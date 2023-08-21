@@ -17,7 +17,12 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    SECONDARY_TEST_AWS_REGION_NAME,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SMS_MSGS_ENDPOINT
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
@@ -3947,13 +3952,13 @@ class TestSNSRetrospectionEndpoints:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
         msgs_url = config.get_edge_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
-        api_contents = requests.get(msgs_url).json()
+        api_contents = requests.get(msgs_url, params={"region": TEST_AWS_REGION_NAME}).json()
         api_platform_endpoints_msgs = api_contents["platform_endpoint_messages"]
 
         assert len(api_platform_endpoints_msgs) == 2
         assert len(api_platform_endpoints_msgs[endpoint_arn]) == 1
         assert len(api_platform_endpoints_msgs[endpoint_arn_2]) == 1
-        assert api_contents["region"] == "us-east-1"
+        assert api_contents["region"] == TEST_AWS_REGION_NAME
 
         assert api_platform_endpoints_msgs[endpoint_arn][0]["Message"] == json.dumps(
             message_for_topic["APNS"]
@@ -3963,9 +3968,15 @@ class TestSNSRetrospectionEndpoints:
         )
 
         # Ensure you can select the region
-        msg_with_region = requests.get(msgs_url, params={"region": "eu-west-1"}).json()
+        msg_with_region = requests.get(
+            msgs_url, params={"region": SECONDARY_TEST_AWS_REGION_NAME}
+        ).json()
         assert len(msg_with_region["platform_endpoint_messages"]) == 0
-        assert msg_with_region["region"] == "eu-west-1"
+        assert msg_with_region["region"] == SECONDARY_TEST_AWS_REGION_NAME
+
+        # Ensure default region is us-east-1
+        msg_with_region = requests.get(msgs_url).json()
+        assert msg_with_region["region"] == AWS_REGION_US_EAST_1
 
         # Ensure messages can be filtered by EndpointArn
         api_contents_with_endpoint = requests.get(
@@ -4025,7 +4036,7 @@ class TestSNSRetrospectionEndpoints:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
         msgs_url = config.get_edge_url() + SMS_MSGS_ENDPOINT
-        api_contents = requests.get(msgs_url).json()
+        api_contents = requests.get(msgs_url, params={"region": TEST_AWS_REGION_NAME}).json()
         api_sms_msgs = api_contents["sms_messages"]
 
         assert len(api_sms_msgs) == 3
@@ -4033,14 +4044,20 @@ class TestSNSRetrospectionEndpoints:
         assert len(api_sms_msgs[list_of_contacts[1]]) == 1
         assert len(api_sms_msgs[list_of_contacts[2]]) == 1
 
-        assert api_contents["region"] == "us-east-1"
+        assert api_contents["region"] == TEST_AWS_REGION_NAME
 
         assert api_sms_msgs[phone_number_1][0]["Message"] == "Good news everyone!"
 
         # Ensure you can select the region
-        msg_with_region = requests.get(msgs_url, params={"region": "eu-west-1"}).json()
+        msg_with_region = requests.get(
+            msgs_url, params={"region": SECONDARY_TEST_AWS_REGION_NAME}
+        ).json()
         assert len(msg_with_region["sms_messages"]) == 0
-        assert msg_with_region["region"] == "eu-west-1"
+        assert msg_with_region["region"] == SECONDARY_TEST_AWS_REGION_NAME
+
+        # Ensure default region is us-east-1
+        msg_with_region = requests.get(msgs_url).json()
+        assert msg_with_region["region"] == AWS_REGION_US_EAST_1
 
         # Ensure messages can be filtered by EndpointArn
         api_contents_with_number = requests.get(
