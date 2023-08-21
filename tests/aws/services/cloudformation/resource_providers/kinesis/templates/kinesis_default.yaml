@@ -1,0 +1,5 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Simple CloudFormation Test Template
+Resources:
+  KinesisStream:
+      Type: AWS::Kinesis::Stream
