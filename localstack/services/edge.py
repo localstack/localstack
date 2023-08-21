@@ -488,6 +488,11 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
 
     # separate privileged and unprivileged addresses
     unprivileged, privileged = split_list_by(listen, lambda addr: addr.is_unprivileged() or False)
+    if is_root():
+        # we don't need to split since we are already root, so move all
+        # privileged ports to unprivileged and serve via hypercorn
+        unprivileged = unprivileged + privileged
+        privileged = []
 
     # check that we are actually started the gateway server
     if not unprivileged:
