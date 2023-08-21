@@ -850,7 +850,7 @@ class TestCloudFormation:
         stack = deploy_cfn_template(
             stack_name=stack_name,
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../templates/legacy_transitive_ref.yaml"
+                os.path.dirname(__file__), "../../../templates/legacy_transitive_ref.yaml"
             ),
             max_wait=500,
             parameters={"QueueName": queue_name, "Qualifier": parameter_ver},

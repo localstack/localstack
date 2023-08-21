@@ -231,7 +231,7 @@ class TestStacksApi:
     @markers.aws.validated
     def test_update_stack_actual_update(self, deploy_cfn_template, aws_client):
         template = load_file(
-            os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_update.yaml")
+            os.path.join(os.path.dirname(__file__), "../../../templates/sqs_queue_update.yml")
         )
         queue_name = f"test-queue-{short_uid()}"
         stack = deploy_cfn_template(
