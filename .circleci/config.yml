@@ -88,7 +88,7 @@ jobs:
             TEST_PATH: "tests/unit"
             COVERAGE_ARGS: "-p"
           command: |
-            echo skipped
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" make test-coverage
 
   itest-lambda-legacy-local:
     executor: ubuntu-machine-amd64
@@ -105,7 +105,7 @@ jobs:
             TEST_PATH: "tests/aws/services/lambda_/ tests/aws/test_integration.py tests/aws/services/apigateway/test_apigateway_basic.py tests/aws/services/cloudformation/resources/test_lambda.py"
             COVERAGE_ARGS: "-p"
           command: |
-            echo "skipped"
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" make test-coverage
 
   itest-sfn-v2-provider:
     executor: ubuntu-machine-amd64
@@ -121,8 +121,7 @@ jobs:
             TEST_PATH: "tests/aws/services/stepfunctions/v2/"
             COVERAGE_ARGS: "-p"
           command: |
-            echo skipped
-
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" make test-coverage
 
   itest-s3-stream-provider:
     executor: ubuntu-machine-amd64
@@ -138,7 +137,7 @@ jobs:
             TEST_PATH: "tests/aws/services/s3/"
             COVERAGE_ARGS: "-p"
           command: |
-            echo skipped
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_stream.xml -o junit_suite_name='s3_stream'" make test-coverage
 
   docker-build:
     parameters:
@@ -220,7 +219,7 @@ jobs:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
-            TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
+            TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
             echo $TEST_FILES
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
@@ -372,6 +371,18 @@ workflows:
       - preflight:
           requires:
             - install
+      - itest-lambda-legacy-local:
+          requires:
+            - preflight
+      - itest-sfn-v2-provider:
+          requires:
+            - preflight
+      - itest-s3-stream-provider:
+          requires:
+            - preflight
+      - unit-tests:
+          requires:
+            - preflight
       - docker-build:
           name: docker-build-amd64
           platform: amd64
