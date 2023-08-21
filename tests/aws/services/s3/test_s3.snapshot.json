@@ -9823,7 +9823,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3::test_s3_object_acl": {
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_object_acl": {
     "recorded-date": "15-08-2023, 23:41:05",
     "recorded-content": {
       "put-object-default-acl": {
@@ -9935,7 +9935,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3::test_s3_object_acl_exceptions": {
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_object_acl_exceptions": {
     "recorded-date": "15-08-2023, 23:47:00",
     "recorded-content": {
       "put-object-canned-acl": {
