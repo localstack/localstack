@@ -26,7 +26,6 @@ from localstack.utils.container_utils.container_client import (
     VolumeBind,
     VolumeMappings,
 )
-from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, mkdir
 from localstack.utils.functions import call_safe
@@ -109,6 +108,10 @@ def get_image_environment_variable(env_name: str) -> Optional[str]:
     except StopIteration:
         return None
     return found_env.split("=")[1]
+
+
+def get_container_default_logfile_location(container_name: str) -> str:
+    return os.path.join(config.dirs.tmp, f"{container_name}_container.log")
 
 
 def get_server_version_from_running_container() -> str:
@@ -684,10 +687,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
         print(line)
         log_printer.callback = print
 
-    logfile = os.path.join(config.dirs.tmp, f"{container_config.name}_container.log")
-
-    if isinstance(DOCKER_CLIENT, CmdDockerClient):
-        DOCKER_CLIENT.default_run_outfile = logfile
+    logfile = get_container_default_logfile_location(container_config.name)
 
     log_printer = FileListener(logfile, callback=_init_log_printer)
     log_printer.truncate_log()
