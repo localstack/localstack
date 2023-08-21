@@ -393,6 +393,12 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
         parameters={"QuotaLimit": "5000", "RestApiName": rest_api_name},
     )
 
+    usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
+
+    assert usage_plan["quota"]["limit"] == 5000
+
+    print("========== NEXTDS =========")
+
     deploy_cfn_template(
         is_update=True,
         stack_name=stack.stack_name,

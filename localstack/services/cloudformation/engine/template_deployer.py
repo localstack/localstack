@@ -79,6 +79,9 @@ def get_attr_from_model_instance(
     if legacy_state := resource.get("_state_"):
         properties = {**properties, **legacy_state}
 
+        if legacy_deployed_state := resource.get("_last_deployed_state"):
+            properties = {**properties, **legacy_deployed_state}
+
     # if there's no entry in VALID_GETATT_PROPERTIES for the resource type we still default to "open" and accept anything
     valid_atts = VALID_GETATT_PROPERTIES.get(resource_type)
     if valid_atts is not None and attribute_name not in valid_atts:

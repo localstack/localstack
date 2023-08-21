@@ -295,6 +295,7 @@ def resolve_resource_parameters(
     resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
     resource_props = dict(resource_props)
     resource_state = resource_definition.get(KEY_RESOURCE_STATE, {})
+    last_deployed_state = resource_definition.get("_last_deployed_state", {})
 
     if callable(params):
         # resolve parameter map via custom function
@@ -331,7 +332,10 @@ def resolve_resource_parameters(
                 else:
                     prop_value = resource_props.get(
                         prop_key,
-                        resource_definition.get(prop_key, resource_state.get(prop_key)),
+                        resource_definition.get(
+                            prop_key,
+                            resource_state.get(prop_key, last_deployed_state.get(prop_key)),
+                        ),
                     )
                 if prop_value is not None:
                     params[param_key] = prop_value
@@ -385,6 +389,7 @@ class LegacyResourceProvider(ResourceProvider):
                 "Type": self.resource_type,
                 "Properties": request.desired_state,
                 "_state_": request.previous_state,
+                # "_last_deployed_state": request
                 "PhysicalResourceId": physical_resource_id,
                 "LogicalResourceId": request.logical_resource_id,
             },
@@ -400,7 +405,9 @@ class LegacyResourceProvider(ResourceProvider):
             # TODO: should not really claim the update was successful, but the
             #   API does not really let us signal this in any other way.
             return ProgressEvent(
-                status=OperationStatus.SUCCESS, resource_model=request.desired_state
+                # TODO
+                status=OperationStatus.SUCCESS,
+                resource_model=request.previous_state,
             )
 
         LOG.info("Updating resource %s of type %s", request.logical_resource_id, self.resource_type)
