@@ -48,6 +48,7 @@ from localstack.services.lambda_.invocation.models import lambda_stores
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.utils.archives import get_unzipped_size, is_zip_file
+from localstack.utils.aws.resources import get_or_create_bucket
 from localstack.utils.container_utils.container_client import ContainerException
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.strings import short_uid, to_str
@@ -567,8 +568,7 @@ def store_lambda_archive(
     # store all buckets in us-east-1 for now
     s3_client = connect_to(region_name=AWS_REGION_US_EAST_1, aws_access_key_id=BUCKET_ACCOUNT).s3
     bucket_name = f"awslambda-{region_name}-tasks"
-    # s3 create bucket is idempotent
-    s3_client.create_bucket(Bucket=bucket_name)
+    get_or_create_bucket(bucket_name=bucket_name, s3_client=s3_client)
     code_id = f"{function_name}-{uuid.uuid4()}"
     key = f"snapshots/{account_id}/{code_id}"
     s3_client.upload_fileobj(Fileobj=io.BytesIO(archive_file), Bucket=bucket_name, Key=key)
