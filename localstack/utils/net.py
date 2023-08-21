@@ -187,7 +187,7 @@ def get_free_udp_port(blocklist: List[int] = None) -> int:
         udp.close()
         if port not in blocklist:
             return port
-    raise Exception(f"Unable to determine free TCP port with blocklist {blocklist}")
+    raise Exception(f"Unable to determine free UDP port with blocklist {blocklist}")
 
 
 def get_free_tcp_port(blocklist: List[int] = None) -> int:
