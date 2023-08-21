@@ -170,8 +170,24 @@ def port_can_be_bound(port: IntOrPort) -> bool:
             return False
         sock.bind(("", port.port))
         return True
-    except Exception:
+    except OSError:
+        # either the port is used or we don't have permission to bind it
         return False
+    except Exception:
+        LOG.error(f"cannot bind port {port}", exc_info=LOG.isEnabledFor(logging.DEBUG))
+        return False
+
+
+def get_free_udp_port(blocklist: List[int] = None) -> int:
+    blocklist = blocklist or []
+    for i in range(10):
+        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp.bind(("", 0))
+        addr, port = udp.getsockname()
+        udp.close()
+        if port not in blocklist:
+            return port
+    raise Exception(f"Unable to determine free UDP port with blocklist {blocklist}")
 
 
 def get_free_tcp_port(blocklist: List[int] = None) -> int:

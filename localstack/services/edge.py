@@ -3,6 +3,7 @@ import gzip
 import json
 import logging
 import re
+import shlex
 import subprocess
 import sys
 import threading
@@ -537,7 +538,7 @@ def run_module_as_sudo(
     python_cmd = sys.executable
     cmd = [sudo_cmd, env_vars_str, python_cmd, "-m", module]
     arguments = arguments or []
-    shell_cmd = " ".join(cmd + arguments)
+    shell_cmd = shlex.join(cmd + arguments)
 
     # make sure we can run sudo commands
     try:
