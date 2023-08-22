@@ -170,18 +170,19 @@ from localstack.services.s3.utils import (
     get_key_from_moto_bucket,
     get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
+    get_permission_from_header,
     is_key_expired,
     serialize_expiration_header,
     validate_kms_key_id,
     verify_checksum,
 )
 from localstack.services.s3.validation import (
+    parse_grants_in_headers,
     validate_acl_acp,
     validate_bucket_analytics_configuration,
     validate_bucket_intelligent_tiering_configuration,
     validate_bucket_name,
     validate_canned_acl,
-    validate_grantee_in_headers,
     validate_inventory_configuration,
     validate_lifecycle_configuration,
     validate_website_configuration,
@@ -1183,8 +1184,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_canned_acl(canned_acl)
 
         elif present_headers:
-            for key, grantees_values in present_headers:
-                validate_grantee_in_headers(key, grantees_values)
+            for key in grant_keys:
+                if grantees_values := request.get(key, ""):  # noqa
+                    permission = get_permission_from_header(key)
+                    parse_grants_in_headers(permission, grantees_values)
 
         elif acp := request.get("AccessControlPolicy"):
             validate_acl_acp(acp)
@@ -1227,7 +1230,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         ]
         for key in grant_keys:
             if grantees_values := request.get(key, ""):  # noqa
-                validate_grantee_in_headers(key, grantees_values)
+                permission = get_permission_from_header(key)
+                parse_grants_in_headers(permission, grantees_values)
 
         if acp := request.get("AccessControlPolicy"):
             validate_acl_acp(acp)

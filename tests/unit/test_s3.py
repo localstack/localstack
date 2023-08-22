@@ -9,6 +9,7 @@ import pytest
 from requests.models import Response
 
 from localstack.aws.api import RequestContext
+from localstack.aws.api.s3 import InvalidArgument
 from localstack.constants import LOCALHOST, S3_VIRTUAL_HOSTNAME
 from localstack.http import Request
 from localstack.services.infra import patch_instance_tracker_meta
@@ -19,6 +20,7 @@ from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
+from localstack.services.s3.validation import validate_canned_acl
 from localstack.utils.strings import short_uid
 
 
@@ -534,38 +536,51 @@ class TestS3UtilsAsf:
         for canonical_id, expected_result in canonical_ids:
             assert s3_utils_asf.is_valid_canonical_id(canonical_id) == expected_result
 
-    def test_get_header_name(self):
+    @pytest.mark.parametrize(
+        "request_member, permission, response_header",
+        [
+            ("GrantFullControl", "FULL_CONTROL", "x-amz-grant-full-control"),
+            ("GrantRead", "READ", "x-amz-grant-read"),
+            ("GrantReadACP", "READ_ACP", "x-amz-grant-read-acp"),
+            ("GrantWrite", "WRITE", "x-amz-grant-write"),
+            ("GrantWriteACP", "WRITE_ACP", "x-amz-grant-write-acp"),
+        ],
+    )
+    def test_get_permission_from_request_header_to_response_header(
+        self, request_member, permission, response_header
+    ):
         """
         Test to transform shape member names into their header location
         We could maybe use the specs for this
         """
-        query_params = [
-            ("GrantFullControl", "x-amz-grant-full-control"),
-            ("GrantRead", "x-amz-grant-read"),
-            ("GrantReadACP", "x-amz-grant-read-acp"),
-            ("GrantWrite", "x-amz-grant-write"),
-            ("GrantWriteACP", "x-amz-grant-write-acp"),
-        ]
+        parsed_permission = s3_utils_asf.get_permission_from_header(request_member)
+        assert parsed_permission == permission
+        assert s3_utils_asf.get_permission_header_name(parsed_permission) == response_header
 
-        for query_param, expected_header_name in query_params:
-            assert s3_utils_asf.get_header_name(query_param) == expected_header_name
+    @pytest.mark.parametrize(
+        "canned_acl, raise_exception",
+        [
+            ("private", False),
+            ("public-read", False),
+            ("public-read-write", False),
+            ("authenticated-read", False),
+            ("aws-exec-read", False),
+            ("bucket-owner-read", False),
+            ("bucket-owner-full-control", False),
+            ("not-a-canned-one", True),
+            ("aws--exec-read", True),
+            ("log-delivery-write", False),
+        ],
+    )
+    def test_validate_canned_acl(self, canned_acl, raise_exception):
+        if raise_exception:
+            with pytest.raises(InvalidArgument) as e:
+                validate_canned_acl(canned_acl)
+            assert e.value.ArgumentName == "x-amz-acl"
+            assert e.value.ArgumentValue == canned_acl
 
-    def test_is_canned_acl_valid(self):
-        canned_acls = [
-            ("private", True),
-            ("public-read", True),
-            ("public-read-write", True),
-            ("authenticated-read", True),
-            ("aws-exec-read", True),
-            ("bucket-owner-read", True),
-            ("bucket-owner-full-control", True),
-            ("not-a-canned-one", False),
-            ("aws--exec-read", False),
-            ("log-delivery-write", True),
-        ]
-
-        for canned_acl, expected_result in canned_acls:
-            assert s3_utils_asf.is_canned_acl_bucket_valid(canned_acl) == expected_result
+        else:
+            validate_canned_acl(canned_acl)
 
     def test_s3_bucket_name(self):
         bucket_names = [
