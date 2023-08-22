@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 import pytest
@@ -12,6 +13,9 @@ from localstack.utils.testutil import get_lambda_log_events
 
 def get_base_dir() -> str:
     return os.path.join(os.path.dirname(__file__), "serverless")
+
+
+LOG = logging.getLogger(__name__)
 
 
 class TestServerless:
@@ -31,8 +35,11 @@ class TestServerless:
 
         yield existing_api_ids
 
-        # TODO uncomment once removal via the sls plugin is fixed
-        # run('cd %s; npm run undeploy -- --region=%s' % (cls.get_base_dir(), aws_stack.get_region()))
+        try:
+            # TODO the cleanup still fails due to inability to find ECR service in community
+            run(["npm", "run", "undeploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir)
+        except Exception:
+            LOG.error("Unable to clean up serverless stack")
 
     @markers.skip_offline
     @markers.aws.unknown
