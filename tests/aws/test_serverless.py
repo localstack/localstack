@@ -19,7 +19,7 @@ LOG = logging.getLogger(__name__)
 
 
 class TestServerless:
-    @pytest.fixture(scope="session")
+    @pytest.fixture(scope="class")
     def setup_and_teardown(self, aws_client):
         base_dir = get_base_dir()
         if not os.path.exists(os.path.join(base_dir, "node_modules")):
