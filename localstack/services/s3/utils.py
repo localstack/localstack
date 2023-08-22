@@ -356,7 +356,7 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
 
 def uses_host_addressing(headers: Dict[str, str]) -> bool:
     """
-    Determines if the request is targetting S3 with virtual host addressing
+    Determines if the request is targeting S3 with virtual host addressing
     :param headers: the request headers
     :return: whether the request targets S3 with virtual host addressing
     """
@@ -390,10 +390,7 @@ def forwarded_from_virtual_host_addressed_request(headers: dict[str, str]) -> bo
     """
     # we can assume that the host header we are receiving here is actually the header we originally received
     # from the client (because the edge service is forwarding the request in memory)
-    match = re.match(S3_VIRTUAL_HOSTNAME_REGEX, headers.get(S3_VIRTUAL_HOST_FORWARDED_HEADER, ""))
-
-    # checks whether there is a bucket name. This is sort of hacky
-    return True if match and match.group(3) else False
+    return S3_VIRTUAL_HOST_FORWARDED_HEADER in headers
 
 
 def extract_bucket_name_and_key_from_headers_and_path(
@@ -418,8 +415,8 @@ def extract_bucket_name_and_key_from_headers_and_path(
                 object_key = split[1]
     else:
         path_without_params = path.partition("?")[0]
-        bucket_name = path_without_params.split("/", maxsplit=2)[1]
-        split = path.split("/", maxsplit=2)
+        split = path_without_params.split("/", maxsplit=2)
+        bucket_name = split[1]
         if len(split) > 2:
             object_key = split[2]
 

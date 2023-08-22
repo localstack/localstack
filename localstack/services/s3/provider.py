@@ -157,7 +157,6 @@ from localstack.services.s3.exceptions import (
 from localstack.services.s3.models import BucketCorsIndex, S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.presigned_url import (
-    s3_presigned_url_request_handler,
     s3_presigned_url_response_handler,
     validate_post_policy,
 )
@@ -1921,5 +1920,5 @@ def apply_moto_patches():
 
 def register_custom_handlers():
     serve_custom_service_request_handlers.append(s3_cors_request_handler)
-    serve_custom_service_request_handlers.append(s3_presigned_url_request_handler)
+    # serve_custom_service_request_handlers.append(s3_presigned_url_request_handler)
     modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)

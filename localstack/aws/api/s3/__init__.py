@@ -594,7 +594,7 @@ class BucketAlreadyOwnedByYou(ServiceException):
 class InvalidObjectState(ServiceException):
     code: str = "InvalidObjectState"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 403
     StorageClass: Optional[StorageClass]
     AccessTier: Optional[IntelligentTieringAccessTier]
 
