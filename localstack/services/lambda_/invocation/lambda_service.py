@@ -80,7 +80,7 @@ class LambdaService:
         self.lambda_starting_versions = {}
         self.event_managers = {}
         self.lambda_version_manager_lock = RLock()
-        self.task_executor = ThreadPoolExecutor()
+        self.task_executor = ThreadPoolExecutor(thread_name_prefix="lambda-service-task")
         self.assignment_service = AssignmentService()
         self.counting_service = CountingService()
 
@@ -100,7 +100,9 @@ class LambdaService:
                     version_manager.function_version.config.code.destroy_cached
                 )
             )
-        concurrent.futures.wait(shutdown_futures, timeout=5)
+        _, not_done = concurrent.futures.wait(shutdown_futures, timeout=5)
+        if not_done:
+            LOG.debug("Shutdown not complete, missing threads: %s", not_done)
         self.task_executor.shutdown(cancel_futures=True)
 
     def stop_version(self, qualified_arn: str) -> None:
@@ -348,62 +350,70 @@ class LambdaService:
         :param function_version: Version reporting the state
         :param new_state: New state
         """
-        function_arn = function_version.qualified_arn
-        old_version = None
-        old_event_manager = None
-        with self.lambda_version_manager_lock:
-            new_version_manager = self.lambda_starting_versions.pop(function_arn)
-            if not new_version_manager:
-                raise ValueError(
-                    f"Version {function_arn} reporting state {new_state.state} does exist in the starting versions."
-                )
-            if new_state.state == State.Active:
-                old_version = self.lambda_running_versions.get(function_arn, None)
-                old_event_manager = self.event_managers.get(function_arn, None)
-                self.lambda_running_versions[function_arn] = new_version_manager
-                self.event_managers[function_arn] = LambdaEventManager(
-                    version_manager=new_version_manager
-                )
-                self.event_managers[function_arn].start()
-                update_status = UpdateStatus(status=LastUpdateStatus.Successful)
-            elif new_state.state == State.Failed:
-                update_status = UpdateStatus(status=LastUpdateStatus.Failed)
-                self.task_executor.submit(new_version_manager.stop)
-            else:
-                # TODO what to do if state pending or inactive is supported?
-                self.task_executor.submit(new_version_manager.stop)
-                LOG.error(
-                    "State %s for version %s should not have been reported. New version will be stopped.",
-                    new_state,
-                    function_arn,
-                )
+        try:
+            function_arn = function_version.qualified_arn
+            old_version = None
+            old_event_manager = None
+            with self.lambda_version_manager_lock:
+                new_version_manager = self.lambda_starting_versions.pop(function_arn)
+                if not new_version_manager:
+                    raise ValueError(
+                        f"Version {function_arn} reporting state {new_state.state} does exist in the starting versions."
+                    )
+                if new_state.state == State.Active:
+                    old_version = self.lambda_running_versions.get(function_arn, None)
+                    old_event_manager = self.event_managers.get(function_arn, None)
+                    self.lambda_running_versions[function_arn] = new_version_manager
+                    self.event_managers[function_arn] = LambdaEventManager(
+                        version_manager=new_version_manager
+                    )
+                    self.event_managers[function_arn].start()
+                    update_status = UpdateStatus(status=LastUpdateStatus.Successful)
+                elif new_state.state == State.Failed:
+                    update_status = UpdateStatus(status=LastUpdateStatus.Failed)
+                    self.task_executor.submit(new_version_manager.stop)
+                else:
+                    # TODO what to do if state pending or inactive is supported?
+                    self.task_executor.submit(new_version_manager.stop)
+                    LOG.error(
+                        "State %s for version %s should not have been reported. New version will be stopped.",
+                        new_state,
+                        function_arn,
+                    )
+                    return
+
+            # TODO is it necessary to get the version again? Should be locked for modification anyway
+            # Without updating the new state, the function would not change to active, last_update would be missing, and
+            # the revision id would not be updated.
+            state = lambda_stores[function_version.id.account][function_version.id.region]
+            # FIXME this will fail if the function is deleted during this code lines here
+            function = state.functions.get(function_version.id.function_name)
+            if old_event_manager:
+                self.task_executor.submit(old_event_manager.stop_for_update)
+            if old_version:
+                # if there is an old version, we assume it is an update, and stop the old one
+                self.task_executor.submit(old_version.stop)
+                if function:
+                    self.task_executor.submit(
+                        destroy_code_if_not_used, old_version.function_version.config.code, function
+                    )
+            if not function:
+                LOG.debug("Function %s was deleted during status update", function_arn)
                 return
-
-        # TODO is it necessary to get the version again? Should be locked for modification anyway
-        # Without updating the new state, the function would not change to active, last_update would be missing, and
-        # the revision id would not be updated.
-        state = lambda_stores[function_version.id.account][function_version.id.region]
-        function = state.functions[function_version.id.function_name]
-        current_version = function.versions[function_version.id.qualifier]
-        new_version_manager.state = new_state
-        new_version_state = dataclasses.replace(
-            current_version,
-            config=dataclasses.replace(
-                current_version.config, state=new_state, last_update=update_status
-            ),
-        )
-        state.functions[function_version.id.function_name].versions[
-            function_version.id.qualifier
-        ] = new_version_state
-
-        if old_event_manager:
-            self.task_executor.submit(old_event_manager.stop_for_update)
-        if old_version:
-            # if there is an old version, we assume it is an update, and stop the old one
-            self.task_executor.submit(old_version.stop)
-            self.task_executor.submit(
-                destroy_code_if_not_used, old_version.function_version.config.code, function
+            current_version = function.versions[function_version.id.qualifier]
+            new_version_manager.state = new_state
+            new_version_state = dataclasses.replace(
+                current_version,
+                config=dataclasses.replace(
+                    current_version.config, state=new_state, last_update=update_status
+                ),
             )
+            state.functions[function_version.id.function_name].versions[
+                function_version.id.qualifier
+            ] = new_version_state
+
+        except Exception:
+            LOG.exception("This no good")
 
     def update_alias(self, old_alias: VersionAlias, new_alias: VersionAlias, function: Function):
         # if pointer changed, need to restart provisioned

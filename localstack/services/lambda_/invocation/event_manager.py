@@ -132,7 +132,9 @@ class Poller:
 
     def stop(self):
         LOG.debug(
-            "Shutting down event poller %s", self.version_manager.function_version.qualified_arn
+            "Shutting down event poller %s %s",
+            self.version_manager.function_version.qualified_arn,
+            id(self),
         )
         self._shutdown_event.set()
         self.invoker_pool.shutdown(cancel_futures=True)
@@ -380,12 +382,16 @@ class LambdaEventManager:
     poller: Poller | None
     poller_thread: FuncThread | None
     event_queue_url: str | None
+    lifecycle_lock: threading.RLock
+    stopped: threading.Event
 
     def __init__(self, version_manager: LambdaVersionManager):
         self.version_manager = version_manager
         self.poller = None
         self.poller_thread = None
         self.event_queue_url = None
+        self.lifecycle_lock = threading.RLock()
+        self.stopped = threading.Event()
 
     def enqueue_event(self, invocation: Invocation) -> None:
         message_body = SQSInvocation(invocation).encode()
@@ -393,42 +399,69 @@ class LambdaEventManager:
         sqs_client.send_message(QueueUrl=self.event_queue_url, MessageBody=message_body)
 
     def start(self) -> None:
-        sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
-        fn_version_id = self.version_manager.function_version.id
-        # Truncate function name to ensure queue name limit of max 80 characters
-        function_name_short = fn_version_id.function_name[:47]
-        queue_name = f"{function_name_short}-{md5(fn_version_id.qualified_arn())}"
-        create_queue_response = sqs_client.create_queue(QueueName=queue_name)
-        self.event_queue_url = create_queue_response["QueueUrl"]
-        # Ensure no events are in new queues due to persistence and cloud pods
-        sqs_client.purge_queue(QueueUrl=self.event_queue_url)
+        LOG.debug(
+            "Starting event manager %s id %s",
+            self.version_manager.function_version.id.qualified_arn(),
+            id(self),
+        )
+        with self.lifecycle_lock:
+            if self.stopped.is_set():
+                LOG.debug("Event manager already stopped before started.")
+                return
+            sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+            fn_version_id = self.version_manager.function_version.id
+            # Truncate function name to ensure queue name limit of max 80 characters
+            function_name_short = fn_version_id.function_name[:47]
+            queue_name = f"{function_name_short}-{md5(fn_version_id.qualified_arn())}"
+            create_queue_response = sqs_client.create_queue(QueueName=queue_name)
+            self.event_queue_url = create_queue_response["QueueUrl"]
+            # Ensure no events are in new queues due to persistence and cloud pods
+            sqs_client.purge_queue(QueueUrl=self.event_queue_url)
 
-        self.poller = Poller(self.version_manager, self.event_queue_url)
-        self.poller_thread = FuncThread(self.poller.run, name="lambda-poller")
-        self.poller_thread.start()
+            self.poller = Poller(self.version_manager, self.event_queue_url)
+            self.poller_thread = FuncThread(self.poller.run, name="lambda-poller")
+            self.poller_thread.start()
 
     def stop_for_update(self) -> None:
         LOG.debug(
-            "Stopping event manager but keep queue %s",
+            "Stopping event manager but keep queue %s id %s",
             self.version_manager.function_version.qualified_arn,
+            id(self),
         )
-        if self.poller:
-            self.poller.stop()
-            self.poller = None
+        with self.lifecycle_lock:
+            if self.stopped.is_set():
+                LOG.debug("Event manager already stopped!")
+                return
+            self.stopped.set()
+            if self.poller:
+                self.poller.stop()
+                self.poller_thread.join(timeout=3)
+                LOG.debug("Waited for poller thread %s", self.poller_thread)
+                if self.poller_thread.is_alive():
+                    LOG.error("Poller did not shutdown %s", self.poller_thread)
+                self.poller = None
 
     def stop(self) -> None:
         LOG.debug(
-            "Stopping event manager %s: %s",
+            "Stopping event manager %s: %s id %s",
             self.version_manager.function_version.qualified_arn,
             self.poller,
+            id(self),
         )
-        if self.poller:
-            self.poller.stop()
-            self.poller_thread.join(timeout=3)
-            if self.poller_thread.is_alive():
-                LOG.error("Poller did not shutdown %s", self.poller)
-            self.poller = None
-        if self.event_queue_url:
-            sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
-            sqs_client.delete_queue(QueueUrl=self.event_queue_url)
-            self.event_queue_url = None
+        with self.lifecycle_lock:
+            if self.stopped.is_set():
+                LOG.debug("Event manager already stopped!")
+                return
+            self.stopped.set()
+            if self.poller:
+                self.poller.stop()
+                self.poller_thread.join(timeout=3)
+                LOG.debug("Waited for poller thread %s", self.poller_thread)
+                if self.poller_thread.is_alive():
+                    LOG.error("Poller did not shutdown %s", self.poller_thread)
+                self.poller = None
+            if self.event_queue_url:
+                sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+                # TODO add boto config to disable retries in case gateway is already shut down
+                sqs_client.delete_queue(QueueUrl=self.event_queue_url)
+                self.event_queue_url = None
