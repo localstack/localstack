@@ -396,14 +396,14 @@ class LambdaService:
             function_version.id.qualifier
         ] = new_version_state
 
+        if old_event_manager:
+            self.task_executor.submit(old_event_manager.stop_for_update)
         if old_version:
             # if there is an old version, we assume it is an update, and stop the old one
             self.task_executor.submit(old_version.stop)
             self.task_executor.submit(
                 destroy_code_if_not_used, old_version.function_version.config.code, function
             )
-        if old_event_manager:
-            self.task_executor.submit(old_event_manager.stop)
 
     def update_alias(self, old_alias: VersionAlias, new_alias: VersionAlias, function: Function):
         # if pointer changed, need to restart provisioned
