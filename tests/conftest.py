@@ -4,6 +4,8 @@ import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
 
+from localstack.testing.snapshots import SnapshotSession
+
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
 pytest_plugins = [
@@ -81,6 +83,11 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "skip_offline" in item.keywords:
             item.add_marker(skip_offline)
+
+
+@pytest.fixture(scope="function")
+def snapshot(_snapshot_session: SnapshotSession):
+    return _snapshot_session
 
 
 @pytest.fixture(scope="session")
