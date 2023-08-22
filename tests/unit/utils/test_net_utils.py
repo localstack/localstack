@@ -5,7 +5,7 @@ import pytest as pytest
 from localstack.constants import LOCALHOST
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
-from localstack.utils.net import Port, port_can_be_bound, resolve_hostname
+from localstack.utils.net import Port, get_free_udp_port, port_can_be_bound, resolve_hostname
 
 
 @markers.skip_offline
@@ -34,3 +34,8 @@ def test_port_open(protocol):
     # close socket, assert that port can be bound
     sock.close()
     assert port_can_be_bound(port)
+
+
+def test_get_free_udp_port():
+    port = get_free_udp_port()
+    assert port_can_be_bound(Port(port, "udp"))
