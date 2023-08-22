@@ -23,7 +23,7 @@ class WaitFunction(EvalComponent, abc.ABC):
         tot_sec_waited = seconds_waited + round_sec_waited
         if tot_sec_waited >= max_seconds:
             return
-        elif isinstance(env.program_state(), ProgramRunning):
+        elif env.is_running():
             # Unrelated interrupt: continue waiting.
             LOG.warning(
                 f"Wait function '{self}' successfully reentered waiting for "
