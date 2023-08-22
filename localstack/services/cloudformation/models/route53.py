@@ -1,6 +1,7 @@
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.common import select_attributes
+from localstack.utils.strings import short_uid
 
 
 class Route53RecordSet(GenericBaseModel):
@@ -91,6 +92,10 @@ class Route53RecordSet(GenericBaseModel):
             resource: dict,
         ):
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+            if resource["Properties"].get("AliasTarget"):
+                resource["Properties"]["HostedZoneId"] = resource["Properties"]["AliasTarget"][
+                    "HostedZoneId"
+                ]
 
         return {
             "create": {
@@ -101,4 +106,46 @@ class Route53RecordSet(GenericBaseModel):
                 },
                 "result_handler": _handle_result,
             }
+        }
+
+
+class Route53HealthCheck(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::Route53::HealthCheck"
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        props = resource.get("Properties", {})
+        if not props.get("CallerReference"):
+            props["CallerReference"] = short_uid()
+
+    def fetch_state(self, stack_name, resources):
+        client = connect_to().route53
+        result = client.list_health_checks()["HealthChecks"]
+        result = [z for z in result if z["Id"] == self.props.get("HealthCheckConfig", {}).get("Id")]
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        def _get_params(resource_props, logical_resource_id, resource_definition, stack_name):
+            resource = Route53HealthCheck(resource_definition)
+            props = resource.props
+            result = select_attributes(props, ["CallerReference", "HealthCheckConfig"])
+            return result
+
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Id"] = result["HealthCheck"]["Id"]
+            resource["PhysicalResourceId"] = result["HealthCheck"]["Id"]
+
+        return {
+            "create": {
+                "function": "create_health_check",
+                "parameters": _get_params,
+                "result_handler": _handle_result,
+            },
+            "delete": {
+                "function": "delete_health_check",
+                "parameters": {"Id": "PhysicalResourceId"},
+            },
         }
