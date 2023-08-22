@@ -1260,18 +1260,18 @@ def service_port(service_key: str, external: bool = False) -> int:
     return get_edge_port_http()
 
 
-def get_protocol():
+def get_protocol() -> str:
     return "https" if USE_SSL else "http"
 
 
-def service_url(service_key, host=None, port=None):
+def service_url(service_key: str, host: str | None = None, port: int | None = None) -> str:
     host = host or LOCALHOST
     port = port or service_port(service_key)
     return f"{get_protocol()}://{host}:{port}"
 
 
-def external_service_url(service_key, host=None, port=None):
-    host = host or HOSTNAME_EXTERNAL
+def external_service_url(service_key: str, host: str | None = None, port: int | None = None) -> str:
+    host = host or LOCALSTACK_HOST
     port = port or service_port(service_key, external=True)
     return service_url(service_key, host=host, port=port)
 
