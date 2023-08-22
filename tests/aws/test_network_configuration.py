@@ -28,12 +28,10 @@ class TestOpenSearch:
 
     @markers.aws.only_localstack
     def test_default_strategy(
-        self, opensearch_wait_for_cluster, assert_host_customisation, aws_client, cleanups
+        self, opensearch_create_domain, assert_host_customisation, aws_client
     ):
         domain_name = f"domain-{short_uid()}"
-        res = aws_client.opensearch.create_domain(DomainName=domain_name)
-        cleanups.append(lambda: aws_client.opensearch.delete_domain(DomainName=domain_name))
-        opensearch_wait_for_cluster(domain_name)
+        res = opensearch_create_domain(DomainName=domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
         assert_host_customisation(endpoint, use_localstack_cloud=True)
@@ -42,17 +40,14 @@ class TestOpenSearch:
     def test_port_strategy(
         self,
         monkeypatch,
-        opensearch_wait_for_cluster,
+        opensearch_create_domain,
         assert_host_customisation,
         aws_client,
-        cleanups,
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
 
         domain_name = f"domain-{short_uid()}"
-        res = aws_client.opensearch.create_domain(DomainName=domain_name)
-        cleanups.append(lambda: aws_client.opensearch.delete_domain(DomainName=domain_name))
-        opensearch_wait_for_cluster(domain_name)
+        res = opensearch_create_domain(DomainName=domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
         if config.is_in_docker:
@@ -64,17 +59,14 @@ class TestOpenSearch:
     def test_path_strategy(
         self,
         monkeypatch,
-        opensearch_wait_for_cluster,
+        opensearch_create_domain,
         assert_host_customisation,
         aws_client,
-        cleanups,
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
 
         domain_name = f"domain-{short_uid()}"
-        res = aws_client.opensearch.create_domain(DomainName=domain_name)
-        cleanups.append(lambda: aws_client.opensearch.delete_domain(DomainName=domain_name))
-        opensearch_wait_for_cluster(domain_name)
+        res = opensearch_create_domain(DomainName=domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
         assert_host_customisation(endpoint, use_localstack_hostname=True)
