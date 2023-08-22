@@ -199,7 +199,7 @@ class LambdaVersionManager:
                 invocation_result.executed_version = self.function_version.id.qualifier
                 self.store_logs(invocation_result=invocation_result, execution_env=execution_env)
 
-        # TODO: does this need to happen async?
+        # MAYBE: reuse threads
         start_thread(
             lambda *args, **kwargs: record_cw_metric_invocation(
                 function_name=self.function.function_name,

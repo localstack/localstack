@@ -36,7 +36,7 @@ class RuntimeStatus(Enum):
     STARTING = auto()
     READY = auto()
     RUNNING = auto()
-    FAILED = auto()
+    STARTUP_FAILED = auto()
     STOPPED = auto()
 
 
@@ -240,7 +240,7 @@ class ExecutionEnvironment:
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException("Runtime Handler can only error while starting")
-            self.status = RuntimeStatus.FAILED
+            self.status = RuntimeStatus.STARTUP_FAILED
         if self.startup_timer:
             self.startup_timer.cancel()
         try:

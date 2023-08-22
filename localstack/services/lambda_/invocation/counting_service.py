@@ -98,7 +98,7 @@ class CountingService:
         on_demand_tracker = self.on_demand_concurrency_trackers.get(scope_tuple)
         # Double-checked locking pattern to initialize an on-demand concurrency tracker if it does not exist
         if not on_demand_tracker:
-            with self.provisioned_concurrency_init_lock:
+            with self.on_demand_init_lock:
                 on_demand_tracker = self.on_demand_concurrency_trackers.get(scope_tuple)
                 if not on_demand_tracker:
                     on_demand_tracker = self.on_demand_concurrency_trackers[
@@ -108,7 +108,7 @@ class CountingService:
         provisioned_tracker = self.provisioned_concurrency_trackers.get(scope_tuple)
         # Double-checked locking pattern to initialize a provisioned concurrency tracker if it does not exist
         if not provisioned_tracker:
-            with self.on_demand_init_lock:
+            with self.provisioned_concurrency_init_lock:
                 provisioned_tracker = self.provisioned_concurrency_trackers.get(scope_tuple)
                 if not provisioned_tracker:
                     provisioned_tracker = self.provisioned_concurrency_trackers[
