@@ -6,6 +6,7 @@ We use this to track the memory usage (initially) of the runner instance to
 know when it is out of memory.
 """
 import json
+import sys
 import time
 from typing import Optional, Tuple
 
@@ -14,28 +15,21 @@ import pytest
 
 
 class ResourceMonitorPlugin:
-    def __init__(self):
-        self.logfile_path = "./resource_usage.log"
-        self.logfile = None
-
     @pytest.hookimpl()
     def pytest_collectstart(self, collector: pytest.Collector):
-        self.logfile = open(self.logfile_path, "w")
         self.capture("start")
 
     @pytest.hookimpl()
     def pytest_runtest_logfinish(self, nodeid: str, location: Tuple[str, Optional[int], str]):
-        if self.logfile is None:
-            return
-
         filename, line_no, testname = location
-        self.capture("post-test", nodeid, filename, line_no, testname)
+        try:
+            self.capture("post-test", nodeid, filename, line_no, testname)
+        except Exception as e:
+            print(f"Error capturing statistics: {e}", file=sys.stderr)
 
     @pytest.hookimpl()
     def pytest_terminal_summary(self, *args, **kwargs):
-        if self.logfile is None:
-            return
-        self.logfile.close()
+        pass
 
     def capture(
         self,
@@ -46,22 +40,25 @@ class ResourceMonitorPlugin:
         testname: str | None = None,
     ):
         memory_usage = psutil.virtual_memory()
+        loadavg = psutil.getloadavg()
+        cpu_percents = psutil.cpu_percent()
+        swap = psutil.swap_memory()
+        disk = psutil.disk_usage("/")
         row = {
             "time": time.time(),
-            "used": memory_usage.used,
-            "available": memory_usage.available,
+            "memory": memory_usage,
             "node_id": node_id,
             "filename": filename,
             "line_no": line_no,
             "testname": testname,
             "label": label,
+            "loadavg": loadavg,
+            "cpu_percents": cpu_percents,
+            "swap": swap,
+            "disk": disk,
         }
 
         self.print_row(row)
 
     def print_row(self, row: dict):
-        if self.logfile is None:
-            return
-        line = json.dumps(row)
-        print(line, file=self.logfile)
-        self.logfile.flush()
+        print(f"*** RESOURCE USAGE:{json.dumps(row)}")
