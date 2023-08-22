@@ -1,10 +1,12 @@
 import os
+from typing import TYPE_CHECKING
 
 import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
 
-from localstack.testing.snapshots import SnapshotSession
+if TYPE_CHECKING:
+    from localstack.testing.snapshots import SnapshotSession
 
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
@@ -86,7 +88,7 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="function")
-def snapshot(_snapshot_session: SnapshotSession):
+def snapshot(_snapshot_session: "SnapshotSession"):
     return _snapshot_session
 
 
