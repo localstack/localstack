@@ -2,8 +2,10 @@ import json
 from json import JSONDecodeError
 from typing import Any, Final, Optional
 
+from botocore.config import Config
+
 from localstack.aws.api.lambda_ import InvocationResponse
-from localstack.aws.connect import connect_to
+from localstack.aws.connect import connect_externally_to
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.collections import select_from_typed_dict
@@ -21,7 +23,7 @@ class LambdaFunctionErrorException(Exception):
 
 
 def exec_lambda_function(env: Environment, parameters: dict) -> None:
-    lambda_client = connect_to().lambda_
+    lambda_client = connect_externally_to(config=Config(parameter_validation=False)).lambda_
     invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
 
     func_error: Optional[str] = invocation_resp.get("FunctionError")
