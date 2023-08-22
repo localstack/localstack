@@ -7,6 +7,7 @@ from jsonpath_ng.ext import parse
 
 from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import TransformContext
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
@@ -159,7 +160,8 @@ def create_iam_role_for_sfn(aws_client, cleanups, create_state_machine):
 
             stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
-        _wait_sfn_can_assume_role()
+        if is_aws_cloud():
+            _wait_sfn_can_assume_role()
 
         return role_arn
 
