@@ -77,6 +77,13 @@ def pytest_runtestloop(session):
 
 
 @pytest.hookimpl()
+def pytest_addhooks(pluginmanager):
+    from localstack.testing.pytest.resourcemon import ResourceMonitorPlugin
+
+    pluginmanager.register(ResourceMonitorPlugin())
+
+
+@pytest.hookimpl()
 def pytest_unconfigure(config):
     # last pytest lifecycle hook (before pytest exits)
     _trigger_stop()
