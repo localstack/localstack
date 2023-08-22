@@ -28,10 +28,11 @@ class TestOpenSearch:
 
     @markers.aws.only_localstack
     def test_default_strategy(
-        self, opensearch_wait_for_cluster, assert_host_customisation, aws_client
+        self, opensearch_wait_for_cluster, assert_host_customisation, aws_client, cleanups
     ):
         domain_name = f"domain-{short_uid()}"
         res = aws_client.opensearch.create_domain(DomainName=domain_name)
+        cleanups.append(lambda: aws_client.opensearch.delete_domain(DomainName=domain_name))
         opensearch_wait_for_cluster(domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
@@ -39,12 +40,18 @@ class TestOpenSearch:
 
     @markers.aws.only_localstack
     def test_port_strategy(
-        self, monkeypatch, opensearch_wait_for_cluster, assert_host_customisation, aws_client
+        self,
+        monkeypatch,
+        opensearch_wait_for_cluster,
+        assert_host_customisation,
+        aws_client,
+        cleanups,
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
 
         domain_name = f"domain-{short_uid()}"
         res = aws_client.opensearch.create_domain(DomainName=domain_name)
+        cleanups.append(lambda: aws_client.opensearch.delete_domain(DomainName=domain_name))
         opensearch_wait_for_cluster(domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
@@ -55,12 +62,18 @@ class TestOpenSearch:
 
     @markers.aws.only_localstack
     def test_path_strategy(
-        self, monkeypatch, opensearch_wait_for_cluster, assert_host_customisation, aws_client
+        self,
+        monkeypatch,
+        opensearch_wait_for_cluster,
+        assert_host_customisation,
+        aws_client,
+        cleanups,
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
 
         domain_name = f"domain-{short_uid()}"
         res = aws_client.opensearch.create_domain(DomainName=domain_name)
+        cleanups.append(lambda: aws_client.opensearch.delete_domain(DomainName=domain_name))
         opensearch_wait_for_cluster(domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
