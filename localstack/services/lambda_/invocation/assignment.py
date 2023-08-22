@@ -71,9 +71,9 @@ class AssignmentService(OtherServiceEndpoint):
         except InvalidStatusException as invalid_e:
             LOG.error("Should not happen: %s", invalid_e)
         except Exception as e:
-            # TODO: add logging, stop environment
             LOG.error("Failed invocation %s", e)
-            execution_environment.errored()
+            self.stop_environment(execution_environment)
+            raise e
 
     def start_environment(self, function_version: FunctionVersion) -> ExecutionEnvironment:
         LOG.debug("Starting new environment")
@@ -85,7 +85,9 @@ class AssignmentService(OtherServiceEndpoint):
         try:
             execution_environment.start()
         except Exception as e:
-            LOG.error(f"Could not start new environment: {e}")
+            message = f"Could not start new environment: {e}"
+            LOG.error(message, exc_info=LOG.isEnabledFor(logging.DEBUG))
+            raise AssignmentException(message) from e
         return execution_environment
 
     def on_timeout(self, version_arn: str, environment_id: str) -> None:
