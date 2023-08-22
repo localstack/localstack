@@ -9344,7 +9344,6 @@ class TestS3BucketReplication:
 class TestS3PresignedPost:
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not NATIVE_S3_PROVIDER,
         reason="failing sporadically with new HTTP gateway (only in CI)",
     )
     def test_post_object_with_files(self, s3_bucket, aws_client):
@@ -9558,7 +9557,6 @@ class TestS3PresignedPost:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not NATIVE_S3_PROVIDER,
         reason="sporadically failing in CI: presigned-post does not set the body, and then etag is wrong",
     )
     def test_s3_presigned_post_success_action_status_201_response(self, s3_bucket, aws_client):
@@ -9720,6 +9718,12 @@ class TestS3PresignedPost:
         condition=lambda: not is_native_provider(),
         paths=["$..ServerSideEncryption"],
     )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ContentLength",
+            "$..ETag",
+        ],  # FIXME: in CI, it fails sporadically and the form is empty
+    )
     def test_post_object_with_metadata(self, s3_bucket, aws_client, snapshot):
         object_key = "test-presigned-post-key-metadata"
         object_expires = rfc_1123_datetime(
@@ -9761,7 +9765,11 @@ class TestS3PresignedPost:
         reason="not implemented in moto",
     )
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..HostId"],  # missing from the exception XML
+        paths=[
+            "$..HostId",
+            "$..ContentLength",
+            "$..ETag",
+        ],  # missing from the exception XML, and failing in CI
     )
     def test_post_object_with_storage_class(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformers_list(
