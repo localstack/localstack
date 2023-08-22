@@ -57,16 +57,16 @@ class Execution:
             exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
             self.execution.stop_date = datetime.datetime.now()
             if isinstance(exit_program_state, ProgramEnded):
+                self.execution.exec_status = ExecutionStatus.SUCCEEDED
                 self.execution.output = to_json_str(
                     self.execution.exec_worker.env.inp, separators=(",", ":")
                 )
-                self.execution.exec_status = ExecutionStatus.SUCCEEDED
             elif isinstance(exit_program_state, ProgramStopped):
                 self.execution.exec_status = ExecutionStatus.ABORTED
             elif isinstance(exit_program_state, ProgramError):
+                self.execution.exec_status = ExecutionStatus.FAILED
                 self.execution.error = exit_program_state.error["error"]
                 self.execution.cause = exit_program_state.error["cause"]
-                self.execution.exec_status = ExecutionStatus.FAILED
             else:
                 raise RuntimeWarning(
                     f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
