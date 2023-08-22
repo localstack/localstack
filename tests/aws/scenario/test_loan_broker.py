@@ -99,7 +99,7 @@ class TestLoanBrokerScenario:
         infra.add_cdk_stack(pub_sub_stack)
 
         # set skip_teardown=True to prevent the stack to be deleted
-        with infra.provisioner(skip_teardown=False) as prov:
+        with infra.provisioner(skip_teardown=True) as prov:
             if not infra.skipped_provisioning:
                 # here we could add some initial setup, e.g. pre-filling the app with data
                 bank_addresses = [{"S": bank_name} for bank_name in self.BANKS.keys()]
@@ -109,13 +109,17 @@ class TestLoanBrokerScenario:
                 )
             yield prov
 
-    def test_nothing(self):
-        pass
-
+    @markers.aws.validated
     def test_stepfunctions_pub_sub(self, aws_client, infrastructure, snapshot):
+        snapshot.add_transformer(snapshot.transform.stepfunctions_api())
+        snapshot.add_transformer(snapshot.transform.key_value("executionArn"))
+        snapshot.add_transformer(snapshot.transform.key_value("stateMachineArn"))
+        snapshot.add_transformer(snapshot.transform.key_value("traceHeader"))
+        snapshot.add_transformer(snapshot.transform.key_value("name"))
+
         outputs = infrastructure.get_stack_outputs(PUB_SUB_STACK_NAME)
         state_machine_arn = outputs.get(OUTPUT_LOAN_BROKER_STATE_MACHINE_ARN)
-        state_machine_arn
+
         step_function_input = {"SSN": "123-45-6789", "Amount": 5000, "Term": 30}
         execution_name = f"test-sns-{short_uid()}"
         result = aws_client.stepfunctions.start_execution(
@@ -131,7 +135,7 @@ class TestLoanBrokerScenario:
             return res
 
         result = retry(_execution_finished, sleep=2, retries=100 if is_aws_cloud() else 10)
-
+        snapshot.match("result", result)
         # '{"Credit":{"Score":900,"History":10},"Amount":5000,"Quotes":[],"Term":30,"SSN":"123-45-6789"}'
         # '{"SSN":"123-45-6789","Amount":5000,"Term":30,"Credit":{"Score":900,"History":10},"Quotes":[{"rate":14,"bankId":"Universal"},{"rate":15,"bankId":"PawnShop"}]}'
 
@@ -147,6 +151,7 @@ class TestLoanBrokerScenario:
             ({"SSN": "234-45-6789"}, "FAILED"),  # TODO LS: it keeps in RUNNING but should fail
         ],
     )
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..traceHeader", "$..cause", "$..error"]
     )  # TODO add missing properties
@@ -302,7 +307,6 @@ class TestLoanBrokerScenario:
 
     def setup_pub_sub_stack(self, stack: cdk.Stack):
         # https://www.enterpriseintegrationpatterns.com/ramblings/loanbroker_stepfunctions_pubsub.html
-        # TODO check if we can re-use resources as those are also in the first stack
         credit_bureau_lambda = awslambda.Function(
             stack,
             "CreditBureauLambda",

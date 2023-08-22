@@ -1,5 +1,5 @@
 {
-  "tests/integration/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input0-SUCCEEDED]": {
+  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input0-SUCCEEDED]": {
     "recorded-date": "02-08-2023, 11:58:05",
     "recorded-content": {
       "describe-execution-finished": {
@@ -64,7 +64,7 @@
       }
     }
   },
-  "tests/integration/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input1-SUCCEEDED]": {
+  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input1-SUCCEEDED]": {
     "recorded-date": "02-08-2023, 11:58:07",
     "recorded-content": {
       "describe-execution-finished": {
@@ -120,7 +120,7 @@
       }
     }
   },
-  "tests/integration/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input2-FAILED]": {
+  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input2-FAILED]": {
     "recorded-date": "02-08-2023, 11:58:10",
     "recorded-content": {
       "describe-execution-finished": {
@@ -148,7 +148,7 @@
       }
     }
   },
-  "tests/integration/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input3-FAILED]": {
+  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input3-FAILED]": {
     "recorded-date": "02-08-2023, 11:58:10",
     "recorded-content": {
       "describe-execution-finished": {
@@ -174,7 +174,7 @@
       }
     }
   },
-  "tests/integration/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input4-FAILED]": {
+  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input4-FAILED]": {
     "recorded-date": "02-08-2023, 11:58:13",
     "recorded-content": {
       "describe-execution-finished": {
@@ -191,6 +191,54 @@
         "startDate": "datetime",
         "stateMachineArn": "<state-machine-arn:1>",
         "status": "FAILED",
+        "stopDate": "datetime",
+        "traceHeader": "<trace-header:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_pub_sub": {
+    "recorded-date": "22-08-2023, 17:39:05",
+    "recorded-content": {
+      "result": {
+        "executionArn": "<execution-arn:1>",
+        "input": {
+          "SSN": "123-45-6789",
+          "Amount": 5000,
+          "Term": 30
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<name:1>",
+        "output": {
+          "SSN": "123-45-6789",
+          "Amount": 5000,
+          "Term": 30,
+          "Credit": {
+            "Score": 900,
+            "History": 10
+          },
+          "Quotes": [
+            {
+              "rate": 14,
+              "bankId": "Universal"
+            },
+            {
+              "rate": 13,
+              "bankId": "Premium"
+            }
+          ]
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "<state-machine-arn:1>",
+        "status": "SUCCEEDED",
         "stopDate": "datetime",
         "traceHeader": "<trace-header:1>",
         "ResponseMetadata": {
