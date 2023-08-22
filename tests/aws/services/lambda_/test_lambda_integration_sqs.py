@@ -356,6 +356,7 @@ def test_redrive_policy_with_failing_lambda(
 
 
 @markers.aws.validated
+@pytest.mark.skipif(is_old_provider(), reason="not supported anymore")
 def test_sqs_queue_as_lambda_dead_letter_queue(
     lambda_su_role, create_lambda_function, sqs_create_queue, sqs_queue_arn, snapshot, aws_client
 ):
