@@ -407,10 +407,26 @@ class LambdaEventManager:
         self.poller_thread = FuncThread(self.poller.run, name="lambda-poller")
         self.poller_thread.start()
 
-    def stop(self) -> None:
-        LOG.debug("Stopping event manager %s", self.version_manager.function_version.qualified_arn)
+    def stop_for_update(self) -> None:
+        LOG.debug(
+            "Stopping event manager but keep queue %s",
+            self.version_manager.function_version.qualified_arn,
+        )
         if self.poller:
             self.poller.stop()
+            self.poller = None
+
+    def stop(self) -> None:
+        LOG.debug(
+            "Stopping event manager %s: %s",
+            self.version_manager.function_version.qualified_arn,
+            self.poller,
+        )
+        if self.poller:
+            self.poller.stop()
+            self.poller_thread.join(timeout=3)
+            if self.poller_thread.is_alive():
+                LOG.error("Poller did not shutdown %s", self.poller)
             self.poller = None
         if self.event_queue_url:
             sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
