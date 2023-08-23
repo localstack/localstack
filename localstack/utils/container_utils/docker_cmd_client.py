@@ -663,7 +663,7 @@ class CmdDockerClient(ContainerClient):
     def attach_to_container(self, container_name_or_id: str):
         cmd = self._docker_cmd() + ["attach", container_name_or_id]
         LOG.debug(f"Attaching to container {container_name_or_id}")
-        run(cmd)
+        return self._run_async_cmd(cmd, stdin=None, container_name=container_name_or_id)
 
     def _run_async_cmd(
         self, cmd: List[str], stdin: bytes, container_name: str, image_name=None

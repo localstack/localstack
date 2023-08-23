@@ -26,6 +26,7 @@ from localstack.utils.container_utils.container_client import (
     VolumeBind,
     VolumeMappings,
 )
+from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, mkdir
 from localstack.utils.functions import call_safe
@@ -533,6 +534,12 @@ class LocalstackContainerServer(Server):
             case Container():
                 LOG.debug("starting LocalStack container")
                 self.container = self.container.start(attach=False)
+                if isinstance(DOCKER_CLIENT, CmdDockerClient):
+                    DOCKER_CLIENT.default_run_outfile = get_container_default_logfile_location(
+                        self.container.config.name
+                    )
+
+                # block the current thread
                 self.container.attach()
             case _:
                 raise ValueError(f"Invalid container type: {type(self.container)}")
@@ -688,7 +695,6 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
         log_printer.callback = print
 
     logfile = get_container_default_logfile_location(container_config.name)
-
     log_printer = FileListener(logfile, callback=_init_log_printer)
     log_printer.truncate_log()
     log_printer.start()
@@ -706,7 +712,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
             shutdown_event.set()
         print("Shutting down...")
         server.shutdown()
-        # log_printer.close()
+        log_printer.close()
 
     shutdown_event = threading.Event()
     shutdown_event_lock = threading.RLock()
