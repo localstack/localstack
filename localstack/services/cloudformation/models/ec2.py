@@ -1,3 +1,4 @@
+import base64
 import json
 
 from moto.ec2.utils import generate_route_id
@@ -6,7 +7,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.cfn_utils import get_tags_param
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.strings import str_to_bool
+from localstack.utils.strings import str_to_bool, to_str
 
 
 def _get_default_security_group_for_vpc(ec2_client, vpc_id: str) -> str:
@@ -604,6 +605,18 @@ class EC2Instance(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         # TODO: validate again
+
+        def get_user_data_decoded(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            if "UserData" in properties:
+                return to_str(base64.b64decode(properties["UserData"]))
+
         def _handle_result(
             account_id: str,
             region_name: str,
@@ -631,6 +644,7 @@ class EC2Instance(GenericBaseModel):
                     "ImageId": "ImageId",
                     "MaxCount": "MaxCount",
                     "MinCount": "MinCount",
+                    "UserData": get_user_data_decoded,
                 },
                 "result_handler": _handle_result,
             },
