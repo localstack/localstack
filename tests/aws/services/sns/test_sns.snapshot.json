@@ -4152,5 +4152,62 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscription::test_multiple_lambda_subscribe_sns_topic": {
+    "recorded-date": "23-08-2023, 21:11:17",
+    "recorded-content": {
+      "function_1_notification_1": {
+        "Message": "Message 1",
+        "MessageAttributes": {},
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "Subject": "Subject 1",
+        "Timestamp": "date",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeUrl": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+      },
+      "function_1_notification_2": {
+        "Message": "Message 2",
+        "MessageAttributes": {},
+        "MessageId": "<uuid:2>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "Subject": "Subject 2",
+        "Timestamp": "date",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeUrl": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+      },
+      "function_2_notification_1": {
+        "Message": "Message 1",
+        "MessageAttributes": {},
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "Subject": "Subject 1",
+        "Timestamp": "date",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeUrl": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+      },
+      "function_2_notification_2": {
+        "Message": "Message 2",
+        "MessageAttributes": {},
+        "MessageId": "<uuid:2>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "Subject": "Subject 2",
+        "Timestamp": "date",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeUrl": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+      }
+    }
   }
 }

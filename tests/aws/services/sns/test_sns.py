@@ -152,6 +152,122 @@ class TestSNSSubscription:
         notification = events[0]["Records"][0]["Sns"]
         snapshot.match("notification", notification)
 
+    # TODO: investigate why we spawn 4 Lambda containers upon 2 messages but 2 of them handle both invokes?!
+    #   This cold-start problem continues (e.g., 3 messages => 6 containers, 4 messages => 8 containers)
+    @markers.aws.validated
+    def test_multiple_lambda_subscribe_sns_topic(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        lambda_su_role,
+        create_lambda_function,
+        snapshot,
+        aws_client,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        function_name_1 = f"lambda-function-1-{short_uid()}"
+        permission_id_1 = f"test-statement-{short_uid()}"
+        lambda_creation_response_1 = create_lambda_function(
+            func_name=function_name_1,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_10,
+            role=lambda_su_role,
+        )
+        lambda_arn_1 = lambda_creation_response_1["CreateFunctionResponse"]["FunctionArn"]
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name_1,
+            StatementId=permission_id_1,
+            Action="lambda:InvokeFunction",
+            Principal="sns.amazonaws.com",
+            SourceArn=topic_arn,
+        )
+        subscription_1 = sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="lambda",
+            Endpoint=lambda_arn_1,
+        )
+
+        function_name_2 = f"lambda-function-2-{short_uid()}"
+        permission_id_2 = f"test-statement-{short_uid()}"
+        lambda_creation_response_2 = create_lambda_function(
+            func_name=function_name_2,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_10,
+            role=lambda_su_role,
+        )
+        lambda_arn_2 = lambda_creation_response_2["CreateFunctionResponse"]["FunctionArn"]
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name_2,
+            StatementId=permission_id_2,
+            Action="lambda:InvokeFunction",
+            Principal="sns.amazonaws.com",
+            SourceArn=topic_arn,
+        )
+        subscription_2 = sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="lambda",
+            Endpoint=lambda_arn_2,
+        )
+
+        def check_subscription(**kwargs):
+            subscription = kwargs["subscription"]
+            subscription_arn = subscription["SubscriptionArn"]
+            subscription_attrs = aws_client.sns.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            assert subscription_attrs["Attributes"]["PendingConfirmation"] == "false"
+
+        retry(
+            check_subscription,
+            retries=PUBLICATION_RETRIES,
+            sleep=PUBLICATION_TIMEOUT,
+            subscription=subscription_1,
+        )
+
+        retry(
+            check_subscription,
+            retries=PUBLICATION_RETRIES,
+            sleep=PUBLICATION_TIMEOUT,
+            subscription=subscription_2,
+        )
+
+        aws_client.sns.publish(TopicArn=topic_arn, Subject="Subject 1", Message="Message 1")
+        aws_client.sns.publish(TopicArn=topic_arn, Subject="Subject 2", Message="Message 2")
+
+        # access events sent by lambda
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name_1,
+            expected_length=2,
+            regex_filter="Records.*Sns",
+            logs_client=aws_client.logs,
+        )
+        # TODO: ordering could be flaky because message 2 could be executed first!
+        function_1_notification_1 = events[0]["Records"][0]["Sns"]
+        snapshot.match("function_1_notification_1", function_1_notification_1)
+
+        function_1_notification_2 = events[1]["Records"][0]["Sns"]
+        snapshot.match("function_1_notification_2", function_1_notification_2)
+
+        # access events sent by lambda
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name_2,
+            expected_length=2,
+            regex_filter="Records.*Sns",
+            logs_client=aws_client.logs,
+        )
+        function_2_notification_1 = events[0]["Records"][0]["Sns"]
+        snapshot.match("function_2_notification_1", function_2_notification_1)
+
+        function_2_notification_2 = events[1]["Records"][0]["Sns"]
+        snapshot.match("function_2_notification_2", function_2_notification_2)
+
 
 class TestSNSProvider:
     @markers.aws.validated
