@@ -12,6 +12,7 @@ from typing import Callable, Dict, Optional
 from localstack import config
 from localstack.aws.api.lambda_ import TracingMode
 from localstack.aws.connect import connect_to
+from localstack.services.lambda_.invocation.executor_endpoint import StatusErrorException
 from localstack.services.lambda_.invocation.lambda_models import (
     Credentials,
     FunctionVersion,
@@ -175,7 +176,8 @@ class ExecutionEnvironment:
                     "Failed to start runtime environment for ID=%s with: %s",
                     self.id,
                     e,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG)
+                    and not isinstance(e, StatusErrorException),
                 )
                 self.errored()
                 raise

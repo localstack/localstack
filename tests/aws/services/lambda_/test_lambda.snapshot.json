@@ -3263,5 +3263,34 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_error": {
+    "recorded-date": "23-08-2023, 11:18:22",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Runtime startup fails",
+          "errorType": "Exception",
+          "requestId": "",
+          "stackTrace": [
+            "  File \"/var/lang/lib/python3.10/importlib/__init__.py\", line 126, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n",
+            "  File \"<frozen importlib._bootstrap>\", line 1050, in _gcd_import\n",
+            "  File \"<frozen importlib._bootstrap>\", line 1027, in _find_and_load\n",
+            "  File \"<frozen importlib._bootstrap>\", line 1006, in _find_and_load_unlocked\n",
+            "  File \"<frozen importlib._bootstrap>\", line 688, in _load_unlocked\n",
+            "  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n",
+            "  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n",
+            "  File \"/var/task/lambda_runtime_error.py\", line 1, in <module>\n    raise Exception(\"Runtime startup fails\")\n"
+          ]
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

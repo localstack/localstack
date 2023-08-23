@@ -49,6 +49,7 @@ TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_python_
 TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
     THIS_FOLDER, "functions/lambda_unhandled_error.py"
 )
+TEST_LAMBDA_PYTHON_RUNTIME_ERROR = os.path.join(THIS_FOLDER, "functions/lambda_runtime_error.py")
 TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
@@ -1208,6 +1209,24 @@ class TestLambdaFeatures:
             check_lambda_logs(function_name, expected_lines=expected)
 
         retry(check_logs, retries=15)
+
+
+class TestLambdaErrors:
+    @markers.aws.validated
+    def test_lambda_runtime_error(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that cannot start due to a runtime error"""
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_RUNTIME_ERROR,
+            handler="lambda_runtime_error.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
 
 
 class TestLambdaMultiAccounts:

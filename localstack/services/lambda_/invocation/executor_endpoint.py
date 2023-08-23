@@ -24,8 +24,11 @@ class InvokeSendError(Exception):
 
 
 class StatusErrorException(Exception):
-    def __init__(self, message):
+    payload: bytes
+
+    def __init__(self, message, payload: bytes):
         super().__init__(message)
+        self.payload = payload
 
 
 class ShutdownDuringStartup(Exception):
@@ -83,8 +86,11 @@ class ExecutorEndpoint:
 
         def status_error(request: Request, executor_id: str) -> Response:
             LOG.warning("Execution environment startup failed: %s", to_str(request.data))
+            # TODO: debug Lambda runtime init to not send `runtime/init/error` twice
+            if self.startup_future.done():
+                return Response(status=HTTPStatus.BAD_REQUEST)
             self.startup_future.set_exception(
-                StatusErrorException(f"Environment startup failed: {to_str(request.data)}")
+                StatusErrorException("Environment startup failed", payload=request.data)
             )
             return Response(status=HTTPStatus.ACCEPTED)
 

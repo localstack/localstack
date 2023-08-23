@@ -8,6 +8,7 @@ from localstack.services.lambda_.invocation.execution_environment import (
     ExecutionEnvironment,
     InvalidStatusException,
 )
+from localstack.services.lambda_.invocation.executor_endpoint import StatusErrorException
 from localstack.services.lambda_.invocation.lambda_models import (
     FunctionVersion,
     InitializationType,
@@ -84,6 +85,8 @@ class AssignmentService(OtherServiceEndpoint):
         )
         try:
             execution_environment.start()
+        except StatusErrorException:
+            raise
         except Exception as e:
             message = f"Could not start new environment: {e}"
             LOG.error(message, exc_info=LOG.isEnabledFor(logging.DEBUG))

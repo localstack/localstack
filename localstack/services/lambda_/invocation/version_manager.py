@@ -14,6 +14,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.services.lambda_.invocation.assignment import AssignmentService
 from localstack.services.lambda_.invocation.counting_service import CountingService
 from localstack.services.lambda_.invocation.execution_environment import ExecutionEnvironment
+from localstack.services.lambda_.invocation.executor_endpoint import StatusErrorException
 from localstack.services.lambda_.invocation.lambda_models import (
     Function,
     FunctionVersion,
@@ -191,13 +192,24 @@ class LambdaVersionManager:
         ) as provisioning_type:
             # TODO: potential race condition when changing provisioned concurrency after getting the lease but before
             #   getting an an environment
-            # Blocks and potentially creates a new execution environment for this invocation
-            with self.assignment_service.get_environment(
-                self.function_version, provisioning_type
-            ) as execution_env:
-                invocation_result = execution_env.invoke(invocation)
-                invocation_result.executed_version = self.function_version.id.qualifier
-                self.store_logs(invocation_result=invocation_result, execution_env=execution_env)
+            try:
+                # Blocks and potentially creates a new execution environment for this invocation
+                with self.assignment_service.get_environment(
+                    self.function_version, provisioning_type
+                ) as execution_env:
+                    invocation_result = execution_env.invoke(invocation)
+                    invocation_result.executed_version = self.function_version.id.qualifier
+                    self.store_logs(
+                        invocation_result=invocation_result, execution_env=execution_env
+                    )
+            except StatusErrorException as e:
+                invocation_result = InvocationResult(
+                    request_id="",
+                    payload=e.payload,
+                    is_error=True,
+                    logs="",
+                    executed_version=self.function_version.id.qualifier,
+                )
 
         # MAYBE: reuse threads
         start_thread(
