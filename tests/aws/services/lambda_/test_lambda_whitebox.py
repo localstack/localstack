@@ -122,6 +122,7 @@ class TestLambdaFallbackUrl:
                     handler_file=TEST_LAMBDA_PYTHON,
                     func_name=lambda_name,
                     libs=TEST_LAMBDA_LIBS,
+                    client=aws_client.lambda_,
                 )
                 lambda_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
 
@@ -187,6 +188,7 @@ class TestDockerExecutors:
                 handler_file=TEST_LAMBDA_ENV,
                 libs=TEST_LAMBDA_LIBS,
                 func_name=function_name,
+                client=aws_client.lambda_,
             )
             lambda_client = aws_client.lambda_
             lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
@@ -213,6 +215,7 @@ class TestDockerExecutors:
             handler_file=TEST_LAMBDA_ENV,
             libs=TEST_LAMBDA_LIBS,
             envvars={"Hello": "World"},
+            client=aws_client.lambda_,
         )
         aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
@@ -257,6 +260,7 @@ class TestDockerExecutors:
             handler_file=TEST_LAMBDA_ENV,
             libs=TEST_LAMBDA_LIBS,
             envvars={"Hello": "World"},
+            client=aws_client.lambda_,
         )
         aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
@@ -327,6 +331,7 @@ class TestDockerExecutors:
             handler_file=TEST_LAMBDA_ENV,
             libs=TEST_LAMBDA_LIBS,
             envvars={"Hello": "World"},
+            client=aws_client.lambda_,
         )
         aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
@@ -366,7 +371,10 @@ class TestDockerExecutors:
         func_name = "test_logresult_more_than_4k_characters"
 
         testutil.create_lambda_function(
-            func_name=func_name, handler_file=TEST_LAMBDA_NODEJS_ECHO, runtime="nodejs16.x"
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_NODEJS_ECHO,
+            runtime="nodejs16.x",
+            client=aws_client.lambda_,
         )
         aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
@@ -397,6 +405,7 @@ class TestLocalExecutors:
                 zip_file=python3_with_settings1,
                 runtime=LAMBDA_RUNTIME_PYTHON39,
                 handler="handler1.handler",
+                client=aws_client.lambda_,
             )
             lambda_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name1)
 
@@ -406,6 +415,7 @@ class TestLocalExecutors:
                 zip_file=python3_with_settings2,
                 runtime=LAMBDA_RUNTIME_PYTHON39,
                 handler="handler2.handler",
+                client=aws_client.lambda_,
             )
             lambda_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name2)
 

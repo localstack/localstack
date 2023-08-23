@@ -625,8 +625,8 @@ def get_cors_response(headers):
     return response
 
 
-def get_rest_api_paths(rest_api_id, region_name=None):
-    apigateway = connect_to(region_name=region_name).apigateway
+def get_rest_api_paths(account_id: str, region_name: str, rest_api_id: str):
+    apigateway = connect_to(aws_access_key_id=account_id, region_name=region_name).apigateway
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
     resource_map = {}
     for resource in resources["items"]:
@@ -1272,7 +1272,9 @@ def import_api_from_openapi_spec(
 def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tuple[str, Dict]:
     """Look up and return the API GW resource (path pattern + resource dict) for the given invocation context."""
     path_map = get_rest_api_paths(
-        rest_api_id=invocation_context.api_id, region_name=invocation_context.region_name
+        account_id=invocation_context.account_id,
+        region_name=invocation_context.region_name,
+        rest_api_id=invocation_context.api_id,
     )
     relative_path = invocation_context.invocation_path.rstrip("/") or "/"
     try:
