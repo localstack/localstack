@@ -1264,13 +1264,15 @@ def get_protocol() -> str:
     return "https" if USE_SSL else "http"
 
 
-def service_url(service_key: str, host: str | None = None, port: int | None = None) -> str:
+def service_url(service_key: str, host: Optional[str] = None, port: Optional[int] = None) -> str:
     host = host or LOCALHOST
     port = port or service_port(service_key)
     return f"{get_protocol()}://{host}:{port}"
 
 
-def external_service_url(service_key: str, host: str | None = None, port: int | None = None) -> str:
+def external_service_url(
+    service_key: str, host: Optional[str] = None, port: Optional[int] = None
+) -> str:
     host = host or LOCALSTACK_HOST
     port = port or service_port(service_key, external=True)
     return service_url(service_key, host=host, port=port)
