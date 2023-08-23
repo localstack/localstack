@@ -595,8 +595,10 @@ def configure_container(container_config: ContainerConfiguration):
     # get additional configured flags
     user_flags = config.DOCKER_FLAGS
     user_flags = extract_port_flags(user_flags, container_config.ports)
-    # TODO: handle additional flags
-    # container_config.additional_flags.extend(shlex.split(user_flags))
+    if container_config.additional_flags is None:
+        container_config.additional_flags = user_flags
+    else:
+        container_config.additional_flags = f"{container_config.additional_flags} {user_flags}"
 
     # get additional parameters from plugins
     hooks.configure_localstack_container.run(container_config)
