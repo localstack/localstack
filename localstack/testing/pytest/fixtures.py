@@ -1714,19 +1714,6 @@ def ec2_create_security_group(aws_client):
             LOG.debug("Error cleaning up EC2 security group: %s, %s", sg_group_id, e)
 
 
-@pytest.fixture
-def cleanups():
-    cleanup_fns = []
-
-    yield cleanup_fns
-
-    for cleanup_callback in cleanup_fns[::-1]:
-        try:
-            cleanup_callback()
-        except Exception as e:
-            LOG.warning("Failed to execute cleanup", exc_info=e)
-
-
 @pytest.fixture(scope="session")
 def account_id(aws_client):
     return aws_client.sts.get_caller_identity()["Account"]
