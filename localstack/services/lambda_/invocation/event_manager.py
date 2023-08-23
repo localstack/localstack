@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
 
+from botocore.config import Config
+
 from localstack import config
 from localstack.aws.api.lambda_ import TooManyRequestsException
 from localstack.aws.connect import connect_to
@@ -461,7 +463,13 @@ class LambdaEventManager:
                     LOG.error("Poller did not shutdown %s", self.poller_thread)
                 self.poller = None
             if self.event_queue_url:
-                sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
-                # TODO add boto config to disable retries in case gateway is already shut down
+                config = Config(
+                    connect_timeout=1,
+                    read_timeout=2,
+                    retries={"total_max_attempts": 1},
+                )
+                sqs_client = connect_to(
+                    aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT, config=config
+                ).sqs
                 sqs_client.delete_queue(QueueUrl=self.event_queue_url)
                 self.event_queue_url = None
