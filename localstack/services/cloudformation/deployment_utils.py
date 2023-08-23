@@ -21,8 +21,12 @@ LOG = logging.getLogger(__name__)
 
 
 def dump_json_params(param_func=None, *param_names):
-    def replace(params, logical_resource_id, *args, **kwargs):
-        result = param_func(params, logical_resource_id, *args, **kwargs) if param_func else params
+    def replace(account_id: str, region_name: str, params, logical_resource_id, *args, **kwargs):
+        result = (
+            param_func(account_id, region_name, params, logical_resource_id, *args, **kwargs)
+            if param_func
+            else params
+        )
         for name in param_names:
             if isinstance(result.get(name), (dict, list)):
                 # Fix for https://github.com/localstack/localstack/issues/2022
@@ -36,8 +40,17 @@ def dump_json_params(param_func=None, *param_names):
 
 # TODO: remove
 def param_defaults(param_func, defaults):
-    def replace(properties: dict, logical_resource_id: str, *args, **kwargs):
-        result = param_func(properties, logical_resource_id, *args, **kwargs)
+    def replace(
+        account_id: str,
+        region_name: str,
+        properties: dict,
+        logical_resource_id: str,
+        *args,
+        **kwargs,
+    ):
+        result = param_func(
+            account_id, region_name, properties, logical_resource_id, *args, **kwargs
+        )
         for key, value in defaults.items():
             if result.get(key) in ["", None]:
                 result[key] = value
@@ -64,7 +77,7 @@ def remove_none_values(params):
 
 
 def params_list_to_dict(param_name, key_attr_name="Key", value_attr_name="Value"):
-    def do_replace(params, logical_resource_id, *args, **kwargs):
+    def do_replace(account_id: str, region_name: str, params, logical_resource_id, *args, **kwargs):
         result = {}
         for entry in params.get(param_name, []):
             key = entry[key_attr_name]
@@ -76,15 +89,15 @@ def params_list_to_dict(param_name, key_attr_name="Key", value_attr_name="Value"
 
 
 def lambda_keys_to_lower(key=None, skip_children_of: List[str] = None):
-    return lambda params, logical_resource_id, *args, **kwargs: common.keys_to_lower(
+    return lambda account_id, region_name, params, logical_resource_id, *args, **kwargs: common.keys_to_lower(
         obj=(params.get(key) if key else params), skip_children_of=skip_children_of
     )
 
 
 def merge_parameters(func1, func2):
-    return lambda properties, logical_resource_id, *args, **kwargs: common.merge_dicts(
-        func1(properties, logical_resource_id, *args, **kwargs),
-        func2(properties, logical_resource_id, *args, **kwargs),
+    return lambda account_id, region_name, properties, logical_resource_id, *args, **kwargs: common.merge_dicts(
+        func1(account_id, region_name, properties, logical_resource_id, *args, **kwargs),
+        func2(account_id, region_name, properties, logical_resource_id, *args, **kwargs),
     )
 
 
@@ -93,7 +106,7 @@ def str_or_none(o):
 
 
 def params_dict_to_list(param_name, key_attr_name="Key", value_attr_name="Value", wrapper=None):
-    def do_replace(params, logical_resource_id, *args, **kwargs):
+    def do_replace(account_id: str, region_name: str, params, logical_resource_id, *args, **kwargs):
         result = []
         for key, value in params.get(param_name, {}).items():
             result.append({key_attr_name: key, value_attr_name: value})
@@ -106,7 +119,7 @@ def params_dict_to_list(param_name, key_attr_name="Key", value_attr_name="Value"
 
 # TODO: remove
 def params_select_attributes(*attrs):
-    def do_select(params, logical_resource_id, *args, **kwargs):
+    def do_select(account_id: str, region_name: str, params, logical_resource_id, *args, **kwargs):
         result = {}
         for attr in attrs:
             if params.get(attr) is not None:
@@ -117,7 +130,7 @@ def params_select_attributes(*attrs):
 
 
 def param_json_to_str(name):
-    def _convert(params, logical_resource_id, *args, **kwargs):
+    def _convert(account_id: str, region_name: str, params, logical_resource_id, *args, **kwargs):
         result = params.get(name)
         if result:
             result = json.dumps(result)
@@ -132,7 +145,7 @@ def lambda_select_params(*selected):
 
 
 def select_parameters(*param_names):
-    return lambda properties, logical_resource_id, *args, **kwargs: select_attributes(
+    return lambda account_id, region_name, properties, logical_resource_id, *args, **kwargs: select_attributes(
         properties, param_names
     )
 

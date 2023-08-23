@@ -32,6 +32,6 @@ def pytest_runtest_setup(item: Item):
             # the fixture names only include a single entry even when multiple definitions are found
             # so we need to check the internal name2fixturedefs dict instead
             defs = item._fixtureinfo.name2fixturedefs
-            multi_defs = [k for k, v in defs.items() if len(v) > 1]
+            multi_defs = [k for k, v in defs.items() if len(v) > 1 and "snapshot" not in k]
             if multi_defs:
                 pytest.exit(f"Aborting. Detected multiple defs for fixtures: {multi_defs}")

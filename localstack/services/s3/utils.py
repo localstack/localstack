@@ -8,21 +8,26 @@ from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
 import moto.s3.models as moto_s3_models
+import xmltodict
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
-from moto.s3.exceptions import MalformedXML, MissingBucket
+from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 from moto.s3.utils import clean_key_name
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3 import (
+    AccessControlPolicy,
+    BucketCannedACL,
     BucketName,
     ChecksumAlgorithm,
     CopyObjectRequest,
     CopySource,
     ETag,
     GetObjectRequest,
+    Grant,
+    Grantee,
     HeadObjectRequest,
     InvalidArgument,
     InvalidRange,
@@ -34,25 +39,30 @@ from localstack.aws.api.s3 import (
     MethodNotAllowed,
     NoSuchBucket,
     NoSuchKey,
+    ObjectCannedACL,
     ObjectKey,
     ObjectSize,
     ObjectVersionId,
     Owner,
+    Permission,
     PreconditionFailed,
     SSEKMSKeyId,
     TaggingHeader,
     TagSet,
 )
+from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
+    ALL_USERS_ACL_GRANTEE,
+    AUTHENTICATED_USERS_ACL_GRANTEE,
+    LOG_DELIVERY_ACL_GRANTEE,
     S3_CHUNK_SIZE,
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
     SYSTEM_METADATA_SETTABLE_HEADERS,
-    VALID_CANNED_ACLS_BUCKET,
 )
-from localstack.services.s3.exceptions import InvalidRequest
+from localstack.services.s3.exceptions import InvalidRequest, MalformedXML
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
@@ -325,13 +335,13 @@ def is_bucket_name_valid(bucket_name: str) -> bool:
     return True if re.match(BUCKET_NAME_REGEX, bucket_name) else False
 
 
-def is_canned_acl_bucket_valid(canned_acl: str) -> bool:
-    return canned_acl in VALID_CANNED_ACLS_BUCKET
+def get_permission_header_name(permission: Permission) -> str:
+    return f"x-amz-grant-{permission.replace('_', '-').lower()}"
 
 
-def get_header_name(capitalized_field: str) -> str:
-    headers_parts = re.split(r"([A-Z][a-z]+)", capitalized_field)
-    return f"x-amz-{'-'.join([part.lower() for part in headers_parts if part])}"
+def get_permission_from_header(capitalized_field: str) -> Permission:
+    headers_parts = [part.upper() for part in re.split(r"([A-Z][a-z]+)", capitalized_field) if part]
+    return "_".join(headers_parts[1:])
 
 
 def is_valid_canonical_id(canonical_id: str) -> bool:
@@ -346,7 +356,7 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
 
 def uses_host_addressing(headers: Dict[str, str]) -> bool:
     """
-    Determines if the request is targetting S3 with virtual host addressing
+    Determines if the request is targeting S3 with virtual host addressing
     :param headers: the request headers
     :return: whether the request targets S3 with virtual host addressing
     """
@@ -380,10 +390,7 @@ def forwarded_from_virtual_host_addressed_request(headers: dict[str, str]) -> bo
     """
     # we can assume that the host header we are receiving here is actually the header we originally received
     # from the client (because the edge service is forwarding the request in memory)
-    match = re.match(S3_VIRTUAL_HOSTNAME_REGEX, headers.get(S3_VIRTUAL_HOST_FORWARDED_HEADER, ""))
-
-    # checks whether there is a bucket name. This is sort of hacky
-    return True if match and match.group(3) else False
+    return S3_VIRTUAL_HOST_FORWARDED_HEADER in headers
 
 
 def extract_bucket_name_and_key_from_headers_and_path(
@@ -408,8 +415,8 @@ def extract_bucket_name_and_key_from_headers_and_path(
                 object_key = split[1]
     else:
         path_without_params = path.partition("?")[0]
-        bucket_name = path_without_params.split("/", maxsplit=2)[1]
-        split = path.split("/", maxsplit=2)
+        split = path_without_params.split("/", maxsplit=2)
+        bucket_name = split[1]
         if len(split) > 2:
             object_key = split[2]
 
@@ -860,3 +867,92 @@ def validate_failed_precondition(
             code="NotModified",
             status_code=304,
         )
+
+
+def get_canned_acl(
+    canned_acl: BucketCannedACL | ObjectCannedACL, owner: Owner
+) -> AccessControlPolicy:
+    """
+    Return the proper Owner and Grants from a CannedACL
+    See https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
+    :param canned_acl: an S3 CannedACL
+    :param owner: the current owner of the bucket or object
+    :return: an AccessControlPolicy containing the Grants and Owner
+    """
+    owner_grantee = Grantee(**owner, Type=GranteeType.CanonicalUser)
+    grants = [Grant(Grantee=owner_grantee, Permission=Permission.FULL_CONTROL)]
+
+    match canned_acl:
+        case ObjectCannedACL.private:
+            pass  # no other permissions
+        case ObjectCannedACL.public_read:
+            grants.append(Grant(Grantee=ALL_USERS_ACL_GRANTEE, Permission=Permission.READ))
+
+        case ObjectCannedACL.public_read_write:
+            grants.append(Grant(Grantee=ALL_USERS_ACL_GRANTEE, Permission=Permission.READ))
+            grants.append(Grant(Grantee=ALL_USERS_ACL_GRANTEE, Permission=Permission.WRITE))
+        case ObjectCannedACL.authenticated_read:
+            grants.append(
+                Grant(Grantee=AUTHENTICATED_USERS_ACL_GRANTEE, Permission=Permission.READ)
+            )
+        case ObjectCannedACL.bucket_owner_read:
+            pass  # TODO: bucket owner ACL
+        case ObjectCannedACL.bucket_owner_full_control:
+            pass  # TODO: bucket owner ACL
+        case ObjectCannedACL.aws_exec_read:
+            pass  # TODO: bucket owner, EC2 Read
+        case BucketCannedACL.log_delivery_write:
+            grants.append(Grant(Grantee=LOG_DELIVERY_ACL_GRANTEE, Permission=Permission.READ_ACP))
+            grants.append(Grant(Grantee=LOG_DELIVERY_ACL_GRANTEE, Permission=Permission.WRITE))
+
+    return AccessControlPolicy(Owner=owner, Grants=grants)
+
+
+def create_redirect_for_post_request(
+    base_redirect: str, bucket: BucketName, object_key: ObjectKey, etag: ETag
+):
+    """
+    POST requests can redirect if successful. It will take the URL provided and append query string parameters
+    (key, bucket and ETag). It needs to be a full URL.
+    :param base_redirect: the URL provided for redirection
+    :param bucket: bucket name
+    :param object_key: object key
+    :param etag: key ETag
+    :return: the URL provided with the new appended query string parameters
+    """
+    parts = urlparser.urlparse(base_redirect)
+    if not parts.netloc:
+        raise ValueError("The provided URL is not valid")
+    queryargs = urlparser.parse_qs(parts.query)
+    queryargs["key"] = [object_key]
+    queryargs["bucket"] = [bucket]
+    queryargs["etag"] = [etag]
+    redirect_queryargs = urlparser.urlencode(queryargs, doseq=True)
+    newparts = (
+        parts.scheme,
+        parts.netloc,
+        parts.path,
+        parts.params,
+        redirect_queryargs,
+        parts.fragment,
+    )
+    return urlparser.urlunparse(newparts)
+
+
+def parse_post_object_tagging_xml(tagging: str) -> Optional[dict]:
+    try:
+        tag_set = {}
+        tags = xmltodict.parse(tagging)
+        xml_tags = tags.get("Tagging", {}).get("TagSet", {}).get("Tag", [])
+        if not xml_tags:
+            # if the Tagging does not respect the schema, just return
+            return
+        if not isinstance(xml_tags, list):
+            xml_tags = [xml_tags]
+        for tag in xml_tags:
+            tag_set[tag["Key"]] = tag["Value"]
+
+        return tag_set
+
+    except Exception:
+        raise MalformedXML()

@@ -5,7 +5,7 @@ import os
 from collections import defaultdict
 from operator import itemgetter
 from typing import IO, Dict, List, Optional
-from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
+from urllib.parse import quote, urlparse
 from zoneinfo import ZoneInfo
 
 import moto.s3.responses as moto_s3_responses
@@ -41,7 +41,6 @@ from localstack.aws.api.s3 import (
     DeleteObjectsOutput,
     DeleteObjectTaggingOutput,
     DeleteObjectTaggingRequest,
-    ETag,
     Expiration,
     Expression,
     ExpressionType,
@@ -158,30 +157,31 @@ from localstack.services.s3.exceptions import (
 from localstack.services.s3.models import BucketCorsIndex, S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.presigned_url import (
-    s3_presigned_url_request_handler,
     s3_presigned_url_response_handler,
     validate_post_policy,
 )
 from localstack.services.s3.utils import (
     capitalize_header_name_from_snake_case,
+    create_redirect_for_post_request,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_failed_precondition_copy_source,
     get_key_from_moto_bucket,
     get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
+    get_permission_from_header,
     is_key_expired,
     serialize_expiration_header,
     validate_kms_key_id,
     verify_checksum,
 )
 from localstack.services.s3.validation import (
+    parse_grants_in_headers,
     validate_acl_acp,
     validate_bucket_analytics_configuration,
     validate_bucket_intelligent_tiering_configuration,
     validate_bucket_name,
     validate_canned_acl,
-    validate_grantee_in_headers,
     validate_inventory_configuration,
     validate_lifecycle_configuration,
     validate_website_configuration,
@@ -1183,8 +1183,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_canned_acl(canned_acl)
 
         elif present_headers:
-            for key, grantees_values in present_headers:
-                validate_grantee_in_headers(key, grantees_values)
+            for key in grant_keys:
+                if grantees_values := request.get(key, ""):  # noqa
+                    permission = get_permission_from_header(key)
+                    parse_grants_in_headers(permission, grantees_values)
 
         elif acp := request.get("AccessControlPolicy"):
             validate_acl_acp(acp)
@@ -1227,7 +1229,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         ]
         for key in grant_keys:
             if grantees_values := request.get(key, ""):  # noqa
-                validate_grantee_in_headers(key, grantees_values)
+                permission = get_permission_from_header(key)
+                parse_grants_in_headers(permission, grantees_values)
 
         if acp := request.get("AccessControlPolicy"):
             validate_acl_acp(acp)
@@ -1375,10 +1378,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if response["StatusCode"] == 303:
             # we need to create the redirect, as the parser could not return the moto-calculated one
             try:
-                redirect = _create_redirect_for_post_request(
+                redirect = create_redirect_for_post_request(
                     base_redirect=context.request.form["success_action_redirect"],
                     bucket=bucket,
-                    key=key_name,
+                    object_key=key_name,
                     etag=key.etag,
                 )
                 response["LocationHeader"] = redirect
@@ -1760,37 +1763,6 @@ def is_object_expired(
     return is_key_expired(key_object=key_object)
 
 
-def _create_redirect_for_post_request(
-    base_redirect: str, bucket: BucketName, key: ObjectKey, etag: ETag
-):
-    """
-    POST requests can redirect if successful. It will take the URL provided and append query string parameters
-    (key, bucket and ETag). It needs to be a full URL.
-    :param base_redirect: the URL provided for redirection
-    :param bucket: bucket name
-    :param key: key name
-    :param etag: key ETag
-    :return: the URL provided with the new appended query string parameters
-    """
-    parts = urlparse(base_redirect)
-    if not parts.netloc:
-        raise ValueError("The provided URL is not valid")
-    queryargs = parse_qs(parts.query)
-    queryargs["key"] = [key]
-    queryargs["bucket"] = [bucket]
-    queryargs["etag"] = [etag]
-    redirect_queryargs = urlencode(queryargs, doseq=True)
-    newparts = (
-        parts.scheme,
-        parts.netloc,
-        parts.path,
-        parts.params,
-        redirect_queryargs,
-        parts.fragment,
-    )
-    return urlunparse(newparts)
-
-
 def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
     import moto.s3.models as moto_s3_models
@@ -1948,5 +1920,5 @@ def apply_moto_patches():
 
 def register_custom_handlers():
     serve_custom_service_request_handlers.append(s3_cors_request_handler)
-    serve_custom_service_request_handlers.append(s3_presigned_url_request_handler)
+    # serve_custom_service_request_handlers.append(s3_presigned_url_request_handler)
     modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)

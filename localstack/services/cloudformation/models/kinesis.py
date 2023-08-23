@@ -11,13 +11,21 @@ class KinesisStreamConsumer(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         props = self.props
         stream_arn = props["StreamARN"]
-        result = connect_to().kinesis.list_stream_consumers(StreamARN=stream_arn)
+        result = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).kinesis.list_stream_consumers(StreamARN=stream_arn)
         result = [r for r in result["Consumers"] if r["ConsumerName"] == props["ConsumerName"]]
         return (result or [None])[0]
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["Consumer"]["ConsumerARN"]
             resource["Properties"]["ConsumerARN"] = result["Consumer"]["ConsumerARN"]
             resource["Properties"]["ConsumerCreationTimestamp"] = result["Consumer"][
@@ -38,7 +46,7 @@ class KinesisStream(GenericBaseModel):
 
     # def fetch_state(self, stack_name, resources):
     #     stream_name = self.props["Name"]
-    #     result = connect_to().kinesis.describe_stream(StreamName=stream_name)
+    #     result = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).kinesis.describe_stream(StreamName=stream_name)
     #     return result
 
     @staticmethod
@@ -55,12 +63,23 @@ class KinesisStream(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def get_delete_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             return {"StreamName": properties["Name"], "EnforceConsumerDeletion": True}
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            client = connect_to().kinesis
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            client = connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis
             stream_name = resource["Properties"]["Name"]
 
             client.get_waiter("stream_exists").wait(StreamName=stream_name)

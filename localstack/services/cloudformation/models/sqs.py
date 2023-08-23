@@ -27,9 +27,15 @@ class QueuePolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(logical_resource_id: str, resource: dict, stack_name: str):
-            sqs_client = connect_to().sqs
-            resource_provider = cls(resource)
+        def _create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            sqs_client = connect_to(aws_access_key_id=account_id, region_name=region_name).sqs
+            resource_provider = cls(account_id, region_name, resource)
             props = resource_provider.props
 
             resource["PhysicalResourceId"] = "%s-%s-%s" % (
@@ -42,9 +48,15 @@ class QueuePolicy(GenericBaseModel):
             for queue in props["Queues"]:
                 sqs_client.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": policy})
 
-        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
-            sqs_client = connect_to().sqs
-            resource_provider = cls(resource)
+        def _delete(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            sqs_client = connect_to(aws_access_key_id=account_id, region_name=region_name).sqs
+            resource_provider = cls(account_id, region_name, resource)
             props = resource_provider.props
 
             for queue in props["Queues"]:
@@ -69,7 +81,7 @@ class SQSQueue(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         queue_name = self.props["QueueName"]
-        sqs_client = connect_to().sqs
+        sqs_client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).sqs
         queues = sqs_client.list_queues()
         result = list(
             filter(
@@ -100,14 +112,27 @@ class SQSQueue(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _queue_url(properties: dict, logical_resource_id: str, resource: dict, stack_name: str):
-            provider = cls(resource)
+        def _queue_url(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            provider = cls(account_id, region_name, resource)
             queue_url = provider.physical_resource_id or properties.get("QueueUrl")
             if queue_url:
                 return queue_url
             return arns.sqs_queue_url_for_arn(properties["QueueArn"])
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["QueueUrl"]
 
         return {

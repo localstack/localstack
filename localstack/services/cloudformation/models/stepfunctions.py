@@ -19,13 +19,21 @@ class SFNActivity(GenericBaseModel):
         activity_arn = self.physical_resource_id
         if not activity_arn:
             return None
-        client = connect_to().stepfunctions
+        client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).stepfunctions
         result = client.describe_activity(activityArn=activity_arn)
         return result
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["Properties"]["Arn"] = result["activityArn"]
             resource["PhysicalResourceId"] = result["activityArn"]
 
@@ -49,7 +57,9 @@ class SFNStateMachine(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         sm_name = self.props.get("StateMachineName") or self.logical_resource_id
-        sfn_client = connect_to().stepfunctions
+        sfn_client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).stepfunctions
         state_machines = sfn_client.list_state_machines()["stateMachines"]
         sm_arn = [m["stateMachineArn"] for m in state_machines if m["name"] == sm_name]
         if not sm_arn:
@@ -59,7 +69,9 @@ class SFNStateMachine(GenericBaseModel):
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
-        client = connect_to().stepfunctions
+        client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).stepfunctions
         sm_arn = self.props.get("stateMachineArn")
         if not sm_arn:
             self.state = self.fetch_state(stack_name=stack_name, resources=resources)
@@ -80,14 +92,25 @@ class SFNStateMachine(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["Properties"]["Arn"] = result["stateMachineArn"]
             resource["Properties"]["Name"] = resource["Properties"]["StateMachineName"]
             # resource["Properties"]["StateMachineRevisionId"] = ?
             resource["PhysicalResourceId"] = result["stateMachineArn"]
 
         def _create_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             def _get_definition(properties):
                 # TODO: support "Definition" parameter
@@ -95,7 +118,7 @@ class SFNStateMachine(GenericBaseModel):
                 s3_location = properties.get("DefinitionS3Location")
                 if not definition_str and s3_location:
                     # TODO: currently not covered by tests - add a test to mimick the behavior of "sam deploy ..."
-                    s3_client = connect_to().s3
+                    s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
                     LOG.debug("Fetching state machine definition from S3: %s", s3_location)
                     result = s3_client.get_object(
                         Bucket=s3_location["Bucket"], Key=s3_location["Key"]
