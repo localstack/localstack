@@ -9,7 +9,9 @@ class Route53RecordSet(GenericBaseModel):
         return "AWS::Route53::RecordSet"
 
     def fetch_state(self, stack_name, resources):
-        route53 = connect_to().route53
+        route53 = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).route53
         props = self.props
         result = route53.list_resource_record_sets(HostedZoneId=props["HostedZoneId"])[
             "ResourceRecordSets"
@@ -20,7 +22,12 @@ class Route53RecordSet(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def param_change_batch(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ):
             attr_names = [
                 "Name",
@@ -51,9 +58,14 @@ class Route53RecordSet(GenericBaseModel):
             }
 
         def hosted_zone_id_change_batch(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ):
-            route53 = connect_to().route53
+            route53 = connect_to(aws_access_key_id=account_id, region_name=region_name).route53
             hosted_zone_id = properties.get("HostedZoneId")
             if not hosted_zone_id:
                 hosted_zone_name = properties.get("HostedZoneName")
@@ -71,7 +83,13 @@ class Route53RecordSet(GenericBaseModel):
                 hosted_zone_id = hosted_zone.get("Id")
             return hosted_zone_id
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {

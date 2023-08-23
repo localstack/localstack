@@ -9,14 +9,22 @@ class ResourceGroupsGroup(GenericBaseModel):
         return "AWS::ResourceGroups::Group"
 
     def fetch_state(self, stack_name, resources):
-        client = connect_to().resource_groups
+        client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).resource_groups
         result = client.list_groups().get("Groups", [])
         result = [g for g in result if g["Name"] == self.props["Name"]]
         return (result or [None])[0]
 
     @classmethod
     def get_deploy_templates(cls):
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["Properties"]["Arn"] = result["Group"]["GroupArn"]
             resource["PhysicalResourceId"] = result["Group"]["Name"]
 

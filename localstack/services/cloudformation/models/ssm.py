@@ -16,7 +16,9 @@ class SSMParameter(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         param_name = self.props.get("Name") or self.logical_resource_id
-        return connect_to().ssm.get_parameter(Name=param_name)["Parameter"]
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).ssm.get_parameter(Name=param_name)["Parameter"]
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -39,7 +41,7 @@ class SSMParameter(GenericBaseModel):
         ]
         update_config_props = select_attributes(props, parameters_to_select)
 
-        ssm_client = connect_to().ssm
+        ssm_client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ssm
 
         # tag handling
         new_tags = update_config_props.pop("Tags", {})
@@ -79,7 +81,13 @@ class SSMParameter(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {
@@ -110,17 +118,25 @@ class SSMMaintenanceWindow(GenericBaseModel):
         return "AWS::SSM::MaintenanceWindow"
 
     def fetch_state(self, stack_name, resources):
-        maintenance_windows = connect_to().ssm.describe_maintenance_windows()["WindowIdentities"]
+        maintenance_windows = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).ssm.describe_maintenance_windows()["WindowIdentities"]
         for maintenance_window in maintenance_windows:
             if maintenance_window["WindowId"] == self.physical_resource_id:
                 return maintenance_window
 
     @staticmethod
     def get_deploy_templates():
-        def _delete_window(logical_resource_id, resource, stack_name):
-            connect_to().ssm.delete_maintenance_window(WindowId=resource["PhysicalResourceId"])
+        def _delete_window(
+            account_id: str, region_name: str, logical_resource_id, resource, stack_name
+        ):
+            connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).ssm.delete_maintenance_window(WindowId=resource["PhysicalResourceId"])
 
-        def _handle_result(result, logical_resource_id, resource):
+        def _handle_result(
+            account_id: str, region_name: str, result, logical_resource_id, resource
+        ):
             resource["PhysicalResourceId"] = result["WindowId"]
 
         return {
@@ -151,9 +167,9 @@ class SSMMaintenanceWindowTarget(GenericBaseModel):
         return "AWS::SSM::MaintenanceWindowTarget"
 
     def fetch_state(self, stack_name, resources):
-        targets = connect_to().ssm.describe_maintenance_window_targets(
-            WindowId=self.props.get("WindowId")
-        )["Targets"]
+        targets = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).ssm.describe_maintenance_window_targets(WindowId=self.props.get("WindowId"))["Targets"]
         targets = [
             target for target in targets if target["WindowTargetId"] == self.physical_resource_id
         ]
@@ -161,13 +177,19 @@ class SSMMaintenanceWindowTarget(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _delete_window_target(logical_resource_id, resource, stack_name):
-            connect_to().ssm.deregister_target_from_maintenance_window(
+        def _delete_window_target(
+            account_id: str, region_name: str, logical_resource_id, resource, stack_name
+        ):
+            connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).ssm.deregister_target_from_maintenance_window(
                 WindowId=resource["Properties"]["WindowId"],
                 WindowTargetId=resource["PhysicalResourceId"],
             )
 
-        def _handle_result(result, logical_resource_id, resource):
+        def _handle_result(
+            account_id: str, region_name: str, result, logical_resource_id, resource
+        ):
             resource["PhysicalResourceId"] = result["WindowTargetId"]
 
         return {
@@ -193,22 +215,37 @@ class SSMMaintenanceTask(GenericBaseModel):
         return "AWS::SSM::MaintenanceWindowTask"
 
     def fetch_state(self, stack_name, resources):
-        return connect_to().ssm.describe_maintenance_window_task(
-            WindowTaskId=self.props.get("WindowTaskId")
-        )["WindowTaskId"]
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).ssm.describe_maintenance_window_task(WindowTaskId=self.props.get("WindowTaskId"))[
+            "WindowTaskId"
+        ]
 
     @staticmethod
     def get_deploy_templates():
-        def _delete_window_task(logical_resource_id, resource, stack_name):
-            connect_to().ssm.deregister_task_from_maintenance_window(
+        def _delete_window_task(
+            account_id: str, region_name: str, logical_resource_id, resource, stack_name
+        ):
+            connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).ssm.deregister_task_from_maintenance_window(
                 WindowId=resource["Properties"]["WindowId"],
                 WindowTaskId=resource["PhysicalResourceId"],
             )
 
-        def _handle_result(result, logical_resource_id, resource):
+        def _handle_result(
+            account_id: str, region_name: str, result, logical_resource_id, resource
+        ):
             resource["PhysicalResourceId"] = result["WindowTaskId"]
 
-        def _params(properties, logical_resource_id, resource_def, stack_name):
+        def _params(
+            account_id: str,
+            region_name: str,
+            properties,
+            logical_resource_id,
+            resource_def,
+            stack_name,
+        ):
             kwargs = {
                 "Description": properties.get("Description"),
                 "Name": properties.get("Name"),
@@ -251,17 +288,25 @@ class SSMPatchBaseline(GenericBaseModel):
         return "AWS::SSM::PatchBaseline"
 
     def fetch_state(self, stack_name, resources):
-        patches = connect_to().ssm.describe_patch_baselines()["BaselineIdentities"]
+        patches = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).ssm.describe_patch_baselines()["BaselineIdentities"]
         for patch in patches:
             if patch["BaselineId"] == self.physical_resource_id:
                 return patch
 
     @staticmethod
     def get_deploy_templates():
-        def _delete_patch_baseline(logical_resource_id, resource, stack_name):
-            connect_to().ssm.delete_patch_baseline(BaselineId=resource["PhysicalResourceId"])
+        def _delete_patch_baseline(
+            account_id: str, region_name: str, logical_resource_id, resource, stack_name
+        ):
+            connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).ssm.delete_patch_baseline(BaselineId=resource["PhysicalResourceId"])
 
-        def _handle_result(result, logical_resource_id, resource):
+        def _handle_result(
+            account_id: str, region_name: str, result, logical_resource_id, resource
+        ):
             resource["PhysicalResourceId"] = result["BaselineId"]
 
         return {

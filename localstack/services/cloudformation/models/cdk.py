@@ -21,7 +21,13 @@ class CDKMetadata(GenericBaseModel):
         def _no_op(*args, **kwargs):
             pass
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = md5(canonical_json(resource["Properties"]))
 
         return {

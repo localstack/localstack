@@ -18,13 +18,19 @@ class EventConnection(GenericBaseModel):
         return "AWS::Events::Connection"
 
     def fetch_state(self, stack_name, resources):
-        client = connect_to().events
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
         conn_name = self.props.get("Name")
         return client.describe_connection(Name=conn_name)
 
     @classmethod
     def get_deploy_templates(cls):
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["Properties"]["Arn"] = result["ConnectionArn"]
             # TODO
             # resource["Properties"]["SecretArn"] = ?
@@ -43,12 +49,18 @@ class EventBus(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         event_bus_name = self.props.get("Name")
-        client = connect_to().events
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
         return client.describe_event_bus(Name=event_bus_name)
 
     @classmethod
     def get_deploy_templates(cls):
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["Properties"]["Arn"] = result["EventBusArn"]
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
@@ -74,7 +86,12 @@ class EventsRule(GenericBaseModel):
         if bus_name := self.props.get("EventBusName"):
             kwargs["EventBusName"] = bus_name
 
-        result = connect_to().events.describe_rule(**kwargs) or {}
+        result = (
+            connect_to(
+                aws_access_key_id=self.account_id, region_name=self.region_name
+            ).events.describe_rule(**kwargs)
+            or {}
+        )
         return result if result.get("Name") else None
 
     @staticmethod
@@ -88,7 +105,12 @@ class EventsRule(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def events_put_rule_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             attrs = [
                 "ScheduleExpression",
@@ -99,7 +121,7 @@ class EventsRule(GenericBaseModel):
                 "EventBusName",
             ]
             result = select_parameters(*attrs)(
-                properties, logical_resource_id, resource, stack_name
+                account_id, region_name, properties, logical_resource_id, resource, stack_name
             )
 
             # TODO: remove this when refactoring events (prefix etc. was excluded here already to avoid most of the wrong behavior)
@@ -120,8 +142,14 @@ class EventsRule(GenericBaseModel):
                 result["EventPattern"] = json.dumps(wrapped)
             return result
 
-        def _delete_rule(logical_resource_id: str, resource: dict, stack_name: str):
-            events = connect_to().events
+        def _delete_rule(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
             props = resource["Properties"]
             rule_name = props["Name"]
             targets = events.list_targets_by_rule(Rule=rule_name)["Targets"]
@@ -130,8 +158,14 @@ class EventsRule(GenericBaseModel):
                 events.remove_targets(Rule=rule_name, Ids=target_ids, Force=True)
             events.delete_rule(Name=rule_name)
 
-        def _put_targets(logical_resource_id: str, resource: dict, stack_name: str):
-            events = connect_to().events
+        def _put_targets(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
             props = resource["Properties"]
             rule_name = props["Name"]
             event_bus_name = props.get("EventBusName")
@@ -141,7 +175,13 @@ class EventsRule(GenericBaseModel):
             elif len(targets) > 0:
                 events.put_targets(Rule=rule_name, Targets=targets)
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["Properties"]["Arn"] = result["RuleArn"]
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
@@ -165,8 +205,14 @@ class EventBusPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(logical_resource_id: str, resource: dict, stack_name: str):
-            events = connect_to().events
+        def _create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
             props = resource["Properties"]
 
             resource["PhysicalResourceId"] = f"EventBusPolicy-{short_uid()}"
@@ -201,8 +247,14 @@ class EventBusPolicy(GenericBaseModel):
                     **optional_condition,
                 )
 
-        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
-            events = connect_to().events
+        def _delete(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
             props = resource["Properties"]
             statement_id = props["StatementId"]
             event_bus_name = props.get("EventBusName")
