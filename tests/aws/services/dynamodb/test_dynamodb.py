@@ -7,12 +7,10 @@ from typing import Dict
 import pytest
 from boto3.dynamodb.types import STRING
 
-from localstack.aws.api.dynamodb import (
-    ContinuousBackupsUnavailableException,
-    PointInTimeRecoverySpecification,
-)
+from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
@@ -1391,13 +1389,6 @@ class TestDynamoDB:
         assert result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..KeyMetadata..KeyUsage",
-            "$..KeyMetadata..MultiRegion",
-            "$..KeyMetadata..SigningAlgorithms",
-        ]
-    )
     def test_dynamodb_create_table_with_partial_sse_specification(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -1689,10 +1680,14 @@ class TestDynamoDB:
                     ),
                 )
                 return True
-            except ContinuousBackupsUnavailableException:
+            except Exception:  # noqa
                 return False
 
-        assert poll_condition(wait_for_continuous_backend, timeout=10)
+        assert poll_condition(
+            wait_for_continuous_backend,
+            timeout=50 if is_aws_cloud() else 10,
+            interval=1 if is_aws_cloud() else 0.5,
+        )
 
         response = aws_client.dynamodb.update_continuous_backups(
             TableName=table_name,
