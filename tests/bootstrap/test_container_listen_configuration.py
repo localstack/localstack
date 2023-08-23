@@ -88,6 +88,5 @@ class TestContainerConfiguration:
             r = requests.get(f"http://127.0.0.1:{port1}/_localstack/health")
             assert r.ok
 
-            # port2 should not be accessible from the host
             r = requests.get(f"http://127.0.0.1:{port2}/_localstack/health")
             assert r.ok
