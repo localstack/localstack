@@ -32,7 +32,13 @@ class GatewayResponse(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = generate_default_name_without_stack(
                 logical_resource_id
             )
