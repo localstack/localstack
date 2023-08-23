@@ -110,6 +110,10 @@ class Poller:
             sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
             function_timeout = self.version_manager.function_version.config.timeout
             while not self._shutdown_event.is_set():
+                # TODO: Fix proper shutdown causing EndpointConnectionError
+                # https://app.circleci.com/pipelines/github/localstack/localstack/17428/workflows/391fc320-0cec-4dd1-9e3b-d7511de61d12/jobs/132663/parallel-runs/2
+                # Test case (happens not every time!):
+                # tests.aws.services.cloudformation.resources.test_legacy.TestCloudFormation.test_updating_stack_with_iam_role
                 messages = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
                     WaitTimeSeconds=2,

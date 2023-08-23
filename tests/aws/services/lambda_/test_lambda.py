@@ -1212,6 +1212,7 @@ class TestLambdaFeatures:
 
 
 class TestLambdaErrors:
+    @pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
     @markers.aws.validated
     def test_lambda_runtime_error(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that cannot start due to a runtime error"""
