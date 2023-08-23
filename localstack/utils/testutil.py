@@ -124,12 +124,6 @@ def create_lambda_archive(
         return result
 
 
-# TODO: remove all occurrences
-def delete_lambda_function(name, region_name: str = None):
-    client = connect_externally_to(region_name=region_name).lambda_
-    client.delete_function(FunctionName=name)
-
-
 def create_zip_file(
     file_path: str,
     zip_file: str = None,

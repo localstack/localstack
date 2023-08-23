@@ -74,7 +74,7 @@ def scheduled_test_lambda(aws_client):
 
     aws_client.events.remove_targets(Rule=rule_name, Ids=[target_id])
     aws_client.events.delete_rule(Name=rule_name)
-    testutil.delete_lambda_function(scheduled_lambda_name)
+    aws_client.lambda_.delete_function(FunctionName=scheduled_lambda_name)
 
 
 @pytest.mark.usefixtures("scheduled_test_lambda")
