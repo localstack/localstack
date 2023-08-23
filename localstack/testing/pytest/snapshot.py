@@ -104,8 +104,8 @@ def fixture_region(aws_client):
     return aws_client.sts.meta.region_name
 
 
-@pytest.fixture(name="snapshot", scope="function")
-def fixture_snapshot(request: SubRequest, account_id, region):
+@pytest.fixture(scope="function")
+def _snapshot_session(request: SubRequest, account_id, region):
     update_overwrite = os.environ.get("SNAPSHOT_UPDATE", None) == "1"
 
     sm = SnapshotSession(
@@ -123,3 +123,9 @@ def fixture_snapshot(request: SubRequest, account_id, region):
     yield sm
 
     sm._persist_state()
+
+
+# FIXME: remove after fixture is added in -ext
+@pytest.fixture(scope="function")
+def snapshot(_snapshot_session):
+    return _snapshot_session
