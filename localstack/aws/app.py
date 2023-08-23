@@ -36,6 +36,7 @@ class LocalstackAwsGateway(Gateway):
                 handlers.serve_default_listeners,  # legacy proxy default listeners
                 handlers.serve_edge_router_rules,
                 # start aws handler chain
+                handlers.parse_pre_signed_url_request,
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,
                 handlers.add_account_id,

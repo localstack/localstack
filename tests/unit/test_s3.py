@@ -17,6 +17,7 @@ from localstack.services.s3 import presigned_url
 from localstack.services.s3 import utils as s3_utils_asf
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import S3_CHUNK_SIZE
+from localstack.services.s3.exceptions import MalformedXML
 from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
@@ -483,41 +484,35 @@ class TestS3UtilsAsf:
     # region is optional in localstack
     # the requested has been forwarded by the router, and S3_VIRTUAL_HOST_FORWARDED_HEADER has been added with the
     # original host header
-    def test_forwarded_from_virtual_host_addressed_request(self):
-        host_header = s3_utils_asf.S3_VIRTUAL_HOST_FORWARDED_HEADER
+    def test_uses_virtual_host_addressing(self):
         addresses = [
-            ({host_header: f"https://aws.{LOCALHOST}:4566"}, False),
-            # attention: This is **not** a host style reference according to s3 specs but a special case from our side
-            ({host_header: f"https://aws.{LOCALHOST}.localstack.cloud:4566"}, True),
-            ({host_header: f"https://{LOCALHOST}.aws:4566"}, False),
-            ({host_header: f"https://{LOCALHOST}.swa:4566"}, False),
-            ({host_header: f"https://swa.{LOCALHOST}:4566"}, False),
-            ({host_header: "https://bucket.s3.localhost.localstack.cloud"}, True),
-            ({host_header: "bucket.s3.eu-west-1.amazonaws.com"}, True),
-            ({host_header: "https://s3.eu-west-1.localhost.localstack.cloud/bucket"}, False),
-            ({host_header: "https://s3.eu-west-1.localhost.localstack.cloud/bucket/key"}, False),
-            ({host_header: "https://s3.localhost.localstack.cloud/bucket"}, False),
-            ({host_header: "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key"}, True),
+            ({"host": f"https://aws.{LOCALHOST}:4566"}, False),
+            ({"host": f"https://{LOCALHOST}.aws:4566"}, False),
+            ({"host": f"https://{LOCALHOST}.swa:4566"}, False),
+            ({"host": f"https://swa.{LOCALHOST}:4566"}, False),
+            ({"host": "https://bucket.s3.localhost.localstack.cloud"}, True),
+            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, True),
+            ({"host": "https://s3.eu-west-1.localhost.localstack.cloud/bucket"}, False),
+            ({"host": "https://s3.eu-west-1.localhost.localstack.cloud/bucket/key"}, False),
+            ({"host": "https://s3.localhost.localstack.cloud/bucket"}, False),
+            ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key"}, True),
             (
                 {
-                    host_header: "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key/key/content.png"
+                    "host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key/key/content.png"
                 },
                 True,
             ),
-            ({host_header: "https://s3.localhost.localstack.cloud/bucket/key"}, False),
-            ({host_header: "https://bucket.s3.eu-west-1.localhost.localstack.cloud"}, True),
-            ({host_header: "https://bucket.s3.localhost.localstack.cloud/key"}, True),
-            ({host_header: "bucket.s3.eu-west-1.amazonaws.com"}, True),
-            ({host_header: "bucket.s3.amazonaws.com"}, True),
-            ({host_header: "notabucket.amazonaws.com"}, False),
-            ({host_header: "s3.amazonaws.com"}, False),
-            ({host_header: "s3.eu-west-1.amazonaws.com"}, False),
+            ({"host": "https://s3.localhost.localstack.cloud/bucket/key"}, False),
+            ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud"}, True),
+            ({"host": "https://bucket.s3.localhost.localstack.cloud/key"}, True),
+            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, True),
+            ({"host": "bucket.s3.amazonaws.com"}, True),
+            ({"host": "notabucket.amazonaws.com"}, False),
+            ({"host": "s3.amazonaws.com"}, False),
+            ({"host": "s3.eu-west-1.amazonaws.com"}, False),
         ]
         for headers, expected_result in addresses:
-            assert (
-                s3_utils_asf.forwarded_from_virtual_host_addressed_request(headers)
-                == expected_result
-            )
+            assert s3_utils_asf.uses_host_addressing(headers) == expected_result
 
     def test_is_valid_canonical_id(self):
         canonical_ids = [
@@ -782,6 +777,34 @@ class TestS3UtilsAsf:
     )
     def test_validate_dict_fields(self, data, required, optional, result):
         assert s3_utils_asf.validate_dict_fields(data, required, optional) == result
+
+    @pytest.mark.parametrize(
+        "tagging, result",
+        [
+            (
+                "<Tagging><TagSet><Tag><Key>TagName</Key><Value>TagValue</Value></Tag></TagSet></Tagging>",
+                {"TagName": "TagValue"},
+            ),
+            (
+                "<Tagging><TagSet><Tag><Key>TagName</Key><Value>TagValue</Value></Tag><Tag><Key>TagName2</Key><Value>TagValue2</Value></Tag></TagSet></Tagging>",
+                {"TagName": "TagValue", "TagName2": "TagValue2"},
+            ),
+            (
+                "<InvalidXmlTagging></InvalidXmlTagging>",
+                None,
+            ),
+        ],
+        ids=["single", "list", "invalid"],
+    )
+    def test_parse_post_object_tagging_xml(self, tagging, result):
+        assert s3_utils_asf.parse_post_object_tagging_xml(tagging) == result
+
+    def test_parse_post_object_tagging_xml_exception(self):
+        with pytest.raises(MalformedXML) as e:
+            s3_utils_asf.parse_post_object_tagging_xml("not-xml")
+        e.match(
+            "The XML you provided was not well-formed or did not validate against our published schema"
+        )
 
 
 class TestS3PresignedUrlAsf:

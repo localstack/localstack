@@ -73,7 +73,6 @@ SYSTEM_METADATA_SETTABLE_HEADERS = [
     "ContentDisposition",
     "ContentEncoding",
     "ContentLanguage",
-    "ContentMD5",
     "ContentType",
 ]
 
