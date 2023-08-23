@@ -507,6 +507,7 @@ def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[
             return access_id[0]
 
 
+# TODO remove the `internal` arg
 def mock_aws_request_headers(
     service="dynamodb", region_name=None, access_key=None, internal=False
 ) -> Dict[str, str]:
