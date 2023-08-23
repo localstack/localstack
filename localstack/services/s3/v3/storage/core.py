@@ -23,6 +23,8 @@ class LimitedIterableStream(Iterable[bytes]):
             if self.max_length - read >= 0:
                 self.max_length -= read
                 yield chunk
+            elif self.max_length == 0:
+                break
             else:
                 yield chunk[: self.max_length]
                 break

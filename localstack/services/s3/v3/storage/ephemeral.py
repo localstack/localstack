@@ -159,8 +159,8 @@ class EphemeralS3StoredObject(S3StoredObject):
         return read
 
     def close(self):
-        """Close the underlying fileobject, effectively deleting it"""
-        return self.file.close()
+        """This is a noop, because closing the underlying file object will delete it"""
+        pass
 
     @property
     def checksum(self) -> Optional[str]:
@@ -212,6 +212,9 @@ class EphemeralS3StoredObject(S3StoredObject):
 
                 yield data
 
+    def delete(self):
+        self.file.close()
+
 
 class EphemeralS3StoredMultipart(S3StoredMultipart):
     upload_dir: str
@@ -251,7 +254,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         """
         stored_part = self.parts.pop(s3_part.part_number, None)
         if stored_part:
-            stored_part.close()
+            stored_part.delete()
 
     def complete_multipart(self, parts: list[S3Part]) -> EphemeralS3StoredObject:
         """
@@ -273,8 +276,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :return:
         """
         for part in self.parts.values():
-            part.close()
-
+            part.delete()
         self.parts.clear()
 
     def copy_from_object(
