@@ -1,0 +1,29 @@
+// Source adapted from: https://github.com/aws-samples/serverless-coffee-workshop
+
+const AWS = require('aws-sdk')
+AWS.config.update({region: process.env.AWS_REGION})
+const iotdata = new AWS.IotData({ endpoint: process.env.IOT_DATA_ENDPOINT })
+
+// Publishes the message to the IoT topic
+const iotPublish = async function (topic, event) {
+    try {
+        const params = {
+            topic,
+            qos: 1,
+            payload: JSON.stringify({
+                type: event['detail-type'],
+                detail: event.detail
+            })
+        }
+        console.log('Params: ', params)
+        const result = await iotdata.publish(params).promise()
+        console.log('iotPublish success: ', topic, process.env.IOT_DATA_ENDPOINT, result)
+    } catch (err) {
+        console.error('iotPublish error:', err)
+    }
+}
+
+exports.handler = async (event) => {
+    console.log(JSON.stringify(event, null, 2))
+    await iotPublish(process.env.IOT_TOPIC, event)
+}
