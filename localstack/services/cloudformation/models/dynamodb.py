@@ -144,6 +144,7 @@ class DynamoDBTable(GenericBaseModel):
                                 default=None,
                             )
                         ),
+                        "Tags": "Tags",
                     },
                     "result_handler": _handle_result,
                 },
