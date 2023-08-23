@@ -706,7 +706,7 @@ def resolve_placeholders_in_string(
                 resolved = str(resolved)
             return resolved
         if len(parts) == 1:
-            if parts[0] in resources:
+            if parts[0] in resources or parts[0].startswith("AWS::"):
                 # Logical resource ID or parameter name specified => Use Ref for lookup
                 result = resolve_ref(
                     account_id, region_name, stack_name, resources, parameters, parts[0]
