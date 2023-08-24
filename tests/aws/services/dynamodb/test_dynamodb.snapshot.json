@@ -337,7 +337,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_data_encoding_consistency": {
-    "recorded-date": "09-11-2022, 11:27:21",
+    "recorded-date": "24-08-2023, 10:56:37",
     "recorded-content": {
       "GetItem": {
         "data": {

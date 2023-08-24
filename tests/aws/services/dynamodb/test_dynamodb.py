@@ -1584,10 +1584,7 @@ class TestDynamoDB:
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
 
-    @markers.aws.only_localstack(reason="wait_for_stream_ready of kinesis stream")
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..eventID", "$..SequenceNumber", "$..SizeBytes"]
-    )
+    @markers.aws.validated
     def test_data_encoding_consistency(
         self, dynamodb_create_table_with_parameters, wait_for_stream_ready, snapshot, aws_client
     ):
@@ -1602,8 +1599,10 @@ class TestDynamoDB:
                 "StreamViewType": "NEW_AND_OLD_IMAGES",
             },
         )
-        stream_name = get_kinesis_stream_name(table_name)
-        wait_for_stream_ready(stream_name)
+        if not is_aws_cloud():
+            # required for LS because the stream is using kinesis, which needs to be ready
+            stream_name = get_kinesis_stream_name(table_name)
+            wait_for_stream_ready(stream_name)
 
         # put item
         aws_client.dynamodb.put_item(
