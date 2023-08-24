@@ -257,6 +257,18 @@ def get_service_name(resource):
         return "resource-groups"
     if parts[-2] == "CertificateManager":
         return "acm"
+    if "Cognito::IdentityPool" in res_type:
+        return "cognito-identity"
+    if "ElasticLoadBalancing::" in res_type:
+        return "elb"
+    if "ElasticLoadBalancingV2::" in res_type:
+        return "elbv2"
+    if "ApplicationAutoScaling::" in res_type:
+        return "application-autoscaling"
+    if "MSK::" in res_type:
+        return "kafka"
+    if "Timestream::" in res_type:
+        return "timestream-write"
     return parts[1].lower()
 
 
