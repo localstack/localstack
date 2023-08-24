@@ -251,6 +251,8 @@ def get_service_name(resource):
     parts = res_type.split("::")
     if len(parts) == 1:
         return None
+    if "Cognito::IdentityPool" in res_type:
+        return "cognito-identity"
     if res_type.endswith("Cognito::UserPool"):
         return "cognito-idp"
     if parts[-2] == "Cognito":
@@ -265,8 +267,6 @@ def get_service_name(resource):
         return "resource-groups"
     if parts[-2] == "CertificateManager":
         return "acm"
-    if "Cognito::IdentityPool" in res_type:
-        return "cognito-identity"
     if "ElasticLoadBalancing::" in res_type:
         return "elb"
     if "ElasticLoadBalancingV2::" in res_type:

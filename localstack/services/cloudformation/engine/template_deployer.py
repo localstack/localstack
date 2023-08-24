@@ -816,7 +816,7 @@ class TemplateDeployer:
 
     # ------------------
     # MAIN ENTRY POINTS
-    # -----------------
+    # ------------------
 
     def deploy_stack(self):
         self.stack.set_stack_status("CREATE_IN_PROGRESS")
@@ -1045,7 +1045,6 @@ class TemplateDeployer:
         old_resources = old_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
         new_resource = new_resources[resource_id]
-        # old_resource = old_resources.get(resource_id)
 
         old_resource = old_resources[resource_id] = old_resources.get(resource_id) or {}
         for key, value in new_resource.items():
@@ -1131,9 +1130,9 @@ class TemplateDeployer:
         contains_changes = False
         for change in changes:
             res_action = change["ResourceChange"]["Action"]
-            #  we need to resolve refs before diffing to detect if for example a parameter causes the change or not
-            # FIXME: this now causes issues because we might not be able to resolve everything yet
             resource = new_resources.get(change["ResourceChange"]["LogicalResourceId"])
+            #  FIXME: we need to resolve refs before diffing to detect if for example a parameter causes the change or not
+            #   unfortunately this would currently cause issues because we might not be able to resolve everything yet
             # resource = resolve_refs_recursively(
             #     self.stack_name,
             #     self.resources,
@@ -1144,9 +1143,6 @@ class TemplateDeployer:
             # )
             if res_action in ["Add", "Remove"] or self.resource_config_differs(resource):
                 contains_changes = True
-            # if res_action in ["Modify", "Add"]:
-            #     # mutating call that overwrites resource properties with new properties and overwrites the template in old stack with new template
-            #     self.merge_properties(resource["LogicalResourceId"], existing_stack, new_stack)
             if res_action in ["Modify", "Add"]:
                 # mutating call that overwrites resource properties with new properties and overwrites the template in old stack with new template
                 self.merge_properties(resource["LogicalResourceId"], existing_stack, new_stack)
@@ -1362,24 +1358,8 @@ class TemplateDeployer:
 
         progress_event = executor.deploy_loop(resource_provider_payload)  # noqa
 
+        # TODO: this is probably already done in executor, try removing this
         resource["Properties"] = progress_event.resource_model
-
-        # progress_event.resource_model
-
-        # TODO: verify event
-        # try:
-        #
-        # except NotImplementedError:
-        #     if action == "Modify":
-        #         # TODO: replacement?
-        #
-        #         # create new one
-        #         resource_provider_payload['action'] = "CREATE"
-        #         executor.deploy_loop(resource_provider_payload)
-        #
-        #         # delete old one
-
-        # TODO: update resource state with returned state from progress event
 
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)
