@@ -1,8 +1,7 @@
 import pytest
 
-from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
@@ -62,7 +61,7 @@ class TestRoute53:
         vpc2_id = vpc2["Vpc"]["VpcId"]
 
         # associate zone with VPC
-        vpc_region = aws_stack.get_region()
+        vpc_region = TEST_AWS_REGION_NAME
         for vpc_id in [vpc1_id, vpc2_id]:
             result = aws_client.route53.associate_vpc_with_hosted_zone(
                 HostedZoneId=zone_id,
@@ -84,7 +83,7 @@ class TestRoute53:
         expected = {
             "HostedZoneId": zone_id,
             "Name": "%s." % name,
-            "Owner": {"OwningAccount": get_aws_account_id()},
+            "Owner": {"OwningAccount": TEST_AWS_ACCOUNT_ID},
         }
         assert expected in result
 

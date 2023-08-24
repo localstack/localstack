@@ -9,7 +9,9 @@ class RedshiftCluster(GenericBaseModel):
         return "AWS::Redshift::Cluster"
 
     def fetch_state(self, stack_name, resources):
-        client = connect_to().redshift
+        client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).redshift
         cluster_id = self.props.get("ClusterIdentifier")
         result = client.describe_clusters(ClusterIdentifier=cluster_id)["Clusters"]
         return (result or [None])[0]
@@ -24,7 +26,13 @@ class RedshiftCluster(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["Cluster"]["ClusterIdentifier"]
 
         return {"create": {"function": "create_cluster", "result_handler": _handle_result}}

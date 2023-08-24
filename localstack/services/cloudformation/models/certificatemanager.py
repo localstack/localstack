@@ -9,7 +9,7 @@ class CertificateManagerCertificate(GenericBaseModel):
         return "AWS::CertificateManager::Certificate"
 
     def fetch_state(self, stack_name, resources):
-        client = connect_to().acm
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).acm
         result = client.list_certificates().get("CertificateSummaryList", [])
         domain_name = self.props.get("DomainName")
         result = [c for c in result if c["DomainName"] == domain_name]
@@ -18,7 +18,12 @@ class CertificateManagerCertificate(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _create_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             result = select_attributes(
                 properties,
@@ -50,7 +55,13 @@ class CertificateManagerCertificate(GenericBaseModel):
 
             return result
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["Properties"]["CertificateArn"] = resource["PhysicalResourceId"] = result[
                 "CertificateArn"
             ]

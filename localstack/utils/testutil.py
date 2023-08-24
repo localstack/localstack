@@ -180,6 +180,7 @@ def create_zip_file(
     return zip_file_content
 
 
+# TODO: make the `client` parameter mandatory to enforce proper xaccount access
 def create_lambda_function(
     func_name,
     zip_file=None,
@@ -323,6 +324,7 @@ def create_lambda_api_gateway_integration(
     gateway_name,
     func_name,
     handler_file,
+    lambda_client,
     methods=None,
     path=None,
     runtime=None,
@@ -338,7 +340,9 @@ def create_lambda_api_gateway_integration(
 
     # create Lambda
     zip_file = create_lambda_archive(handler_file, get_content=True, runtime=runtime)
-    create_lambda_function(func_name=func_name, zip_file=zip_file, runtime=runtime)
+    create_lambda_function(
+        func_name=func_name, zip_file=zip_file, runtime=runtime, client=lambda_client
+    )
     func_arn = arns.lambda_function_arn(func_name)
     target_arn = arns.apigateway_invocations_arn(func_arn)
 

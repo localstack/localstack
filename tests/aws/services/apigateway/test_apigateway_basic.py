@@ -13,11 +13,15 @@ from jsonpatch import apply_patch
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
-from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
+from localstack.constants import (
+    APPLICATION_JSON,
+    LOCALHOST_HOSTNAME,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
@@ -251,7 +255,7 @@ class TestAPIGateway:
             httpMethod="GET",
             integrationHttpMethod="GET",
             type="AWS_PROXY",
-            uri=f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path//2015-03-31/function"
+            uri=f"arn:aws:apigateway:{TEST_AWS_REGION_NAME}:lambda:path//2015-03-31/function"
             f"s/{lambda_arn}/invocations",
         )
 
@@ -447,14 +451,16 @@ class TestAPIGateway:
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = arns.lambda_function_arn(fn_name)
         invocation_uri = "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations"
-        target_uri = invocation_uri % (aws_stack.get_region(), lambda_uri)
+        target_uri = invocation_uri % (TEST_AWS_REGION_NAME, lambda_uri)
 
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway2", target_uri, path=path, stage_name=TEST_STAGE_NAME
         )
 
         api_id = result["id"]
-        path_map = get_rest_api_paths(api_id)
+        path_map = get_rest_api_paths(
+            account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME, rest_api_id=api_id
+        )
         _, resource = get_resource_for_path(path, path_map)
 
         # make test request to gateway and check response
@@ -512,7 +518,7 @@ class TestAPIGateway:
         expected_path = f"/{TEST_STAGE_NAME}/lambda/foo1"
         assert expected_path == request_context["path"]
         assert request_context.get("stageVariables") is None
-        assert get_aws_account_id() == request_context["accountId"]
+        assert TEST_AWS_ACCOUNT_ID == request_context["accountId"]
         assert resource.get("id") == request_context["resourceId"]
         assert request_context["stage"] == TEST_STAGE_NAME
         assert "python-requests/testing" == request_context["identity"]["userAgent"]
@@ -657,7 +663,7 @@ class TestAPIGateway:
         )
 
         lambda_uri = arns.lambda_function_arn(lambda_name)
-        target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
+        target_uri = f"arn:aws:apigateway:{TEST_AWS_REGION_NAME}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway",
             target_uri,
@@ -1272,7 +1278,7 @@ class TestAPIGateway:
         )
 
         lambda_uri = arns.lambda_function_arn(lambda_name)
-        target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
+        target_uri = f"arn:aws:apigateway:{TEST_AWS_REGION_NAME}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway",
             target_uri,
@@ -1320,7 +1326,7 @@ class TestAPIGateway:
             integrationHttpMethod="GET",
             type="AWS",
             uri="arn:aws:apigateway:{}:lambda:path//2015-03-31/functions/{}/invocations".format(
-                aws_stack.get_region(), lambda_arn_1
+                TEST_AWS_REGION_NAME, lambda_arn_1
             ),
         )
 
@@ -1634,20 +1640,22 @@ def test_rest_api_multi_region(
     )
 
     lambda_name = f"lambda-{short_uid()}"
+    lambda_eu_west_1_client = aws_client_factory(region_name="eu-west-1").lambda_
+    lambda_us_west_1_client = aws_client_factory(region_name="us-west-1").lambda_
     testutil.create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
         runtime=Runtime.nodejs16_x,
         region_name="eu-west-1",
+        client=lambda_eu_west_1_client,
     )
     testutil.create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
         runtime=Runtime.nodejs16_x,
         region_name="us-west-1",
+        client=lambda_us_west_1_client,
     )
-    lambda_eu_west_1_client = aws_client_factory(region_name="eu-west-1").lambda_
-    lambda_us_west_1_client = aws_client_factory(region_name="us-west-1").lambda_
     lambda_eu_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_us_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_eu_arn = arns.lambda_function_arn(lambda_name, region_name="eu-west-1")
@@ -1926,7 +1934,7 @@ class TestIntegrations:
     def connect_api_gateway_to_s3(self, apigw_client, bucket_name, file_name, api_id, method):
         """Connects the root resource of an api gateway to the given object of an s3 bucket."""
         s3_uri = "arn:aws:apigateway:{}:s3:path/{}/{{proxy}}".format(
-            aws_stack.get_region(), bucket_name
+            TEST_AWS_REGION_NAME, bucket_name
         )
 
         test_role = "test-s3-role"

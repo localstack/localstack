@@ -2,13 +2,13 @@ import os
 
 from localstack.testing.pytest import markers
 
+THIS_FOLDER = os.path.dirname(__file__)
+
 
 @markers.aws.unknown
 def test_vpc_creates_default_sg(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../../templates/ec2_vpc_default_sg.yaml"
-        )
+        template_path=os.path.join(THIS_FOLDER, "../../../templates/ec2_vpc_default_sg.yaml")
     )
 
     vpc_id = result.outputs.get("VpcId")
@@ -32,7 +32,7 @@ def test_vpc_creates_default_sg(deploy_cfn_template, aws_client):
 def test_cfn_with_multiple_route_tables(deploy_cfn_template, aws_client):
 
     result = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/template36.yaml"),
+        template_path=os.path.join(THIS_FOLDER, "../../../templates/template36.yaml"),
         max_wait=180,
     )
     vpc_id = result.outputs["VPC"]
@@ -47,7 +47,7 @@ def test_cfn_with_multiple_route_tables(deploy_cfn_template, aws_client):
 def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_client):
     # TODO: stack does not deploy to AWS
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/template37.yaml")
+        template_path=os.path.join(THIS_FOLDER, "../../../templates/template37.yaml")
     )
     route_table_id = stack.outputs["RouteTable"]
     route_table = aws_client.ec2.describe_route_tables(
@@ -72,9 +72,7 @@ def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_cli
 @markers.snapshot.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
 def test_internet_gateway_ref_and_attr(deploy_cfn_template, snapshot, aws_client):
     stack = deploy_cfn_template(
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../../templates/internet_gateway.yml"
-        )
+        template_path=os.path.join(THIS_FOLDER, "../../../templates/internet_gateway.yml")
     )
 
     response = aws_client.cloudformation.describe_stack_resource(

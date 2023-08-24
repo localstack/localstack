@@ -643,6 +643,30 @@ class TestS3BucketEncryption:
         get_object_encrypted = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         snapshot.match("get-object-encrypted", get_object_encrypted)
 
+        # disable the BucketKeyEnabled
+        put_bucket_enc = aws_client.s3.put_bucket_encryption(
+            Bucket=s3_bucket,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {
+                            "SSEAlgorithm": "aws:kms",
+                            "KMSMasterKeyID": kms_key["KeyId"],
+                        },
+                        "BucketKeyEnabled": False,
+                    }
+                ]
+            },
+        )
+        snapshot.match("put-bucket-enc-bucket-key-disabled", put_bucket_enc)
+
+        # if the BucketKeyEnabled is False, S3 does not return the field from PutObject
+        key_name = "key-encrypted-bucket-key-disabled"
+        put_object_encrypted = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=key_name, Body="test-encrypted"
+        )
+        snapshot.match("put-object-encrypted-bucket-key-disabled", put_object_encrypted)
+
     @markers.aws.validated
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(

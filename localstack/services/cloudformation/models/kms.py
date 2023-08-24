@@ -10,15 +10,21 @@ class KMSKey(GenericBaseModel):
         return "AWS::KMS::Key"
 
     def fetch_state(self, stack_name, resources):
-        client = connect_to().kms
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).kms
         physical_res_id = self.physical_resource_id
         return client.describe_key(KeyId=physical_res_id)
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(logical_resource_id: str, resource: dict, stack_name: str):
-            kms_client = connect_to().kms
-            resource_provider = cls(resource)
+        def _create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            kms_client = connect_to(aws_access_key_id=account_id, region_name=region_name).kms
+            resource_provider = cls(account_id, region_name, resource)
             props = resource_provider.props
             params = {}
             if props.get("KeyPolicy"):
@@ -50,7 +56,13 @@ class KMSKey(GenericBaseModel):
 
             return new_key
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["KeyMetadata"]["KeyId"]
             resource["Properties"]["Arn"] = result["KeyMetadata"]["Arn"]
 
@@ -72,7 +84,9 @@ class KMSAlias(GenericBaseModel):
         return "AWS::KMS::Alias"
 
     def fetch_state(self, stack_name, resources):
-        aliases = connect_to().kms.list_aliases()["Aliases"]
+        aliases = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).kms.list_aliases()["Aliases"]
         for alias in aliases:
             if alias["AliasName"] == self.props.get("AliasName"):
                 return alias
@@ -80,7 +94,13 @@ class KMSAlias(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = resource["Properties"]["AliasName"]
 
         return {

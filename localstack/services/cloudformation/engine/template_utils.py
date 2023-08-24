@@ -1,9 +1,7 @@
 import re
 from typing import Any
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_AWS_NO_VALUE
-from localstack.utils.aws import aws_stack
 
 # TODO: deduplicate
 AWS_URL_SUFFIX = "localhost.localstack.cloud"
@@ -82,7 +80,12 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
 
 
 def resolve_stack_conditions(
-    conditions: dict, parameters: dict, mappings: dict, stack_name: str
+    account_id: str,
+    region_name: str,
+    conditions: dict,
+    parameters: dict,
+    mappings: dict,
+    stack_name: str,
 ) -> dict[str, bool]:
     """
     Within each condition, you can reference another:
@@ -104,19 +107,21 @@ def resolve_stack_conditions(
     result = {}
     for condition_name, condition in conditions.items():
         result[condition_name] = resolve_condition(
-            condition, conditions, parameters, mappings, stack_name
+            account_id, region_name, condition, conditions, parameters, mappings, stack_name
         )
     return result
 
 
-def resolve_pseudo_parameter(pseudo_parameter: str, stack_name: str) -> Any:
+def resolve_pseudo_parameter(
+    account_id: str, region_name: str, pseudo_parameter: str, stack_name: str
+) -> Any:
     """
     TODO: this function needs access to more stack context
     """
     # pseudo parameters
     match pseudo_parameter:
         case "AWS::Region":
-            return aws_stack.get_region()
+            return region_name
         case "AWS::Partition":
             return "aws"
         case "AWS::StackName":
@@ -125,7 +130,7 @@ def resolve_pseudo_parameter(pseudo_parameter: str, stack_name: str) -> Any:
             # TODO return proper stack id!
             return stack_name
         case "AWS::AccountId":
-            return get_aws_account_id()
+            return account_id
         case "AWS::NoValue":
             return PLACEHOLDER_AWS_NO_VALUE
         case "AWS::NotificationARNs":
@@ -135,14 +140,16 @@ def resolve_pseudo_parameter(pseudo_parameter: str, stack_name: str) -> Any:
             return AWS_URL_SUFFIX
 
 
-def resolve_condition(condition, conditions, parameters, mappings, stack_name):
+def resolve_condition(
+    account_id: str, region_name: str, condition, conditions, parameters, mappings, stack_name
+):
     if isinstance(condition, dict):
         for k, v in condition.items():
             match k:
                 case "Ref":
                     if isinstance(v, str) and v.startswith("AWS::"):
                         return resolve_pseudo_parameter(
-                            v, stack_name
+                            account_id, region_name, v, stack_name
                         )  # TODO: this pseudo parameter resolving needs context(!)
                     # TODO: add util function for resolving individual refs (e.g. one util for resolving pseudo parameters)
                     # TODO: pseudo-parameters like AWS::Region
@@ -162,7 +169,13 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
 
                 case "Condition":
                     return resolve_condition(
-                        conditions[v], conditions, parameters, mappings, stack_name
+                        account_id,
+                        region_name,
+                        conditions[v],
+                        conditions,
+                        parameters,
+                        mappings,
+                        stack_name,
                     )
                 case "Fn::FindInMap":
                     map_name, top_level_key, second_level_key = v
@@ -170,39 +183,81 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                 case "Fn::If":
                     if_condition_name, true_branch, false_branch = v
                     if resolve_condition(
-                        if_condition_name, conditions, parameters, mappings, stack_name
+                        account_id,
+                        region_name,
+                        if_condition_name,
+                        conditions,
+                        parameters,
+                        mappings,
+                        stack_name,
                     ):
                         return resolve_condition(
-                            true_branch, conditions, parameters, mappings, stack_name
+                            account_id,
+                            region_name,
+                            true_branch,
+                            conditions,
+                            parameters,
+                            mappings,
+                            stack_name,
                         )
                     else:
                         return resolve_condition(
-                            false_branch, conditions, parameters, mappings, stack_name
+                            account_id,
+                            region_name,
+                            false_branch,
+                            conditions,
+                            parameters,
+                            mappings,
+                            stack_name,
                         )
                 case "Fn::Not":
-                    return not resolve_condition(v[0], conditions, parameters, mappings, stack_name)
+                    return not resolve_condition(
+                        account_id, region_name, v[0], conditions, parameters, mappings, stack_name
+                    )
                 case "Fn::And":
                     # TODO: should actually restrict this a bit
                     return resolve_condition(
-                        v[0], conditions, parameters, mappings, stack_name
-                    ) and resolve_condition(v[1], conditions, parameters, mappings, stack_name)
+                        account_id, region_name, v[0], conditions, parameters, mappings, stack_name
+                    ) and resolve_condition(
+                        account_id, region_name, v[1], conditions, parameters, mappings, stack_name
+                    )
                 case "Fn::Or":
                     return resolve_condition(
-                        v[0], conditions, parameters, mappings, stack_name
-                    ) or resolve_condition(v[1], conditions, parameters, mappings, stack_name)
+                        account_id, region_name, v[0], conditions, parameters, mappings, stack_name
+                    ) or resolve_condition(
+                        account_id, region_name, v[1], conditions, parameters, mappings, stack_name
+                    )
                 case "Fn::Equals":
-                    left = resolve_condition(v[0], conditions, parameters, mappings, stack_name)
-                    right = resolve_condition(v[1], conditions, parameters, mappings, stack_name)
+                    left = resolve_condition(
+                        account_id, region_name, v[0], conditions, parameters, mappings, stack_name
+                    )
+                    right = resolve_condition(
+                        account_id, region_name, v[1], conditions, parameters, mappings, stack_name
+                    )
                     return fn_equals_type_conversion(left) == fn_equals_type_conversion(right)
                 case "Fn::Join":
                     join_list = v[1]
                     if isinstance(v[1], dict):
                         join_list = resolve_condition(
-                            v[1], conditions, parameters, mappings, stack_name
+                            account_id,
+                            region_name,
+                            v[1],
+                            conditions,
+                            parameters,
+                            mappings,
+                            stack_name,
                         )
                     result = v[0].join(
                         [
-                            resolve_condition(x, conditions, parameters, mappings, stack_name)
+                            resolve_condition(
+                                account_id,
+                                region_name,
+                                x,
+                                conditions,
+                                parameters,
+                                mappings,
+                                stack_name,
+                            )
                             for x in join_list
                         ]
                     )
@@ -217,7 +272,9 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                             # can't be a resource here (!), so also not attribute access
                             if var.startswith("AWS::"):
                                 # pseudo-parameter
-                                resolved_pseudo_param = resolve_pseudo_parameter(var, stack_name)
+                                resolved_pseudo_param = resolve_pseudo_parameter(
+                                    account_id, region_name, var, stack_name
+                                )
                                 result = result.replace(f"${{{var}}}", resolved_pseudo_param)
                             else:
                                 # parameter
@@ -248,7 +305,13 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                                     # e.g. { "Fn::Sub" : [ "Hello ${Name}", { "Name": {"Ref": "NameParam"} } ] }
                                     #   the values can have references, so we need to go deeper
                                     resolved_var = resolve_condition(
-                                        v[1][var], conditions, parameters, mappings, stack_name
+                                        account_id,
+                                        region_name,
+                                        v[1][var],
+                                        conditions,
+                                        parameters,
+                                        mappings,
+                                        stack_name,
                                     )
                                     result = result.replace(f"${{{var}}}", resolved_var)
                                 else:
@@ -258,7 +321,7 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                                 if var.startswith("AWS::"):
                                     # pseudo-parameter
                                     resolved_pseudo_param = resolve_pseudo_parameter(
-                                        var, stack_name
+                                        account_id, region_name, var, stack_name
                                     )
                                     result = result.replace(f"${{{var}}}", resolved_pseudo_param)
                                 else:

@@ -1,6 +1,6 @@
 from io import BytesIO
 from typing import IO, TYPE_CHECKING, Dict, Mapping, Optional, Tuple, Union
-from urllib.parse import quote, unquote, urlencode
+from urllib.parse import quote, unquote, urlencode, urlparse
 
 if TYPE_CHECKING:
     from _typeshed.wsgi import WSGIEnvironment
@@ -187,15 +187,16 @@ class Request(WerkzeugRequest):
 def get_raw_path(request) -> str:
     """
     Returns the raw_path inside the request without the query string. The request can either be a Quart Request
-    object (that encodes the raw path in request.scope['raw_path']) or a Werkzeug WSGi request (that encodes the raw
-    path in request.environ['RAW_URI']).
+    object (that encodes the raw path in request.scope['raw_path']) or a Werkzeug WSGI request (that encodes the raw
+    URI in request.environ['RAW_URI']).
 
     :param request: the request object
     :return: the raw path if any
     """
     if hasattr(request, "environ"):
         # werkzeug/flask request (already a string, and contains the query part)
-        return request.environ.get("RAW_URI", request.path).split("?")[0]
+        # we need to parse it, because the RAW_URI can contain a full URL if it is specified in the HTTP request
+        return urlparse(request.environ.get("RAW_URI", request.path)).path
 
     if hasattr(request, "scope"):
         # quart request raw_path comes as bytes, and without the query part

@@ -16,7 +16,9 @@ class CloudWatchAlarm(GenericBaseModel):
         return "put_metric_alarm"
 
     def fetch_state(self, stack_name, resources):
-        client = connect_to().cloudwatch
+        client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).cloudwatch
         alarm_name = self.props["AlarmName"]
         result = client.describe_alarms(AlarmNames=[alarm_name]).get(self._response_name(), [])
         return (result or [None])[0]
@@ -31,16 +33,27 @@ class CloudWatchAlarm(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            alarms = connect_to().cloudwatch.describe_alarms(
-                AlarmNames=[resource["Properties"]["AlarmName"]]
-            )
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            alarms = connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).cloudwatch.describe_alarms(AlarmNames=[resource["Properties"]["AlarmName"]])
             arn = alarms["MetricAlarms"][0]["AlarmArn"]
             resource["Properties"]["Arn"] = arn
             resource["PhysicalResourceId"] = resource["Properties"]["AlarmName"]
 
         def get_delete_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             return {"AlarmNames": [properties["AlarmName"]]}
 
