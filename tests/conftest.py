@@ -1,4 +1,3 @@
-import logging
 import os
 from typing import TYPE_CHECKING
 
@@ -8,8 +7,6 @@ from _pytest.config.argparsing import Parser
 
 if TYPE_CHECKING:
     from localstack.testing.snapshots import SnapshotSession
-
-LOG = logging.getLogger(__name__)
 
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
@@ -139,16 +136,3 @@ def secondary_aws_client(aws_client_factory):
     from localstack.testing.aws.util import secondary_testing_aws_client
 
     return secondary_testing_aws_client(aws_client_factory)
-
-
-@pytest.fixture
-def cleanups():
-    cleanup_fns = []
-
-    yield cleanup_fns
-
-    for cleanup_callback in cleanup_fns[::-1]:
-        try:
-            cleanup_callback()
-        except Exception as e:
-            LOG.warning("Failed to execute cleanup", exc_info=e)
