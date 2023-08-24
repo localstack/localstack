@@ -530,35 +530,29 @@ class LocalstackContainerServer(Server):
             )
 
         config.dirs.mkdirs()
-        match self.container:
-            case Container():
-                LOG.debug("starting LocalStack container")
-                self.container = self.container.start(attach=False)
-                if isinstance(DOCKER_CLIENT, CmdDockerClient):
-                    DOCKER_CLIENT.default_run_outfile = get_container_default_logfile_location(
-                        self.container.config.name
-                    )
+        if not isinstance(self.container, Container):
+            raise ValueError(f"Invalid container type: {type(self.container)}")
 
-                # block the current thread
-                self.container.attach()
-            case _:
-                raise ValueError(f"Invalid container type: {type(self.container)}")
+        LOG.debug("starting LocalStack container")
+        self.container = self.container.start(attach=False)
+        if isinstance(DOCKER_CLIENT, CmdDockerClient):
+            DOCKER_CLIENT.default_run_outfile = get_container_default_logfile_location(
+                self.container.config.name
+            )
 
+        # block the current thread
+        self.container.attach()
         return self.container
 
     def do_shutdown(self):
-        match self.container:
-            case RunningContainer():
-                try:
-                    DOCKER_CLIENT.stop_container(
-                        self.container.name, timeout=10
-                    )  # giving the container some time to stop
-                except Exception as e:
-                    LOG.info(
-                        "error cleaning up localstack container %s: %s", self.container.name, e
-                    )
-            case Container():
-                raise ValueError(f"Container {self.container} not started")
+        if not isinstance(self.container, RunningContainer):
+            raise ValueError(f"Container {self.container} not started")
+        try:
+            DOCKER_CLIENT.stop_container(
+                self.container.name, timeout=10
+            )  # giving the container some time to stop
+        except Exception as e:
+            LOG.info("error cleaning up localstack container %s: %s", self.container.name, e)
 
 
 class ContainerExists(Exception):
