@@ -40,6 +40,11 @@ class TestFnSub:
         snapshot.add_transformer(
             snapshot.transform.regex(ssm_parameter_name, "<ssm-parameter-name>")
         )
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "UrlSuffixPseudoParam", "<url-suffix>", reference_replacement=False
+            )
+        )
         deployment = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../../templates/engine/cfn_fn_sub.yaml"
