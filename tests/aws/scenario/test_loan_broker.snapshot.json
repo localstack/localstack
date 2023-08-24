@@ -199,5 +199,171 @@
         }
       }
     }
+  },
+  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_prefill_dynamodb_table": {
+    "recorded-date": "24-08-2023, 16:33:21",
+    "recorded-content": {
+      "describe_table": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "Type",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "datetime"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "Type",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/LoanBrokerBanksTable",
+          "TableId": "<uuid:1>",
+          "TableName": "LoanBrokerBanksTable",
+          "TableSizeBytes": 0,
+          "TableStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_item": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_item_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "scan": {
+        "Count": 2,
+        "Items": [
+          {
+            "Hello": {
+              "S": "something"
+            },
+            "Type": {
+              "S": "Test"
+            }
+          },
+          {
+            "BankAddress": {
+              "L": [
+                {
+                  "S": "will be replaced"
+                }
+              ]
+            },
+            "Type": {
+              "S": "Home"
+            }
+          }
+        ],
+        "ScannedCount": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_item": {
+        "Item": {
+          "BankAddress": {
+            "L": [
+              {
+                "S": "will be replaced"
+              }
+            ]
+          },
+          "Type": {
+            "S": "Home"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_item": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_item2": {
+        "Item": {
+          "BankAddress": {
+            "L": [
+              {
+                "S": "BankRecipientPawnShop"
+              },
+              {
+                "S": "BankRecipientUniversal"
+              },
+              {
+                "S": "BankRecipientPremium"
+              }
+            ]
+          },
+          "Type": {
+            "S": "Home"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_item": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "scan_2": {
+        "Count": 1,
+        "Items": [
+          {
+            "BankAddress": {
+              "L": [
+                {
+                  "S": "BankRecipientPawnShop"
+                },
+                {
+                  "S": "BankRecipientUniversal"
+                },
+                {
+                  "S": "BankRecipientPremium"
+                }
+              ]
+            },
+            "Type": {
+              "S": "Home"
+            }
+          }
+        ],
+        "ScannedCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

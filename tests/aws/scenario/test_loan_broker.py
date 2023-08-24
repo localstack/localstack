@@ -18,6 +18,7 @@ import pytest
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
+from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
@@ -25,19 +26,16 @@ RECIPIENT_LIST_STACK_NAME = "LoanBroker-RecipientList"
 PROJECT_NAME = "CDK Loan Broker"
 OUTPUT_LOAN_BROKER_STATE_MACHINE_ARN = "LoanBrokerArn"
 OUTPUT_LOAN_BROKER_LOG_GROUP_NAME = "LogGroupName"
+OUTPUT_LOAN_BROKER_TABLE = "TableName"
 LOAN_BROKER_TABLE = "LoanBrokerBanksTable"
 
 CREDIT_BUREAU_JS = "./resources_loan_broker/bank_app_credit_bureau.js"
 BANK_APP_JS = "./resources_loan_broker/bank_app.js"
 
 
-def _read_file_as_string(filename: str):
+def _read_file_as_string(filename: str) -> str:
     file_path = os.path.join(os.path.dirname(__file__), filename)
-
-    content = None
-    with open(file_path, "r") as file:
-        content = file.read()
-    return content
+    return load_file(file_path)
 
 
 @dataclass
@@ -47,7 +45,7 @@ class Bank:
     max_loan: str
     min_credit_score: str
 
-    def get_env(self) -> str:
+    def get_env(self) -> dict:
         return {
             "BANK_ID": self.bank_id,
             "BASE_RATE": self.base_rate,
@@ -81,15 +79,77 @@ class TestLoanBrokerScenario:
         infra.add_cdk_stack(recipient_stack)
 
         # set skip_teardown=True to prevent the stack to be deleted
-        with infra.provisioner(skip_teardown=True) as prov:
-            if not infra.skipped_provisioning:
-                # here we could add some initial setup, e.g. pre-filling the app with data
-                bank_addresses = [{"S": bank_name} for bank_name in self.BANKS.keys()]
-                aws_client.dynamodb.put_item(
-                    TableName=LOAN_BROKER_TABLE,
-                    Item={"Type": {"S": "Home"}, "BankAddress": {"L": bank_addresses}},
-                )
+        with infra.provisioner(skip_teardown=False) as prov:
             yield prov
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Table.DeletionProtectionEnabled",
+            "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+            "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+            "$..Table.Replicas",
+        ]
+    )
+    def test_prefill_dynamodb_table(self, aws_client, infrastructure, snapshot):
+        if infrastructure.skipped_provisioning:
+            pytest.skip("prefilling the dynamodb should only happen once")
+
+        """setups the dynamodb for the following tests,
+        additionally tests some typical dynamodb APIs
+        """
+        outputs = infrastructure.get_stack_outputs(RECIPIENT_LIST_STACK_NAME)
+        table_name = outputs.get(OUTPUT_LOAN_BROKER_TABLE)
+        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+
+        describe_table = aws_client.dynamodb.describe_table(TableName=table_name)
+        snapshot.match("describe_table", describe_table)
+
+        result = aws_client.dynamodb.put_item(
+            TableName=table_name,
+            Item={"Type": {"S": "Home"}, "BankAddress": {"L": [{"S": "will be replaced"}]}},
+        )
+        snapshot.match("put_item", result)
+
+        result = aws_client.dynamodb.put_item(
+            TableName=table_name,
+            Item={"Type": {"S": "Test"}, "Hello": {"S": "something"}},
+        )
+        snapshot.match("put_item_2", result)
+
+        scan_result = aws_client.dynamodb.scan(TableName=table_name)
+
+        # the order for scan is not guarnateed, but we want to compare it
+        scan_result["Items"].sort(key=lambda x: x["Type"]["S"], reverse=True)
+        snapshot.match("scan", scan_result)
+
+        item = aws_client.dynamodb.get_item(TableName=table_name, Key={"Type": {"S": "Home"}})
+        snapshot.match("get_item", item)
+
+        bank_addresses = [{"S": bank_name} for bank_name in self.BANKS.keys()]
+
+        # this entry will be required for the upcoming tests
+        result = aws_client.dynamodb.update_item(
+            TableName=table_name,
+            Key={"Type": {"S": "Home"}},
+            UpdateExpression="SET BankAddress=:v",
+            ExpressionAttributeValues={":v": {"L": bank_addresses}},
+        )
+        snapshot.match("update_item", result)
+
+        item = aws_client.dynamodb.get_item(TableName=table_name, Key={"Type": {"S": "Home"}})
+        snapshot.match("get_item2", item)
+
+        # delete item
+        delete_item = aws_client.dynamodb.delete_item(
+            TableName=table_name, Key={"Type": {"S": "Test"}}
+        )
+        snapshot.match("delete_item", delete_item)
+
+        scan_result = aws_client.dynamodb.scan(TableName=table_name)
+        snapshot.match("scan_2", scan_result)
+
+        # TODO could further test dynamodb if required
 
     @pytest.mark.parametrize(
         "step_function_input,expected_result",
@@ -257,3 +317,5 @@ class TestLoanBrokerScenario:
         cdk.CfnOutput(
             stack, OUTPUT_LOAN_BROKER_LOG_GROUP_NAME, value=loan_broker_log_group.log_group_name
         )
+
+        cdk.CfnOutput(stack, OUTPUT_LOAN_BROKER_TABLE, value=bank_table.table_name)
