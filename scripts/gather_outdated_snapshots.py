@@ -49,8 +49,6 @@ def get_outdated_snapshots_for_directory(
                             outdated_snapshots[name] = outdated_snapshot_data
 
     do_get_outdated_snapshots(path)
-    # remove duplicates, e.g. combine_parametrized was False
-    # outdated_snapshots = set(outdated_snapshots)
     result["count"] = len(outdated_snapshots)
     result["outdated_snapshots"] = outdated_snapshots
     return result
