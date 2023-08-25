@@ -653,3 +653,35 @@ class TestSnfApi:
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("describe_resp_t2", describe_resp_t2)
+
+    @markers.aws.validated
+    def test_describe_state_machine_for_execution(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        sm_name: str = f"statemachine_{short_uid()}"
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        exec_resp = aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        sfn_snapshot.match("exec_resp", exec_resp)
+        execution_arn = exec_resp["executionArn"]
+
+        await_execution_success(
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        )
+
+        describe_resp = aws_client.stepfunctions.describe_state_machine_for_execution(
+            executionArn=execution_arn
+        )
+        sfn_snapshot.match("describe_resp", describe_resp)

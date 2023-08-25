@@ -9,6 +9,7 @@ from localstack.aws.api.stepfunctions import (
     Arn,
     CloudWatchEventsExecutionDataDetails,
     DescribeExecutionOutput,
+    DescribeStateMachineForExecutionOutput,
     ExecutionListItem,
     ExecutionStatus,
     GetExecutionHistoryOutput,
@@ -143,6 +144,28 @@ class Execution:
         if self.cause is not None:
             describe_output["cause"] = self.cause
         return describe_output
+
+    def to_describe_state_machine_for_execution_output(
+        self,
+    ) -> DescribeStateMachineForExecutionOutput:
+        state_machine: StateMachineInstance = self.state_machine
+        state_machine_arn = (
+            state_machine.source_arn
+            if isinstance(state_machine, StateMachineVersion)
+            else state_machine.arn
+        )
+        out = DescribeStateMachineForExecutionOutput(
+            stateMachineArn=state_machine_arn,
+            name=state_machine.name,
+            definition=state_machine.definition,
+            roleArn=self.role_arn,
+            # The date and time the state machine associated with an execution was updated.
+            updateDate=state_machine.create_date,
+        )
+        revision_id = self.state_machine.revision_id
+        if self.state_machine.revision_id:
+            out["revisionId"] = revision_id
+        return out
 
     def to_execution_list_item(self) -> ExecutionListItem:
         if isinstance(self.state_machine, StateMachineVersion):
