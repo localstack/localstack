@@ -531,6 +531,8 @@ def test_create_and_then_update_refreshes_template_metadata(
         cleanup_changesets(list(changesets_to_cleanup))
 
 
+# TODO: the intention of this test is not particularly clear. The resource isn't removed, it'll just generate a new bucket with a new default name
+# TODO: rework this to a conditional instead of two templates + parameter usage instead of templating
 @markers.aws.validated
 def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_template, aws_client):
     first_bucket_name = f"test-bucket-1-{short_uid()}"
@@ -547,6 +549,8 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
             "second_bucket_name": second_bucket_name,
         },
     )
+    assert first_bucket_name in stack.outputs["FirstBucket"]
+    assert second_bucket_name in stack.outputs["SecondBucket"]
 
     available_buckets = aws_client.s3.list_buckets()
     bucket_names = [bucket["Name"] for bucket in available_buckets["Buckets"]]
@@ -557,12 +561,14 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
         os.path.dirname(__file__), "../../../templates/for_removal_remove.yaml"
     )
     template_body = load_template_raw(template_path)
-    deploy_cfn_template(
+    stack_updated = deploy_cfn_template(
         is_update=True,
         template=template_body,
         template_mapping={"first_bucket_name": first_bucket_name},
         stack_name=stack.stack_name,
     )
+
+    assert first_bucket_name in stack_updated.outputs["FirstBucket"]
 
     def assert_bucket_gone():
         available_buckets = aws_client.s3.list_buckets()

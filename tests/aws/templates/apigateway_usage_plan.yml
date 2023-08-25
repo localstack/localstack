@@ -52,3 +52,5 @@ Resources:
 Outputs:
     UsagePlanId:
         Value: !Ref UsagePlan
+    RestApiId:
+        Value: !GetAtt RestApi.RestApiId

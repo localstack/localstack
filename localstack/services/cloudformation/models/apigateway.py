@@ -242,6 +242,7 @@ class GatewayRestAPI(GenericBaseModel):
             logical_resource_id: str,
             resource: dict,
         ):
+            resource["Properties"]["RestApiId"] = result["id"]
             resource["PhysicalResourceId"] = result["id"]
 
             resources = connect_to(
@@ -256,7 +257,7 @@ class GatewayRestAPI(GenericBaseModel):
             "delete": {
                 "function": "delete_rest_api",
                 "parameters": {
-                    "restApiId": _api_id,
+                    "restApiId": "RestApiId",
                 },
             },
         }
@@ -290,6 +291,7 @@ class GatewayDeployment(GenericBaseModel):
             logical_resource_id: str,
             resource: dict,
         ):
+            resource["Properties"]["DeploymentId"] = result["id"]
             resource["PhysicalResourceId"] = result["id"]
 
         return {
@@ -302,7 +304,12 @@ class GatewayDeployment(GenericBaseModel):
                     "description": "Description",
                 },
                 "result_handler": _handle_result,
-            }
+                # }
+            },
+            "delete": {
+                "function": "delete_deployment",
+                "parameters": {"restApiId": "RestApiId", "deploymentId": "DeploymentId"},
+            },
         }
 
 

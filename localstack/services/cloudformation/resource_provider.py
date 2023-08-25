@@ -43,6 +43,7 @@ PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 # by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
 # add your new provider here when you want it to be the default
 PROVIDER_DEFAULTS = {
+    "AWS::SQS::Queue": "ResourceProvider"
     # "AWS::IAM::User": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
@@ -110,7 +111,7 @@ def convert_payload(
         region_name=payload["region"],
     )
     desired_state = payload["requestData"]["resourceProperties"]
-    return ResourceRequest[Properties](
+    rr = ResourceRequest(
         _original_payload=desired_state,
         aws_client_factory=client_factory,
         request_token=str(uuid.uuid4()),  # TODO: not actually a UUID
@@ -120,10 +121,16 @@ def convert_payload(
         region_name=payload["region"],
         desired_state=desired_state,
         logical_resource_id=payload["requestData"]["logicalResourceId"],
+        resource_type=payload["resourceType"],
         logger=logging.getLogger("abc"),
         custom_context=payload["callbackContext"],
         action=payload["action"],
     )
+
+    if previous_properties := payload["requestData"].get("previousResourceProperties"):
+        rr.previous_state = previous_properties
+
+    return rr
 
 
 @dataclass
@@ -141,6 +148,7 @@ class ResourceRequest(Generic[Properties]):
     desired_state: Properties
 
     logical_resource_id: str
+    resource_type: str
 
     logger: Logger
 
@@ -243,6 +251,8 @@ def get_service_name(resource):
     parts = res_type.split("::")
     if len(parts) == 1:
         return None
+    if "Cognito::IdentityPool" in res_type:
+        return "cognito-identity"
     if res_type.endswith("Cognito::UserPool"):
         return "cognito-idp"
     if parts[-2] == "Cognito":
@@ -257,8 +267,6 @@ def get_service_name(resource):
         return "resource-groups"
     if parts[-2] == "CertificateManager":
         return "acm"
-    if "Cognito::IdentityPool" in res_type:
-        return "cognito-identity"
     if "ElasticLoadBalancing::" in res_type:
         return "elb"
     if "ElasticLoadBalancingV2::" in res_type:
@@ -287,6 +295,7 @@ def resolve_resource_parameters(
     resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
     resource_props = dict(resource_props)
     resource_state = resource_definition.get(KEY_RESOURCE_STATE, {})
+    last_deployed_state = resource_definition.get("_last_deployed_state", {})
 
     if callable(params):
         # resolve parameter map via custom function
@@ -323,7 +332,10 @@ def resolve_resource_parameters(
                 else:
                     prop_value = resource_props.get(
                         prop_key,
-                        resource_definition.get(prop_key, resource_state.get(prop_key)),
+                        resource_definition.get(
+                            prop_key,
+                            resource_state.get(prop_key, last_deployed_state.get(prop_key)),
+                        ),
                     )
                 if prop_value is not None:
                     params[param_key] = prop_value
@@ -376,7 +388,9 @@ class LegacyResourceProvider(ResourceProvider):
             resource_json={
                 "Type": self.resource_type,
                 "Properties": request.desired_state,
+                # just a temporary workaround, technically we're setting _state_ here to _last_deployed_state
                 "_state_": request.previous_state,
+                # "_last_deployed_state": request
                 "PhysicalResourceId": physical_resource_id,
                 "LogicalResourceId": request.logical_resource_id,
             },
@@ -392,7 +406,8 @@ class LegacyResourceProvider(ResourceProvider):
             # TODO: should not really claim the update was successful, but the
             #   API does not really let us signal this in any other way.
             return ProgressEvent(
-                status=OperationStatus.SUCCESS, resource_model=request.desired_state
+                status=OperationStatus.SUCCESS,
+                resource_model=request.previous_state,
             )
 
         LOG.info("Updating resource %s of type %s", request.logical_resource_id, self.resource_type)
@@ -607,12 +622,17 @@ class ResourceProviderExecutor:
             )  # TODO: simplify signature of get_resource_type to just take the type
             try:
                 resource_provider = self.load_resource_provider(resource_type)
+
+                logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
+                resource = self.resources[logical_resource_id]
+
+                resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
+
                 event = self.execute_action(resource_provider, payload)
 
                 if event.status == OperationStatus.SUCCESS:
-                    logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
-                    resource = self.resources[logical_resource_id]
-                    if "PhysicalResourceId" not in resource:
+
+                    if not isinstance(resource_provider, LegacyResourceProvider):
                         # branch for non-legacy providers
                         # TODO: move out of if? (physical res id can be set earlier possibly)
                         if isinstance(resource_provider, LegacyResourceProvider):
@@ -636,6 +656,7 @@ class ResourceProviderExecutor:
 
                         resource["PhysicalResourceId"] = physical_resource_id
                         resource["Properties"] = event.resource_model
+                    resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
                     return event
 
                 # update the shared state
@@ -675,11 +696,21 @@ class ResourceProviderExecutor:
             case "Add":
                 return resource_provider.create(request)
             case "Dynamic" | "Modify":
-                return resource_provider.update(request)
+                try:
+                    return resource_provider.update(request)
+                except NotImplementedError:
+                    LOG.warning(
+                        'Unable to update resource type "%s", id "%s"',
+                        request.resource_type,
+                        request.logical_resource_id,
+                    )
+                    return ProgressEvent(
+                        status=OperationStatus.SUCCESS, resource_model=request.previous_state
+                    )
             case "Remove":
                 return resource_provider.delete(request)
             case _:
-                raise NotImplementedError(change_type)
+                raise NotImplementedError(change_type)  # TODO: change error type
 
     def should_use_legacy_provider(self, resource_type: str) -> bool:
         # any config overwrites take precedence over the default list

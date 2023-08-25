@@ -123,4 +123,6 @@ class GenericBaseModel:
         (2) the current deployment state properties of the resource."""
         result = dict(self.properties)
         result.update(self.state or {})
+        last_state = self.resource_json.get("_last_deployed_state", {})
+        result.update(last_state)
         return result
