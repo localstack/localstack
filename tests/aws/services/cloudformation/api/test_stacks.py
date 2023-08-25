@@ -210,7 +210,7 @@ class TestStacksApi:
         assert statuses == {"UPDATE_COMPLETE"}
 
     @markers.aws.unknown
-    def test_update_stack_with_same_template(self, deploy_cfn_template, aws_client):
+    def test_update_stack_with_same_template_withoutchange(self, deploy_cfn_template, aws_client):
         template = load_file(
             os.path.join(os.path.dirname(__file__), "../../../templates/fifo_queue.json")
         )
@@ -257,7 +257,6 @@ class TestStacksApi:
         assert queue_arn_2
 
         assert queue_arn_1 != queue_arn_2
-        print("done")
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..StackEvents"])
     @markers.aws.validated

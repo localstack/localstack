@@ -706,7 +706,7 @@ class ResourceProviderExecutor:
                         request.logical_resource_id,
                     )
                     return ProgressEvent(
-                        status=OperationStatus.SUCCESS, resource_model=request.desired_state
+                        status=OperationStatus.SUCCESS, resource_model=request.previous_state
                     )
             case "Remove":
                 return resource_provider.delete(request)
