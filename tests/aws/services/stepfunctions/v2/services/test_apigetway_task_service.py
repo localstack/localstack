@@ -14,11 +14,7 @@ from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
-from tests.aws.services.stepfunctions.utils import create_and_record_execution, is_old_provider
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
-)
+from tests.aws.services.stepfunctions.utils import create_and_record_execution
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -233,10 +229,7 @@ class TestTaskApiGateway:
             None,
             "",
             "HelloWorld",
-            json.dumps("HelloWorld"),
-            json.dumps(0),
-            json.dumps(True),
-            json.dumps({"message": "HelloWorld!"}),
+            {"message": "HelloWorld!"},
         ],
     )
     @markers.aws.unknown
