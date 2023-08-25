@@ -506,13 +506,19 @@ class TestSNSSubscriptionCrud:
 
     @markers.aws.validated
     def test_create_subscriptions_with_attributes(
-        self, sns_create_topic, sqs_create_queue, sqs_queue_arn, snapshot, aws_client
+        self,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        snapshot,
+        aws_client,
+        sns_subscription,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         queue_arn = sqs_queue_arn(queue_url)
 
-        subscribe_resp = aws_client.sns.subscribe(
+        subscribe_resp = sns_subscription(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
@@ -672,6 +678,56 @@ class TestSNSSubscriptionCrud:
             )
 
         snapshot.match("token-not-exists", e.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$.list-subscriptions.Subscriptions"],
+        # there could be cleanup issues and don't want to flake, manually assert
+    )
+    def test_list_subscriptions(
+        self,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_subscription,
+        snapshot,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("NextToken"))
+        topic = sns_create_topic()
+        topic_arn = topic["TopicArn"]
+        snapshot.match("create-topic-1", topic)
+        topic_2 = sns_create_topic()
+        topic_arn_2 = topic_2["TopicArn"]
+        snapshot.match("create-topic-2", topic_2)
+        sorting_list = []
+        for i in range(3):
+            queue_url = sqs_create_queue()
+            queue_arn = sqs_queue_arn(queue_url)
+            subscription = sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+            snapshot.match(f"sub-topic-1-{i}", subscription)
+            sorting_list.append((topic_arn, queue_arn))
+        for i in range(3):
+            queue_url = sqs_create_queue()
+            queue_arn = sqs_queue_arn(queue_url)
+            subscription = sns_subscription(
+                TopicArn=topic_arn_2, Protocol="sqs", Endpoint=queue_arn
+            )
+            snapshot.match(f"sub-topic-2-{i}", subscription)
+            sorting_list.append((topic_arn_2, queue_arn))
+
+        list_subs = aws_client.sns.list_subscriptions()
+        all_subs = list_subs["Subscriptions"]
+        if list_subs.get("NextToken"):
+            while next_token := list_subs.get("NextToken"):
+                list_subs = aws_client.sns.list_subscriptions(NextToken=next_token)
+                all_subs.extend(list_subs["Subscriptions"])
+
+        all_subs.sort(key=lambda x: sorting_list.index((x["TopicArn"], x["Endpoint"])))
+        list_subs["Subscriptions"] = all_subs
+        snapshot.match("list-subscriptions-aggregated", list_subs)
+
+        assert all((sub["TopicArn"], sub["Endpoint"]) in sorting_list for sub in all_subs)
 
 
 class TestSNSSubscriptionLambda:
