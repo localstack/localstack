@@ -7,7 +7,7 @@ import shlex
 import subprocess
 import sys
 import threading
-from typing import Dict, List, Optional, TypeVar
+from typing import List, Optional, TypeVar
 from urllib.parse import urlparse
 
 from requests.models import Response
@@ -531,12 +531,10 @@ def run_module_as_sudo(
     # prepare environment
     env_vars = env_vars or {}
     env_vars["PYTHONPATH"] = f".:{LOCALSTACK_ROOT_FOLDER}"
-    env_vars_str = env_vars_to_string(env_vars)
 
     # start the process as sudo
-    sudo_cmd = "sudo -n"
     python_cmd = sys.executable
-    cmd = [sudo_cmd, env_vars_str, python_cmd, "-m", module]
+    cmd = ["sudo", "-n", "--preserve-env", python_cmd, "-m", module]
     arguments = arguments or []
     shell_cmd = shlex.join(cmd + arguments)
 
@@ -555,10 +553,6 @@ def run_module_as_sudo(
         start_thread(run_command, quiet=True, name="sudo-edge") if asynchronous else run_command()
     )
     return result
-
-
-def env_vars_to_string(env_vars: Dict) -> str:
-    return " ".join(f"{k}='{v}'" for k, v in env_vars.items())
 
 
 def parse_gateway_listen(listen: str, default_host: str, default_port: int) -> List[HostAndPort]:
