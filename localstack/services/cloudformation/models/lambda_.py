@@ -43,12 +43,12 @@ class LambdaFunction(GenericBaseModel):
         props = new_resource["Properties"]
         client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
         function_name = (
-            props.get("FunctionName") or new_resource["_last_deployed_state"]["FunctionName"]
+            props.get("FunctionName")
+            or new_resource.get("_last_deployed_state", new_resource.get("_state_"))["FunctionName"]
         )
         config_keys = [
             "Description",
             "Environment",
-            # "FunctionName",
             "Handler",
             "ImageConfig",
             "Layers",

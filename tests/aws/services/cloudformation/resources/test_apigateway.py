@@ -394,10 +394,7 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
     )
 
     usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
-
     assert usage_plan["quota"]["limit"] == 5000
-
-    print("========== NEXTDS =========")
 
     deploy_cfn_template(
         is_update=True,
@@ -408,10 +405,7 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
         parameters={"QuotaLimit": "7000", "RestApiName": rest_api_name},
     )
 
-    aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
-
     usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
-
     assert 7000 == usage_plan["quota"]["limit"]
 
     usage_plans = aws_client.apigateway.get_usage_plans()["items"]

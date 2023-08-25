@@ -388,6 +388,7 @@ class LegacyResourceProvider(ResourceProvider):
             resource_json={
                 "Type": self.resource_type,
                 "Properties": request.desired_state,
+                # just a temporary workaround, technically we're setting _state_ here to _last_deployed_state
                 "_state_": request.previous_state,
                 # "_last_deployed_state": request
                 "PhysicalResourceId": physical_resource_id,
@@ -405,7 +406,6 @@ class LegacyResourceProvider(ResourceProvider):
             # TODO: should not really claim the update was successful, but the
             #   API does not really let us signal this in any other way.
             return ProgressEvent(
-                # TODO
                 status=OperationStatus.SUCCESS,
                 resource_model=request.previous_state,
             )
@@ -414,7 +414,6 @@ class LegacyResourceProvider(ResourceProvider):
 
         resource_provider.update_resource(
             self.all_resources[request.logical_resource_id],
-            # resource_provider.props,  # TODO: this will break if update is mutating the properties :/
             stack_name=request.stack_name,
             resources=self.all_resources,
         )

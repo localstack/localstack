@@ -94,19 +94,10 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
           - sqs:TagQueue
 
         """
+        # TODO: validations
         model = request.desired_state
         sqs = request.aws_client_factory.sqs
 
-        # TODO: validations
-
-        # if not request.custom_context.get(REPEATED_INVOCATION):
-        #     request.custom_context[REPEATED_INVOCATION] = True
-        #     # this is the first time this callback is invoked
-        #     # TODO: defaults
-        #     # TODO: idempotency
-        #     # TODO: actually create the resource
-        #
-        #     tags = {tag["Key"]: tag["Value"] for tag in model.Tags} if model.Tags else {}
         queue_name = model.get("QueueName")
         if not queue_name:
             # TODO: verify patterns here
@@ -121,10 +112,6 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
                 )
             model["QueueName"] = queue_name
 
-        # attributes = {}
-        #
-        # if model.get("FifoQueue"):
-        #     attributes["FifoQueue"] = "true"
         attributes = self._compile_sqs_queue_attributes(model)
         result = request.aws_client_factory.sqs.create_queue(
             QueueName=model["QueueName"],
@@ -193,11 +180,13 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
           - sqs:TagQueue
           - sqs:UntagQueue
         """
-        # TODO
         sqs = request.aws_client_factory.sqs
         model = request.desired_state
         if request.desired_state.get("QueueName") != request.previous_state.get("QueueName"):
+            # replacement (TODO: find out if we should handle this in the provider or outside of it)
+            # delete old queue
             sqs.delete_queue(QueueUrl=request.previous_state["QueueUrl"])
+            # create new queue (TODO: re-use create logic to make this more robust, e.g. for auto-generated queue names)
             model["QueueUrl"] = sqs.create_queue(QueueName=request.desired_state.get("QueueName"))[
                 "QueueUrl"
             ]
@@ -205,7 +194,6 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
                 QueueUrl=model["QueueUrl"], AttributeNames=["QueueArn"]
             )["Attributes"]["QueueArn"]
         return ProgressEvent(OperationStatus.SUCCESS, resource_model=model)
-        # raise NotImplementedError
 
     def _compile_sqs_queue_attributes(self, properties: SQSQueueProperties) -> dict[str, str]:
         """
