@@ -38,6 +38,13 @@ ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SSL_CERT_URL = f"{ARTIFACTS_REPO}/raw/master/local-certs/server.key"
 SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
 
+# name and URL of S3 bucket containing assets that are downloaded at build or runtime
+S3_ASSETS_BUCKET = "localstack-assets"
+S3_ASSETS_BUCKET_URL = f"https://{S3_ASSETS_BUCKET}.s3.amazonaws.com"
+
+# default network interface name in Mac OS
+MAC_NETWORK_INTERFACE = "en0"
+
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
