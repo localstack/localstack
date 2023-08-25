@@ -8,7 +8,7 @@ import requests
 from botocore.exceptions import ClientError
 
 import localstack.config as config
-from localstack.services.ses.provider import EMAILS_ENDPOINT
+from localstack.services.ses.provider import EMAILS, EMAILS_ENDPOINT
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -845,6 +845,9 @@ class TestSESRetrospection:
     def test_send_email_can_retrospect(self, aws_client):
         # Test that sent emails can be retrospected through saved file and API access
 
+        # reset endpoint stored messages
+        EMAILS.clear()
+
         def _read_message_from_filesystem(message_id: str) -> dict:
             """Given a message ID, read the message from filesystem and deserialise it."""
             data_dir = config.dirs.data or config.dirs.tmp
@@ -921,6 +924,10 @@ class TestSESRetrospection:
     @markers.aws.only_localstack
     def test_send_templated_email_can_retrospect(self, create_template, aws_client):
         # Test that sent emails can be retrospected through saved file and API access
+
+        # reset endpoint stored messages
+        EMAILS.clear()
+
         data_dir = config.dirs.data or config.dirs.tmp
         email = f"user-{short_uid()}@example.com"
         aws_client.ses.verify_email_address(EmailAddress=email)
