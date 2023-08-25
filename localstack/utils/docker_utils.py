@@ -133,7 +133,7 @@ def get_host_path_for_path_in_docker(path):
 
 
 def container_ports_can_be_bound(
-    ports: Union[IntOrPort, List[IntOrPort]], bind_host: str | None = None
+    ports: Union[IntOrPort, List[IntOrPort]], bind_host: Union[str, None] = None
 ) -> bool:
     """Determine whether a given list of ports can be bound by Docker containers
 
