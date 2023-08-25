@@ -45,7 +45,7 @@ PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 PROVIDER_DEFAULTS = {
     "AWS::SQS::Queue": "ResourceProvider",
     "AWS::SQS::QueuePolicy": "ResourceProvider",
-    # "AWS::IAM::User": "ResourceProvider",
+    "AWS::IAM::User": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }
