@@ -654,7 +654,7 @@ class TestSnfApi:
         )
         sfn_snapshot.match("describe_resp_t2", describe_resp_t2)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_describe_state_machine_for_execution(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):

@@ -585,7 +585,7 @@ class TestSnfApiVersioning:
         )
         sfn_snapshot.match("update_resp_2", update_resp_2)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_describe_state_machine_for_execution_of_version(
         self,
         create_iam_role_for_sfn,
@@ -623,7 +623,7 @@ class TestSnfApiVersioning:
         )
         sfn_snapshot.match("describe_resp", describe_resp)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_describe_state_machine_for_execution_of_version_with_revision(
         self,
         create_iam_role_for_sfn,
