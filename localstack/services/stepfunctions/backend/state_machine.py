@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import json
+from collections import OrderedDict
 from datetime import datetime
 from typing import Final, Optional
 
@@ -16,8 +17,11 @@ from localstack.aws.api.stepfunctions import (
     StateMachineStatus,
     StateMachineType,
     StateMachineVersionListItem,
+    Tag,
+    TagKeyList,
     TagList,
     TracingConfiguration,
+    ValidationException,
 )
 from localstack.utils.strings import long_uid
 
@@ -78,8 +82,44 @@ class StateMachineInstance:
 
 
 class StateMachineRevision(StateMachineInstance):
+    class TagManager:
+        _tags: Final[dict[str, Optional[str]]]
+
+        def __init__(self):
+            self._tags = OrderedDict()
+
+        @staticmethod
+        def _validate_key_value(key: str) -> None:
+            if not key:
+                raise ValidationException()
+
+        @staticmethod
+        def _validate_tag_value(value: str) -> None:
+            if value is None:
+                raise ValidationException()
+
+        def add_all(self, tags: TagList) -> None:
+            for tag in tags:
+                tag_key = tag["key"]
+                tag_value = tag["value"]
+                self._validate_key_value(key=tag_key)
+                self._validate_tag_value(value=tag_value)
+                self._tags[tag_key] = tag_value
+
+        def remove_all(self, keys: TagKeyList):
+            for key in keys:
+                self._validate_key_value(key=key)
+                self._tags.pop(key, None)
+
+        def to_tag_list(self) -> TagList:
+            tag_list = list()
+            for key, value in self._tags.items():
+                tag_list.append(Tag(key=key, value=value))
+            return tag_list
+
     _next_version_number: int
     versions: Final[dict[RevisionId, Arn]]
+    tag_manager: Final[TagManager]
 
     def __init__(
         self,
@@ -106,6 +146,7 @@ class StateMachineRevision(StateMachineInstance):
         )
         self.versions = dict()
         self._version_number = 0
+        self.tag_manager = StateMachineRevision.TagManager()
 
     def create_revision(
         self, definition: Optional[str], role_arn: Optional[Arn]
