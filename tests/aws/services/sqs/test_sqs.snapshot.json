@@ -1065,5 +1065,39 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_message_group_id_for_fifo_queue": {
+    "recorded-date": "02-08-2023, 12:36:06",
+    "recorded-content": {
+      "test_missing_message_group_id_for_fifo_queue": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "The request must contain the parameter MessageGroupId.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_deduplication_id_for_fifo_queue": {
+    "recorded-date": "02-08-2023, 12:37:36",
+    "recorded-content": {
+      "test_missing_deduplication_id_for_fifo_queue": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "The queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
