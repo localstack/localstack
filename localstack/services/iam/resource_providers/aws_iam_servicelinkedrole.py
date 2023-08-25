@@ -49,32 +49,15 @@ class IAMServiceLinkedRoleProvider(ResourceProvider[IAMServiceLinkedRoleProperti
         Read-only properties:
           - /properties/Id
 
-
-
         """
         model = request.desired_state
+        response = request.aws_client_factory.iam.create_service_linked_role(**model)
+        model["Id"] = response["Role"]["RoleName"]  # TODO
 
-        # TODO: validations
-
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
-
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+        )
 
     def read(
         self,
@@ -93,10 +76,14 @@ class IAMServiceLinkedRoleProvider(ResourceProvider[IAMServiceLinkedRoleProperti
     ) -> ProgressEvent[IAMServiceLinkedRoleProperties]:
         """
         Delete a resource
-
-
         """
-        raise NotImplementedError
+        request.aws_client_factory.iam.delete_service_linked_role(
+            RoleName=request.previous_state["Id"]
+        )
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model={},
+        )
 
     def update(
         self,

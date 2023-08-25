@@ -46,6 +46,7 @@ PROVIDER_DEFAULTS = {
     "AWS::SQS::Queue": "ResourceProvider",
     "AWS::SQS::QueuePolicy": "ResourceProvider",
     "AWS::IAM::User": "ResourceProvider",
+    "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }
