@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 from datetime import date, datetime
@@ -63,7 +64,8 @@ def ses_create_receipt_rule_set(aws_client):
     yield _create
 
     for name in receipt_rule_sets:
-        aws_client.ses.delete_receipt_rule_set(RuleSetName=name)
+        with contextlib.suppress(ClientError):
+            aws_client.ses.delete_receipt_rule_set(RuleSetName=name)
 
 
 @pytest.fixture
@@ -78,7 +80,8 @@ def ses_clone_receipt_rule_set(aws_client):
     yield _clone
 
     for name in receipt_rule_sets:
-        aws_client.ses.delete_receipt_rule_set(RuleSetName=name)
+        with contextlib.suppress(ClientError):
+            aws_client.ses.delete_receipt_rule_set(RuleSetName=name)
 
 
 @pytest.fixture
