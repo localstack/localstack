@@ -1824,7 +1824,9 @@ class TestSqsProvider:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
-    def test_missing_deduplication_id_for_fifo_queue(self, sqs_create_queue, snapshot, aws_client):
+    def test_send_batch_missing_deduplication_id_for_fifo_queue(
+        self, sqs_create_queue, snapshot, aws_client
+    ):
         queue_url = sqs_create_queue(
             QueueName=f"queue-{short_uid()}.fifo",
             Attributes={
@@ -1851,7 +1853,9 @@ class TestSqsProvider:
 
     @markers.parity.aws_validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
-    def test_missing_message_group_id_for_fifo_queue(self, sqs_create_queue, snapshot, aws_client):
+    def test_send_batch_missing_message_group_id_for_fifo_queue(
+        self, sqs_create_queue, snapshot, aws_client
+    ):
         queue_url = sqs_create_queue(
             QueueName=f"queue-{short_uid()}.fifo",
             Attributes={
