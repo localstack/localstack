@@ -26,7 +26,6 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
-from localstack.utils.aws import aws_stack
 
 if TYPE_CHECKING:
     from localstack.services.cloudformation.engine.types import (
@@ -117,7 +116,7 @@ def convert_payload(
         request_token=str(uuid.uuid4()),  # TODO: not actually a UUID
         stack_name=stack_name,
         stack_id=stack_id,
-        account_id="000000000000",
+        account_id=payload["awsAccountId"],
         region_name=payload["region"],
         desired_state=desired_state,
         logical_resource_id=payload["requestData"]["logicalResourceId"],
@@ -195,6 +194,8 @@ def get_resource_type(resource: dict) -> str:
 
 
 def invoke_function(
+    account_id: str,
+    region_name: str,
     function: Callable,
     params: dict,
     resource_type: str,
@@ -204,9 +205,10 @@ def invoke_function(
 ) -> Any:
     try:
         LOG.debug(
-            'Request for resource type "%s" in region %s: %s %s',
+            'Request for resource type "%s" in account %s region %s: %s %s',
             resource_type,
-            aws_stack.get_region(),
+            account_id,
+            region_name,
             func_details["function"],
             params,
         )
@@ -255,10 +257,24 @@ def get_service_name(resource):
         return "resource-groups"
     if parts[-2] == "CertificateManager":
         return "acm"
+    if "Cognito::IdentityPool" in res_type:
+        return "cognito-identity"
+    if "ElasticLoadBalancing::" in res_type:
+        return "elb"
+    if "ElasticLoadBalancingV2::" in res_type:
+        return "elbv2"
+    if "ApplicationAutoScaling::" in res_type:
+        return "application-autoscaling"
+    if "MSK::" in res_type:
+        return "kafka"
+    if "Timestream::" in res_type:
+        return "timestream-write"
     return parts[1].lower()
 
 
 def resolve_resource_parameters(
+    account_id_: str,
+    region_name_: str,
     stack_name: str,
     resource_definition: ResourceDefinition,
     resources: dict[str, ResourceDefinition],
@@ -266,7 +282,7 @@ def resolve_resource_parameters(
     func_details: FuncDetailsValue,
 ) -> dict | None:
     params = func_details.get("parameters") or (
-        lambda properties, logical_resource_id, *args, **kwargs: properties
+        lambda account_id, region_name, properties, logical_resource_id, *args, **kwargs: properties
     )
     resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
     resource_props = dict(resource_props)
@@ -274,7 +290,9 @@ def resolve_resource_parameters(
 
     if callable(params):
         # resolve parameter map via custom function
-        params = params(resource_props, resource_id, resource_definition, stack_name)
+        params = params(
+            account_id_, region_name_, resource_props, resource_id, resource_definition, stack_name
+        )
     else:
         # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
         if isinstance(params, list):
@@ -295,6 +313,8 @@ def resolve_resource_parameters(
             for prop_key in prop_keys:
                 if callable(prop_key):
                     prop_value = prop_key(
+                        account_id_,
+                        region_name_,
                         resource_props,
                         resource_id,
                         resource_definition,
@@ -360,6 +380,7 @@ class LegacyResourceProvider(ResourceProvider):
                 "PhysicalResourceId": physical_resource_id,
                 "LogicalResourceId": request.logical_resource_id,
             },
+            account_id=request.account_id,
             region_name=request.region_name,
         )
         if not resource_provider.is_updatable():
@@ -403,6 +424,8 @@ class LegacyResourceProvider(ResourceProvider):
 
     def create_or_delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
         resource_provider = self.resource_provider_cls(
+            account_id=request.account_id,
+            region_name=request.region_name,
             # TODO: other top level keys
             resource_json={
                 "Type": self.resource_type,
@@ -413,7 +436,6 @@ class LegacyResourceProvider(ResourceProvider):
                 "_state_": request.previous_state,
                 "LogicalResourceId": request.logical_resource_id,
             },
-            region_name=request.region_name,
         )
         # TODO: only really necessary for the create and update operation
         resource_provider.add_defaults(
@@ -453,20 +475,32 @@ class LegacyResourceProvider(ResourceProvider):
             executed = False
             # TODO(srw) 3 - callable function
             if callable(func.get("function")):
-                result = func["function"](request.logical_resource_id, resource, request.stack_name)
+                result = func["function"](
+                    request.account_id,
+                    request.region_name,
+                    request.logical_resource_id,
+                    resource,
+                    request.stack_name,
+                )
 
                 results.append(result)
                 executed = True
             elif not executed:
                 service = get_service_name(resource)
                 try:
-                    client = connect_to.get_client(service)
+                    client = connect_to.get_client(
+                        aws_access_key_id=request.account_id,
+                        region_name=request.region_name,
+                        service_name=service,
+                    )
                     if client:
                         # get the method on that function
                         function = getattr(client, func["function"])
 
                         # unify the resource parameters
                         params = resolve_resource_parameters(
+                            request.account_id,
+                            request.region_name,
                             request.stack_name,
                             resource,
                             self.all_resources,
@@ -477,6 +511,8 @@ class LegacyResourceProvider(ResourceProvider):
                             result = None
                         else:
                             result = invoke_function(
+                                request.account_id,
+                                request.region_name,
                                 function,
                                 params,
                                 self.resource_type,
@@ -497,6 +533,8 @@ class LegacyResourceProvider(ResourceProvider):
                 )
                 result_handler = func["result_handler"]
                 result_handler(
+                    request.account_id,
+                    request.region_name,
                     result,
                     request.logical_resource_id,
                     self.all_resources[request.logical_resource_id],

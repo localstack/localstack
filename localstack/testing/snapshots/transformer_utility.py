@@ -1,6 +1,8 @@
+import json
 import logging
 import re
 from datetime import datetime
+from json import JSONDecodeError
 from typing import Optional, Pattern
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
@@ -582,6 +584,7 @@ class TransformerUtility:
                 "X-Amzn-Trace-Id",
                 replace_reference=False,
             ),
+            KeyValueBasedTransformer(_transform_stepfunctions_cause_details, "json-input"),
         ]
 
     # TODO add example
@@ -650,6 +653,22 @@ def _resource_name_transformer(key: str, val: str) -> str:
                 return res.split(":")[-1]  # TODO might not work for every replacement
             return res
         return None
+
+
+def _transform_stepfunctions_cause_details(key: str, val: str) -> str:
+    if key == "cause" and isinstance(val, str):
+        # the cause might contain the entire input, including http metadata (date, request-ids etc).
+        # the input is a json: if we can match the regex and parse it as a json, we remove this part from the response
+        regex = r".*'({.*})'"
+        match = re.match(regex, val)
+        if match:
+            json_input = match.groups()[0]
+            try:
+                json.loads(json_input)
+                return json_input
+            except JSONDecodeError:
+                return None
+    return None
 
 
 def _change_set_id_transformer(key: str, val: str) -> str:

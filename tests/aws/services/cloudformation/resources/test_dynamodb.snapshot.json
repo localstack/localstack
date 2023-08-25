@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_default_name_for_table": {
-    "recorded-date": "21-10-2022, 11:11:09",
+    "recorded-date": "23-08-2023, 17:50:06",
     "recorded-content": {
       "table_description": {
         "Table": {
@@ -11,6 +11,7 @@
             }
           ],
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -37,7 +38,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PROVISIONED]": {
-    "recorded-date": "18-04-2023, 10:44:47",
+    "recorded-date": "23-08-2023, 17:59:11",
     "recorded-content": {
       "table_description": {
         "Table": {
@@ -56,8 +57,8 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/2023-04-18T15:44:18.287",
-          "LatestStreamLabel": "2023-04-18T15:44:18.287",
+          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
             "ReadCapacityUnits": 5,
@@ -81,7 +82,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PAY_PER_REQUEST]": {
-    "recorded-date": "18-04-2023, 10:45:28",
+    "recorded-date": "23-08-2023, 17:59:35",
     "recorded-content": {
       "table_description": {
         "Table": {
@@ -104,8 +105,8 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/2023-04-18T15:45:01.056",
-          "LatestStreamLabel": "2023-04-18T15:45:01.056",
+          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/stream/<latest-stream-label:1>",
+          "LatestStreamLabel": "<latest-stream-label:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
             "ReadCapacityUnits": 0,

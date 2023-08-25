@@ -28,25 +28,31 @@ class TestOpenSearch:
 
     @markers.aws.only_localstack
     def test_default_strategy(
-        self, opensearch_wait_for_cluster, assert_host_customisation, aws_client
+        self, opensearch_create_domain, assert_host_customisation, aws_client
     ):
         domain_name = f"domain-{short_uid()}"
-        res = aws_client.opensearch.create_domain(DomainName=domain_name)
-        opensearch_wait_for_cluster(domain_name)
-        endpoint = res["DomainStatus"]["Endpoint"]
+        opensearch_create_domain(DomainName=domain_name)
+        endpoint = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"][
+            "Endpoint"
+        ]
 
         assert_host_customisation(endpoint, use_localstack_cloud=True)
 
     @markers.aws.only_localstack
     def test_port_strategy(
-        self, monkeypatch, opensearch_wait_for_cluster, assert_host_customisation, aws_client
+        self,
+        monkeypatch,
+        opensearch_create_domain,
+        assert_host_customisation,
+        aws_client,
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
 
         domain_name = f"domain-{short_uid()}"
-        res = aws_client.opensearch.create_domain(DomainName=domain_name)
-        opensearch_wait_for_cluster(domain_name)
-        endpoint = res["DomainStatus"]["Endpoint"]
+        opensearch_create_domain(DomainName=domain_name)
+        endpoint = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"][
+            "Endpoint"
+        ]
 
         if config.is_in_docker:
             assert_host_customisation(endpoint, use_localhost=True)
@@ -55,14 +61,19 @@ class TestOpenSearch:
 
     @markers.aws.only_localstack
     def test_path_strategy(
-        self, monkeypatch, opensearch_wait_for_cluster, assert_host_customisation, aws_client
+        self,
+        monkeypatch,
+        opensearch_create_domain,
+        assert_host_customisation,
+        aws_client,
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
 
         domain_name = f"domain-{short_uid()}"
-        res = aws_client.opensearch.create_domain(DomainName=domain_name)
-        opensearch_wait_for_cluster(domain_name)
-        endpoint = res["DomainStatus"]["Endpoint"]
+        opensearch_create_domain(DomainName=domain_name)
+        endpoint = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"][
+            "Endpoint"
+        ]
 
         assert_host_customisation(endpoint, use_localstack_hostname=True)
 

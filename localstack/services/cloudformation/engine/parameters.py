@@ -51,6 +51,8 @@ class StackParameter(Parameter):
 
 
 def resolve_parameters(
+    account_id: str,
+    region_name: str,
     parameter_declarations: dict[str, ParameterDeclaration],
     new_parameters: dict[str, Parameter],
     old_parameters: dict[str, Parameter],
@@ -116,7 +118,7 @@ def resolve_parameters(
             ]:
                 # TODO: error handling (e.g. no permission to lookup SSM parameter or SSM parameter doesn't exist)
                 resolved_param["ResolvedValue"] = resolve_ssm_parameter(
-                    resolved_param["ParameterValue"]
+                    account_id, region_name, resolved_param["ParameterValue"]
                 )
             else:
                 raise Exception(f"Unsupported stack parameter type: {pm['ParameterType']}")
@@ -125,11 +127,13 @@ def resolve_parameters(
 
 
 # TODO: inject credentials / client factory for proper account/region lookup
-def resolve_ssm_parameter(stack_parameter_value: str) -> str:
+def resolve_ssm_parameter(account_id: str, region_name: str, stack_parameter_value: str) -> str:
     """
     Resolve the SSM stack parameter from the SSM service with a name equal to the stack parameter value.
     """
-    return connect_to().ssm.get_parameter(Name=stack_parameter_value)["Parameter"]["Value"]
+    return connect_to(aws_access_key_id=account_id, region_name=region_name).ssm.get_parameter(
+        Name=stack_parameter_value
+    )["Parameter"]["Value"]
 
 
 def strip_parameter_type(in_param: StackParameter) -> Parameter:

@@ -8,7 +8,12 @@ from localstack.utils import common
 
 
 def get_ddb_provisioned_throughput(
-    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+    account_id: str,
+    region_name: str,
+    properties: dict,
+    logical_resource_id: str,
+    resource: dict,
+    stack_name: str,
 ) -> dict | None:
     # see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html#cfn-dynamodb-table-provisionedthroughput
     args = properties.get("ProvisionedThroughput")
@@ -38,7 +43,12 @@ def get_ddb_provisioned_throughput(
 
 
 def get_ddb_global_sec_indexes(
-    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+    account_id: str,
+    region_name: str,
+    properties: dict,
+    logical_resource_id: str,
+    resource: dict,
+    stack_name: str,
 ) -> list | None:
     args: list = properties.get("GlobalSecondaryIndexes")
     is_ondemand = properties.get("BillingMode") == "PAY_PER_REQUEST"
@@ -63,7 +73,12 @@ def get_ddb_global_sec_indexes(
 
 
 def get_ddb_kinesis_stream_specification(
-    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+    account_id: str,
+    region_name: str,
+    properties: dict,
+    logical_resource_id: str,
+    resource: dict,
+    stack_name: str,
 ) -> dict:
     args = properties.get("KinesisStreamSpecification")
     if args:
@@ -78,7 +93,9 @@ class DynamoDBTable(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get("TableName") or self.logical_resource_id
-        return connect_to().dynamodb.describe_table(TableName=table_name)
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).dynamodb.describe_table(TableName=table_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -89,10 +106,20 @@ class DynamoDBTable(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             table_name = result["TableDescription"]["TableName"]
-            connect_to().dynamodb.get_waiter("table_exists").wait(TableName=table_name)
-            desc_table = connect_to().dynamodb.describe_table(TableName=table_name)
+            connect_to(aws_access_key_id=account_id, region_name=region_name).dynamodb.get_waiter(
+                "table_exists"
+            ).wait(TableName=table_name)
+            desc_table = connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).dynamodb.describe_table(TableName=table_name)
             resource["Properties"]["Arn"] = desc_table["Table"]["TableArn"]
             if stream_arn := desc_table["Table"].get("LatestStreamArn"):
                 resource["Properties"]["StreamArn"] = stream_arn
@@ -110,7 +137,7 @@ class DynamoDBTable(GenericBaseModel):
                         "ProvisionedThroughput": get_ddb_provisioned_throughput,
                         "LocalSecondaryIndexes": "LocalSecondaryIndexes",
                         "GlobalSecondaryIndexes": get_ddb_global_sec_indexes,
-                        "StreamSpecification": lambda properties, logical_resource_id, *args, **kwargs: (
+                        "StreamSpecification": lambda account_id, region_name, properties, logical_resource_id, *args, **kwargs: (
                             common.merge_dicts(
                                 properties.get("StreamSpecification"),
                                 {"StreamEnabled": True},

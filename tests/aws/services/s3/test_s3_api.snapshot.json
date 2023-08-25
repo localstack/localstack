@@ -1424,7 +1424,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms": {
-    "recorded-date": "02-08-2023, 02:06:21",
+    "recorded-date": "15-08-2023, 00:14:18",
     "recorded-content": {
       "put-bucket-enc": {
         "ResponseMetadata": {
@@ -1483,6 +1483,21 @@
         "ETag": "\"31f9fc96ed971f30ac05dd6eb7b6c2cc\"",
         "LastModified": "datetime",
         "Metadata": {},
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-bucket-enc-bucket-key-disabled": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-encrypted-bucket-key-disabled": {
+        "ETag": "\"ff3e3e3afc59e48b1d4ae52980c00bb8\"",
         "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {

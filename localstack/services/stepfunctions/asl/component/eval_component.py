@@ -17,7 +17,7 @@ class EvalComponent(Component, abc.ABC):
             try:
                 self._eval_body(env)
             except Exception as ex:
-                LOG.error(f"Exception '{ex}' at '{self._eval_log()}'")
+                LOG.error(f"Exception '{type(ex)}':'{str(ex)}' at '{self._eval_log()}'")
                 raise ex
         else:
             LOG.debug(self._eval_log("prun"))

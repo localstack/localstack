@@ -18,7 +18,9 @@ class SecretsManagerSecret(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         secret_name = self.props.get("Name") or self.logical_resource_id
-        result = connect_to().secretsmanager.describe_secret(SecretId=secret_name)
+        result = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).secretsmanager.describe_secret(SecretId=secret_name)
         return result
 
     @staticmethod
@@ -71,7 +73,12 @@ class SecretsManagerSecret(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _create_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             attributes = ["Name", "Description", "KmsKeyId", "SecretString", "Tags"]
             result = select_attributes(properties, attributes)
@@ -104,7 +111,13 @@ class SecretsManagerSecret(GenericBaseModel):
                 result["SecretString"] = secret_value
             return result
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["Properties"]["Id"] = result["ARN"]
             resource["PhysicalResourceId"] = result["ARN"]
 
@@ -145,13 +158,20 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         secret_id = self.props.get("SecretId")
-        result = connect_to().secretsmanager.get_resource_policy(SecretId=secret_id)
+        result = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).secretsmanager.get_resource_policy(SecretId=secret_id)
         return result
 
     @staticmethod
     def get_deploy_templates():
         def create_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             return {
                 "SecretId": properties["SecretId"],
@@ -159,7 +179,13 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
                 "BlockPublicPolicy": properties.get("BlockPublicPolicy"),
             }
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["ARN"]
 
         return {

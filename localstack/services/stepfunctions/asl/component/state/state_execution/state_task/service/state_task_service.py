@@ -144,6 +144,12 @@ class StateTaskService(StateTask, abc.ABC):
                 )
 
                 return StateTaskServiceDynamoDB()
+            case "apigateway":
+                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_api_gateway import (
+                    StateTaskServiceApiGateway,
+                )
+
+                return StateTaskServiceApiGateway()
 
             case unknown:
                 raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa

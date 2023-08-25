@@ -183,23 +183,31 @@ def setup_and_tear_down(aws_client):
         func_name=TEST_LAMBDA_NAME_1,
         zip_file=zip_file,
         envvars={"Hello": TEST_RESULT_VALUE},
+        client=aws_client.lambda_,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_2,
         zip_file=zip_file,
         envvars={"Hello": TEST_RESULT_VALUE_2},
+        client=aws_client.lambda_,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_3,
         zip_file=zip_file,
         envvars={"Hello": "Replace Value"},
+        client=aws_client.lambda_,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_4,
         zip_file=zip_file,
         envvars={"Hello": TEST_RESULT_VALUE_4},
+        client=aws_client.lambda_,
     )
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_5, zip_file=zip_file2)
+    testutil.create_lambda_function(
+        func_name=TEST_LAMBDA_NAME_5,
+        zip_file=zip_file2,
+        client=aws_client.lambda_,
+    )
 
     active_waiter = lambda_client.get_waiter("function_active_v2")
     active_waiter.wait(FunctionName=TEST_LAMBDA_NAME_1)

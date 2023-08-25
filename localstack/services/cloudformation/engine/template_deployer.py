@@ -7,7 +7,6 @@ import uuid
 from typing import Literal, Optional, Type, TypedDict
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -32,7 +31,6 @@ from localstack.services.cloudformation.service_models import (
     GenericBaseModel,
 )
 from localstack.services.cloudformation.stores import exports_map
-from localstack.utils.aws import aws_stack
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe
 from localstack.utils.objects import get_all_subclasses
@@ -118,6 +116,8 @@ def get_attr_from_model_instance(
 
 
 def resolve_ref(
+    account_id: str,
+    region_name: str,
     stack_name: str,
     resources: dict,
     parameters: dict[str, StackParameter],
@@ -132,7 +132,7 @@ def resolve_ref(
     """
     # pseudo parameter
     if ref == "AWS::Region":
-        return aws_stack.get_region()
+        return region_name
     if ref == "AWS::Partition":
         return "aws"
     if ref == "AWS::StackName":
@@ -141,7 +141,7 @@ def resolve_ref(
         # TODO return proper stack id!
         return stack_name
     if ref == "AWS::AccountId":
-        return get_aws_account_id()
+        return account_id
     if ref == "AWS::NoValue":
         return PLACEHOLDER_AWS_NO_VALUE
     if ref == "AWS::NotificationARNs":
@@ -173,6 +173,8 @@ def resolve_ref(
 # TODO: Potentially think about a better approach in the future
 @prevent_stack_overflow(match_parameters=True)
 def resolve_refs_recursively(
+    account_id: str,
+    region_name: str,
     stack_name: str,
     resources: dict,
     mappings: dict,
@@ -181,7 +183,7 @@ def resolve_refs_recursively(
     value,
 ):
     result = _resolve_refs_recursively(
-        stack_name, resources, mappings, conditions, parameters, value
+        account_id, region_name, stack_name, resources, mappings, conditions, parameters, value
     )
 
     # localstack specific patches
@@ -206,10 +208,10 @@ def resolve_refs_recursively(
 
             # only these 3 services are supported for dynamic references right now
             if service_name == "ssm":
-                ssm_client = connect_to().ssm
+                ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
                 return ssm_client.get_parameter(Name=reference_key)["Parameter"]["Value"]
             elif service_name == "ssm-secure":
-                ssm_client = connect_to().ssm
+                ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
                 return ssm_client.get_parameter(Name=reference_key, WithDecryption=True)[
                     "Parameter"
                 ]["Value"]
@@ -235,7 +237,9 @@ def resolve_refs_recursively(
                 if version_stage:
                     kwargs["VersionStage"] = version_stage
 
-                secretsmanager_client = connect_to().secretsmanager
+                secretsmanager_client = connect_to(
+                    aws_access_key_id=account_id, region_name=region_name
+                ).secretsmanager
                 secret_value = secretsmanager_client.get_secret_value(SecretId=secret_id, **kwargs)[
                     "SecretString"
                 ]
@@ -257,6 +261,8 @@ def resolve_refs_recursively(
 
 @prevent_stack_overflow(match_parameters=True)
 def _resolve_refs_recursively(
+    account_id: str,
+    region_name: str,
     stack_name: str,
     resources: dict,
     mappings: dict,
@@ -270,13 +276,22 @@ def _resolve_refs_recursively(
 
         # process special operators
         if keys_list == ["Ref"]:
-            ref = resolve_ref(stack_name, resources, parameters, value["Ref"])
+            ref = resolve_ref(
+                account_id, region_name, stack_name, resources, parameters, value["Ref"]
+            )
             if ref is None:
                 msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
             ref = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, ref
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                ref,
             )
             return ref
 
@@ -288,7 +303,14 @@ def _resolve_refs_recursively(
 
             # the attribute name can be a Ref
             attribute_name = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, attribute_name
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                attribute_name,
             )
             resource = resources.get(resource_logical_id)
 
@@ -306,11 +328,27 @@ def _resolve_refs_recursively(
             # this can actually be another ref that produces a list as output
             if isinstance(join_values, dict):
                 join_values = resolve_refs_recursively(
-                    stack_name, resources, mappings, conditions, parameters, join_values
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    parameters,
+                    join_values,
                 )
 
             join_values = [
-                resolve_refs_recursively(stack_name, resources, mappings, conditions, parameters, v)
+                resolve_refs_recursively(
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    parameters,
+                    v,
+                )
                 for v in join_values
             ]
 
@@ -332,7 +370,14 @@ def _resolve_refs_recursively(
 
             for key, val in item_to_sub[1].items():
                 val = resolve_refs_recursively(
-                    stack_name, resources, mappings, conditions, parameters, val
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    parameters,
+                    val,
                 )
                 if not isinstance(val, str):
                     # We don't have access to the resource that's a dependency in this case,
@@ -342,7 +387,14 @@ def _resolve_refs_recursively(
 
             # resolve placeholders
             result = resolve_placeholders_in_string(
-                result, stack_name, resources, mappings, conditions, parameters
+                account_id,
+                region_name,
+                result,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
             )
             return result
 
@@ -352,7 +404,9 @@ def _resolve_refs_recursively(
 
             if isinstance(mapping_id, dict) and "Ref" in mapping_id:
                 # TODO: ??
-                mapping_id = resolve_ref(stack_name, resources, parameters, mapping_id["Ref"])
+                mapping_id = resolve_ref(
+                    account_id, region_name, stack_name, resources, parameters, mapping_id["Ref"]
+                )
 
             selected_map = mappings.get(mapping_id)
             if not selected_map:
@@ -362,22 +416,43 @@ def _resolve_refs_recursively(
 
             first_level_attribute = value[keys_list[0]][1]
             first_level_attribute = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, first_level_attribute
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                first_level_attribute,
             )
 
             second_level_attribute = value[keys_list[0]][2]
             if not isinstance(second_level_attribute, str):
                 second_level_attribute = resolve_refs_recursively(
-                    stack_name, resources, mappings, conditions, parameters, second_level_attribute
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    parameters,
+                    second_level_attribute,
                 )
 
             return selected_map.get(first_level_attribute).get(second_level_attribute)
 
         if stripped_fn_lower == "importvalue":
             import_value_key = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, value[keys_list[0]]
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                value[keys_list[0]],
             )
-            exports = exports_map()
+            exports = exports_map(account_id, region_name)
             stack_export = exports.get(import_value_key) or {}
             if not stack_export.get("Value"):
                 LOG.info(
@@ -393,6 +468,8 @@ def _resolve_refs_recursively(
             condition, option1, option2 = value[keys_list[0]]
             condition = conditions[condition]
             result = resolve_refs_recursively(
+                account_id,
+                region_name,
                 stack_name,
                 resources,
                 mappings,
@@ -410,7 +487,14 @@ def _resolve_refs_recursively(
         if stripped_fn_lower == "not":
             condition = value[keys_list[0]][0]
             condition = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, condition
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                condition,
             )
             return not condition
 
@@ -418,7 +502,14 @@ def _resolve_refs_recursively(
             conditions = value[keys_list[0]]
             results = [
                 resolve_refs_recursively(
-                    stack_name, resources, mappings, conditions, parameters, cond
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    parameters,
+                    cond,
                 )
                 for cond in conditions
             ]
@@ -428,10 +519,24 @@ def _resolve_refs_recursively(
         if stripped_fn_lower == "equals":
             operand1, operand2 = value[keys_list[0]]
             operand1 = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, operand1
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                operand1,
             )
             operand2 = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, operand2
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                operand2,
             )
             # TODO: investigate type coercion here
             return fn_equals_type_conversion(operand1) == fn_equals_type_conversion(operand2)
@@ -439,10 +544,24 @@ def _resolve_refs_recursively(
         if stripped_fn_lower == "select":
             index, values = value[keys_list[0]]
             index = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, index
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                index,
             )
             values = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, values
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                values,
             )
             try:
                 return values[index]
@@ -452,19 +571,40 @@ def _resolve_refs_recursively(
         if stripped_fn_lower == "split":
             delimiter, string = value[keys_list[0]]
             delimiter = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, delimiter
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                delimiter,
             )
             string = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, string
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                string,
             )
             return string.split(delimiter)
 
         if stripped_fn_lower == "getazs":
             region = (
                 resolve_refs_recursively(
-                    stack_name, resources, mappings, conditions, parameters, value["Fn::GetAZs"]
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    parameters,
+                    value["Fn::GetAZs"],
                 )
-                or aws_stack.get_region()
+                or region_name
             )
             azs = []
             for az in ("a", "b", "c", "d"):
@@ -475,13 +615,27 @@ def _resolve_refs_recursively(
         if stripped_fn_lower == "base64":
             value_to_encode = value[keys_list[0]]
             value_to_encode = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, value_to_encode
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                value_to_encode,
             )
             return to_str(base64.b64encode(to_bytes(value_to_encode)))
 
         for key, val in dict(value).items():
             value[key] = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, val
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                val,
             )
 
     if isinstance(value, list):
@@ -490,6 +644,8 @@ def _resolve_refs_recursively(
             inner_list = value[0]
             if str(inner_list[0]).lower().startswith("fn::"):
                 return resolve_refs_recursively(
+                    account_id,
+                    region_name,
                     stack_name,
                     resources,
                     mappings,
@@ -500,13 +656,22 @@ def _resolve_refs_recursively(
 
         for i in range(len(value)):
             value[i] = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, value[i]
+                account_id,
+                region_name,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                value[i],
             )
 
     return value
 
 
 def resolve_placeholders_in_string(
+    account_id: str,
+    region_name: str,
     result,
     stack_name: str,
     resources: dict,
@@ -541,9 +706,11 @@ def resolve_placeholders_in_string(
                 resolved = str(resolved)
             return resolved
         if len(parts) == 1:
-            if parts[0] in resources:
+            if parts[0] in resources or parts[0].startswith("AWS::"):
                 # Logical resource ID or parameter name specified => Use Ref for lookup
-                result = resolve_ref(stack_name, resources, parameters, parts[0])
+                result = resolve_ref(
+                    account_id, region_name, stack_name, resources, parameters, parts[0]
+                )
 
                 if result is None:
                     raise DependencyNotYetSatisfied(
@@ -553,7 +720,14 @@ def resolve_placeholders_in_string(
                 # TODO: is this valid?
                 # make sure we resolve any functions/placeholders in the extracted string
                 result = resolve_refs_recursively(
-                    stack_name, resources, mappings, conditions, parameters, result
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    parameters,
+                    result,
                 )
                 # make sure we convert the result to string
                 # TODO: do this more systematically
@@ -611,8 +785,10 @@ class ChangeConfig(TypedDict):
 
 
 class TemplateDeployer:
-    def __init__(self, stack):
+    def __init__(self, account_id: str, region_name: str, stack):
         self.stack = stack
+        self.account_id = account_id
+        self.region_name = region_name
 
         try:
             self.provider_config = json.loads(config.CFN_RESOURCE_PROVIDER_OVERRIDES)
@@ -1086,7 +1262,7 @@ class TemplateDeployer:
             stack.template["Resources"].pop(delete["ResourceChange"]["LogicalResourceId"], None)
 
         # resolve outputs
-        stack.resolved_outputs = resolve_outputs(stack)
+        stack.resolved_outputs = resolve_outputs(self.account_id, self.region_name, stack)
 
         return changes_done
 
@@ -1108,6 +1284,8 @@ class TemplateDeployer:
 
         # resolve refs in resource details
         resolve_refs_recursively(
+            self.account_id,
+            self.region_name,
             stack.stack_name,
             stack.resources,
             stack.mappings,
@@ -1183,15 +1361,14 @@ class TemplateDeployer:
         resource = self.resources[logical_resource_id]
 
         resource_provider_payload: ResourceProviderPayload = {
-            "awsAccountId": "000000000000",
+            "awsAccountId": self.account_id,
             "callbackContext": {},
             "stackId": self.stack.stack_name,
             "resourceType": resource["Type"],
             "resourceTypeVersion": "000000",
             # TODO: not actually a UUID
             "bearerToken": str(uuid.uuid4()),
-            # TODO: get the current region
-            "region": "us-east-1",
+            "region": self.region_name,
             "action": action,
             "requestData": {
                 "logicalResourceId": logical_resource_id,
@@ -1209,12 +1386,14 @@ class TemplateDeployer:
 
 
 # FIXME: resolve_refs_recursively should not be needed, the resources themselves should have those values available already
-def resolve_outputs(stack) -> list[dict]:
+def resolve_outputs(account_id: str, region_name: str, stack) -> list[dict]:
     result = []
     for k, details in stack.outputs.items():
         value = None
         try:
             resolve_refs_recursively(
+                account_id,
+                region_name,
                 stack.stack_name,
                 stack.resources,
                 stack.mappings,
@@ -1232,6 +1411,8 @@ def resolve_outputs(stack) -> list[dict]:
         exports = details.get("Export") or {}
         export = exports.get("Name")
         export = resolve_refs_recursively(
+            account_id,
+            region_name,
             stack.stack_name,
             stack.resources,
             stack.mappings,

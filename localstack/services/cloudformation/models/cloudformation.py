@@ -33,7 +33,12 @@ class CloudFormationStack(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def get_nested_stack_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ):
             nested_stack_name = properties["StackName"]
             stack_parameters = properties.get("Parameters", {})
@@ -57,15 +62,21 @@ class CloudFormationStack(GenericBaseModel):
             }
             return result
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            connect_to().cloudformation.get_waiter("stack_create_complete").wait(
-                StackName=result["StackId"]
-            )
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).cloudformation.get_waiter("stack_create_complete").wait(StackName=result["StackId"])
             resource["PhysicalResourceId"] = result["StackId"]
             # set outputs
-            stack_details = connect_to().cloudformation.describe_stacks(
-                StackName=result["StackId"]
-            )["Stacks"][0]
+            stack_details = connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).cloudformation.describe_stacks(StackName=result["StackId"])["Stacks"][0]
             if outputs := stack_details.get("Outputs"):
                 resource["Properties"]["Outputs"] = {
                     o["OutputKey"]: o["OutputValue"] for o in outputs
@@ -86,21 +97,41 @@ class CloudFormationMacro(GenericBaseModel):
         return "AWS::CloudFormation::Macro"
 
     def fetch_state(self, stack_name, resources):
-        return get_cloudformation_store().macros.get(self.props.get("Name"))
+        return get_cloudformation_store(self.account_id, self.region_name).macros.get(
+            self.props.get("Name")
+        )
 
     @classmethod
     def get_deploy_templates(cls):
-        def _store_macro(logical_resource_id: str, resource: dict, stack_name: str):
+        def _store_macro(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
             properties = resource["Properties"]
             name = properties["Name"]
-            get_cloudformation_store().macros[name] = properties
+            get_cloudformation_store(account_id, region_name).macros[name] = properties
 
-        def _delete_macro(logical_resource_id: str, resource: dict, stack_name: str):
+        def _delete_macro(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
             properties = resource["Properties"]
             name = properties["Name"]
-            get_cloudformation_store().macros.pop(name)
+            get_cloudformation_store(account_id, region_name).macros.pop(name)
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {
@@ -114,16 +145,16 @@ class CloudFormationMacro(GenericBaseModel):
         }
 
 
-def generate_waitcondition_url(stack_name: str) -> str:
-    client = connect_to().s3
+def generate_waitcondition_url(account_id: str, region_name: str, stack_name: str) -> str:
+    client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
     region = client.meta.region_name
 
     bucket = f"cloudformation-waitcondition-{region}"
     key = arns.cloudformation_stack_arn(stack_name=stack_name)
 
-    return connect_to().s3.generate_presigned_url(
-        "put_object", Params={"Bucket": bucket, "Key": key}
-    )
+    return connect_to(
+        aws_access_key_id=account_id, region_name=region_name
+    ).s3.generate_presigned_url("put_object", Params={"Bucket": bucket, "Key": key})
 
 
 class CloudFormationWaitConditionHandle(GenericBaseModel):
@@ -137,12 +168,26 @@ class CloudFormationWaitConditionHandle(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
+        def _create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict:
             # no resources to create as such, but the physical resource id needs the stack name
             return {"stack_name": stack_name}
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             waitcondition_url = generate_waitcondition_url(
+                account_id,
+                region_name,
                 stack_name=result["stack_name"],
             )
             resource["PhysicalResourceId"] = waitcondition_url
@@ -169,11 +214,23 @@ class CloudFormationWaitCondition(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
+        def _create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict:
             # no resources to create, but the physical resource id requires the stack name
             return {"stack_name": stack_name}
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             stack_arn = arns.cloudformation_stack_arn(result["stack_name"])
             resource["PhysicalResourceId"] = f"{stack_arn}/{uuid.uuid4()}/{logical_resource_id}"
 

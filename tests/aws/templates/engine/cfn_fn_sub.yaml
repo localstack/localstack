@@ -63,3 +63,6 @@ Outputs:
     Value: !Sub
       - "${ParamValue}"
       - ParamValue: !GetAtt MyResource.Value
+  UrlSuffixPseudoParam:
+    Value:
+      "Fn::Sub": "${AWS::URLSuffix}"
