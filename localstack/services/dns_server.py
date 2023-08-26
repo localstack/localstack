@@ -261,9 +261,6 @@ SKIP_PATTERNS = {
 }
 
 NAME_PATTERNS_POINTING_TO_LOCALSTACK = [
-    ".*.amazonaws.com",
-    ".*aws.amazon.com",
-    ".*cloudfront.net",
     f".*{LOCALHOST_HOSTNAME}",
 ]
 

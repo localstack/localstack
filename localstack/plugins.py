@@ -34,3 +34,24 @@ def deprecation_warnings() -> None:
     from localstack.deprecations import log_deprecation_warnings
 
     log_deprecation_warnings()
+
+
+@hooks.on_infra_start(priority=10)
+def start_dns_server():
+    try:
+        from localstack.services import dns_server
+
+        dns_server.start_dns_server(port=config.DNS_PORT, asynchronous=True)
+    except Exception as e:
+        LOG.warning("Unable to start DNS: %s", e)
+
+
+@hooks.on_infra_start(priority=10)
+def setup_dns_configuration_on_host():
+    try:
+        from localstack.services import dns_server
+
+        # Prepare network interfaces for DNS server for the infra.
+        dns_server.setup_network_configuration()
+    except Exception as e:
+        LOG.warning("error setting up dns server: %s", e)
