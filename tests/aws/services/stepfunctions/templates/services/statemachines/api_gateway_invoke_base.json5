@@ -1,0 +1,17 @@
+{
+  "Comment": "API_GATEWAY_INVOKE_BASE",
+  "StartAt": "ApiGatewayInvoke",
+  "States": {
+    "ApiGatewayInvoke": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::apigateway:invoke",
+      "Parameters": {
+        "ApiEndpoint.$": "$.ApiEndpoint",
+        "Method.$": "$.Method",
+        "Path.$": "$.Path",
+        "Stage.$": "$.Stage"
+      },
+      "End": true
+    }
+  }
+}

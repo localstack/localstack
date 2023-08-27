@@ -31,6 +31,7 @@ from localstack.services.sqs.utils import (
     decode_receipt_handle,
     encode_receipt_handle,
     global_message_sequence,
+    is_message_deduplication_id_required,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.time import now
@@ -816,10 +817,7 @@ class FifoQueue(SqsQueue):
         if not message_group_id:
             raise MissingParameter("The request must contain the parameter MessageGroupId.")
         dedup_id = message_deduplication_id
-        content_based_deduplication = (
-            "true"
-            == (self.attributes.get(QueueAttributeName.ContentBasedDeduplication, "false")).lower()
-        )
+        content_based_deduplication = not is_message_deduplication_id_required(self)
         if not dedup_id and content_based_deduplication:
             dedup_id = hashlib.sha256(message.get("Body").encode("utf-8")).hexdigest()
         if not dedup_id:

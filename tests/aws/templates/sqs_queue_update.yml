@@ -1,0 +1,16 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  QueueName:
+    Type: String
+Resources:
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName:
+        Ref: QueueName
+    DeletionPolicy: Delete
+Outputs:
+  QueueUrl:
+    Value: !Ref MyQueue
+  QueueArn:
+    Value: !GetAtt MyQueue.Arn

@@ -1823,6 +1823,64 @@ class TestSqsProvider:
         snapshot.match("test_invalid_batch_id", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_batch_missing_deduplication_id_for_fifo_queue(
+        self, sqs_create_queue, snapshot, aws_client
+    ):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "false",
+            },
+        )
+        message_batch = [
+            {
+                "Id": f"message-{short_uid()}",
+                "MessageBody": "messageBody",
+                "MessageGroupId": "test-group",
+                "MessageDeduplicationId": f"dedup-{short_uid()}",
+            },
+            {
+                "Id": f"message-{short_uid()}",
+                "MessageBody": "messageBody",
+                "MessageGroupId": "test-group",
+            },
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.send_message_batch(QueueUrl=queue_url, Entries=message_batch)
+        snapshot.match("test_missing_deduplication_id_for_fifo_queue", e.value.response)
+
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_batch_missing_message_group_id_for_fifo_queue(
+        self, sqs_create_queue, snapshot, aws_client
+    ):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "false",
+            },
+        )
+        message_batch = [
+            {
+                "Id": f"message-{short_uid()}",
+                "MessageBody": "messageBody",
+                "MessageGroupId": "test-group",
+                "MessageDeduplicationId": f"dedup-{short_uid()}",
+            },
+            {
+                "Id": f"message-{short_uid()}",
+                "MessageBody": "messageBody",
+                "MessageDeduplicationId": f"dedup-{short_uid()}",
+            },
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.send_message_batch(QueueUrl=queue_url, Entries=message_batch)
+        snapshot.match("test_missing_message_group_id_for_fifo_queue", e.value.response)
+
+    @markers.aws.validated
     def test_publish_get_delete_message_batch(self, sqs_create_queue, aws_client):
         message_count = 10
         queue_name = f"queue-{short_uid()}"

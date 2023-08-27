@@ -13,7 +13,9 @@ from localstack.aws.api.stepfunctions import (
     DeleteStateMachineOutput,
     DeleteStateMachineVersionOutput,
     DescribeExecutionOutput,
+    DescribeStateMachineForExecutionOutput,
     DescribeStateMachineOutput,
+    ExecutionDoesNotExist,
     ExecutionList,
     ExecutionStatus,
     GetExecutionHistoryOutput,
@@ -216,10 +218,20 @@ class StepFunctionsProvider(StepfunctionsApi):
     def describe_state_machine(
         self, context: RequestContext, state_machine_arn: Arn
     ) -> DescribeStateMachineOutput:
+        # TODO: add arn validation.
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
         if state_machine is None:
-            raise InvalidArn()
+            raise ExecutionDoesNotExist()
         return state_machine.describe()
+
+    def describe_state_machine_for_execution(
+        self, context: RequestContext, execution_arn: Arn
+    ) -> DescribeStateMachineForExecutionOutput:
+        # TODO: add arn validation.
+        execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
+        if not execution:
+            raise ExecutionDoesNotExist()
+        return execution.to_describe_state_machine_for_execution_output()
 
     def send_task_heartbeat(
         self, context: RequestContext, task_token: TaskToken
