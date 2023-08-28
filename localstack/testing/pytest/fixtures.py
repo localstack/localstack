@@ -959,7 +959,7 @@ def deploy_cfn_template(
         change_set_name = change_set_name or f"change-set-{short_uid()}"
 
         if max_wait is None:
-            max_wait = 1800 if is_aws_cloud() else 60
+            max_wait = 1800 if is_aws_cloud() else 180
 
         if template_path is not None:
             template = load_template_file(template_path)
@@ -1020,8 +1020,14 @@ def deploy_cfn_template(
         def _destroy_stack():
             aws_client.cloudformation.delete_stack(StackName=stack_id)
             aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
-                StackName=stack_id
+                StackName=stack_id,
+                WaiterConfig={
+                    "Delay": delay_between_polls,
+                    "MaxAttempts": max_wait / delay_between_polls,
+                },
             )
+            # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
+            time.sleep(2)
 
         return DeployResult(
             change_set_id, stack_id, stack_name, change_set_name, mapped_outputs, _destroy_stack
