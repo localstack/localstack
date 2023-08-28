@@ -1,6 +1,6 @@
 {
   "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_email": {
-    "recorded-date": "14-12-2022, 17:29:13",
+    "recorded-date": "25-08-2023, 23:53:37",
     "recorded-content": {
       "messages": [
         {
@@ -22,7 +22,7 @@
           "Message": {
             "eventType": "Send",
             "mail": {
-              "timestamp": "date",
+              "timestamp": "timestamp",
               "source": "<sender-email-address>",
               "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
@@ -42,7 +42,7 @@
                 },
                 {
                   "name": "Subject",
-                  "value": "foo subject"
+                  "value": "SOME_SUBJECT"
                 },
                 {
                   "name": "MIME-Version",
@@ -50,11 +50,7 @@
                 },
                 {
                   "name": "Content-Type",
-                  "value": "text/plain; charset=UTF-8"
-                },
-                {
-                  "name": "Content-Transfer-Encoding",
-                  "value": "7bit"
+                  "value": "multipart/alternative;  boundary=\"----=_Part_444254_355072649.1693000415859\""
                 }
               ],
               "commonHeaders": {
@@ -65,26 +61,26 @@
                   "<recipient-email-address>"
                 ],
                 "messageId": "<message-id:1>",
-                "subject": "foo subject"
+                "subject": "SOME_SUBJECT"
               },
               "tags": {
                 "ses:operation": [
                   "SendEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-88be5780"
+                  "<config-set-name>"
                 ],
                 "ses:source-ip": [
-                  "80.189.216.182"
+                  "<ses-source-ip:1>"
                 ],
                 "ses:from-domain": [
-                  "gmail.com"
+                  "<ses-from-domain:1>"
                 ],
                 "custom-tag": [
                   "tag-value"
                 ],
                 "ses:caller-identity": [
-                  "localstack-testing"
+                  "<ses-caller-identity:1>"
                 ]
               }
             },
@@ -104,7 +100,7 @@
           "Message": {
             "eventType": "Delivery",
             "mail": {
-              "timestamp": "date",
+              "timestamp": "timestamp",
               "source": "<sender-email-address>",
               "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
@@ -124,7 +120,7 @@
                 },
                 {
                   "name": "Subject",
-                  "value": "foo subject"
+                  "value": "SOME_SUBJECT"
                 },
                 {
                   "name": "MIME-Version",
@@ -132,11 +128,7 @@
                 },
                 {
                   "name": "Content-Type",
-                  "value": "text/plain; charset=UTF-8"
-                },
-                {
-                  "name": "Content-Transfer-Encoding",
-                  "value": "7bit"
+                  "value": "multipart/alternative;  boundary=\"----=_Part_444254_355072649.1693000415859\""
                 }
               ],
               "commonHeaders": {
@@ -147,40 +139,40 @@
                   "<recipient-email-address>"
                 ],
                 "messageId": "<message-id:1>",
-                "subject": "foo subject"
+                "subject": "SOME_SUBJECT"
               },
               "tags": {
                 "ses:operation": [
                   "SendEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-88be5780"
+                  "<config-set-name>"
                 ],
                 "ses:source-ip": [
-                  "80.189.216.182"
+                  "<ses-source-ip:1>"
                 ],
                 "ses:from-domain": [
-                  "gmail.com"
+                  "<ses-from-domain:1>"
                 ],
                 "custom-tag": [
                   "tag-value"
                 ],
                 "ses:caller-identity": [
-                  "localstack-testing"
+                  "<ses-caller-identity:1>"
                 ],
                 "ses:outgoing-ip": [
-                  "69.169.224.8"
+                  "<ses-outgoing-ip:1>"
                 ]
               }
             },
             "delivery": {
               "timestamp": "date",
-              "processingTimeMillis": 1167,
+              "processingTimeMillis": "processing-time",
               "recipients": [
                 "<recipient-email-address>"
               ],
-              "smtpResponse": "250 2.0.0 OK  1671038953 v10-20020adfa1ca000000b00241d1ecc8c6si1900057wrv.541 - gsmtp",
-              "reportingMTA": "b224-8.smtp-out.<region>.amazonses.com"
+              "smtpResponse": "250 2.0.0 OK DMARC:Quarantine 1693000416 l9-20020a05620a28c900b0076d9e089c17si1864617qkp.664 - gsmtp",
+              "reportingMTA": "a8-77.smtp-out.amazonses.com"
             }
           },
           "Timestamp": "date",
@@ -193,7 +185,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_templated_email": {
-    "recorded-date": "14-12-2022, 17:29:16",
+    "recorded-date": "26-08-2023, 00:00:04",
     "recorded-content": {
       "messages": [
         {
@@ -215,7 +207,7 @@
           "Message": {
             "eventType": "Send",
             "mail": {
-              "timestamp": "date",
+              "timestamp": "timestamp",
               "source": "<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
@@ -251,19 +243,19 @@
                   "SendTemplatedEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-c17e0219"
+                  "<config-set-name>"
                 ],
                 "ses:source-ip": [
-                  "80.189.216.182"
+                  "<ses-source-ip:1>"
                 ],
                 "ses:from-domain": [
-                  "gmail.com"
+                  "<ses-from-domain:1>"
                 ],
                 "custom-tag": [
                   "tag-value"
                 ],
                 "ses:caller-identity": [
-                  "localstack-testing"
+                  "<ses-caller-identity:1>"
                 ]
               }
             },
@@ -283,7 +275,7 @@
           "Message": {
             "eventType": "Delivery",
             "mail": {
-              "timestamp": "date",
+              "timestamp": "timestamp",
               "source": "<sender-email-address>",
               "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
@@ -295,7 +287,7 @@
               "headers": [
                 {
                   "name": "Date",
-                  "value": "Wed, 14 Dec 2022 17:29:15 +0000"
+                  "value": "Fri, 25 Aug 2023 22:00:03 +0000"
                 },
                 {
                   "name": "From",
@@ -306,12 +298,8 @@
                   "value": "<recipient-email-address>"
                 },
                 {
-                  "name": "Message-ID",
-                  "value": "<1786912680.12997.1671038955596@ip-10-0-189-31.<region>.compute.internal>"
-                },
-                {
                   "name": "Subject",
-                  "value": "Email template e16fc3f7"
+                  "value": "Email template c51cf868"
                 },
                 {
                   "name": "MIME-Version",
@@ -330,45 +318,45 @@
                 "from": [
                   "<sender-email-address>"
                 ],
-                "date": "Wed, 14 Dec 2022 17:29:15 +0000",
+                "date": "Fri, 25 Aug 2023 22:00:03 +0000",
                 "to": [
                   "<recipient-email-address>"
                 ],
                 "messageId": "<message-id:1>",
-                "subject": "Email template e16fc3f7"
+                "subject": "Email template c51cf868"
               },
               "tags": {
                 "ses:operation": [
                   "SendTemplatedEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-c17e0219"
+                  "<config-set-name>"
                 ],
                 "ses:source-ip": [
-                  "80.189.216.182"
+                  "<ses-source-ip:1>"
                 ],
                 "ses:from-domain": [
-                  "gmail.com"
+                  "<ses-from-domain:1>"
                 ],
                 "custom-tag": [
                   "tag-value"
                 ],
                 "ses:caller-identity": [
-                  "localstack-testing"
+                  "<ses-caller-identity:1>"
                 ],
                 "ses:outgoing-ip": [
-                  "69.169.224.10"
+                  "<ses-outgoing-ip:1>"
                 ]
               }
             },
             "delivery": {
               "timestamp": "date",
-              "processingTimeMillis": 800,
+              "processingTimeMillis": "processing-time",
               "recipients": [
                 "<recipient-email-address>"
               ],
-              "smtpResponse": "250 2.0.0 OK  1671038956 b13-20020adfde0d000000b0022ac0f59416si1880444wrm.732 - gsmtp",
-              "reportingMTA": "b224-10.smtp-out.<region>.amazonses.com"
+              "smtpResponse": "250 2.0.0 OK DMARC:Quarantine 1693000804 o10-20020a05622a138a00b004120c782853si1668341qtk.699 - gsmtp",
+              "reportingMTA": "a48-118.smtp-out.amazonses.com"
             }
           },
           "Timestamp": "date",
@@ -381,7 +369,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_raw_email": {
-    "recorded-date": "14-12-2022, 17:29:18",
+    "recorded-date": "26-08-2023, 00:01:24",
     "recorded-content": {
       "messages": [
         {
@@ -403,7 +391,7 @@
           "Message": {
             "eventType": "Send",
             "mail": {
-              "timestamp": "date",
+              "timestamp": "timestamp",
               "source": "<sender-email-address>",
               "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
@@ -421,16 +409,16 @@
                   "SendRawEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-20c4c21e"
+                  "<config-set-name>"
                 ],
                 "ses:source-ip": [
-                  "80.189.216.182"
+                  "<ses-source-ip:1>"
                 ],
                 "custom-tag": [
                   "tag-value"
                 ],
                 "ses:caller-identity": [
-                  "localstack-testing"
+                  "<ses-caller-identity:1>"
                 ]
               }
             },
@@ -450,7 +438,7 @@
           "Message": {
             "eventType": "Delivery",
             "mail": {
-              "timestamp": "date",
+              "timestamp": "timestamp",
               "source": "<sender-email-address>",
               "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
@@ -468,30 +456,30 @@
                   "SendRawEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-20c4c21e"
+                  "<config-set-name>"
                 ],
                 "ses:source-ip": [
-                  "80.189.216.182"
+                  "<ses-source-ip:1>"
                 ],
                 "custom-tag": [
                   "tag-value"
                 ],
                 "ses:caller-identity": [
-                  "localstack-testing"
+                  "<ses-caller-identity:1>"
                 ],
                 "ses:outgoing-ip": [
-                  "69.169.224.7"
+                  "<ses-outgoing-ip:1>"
                 ]
               }
             },
             "delivery": {
               "timestamp": "date",
-              "processingTimeMillis": 640,
+              "processingTimeMillis": "processing-time",
               "recipients": [
                 "<recipient-email-address>"
               ],
-              "smtpResponse": "250 2.0.0 OK  1671038958 f20-20020a1c6a14000000b003cdb23b6e5dsi1483316wmc.28 - gsmtp",
-              "reportingMTA": "b224-7.smtp-out.<region>.amazonses.com"
+              "smtpResponse": "250 2.0.0 OK DMARC:Quarantine 1693000884 v14-20020a05622a130e00b004053819f665si191486qtk.608 - gsmtp",
+              "reportingMTA": "a48-119.smtp-out.amazonses.com"
             }
           },
           "Timestamp": "date",
@@ -504,7 +492,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_cannot_create_event_for_no_topic": {
-    "recorded-date": "23-11-2022, 21:30:20",
+    "recorded-date": "26-08-2023, 00:04:12",
     "recorded-content": {
       "create-error": {
         "Error": {
@@ -520,7 +508,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set": {
-    "recorded-date": "28-11-2022, 11:07:06",
+    "recorded-date": "26-08-2023, 00:04:44",
     "recorded-content": {
       "delete-error": {
         "Error": {
@@ -536,7 +524,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set_event_destination": {
-    "recorded-date": "28-11-2022, 11:00:55",
+    "recorded-date": "26-08-2023, 00:04:53",
     "recorded-content": {
       "delete-error": {
         "Error": {
@@ -552,7 +540,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_sending_to_deleted_topic": {
-    "recorded-date": "28-11-2022, 12:33:32",
+    "recorded-date": "26-08-2023, 00:02:43",
     "recorded-content": {
       "messages": [
         {
@@ -570,7 +558,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_creating_event_destination_without_configuration_set": {
-    "recorded-date": "28-11-2022, 16:12:48",
+    "recorded-date": "26-08-2023, 00:04:35",
     "recorded-content": {
       "create-error": {
         "Error": {
@@ -586,7 +574,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_trying_to_delete_event_destination_from_non_existent_configuration_set": {
-    "recorded-date": "02-12-2022, 15:19:54",
+    "recorded-date": "26-08-2023, 00:05:02",
     "recorded-content": {
       "delete-error": {
         "Error": {
@@ -602,7 +590,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]": {
-    "recorded-date": "06-07-2023, 22:46:19",
+    "recorded-date": "26-08-2023, 00:05:47",
     "recorded-content": {
       "response": {
         "Error": {
@@ -618,7 +606,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]": {
-    "recorded-date": "06-07-2023, 22:46:20",
+    "recorded-date": "26-08-2023, 00:05:47",
     "recorded-content": {
       "response": {
         "Error": {
@@ -634,7 +622,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]": {
-    "recorded-date": "06-07-2023, 22:46:21",
+    "recorded-date": "26-08-2023, 00:05:47",
     "recorded-content": {
       "response": {
         "Error": {
@@ -650,7 +638,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_len]": {
-    "recorded-date": "06-07-2023, 22:46:23",
+    "recorded-date": "26-08-2023, 00:05:47",
     "recorded-content": {
       "response": {
         "Error": {
@@ -666,7 +654,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_value_len]": {
-    "recorded-date": "06-07-2023, 22:46:24",
+    "recorded-date": "26-08-2023, 00:05:47",
     "recorded-content": {
       "response": {
         "Error": {
@@ -682,7 +670,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_priority_name_value]": {
-    "recorded-date": "06-07-2023, 22:46:26",
+    "recorded-date": "26-08-2023, 00:05:47",
     "recorded-content": {
       "response": {
         "Error": {
@@ -698,7 +686,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-]": {
-    "recorded-date": "06-07-2023, 22:46:28",
+    "recorded-date": "26-08-2023, 00:05:47",
     "recorded-content": {
       "response": {
         "Error": {
@@ -714,7 +702,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-test]": {
-    "recorded-date": "06-07-2023, 22:46:29",
+    "recorded-date": "26-08-2023, 00:05:48",
     "recorded-content": {
       "response": {
         "Error": {
@@ -730,7 +718,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-]": {
-    "recorded-date": "06-07-2023, 22:46:32",
+    "recorded-date": "26-08-2023, 00:05:48",
     "recorded-content": {
       "response": {
         "Error": {
@@ -741,6 +729,189 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_list_templates": {
+    "recorded-date": "25-08-2023, 18:33:54",
+    "recorded-content": {
+      "create-template": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-templates-1": {
+        "TemplatesMetadata": [
+          {
+            "CreatedTimestamp": "timestamp",
+            "Name": "hello-world"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-templates-2": {
+        "TemplatesMetadata": [
+          {
+            "CreatedTimestamp": "timestamp",
+            "Name": "hello-world"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_delete_template": {
+    "recorded-date": "25-08-2023, 19:14:04",
+    "recorded-content": {
+      "list-templates-empty": {
+        "TemplatesMetadata": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-templates-after-create": {
+        "TemplatesMetadata": [
+          {
+            "CreatedTimestamp": "timestamp",
+            "Name": "hello-world"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-template": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-templates-after-delete": {
+        "TemplatesMetadata": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_clone_receipt_rule_set": {
+    "recorded-date": "25-08-2023, 23:05:14",
+    "recorded-content": {
+      "create-receipt-rule-set": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "clone-receipt-rule-set": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "original-rule-set": {
+        "Metadata": {
+          "CreatedTimestamp": "timestamp",
+          "Name": "RuleSetToClone"
+        },
+        "Rules": [
+          {
+            "Actions": [
+              {
+                "AddHeaderAction": {
+                  "HeaderName": "test-header",
+                  "HeaderValue": "test"
+                }
+              }
+            ],
+            "Enabled": true,
+            "Name": "MyRule1",
+            "ScanEnabled": true,
+            "TlsPolicy": "Optional"
+          },
+          {
+            "Actions": [
+              {
+                "S3Action": {
+                  "BucketName": "<bucket-name:1>",
+                  "ObjectKeyPrefix": "template"
+                }
+              }
+            ],
+            "Enabled": true,
+            "Name": "MyRule2",
+            "ScanEnabled": true,
+            "TlsPolicy": "Optional"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cloned-rule-set": {
+        "Metadata": {
+          "CreatedTimestamp": "timestamp",
+          "Name": "RuleSetToCreate"
+        },
+        "Rules": [
+          {
+            "Actions": [
+              {
+                "AddHeaderAction": {
+                  "HeaderName": "test-header",
+                  "HeaderValue": "test"
+                }
+              }
+            ],
+            "Enabled": true,
+            "Name": "MyRule1",
+            "ScanEnabled": true,
+            "TlsPolicy": "Optional"
+          },
+          {
+            "Actions": [
+              {
+                "S3Action": {
+                  "BucketName": "<bucket-name:1>",
+                  "ObjectKeyPrefix": "template"
+                }
+              }
+            ],
+            "Enabled": true,
+            "Name": "MyRule2",
+            "ScanEnabled": true,
+            "TlsPolicy": "Optional"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_sent_message_counter": {
+    "recorded-date": "25-08-2023, 23:40:26",
+    "recorded-content": {
+      "get-quota-0": {
+        "Max24HourSend": 200.0,
+        "MaxSendRate": 1.0,
+        "SentLast24Hours": 0.0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
