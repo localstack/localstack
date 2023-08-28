@@ -6,7 +6,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client):
     env = "Staging"
     ddb_table_name_prefix = f"ddb-table-{short_uid()}"
@@ -32,7 +32,7 @@ def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client):
     assert ddb_table_name not in rs["TableNames"]
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
     deploy_cfn_template, aws_client
 ):
@@ -78,6 +78,9 @@ def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
 
     response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
     snapshot.match("table_description", response)
+
+    list_tags = aws_client.dynamodb.list_tags_of_resource(ResourceArn=stack.outputs["TableArn"])
+    snapshot.match("list_tags_of_resource", list_tags)
 
 
 @markers.aws.validated
