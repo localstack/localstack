@@ -1,14 +1,12 @@
 import aws_cdk as cdk
-
-import aws_cdk.aws_batch as batch
 import aws_cdk.aws_batch_alpha as batch_alpha
 import aws_cdk.aws_stepfunctions as sfn
 import aws_cdk.aws_stepfunctions_tasks as tasks
-from aws_cdk.aws_ecs import ContainerImage, LogDriver
 import pytest
+from aws_cdk.aws_ecs import ContainerImage, LogDriver
 
 from localstack.testing.scenario.provisioning import InfraProvisioner
-from tests.integration.stepfunctions.utils import await_execution_terminated
+from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 
 # @pytest.mark.skip(reason="WIP")
@@ -34,7 +32,11 @@ class TestTaskServiceBatch:
         job_queue = batch_alpha.JobQueue(
             stack,
             "jobqueue",
-            compute_environments=[batch_alpha.OrderedComputeEnvironment(compute_environment=compute_environment, order=1)]
+            compute_environments=[
+                batch_alpha.OrderedComputeEnvironment(
+                    compute_environment=compute_environment, order=1
+                )
+            ],
         )
         start_state = tasks.BatchSubmitJob(
             stack,
@@ -64,9 +66,8 @@ class TestTaskServiceBatch:
         ]
         await_execution_terminated(aws_client.stepfunctions, execution_arn)
         describe_execution = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
-        describe_execution['output']
-        assert (
-                describe_execution["status"]
-                == "SUCCEEDED"
+        describe_execution["output"]
+        assert describe_execution["status"] == "SUCCEEDED"
+        aws_client.logs.filter_log_events(
+            log_group_name=log_group_name,
         )
-        aws_client.logs.filter_log_events(log_group_name=log_group_name, )

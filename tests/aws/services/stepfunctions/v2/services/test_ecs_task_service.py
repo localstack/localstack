@@ -6,7 +6,7 @@ import pytest
 
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
-from tests.integration.stepfunctions.utils import await_execution_terminated
+from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 
 @pytest.mark.skip(reason="WIP")
