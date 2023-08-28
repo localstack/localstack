@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional, Type, TypedDict
 
@@ -12,6 +13,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProvider,
     ResourceRequest,
 )
+from localstack.utils.functions import call_safe
 
 
 class IAMRoleProperties(TypedDict):
@@ -39,6 +41,8 @@ class Tag(TypedDict):
 
 
 REPEATED_INVOCATION = "repeated_invocation"
+
+IAM_POLICY_VERSION = "2012-10-17"
 
 
 class IAMRoleProvider(ResourceProvider[IAMRoleProperties]):
@@ -71,32 +75,65 @@ class IAMRoleProvider(ResourceProvider[IAMRoleProperties]):
           - iam:CreateRole
           - iam:PutRolePolicy
           - iam:AttachRolePolicy
-          - iam:GetRolePolicy
+          - iam:GetRolePolicy <- not in use right now
 
         """
         model = request.desired_state
+        iam = request.aws_client_factory.iam
 
-        # TODO: validations
+        # defaults
+        role_name = model.get("RoleName")
+        if not role_name:
+            role_name = util.generate_default_name(request.stack_name, request.logical_resource_id)
+            model["RoleName"] = role_name
 
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
+        create_role_response = iam.create_role(
+            **{
+                k: v
+                for k, v in model.items()
+                if k not in ["ManagedPolicyArns", "Policies", "AssumeRolePolicyDocument"]
+            },
+            AssumeRolePolicyDocument=json.dumps(model["AssumeRolePolicyDocument"]),
+        )
+
+        # attach managed policies
+        policy_arns = model.get("ManagedPolicyArns", [])
+        for arn in policy_arns:
+            iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
+
+        # add inline policies
+        inline_policies = model.get("Policies", [])
+        for policy in inline_policies:
+            if not isinstance(policy, dict):
+                request.logger.info(
+                    'Invalid format of policy for IAM role "%s": %s',
+                    model.get("RoleName"),
+                    policy,
+                )
+                continue
+            pol_name = policy.get("PolicyName")
+
+            # get policy document - make sure we're resolving references in the policy doc
+            doc = dict(policy["PolicyDocument"])
+            doc = util.remove_none_values(doc)
+
+            doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
+            statements = doc["Statement"]
+            statements = statements if isinstance(statements, list) else [statements]
+            for statement in statements:
+                if isinstance(statement.get("Resource"), list):
+                    # filter out empty resource strings
+                    statement["Resource"] = [r for r in statement["Resource"] if r]
+            doc = json.dumps(doc)
+            iam.put_role_policy(
+                RoleName=model["RoleName"],
+                PolicyName=pol_name,
+                PolicyDocument=doc,
             )
+        model["Arn"] = create_role_response["Role"]["Arn"]
+        model["RoleId"] = create_role_response["Role"]["RoleId"]
 
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def read(
         self,
@@ -128,7 +165,29 @@ class IAMRoleProvider(ResourceProvider[IAMRoleProperties]):
           - iam:ListAttachedRolePolicies
           - iam:ListRolePolicies
         """
-        raise NotImplementedError
+        iam_client = request.aws_client_factory.iam
+        role_name = request.previous_state["RoleName"]
+
+        # detach managed policies
+        for policy in iam_client.list_attached_role_policies(RoleName=role_name).get(
+            "AttachedPolicies", []
+        ):
+            call_safe(
+                iam_client.detach_role_policy,
+                kwargs={"RoleName": role_name, "PolicyArn": policy["PolicyArn"]},
+            )
+
+        # delete inline policies
+        for inline_policy_name in iam_client.list_role_policies(RoleName=role_name).get(
+            "PolicyNames", []
+        ):
+            call_safe(
+                iam_client.delete_role_policy,
+                kwargs={"RoleName": role_name, "PolicyName": inline_policy_name},
+            )
+
+        iam_client.delete_role(RoleName=role_name)
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
         self,
@@ -150,7 +209,30 @@ class IAMRoleProvider(ResourceProvider[IAMRoleProperties]):
           - iam:TagRole
           - iam:UntagRole
         """
-        raise NotImplementedError
+        props = request.desired_state
+        _states = request.previous_state
+
+        # note that we're using permissions that are not technically allowed here due to the currently broken change detection
+        props_policy = props.get("AssumeRolePolicyDocument")
+        # technically a change to the role name shouldn't even get here since it implies a replacement, not an in-place update
+        # for now we just go with it though
+        # determine if the previous name was autogenerated or not
+        new_role_name = props.get("RoleName")
+        name_changed = new_role_name and new_role_name != _states["RoleName"]
+
+        # new_role_name = props.get("RoleName", _states.get("RoleName"))
+        policy_changed = props_policy and props_policy != _states.get(
+            "AssumeRolePolicyDocument", ""
+        )
+        managed_policy_arns_changed = props.get("ManagedPolicyArns", []) != _states.get(
+            "ManagedPolicyArns", []
+        )
+        if name_changed or policy_changed or managed_policy_arns_changed:
+            # TODO: do a proper update instead of replacement
+            self.delete(request)
+            return self.create(request)
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.previous_state)
+        # raise Exception("why was a change even detected?")
 
 
 class IAMRoleProviderPlugin(CloudFormationResourceProviderPlugin):
