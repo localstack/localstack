@@ -53,7 +53,7 @@ class TestTaskServiceECS:
             yield prov
 
     # TODO: snapshot
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_run_machine(self, aws_client, infrastructure):
         sm_arn = infrastructure.get_stack_outputs(stack_name="ClusterStack")["StateMachineArn"]
         execution_arn = aws_client.stepfunctions.start_execution(stateMachineArn=sm_arn)[

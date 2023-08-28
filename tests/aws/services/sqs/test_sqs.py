@@ -1851,7 +1851,7 @@ class TestSqsProvider:
             aws_client.sqs.send_message_batch(QueueUrl=queue_url, Entries=message_batch)
         snapshot.match("test_missing_deduplication_id_for_fifo_queue", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_batch_missing_message_group_id_for_fifo_queue(
         self, sqs_create_queue, snapshot, aws_client
