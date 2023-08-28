@@ -949,13 +949,16 @@ def deploy_cfn_template(
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
         role_arn: Optional[str] = None,
-        max_wait: Optional[int] = 60,
+        max_wait: Optional[int] = None,
         delay_between_polls: Optional[int] = 2,
     ) -> DeployResult:
         if is_update:
             assert stack_name
         stack_name = stack_name or f"stack-{short_uid()}"
         change_set_name = change_set_name or f"change-set-{short_uid()}"
+
+        if max_wait is None:
+            max_wait = 1800 if is_aws_cloud() else 60
 
         if template_path is not None:
             template = load_template_file(template_path)
