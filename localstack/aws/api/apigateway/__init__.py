@@ -1177,6 +1177,7 @@ class RestApi(TypedDict, total=False):
     policy: Optional[String]
     tags: Optional[MapOfStringToString]
     disableExecuteApiEndpoint: Optional[Boolean]
+    rootResourceId: Optional[String]
 
 
 ListOfRestApi = List[RestApi]

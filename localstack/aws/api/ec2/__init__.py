@@ -229,6 +229,7 @@ NextToken = str
 NitroTpmSupportedVersionType = str
 OfferingId = str
 OutpostArn = str
+PasswordData = str
 PeakBandwidthInGbps = float
 PlacementGroupArn = str
 PlacementGroupId = str
@@ -256,6 +257,8 @@ RouteGatewayId = str
 RouteTableAssociationId = str
 RouteTableId = str
 RunInstancesUserData = str
+S3StorageUploadPolicy = str
+S3StorageUploadPolicySignature = str
 ScheduledInstanceId = str
 SecurityGroupId = str
 SecurityGroupName = str
@@ -1839,6 +1842,22 @@ class InstanceType(str):
     m7i_flex_2xlarge = "m7i-flex.2xlarge"
     m7i_flex_4xlarge = "m7i-flex.4xlarge"
     m7i_flex_8xlarge = "m7i-flex.8xlarge"
+    m7a_medium = "m7a.medium"
+    m7a_large = "m7a.large"
+    m7a_xlarge = "m7a.xlarge"
+    m7a_2xlarge = "m7a.2xlarge"
+    m7a_4xlarge = "m7a.4xlarge"
+    m7a_8xlarge = "m7a.8xlarge"
+    m7a_12xlarge = "m7a.12xlarge"
+    m7a_16xlarge = "m7a.16xlarge"
+    m7a_24xlarge = "m7a.24xlarge"
+    m7a_32xlarge = "m7a.32xlarge"
+    m7a_48xlarge = "m7a.48xlarge"
+    m7a_metal_48xl = "m7a.metal-48xl"
+    hpc7a_12xlarge = "hpc7a.12xlarge"
+    hpc7a_24xlarge = "hpc7a.24xlarge"
+    hpc7a_48xlarge = "hpc7a.48xlarge"
+    hpc7a_96xlarge = "hpc7a.96xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -4668,7 +4687,7 @@ class S3Storage(TypedDict, total=False):
     Bucket: Optional[String]
     Prefix: Optional[String]
     UploadPolicy: Optional[Blob]
-    UploadPolicySignature: Optional[String]
+    UploadPolicySignature: Optional[S3StorageUploadPolicySignature]
 
 
 class Storage(TypedDict, total=False):
@@ -8217,6 +8236,15 @@ class CreateVpcEndpointConnectionNotificationResult(TypedDict, total=False):
     ClientToken: Optional[String]
 
 
+class SubnetConfiguration(TypedDict, total=False):
+    SubnetId: Optional[SubnetId]
+    Ipv4: Optional[String]
+    Ipv6: Optional[String]
+
+
+SubnetConfigurationsList = List[SubnetConfiguration]
+
+
 class DnsOptionsSpecification(TypedDict, total=False):
     DnsRecordIpType: Optional[DnsRecordIpType]
     PrivateDnsOnlyForInboundResolverEndpoint: Optional[Boolean]
@@ -8241,6 +8269,7 @@ class CreateVpcEndpointRequest(ServiceRequest):
     ClientToken: Optional[String]
     PrivateDnsEnabled: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
+    SubnetConfigurations: Optional[SubnetConfigurationsList]
 
 
 class LastError(TypedDict, total=False):
@@ -8878,6 +8907,11 @@ class DeleteKeyPairRequest(ServiceRequest):
     KeyName: Optional[KeyPairName]
     KeyPairId: Optional[KeyPairId]
     DryRun: Optional[Boolean]
+
+
+class DeleteKeyPairResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+    KeyPairId: Optional[String]
 
 
 class DeleteLaunchTemplateRequest(ServiceRequest):
@@ -14737,7 +14771,7 @@ class GetPasswordDataRequest(ServiceRequest):
 
 class GetPasswordDataResult(TypedDict, total=False):
     InstanceId: Optional[String]
-    PasswordData: Optional[String]
+    PasswordData: Optional[PasswordData]
     Timestamp: Optional[DateTime]
 
 
@@ -16260,6 +16294,7 @@ class ModifyVpcEndpointRequest(ServiceRequest):
     IpAddressType: Optional[IpAddressType]
     DnsOptions: Optional[DnsOptionsSpecification]
     PrivateDnsEnabled: Optional[Boolean]
+    SubnetConfigurations: Optional[SubnetConfigurationsList]
 
 
 class ModifyVpcEndpointResult(TypedDict, total=False):
@@ -18994,6 +19029,7 @@ class Ec2Api:
         client_token: String = None,
         private_dns_enabled: Boolean = None,
         tag_specifications: TagSpecificationList = None,
+        subnet_configurations: SubnetConfigurationsList = None,
     ) -> CreateVpcEndpointResult:
         raise NotImplementedError
 
@@ -19213,7 +19249,7 @@ class Ec2Api:
         key_name: KeyPairName = None,
         key_pair_id: KeyPairId = None,
         dry_run: Boolean = None,
-    ) -> None:
+    ) -> DeleteKeyPairResult:
         raise NotImplementedError
 
     @handler("DeleteLaunchTemplate")
@@ -23119,6 +23155,7 @@ class Ec2Api:
         ip_address_type: IpAddressType = None,
         dns_options: DnsOptionsSpecification = None,
         private_dns_enabled: Boolean = None,
+        subnet_configurations: SubnetConfigurationsList = None,
     ) -> ModifyVpcEndpointResult:
         raise NotImplementedError
 
