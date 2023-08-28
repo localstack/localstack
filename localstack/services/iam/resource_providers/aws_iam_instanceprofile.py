@@ -58,27 +58,23 @@ class IAMInstanceProfileProvider(ResourceProvider[IAMInstanceProfileProperties])
         """
         model = request.desired_state
 
-        # TODO: validations
+        iam = request.aws_client_factory.iam
 
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
+        iam.get_instance_profile(InstanceProfileName="")
+        response = iam.create_instance_profile(
+            InstanceProfileName=model['InstanceProfileName'],
+            Path=model['Path'],
+        )
+        for role_name in model.get('Roles', []):
+            iam.add_role_to_instance_profile(
+                InstanceProfileName=model['InstanceProfileName'], RoleName=role_name
             )
+        model['Arn'] = response['InstanceProfile']['Arn']
+        return ProgressEvent(
+            status=OperationStatus.IN_PROGRESS,
+            resource_model=model,
+        )
 
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
 
     def read(
         self,
