@@ -13,7 +13,9 @@ from localstack.aws.api.stepfunctions import (
     DeleteStateMachineOutput,
     DeleteStateMachineVersionOutput,
     DescribeExecutionOutput,
+    DescribeStateMachineForExecutionOutput,
     DescribeStateMachineOutput,
+    ExecutionDoesNotExist,
     ExecutionList,
     ExecutionStatus,
     GetExecutionHistoryOutput,
@@ -27,6 +29,7 @@ from localstack.aws.api.stepfunctions import (
     ListExecutionsPageToken,
     ListStateMachinesOutput,
     ListStateMachineVersionsOutput,
+    ListTagsForResourceOutput,
     LoggingConfiguration,
     LongArn,
     MissingRequiredParameter,
@@ -35,6 +38,7 @@ from localstack.aws.api.stepfunctions import (
     PageToken,
     Publish,
     PublishStateMachineVersionOutput,
+    ResourceNotFound,
     ReverseOrder,
     RevisionId,
     SendTaskFailureOutput,
@@ -50,11 +54,15 @@ from localstack.aws.api.stepfunctions import (
     StateMachineType,
     StepfunctionsApi,
     StopExecutionOutput,
+    TagKeyList,
+    TagList,
+    TagResourceOutput,
     TaskDoesNotExist,
     TaskTimedOut,
     TaskToken,
     TraceHeader,
     TracingConfiguration,
+    UntagResourceOutput,
     UpdateStateMachineOutput,
     ValidationException,
     VersionDescription,
@@ -197,6 +205,10 @@ class StepFunctionsProvider(StepfunctionsApi):
             tracing_config=request.get("tracingConfiguration"),
         )
 
+        tags = request.get("tags")
+        if tags:
+            state_machine.tag_manager.add_all(tags)
+
         state_machines[arn] = state_machine
 
         create_output = CreateStateMachineOutput(
@@ -216,10 +228,20 @@ class StepFunctionsProvider(StepfunctionsApi):
     def describe_state_machine(
         self, context: RequestContext, state_machine_arn: Arn
     ) -> DescribeStateMachineOutput:
+        # TODO: add arn validation.
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
         if state_machine is None:
-            raise InvalidArn()
+            raise ExecutionDoesNotExist()
         return state_machine.describe()
+
+    def describe_state_machine_for_execution(
+        self, context: RequestContext, execution_arn: Arn
+    ) -> DescribeStateMachineForExecutionOutput:
+        # TODO: add arn validation.
+        execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
+        if not execution:
+            raise ExecutionDoesNotExist()
+        return execution.to_describe_state_machine_for_execution_output()
 
     def send_task_heartbeat(
         self, context: RequestContext, task_token: TaskToken
@@ -526,3 +548,39 @@ class StepFunctionsProvider(StepfunctionsApi):
             creationDate=state_machine_version.create_date,
             stateMachineVersionArn=state_machine_version.arn,
         )
+
+    def tag_resource(
+        self, context: RequestContext, resource_arn: Arn, tags: TagList
+    ) -> TagResourceOutput:
+        # TODO: add tagging for activities.
+        state_machines = self.get_store(context).state_machines
+        state_machine = state_machines.get(resource_arn)
+        if not isinstance(state_machine, StateMachineRevision):
+            raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
+
+        state_machine.tag_manager.add_all(tags)
+        return TagResourceOutput()
+
+    def untag_resource(
+        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList
+    ) -> UntagResourceOutput:
+        # TODO: add untagging for activities.
+        state_machines = self.get_store(context).state_machines
+        state_machine = state_machines.get(resource_arn)
+        if not isinstance(state_machine, StateMachineRevision):
+            raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
+
+        state_machine.tag_manager.remove_all(tag_keys)
+        return UntagResourceOutput()
+
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: Arn
+    ) -> ListTagsForResourceOutput:
+        # TODO: add untagging for activities.
+        state_machines = self.get_store(context).state_machines
+        state_machine = state_machines.get(resource_arn)
+        if not isinstance(state_machine, StateMachineRevision):
+            raise ResourceNotFound(f"Resource not found: '{resource_arn}'")
+
+        tags: TagList = state_machine.tag_manager.to_tag_list()
+        return ListTagsForResourceOutput(tags=tags)

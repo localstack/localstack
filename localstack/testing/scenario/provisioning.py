@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Callable, Optional
 import aws_cdk as cdk
 from typing_extensions import Self
 
+from localstack.testing.aws.util import is_aws_cloud
+
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
@@ -14,6 +16,8 @@ from localstack.aws.connect import ServiceLevelClientFactory
 
 LOG = logging.getLogger(__name__)
 CDK_BOOTSTRAP_PARAM = "/cdk-bootstrap/hnb659fds/version"
+WAITER_CONFIG_AWS = {"Delay": 10, "MaxAttempts": 1000}
+WAITER_CONFIG_LS = {"Delay": 1, "MaxAttempts": 500}
 
 
 def cleanup_s3_bucket(s3_client: "S3Client", bucket_name: str):
@@ -41,6 +45,7 @@ class InfraProvisioner:
     cloudformation_stacks: dict[str, dict]
     custom_cleanup_steps: list[Callable]
     custom_setup_steps: list[Callable]
+    skipped_provisioning: bool = False
 
     def __init__(self, aws_client: ServiceLevelClientFactory):
         self.cloudformation_stacks = {}
@@ -66,6 +71,7 @@ class InfraProvisioner:
         ):
             # TODO it's currently all or nothing -> deploying one new stack will most likely fail
             LOG.info("All stacks are already deployed. Skipping the provisioning.")
+            self.skipped_provisioning = True
             return
 
         self.run_manual_setup_tasks()
@@ -81,7 +87,8 @@ class InfraProvisioner:
                 ],
             )
             self.aws_client.cloudformation.get_waiter("stack_create_complete").wait(
-                StackName=stack_name, WaiterConfig={"Delay": 1}
+                StackName=stack_name,
+                WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
             )
             describe_stack = self.aws_client.cloudformation.describe_stacks(StackName=stack_name)
             outputs = describe_stack["Stacks"][0].get("Outputs", {})
@@ -111,13 +118,17 @@ class InfraProvisioner:
         for stack_name, stack in self.cloudformation_stacks.items():
             self.aws_client.cloudformation.delete_stack(StackName=stack_name)
             self.aws_client.cloudformation.get_waiter("stack_delete_complete").wait(
-                StackName=stack_name, WaiterConfig={"Delay": 1}
+                StackName=stack_name,
+                WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
             )
-        # TODO proper handling of ssm parameter
-        try:
-            self.aws_client.ssm.delete_parameter(Name=CDK_BOOTSTRAP_PARAM)
-        except Exception:
-            pass
+        # TODO log-groups created by lambda are not automatically cleaned up by CDK
+
+        if not is_aws_cloud():
+            # TODO proper handling of ssm parameter
+            try:
+                self.aws_client.ssm.delete_parameter(Name=CDK_BOOTSTRAP_PARAM)
+            except Exception:
+                pass
 
     def add_cdk_stack(self, cdk_stack: cdk.Stack, autoclean_buckets: Optional[bool] = True):
         """

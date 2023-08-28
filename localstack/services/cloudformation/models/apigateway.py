@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
+    generate_default_name_without_stack,
     lambda_keys_to_lower,
     params_list_to_dict,
 )
@@ -31,6 +32,17 @@ class GatewayResponse(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = generate_default_name_without_stack(
+                logical_resource_id
+            )
+
         return {
             "create": {
                 "function": "put_gateway_response",
@@ -41,6 +53,7 @@ class GatewayResponse(GenericBaseModel):
                     "responseParameters": "ResponseParameters",
                     "responseTemplates": "ResponseTemplates",
                 },
+                "result_handler": _handle_result,
             }
         }
 
@@ -229,6 +242,7 @@ class GatewayRestAPI(GenericBaseModel):
             logical_resource_id: str,
             resource: dict,
         ):
+            resource["Properties"]["RestApiId"] = result["id"]
             resource["PhysicalResourceId"] = result["id"]
 
             resources = connect_to(
@@ -243,7 +257,7 @@ class GatewayRestAPI(GenericBaseModel):
             "delete": {
                 "function": "delete_rest_api",
                 "parameters": {
-                    "restApiId": _api_id,
+                    "restApiId": "RestApiId",
                 },
             },
         }
@@ -277,6 +291,7 @@ class GatewayDeployment(GenericBaseModel):
             logical_resource_id: str,
             resource: dict,
         ):
+            resource["Properties"]["DeploymentId"] = result["id"]
             resource["PhysicalResourceId"] = result["id"]
 
         return {
@@ -289,7 +304,12 @@ class GatewayDeployment(GenericBaseModel):
                     "description": "Description",
                 },
                 "result_handler": _handle_result,
-            }
+                # }
+            },
+            "delete": {
+                "function": "delete_deployment",
+                "parameters": {"restApiId": "RestApiId", "deploymentId": "DeploymentId"},
+            },
         }
 
 

@@ -66,6 +66,7 @@ from localstack.aws.api.ec2 import (
     RevokeSecurityGroupEgressResult,
     RIProductDescription,
     String,
+    SubnetConfigurationsList,
     Tenancy,
     VpcEndpointId,
     VpcEndpointRouteTableIdList,
@@ -204,6 +205,7 @@ class Ec2Provider(Ec2Api, ABC):
         ip_address_type: IpAddressType = None,
         dns_options: DnsOptionsSpecification = None,
         private_dns_enabled: Boolean = None,
+        subnet_configurations: SubnetConfigurationsList = None,
     ) -> ModifyVpcEndpointResult:
         backend = get_ec2_backend(context.account_id, context.region)
 

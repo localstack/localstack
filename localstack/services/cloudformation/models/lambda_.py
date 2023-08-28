@@ -42,10 +42,13 @@ class LambdaFunction(GenericBaseModel):
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
         client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
+        function_name = (
+            props.get("FunctionName")
+            or new_resource.get("_last_deployed_state", new_resource.get("_state_"))["FunctionName"]
+        )
         config_keys = [
             "Description",
             "Environment",
-            "FunctionName",
             "Handler",
             "ImageConfig",
             "Layers",
@@ -57,14 +60,13 @@ class LambdaFunction(GenericBaseModel):
             "VpcConfig",
         ]
         update_config_props = select_attributes(props, config_keys)
+        update_config_props["FunctionName"] = function_name
         if "Timeout" in update_config_props:
             update_config_props["Timeout"] = int(update_config_props["Timeout"])
         if "Code" in props:
             code = props["Code"] or {}
             if not code.get("ZipFile"):
-                LOG.debug(
-                    'Updating code for Lambda "%s" from location: %s', props["FunctionName"], code
-                )
+                LOG.debug('Updating code for Lambda "%s" from location: %s', function_name, code)
             code = LambdaFunction.get_lambda_code_param(
                 self.account_id,
                 self.region_name,
@@ -74,13 +76,15 @@ class LambdaFunction(GenericBaseModel):
                 stack_name,
                 _include_arch=True,
             )
-            client.update_function_code(FunctionName=props["FunctionName"], **code)
+            client.update_function_code(FunctionName=function_name, **code)
         if "Environment" in update_config_props:
             environment_variables = update_config_props["Environment"].get("Variables", {})
             update_config_props["Environment"]["Variables"] = {
                 k: str(v) for k, v in environment_variables.items()
             }
-        return client.update_function_configuration(**update_config_props)
+        result = client.update_function_configuration(**update_config_props)
+        connect_to().lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        return result
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -133,16 +137,6 @@ class LambdaFunction(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_delete_params(
-            account_id: str,
-            region_name: str,
-            properties: dict,
-            logical_resource_id: str,
-            resource: dict,
-            stack_name: str,
-        ) -> dict:
-            return {"FunctionName": properties.get("FunctionName")}
-
         def get_environment_params(
             account_id: str,
             region_name: str,
@@ -195,7 +189,10 @@ class LambdaFunction(GenericBaseModel):
                 "types": {"Timeout": int, "MemorySize": int},
                 "result_handler": _handle_result,
             },
-            "delete": {"function": "delete_function", "parameters": get_delete_params},
+            "delete": {
+                "function": "delete_function",
+                "parameters": {"FunctionName": "FunctionName"},
+            },
         }
 
 
@@ -228,6 +225,9 @@ class LambdaFunctionVersion(GenericBaseModel):
         ):
             resource["Properties"]["Version"] = result["Version"]
             resource["PhysicalResourceId"] = result["FunctionArn"]
+            connect_to().lambda_.get_waiter("published_version_active").wait(
+                FunctionName=result["FunctionName"], Qualifier=result["Version"]
+            )
 
         return {
             "create": {

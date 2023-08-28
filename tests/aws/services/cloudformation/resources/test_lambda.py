@@ -311,7 +311,7 @@ def test_lambda_vpc(deploy_cfn_template, aws_client):
     aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
-@pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out with new provider")
+@pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out with new provider")  # FIXME
 @markers.aws.validated
 def test_update_lambda_permissions(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(

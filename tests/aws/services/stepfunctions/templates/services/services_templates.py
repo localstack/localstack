@@ -20,6 +20,15 @@ class ServicesTemplates(TemplateLoader):
     AWS_SDK_DYNAMODB_PUT_UPDATE_GET_ITEM: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/aws_sdk_dynamodb_put_update_get_item.json5"
     )
+    API_GATEWAY_INVOKE_BASE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/api_gateway_invoke_base.json5"
+    )
+    API_GATEWAY_INVOKE_WITH_BODY: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/api_gateway_invoke_with_body.json5"
+    )
+    API_GATEWAY_INVOKE_WITH_QUERY_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/api_gateway_invoke_with_query_parameters.json5"
+    )
     SQS_SEND_MESSAGE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/sqs_send_msg.json5")
     LAMBDA_INVOKE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/lambda_invoke.json5")
     LAMBDA_INVOKE_PIPE: Final[str] = os.path.join(

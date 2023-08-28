@@ -16,7 +16,7 @@
     }
   },
   "tests/aws/services/cloudformation/engine/test_references.py::TestFnSub::test_fn_sub_cases": {
-    "recorded-date": "10-07-2023, 17:00:03",
+    "recorded-date": "23-08-2023, 20:41:02",
     "recorded-content": {
       "outputs": {
         "ListRefGetAtt": "unimportant",
@@ -32,7 +32,8 @@
         "StringRefParam": "Param1Value",
         "StringRefPseudoParam": "<region>",
         "StringRefResource": "Param1Value",
-        "StringStatic": "this is a static string"
+        "StringStatic": "this is a static string",
+        "UrlSuffixPseudoParam": "<url-suffix>"
       }
     }
   }
