@@ -51,6 +51,7 @@ PUBLIC_HTTP_ECHO_SERVER_URL = "http://httpbin.org"
 WAITER_CHANGE_SET_CREATE_COMPLETE = "change_set_create_complete"
 WAITER_STACK_CREATE_COMPLETE = "stack_create_complete"
 WAITER_STACK_UPDATE_COMPLETE = "stack_update_complete"
+WAITER_STACK_DELETE_COMPLETE = "stack_delete_complete"
 
 
 @pytest.fixture(scope="class")
@@ -1018,18 +1019,9 @@ def deploy_cfn_template(
 
         def _destroy_stack():
             aws_client.cloudformation.delete_stack(StackName=stack_id)
-
-            def _await_stack_delete():
-                return (
-                    aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0][
-                        "StackStatus"
-                    ]
-                    == "DELETE_COMPLETE"
-                )
-
-            assert wait_until(_await_stack_delete, _max_wait=max_wait or 60)
-            # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
-            time.sleep(2)
+            aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
+                StackName=stack_id
+            )
 
         return DeployResult(
             change_set_id, stack_id, stack_name, change_set_name, mapped_outputs, _destroy_stack
