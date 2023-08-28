@@ -68,6 +68,7 @@ class PackageInstaller(abc.ABC):
         self.name = name
         self.version = version
         self.install_lock = install_lock or RLock()
+        self._setup_for_target: dict[InstallTarget, bool] = defaultdict(lambda: False)
 
     def install(self, target: Optional[InstallTarget] = None) -> None:
         """
@@ -92,6 +93,9 @@ class PackageInstaller(abc.ABC):
                     LOG.debug("Installation of %s finished.", self.name)
                 else:
                     LOG.debug("Installation of %s skipped (already installed).", self.name)
+                    if not self._setup_for_target[target]:
+                        LOG.debug("Performing runtime setup for already installed package.")
+                        self._setup_existing_installation(target)
         except PackageException as e:
             raise e
         except Exception as e:
@@ -134,6 +138,17 @@ class PackageInstaller(abc.ABC):
                  (f.e. /var/lib/localstack/lib/dynamodblocal/latest/DynamoDBLocal.jar)
         """
         raise NotImplementedError()
+
+    def _setup_existing_installation(self, target: InstallTarget) -> None:
+        """
+        Internal function to perform the setup for an existing installation, f.e. adding a path to an environment.
+        This is only necessary for certain installers (like the PythonPackageInstaller).
+        This function will _always_ be executed _exactly_ once within a Python session for a specific installer
+        instance and target, if #install is called for the respective target.
+        :param target: of the installation
+        :return: None
+        """
+        pass
 
     def _prepare_installation(self, target: InstallTarget) -> None:
         """
