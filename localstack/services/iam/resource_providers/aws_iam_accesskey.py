@@ -51,32 +51,23 @@ class IAMAccessKeyProvider(ResourceProvider[IAMAccessKeyProperties]):
           - /properties/SecretAccessKey
           - /properties/Id
 
-
-
         """
+        # TODO: what alues can model['Serial'] take on initial create?
         model = request.desired_state
+        iam_client = request.aws_client_factory.iam
 
-        # TODO: validations
+        access_key = iam_client.create_access_key(UserName=model["UserName"])
+        model["SecretAccessKey"] = access_key["AccessKey"]["SecretAccessKey"]
+        model["Id"] = access_key["AccessKey"]["AccessKeyId"]
 
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
+        if model.get("Status") == "Inactive":
+            # can be "Active" or "Inactive"
+            # by default the created access key has Status "Active", but if user set Inactive this needs to be adjusted
+            iam_client.update_access_key(
+                AccessKeyId=model["Id"], UserName=model["UserName"], Status=model["Status"]
             )
 
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def read(
         self,
@@ -84,8 +75,6 @@ class IAMAccessKeyProvider(ResourceProvider[IAMAccessKeyProperties]):
     ) -> ProgressEvent[IAMAccessKeyProperties]:
         """
         Fetch resource information
-
-
         """
         raise NotImplementedError
 
@@ -95,10 +84,11 @@ class IAMAccessKeyProvider(ResourceProvider[IAMAccessKeyProperties]):
     ) -> ProgressEvent[IAMAccessKeyProperties]:
         """
         Delete a resource
-
-
         """
-        raise NotImplementedError
+        iam_client = request.aws_client_factory.iam
+        model = request.previous_state
+        iam_client.delete_access_key(AccessKeyId=model["Id"], UserName=model["UserName"])
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
         self,
@@ -106,10 +96,26 @@ class IAMAccessKeyProvider(ResourceProvider[IAMAccessKeyProperties]):
     ) -> ProgressEvent[IAMAccessKeyProperties]:
         """
         Update a resource
-
-
         """
-        raise NotImplementedError
+        iam_client = request.aws_client_factory.iam
+
+        # FIXME: replacement should be handled in engine before here
+        user_name_changed = request.desired_state["UserName"] != request.previous_state["UserName"]
+        serial_changed = request.desired_state["Serial"] != request.previous_state["Serial"]
+        if user_name_changed or serial_changed:
+            # recreate the key
+            self.delete(request)
+            create_event = self.create(request)
+            return create_event
+
+        iam_client.update_access_key(
+            AccessKeyId=request.previous_state["Id"],
+            UserName=request.previous_state["UserName"],
+            Status=request.desired_state["Status"],
+        )
+        old_model = request.previous_state
+        old_model["Status"] = request.desired_state["Status"]
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=old_model)
 
 
 class IAMAccessKeyProviderPlugin(CloudFormationResourceProviderPlugin):
