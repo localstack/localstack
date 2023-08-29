@@ -50,7 +50,7 @@ PROVIDER_DEFAULTS = {
     "AWS::IAM::Group": "ResourceProvider",
     "AWS::IAM::ManagedPolicy": "ResourceProvider",
     "AWS::IAM::AccessKey": "ResourceProvider",
-    # "AWS::IAM::Policy": "ResourceProvider",
+    "AWS::IAM::Policy": "ResourceProvider",
     "AWS::IAM::InstanceProfile": "ResourceProvider",
     "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",

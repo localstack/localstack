@@ -1,6 +1,9 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
+import random
+import string
 from pathlib import Path
 from typing import Optional, Type, TypedDict
 
@@ -45,37 +48,34 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
           - PolicyDocument
           - PolicyName
 
-
-
         Read-only properties:
           - /properties/Id
 
-
-
         """
         model = request.desired_state
+        iam_client = request.aws_client_factory.iam
 
-        # TODO: validations
+        policy_doc = json.dumps(util.remove_none_values(model["PolicyDocument"]))
+        policy_name = model["PolicyName"]
 
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
+        for role in model.get("Roles", []):
+            iam_client.put_role_policy(
+                RoleName=role, PolicyName=policy_name, PolicyDocument=policy_doc
+            )
+        for user in model.get("Users", []):
+            iam_client.put_user_policy(
+                UserName=user, PolicyName=policy_name, PolicyDocument=policy_doc
+            )
+        for group in model.get("Groups", []):
+            iam_client.put_group_policy(
+                GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
             )
 
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
+        # the physical resource ID here has a bit of a weird format
+        # e.g. 'stack-fnSe-1OKWZIBB89193' where fnSe are the first 4 characters of the LogicalResourceId (or name?)
+        suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=13))
+        model["Id"] = f"stack-{model.get('PolicyName', '')[:4]}-{suffix}"
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def read(
         self,
@@ -94,10 +94,10 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
     ) -> ProgressEvent[IAMPolicyProperties]:
         """
         Delete a resource
-
-
         """
-        raise NotImplementedError
+        iam = request.aws_client_factory.iam
+        iam.delete_policy(PolicyArn=request.desired_state["Id"])
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
         self,
@@ -105,10 +105,29 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
     ) -> ProgressEvent[IAMPolicyProperties]:
         """
         Update a resource
-
-
         """
-        raise NotImplementedError
+        iam_client = request.aws_client_factory.iam
+        model = request.desired_state
+        # FIXME: this wasn't properly implemented before as well, still needs to be rewritten
+        policy_doc = json.dumps(util.remove_none_values(model["PolicyDocument"]))
+        policy_name = model["PolicyName"]
+
+        for role in model.get("Roles", []):
+            iam_client.put_role_policy(
+                RoleName=role, PolicyName=policy_name, PolicyDocument=policy_doc
+            )
+        for user in model.get("Users", []):
+            iam_client.put_user_policy(
+                UserName=user, PolicyName=policy_name, PolicyDocument=policy_doc
+            )
+        for group in model.get("Groups", []):
+            iam_client.put_group_policy(
+                GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
+            )
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model={**request.previous_state, **request.desired_state},
+        )
 
 
 class IAMPolicyProviderPlugin(CloudFormationResourceProviderPlugin):
