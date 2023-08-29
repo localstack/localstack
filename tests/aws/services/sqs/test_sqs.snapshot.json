@@ -474,7 +474,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message": {
-    "recorded-date": "12-11-2022, 15:12:26",
+    "recorded-date": "29-08-2023, 11:09:40",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
