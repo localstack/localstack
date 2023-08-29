@@ -27,19 +27,12 @@ from localstack.services.lambda_.invocation.logs import LogHandler, LogItem
 from localstack.services.lambda_.invocation.metrics import record_cw_metric_invocation
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
 from localstack.utils.strings import truncate
-from localstack.utils.threads import start_thread
+from localstack.utils.threads import FuncThread, start_thread
 
 if TYPE_CHECKING:
     from localstack.services.lambda_.invocation.lambda_service import LambdaService
 
 LOG = logging.getLogger(__name__)
-
-
-class ShutdownPill:
-    pass
-
-
-QUEUE_SHUTDOWN = ShutdownPill()
 
 
 class LambdaVersionManager:
@@ -48,8 +41,11 @@ class LambdaVersionManager:
     function_version: FunctionVersion
     function: Function
 
-    # queue of invocations to be executed
+    # Scale provisioned concurrency up and down
+    provisioning_thread: FuncThread | None
+    # Additional guard to prevent scheduling invocation on version during shutdown
     shutdown_event: threading.Event
+
     state: VersionState | None
     provisioned_state: ProvisionedConcurrencyState | None  # TODO: remove?
     log_handler: LogHandler
@@ -74,9 +70,6 @@ class LambdaVersionManager:
         self.counting_service = counting_service
         self.assignment_service = assignment_service
         self.log_handler = LogHandler(function_version.config.role, function_version.id.region)
-
-        # invocation tracking
-        self.running_invocations = {}
 
         # async
         self.provisioning_thread = None
@@ -150,7 +143,7 @@ class LambdaVersionManager:
         if not self.provisioned_state:
             self.provisioned_state = ProvisionedConcurrencyState()
 
-        def scale_environments(*args, **kwargs):
+        def scale_environments(*args, **kwargs) -> None:
             futures = self.assignment_service.scale_provisioned_concurrency(
                 self.function_version, provisioned_concurrent_executions
             )
@@ -182,6 +175,11 @@ class LambdaVersionManager:
         2.(nogood) fail fast fail hard
 
         """
+        if self.shutdown_event.is_set():
+            message = f"Got an invocation with request id {invocation.request_id} for a version shutting down"
+            LOG.warning(message)
+            raise ServiceException(message)
+
         # TODO: try/catch handle case when no lease available (e.g., reserved concurrency, worker scenario)
         with self.counting_service.get_invocation_lease(
             self.function, self.function_version
