@@ -901,9 +901,12 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_block": {
-    "recorded-date": "26-09-2022, 11:33:01",
+    "recorded-date": "29-08-2023, 15:26:41",
     "recorded-content": {
       "v1_result": {
+        "Architectures": [
+          "x86_64"
+        ],
         "CodeSha256": "code-sha256",
         "CodeSize": "<code-size>",
         "Description": "",
@@ -922,7 +925,14 @@
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.10",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Active",
         "Timeout": 30,
         "TracingConfig": {

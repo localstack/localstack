@@ -253,7 +253,7 @@ class ExecutionEnvironment:
     def invoke(self, invocation: Invocation) -> InvocationResult:
         assert self.status == RuntimeStatus.RUNNING
         invoke_payload = {
-            "invoke-id": invocation.request_id,  # TODO: rename to request-id
+            "invoke-id": invocation.request_id,  # TODO: rename to request-id (requires change in lambda-init)
             "invoked-function-arn": invocation.invoked_arn,
             "payload": to_str(invocation.payload),
             "trace-id": self._generate_trace_header(),

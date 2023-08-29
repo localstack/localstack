@@ -116,11 +116,10 @@ class LambdaVersionManager:
         self.assignment_service.stop_environments_for_version(self.function_version)
         get_runtime_executor().cleanup_version(self.function_version)  # TODO: make pluggable?
 
-    # TODO: move
+    # TODO: move (to where?)
     def update_provisioned_concurrency_config(
         self, provisioned_concurrent_executions: int
     ) -> Future[None]:
-        # TODO: check old TODOs
         """
         TODO: implement update while in progress (see test_provisioned_concurrency test)
         TODO: loop until diff == 0 and retry to remove/add diff environments

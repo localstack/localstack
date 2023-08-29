@@ -347,7 +347,6 @@ class Poller:
             },
             "requestPayload": json.loads(to_str(original_payload)),
         }
-        # TODO: should this conditional be based on invocation_result?
         if failure_cause != "ZeroReservedConcurrency":
             destination_payload["responseContext"] = {
                 "statusCode": 200,
@@ -379,9 +378,9 @@ class Poller:
                 source_arn=self.version_manager.function_arn,
                 dlq_arn=self.version_manager.function_version.config.dead_letter_arn,
                 event=json.loads(to_str(sqs_invocation.invocation.payload)),
-                error=InvocationException(
-                    message="hi", result=to_str(invocation_result.payload)
-                ),  # TODO: check message
+                # TODO: Check message. Possibly remove because it is not used in the DLQ message?!
+                # TODO: Remove InvocationException import dependency to old provider.
+                error=InvocationException(message="hi", result=to_str(invocation_result.payload)),
                 role=self.version_manager.function_version.config.role,
             )
         except Exception as e:

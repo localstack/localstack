@@ -159,5 +159,9 @@ class ExecutorEndpoint:
             raise InvokeSendError(
                 f"Error while sending invocation {payload} to {invocation_url}. Error Code: {response.status_code}"
             )
-        # TODO: define and explain constant, slightly over 15min
-        return self.invocation_future.result(timeout=903)
+        # Do not wait longer for an invoke than the maximum lambda timeout plus a buffer
+        lambda_max_timeout_seconds = 900
+        invoke_timeout_buffer_seconds = 5
+        return self.invocation_future.result(
+            timeout=lambda_max_timeout_seconds + invoke_timeout_buffer_seconds
+        )
