@@ -203,10 +203,10 @@ class Execution:
             exec_comm=Execution.BaseExecutionWorkerComm(self),
             context_object_init=ContextObjectInitData(
                 Execution=ContextObjectExecution(
-                    Id="TODO",
+                    Id=self.exec_arn,
                     Input=self.input_data,
                     Name=self.state_machine.name,
-                    RoleArn="TODO",
+                    RoleArn=self.role_arn,
                     StartTime=self.start_date.time().isoformat(),
                 ),
                 StateMachine=ContextObjectStateMachine(
