@@ -100,7 +100,7 @@ class Poller:
         self.event_queue_url = event_queue_url
         self._shutdown_event = threading.Event()
         function_id = self.version_manager.function_version.id
-        # TODO: think about scaling, test it?!
+        # TODO: think about scaling, test it, make it configurable?!
         self.invoker_pool = ThreadPoolExecutor(
             thread_name_prefix=f"lambda-invoker-{function_id.function_name}:{function_id.qualifier}"
         )
@@ -119,7 +119,6 @@ class Poller:
                 # https://app.circleci.com/pipelines/github/localstack/localstack/17428/workflows/391fc320-0cec-4dd1-9e3b-d7511de61d12/jobs/132663/parallel-runs/2
                 # Test case (happens not every time!):
                 # tests.aws.services.cloudformation.resources.test_legacy.TestCloudFormation.test_updating_stack_with_iam_role
-                LOG.debug("Polling")
                 messages = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
                     WaitTimeSeconds=2,
@@ -127,7 +126,6 @@ class Poller:
                     MaxNumberOfMessages=1,
                     VisibilityTimeout=function_timeout + 60,
                 )
-                LOG.debug("Polled")
                 if not messages.get("Messages"):
                     continue
                 message = messages["Messages"][0]
