@@ -53,7 +53,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns import constants as sns_constants
-from localstack.services.sns.models import SnsMessage, SnsStore, sns_stores
+from localstack.services.sns.models import SnsMessage, SnsStore, SnsSubscription, sns_stores
 from localstack.services.sns.publisher import (
     PublishDispatcher,
     SnsBatchPublishContext,
@@ -238,6 +238,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             attribute_name=attribute_name,
             attribute_value=attribute_value,
             topic_arn=sub["TopicArn"],
+            endpoint=sub["Endpoint"],
         )
         try:
             call_moto(context)
@@ -556,14 +557,17 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 "Invalid parameter: Invalid parameter: Endpoint Reason: FIFO SQS Queues can not be subscribed to standard SNS topics"
             )
-        elif ".fifo" in topic_arn and ".fifo" not in endpoint:
-            raise InvalidParameterException(
-                "Invalid parameter: Invalid parameter: Endpoint Reason: Please use FIFO SQS queue"
-            )
+        # elif ".fifo" in topic_arn and ".fifo" not in endpoint:
+        #     raise InvalidParameterException(
+        #         "Invalid parameter: Invalid parameter: Endpoint Reason: Please use FIFO SQS queue"
+        #     )
         if attributes:
             for attr_name, attr_value in attributes.items():
                 validate_subscription_attribute(
-                    attribute_name=attr_name, attribute_value=attr_value, topic_arn=topic_arn
+                    attribute_name=attr_name,
+                    attribute_value=attr_value,
+                    topic_arn=topic_arn,
+                    endpoint=endpoint,
                 )
 
         moto_response = call_moto(context)
@@ -579,16 +583,20 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             if sub.get("Endpoint") == endpoint:
                 return SubscribeResponse(SubscriptionArn=sub["SubscriptionArn"])
 
-        subscription = {
+        principal = sns_constants.DUMMY_SUBSCRIPTION_PRINCIPAL.replace(
+            "{{account_id}}", context.account_id
+        )
+        subscription = SnsSubscription(
             # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
-            "TopicArn": topic_arn,
-            "Endpoint": endpoint,
-            "Protocol": protocol,
-            "SubscriptionArn": subscription_arn,
-            "PendingConfirmation": "true",
-            "Owner": context.account_id,
-            "RawMessageDelivery": "false",  # default value, will be overriden if set
-        }
+            TopicArn=topic_arn,
+            Endpoint=endpoint,
+            Protocol=protocol,
+            SubscriptionArn=subscription_arn,
+            PendingConfirmation="true",
+            Owner=context.account_id,
+            RawMessageDelivery="false",  # default value, will be overriden if set
+            SubscriptionPrincipal=principal,  # dummy value, could be fetched with a call to STS?
+        )
         if attributes:
             subscription.update(attributes)
             if "FilterPolicy" in attributes:
@@ -699,7 +707,10 @@ def is_raw_message_delivery(susbcriber):
 
 
 def validate_subscription_attribute(
-    attribute_name: str, attribute_value: str, topic_arn: str
+    attribute_name: str,
+    attribute_value: str,
+    topic_arn: str,
+    endpoint: str,
 ) -> None:
     """
     Validate the subscription attribute to be set. See:
@@ -707,6 +718,7 @@ def validate_subscription_attribute(
     :param attribute_name: the subscription attribute name, must be in VALID_SUBSCRIPTION_ATTR_NAME
     :param attribute_value: the subscription attribute value
     :param topic_arn: the topic_arn of the subscription, needed to know if it is FIFO
+    :param endpoint: the subscription endpoint (like an SQS queue ARN)
     :raises InvalidParameterException
     :return:
     """
@@ -744,9 +756,11 @@ def validate_subscription_attribute(
             )
 
         if topic_arn.endswith(".fifo"):
-            if not parsed_arn["resource"].endswith(".fifo") or "sqs" not in parsed_arn["service"]:
+            if endpoint.endswith(".fifo") and (
+                not parsed_arn["resource"].endswith(".fifo") or "sqs" not in parsed_arn["service"]
+            ):
                 raise InvalidParameterException(
-                    "Invalid parameter: RedrivePolicy: must use a FIFO queue as DLQ for a FIFO topic"
+                    "Invalid parameter: RedrivePolicy: must use a FIFO queue as DLQ for a FIFO Subscription to a FIFO Topic."
                 )
 
 

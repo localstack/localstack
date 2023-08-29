@@ -484,6 +484,9 @@ def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_queue_arn, aws_cl
 
 @pytest.fixture
 def sns_create_http_endpoint(sns_create_topic, sns_subscription, aws_client):
+    # This fixture can be used with manual setup to expose the HTTPServer fixture to AWS. One example is to use a
+    # a service like localhost.run, and set up a specific port to start the `HTTPServer(port=40000)` for example,
+    # and tunnel `localhost:40000` to a specific domain that you can manually return from this fixture.
     http_servers = []
 
     def _create_http_endpoint(

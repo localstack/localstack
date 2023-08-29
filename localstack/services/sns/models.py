@@ -86,7 +86,7 @@ class SnsMessage:
         )
 
 
-class SnsSubscription(TypedDict):
+class SnsSubscription(TypedDict, total=False):
     """
     In SNS, Subscription can be represented with only TopicArn, Endpoint, Protocol, SubscriptionArn and Owner, for
     example in ListSubscriptions. However, when getting a subscription with GetSubscriptionAttributes, it will return
