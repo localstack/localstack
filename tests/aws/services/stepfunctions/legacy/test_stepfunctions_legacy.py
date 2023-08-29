@@ -218,11 +218,11 @@ def setup_and_tear_down(aws_client):
 
     yield
 
-    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_1)
-    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_2)
-    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_3)
-    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_4)
-    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_5)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_1)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_2)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_3)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_4)
+    aws_client.lambda_.delete_function(FunctionName=TEST_LAMBDA_NAME_5)
 
 
 @pytest.fixture

@@ -1694,8 +1694,8 @@ def test_rest_api_multi_region(
 
     delete_rest_api(apigateway_client_eu, restApiId=api_eu_id)
     delete_rest_api(apigateway_client_us, restApiId=api_us_id)
-    testutil.delete_lambda_function(name=lambda_name, region_name="eu-west-1")
-    testutil.delete_lambda_function(name=lambda_name, region_name="us-west-1")
+    aws_client_factory(region_name="eu-west-1").lambda_.delete_function(FunctionName=lambda_name)
+    aws_client_factory(region_name="us-west-1").lambda_.delete_function(FunctionName=lambda_name)
 
 
 class TestIntegrations:
