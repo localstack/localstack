@@ -51,7 +51,7 @@ class LogHandler:
                 return
             try:
                 store_cloudwatch_logs(
-                    log_item.log_group, log_item.log_stream, log_item.logs, logs_client
+                    logs_client, log_item.log_group, log_item.log_stream, log_item.logs
                 )
             except Exception as e:
                 LOG.warning(
