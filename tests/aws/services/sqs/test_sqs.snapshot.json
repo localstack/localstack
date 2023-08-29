@@ -336,12 +336,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sse_queue_attributes": {
-    "recorded-date": "01-08-2022, 21:14:43",
+    "recorded-date": "29-08-2023, 11:04:58",
     "recorded-content": {
       "sse_kms_attributes": {
         "Attributes": {
-          "KmsMasterKeyId": "testKeyId",
           "KmsDataKeyReusePeriodSeconds": "6000",
+          "KmsMasterKeyId": "testKeyId",
           "SqsManagedSseEnabled": "false"
         },
         "ResponseMetadata": {
