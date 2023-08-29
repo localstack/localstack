@@ -290,8 +290,9 @@ jobs:
           environment:
             TEST_PATH: "tests/bootstrap"
             COVERAGE_ARGS: "-p"
+            PYTEST_ADDOPTS: "${{ env.TINYBIRD_PYTEST_ARGS }}-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s"
           command: |
-            PYTEST_ARGS="-s ${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/bootstrap-tests.xml -o junit_suite_name=bootstrap-tests" make test-coverage
+            make test-coverage
       - store_test_results:
           path: target/reports/
       - run:
