@@ -415,17 +415,20 @@ class LambdaEventManager:
                 LOG.debug("Event manager already stopped before started.")
                 return
             sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
-            fn_version_id = self.version_manager.function_version.id
+            function_id = self.version_manager.function_version.id
             # Truncate function name to ensure queue name limit of max 80 characters
-            function_name_short = fn_version_id.function_name[:47]
-            queue_name = f"{function_name_short}-{md5(fn_version_id.qualified_arn())}"
+            function_name_short = function_id.function_name[:47]
+            queue_name = f"{function_name_short}-{md5(function_id.qualified_arn())}"
             create_queue_response = sqs_client.create_queue(QueueName=queue_name)
             self.event_queue_url = create_queue_response["QueueUrl"]
             # Ensure no events are in new queues due to persistence and cloud pods
             sqs_client.purge_queue(QueueUrl=self.event_queue_url)
 
             self.poller = Poller(self.version_manager, self.event_queue_url)
-            self.poller_thread = FuncThread(self.poller.run, name="lambda-poller")
+            self.poller_thread = FuncThread(
+                self.poller.run,
+                name=f"lambda-poller-{function_id.function_name}:{function_id.qualifier}",
+            )
             self.poller_thread.start()
 
     def stop_for_update(self) -> None:

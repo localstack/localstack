@@ -4067,6 +4067,7 @@ class TestSNSPublishDelivery:
 
         aws_client.sns.publish(TopicArn=topic_arn, Subject=subject, Message=message)
 
+        # TODO: Wait until Lambda function actually executes and not only for SNS logs
         log_group_name = f"sns/{region}/{account_id}/{topic_name}"
 
         def get_log_events():
