@@ -143,6 +143,8 @@ class ExecutorEndpoint:
         for rule in self.rules:
             self.router.remove_rule(rule)
         self.startup_future.cancel()
+        if self.invocation_future:
+            self.invocation_future.cancel()
 
     def invoke(self, payload: Dict[str, str]) -> InvocationResult:
         self.invocation_future = Future()
@@ -157,4 +159,5 @@ class ExecutorEndpoint:
             raise InvokeSendError(
                 f"Error while sending invocation {payload} to {invocation_url}. Error Code: {response.status_code}"
             )
-        return self.invocation_future.result()
+        # TODO: define and explain constant, slightly over 15min
+        return self.invocation_future.result(timeout=903)
