@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional, Type, TypedDict
 
@@ -46,41 +47,44 @@ class IAMGroupProvider(ResourceProvider[IAMGroupProperties]):
         Primary identifier fields:
           - /properties/Id
 
-
-
         Create-only properties:
           - /properties/GroupName
 
         Read-only properties:
           - /properties/Arn
           - /properties/Id
-
-
-
         """
         model = request.desired_state
+        iam_client = request.aws_client_factory.iam
 
-        # TODO: validations
+        group_name = model.get("GroupName")
+        if not group_name:
+            group_name = util.generate_default_name(request.stack_name, request.logical_resource_id)
+            model["GroupName"] = group_name
 
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
+        create_group_result = iam_client.create_group(
+            **util.select_attributes(model, ["GroupName", "Path"])
+        )
+        model["Id"] = create_group_result["Group"][
+            "GroupName"
+        ]  # a bit weird that this is not the GroupId
+        model["Arn"] = create_group_result["Group"]["Arn"]
+
+        for managed_policy in model.get("ManagedPolicyArns", []):
+            iam_client.attach_group_policy(GroupName=group_name, PolicyArn=managed_policy)
+
+        for inline_policy in model.get("Policies", []):
+            doc = json.dumps(inline_policy.get("PolicyDocument"))
+            iam_client.put_group_policy(
+                GroupName=group_name,
+                PolicyName=inline_policy.get("PolicyName"),
+                PolicyDocument=doc,
             )
-
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def read(
         self,
@@ -99,10 +103,27 @@ class IAMGroupProvider(ResourceProvider[IAMGroupProperties]):
     ) -> ProgressEvent[IAMGroupProperties]:
         """
         Delete a resource
-
-
         """
-        raise NotImplementedError
+        model = request.desired_state
+        iam_client = request.aws_client_factory.iam
+
+        # first we need to detach and delete any attached policies
+        for managed_policy in model.get("ManagedPolicyArns", []):
+            iam_client.detach_group_policy(GroupName=model["GroupName"], PolicyArn=managed_policy)
+
+        for inline_policy in model.get("Policies", []):
+            iam_client.delete_group_policy(
+                GroupName=model["GroupName"],
+                PolicyName=inline_policy.get("PolicyName"),
+            )
+
+        # now we can delete the actual group
+        iam_client.delete_group(GroupName=model["GroupName"])
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model={},
+        )
 
     def update(
         self,
@@ -110,9 +131,14 @@ class IAMGroupProvider(ResourceProvider[IAMGroupProperties]):
     ) -> ProgressEvent[IAMGroupProperties]:
         """
         Update a resource
-
-
         """
+        # TODO: note: while the resource implemented "update_resource" previously, it didn't actually work
+        #  so leaving it out here for now
+        # iam.update_group(
+        #     GroupName=props.get("GroupName"),
+        #     NewPath=props.get("NewPath") or "",
+        #     NewGroupName=props.get("NewGroupName") or "",
+        # )
         raise NotImplementedError
 
 

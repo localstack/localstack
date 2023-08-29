@@ -47,7 +47,7 @@ PROVIDER_DEFAULTS = {
     "AWS::SQS::QueuePolicy": "ResourceProvider",
     "AWS::IAM::User": "ResourceProvider",
     "AWS::IAM::Role": "ResourceProvider",
-    # "AWS::IAM::Group": "ResourceProvider",
+    "AWS::IAM::Group": "ResourceProvider",
     # "AWS::IAM::ManagedPolicy": "ResourceProvider",
     # "AWS::IAM::AccessKey": "ResourceProvider",
     # "AWS::IAM::Policy": "ResourceProvider",
