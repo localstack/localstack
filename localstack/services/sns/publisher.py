@@ -26,6 +26,7 @@ from localstack.services.sns.models import (
     SnsSubscription,
 )
 from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
     extract_region_from_arn,
     extract_resource_from_arn,
     parse_arn,
@@ -873,7 +874,13 @@ def store_delivery_log(
 
     log_output = json.dumps(delivery_log)
 
-    return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
+    account_id = extract_account_id_from_arn(subscriber["TopicArn"])
+    region_name = extract_region_from_arn(subscriber["TopicArn"])
+    logs_client = connect_to(aws_access_key_id=account_id, region_name=region_name).logs
+
+    return store_cloudwatch_logs(
+        logs_client, log_group_name, log_stream_name, log_output, invocation_time
+    )
 
 
 def create_subscribe_url(external_url, topic_arn, subscription_token):
