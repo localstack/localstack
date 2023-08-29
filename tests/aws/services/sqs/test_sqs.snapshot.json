@@ -457,7 +457,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_successive_purge_calls_fail": {
-    "recorded-date": "22-08-2022, 21:28:31",
+    "recorded-date": "29-08-2023, 11:03:34",
     "recorded-content": {
       "purge_queue_error": {
         "Error": {
