@@ -8,8 +8,10 @@ from urllib.parse import urlparse
 
 import dns.resolver
 
+from .. import config, constants
 from .collections import CustomExpiryTTLCache
 from .numbers import is_number
+from .objects import singleton_factory
 from .sync import retry
 
 LOG = logging.getLogger(__name__)
@@ -289,3 +291,48 @@ class PortRange:
             return port.port
         else:
             raise PortNotAvailableException(f"The given port ({port}) is already reserved.")
+
+
+@singleton_factory
+def get_docker_host_from_container() -> str:
+    """
+    Get the hostname/IP to connect to the host from within a Docker container (e.g., Lambda function).
+    The logic is roughly as follows:
+      1. return `host.docker.internal` if we're running in host mode, in a non-Linux OS
+      2. return the IP address that `host.docker.internal` (or alternatively `host.containers.internal`)
+        resolves to, if we're inside Docker
+      3. return the Docker bridge IP (config.DOCKER_BRIDGE_IP) as a fallback, if option (2) fails
+    """
+    result = config.DOCKER_BRIDGE_IP
+    try:
+        if not config.is_in_docker and not config.is_in_linux:
+            # If we're running outside Docker (in host mode), and would like the Lambda containers to be able
+            # to access services running on the local machine, return `host.docker.internal` accordingly
+            if config.LOCALSTACK_HOSTNAME == constants.LOCALHOST:
+                result = "host.docker.internal"
+        # update LOCALSTACK_HOSTNAME if host.docker.internal is available
+        if config.is_in_docker:
+            try:
+                result = socket.gethostbyname("host.docker.internal")
+            except socket.error:
+                result = socket.gethostbyname("host.containers.internal")
+            # TODO still required? - remove
+            # if config.LOCALSTACK_HOSTNAME == config.DOCKER_BRIDGE_IP:
+            #     LOCALSTACK_HOSTNAME = result
+    except socket.error:
+        pass
+    return result
+
+
+def get_addressable_container_host(default_local_hostname: str = None) -> str:
+    """
+    Return the target host to address endpoints exposed by Docker containers, depending on
+    the current execution context.
+
+    If we're currently executing within Docker, then return get_docker_host_from_container(); otherwise, return
+    the value of `LOCALHOST_HOSTNAME`, assuming that container endpoints are exposed and accessible under localhost.
+
+    :param default_local_hostname: local hostname to return, if running outside Docker (defaults to LOCALHOST_HOSTNAME)
+    """
+    default_local_hostname = default_local_hostname or constants.LOCALHOST_HOSTNAME
+    return get_docker_host_from_container() if config.is_in_docker else default_local_hostname
