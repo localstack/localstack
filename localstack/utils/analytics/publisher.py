@@ -257,6 +257,12 @@ class GlobalAnalyticsBus(PublisherBuffer):
             response = self._client.start_session(get_client_metadata())
             if config.DEBUG_ANALYTICS:
                 LOG.debug("session endpoint returned: %s", response)
+
+            if not response.track_events():
+                if config.DEBUG_ANALYTICS:
+                    LOG.debug("gracefully disabling analytics tracking")
+                self.tracking_disabled = True
+
         except Exception:
             self.tracking_disabled = True
             if config.DEBUG_ANALYTICS:
