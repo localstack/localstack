@@ -569,7 +569,7 @@ def prepare_docker_start():
     config.dirs.mkdirs()
 
 
-def configure_container(container_config: ContainerConfiguration):
+def configure_container(container: Container):
     """
     Configuration routine for the LocalstackContainer.
     """
@@ -577,76 +577,74 @@ def configure_container(container_config: ContainerConfiguration):
     for addr in config.GATEWAY_LISTEN:
         port_configuration.add(addr.port)
 
-    container_config.image_name = get_docker_image_to_start()
-    container_config.name = config.MAIN_CONTAINER_NAME
-    container_config.volumes = VolumeMappings()
-    container_config.remove = True
-    container_config.ports = port_configuration
-    container_config.entrypoint = os.environ.get("ENTRYPOINT")
-    container_config.command = shlex.split(os.environ.get("CMD", "")) or None
-    container_config.env_vars = {}
+    container.config.image_name = get_docker_image_to_start()
+    container.config.name = config.MAIN_CONTAINER_NAME
+    container.config.volumes = VolumeMappings()
+    container.config.remove = True
+    container.config.ports = port_configuration
+    container.config.entrypoint = os.environ.get("ENTRYPOINT")
+    container.config.command = shlex.split(os.environ.get("CMD", "")) or None
+    container.config.env_vars = {}
 
     # get additional configured flags
     user_flags = config.DOCKER_FLAGS
-    user_flags = extract_port_flags(user_flags, container_config.ports)
-    if container_config.additional_flags is None:
-        container_config.additional_flags = user_flags
+    user_flags = extract_port_flags(user_flags, container.config.ports)
+    if container.config.additional_flags is None:
+        container.config.additional_flags = user_flags
     else:
-        container_config.additional_flags = f"{container_config.additional_flags} {user_flags}"
+        container.config.additional_flags = f"{container.config.additional_flags} {user_flags}"
 
     # get additional parameters from plugins
-    hooks.configure_localstack_container.run(container_config)
+    hooks.configure_localstack_container.run(container.config)
 
     # construct default port mappings
-    container_config.ports.add(get_edge_port_http())
+    container.config.ports.add(get_edge_port_http())
     for port in range(config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END):
-        container_config.ports.add(port)
+        container.config.ports.add(port)
 
     if config.DEVELOP:
-        container_config.ports.add(config.DEVELOP_PORT)
+        container.config.ports.add(config.DEVELOP_PORT)
 
     # environment variables
     # pass through environment variables defined in config
     for env_var in config.CONFIG_ENV_VARS:
         value = os.environ.get(env_var, None)
         if value is not None:
-            container_config.env_vars[env_var] = value
-    container_config.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
+            container.config.env_vars[env_var] = value
+    container.config.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
 
     # TODO this is default now, remove once a considerate time is passed
     # to activate proper signal handling
-    container_config.env_vars["SET_TERM_HANDLER"] = "1"
+    container.config.env_vars["SET_TERM_HANDLER"] = "1"
 
-    configure_volume_mounts(container_config)
+    configure_volume_mounts(container)
 
     # mount docker socket
-    container_config.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
+    container.config.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
-    container_config.privileged = True
+    container.config.privileged = True
 
 
-def configure_container_from_cli_params(
-    container_config: ContainerConfiguration, params: Dict[str, Any]
-):
+def configure_container_from_cli_params(container: Container, params: Dict[str, Any]):
     # TODO: consolidate with container_client.Util.parse_additional_flags
     # network flag
     if params.get("network"):
-        container_config.network = params.get("network")
+        container.config.network = params.get("network")
 
     # parse environment variable flags
     if params.get("env"):
         for e in params.get("env"):
             if "=" in e:
                 k, v = e.split("=", maxsplit=1)
-                container_config.env_vars[k] = v
+                container.config.env_vars[k] = v
             else:
                 # there's currently no way in our abstraction to only pass the variable name (as you can do
                 # in docker) so we resolve the value here.
-                container_config.env_vars[e] = os.getenv(e)
+                container.config.env_vars[e] = os.getenv(e)
 
 
-def configure_volume_mounts(container_config: ContainerConfiguration):
-    container_config.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
+def configure_volume_mounts(container: Container):
+    container.config.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
 
 
 @log_duration()
@@ -673,6 +671,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
 
     # create and prepare container
     container_config = ContainerConfiguration(get_docker_image_to_start())
+
     configure_container(container_config)
     if cli_params:
         configure_container_from_cli_params(container_config, cli_params or {})
@@ -728,15 +727,15 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
         shutdown_handler()
 
 
-def ensure_container_image(console, container_config: ContainerConfiguration):
+def ensure_container_image(console, container: Container):
     try:
-        DOCKER_CLIENT.inspect_image(container_config.image_name, pull=False)
+        DOCKER_CLIENT.inspect_image(container.config.image_name, pull=False)
         return
     except NoSuchImage:
         console.log("container image not found on host")
 
-    with console.status(f"Pulling container image {container_config.image_name}"):
-        DOCKER_CLIENT.pull_image(container_config.image_name)
+    with console.status(f"Pulling container image {container.config.image_name}"):
+        DOCKER_CLIENT.pull_image(container.config.image_name)
         console.log("download complete")
 
 
