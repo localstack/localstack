@@ -116,14 +116,13 @@ class LambdaVersionManager:
         self.assignment_service.stop_environments_for_version(self.function_version)
         get_runtime_executor().cleanup_version(self.function_version)  # TODO: make pluggable?
 
-    # TODO: move (to where?)
     def update_provisioned_concurrency_config(
         self, provisioned_concurrent_executions: int
     ) -> Future[None]:
         """
         TODO: implement update while in progress (see test_provisioned_concurrency test)
         TODO: loop until diff == 0 and retry to remove/add diff environments
-        TODO: alias routing & allocated
+        TODO: alias routing & allocated (i.e., the status while updating provisioned concurrency)
         TODO: ProvisionedConcurrencyStatusEnum.FAILED
         TODO: status reason
 
@@ -179,7 +178,6 @@ class LambdaVersionManager:
             LOG.warning(message)
             raise ServiceException(message)
 
-        # TODO: try/catch handle case when no lease available (e.g., reserved concurrency, worker scenario)
         with self.counting_service.get_invocation_lease(
             self.function, self.function_version
         ) as provisioning_type:

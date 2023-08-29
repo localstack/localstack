@@ -73,11 +73,9 @@ class ExecutorEndpoint:
         def invocation_logs(request: Request, invoke_id: str) -> Response:
             logs = request.json
             if isinstance(logs, Dict):
-                # TODO: handle logs truncating somewhere (previously in version manager)?
                 self.logs = logs["logs"]
             else:
                 LOG.error("Invalid logs from RAPID! Logs: %s", logs)
-                # TODO handle error in some way?
             return Response(status=HTTPStatus.ACCEPTED)
 
         def status_ready(request: Request, executor_id: str) -> Response:

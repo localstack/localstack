@@ -153,8 +153,7 @@ class CountingService:
                         - calculate_provisioned_concurrency_sum(function)
                         - on_demand_running_invocation_count
                     )
-                    # TODO: shouldn't this check be > 0? Tested somewhere?
-                    if available_reserved_concurrency:
+                    if available_reserved_concurrency > 0:
                         on_demand_tracker.increment(unqualified_function_arn)
                         lease_type = "on-demand"
                     else:

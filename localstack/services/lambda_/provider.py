@@ -1264,7 +1264,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise
         except Exception as e:
             LOG.error("Error while invoking lambda", exc_info=e)
-            # TODO map to correct exception
             raise LambdaServiceException("Internal error while executing lambda") from e
 
         if invocation_type == InvocationType.Event:
