@@ -529,10 +529,11 @@ class FileWriter:
         destination_path = file_destination.parent
         destination_path.mkdir(parents=True, exist_ok=True)
 
-        should_write = self.confirm_overwrite(file_destination)
-        if not should_write:
-            self.console.print(f"{file_destination} already exists. Skipping.")
-            return
+        if file_destination.exists():
+            should_overwrite = self.confirm_overwrite(file_destination)
+            if not should_overwrite:
+                self.console.print(f"Skipping {file_destination}")
+                return
 
         match file_type:
             # provider
@@ -595,9 +596,8 @@ class FileWriter:
         """
         return (
             destination_file.exists()
-            and destination_file.is_file()
-            and not self.overwrite
-            and not click.confirm("Destination files already exist, overwrite?")
+            # and not self.overwrite
+            and click.confirm("Destination files already exist, overwrite?")
         )
 
     @staticmethod
@@ -641,14 +641,12 @@ class Output:
         printer: Console,
         writer: FileWriter,
         resource_name: ResourceName,
-        overwrite: bool = False,
     ):
         self.contents = contents
         self.file_type = file_type
         self.printer = printer
         self.writer = writer
         self.resource_name = resource_name
-        self.overwrite = overwrite
 
     def handle(self, should_write: bool = False):
         if should_write:
