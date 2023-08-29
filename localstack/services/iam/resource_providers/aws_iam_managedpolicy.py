@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional, Type, TypedDict
 
@@ -54,32 +55,27 @@ class IAMManagedPolicyProvider(ResourceProvider[IAMManagedPolicyProperties]):
         Read-only properties:
           - /properties/Id
 
-
-
         """
         model = request.desired_state
+        iam_client = request.aws_client_factory.iam
+        group_name = model.get("ManagedPolicyName")
+        if not group_name:
+            group_name = util.generate_default_name(request.stack_name, request.logical_resource_id)
+            model["ManagedPolicyName"] = group_name
 
-        # TODO: validations
-
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
-
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
+        policy_doc = json.dumps(util.remove_none_values(model["PolicyDocument"]))
+        policy = iam_client.create_policy(
+            PolicyName=model["ManagedPolicyName"], PolicyDocument=policy_doc
+        )
+        model["Id"] = policy["Policy"]["Arn"]
+        policy_arn = policy["Policy"]["Arn"]
+        for role in model.get("Roles", []):
+            iam_client.attach_role_policy(RoleName=role, PolicyArn=policy_arn)
+        for user in model.get("Users", []):
+            iam_client.attach_user_policy(UserName=user, PolicyArn=policy_arn)
+        for group in model.get("Groups", []):
+            iam_client.attach_group_policy(GroupName=group, PolicyArn=policy_arn)
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def read(
         self,
@@ -98,10 +94,20 @@ class IAMManagedPolicyProvider(ResourceProvider[IAMManagedPolicyProperties]):
     ) -> ProgressEvent[IAMManagedPolicyProperties]:
         """
         Delete a resource
-
-
         """
-        raise NotImplementedError
+        iam_client = request.aws_client_factory.iam
+        model = request.previous_state
+
+        for role in model.get("Roles", []):
+            iam_client.detach_role_policy(RoleName=role, PolicyArn=model["Id"])
+        for user in model.get("Users", []):
+            iam_client.detach_user_policy(UserName=user, PolicyArn=model["Id"])
+        for group in model.get("Groups", []):
+            iam_client.detach_group_policy(GroupName=group, PolicyArn=model["Id"])
+
+        iam_client.delete_policy(PolicyArn=model["Id"])
+
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def update(
         self,
@@ -109,8 +115,6 @@ class IAMManagedPolicyProvider(ResourceProvider[IAMManagedPolicyProperties]):
     ) -> ProgressEvent[IAMManagedPolicyProperties]:
         """
         Update a resource
-
-
         """
         raise NotImplementedError
 
