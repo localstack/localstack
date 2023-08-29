@@ -1,7 +1,7 @@
 import concurrent.futures
 import logging
 import threading
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future
 from typing import TYPE_CHECKING
 
 from localstack import config
@@ -80,10 +80,6 @@ class LambdaVersionManager:
 
         # async
         self.provisioning_thread = None
-        # TODO: cleanup
-        self.provisioning_pool = ThreadPoolExecutor(
-            thread_name_prefix=f"lambda-provisioning-{function_version.id.function_name}:{function_version.id.qualifier}"
-        )
         self.shutdown_event = threading.Event()
 
         # async state
@@ -211,14 +207,14 @@ class LambdaVersionManager:
                     executed_version=self.function_version.id.qualifier,
                 )
 
+        function_id = self.function_version.id
         # MAYBE: reuse threads
         start_thread(
             lambda *args, **kwargs: record_cw_metric_invocation(
                 function_name=self.function.function_name,
                 region_name=self.function_version.id.region,
             ),
-            # TODO: improve thread naming
-            name="record-cloudwatch-metric",
+            name=f"record-cloudwatch-metric-{function_id.function_name}:{function_id.qualifier}",
         )
         LOG.debug("Got logs for invocation '%s'", invocation.request_id)
         for log_line in invocation_result.logs.splitlines():
