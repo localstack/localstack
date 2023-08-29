@@ -104,6 +104,7 @@ class LambdaService:
         if not_done:
             LOG.debug("Shutdown not complete, missing threads: %s", not_done)
         self.task_executor.shutdown(cancel_futures=True)
+        self.assignment_service.stop()
 
     def stop_version(self, qualified_arn: str) -> None:
         """

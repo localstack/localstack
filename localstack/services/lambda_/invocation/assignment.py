@@ -149,3 +149,6 @@ class AssignmentService(OtherServiceEndpoint):
             futures.append(self.provisioning_pool.submit(self.stop_environment, env))
 
         return futures
+
+    def stop(self):
+        self.provisioning_pool.shutdown(cancel_futures=True)
