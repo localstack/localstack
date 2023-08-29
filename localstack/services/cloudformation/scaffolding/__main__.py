@@ -594,11 +594,7 @@ class FileWriter:
 
         :return True if file should be (over-)written, False otherwise
         """
-        return (
-            destination_file.exists()
-            # and not self.overwrite
-            and click.confirm("Destination files already exist, overwrite?")
-        )
+        return self.overwrite or click.confirm("Destination files already exist, overwrite?")
 
     @staticmethod
     def write_text(contents: str, destination: Path):
@@ -713,7 +709,7 @@ def cli():
     help="CloudFormation resource type (e.g. 'AWS::SSM::Parameter') to generate",
 )
 @click.option("-w", "--write/--no-write", default=False)
-@click.option("--overwrite", default=False)
+@click.option("--overwrite", is_flag=True, default=False)
 @click.option("-t", "--write-tests/--no-write-tests", default=False)
 def generate(resource_type: str, write: bool, write_tests: bool, overwrite: bool):
     console = Console()
