@@ -57,24 +57,27 @@ class IAMInstanceProfileProvider(ResourceProvider[IAMInstanceProfileProperties])
 
         """
         model = request.desired_state
-
         iam = request.aws_client_factory.iam
 
-        iam.get_instance_profile(InstanceProfileName="")
+        # defaults
+        role_name = model.get("InstanceProfileName")
+        if not role_name:
+            role_name = util.generate_default_name(request.stack_name, request.logical_resource_id)
+            model["InstanceProfileName"] = role_name
+
         response = iam.create_instance_profile(
-            InstanceProfileName=model['InstanceProfileName'],
-            Path=model['Path'],
+            InstanceProfileName=model["InstanceProfileName"],
+            Path=model["Path"],
         )
-        for role_name in model.get('Roles', []):
+        for role_name in model.get("Roles", []):
             iam.add_role_to_instance_profile(
-                InstanceProfileName=model['InstanceProfileName'], RoleName=role_name
+                InstanceProfileName=model["InstanceProfileName"], RoleName=role_name
             )
-        model['Arn'] = response['InstanceProfile']['Arn']
+        model["Arn"] = response["InstanceProfile"]["Arn"]
         return ProgressEvent(
             status=OperationStatus.IN_PROGRESS,
             resource_model=model,
         )
-
 
     def read(
         self,
@@ -100,7 +103,19 @@ class IAMInstanceProfileProvider(ResourceProvider[IAMInstanceProfileProperties])
           - iam:RemoveRoleFromInstanceProfile
           - iam:DeleteInstanceProfile
         """
-        raise NotImplementedError
+        iam = request.aws_client_factory.iam
+        instance_profile = iam.get_instance_profile(
+            InstanceProfileName=request.previous_state["InstanceProfileName"]
+        )
+        for role in instance_profile["InstanceProfile"]["Roles"]:
+            iam.remove_role_from_instance_profile(
+                InstanceProfileName=request.previous_state["InstanceProfileName"],
+                RoleName=role["RoleName"],
+            )
+        iam.delete_instance_profile(
+            InstanceProfileName=request.previous_state["InstanceProfileName"]
+        )
+        return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model={})
 
     def update(
         self,
