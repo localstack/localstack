@@ -1868,7 +1868,7 @@
       "head_bucket_filtered_header": {
         "content-type": "application/xml",
         "x-amz-access-point-alias": "false",
-        "x-amz-bucket-region": "<region>",
+        "x-amz-bucket-region": "<region:1>",
         "x-amz-id-2": "x-amz-id-2",
         "x-amz-request-id": "x-amz-request-id"
       },
@@ -1881,7 +1881,7 @@
       "head_bucket_2_filtered_header": {
         "content-type": "application/xml",
         "x-amz-access-point-alias": "false",
-        "x-amz-bucket-region": "us-west-1",
+        "x-amz-bucket-region": "<region:2>",
         "x-amz-id-2": "x-amz-id-2",
         "x-amz-request-id": "x-amz-request-id"
       },
