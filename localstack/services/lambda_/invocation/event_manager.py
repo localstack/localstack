@@ -248,8 +248,9 @@ class Poller:
                     # Assumption: We assume that the internal exception retries counter is reset after
                     #  an invocation that does not throw an exception
                     sqs_invocation.exception_retries = 0
-                    # TODO: max delay is 15 minutes! specify max 300 limit in docs
-                    #   https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
+                    # LAMBDA_RETRY_BASE_DELAY_SECONDS has a limit of 300s because the maximum SQS DelaySeconds
+                    # is 15 minutes (900s) and the maximum retry count is 3. SQS quota for "Message timer":
+                    # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
                     delay_seconds = sqs_invocation.retries * config.LAMBDA_RETRY_BASE_DELAY_SECONDS
                     # TODO: max SQS message size limit could break parity with AWS because
                     #  our SQSInvocation contains additional fields! 256kb is max for both Lambda payload + SQS
