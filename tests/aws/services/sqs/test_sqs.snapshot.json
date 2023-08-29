@@ -180,109 +180,84 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters": {
-    "recorded-date": "31-05-2022, 12:18:44",
+    "recorded-date": "29-08-2023, 11:15:01",
     "recorded-content": {
       "all_attributes": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:1>",
-            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
-            "Body": "msg",
             "Attributes": {
-              "SenderId": "<sender-id:1>",
               "ApproximateFirstReceiveTimestamp": "timestamp",
               "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id:1>",
               "SentTimestamp": "timestamp"
-            }
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "all_system_and_message_attributes": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:2>",
-            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
-            "Body": "msg",
             "Attributes": {
-              "SenderId": "<sender-id:1>",
               "ApproximateFirstReceiveTimestamp": "timestamp",
               "ApproximateReceiveCount": "2",
+              "SenderId": "<sender-id:1>",
               "SentTimestamp": "timestamp"
             },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
             "MD5OfMessageAttributes": "ae7155c6026991b6d54b11589678bf9c",
             "MessageAttributes": {
               "Foo": {
-                "StringValue": "Bar",
-                "DataType": "String"
+                "DataType": "String",
+                "StringValue": "Bar"
               }
-            }
+            },
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:2>"
           }
         ],
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "single_attribute": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:3>",
-            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
-            "Body": "msg",
             "Attributes": {
               "SenderId": "<sender-id:1>"
-            }
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:3>"
           }
         ],
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "multiple_attributes": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:4>",
-            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
-            "Body": "msg",
             "Attributes": {
               "SenderId": "<sender-id:1>"
-            }
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
           }
         ],
-        "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
-        }
-      }
-    }
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_attributes": {
-    "recorded-date": "01-08-2022, 20:33:31",
-    "recorded-content": {
-      "get_queue_attributes": {
-        "Attributes": {
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-          "ApproximateNumberOfMessages": "0",
-          "ApproximateNumberOfMessagesNotVisible": "0",
-          "ApproximateNumberOfMessagesDelayed": "0",
-          "CreatedTimestamp": "timestamp",
-          "LastModifiedTimestamp": "timestamp",
-          "VisibilityTimeout": "20",
-          "MaximumMessageSize": "262144",
-          "MessageRetentionPeriod": "604800",
-          "DelaySeconds": "0",
-          "ReceiveMessageWaitTimeSeconds": "10",
-          "SqsManagedSseEnabled": "false"
-        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -291,22 +266,22 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes": {
-    "recorded-date": "01-08-2022, 20:51:00",
+    "recorded-date": "29-08-2023, 11:14:51",
     "recorded-content": {
       "get_queue_attributes": {
         "Attributes": {
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
           "ApproximateNumberOfMessages": "0",
-          "ApproximateNumberOfMessagesNotVisible": "0",
           "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
           "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "0",
           "LastModifiedTimestamp": "timestamp",
-          "VisibilityTimeout": "20",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "604800",
-          "DelaySeconds": "0",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "10",
-          "SqsManagedSseEnabled": "false"
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "20"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -315,18 +290,18 @@
       },
       "get_updated_queue_attributes": {
         "Attributes": {
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
           "ApproximateNumberOfMessages": "0",
-          "ApproximateNumberOfMessagesNotVisible": "0",
           "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
           "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "420",
           "LastModifiedTimestamp": "timestamp",
-          "VisibilityTimeout": "69",
           "MaximumMessageSize": "2048",
           "MessageRetentionPeriod": "604800",
-          "DelaySeconds": "420",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "10",
-          "SqsManagedSseEnabled": "false"
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "69"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -336,12 +311,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sse_queue_attributes": {
-    "recorded-date": "01-08-2022, 21:14:43",
+    "recorded-date": "29-08-2023, 11:04:58",
     "recorded-content": {
       "sse_kms_attributes": {
         "Attributes": {
-          "KmsMasterKeyId": "testKeyId",
           "KmsDataKeyReusePeriodSeconds": "6000",
+          "KmsMasterKeyId": "testKeyId",
           "SqsManagedSseEnabled": "false"
         },
         "ResponseMetadata": {
@@ -367,29 +342,29 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_seconds_fails": {
-    "recorded-date": "03-08-2022, 18:36:23",
+    "recorded-date": "29-08-2023, 11:14:59",
     "recorded-content": {
       "send_message": "An error occurred (InvalidParameterValue) when calling the SendMessage operation: Value 2 for parameter DelaySeconds is invalid. Reason: The request include parameter that is not valid for this queue type."
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_different_attributes_raises_exception": {
-    "recorded-date": "04-08-2022, 17:27:47",
+    "recorded-date": "29-08-2023, 11:14:54",
     "recorded-content": {
       "create_queue_01": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds",
       "create_queue_02": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds"
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_attributes": {
-    "recorded-date": "21-08-2022, 00:35:54",
+    "recorded-date": "29-08-2023, 11:14:58",
     "recorded-content": {
       "send_message": {
         "MD5OfMessageBody": "19c9e282d65f9733bc6b35d50062c7ee",
         "MessageId": "<uuid:1>",
+        "SequenceNumber": "<sequence-number:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
-        },
-        "SequenceNumber": "<sequence-number:1>"
+        }
       },
       "receive_message_0": {
         "Messages": [
@@ -440,7 +415,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_dead_letter_arn_rejected_before_lookup": {
-    "recorded-date": "21-08-2022, 00:54:10",
+    "recorded-date": "29-08-2023, 11:14:59",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -457,7 +432,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_successive_purge_calls_fail": {
-    "recorded-date": "22-08-2022, 21:28:31",
+    "recorded-date": "29-08-2023, 11:03:34",
     "recorded-content": {
       "purge_queue_error": {
         "Error": {
@@ -474,7 +449,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message": {
-    "recorded-date": "12-11-2022, 15:12:26",
+    "recorded-date": "29-08-2023, 11:09:40",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
@@ -491,7 +466,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_updated_maximum_message_size": {
-    "recorded-date": "12-11-2022, 15:19:10",
+    "recorded-date": "29-08-2023, 11:15:06",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
@@ -508,7 +483,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents": {
-    "recorded-date": "13-11-2022, 13:33:00",
+    "recorded-date": "29-08-2023, 11:15:03",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Error": {
@@ -525,7 +500,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size": {
-    "recorded-date": "13-11-2022, 13:39:28",
+    "recorded-date": "29-08-2023, 11:15:05",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Successful": [
@@ -549,7 +524,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[]": {
-    "recorded-date": "13-10-2022, 19:19:31",
+    "recorded-date": "29-08-2023, 11:14:55",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -565,7 +540,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[testLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongId]": {
-    "recorded-date": "13-10-2022, 19:19:31",
+    "recorded-date": "29-08-2023, 11:14:56",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -581,7 +556,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[invalid:id]": {
-    "recorded-date": "13-10-2022, 19:19:32",
+    "recorded-date": "29-08-2023, 11:14:57",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -597,7 +572,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_too_many_entries_in_batch_request": {
-    "recorded-date": "27-10-2022, 20:25:28",
+    "recorded-date": "29-08-2023, 11:02:09",
     "recorded-content": {
       "test_too_many_entries_in_batch_request": {
         "Error": {
