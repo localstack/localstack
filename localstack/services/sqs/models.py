@@ -236,7 +236,7 @@ class SqsQueue:
             QueueAttributeName.QueueArn: self.arn,
             QueueAttributeName.ReceiveMessageWaitTimeSeconds: "0",
             QueueAttributeName.VisibilityTimeout: "30",
-            QueueAttributeName.SqsManagedSseEnabled: "false",
+            QueueAttributeName.SqsManagedSseEnabled: "true",
         }
 
     def update_delay_seconds(self, value: int):
