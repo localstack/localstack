@@ -9,6 +9,7 @@ import requests
 from dateutil.tz import tzutc
 
 from localstack import config
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns, aws_stack
@@ -104,8 +105,17 @@ class TestCloudwatch:
         encoded_data = gzip.compress(bytes_data)
 
         url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers("cloudwatch", internal=True)
-        authorization = aws_stack.mock_aws_request_headers("monitoring")["Authorization"]
+        headers = aws_stack.mock_aws_request_headers(
+            "cloudwatch",
+            internal=True,
+            region_name=TEST_AWS_REGION_NAME,
+            access_key=TEST_AWS_ACCESS_KEY_ID,
+        )
+        authorization = aws_stack.mock_aws_request_headers(
+            "monitoring",
+            region_name=TEST_AWS_REGION_NAME,
+            access_key=TEST_AWS_ACCESS_KEY_ID,
+        )["Authorization"]
 
         headers.update(
             {
@@ -207,7 +217,12 @@ class TestCloudwatch:
 
         # get raw metric data
         url = "%s%s" % (config.get_edge_url(), PATH_GET_RAW_METRICS)
-        result = requests.get(url)
+        headers = aws_stack.mock_aws_request_headers(
+            "cloudwatch",
+            region_name=TEST_AWS_REGION_NAME,
+            access_key=TEST_AWS_ACCESS_KEY_ID,
+        )
+        result = requests.get(url, headers=headers)
         assert 200 == result.status_code
         result = json.loads(to_str(result.content))
         assert len(result["metrics"]) >= 3

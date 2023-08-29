@@ -1001,6 +1001,9 @@ class TestLambdaAPI(unittest.TestCase):
     @mock.patch("localstack.utils.cloudwatch.cloudwatch_util.store_cloudwatch_logs")
     def test_executor_store_logs_can_handle_milliseconds(self, mock_store_cloudwatch_logs):
         mock_details = mock.Mock()
+        mock_details.arn = lambda: "arn:aws:lambda:us-west-2:123456789012:function:my-function"
+        mock_details.name = lambda: "my-function"
+
         t_sec = time.time()  # plain old epoch secs
         t_ms = time.time() * 1000  # epoch ms as a long-int like AWS
 
@@ -1009,7 +1012,7 @@ class TestLambdaAPI(unittest.TestCase):
 
         # expect the computed log-stream-name to having a prefix matching the date derived from t_sec
         today = datetime.datetime.utcfromtimestamp(t_sec).strftime("%Y/%m/%d")
-        log_stream_name = mock_store_cloudwatch_logs.call_args_list[0].args[1]
+        log_stream_name = mock_store_cloudwatch_logs.call_args_list[0].args[2]
         parts = log_stream_name.split("/")
         date_part = "/".join(parts[:3])
         self.assertEqual(date_part, today)
