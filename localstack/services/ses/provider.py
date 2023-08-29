@@ -340,42 +340,32 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
     ) -> SendEmailResponse:
-        response = call_moto(context)
-
-        backend = get_ses_backend(context)
-        emitter = SNSEmitter(context)
-        recipients = recipients_from_destination(destination)
-
         if tags:
             for tag in tags:
                 tag_name = tag.get("Name", "")
                 tag_value = tag.get("Value", "")
                 if tag_name == "":
-                    raise CommonServiceException(
-                        "InvalidParameterValue", "The tag name must be specified."
-                    )
+                    raise InvalidParameterValue("The tag name must be specified.")
                 if tag_value == "":
-                    raise CommonServiceException(
-                        "InvalidParameterValue", "The tag value must be specified."
-                    )
+                    raise InvalidParameterValue("The tag value must be specified.")
                 if len(tag_name) > 255:
-                    raise CommonServiceException(
-                        "InvalidParameterValue", "Tag name cannot exceed 255 characters."
-                    )
+                    raise InvalidParameterValue("Tag name cannot exceed 255 characters.")
                 if not re.match(ALLOWED_TAG_CHARS, tag_name):
-                    raise CommonServiceException(
-                        "InvalidParameterValue",
+                    raise InvalidParameterValue(
                         f"Invalid tag name <{tag_name}>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
                     )
                 if len(tag_value) > 255:
-                    raise CommonServiceException(
-                        "InvalidParameterValue", "Tag value cannot exceed 255 characters."
-                    )
+                    raise InvalidParameterValue("Tag value cannot exceed 255 characters.")
                 if not re.match(ALLOWED_TAG_CHARS, tag_value):
-                    raise CommonServiceException(
-                        "InvalidParameterValue",
+                    raise InvalidParameterValue(
                         f"Invalid tag value <{tag_value}>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
                     )
+
+        response = call_moto(context)
+
+        backend = get_ses_backend(context)
+        emitter = SNSEmitter(context)
+        recipients = recipients_from_destination(destination)
 
         for event_destination in backend.config_set_event_destination.values():
             if not event_destination["Enabled"]:
@@ -651,3 +641,8 @@ class SNSEmitter:
             aws_access_key_id=access_key_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         ).sns
+
+
+class InvalidParameterValue(CommonServiceException):
+    def __init__(self, message=None):
+        super().__init__("InvalidParameterValue", status_code=400, message=message)

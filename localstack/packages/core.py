@@ -1,17 +1,20 @@
 import logging
 import os
+import re
 from abc import ABC
 from functools import lru_cache
+from sys import version_info
 from typing import Optional
 
 import requests
 
-from localstack import config
+from localstack import config, constants
 
 from ..utils.archives import download_and_extract
 from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
 from ..utils.http import download
 from ..utils.run import is_root, run
+from ..utils.venv import VirtualEnvironment
 from .api import InstallTarget, PackageException, PackageInstaller
 
 LOG = logging.getLogger(__name__)
@@ -229,3 +232,65 @@ class NodePackageInstaller(ExecutableInstaller):
             # if the package was installed as root, set the ownership manually
             LOG.debug("Setting ownership root:root on %s", target_dir)
             chown_r(target_dir, "root")
+
+
+LOCALSTACK_VENV = VirtualEnvironment(os.path.join(constants.LOCALSTACK_ROOT_FOLDER, ".venv"))
+
+
+class PythonPackageInstaller(PackageInstaller):
+    """
+    Package installer which allows the runtime-installation of additional python packages used by certain services.
+    f.e. vosk as offline speech recognition toolkit (which is ~7MB in size compressed and ~26MB uncompressed).
+    """
+
+    normalized_name: str
+    """Normalized package name according to PEP440."""
+
+    def __init__(self, name: str, version: str, *args, **kwargs):
+        super().__init__(name, version, *args, **kwargs)
+        self.normalized_name = self._normalize_package_name(name)
+
+    def _normalize_package_name(self, name: str):
+        """
+        Normalized the Python package name according to PEP440.
+        https://packaging.python.org/en/latest/specifications/name-normalization/#name-normalization
+        """
+        return re.sub(r"[-_.]+", "-", name).lower()
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        # all python installers share a venv
+        return os.path.join(target.value, "python-packages")
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        python_subdir = f"python{version_info[0]}.{version_info[1]}"
+        dist_info_dir = f"{self.normalized_name}-{self.version}.dist-info"
+        # the METADATA file is mandatory, use it as install marker
+        return os.path.join(
+            install_dir, "lib", python_subdir, "site-packages", dist_info_dir, "METADATA"
+        )
+
+    def _get_venv(self, target: InstallTarget) -> VirtualEnvironment:
+        venv_dir = self._get_install_dir(target)
+        return VirtualEnvironment(venv_dir)
+
+    def _prepare_installation(self, target: InstallTarget) -> None:
+        # make sure the venv is properly set up before installing the package
+        venv = self._get_venv(target)
+        if not venv.exists:
+            LOG.info("creating virtual environment at %s", venv.venv_dir)
+            venv.create()
+            LOG.info("adding localstack venv path %s", venv.venv_dir)
+            venv.add_pth("localstack-venv", LOCALSTACK_VENV)
+        LOG.debug("injecting venv into path %s", venv.venv_dir)
+        venv.inject_to_sys_path()
+
+    def _install(self, target: InstallTarget) -> None:
+        venv = self._get_venv(target)
+        python_bin = os.path.join(venv.venv_dir, "bin/python")
+
+        # run pip via the python binary of the venv
+        run([python_bin, "-m", "pip", "install", f"{self.name}=={self.version}"], print_error=False)
+
+    def _setup_existing_installation(self, target: InstallTarget) -> None:
+        """If the venv is already present, it just needs to be initialized once."""
+        self._prepare_installation(target)

@@ -184,7 +184,15 @@ def store_lambda_logs(
     invocation_time_secs = int(invocation_time / 1000)
     time_str = time.strftime("%Y/%m/%d", time.gmtime(invocation_time_secs))
     log_stream_name = "%s/[LATEST]%s" % (time_str, container_id)
-    return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
+
+    arn = lambda_function.arn()
+    account_id = extract_account_id_from_arn(arn)
+    region_name = extract_region_from_arn(arn)
+    logs_client = connect_to(aws_access_key_id=account_id, region_name=region_name).logs
+
+    return store_cloudwatch_logs(
+        logs_client, log_group_name, log_stream_name, log_output, invocation_time
+    )
 
 
 def get_main_endpoint_from_container() -> str:

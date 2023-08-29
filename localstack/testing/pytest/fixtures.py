@@ -48,6 +48,11 @@ LOG = logging.getLogger(__name__)
 # URL of public HTTP echo server, used primarily for AWS parity/snapshot testing
 PUBLIC_HTTP_ECHO_SERVER_URL = "http://httpbin.org"
 
+WAITER_CHANGE_SET_CREATE_COMPLETE = "change_set_create_complete"
+WAITER_STACK_CREATE_COMPLETE = "stack_create_complete"
+WAITER_STACK_UPDATE_COMPLETE = "stack_update_complete"
+WAITER_STACK_DELETE_COMPLETE = "stack_delete_complete"
+
 
 @pytest.fixture(scope="class")
 def aws_http_client_factory(aws_session):
@@ -944,13 +949,17 @@ def deploy_cfn_template(
         template_path: Optional[str | os.PathLike] = None,
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
-        max_wait: Optional[int] = None,
         role_arn: Optional[str] = None,
+        max_wait: Optional[int] = None,
+        delay_between_polls: Optional[int] = 2,
     ) -> DeployResult:
         if is_update:
             assert stack_name
         stack_name = stack_name or f"stack-{short_uid()}"
         change_set_name = change_set_name or f"change-set-{short_uid()}"
+
+        if max_wait is None:
+            max_wait = 1800 if is_aws_cloud() else 180
 
         if template_path is not None:
             template = load_template_file(template_path)
@@ -979,36 +988,44 @@ def deploy_cfn_template(
         stack_id = response["StackId"]
         state.append({"stack_id": stack_id, "change_set_id": change_set_id})
 
-        assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
+        aws_client.cloudformation.get_waiter(WAITER_CHANGE_SET_CREATE_COMPLETE).wait(
+            ChangeSetName=change_set_id
+        )
         aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        wait_result = wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
+        stack_waiter = aws_client.cloudformation.get_waiter(
+            WAITER_STACK_UPDATE_COMPLETE if is_update else WAITER_STACK_CREATE_COMPLETE
+        )
+
+        try:
+            stack_waiter.wait(
+                StackName=stack_id,
+                WaiterConfig={
+                    "Delay": delay_between_polls,
+                    "MaxAttempts": max_wait / delay_between_polls,
+                },
+            )
+        except botocore.exceptions.WaiterError as e:
+            raise StackDeployError(
+                aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0],
+                aws_client.cloudformation.describe_stack_events(StackName=stack_id)["StackEvents"],
+            ) from e
 
         describe_stack_res = aws_client.cloudformation.describe_stacks(StackName=stack_id)[
             "Stacks"
         ][0]
-
-        if not wait_result:
-            events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)[
-                "StackEvents"
-            ]
-            raise StackDeployError(describe_stack_res, events)
-
         outputs = describe_stack_res.get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o.get("OutputValue") for o in outputs}
 
         def _destroy_stack():
             aws_client.cloudformation.delete_stack(StackName=stack_id)
-
-            def _await_stack_delete():
-                return (
-                    aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0][
-                        "StackStatus"
-                    ]
-                    == "DELETE_COMPLETE"
-                )
-
-            assert wait_until(_await_stack_delete, _max_wait=max_wait or 60)
+            aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
+                StackName=stack_id,
+                WaiterConfig={
+                    "Delay": delay_between_polls,
+                    "MaxAttempts": max_wait / delay_between_polls,
+                },
+            )
             # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
             time.sleep(2)
 
