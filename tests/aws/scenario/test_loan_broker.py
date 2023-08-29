@@ -15,12 +15,10 @@ import aws_cdk.aws_stepfunctions as sfn
 import aws_cdk.aws_stepfunctions_tasks as tasks
 import pytest
 
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import retry
 from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 RECIPIENT_LIST_STACK_NAME = "LoanBroker-RecipientList"
