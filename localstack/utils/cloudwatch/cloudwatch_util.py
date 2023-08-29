@@ -90,17 +90,15 @@ def publish_lambda_result(time_before, result, kwargs):
     publish_lambda_metric("Invocations", 1, kwargs)
 
 
-# TODO: make logs client mandatory for xaccount
 def store_cloudwatch_logs(
+    logs_client,
     log_group_name,
     log_stream_name,
     log_output,
     start_time=None,
     auto_create_group: Optional[bool] = True,
-    logs_client=None,
 ):
     start_time = start_time or int(time.time() * 1000)
-    logs_client = logs_client or connect_to().logs
     log_output = to_str(log_output)
 
     if auto_create_group:

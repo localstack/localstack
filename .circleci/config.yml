@@ -275,6 +275,34 @@ jobs:
             - repo/target/coverage/
             - repo/target/metric_reports
 
+  bootstrap-tests:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          command: docker load -i target/localstack-docker-image-amd64.tar
+      - prepare-pytest-tinybird
+      - run:
+          name: Run bootstrap tests
+          environment:
+            TEST_PATH: "tests/bootstrap"
+            COVERAGE_ARGS: "-p"
+          command: |
+            PYTEST_ARGS="-s ${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/bootstrap-tests.xml -o junit_suite_name=bootstrap-tests" make test-coverage
+      - store_test_results:
+          path: target/reports/
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+
   capture-not-implemented:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -450,6 +478,9 @@ workflows:
           platform: amd64
           resource_class: medium
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          requires:
+            - docker-build-amd64
+      - bootstrap-tests:
           requires:
             - docker-build-amd64
       - capture-not-implemented:

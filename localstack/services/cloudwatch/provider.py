@@ -5,7 +5,7 @@ from xml.sax.saxutils import escape
 from moto.cloudwatch import cloudwatch_backends
 from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm, MetricDatum
 
-from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.accounts import get_account_id_from_access_key_id, get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AlarmNames,
@@ -284,7 +284,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def get_raw_metrics(self, request: Request):
         region = aws_stack.extract_region_from_auth_header(request.headers)
         account_id = (
-            extract_access_key_id_from_auth_header(request.headers) or DEFAULT_AWS_ACCOUNT_ID
+            get_account_id_from_access_key_id(
+                extract_access_key_id_from_auth_header(request.headers)
+            )
+            or DEFAULT_AWS_ACCOUNT_ID
         )
         backend = cloudwatch_backends[account_id][region]
         if backend:

@@ -18,14 +18,6 @@ from localstack.utils.container_utils.container_client import (
 LOG = logging.getLogger(__name__)
 
 
-@pytest.fixture(autouse=True)
-def _setup_cli_environment(monkeypatch):
-    # normally we are setting LOCALSTACK_CLI in localstack/cli/main.py, which is not actually run
-    # in the tests
-    monkeypatch.setenv("LOCALSTACK_CLI", "1")
-    monkeypatch.setattr(config, "dirs", config.Directories.for_cli())
-
-
 # TODO: for now we duplicate this fixture since we can't enable the fixture plugin, and can't
 #  move the fixture to tests/conftest.py because some unit tests are dependent on its current path
 @pytest.fixture
@@ -112,3 +104,8 @@ def container_factory() -> Generator[ContainerFactory, None, None]:
     factory = ContainerFactory()
     yield factory
     factory.remove_all_containers()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_host_config_dirs():
+    config.dirs.mkdirs()

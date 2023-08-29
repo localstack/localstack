@@ -43,7 +43,8 @@ PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 # by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
 # add your new provider here when you want it to be the default
 PROVIDER_DEFAULTS = {
-    "AWS::SQS::Queue": "ResourceProvider"
+    "AWS::SQS::Queue": "ResourceProvider",
+    "AWS::SQS::QueuePolicy": "ResourceProvider",
     # "AWS::IAM::User": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
@@ -407,7 +408,7 @@ class LegacyResourceProvider(ResourceProvider):
             #   API does not really let us signal this in any other way.
             return ProgressEvent(
                 status=OperationStatus.SUCCESS,
-                resource_model=request.previous_state,
+                resource_model={**request.previous_state, **request.desired_state},
             )
 
         LOG.info("Updating resource %s of type %s", request.logical_resource_id, self.resource_type)
@@ -474,6 +475,7 @@ class LegacyResourceProvider(ResourceProvider):
 
         func_details = func_details.get(LEGACY_ACTION_MAP[request.action])
         if not func_details:
+            # TODO: raise here and see where we are missing handlers
             LOG.debug(
                 "No resource handler for %s action on resource type %s available. Skipping.",
                 request.action,

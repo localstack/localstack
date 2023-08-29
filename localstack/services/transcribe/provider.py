@@ -4,6 +4,7 @@ import logging
 import os
 import threading
 import wave
+from functools import cache
 from pathlib import Path
 from typing import Tuple
 from zipfile import ZipFile
@@ -30,12 +31,12 @@ from localstack.aws.api.transcribe import (
 )
 from localstack.aws.connect import connect_to
 from localstack.packages.ffmpeg import ffmpeg_package
-from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.utils import (
     get_bucket_and_key_from_presign_url,
     get_bucket_and_key_from_s3_uri,
 )
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
+from localstack.services.transcribe.packages import vosk_package
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.run import run
@@ -77,26 +78,11 @@ SUPPORTED_FORMAT_NAMES = {
     "wav": MediaFormat.wav,
 }
 
-os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
-
-# Vosk must be imported only after setting the required env vars
-from vosk import MODEL_PRE_URL, KaldiRecognizer, Model, SetLogLevel  # noqa
-
-# Suppress Vosk logging
-SetLogLevel(-1)
-
 # Mutex for when downloading models
 _DL_LOCK = threading.Lock()
 
 
-class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
-    def on_before_start(self):
-        ffmpeg_package.install()
-
-    #
-    # Handlers
-    #
-
+class TranscribeProvider(TranscribeApi):
     def get_transcription_job(
         self, context: RequestContext, transcription_job_name: TranscriptionJobName
     ) -> GetTranscriptionJobResponse:
@@ -117,6 +103,19 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         raise NotFoundException(
             "The requested job couldn't be found. Check the job name and try your request again."
         )
+
+    @staticmethod
+    @cache
+    def _setup_vosk() -> None:
+        # Install and configure vosk
+        vosk_package.install()
+
+        # Vosk must be imported only after setting the required env vars
+        os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
+        from vosk import SetLogLevel  # noqa
+
+        # Suppress Vosk logging
+        SetLogLevel(-1)
 
     @handler("StartTranscriptionJob", expand=False)
     def start_transcription_job(
@@ -234,6 +233,9 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             model_zip_path = str(model_path) + ".zip"
 
             LOG.debug("Downloading language model: %s", model_path.name)
+
+            from vosk import MODEL_PRE_URL  # noqa
+
             download(
                 MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path, verify_ssl=False
             )
@@ -267,6 +269,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
 
+            ffmpeg_package.install()
             ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()
             ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()
 
@@ -313,7 +316,10 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             # Prepare transcriber
             language_code = job["LanguageCode"]
             model_name = LANGUAGE_MODELS[language_code]
+            self._setup_vosk()
             self.download_model(model_name)
+            from vosk import KaldiRecognizer, Model  # noqa
+
             model = Model(model_name=model_name)
 
             tc = KaldiRecognizer(model, audio.getframerate())

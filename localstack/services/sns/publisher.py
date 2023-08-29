@@ -26,6 +26,7 @@ from localstack.services.sns.models import (
     SnsSubscription,
 )
 from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
     extract_region_from_arn,
     extract_resource_from_arn,
     parse_arn,
@@ -278,16 +279,22 @@ class SqsTopicPublisher(TopicPublisher):
         kwargs = {}
         if is_raw_message_delivery(subscriber) and msg_context.message_attributes:
             kwargs["MessageAttributes"] = msg_context.message_attributes
-        if msg_context.message_group_id:
-            kwargs["MessageGroupId"] = msg_context.message_group_id
-        if msg_context.message_deduplication_id:
-            kwargs["MessageDeduplicationId"] = msg_context.message_deduplication_id
-        elif subscriber["TopicArn"].endswith(".fifo"):
-            # Amazon SNS uses the message body provided to generate a unique hash value to use as the deduplication
-            # ID for each message, so you don't need to set a deduplication ID when you send each message.
-            # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
-            content = msg_context.message_content("sqs")
-            kwargs["MessageDeduplicationId"] = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+        # SNS now allows regular non-fifo subscriptions to FIFO topics. Validate that the subscription target is fifo
+        # before passing the FIFO-only parameters
+        if subscriber["Endpoint"].endswith(".fifo"):
+            if msg_context.message_group_id:
+                kwargs["MessageGroupId"] = msg_context.message_group_id
+            if msg_context.message_deduplication_id:
+                kwargs["MessageDeduplicationId"] = msg_context.message_deduplication_id
+            elif subscriber["TopicArn"].endswith(".fifo"):
+                # Amazon SNS uses the message body provided to generate a unique hash value to use as the deduplication
+                # ID for each message, so you don't need to set a deduplication ID when you send each message.
+                # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
+                content = msg_context.message_content("sqs")
+                kwargs["MessageDeduplicationId"] = hashlib.sha256(
+                    content.encode("utf-8")
+                ).hexdigest()
 
         # TODO: for message deduplication, we are using the underlying features of the SQS queue
         # however, SQS queue only deduplicate at the Queue level, where the SNS topic deduplicate on the topic level
@@ -873,7 +880,13 @@ def store_delivery_log(
 
     log_output = json.dumps(delivery_log)
 
-    return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
+    account_id = extract_account_id_from_arn(subscriber["TopicArn"])
+    region_name = extract_region_from_arn(subscriber["TopicArn"])
+    logs_client = connect_to(aws_access_key_id=account_id, region_name=region_name).logs
+
+    return store_cloudwatch_logs(
+        logs_client, log_group_name, log_stream_name, log_output, invocation_time
+    )
 
 
 def create_subscribe_url(external_url, topic_arn, subscription_token):
