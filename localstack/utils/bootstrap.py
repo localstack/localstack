@@ -499,7 +499,6 @@ class LocalstackContainerServer(Server):
                 'LocalStack container named "%s" is already running' % self.container.name
             )
 
-        config.dirs.mkdirs()
         return self.container.run()
 
     def do_shutdown(self):
