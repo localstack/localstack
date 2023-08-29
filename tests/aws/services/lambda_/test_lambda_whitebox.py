@@ -307,7 +307,7 @@ class TestDockerExecutors:
         assert 0 == len(executor.get_all_container_names())
 
         # clean up
-        testutil.delete_lambda_function(func_name)
+        aws_client.lambda_.delete_function(FunctionName=func_name)
 
     @pytest.mark.skipif(
         condition=not isinstance(
@@ -356,7 +356,7 @@ class TestDockerExecutors:
         retry(assert_container_destroyed, retries=3)
 
         # clean up
-        testutil.delete_lambda_function(func_name)
+        aws_client.lambda_.delete_function(FunctionName=func_name)
 
     @pytest.mark.skipif(
         condition=not isinstance(
@@ -384,7 +384,7 @@ class TestDockerExecutors:
         assert "FunctionError" not in result
 
         # clean up
-        testutil.delete_lambda_function(func_name)
+        aws_client.lambda_.delete_function(FunctionName=func_name)
 
 
 class TestLocalExecutors:
@@ -432,8 +432,8 @@ class TestLocalExecutors:
             assert "setting2" in to_str(result_data2)
 
             # clean up
-            testutil.delete_lambda_function(lambda_name1)
-            testutil.delete_lambda_function(lambda_name2)
+            lambda_client.delete_function(FunctionName=lambda_name1)
+            lambda_client.delete_function(FunctionName=lambda_name2)
         finally:
             lambda_api.DO_USE_DOCKER = original_do_use_docker
 
