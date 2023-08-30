@@ -311,9 +311,7 @@ def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: 
     return pattern % (region_name, account_id, name)
 
 
-def sqs_queue_arn(queue_name, account_id=None, region_name=None):
-    account_id = account_id or get_aws_account_id()
-    region_name = region_name or get_region()
+def sqs_queue_arn(queue_name, account_id, region_name):
     queue_name = queue_name.split("/")[-1]
     return "arn:aws:sqs:%s:%s:%s" % (region_name, account_id, queue_name)
 

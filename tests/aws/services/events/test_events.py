@@ -13,6 +13,7 @@ from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -432,7 +433,12 @@ class TestEvents:
     # TODO: further unify/parameterize the tests for the different target types below
 
     @markers.aws.unknown
-    def test_put_events_with_target_sns(self, sns_subscription, aws_client, clean_up):
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_put_events_with_target_sns(
+        self, monkeypatch, strategy, sns_subscription, aws_client, clean_up
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_name = "test-%s" % short_uid()
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -442,7 +448,7 @@ class TestEvents:
         topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
@@ -690,8 +696,10 @@ class TestEvents:
             Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
         )
 
-        queue_arn = arns.sqs_queue_arn(queue_name)
-        fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        fifo_queue_arn = arns.sqs_queue_arn(
+            fifo_queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+        )
 
         event = {"env": "testing"}
         event_json = json.dumps(event)
@@ -1020,7 +1028,7 @@ class TestEvents:
 
         sqs_client = aws_client_factory(region_name="eu-west-1").sqs
         sqs_client.create_queue(QueueName=queue_name)
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         events_client.create_event_bus(Name=bus_name)
 
@@ -1129,7 +1137,7 @@ class TestEvents:
         bus_name = f"bus-{short_uid()}"
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         aws_client.events.create_event_bus(Name=bus_name)
         aws_client.events.put_rule(
@@ -1189,10 +1197,10 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         queue_url_1 = aws_client.sqs.create_queue(QueueName=queue_name_1)["QueueUrl"]
-        queue_arn_1 = arns.sqs_queue_arn(queue_name_1)
+        queue_arn_1 = arns.sqs_queue_arn(queue_name_1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         aws_client.events.create_event_bus(Name=bus_name)
 
@@ -1287,7 +1295,7 @@ class TestEvents:
         # create queue
         queue_name = "queue-{}".format(short_uid())
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         # put rule listening on SSM changes
         ssm_prefix = "/test/local/"
@@ -1335,7 +1343,7 @@ class TestEvents:
         target_id = f"target-{short_uid()}"
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         pattern = {
             "Source": [{"exists": True}],

@@ -167,10 +167,12 @@ class LambdaTopicPublisher(TopicPublisher):
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
+            account_id = extract_account_id_from_arn(subscriber["Endpoint"])
             region = extract_region_from_arn(subscriber["Endpoint"])
-            lambda_client = connect_to(region_name=region).lambda_.request_metadata(
-                source_arn=subscriber["TopicArn"], service_principal="sns"
-            )
+
+            lambda_client = connect_to(
+                aws_access_key_id=account_id, region_name=region
+            ).lambda_.request_metadata(source_arn=subscriber["TopicArn"], service_principal="sns")
             event = self.prepare_message(context.message, subscriber)
             inv_result = lambda_client.invoke(
                 FunctionName=subscriber["Endpoint"],
@@ -253,10 +255,13 @@ class SqsTopicPublisher(TopicPublisher):
             return
         try:
             queue_url: str = sqs_queue_url_for_arn(subscriber["Endpoint"])
+
+            account_id = extract_account_id_from_arn(subscriber["Endpoint"])
             region = extract_region_from_arn(subscriber["Endpoint"])
-            sqs_client = connect_to(region_name=region).sqs.request_metadata(
-                source_arn=subscriber["TopicArn"], service_principal="sns"
-            )
+
+            sqs_client = connect_to(
+                aws_access_key_id=account_id, region_name=region
+            ).sqs.request_metadata(source_arn=subscriber["TopicArn"], service_principal="sns")
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=message_body,
@@ -327,10 +332,13 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
 
         try:
             queue_url = sqs_queue_url_for_arn(subscriber["Endpoint"])
+
+            account_id = extract_account_id_from_arn(subscriber["Endpoint"])
             region = extract_region_from_arn(subscriber["Endpoint"])
-            sqs_client = connect_to(region_name=region).sqs.request_metadata(
-                source_arn=subscriber["TopicArn"], service_principal="sns"
-            )
+
+            sqs_client = connect_to(
+                aws_access_key_id=account_id, region_name=region
+            ).sqs.request_metadata(source_arn=subscriber["TopicArn"], service_principal="sns")
             response = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=entries)
 
             for message_ctx in context.messages:
@@ -447,8 +455,9 @@ class EmailJsonTopicPublisher(TopicPublisher):
     """
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
+        account_id = extract_account_id_from_arn(subscriber["Endpoint"])
         region = extract_region_from_arn(subscriber["Endpoint"])
-        ses_client = connect_to(region_name=region).ses
+        ses_client = connect_to(aws_access_key_id=account_id, region_name=region).ses
         if endpoint := subscriber.get("Endpoint"):
             ses_client.verify_email_address(EmailAddress=endpoint)
             ses_client.verify_email_address(EmailAddress="admin@localstack.com")
@@ -592,7 +601,8 @@ class FirehoseTopicPublisher(TopicPublisher):
                     role_arn=role_arn, service_principal=ServicePrincipal.sns, region_name=region
                 )
             else:
-                factory = connect_to(region_name=region)
+                account_id = extract_account_id_from_arn(subscriber["Endpoint"])
+                factory = connect_to(aws_access_key_id=account_id, region_name=region)
             firehose_client = factory.firehose.request_metadata(
                 source_arn=subscriber["TopicArn"], service_principal=ServicePrincipal.sns
             )
@@ -716,7 +726,11 @@ def get_attributes_for_application_endpoint(endpoint_arn: str) -> Tuple[Dict, Di
     :param endpoint_arn:
     :return:
     """
-    sns_client = connect_to().sns
+    account_id = extract_account_id_from_arn(endpoint_arn)
+    region_name = extract_region_from_arn(endpoint_arn)
+
+    sns_client = connect_to(aws_access_key_id=account_id, region_name=region_name).sns
+
     # TODO: we should access this from the moto store directly
     endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=endpoint_arn)
 
