@@ -97,25 +97,27 @@ class Ec2Provider(Ec2Api, ABC):
         describe_availability_zones_request: DescribeAvailabilityZonesRequest,
     ) -> DescribeAvailabilityZonesResult:
         backend = get_ec2_backend(context.account_id, context.region)
-
-        availability_zones = []
         zone_names = describe_availability_zones_request.get("ZoneNames")
-        if zone_names:
-            for zone in zone_names:
-                zone_detail = backend.get_zone_by_name(zone)
-                if zone_detail:
+        zone_ids = describe_availability_zones_request.get("ZoneIds")
+        if zone_names or zone_ids:
+            filters = {
+                "zone-name": zone_names if zone_names else None,
+                "zone-id": zone_ids if zone_ids else None,
+            }
+            filtered_zones = backend.describe_availability_zones(filters)
+            availability_zones = []
+            if filtered_zones:
+                for zone in filtered_zones:
                     availability_zones.append(
                         AvailabilityZone(
                             State="available",
                             Messages=[],
-                            RegionName=zone_detail.region_name,
-                            ZoneName=zone_detail.name,
-                            ZoneId=zone_detail.zone_id,
+                            RegionName=zone.region_name,
+                            ZoneName=zone.name,
+                            ZoneId=zone.zone_id,
                         )
                     )
-
             return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
-
         return call_moto(context)
 
     @handler("DescribeReservedInstancesOfferings", expand=False)
