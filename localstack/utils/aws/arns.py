@@ -249,7 +249,8 @@ def cognito_user_pool_arn(user_pool_id, account_id=None, region_name=None):
     return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
-def kinesis_stream_arn(stream_name, account_id, region_name):
+# TODO: Make account_id and region_name mandatory
+def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
     pattern = "arn:aws:kinesis:%s:%s:stream/%s"
     return _resource_arn(stream_name, pattern, account_id, region_name)
 
