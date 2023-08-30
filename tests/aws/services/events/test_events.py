@@ -623,6 +623,7 @@ class TestEvents:
             sleep=1,
             function_name=function_name,
             expected_length=1,
+            logs_client=aws_client.logs,
         )
         actual_event = events[0]
         self.assert_valid_event(actual_event)
