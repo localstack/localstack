@@ -44,7 +44,7 @@ ARG TARGETARCH
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
         # Install dependencies to add additional repos
-        apt-get install -y --no-install-recommends ca-certificates curl && \
+        apt-get install -y --no-install-recommends ca-certificates curl iproute2 && \
         # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
         curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
         apt-get update && \
