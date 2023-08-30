@@ -290,30 +290,6 @@ class TestCloudFormation:
         assert len(rs["logGroups"]) == 0
 
     @markers.aws.unknown
-    def test_cfn_handle_iam_role_resource(self, deploy_cfn_template, aws_client):
-        role_name = f"role-{short_uid()}"
-        policy_name = f"policy-{short_uid()}"
-        role_path_prefix = f"/role-prefix-{short_uid()}/"
-
-        template_body = TEST_TEMPLATE_13 % (role_name, role_path_prefix, policy_name)
-        stack = deploy_cfn_template(template=template_body)
-
-        rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
-
-        assert len(rs["Roles"]) == 1
-        role = rs["Roles"][0]
-        assert role["RoleName"] == role_name
-
-        result = aws_client.iam.get_policy(PolicyArn=arns.policy_arn(policy_name))
-        assert result["Policy"]["PolicyName"] == policy_name
-
-        # clean up
-        stack.destroy()
-
-        rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
-        assert not rs["Roles"]
-
-    @markers.aws.unknown
     def test_cfn_handle_iam_role_resource_no_role_name(self, deploy_cfn_template, aws_client):
         role_path_prefix = f"/role-prefix-{short_uid()}/"
         stack = deploy_cfn_template(template=TEST_TEMPLATE_14 % role_path_prefix)

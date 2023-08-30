@@ -106,7 +106,6 @@ def test_iam_username_defaultname(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("get_iam_user", get_iam_user)
 
 
-@pytest.mark.skip(reason="not correctly implemented at the moment")
 @markers.aws.validated
 def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformers_list(
