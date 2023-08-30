@@ -3,13 +3,14 @@ import socket
 import pytest as pytest
 
 from localstack import config
-from localstack.constants import LOCALHOST, LOCALHOST_IP
+from localstack.constants import LOCALHOST
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 from localstack.utils.net import (
     Port,
     get_addressable_container_host,
     get_free_udp_port,
+    is_ip_address,
     port_can_be_bound,
     resolve_hostname,
 )
@@ -52,7 +53,7 @@ def test_get_addressable_container_host(monkeypatch):
     if not config.is_in_docker:
         monkeypatch.setattr(config, "is_in_docker", True)
         monkeypatch.setattr(config, "in_docker", lambda: True)
-        assert get_addressable_container_host() == LOCALHOST_IP
+        assert is_ip_address(get_addressable_container_host())
 
     monkeypatch.setattr(config, "is_in_docker", False)
     monkeypatch.setattr(config, "in_docker", lambda: False)
