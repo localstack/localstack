@@ -695,18 +695,19 @@ def path_matches_pattern(path, api_path):
     return len(results) > 0 and all(results)
 
 
-def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region_name=None):
+def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, account_id, region_name):
     resources = {}
     template = APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE
     resource_path = path.replace("/", "")
-    region_name = region_name or aws_stack.get_region()
 
     try:
         arn = parse_arn(queue_arn)
         queue_name = arn["resource"]
+        sqs_account = arn["account"]
         sqs_region = arn["region"]
     except InvalidArnException:
         queue_name = queue_arn
+        sqs_account = account_id
         sqs_region = region_name
 
     resources[resource_path] = [
@@ -717,7 +718,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
                 {
                     "type": "AWS",
                     "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
-                    % (sqs_region, get_aws_account_id(), queue_name),
+                    % (sqs_region, sqs_account, queue_name),
                     "requestTemplates": {"application/json": template},
                 }
             ],
@@ -727,7 +728,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
         name=gateway_name,
         resources=resources,
         stage_name=stage_name,
-        region_name=region_name,
+        client=connect_to(aws_access_key_id=sqs_account, region_name=sqs_region).apigateway,
     )
 
 

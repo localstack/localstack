@@ -4,7 +4,7 @@ import json
 import requests
 
 from localstack import config
-from localstack.constants import PATH_USER_REQUEST
+from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns, queries
@@ -43,7 +43,8 @@ class TestMultiRegion:
         gw_1 = aws_client_factory(region_name=REGION1).apigateway
         gw_2 = aws_client_factory(region_name=REGION2).apigateway
         gw_3 = aws_client_factory(region_name=REGION3).apigateway
-        sqs_1 = aws_client_factory(region_name=REGION1).sqs
+        sqs_1 = aws_client_factory(region_name=REGION3).sqs
+
         len_1 = len(gw_1.get_rest_apis()["items"])
         len_2 = len(gw_2.get_rest_apis()["items"])
 
@@ -62,9 +63,16 @@ class TestMultiRegion:
         api_name3 = "a-%s" % short_uid()
         queue_name1 = "q-%s" % short_uid()
         sqs_1.create_queue(QueueName=queue_name1)
-        queue_arn = arns.sqs_queue_arn(queue_name1, region_name=REGION1)
+        queue_arn = arns.sqs_queue_arn(
+            queue_name1, region_name=REGION3, account_id=TEST_AWS_ACCOUNT_ID
+        )
         result = connect_api_gateway_to_sqs(
-            api_name3, stage_name="test", queue_arn=queue_arn, path="/data", region_name=REGION3
+            api_name3,
+            stage_name="test",
+            queue_arn=queue_arn,
+            path="/data",
+            account_id=TEST_AWS_ACCOUNT_ID,
+            region_name=REGION3,
         )
         api_id = result["id"]
         result = gw_3.get_rest_apis()["items"]

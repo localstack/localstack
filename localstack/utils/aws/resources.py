@@ -73,6 +73,7 @@ def create_dynamodb_table(
     return table
 
 
+# TODO make client mandatory
 def create_api_gateway(
     name,
     description=None,
@@ -80,14 +81,13 @@ def create_api_gateway(
     stage_name=None,
     enabled_api_keys=None,
     usage_plan_name=None,
-    region_name=None,
     auth_creator_func=None,  # function that receives an api_id and returns an authorizer_id
     client=None,
 ):
     if enabled_api_keys is None:
         enabled_api_keys = []
     if not client:
-        client = connect_to(region_name=region_name).apigateway
+        client = connect_to().apigateway
     resources = resources or []
     stage_name = stage_name or "testing"
     usage_plan_name = usage_plan_name or "Basic Usage"
@@ -132,7 +132,6 @@ def create_api_gateway(
                 api_resource["id"],
                 method,
                 integrations,
-                region_name=region_name,
                 client=client,
             )
     # deploy the API gateway
@@ -140,13 +139,12 @@ def create_api_gateway(
     return api
 
 
-def create_api_gateway_integrations(
-    api_id, resource_id, method, integrations=None, region_name=None, client=None
-):
+# TODO make client mandatory
+def create_api_gateway_integrations(api_id, resource_id, method, integrations=None, client=None):
     if integrations is None:
         integrations = []
     if not client:
-        client = connect_to(region_name=region_name).apigateway
+        client = connect_to().apigateway
     for integration in integrations:
         req_templates = integration.get("requestTemplates") or {}
         res_templates = integration.get("responseTemplates") or {}

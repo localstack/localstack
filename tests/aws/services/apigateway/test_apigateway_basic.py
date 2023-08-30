@@ -1898,6 +1898,8 @@ class TestIntegrations:
             stage_name=TEST_STAGE_NAME,
             queue_arn=sqs_queue,
             path="/data",
+            account_id=TEST_AWS_ACCOUNT_ID,
+            region_name=TEST_AWS_REGION_NAME,
         )
 
         # create event source for sqs lambda processor
