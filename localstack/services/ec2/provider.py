@@ -101,22 +101,20 @@ class Ec2Provider(Ec2Api, ABC):
         zone_ids = describe_availability_zones_request.get("ZoneIds")
         if zone_names or zone_ids:
             filters = {
-                "zone-name": zone_names if zone_names else None,
-                "zone-id": zone_ids if zone_ids else None,
+                "zone-name": zone_names,
+                "zone-id": zone_ids,
             }
             filtered_zones = backend.describe_availability_zones(filters)
-            availability_zones = []
-            if filtered_zones:
-                for zone in filtered_zones:
-                    availability_zones.append(
-                        AvailabilityZone(
-                            State="available",
-                            Messages=[],
-                            RegionName=zone.region_name,
-                            ZoneName=zone.name,
-                            ZoneId=zone.zone_id,
-                        )
-                    )
+            availability_zones = [
+                AvailabilityZone(
+                    State="available",
+                    Messages=[],
+                    RegionName=zone.region_name,
+                    ZoneName=zone.name,
+                    ZoneId=zone.zone_id,
+                )
+                for zone in filtered_zones
+            ]
             return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
         return call_moto(context)
 
