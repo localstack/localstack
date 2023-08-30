@@ -3,7 +3,7 @@ import socket
 import pytest as pytest
 
 from localstack import config
-from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME, LOCALHOST_IP
+from localstack.constants import LOCALHOST, LOCALHOST_IP
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 from localstack.utils.net import (
