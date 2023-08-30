@@ -3319,5 +3319,23 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_wrapper_not_found": {
+    "recorded-date": "30-08-2023, 16:34:59",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorType": "Runtime.ExitError",
+          "errorMessage": "RequestId: c905064c-fb95-4922-bf9e-9ab996ea4683 Error: Runtime exited with error: exit status 127"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

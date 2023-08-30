@@ -1211,8 +1211,8 @@ class TestLambdaFeatures:
         retry(check_logs, retries=15)
 
 
+@pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
 class TestLambdaErrors:
-    @pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
     @markers.aws.validated
     def test_lambda_runtime_error(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that cannot start due to a runtime error"""
@@ -1222,6 +1222,26 @@ class TestLambdaErrors:
             handler_file=TEST_LAMBDA_PYTHON_RUNTIME_ERROR,
             handler="lambda_runtime_error.handler",
             runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
+
+    @pytest.mark.skipif(
+        not is_aws_cloud(), reason="Not yet supported. Need to raise error in Lambda init binary."
+    )
+    @markers.aws.validated
+    def test_lambda_runtime_wrapper_not_found(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that points to a non-existing Lambda wrapper"""
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_10,
+            envvars={"AWS_LAMBDA_EXEC_WRAPPER": "/idontexist.sh"},
         )
 
         result = aws_client.lambda_.invoke(
