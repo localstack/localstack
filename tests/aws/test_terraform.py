@@ -4,8 +4,12 @@ import threading
 
 import pytest
 
-from localstack import config
-from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.packages.terraform import terraform_package
 from localstack.testing.pytest import markers
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
@@ -14,11 +18,11 @@ from localstack.utils.common import is_command_available, rm_rf, run, start_work
 
 BUCKET_NAME = "tf-bucket"
 QUEUE_NAME = "tf-queue"
-QUEUE_ARN = "arn:aws:sqs:us-east-1:{account_id}:tf-queue"
+QUEUE_ARN = "arn:aws:sqs:{region_name}:{account_id}:tf-queue"
 
 # lambda Testing Variables
 LAMBDA_NAME = "tf-lambda"
-LAMBDA_ARN = "arn:aws:lambda:us-east-1:{account_id}:function:{lambda_name}"
+LAMBDA_ARN = "arn:aws:lambda:{region_name}:{account_id}:function:{lambda_name}"
 LAMBDA_HANDLER = "index.handler"
 LAMBDA_RUNTIME = "python3.8"
 LAMBDA_ROLE = "arn:aws:iam::{account_id}:role/iam_for_lambda"
@@ -42,9 +46,13 @@ def check_terraform_version():
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_test():
+    env_vars = {
+        "AWS_REGION": TEST_AWS_REGION_NAME,
+        "AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID,
+        "AWS_SECRET_ACCESS_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+    }
+
     with INIT_LOCK:
-        if config.DEFAULT_REGION != "us-east-1":
-            pytest.skip("Currently only support us-east-1")
         available, version = check_terraform_version()
 
         if not available:
@@ -56,12 +64,15 @@ def setup_test():
 
             return pytest.skip(msg)
 
-        run("cd %s; %s apply -input=false tfplan" % (get_base_dir(), TERRAFORM_BIN))
+        run(
+            "cd %s; %s apply -input=false tfplan" % (get_base_dir(), TERRAFORM_BIN),
+            env_vars=env_vars,
+        )
 
     yield
 
     # clean up
-    run("cd %s; %s destroy -auto-approve" % (get_base_dir(), TERRAFORM_BIN))
+    run("cd %s; %s destroy -auto-approve" % (get_base_dir(), TERRAFORM_BIN), env_vars=env_vars)
 
 
 def get_base_dir():
@@ -128,18 +139,25 @@ class TestTerraform:
     @markers.skip_offline
     @markers.aws.unknown
     def test_lambda(self, aws_client):
-        account_id = get_aws_account_id()
         response = aws_client.lambda_.get_function(FunctionName=LAMBDA_NAME)
         assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
         assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
         assert response["Configuration"]["Runtime"] == LAMBDA_RUNTIME
-        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(account_id=account_id)
+        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(
+            account_id=TEST_AWS_ACCOUNT_ID
+        )
 
     @markers.skip_offline
     @markers.aws.unknown
     def test_event_source_mapping(self, aws_client):
-        queue_arn = QUEUE_ARN.format(account_id=get_aws_account_id())
-        lambda_arn = LAMBDA_ARN.format(account_id=get_aws_account_id(), lambda_name=LAMBDA_NAME)
+        queue_arn = QUEUE_ARN.format(
+            account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+        )
+        lambda_arn = LAMBDA_ARN.format(
+            account_id=TEST_AWS_ACCOUNT_ID,
+            region_name=TEST_AWS_REGION_NAME,
+            lambda_name=LAMBDA_NAME,
+        )
         all_mappings = aws_client.lambda_.list_event_source_mappings(
             EventSourceArn=queue_arn, FunctionName=LAMBDA_NAME
         )
