@@ -8,8 +8,8 @@ from typing import Optional
 
 import requests
 
-from localstack import config, constants
-
+from ..config import dirs
+from ..constants import LOCALSTACK_VENV_FOLDER
 from ..utils.archives import download_and_extract
 from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
 from ..utils.http import download
@@ -112,7 +112,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         download_and_extract(
             download_url,
             retries=3,
-            tmp_archive=os.path.join(config.dirs.tmp, archive_name),
+            tmp_archive=os.path.join(dirs.tmp, archive_name),
             target_dir=target_directory,
         )
         if self.extract_single_directory:
@@ -234,7 +234,7 @@ class NodePackageInstaller(ExecutableInstaller):
             chown_r(target_dir, "root")
 
 
-LOCALSTACK_VENV = VirtualEnvironment(os.path.join(constants.LOCALSTACK_ROOT_FOLDER, ".venv"))
+LOCALSTACK_VENV = VirtualEnvironment(LOCALSTACK_VENV_FOLDER)
 
 
 class PythonPackageInstaller(PackageInstaller):
