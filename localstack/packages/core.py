@@ -8,7 +8,8 @@ from typing import Optional
 
 import requests
 
-from ..config import dirs
+from localstack import config
+
 from ..constants import LOCALSTACK_VENV_FOLDER
 from ..utils.archives import download_and_extract
 from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
@@ -112,7 +113,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         download_and_extract(
             download_url,
             retries=3,
-            tmp_archive=os.path.join(dirs.tmp, archive_name),
+            tmp_archive=os.path.join(config.dirs.tmp, archive_name),
             target_dir=target_directory,
         )
         if self.extract_single_directory:
