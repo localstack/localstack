@@ -265,7 +265,7 @@ from localstack.services.s3.v3.models import (
     VersionedKeyStore,
     s3_stores,
 )
-from localstack.services.s3.v3.storage.core import LimitedIterableStream
+from localstack.services.s3.v3.storage.core import LimitedIterableStream, S3ObjectStore
 from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.services.s3.validation import (
     parse_grants_in_headers,
@@ -293,9 +293,9 @@ DEFAULT_S3_TMP_DIR = "/tmp/localstack-s3-storage"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):
-    def __init__(self) -> None:
+    def __init__(self, storage_backend: S3ObjectStore = None) -> None:
         super().__init__()
-        self._storage_backend = EphemeralS3ObjectStore(DEFAULT_S3_TMP_DIR)
+        self._storage_backend = storage_backend or EphemeralS3ObjectStore(DEFAULT_S3_TMP_DIR)
         self._notification_dispatcher = NotificationDispatcher()
         self._cors_handler = S3CorsHandler(BucketCorsIndex())
 

@@ -190,10 +190,20 @@ class S3ObjectStore(abc.ABC):
         pass
 
     def flush(self):
+        """
+        Calling `flush()` should force the `S3ObjectStore` to dump its state to disk, depending on the implementation.
+        """
         pass
 
     def close(self):
+        """
+        Closing the `S3ObjectStore` allows freeing resources up (like file descriptors for example) when stopping the
+        linked provider.
+        """
         pass
 
     def reset(self):
+        """
+        Resetting the `S3ObjectStore` will delete all the contained resources.
+        """
         pass
