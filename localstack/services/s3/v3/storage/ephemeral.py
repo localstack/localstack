@@ -212,9 +212,6 @@ class EphemeralS3StoredObject(S3StoredObject):
 
                 yield data
 
-    def delete(self):
-        self.file.close()
-
 
 class EphemeralS3StoredMultipart(S3StoredMultipart):
     upload_dir: str
@@ -254,7 +251,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         """
         stored_part = self.parts.pop(s3_part.part_number, None)
         if stored_part:
-            stored_part.delete()
+            stored_part.file.close()
 
     def complete_multipart(self, parts: list[S3Part]) -> EphemeralS3StoredObject:
         """
@@ -276,7 +273,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :return:
         """
         for part in self.parts.values():
-            part.delete()
+            part.file.close()
         self.parts.clear()
 
     def copy_from_object(
