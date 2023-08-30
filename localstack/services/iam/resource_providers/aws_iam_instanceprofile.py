@@ -66,8 +66,13 @@ class IAMInstanceProfileProvider(ResourceProvider[IAMInstanceProfileProperties])
             model["InstanceProfileName"] = role_name
 
         response = iam.create_instance_profile(
-            InstanceProfileName=model["InstanceProfileName"],
-            Path=model["Path"],
+            **util.select_attributes(
+                model,
+                [
+                    "InstanceProfileName",
+                    "Path",
+                ],
+            ),
         )
         for role_name in model.get("Roles", []):
             iam.add_role_to_instance_profile(
@@ -75,7 +80,7 @@ class IAMInstanceProfileProvider(ResourceProvider[IAMInstanceProfileProperties])
             )
         model["Arn"] = response["InstanceProfile"]["Arn"]
         return ProgressEvent(
-            status=OperationStatus.IN_PROGRESS,
+            status=OperationStatus.SUCCESS,
             resource_model=model,
         )
 
