@@ -264,7 +264,7 @@ def firehose_stream_arn(stream_name, account_id=None, region_name=None):
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def es_domain_arn(domain_name, account_id=None, region_name=None):
+def es_domain_arn(domain_name, account_id, region_name):
     pattern = "arn:aws:es:%s:%s:domain/%s"
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
