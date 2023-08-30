@@ -50,6 +50,8 @@ TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
     THIS_FOLDER, "functions/lambda_unhandled_error.py"
 )
 TEST_LAMBDA_PYTHON_RUNTIME_ERROR = os.path.join(THIS_FOLDER, "functions/lambda_runtime_error.py")
+TEST_LAMBDA_PYTHON_RUNTIME_EXIT = os.path.join(THIS_FOLDER, "functions/lambda_runtime_exit.py")
+TEST_LAMBDA_PYTHON_HANDLER_EXIT = os.path.join(THIS_FOLDER, "functions/lambda_handler_exit.py")
 TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
@@ -1216,6 +1218,8 @@ class TestLambdaErrors:
     @markers.aws.validated
     def test_lambda_runtime_error(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that cannot start due to a runtime error"""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
         function_name = f"test-function-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
@@ -1230,11 +1234,55 @@ class TestLambdaErrors:
         snapshot.match("invocation_error", result)
 
     @pytest.mark.skipif(
+        not is_aws_cloud(), reason="Not yet supported. Need to report exit in Lambda init binary."
+    )
+    @markers.aws.validated
+    def test_lambda_runtime_exit(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that exits during the runtime startup"""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_RUNTIME_EXIT,
+            handler="lambda_runtime_exit.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
+
+    @pytest.mark.skipif(
+        not is_aws_cloud(), reason="Not yet supported. Need to report exit in Lambda init binary."
+    )
+    @markers.aws.validated
+    def test_lambda_handler_exit(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that exits during the handler"""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_HANDLER_EXIT,
+            handler="lambda_handler_exit.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
+
+    @pytest.mark.skipif(
         not is_aws_cloud(), reason="Not yet supported. Need to raise error in Lambda init binary."
     )
     @markers.aws.validated
     def test_lambda_runtime_wrapper_not_found(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that points to a non-existing Lambda wrapper"""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
         function_name = f"test-function-{short_uid()}"
         create_lambda_function(
             func_name=function_name,

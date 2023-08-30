@@ -3275,7 +3275,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_error": {
-    "recorded-date": "23-08-2023, 11:18:22",
+    "recorded-date": "30-08-2023, 16:48:55",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
@@ -3321,14 +3321,50 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_wrapper_not_found": {
-    "recorded-date": "30-08-2023, 16:34:59",
+    "recorded-date": "30-08-2023, 16:52:21",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
         "Payload": {
           "errorType": "Runtime.ExitError",
-          "errorMessage": "RequestId: c905064c-fb95-4922-bf9e-9ab996ea4683 Error: Runtime exited with error: exit status 127"
+          "errorMessage": "RequestId: <uuid> Error: Runtime exited with error: exit status 127"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_exit": {
+    "recorded-date": "30-08-2023, 16:48:13",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorType": "Runtime.ExitError",
+          "errorMessage": "RequestId: <uuid> Error: Runtime exited without providing a reason"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_handler_exit": {
+    "recorded-date": "30-08-2023, 16:51:03",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorType": "Runtime.ExitError",
+          "errorMessage": "RequestId: <uuid> Error: Runtime exited without providing a reason"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
