@@ -28,3 +28,5 @@ Resources:
 Outputs:
   SearchDomain:
     Value: !Ref "Domain66AC69E0"
+  SearchDomainEndpoint:
+    Value: !GetAtt Domain66AC69E0.DomainEndpoint
