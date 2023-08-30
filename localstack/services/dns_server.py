@@ -823,7 +823,7 @@ def start_server(upstream_dns: str, port: int = config.DNS_PORT):
         LOG.debug("DNS servers are already started. Avoid starting again.")
         return
 
-    print("Starting DNS servers (tcp/udp port %s on %s)..." % (port, config.DNS_ADDRESS))
+    LOG.debug("Starting DNS servers (tcp/udp port %s on %s)..." % (port, config.DNS_ADDRESS))
     dns_server = DnsServer(
         port, protocols=["tcp", "udp"], host=config.DNS_ADDRESS, upstream_dns=upstream_dns
     )
