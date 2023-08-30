@@ -46,7 +46,7 @@ def find_stream_for_consumer(consumer_arn):
     region_name = extract_region_from_arn(consumer_arn)
     kinesis = connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis
     for stream_name in kinesis.list_streams()["StreamNames"]:
-        stream_arn = arns.kinesis_stream_arn(stream_name)
+        stream_arn = arns.kinesis_stream_arn(stream_name, account_id, region_name)
         for cons in kinesis.list_stream_consumers(StreamARN=stream_arn)["Consumers"]:
             if cons["ConsumerARN"] == consumer_arn:
                 return stream_name

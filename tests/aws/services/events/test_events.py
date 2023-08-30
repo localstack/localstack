@@ -435,7 +435,12 @@ class TestEvents:
     @markers.aws.unknown
     @pytest.mark.parametrize("strategy", ["domain", "path"])
     def test_put_events_with_target_sns(
-        self, monkeypatch, strategy, sns_subscription, aws_client, clean_up
+        self,
+        monkeypatch,
+        sns_subscription,
+        aws_client,
+        clean_up,
+        strategy,
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
@@ -496,7 +501,10 @@ class TestEvents:
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
     @markers.aws.unknown
-    def test_put_events_into_event_bus(self, aws_client, clean_up):
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_put_events_into_event_bus(self, monkeypatch, aws_client, clean_up, strategy):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -639,7 +647,6 @@ class TestEvents:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
         sns_subscription,
         httpserver: HTTPServer,
         aws_client,
@@ -961,7 +968,7 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         # create firehose target bucket
-        resources.get_or_create_bucket(s3_bucket)
+        resources.get_or_create_bucket(s3_bucket, s3_client=aws_client.s3)
 
         # create firehose delivery stream to s3
         stream = aws_client.firehose.create_delivery_stream(
@@ -1064,7 +1071,7 @@ class TestEvents:
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
         stream_name = "stream-{}".format(short_uid())
-        stream_arn = arns.kinesis_stream_arn(stream_name)
+        stream_arn = arns.kinesis_stream_arn(stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         aws_client.kinesis.create_stream(StreamName=stream_name, ShardCount=1)
 
@@ -1288,7 +1295,10 @@ class TestEvents:
         assert response.get("Entries")
 
     @markers.aws.unknown
-    def test_trigger_event_on_ssm_change(self, aws_client, clean_up):
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_trigger_event_on_ssm_change(self, monkeypatch, aws_client, clean_up, strategy):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
 
@@ -1321,14 +1331,18 @@ class TestEvents:
             Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
         )
 
+        param_suffix = short_uid()
+
         # change SSM param to trigger event
-        aws_client.ssm.put_parameter(Name=f"{ssm_prefix}/test123", Value="value1", Type="String")
+        aws_client.ssm.put_parameter(
+            Name=f"{ssm_prefix}/test-{param_suffix}", Value="value1", Type="String"
+        )
 
         def assert_message():
             resp = aws_client.sqs.receive_message(QueueUrl=queue_url)
             result = resp.get("Messages")
             body = json.loads(result[0]["Body"])
-            assert body == {"name": "/test/local/test123", "operation": "Create"}
+            assert body == {"name": f"/test/local/test-{param_suffix}", "operation": "Create"}
 
         # assert that message has been received
         retry(assert_message, retries=7, sleep=0.3)

@@ -11,6 +11,7 @@ def create_sqs_queue(queue_name):
     return connect_to().sqs.create_queue(QueueName=queue_name)
 
 
+# TODO: make s3_client mandatory
 def get_or_create_bucket(bucket_name: str, s3_client=None):
     s3_client = s3_client or connect_to().s3
     try:

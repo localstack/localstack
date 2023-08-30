@@ -32,7 +32,6 @@ from localstack.aws.api.s3 import (
     TopicConfiguration,
 )
 from localstack.aws.connect import connect_to
-from localstack.config import DEFAULT_REGION
 from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.utils import (
     _create_invalid_argument_exc,
@@ -92,6 +91,7 @@ class S3EventNotificationContext:
     request_id: str
     event_type: str
     event_time: datetime.datetime
+    account_id: str
     region: str
     bucket_name: BucketName
     key_name: ObjectKey
@@ -153,6 +153,7 @@ class S3EventNotificationContext:
             request_id=request_context.request_id,
             event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
             event_time=datetime.datetime.now(),
+            account_id=request_context.account_id,
             region=request_context.region,
             bucket_name=bucket_name,
             bucket_location=bucket.location,
@@ -200,6 +201,7 @@ class S3EventNotificationContext:
             request_id=request_context.request_id,
             event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
             event_time=datetime.datetime.now(),
+            account_id=request_context.account_id,
             region=request_context.region,
             bucket_name=bucket_name,
             bucket_location=s3_bucket.bucket_region,
@@ -441,7 +443,9 @@ class SqsNotifier(BaseNotifier):
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         arn_data = parse_arn(target_arn)
-        sqs_client = connect_to(region_name=arn_data["region"]).sqs
+        sqs_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).sqs
         try:
             queue_url = sqs_client.get_queue_url(
                 QueueName=arn_data["resource"], QueueOwnerAWSAccountId=arn_data["account"]
@@ -480,8 +484,9 @@ class SqsNotifier(BaseNotifier):
         queue_arn = config["QueueArn"]
 
         parsed_arn = parse_arn(queue_arn)
-        region = parsed_arn["region"]
-        sqs_client = connect_to(region_name=region).sqs.request_metadata(
+        sqs_client = connect_to(
+            aws_access_key_id=parsed_arn["account"], region_name=parsed_arn["region"]
+        ).sqs.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         try:
@@ -514,7 +519,9 @@ class SnsNotifier(BaseNotifier):
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         arn_data = parse_arn(target_arn)
-        sns_client = connect_to(region_name=arn_data["region"]).sns
+        sns_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).sns
         try:
             sns_client.get_topic_attributes(TopicArn=target_arn)
         except ClientError:
@@ -559,8 +566,10 @@ class SnsNotifier(BaseNotifier):
         message = json.dumps(event_payload)
         topic_arn = config["TopicArn"]
 
-        region_name = arns.extract_region_from_arn(topic_arn)
-        sns_client = connect_to(region_name=region_name).sns.request_metadata(
+        arn_data = parse_arn(topic_arn)
+        sns_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).sns.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         try:
@@ -588,7 +597,9 @@ class LambdaNotifier(BaseNotifier):
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         arn_data = parse_arn(arn=target_arn)
-        lambda_client = connect_to(region_name=arn_data["region"]).lambda_
+        lambda_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).lambda_
         try:
             lambda_client.get_function(FunctionName=target_arn)
         except ClientError:
@@ -615,8 +626,11 @@ class LambdaNotifier(BaseNotifier):
         payload = json.dumps(event_payload)
         lambda_arn = config["LambdaFunctionArn"]
 
-        region_name = arns.extract_region_from_arn(lambda_arn)
-        lambda_client = connect_to(region_name=region_name).lambda_.request_metadata(
+        arn_data = parse_arn(lambda_arn)
+
+        lambda_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).lambda_.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         lambda_function_config = arns.lambda_function_name(lambda_arn)
@@ -733,10 +747,9 @@ class EventBridgeNotifier(BaseNotifier):
         return
 
     def notify(self, ctx: S3EventNotificationContext, config: EventBridgeConfiguration):
-        region = ctx.bucket_location or DEFAULT_REGION
         # does not require permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-permissions.html
-        events_client = connect_to(region_name=region).events
+        events_client = connect_to(aws_access_key_id=ctx.account_id, region_name=ctx.region).events
         entry = self._get_event_payload(ctx)
         try:
             events_client.put_events(Entries=[entry])
