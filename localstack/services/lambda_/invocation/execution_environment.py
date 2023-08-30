@@ -236,7 +236,7 @@ class ExecutionEnvironment:
             self.function_version.qualified_arn,
         )
         self.startup_timer = None
-        self.errored()
+        self.runtime_executor.stop()
 
     def errored(self) -> None:
         with self.status_lock:

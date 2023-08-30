@@ -42,8 +42,8 @@ class ExecutorEndpoint:
     rules: list[Rule]
     endpoint_id: str
     router: Router
-    startup_future: Future[bool]
-    invocation_future: Future[InvocationResult]
+    startup_future: Future[bool] | None
+    invocation_future: Future[InvocationResult] | None
     logs: str | None
 
     def __init__(
@@ -57,6 +57,8 @@ class ExecutorEndpoint:
         self.rules = []
         self.endpoint_id = endpoint_id
         self.router = ROUTER
+        self.startup_future = None
+        self.invocation_future = None
         self.logs = None
 
     def _create_endpoint(self, router: Router) -> list[Rule]:

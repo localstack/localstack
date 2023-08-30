@@ -1229,6 +1229,33 @@ class TestLambdaErrors:
         )
         snapshot.match("invocation_error", result)
 
+    @markers.aws.only_localstack
+    def test_lambda_runtime_startup_timeout(
+        self, aws_client, create_lambda_function, snapshot, monkeypatch
+    ):
+        """Test Lambda that times out during runtime startup"""
+        monkeypatch.setattr(
+            config, "LAMBDA_DOCKER_FLAGS", "-e LOCALSTACK_RUNTIME_ENDPOINT=http://somehost.invalid"
+        )
+        monkeypatch.setattr(config, "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT", 2)
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        with pytest.raises(aws_client.lambda_.exceptions.ServiceException) as e:
+            aws_client.lambda_.invoke(
+                FunctionName=function_name,
+            )
+        assert e.match(
+            r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
+            r"retries: 0\): Internal error while executing lambda"
+        )
+
 
 class TestLambdaMultiAccounts:
     @pytest.fixture
