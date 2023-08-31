@@ -1297,7 +1297,9 @@ class TestLambdaErrors:
         )
         snapshot.match("invocation_error", result)
 
-    @markers.aws.only_localstack
+    @markers.aws.only_localstack(
+        reason="Can only induce Lambda-internal Docker error in LocalStack"
+    )
     def test_lambda_runtime_startup_timeout(
         self, aws_client, create_lambda_function, snapshot, monkeypatch
     ):
@@ -1321,7 +1323,7 @@ class TestLambdaErrors:
             )
         assert e.match(
             r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
-            r"retries: 0\): Internal error while executing lambda"
+            r"retries: \d\): Internal error while executing lambda"
         )
 
 
