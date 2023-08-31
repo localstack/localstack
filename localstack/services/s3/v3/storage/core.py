@@ -23,6 +23,8 @@ class LimitedIterableStream(Iterable[bytes]):
             if self.max_length - read >= 0:
                 self.max_length -= read
                 yield chunk
+            elif self.max_length == 0:
+                break
             else:
                 yield chunk[: self.max_length]
                 break
@@ -145,7 +147,7 @@ class S3StoredMultipart(abc.ABC):
         src_bucket: BucketName,
         src_s3_object: S3Object,
         range_data: ObjectRange,
-    ) -> S3StoredObject:
+    ) -> None:
         pass
 
 
@@ -181,6 +183,27 @@ class S3ObjectStore(abc.ABC):
     def remove_multipart(self, bucket: BucketName, s3_multipart: S3Multipart):
         pass
 
-    @abc.abstractmethod
+    def create_bucket(self, bucket: BucketName):
+        pass
+
+    def delete_bucket(self, bucket: BucketName):
+        pass
+
+    def flush(self):
+        """
+        Calling `flush()` should force the `S3ObjectStore` to dump its state to disk, depending on the implementation.
+        """
+        pass
+
     def close(self):
+        """
+        Closing the `S3ObjectStore` allows freeing resources up (like file descriptors for example) when stopping the
+        linked provider.
+        """
+        pass
+
+    def reset(self):
+        """
+        Resetting the `S3ObjectStore` will delete all the contained resources.
+        """
         pass

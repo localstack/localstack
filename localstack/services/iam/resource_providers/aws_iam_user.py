@@ -144,8 +144,8 @@ class IAMUserProvider(ResourceProvider[IAMUserProperties]):
         """
         Update a resource
         """
-        return ProgressEvent(OperationStatus.SUCCESS, request.desired_state)
-        # raise NotImplementedError
+        # return ProgressEvent(OperationStatus.SUCCESS, request.desired_state)
+        raise NotImplementedError
 
 
 class IAMUserProviderPlugin(CloudFormationResourceProviderPlugin):

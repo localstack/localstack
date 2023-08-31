@@ -2,14 +2,22 @@ from __future__ import annotations
 
 import http
 import json
+import logging
+from json import JSONDecodeError
 from typing import Final, Optional, TypedDict
-from urllib.parse import urlencode, urljoin
+from urllib.parse import urlencode, urljoin, urlparse
 
 import requests
 from requests import Response
 
+from localstack import config
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
-from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE, PATH_USER_REQUEST
+from localstack.constants import (
+    APPLICATION_JSON,
+    HEADER_CONTENT_TYPE,
+    LOCALHOST_HOSTNAME,
+    PATH_USER_REQUEST,
+)
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
@@ -23,6 +31,9 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import long_uid
+
+LOG = logging.getLogger(__name__)
+
 
 ApiEndpoint = str
 Headers = dict
@@ -142,8 +153,30 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
         return headers
 
     @staticmethod
+    def _path_based_url_of(api_endpoint: ApiEndpoint) -> ApiEndpoint:
+        # Attempts to convert an url based api endpoint:
+        #   <api-id>.execute-api.<-region->.localhost.localstack.cloud
+        # To a path based:
+        #   http://localhost:4566/restapis/<api-id>
+        # TODO: this heavily normalises url based api endpoints to path endpoint.
+        #  there's an argument to be made that this may mast implementation mistakes: investigate further.
+        url_spec = urlparse(api_endpoint)
+        url_path = url_spec.path
+        if not url_path.endswith(LOCALHOST_HOSTNAME):
+            return api_endpoint
+        path_parts = url_path.split(".")
+        api_id = path_parts[0]
+        path_based_api_endpoint = f"{config.service_url('apigateway')}/restapis/{api_id}"
+        return path_based_api_endpoint
+
+    @staticmethod
     def _invoke_url_of(parameters: TaskParameters) -> str:
-        url_base = parameters["ApiEndpoint"] + "/"
+        given_api_endpoint = parameters["ApiEndpoint"]
+        api_endpoint = StateTaskServiceApiGateway._path_based_url_of(given_api_endpoint)
+        if given_api_endpoint != api_endpoint:
+            LOG.warning(f"ApiEndpoint '{given_api_endpoint}' ignored in favour of {api_endpoint}")
+
+        url_base = api_endpoint + "/"
         # http://localhost:4566/restapis/<api-id>/<stage>/_user_request_/<path>(?<query-parameters>)?
         url_tail = "/".join(
             [
@@ -160,11 +193,16 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
     def _invoke_output_of(response: Response) -> InvokeOutput:
         status_code = response.status_code
         status_text = http.HTTPStatus(status_code).phrase
-        response_body = response.text
-        if response_body == json.dumps(dict()):
-            response_body = dict()
 
         headers = dict(response.headers)
+
+        try:
+            response_body = response.json()
+        except JSONDecodeError:
+            response_body = response.text
+            if response_body == json.dumps(dict()):
+                response_body = dict()
+
         headers.pop("server", None)
         if "date" in headers:
             headers["Date"] = [headers.pop("date")]

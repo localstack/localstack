@@ -5,7 +5,6 @@ from urllib.parse import urlsplit, urlunsplit
 from localstack import config
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.http import Request, Response
-from localstack.http.client import SimpleStreamingRequestsClient
 from localstack.http.proxy import Proxy
 from localstack.runtime import hooks
 from localstack.services.edge import ROUTER
@@ -62,7 +61,6 @@ class S3VirtualHostProxyHandler:
             forward_base_url=config.get_edge_url(),
             # do not preserve the Host when forwarding (to avoid an endless loop)
             preserve_host=False,
-            client=SimpleStreamingRequestsClient(),
         )
 
     @staticmethod

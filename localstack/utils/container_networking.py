@@ -7,6 +7,7 @@ from typing import Optional
 from localstack import config, constants
 from localstack.utils.container_utils.container_client import ContainerException
 from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.net import get_docker_host_from_container
 
 LOG = logging.getLogger(__name__)
 
@@ -94,7 +95,11 @@ def get_endpoint_for_network(network: Optional[str] = None) -> str:
     except Exception as e:
         LOG.info("Unable to get main container IP address: %s", e)
 
-    return main_container_ip or config.DOCKER_HOST_FROM_CONTAINER
+    if not main_container_ip:
+        # fall back to returning the hostname/IP of the Docker host, if we cannot determine the main container IP
+        return get_docker_host_from_container()
+
+    return main_container_ip
 
 
 def get_main_container_ip():
