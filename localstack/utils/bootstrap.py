@@ -691,7 +691,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
 
     logfile = get_container_default_logfile_location(container_config.name)
     log_printer = FileListener(logfile, callback=_init_log_printer)
-    log_printer.truncate_log()
+    log_printer.truncate_file()
     log_printer.start()
 
     # Set up signal handler, to enable clean shutdown across different operating systems.

@@ -43,7 +43,7 @@ class FileListener:
         self.started.clear()
         self.thread = None
 
-    def truncate_log(self):
+    def truncate_file(self):
         with open(self.file_path, "wb") as outfile:
             outfile.write(b"")
 
