@@ -488,6 +488,12 @@ class RunningContainer:
             container_name_or_id=self.id, *args, **kwargs
         )
 
+    def stopped(self) -> Container:
+        """
+        Convert this running instance to a stopped instance ready to be restarted
+        """
+        return Container(container_config=self.config, docker_client=self.container_client)
+
 
 class LocalstackContainerServer(Server):
     def __init__(self, container_configuration: ContainerConfiguration | None = None) -> None:
@@ -536,6 +542,12 @@ class LocalstackContainerServer(Server):
     def wait_is_container_running(self, timeout=None) -> bool:
         return poll_condition(self.is_container_running, timeout)
 
+    def start(self) -> bool:
+        if isinstance(self.container, RunningContainer):
+            raise RuntimeError("cannot start container as container reference has been started")
+
+        return super().start()
+
     def do_run(self):
         if self.is_container_running():
             raise ContainerExists(
@@ -557,13 +569,16 @@ class LocalstackContainerServer(Server):
         self.container.attach()
         return self.container
 
-    def do_shutdown(self):
-
+    def shutdown(self):
         if not isinstance(self.container, RunningContainer):
             raise ValueError(f"Container {self.container} not started")
 
+        return super().shutdown()
+
+    def do_shutdown(self):
         try:
             self.container.shutdown(timeout=10)
+            self.container = self.container.stopped()
         except Exception as e:
             LOG.info("error cleaning up localstack container %s: %s", self.container.name, e)
 
