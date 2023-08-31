@@ -465,19 +465,20 @@ class RunningContainer:
         return False
 
     def get_logs(self) -> str:
-        return self.container_client.get_container_logs(self.id)
+        return self.container_client.get_container_logs(self.id, safe=True)
 
     def wait_until_ready(self, timeout: float = None):
         poll_condition(self.is_running, timeout)
 
-    def shutdown(self, timeout: int = 10):
+    def shutdown(self, timeout: int = 10, remove: bool = True):
         if not self.container_client.is_container_running(self.name):
             return
 
         self.container_client.stop_container(container_name=self.id, timeout=timeout)
-        self.container_client.remove_container(
-            container_name=self.id, force=True, check_existence=False
-        )
+        if remove:
+            self.container_client.remove_container(
+                container_name=self.id, force=True, check_existence=False
+            )
 
     def attach(self):
         self.container_client.attach_to_container(container_name_or_id=self.id)
