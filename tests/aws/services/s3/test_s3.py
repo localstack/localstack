@@ -2816,8 +2816,7 @@ class TestS3:
         response = requests.put(url, data, headers=headers, verify=False)
         assert response.ok
         part_etag = response.headers.get("ETag")
-        xml_response = xmltodict.parse(response.content)
-        assert "UploadPartOutput" in xml_response
+        assert not response.content
 
         # validate that the object etag is the same as the pre-calculated one
         assert part_etag.strip('"') == precalculated_etag
