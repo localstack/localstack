@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
@@ -350,8 +351,7 @@ class TestCloudFormation:
         s3_client = aws_client_factory(region_name=region).s3
         bucket_name = f"target-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
-        # the queue is always created in us-east-1
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         if create_bucket_first:
             s3_client.create_bucket(
                 Bucket=bucket_name,
