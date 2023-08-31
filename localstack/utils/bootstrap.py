@@ -607,7 +607,7 @@ def configure_container(container: Container):
         container.config.additional_flags = f"{container.config.additional_flags} {user_flags}"
 
     # get additional parameters from plugins
-    hooks.configure_localstack_container.run(container.config)
+    hooks.configure_localstack_container.run(container)
 
     # construct default port mappings
     container.config.ports.add(get_edge_port_http())
@@ -683,11 +683,12 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
 
     # create and prepare container
     container_config = ContainerConfiguration(get_docker_image_to_start())
+    container = Container(container_config)
 
-    configure_container(container_config)
+    configure_container(container)
     if cli_params:
-        configure_container_from_cli_params(container_config, cli_params or {})
-    ensure_container_image(console, container_config)
+        configure_container_from_cli_params(container, cli_params or {})
+    ensure_container_image(console, container)
 
     status = console.status("Starting LocalStack container")
     status.start()
@@ -765,10 +766,11 @@ def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
     # create and prepare container
     console.log("configuring container")
     container_config = ContainerConfiguration(get_docker_image_to_start())
-    configure_container(container_config)
+    container = Container(container_config)
+    configure_container(container)
     if cli_params:
-        configure_container_from_cli_params(container_config, cli_params)
-    ensure_container_image(console, container_config)
+        configure_container_from_cli_params(container, cli_params)
+    ensure_container_image(console, container)
 
     container_config.detach = True
 
