@@ -39,7 +39,7 @@ from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
-# To add support for a new runtime, just add it here with the accompanying image postfix
+# To add support for a new runtime, just add it here with the accompanying image postfix and to api_utils.RUNTIMES
 IMAGE_MAPPING = {
     "python3.7": "python:3.7",
     "python3.8": "python:3.8",

@@ -9,6 +9,8 @@ from unittest import mock
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.lambda_ import lambda_api, lambda_executors, lambda_utils
+from localstack.services.lambda_.api_utils import RUNTIMES
+from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING
 from localstack.services.lambda_.lambda_api import get_lambda_policy_name
 from localstack.services.lambda_.lambda_executors import OutputLog
 from localstack.services.lambda_.lambda_utils import (
@@ -1173,3 +1175,11 @@ class TestLambdaUtils:
         policy_name2 = get_lambda_policy_name(lambda_api.func_arn(func_name))
         assert func_name in policy_name1
         assert policy_name1 == policy_name2
+
+    def test_check_runtime(self):
+        """
+        Make sure that the list of runtimes to test at least contains all mapped runtime images.
+        This is a test which ensures that runtimes considered for validation do not diverge from the supported runtimes.
+        See #9020 for more details.
+        """
+        assert set(RUNTIMES) == set(IMAGE_MAPPING.keys())

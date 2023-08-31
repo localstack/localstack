@@ -14,7 +14,7 @@ from localstack.aws.api.opensearch import (
     EngineType,
     ValidationException,
 )
-from localstack.http.client import SimpleStreamingRequestsClient
+from localstack.http.client import SimpleRequestsClient
 from localstack.http.proxy import ProxyHandler
 from localstack.services.edge import ROUTER
 from localstack.services.infra import DEFAULT_BACKEND_HOST
@@ -229,7 +229,7 @@ def register_cluster(
     forward_url = config.OPENSEARCH_CUSTOM_BACKEND or forward_url
 
     # if the opensearch security plugin is enabled, only TLS connections are allowed, but the cert cannot be verified
-    client = SimpleStreamingRequestsClient()
+    client = SimpleRequestsClient()
     client.session.verify = False
     endpoint = ProxyHandler(forward_url, client)
 
@@ -416,7 +416,6 @@ class OpensearchCluster(Server):
             "http.publish_port": self.port,
             "transport.port": "0",
             "network.host": self.host,
-            # TODO this breaks the cluster check?!
             "http.compression": "true",
             "path.data": f'"{dirs.data}"',
             "path.repo": f'"{dirs.backup}"',

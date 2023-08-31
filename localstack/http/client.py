@@ -81,10 +81,6 @@ class SimpleRequestsClient(HttpClient):
         Very naive implementation to make the given HTTP request using the requests library, i.e., process the request
         as a client.
 
-        TODO: over time, this should become more sophisticated, specifically the use of restore_payload should only be
-         used when necessary (when the underlying stream has been consumed), and by default the stream should be
-         streamed to the destination.
-
         :param request: the request to perform
         :param server: the URL to send the request to, which defaults to the host component of the original Request.
         :return: the response.
@@ -92,43 +88,17 @@ class SimpleRequestsClient(HttpClient):
 
         url = self._get_destination_url(request, server)
 
-        response = self.session.request(
-            method=request.method,
-            # use raw base url to preserve path url encoding
-            url=url,
-            # request.args are only the url parameters
-            params=[(k, v) for k, v in request.args.items(multi=True)],
-            headers=dict(request.headers.items()),
-            data=restore_payload(request),
-        )
+        headers = dict(request.headers.items())
 
-        final_response = Response(
-            response=response.content,
-            status=response.status_code,
-            headers=Headers(dict(response.headers)),
-        )
-        if request.method == "HEAD":
-            # for HEAD  requests we have to keep the original content-length, but it will be re-calculated when creating
-            # the final_response object
-            final_response.content_length = response.headers.get("Content-Length", 0)
-        return final_response
-
-    def close(self):
-        self.session.close()
-
-
-class SimpleStreamingRequestsClient(SimpleRequestsClient):
-    def request(self, request: Request, server: str | None = None) -> Response:
-        """
-        Very naive implementation to make the given HTTP request using the requests library, i.e., process the request
-        as a client.
-
-        :param request: the request to perform
-        :param server: the URL to send the request to, which defaults to the host component of the original Request.
-        :return: the response.
-        """
-
-        url = self._get_destination_url(request, server)
+        # urllib3 (used by requests) will set an Accept-Encoding header ("gzip,deflate")
+        # - See urllib3.util.request.ACCEPT_ENCODING
+        # - This could be circumvented by setting Accept-Encoding explicitly to None
+        # BUT: Python's http client (used by urllib3) will always add an accept header if none is given
+        # - See https://github.com/psf/requests/issues/2234 and http.client.putrequest
+        # Explicitly set `Accept-Encoding: identity` here if no `Accept-Encoding` header is set in the originating
+        # request to avoid any unused manipulations by underlying libraries.
+        if not request.headers.get("accept-encoding"):
+            headers["accept-encoding"] = "identity"
 
         response = self.session.request(
             method=request.method,
@@ -136,7 +106,7 @@ class SimpleStreamingRequestsClient(SimpleRequestsClient):
             url=url,
             # request.args are only the url parameters
             params=[(k, v) for k, v in request.args.items(multi=True)],
-            headers=dict(request.headers.items()),
+            headers=headers,
             data=restore_payload(request),
             stream=True,
         )
@@ -163,6 +133,9 @@ class SimpleStreamingRequestsClient(SimpleRequestsClient):
         )
 
         return final_response
+
+    def close(self):
+        self.session.close()
 
 
 def make_request(request: Request) -> Response:

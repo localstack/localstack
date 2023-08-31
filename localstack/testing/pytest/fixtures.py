@@ -872,6 +872,7 @@ def cleanup_stacks(aws_client):
         for stack in stacks:
             try:
                 aws_client.cloudformation.delete_stack(StackName=stack)
+                aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack)
             except Exception:
                 LOG.debug(f"Failed to cleanup stack '{stack}'")
 
@@ -1040,14 +1041,18 @@ def deploy_cfn_template(
 
     for entry in state:
         entry_stack_id = entry.get("stack_id")
-        entry_change_set_id = entry.get("change_set_id")
         try:
-            entry_change_set_id and cleanup_changesets([entry_change_set_id])
-            entry_stack_id and cleanup_stacks([entry_stack_id])
+            if entry_stack_id:
+                aws_client.cloudformation.delete_stack(StackName=entry_stack_id)
+                aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
+                    StackName=entry_stack_id,
+                    WaiterConfig={
+                        "Delay": 2,
+                        "MaxAttempts": 120,
+                    },
+                )
         except Exception as e:
-            LOG.debug(
-                f"Failed cleaning up change set {entry_change_set_id=} and stack {entry_stack_id=}: {e}"
-            )
+            LOG.debug(f"Failed cleaning up stack {entry_stack_id=}: {e}")
 
 
 @pytest.fixture
