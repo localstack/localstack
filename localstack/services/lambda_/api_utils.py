@@ -90,6 +90,8 @@ URL_CHAR_SET = string.ascii_lowercase + string.digits
 # Date format as returned by the lambda service
 LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
 
+# An unordered list of all Lambda runtimes supported by LocalStack.
+# Has to contain all elements of lambda_mapping.IMAGE_MAPPING.
 RUNTIMES = [
     Runtime.nodejs12_x,
     Runtime.nodejs14_x,
@@ -99,6 +101,7 @@ RUNTIMES = [
     Runtime.python3_8,
     Runtime.python3_9,
     Runtime.python3_10,
+    Runtime.python3_11,
     Runtime.ruby2_7,
     Runtime.ruby3_2,
     Runtime.java8,
@@ -112,6 +115,7 @@ RUNTIMES = [
     Runtime.provided_al2,
 ]
 
+# An unordered list of all Lambda CPU architectures supported by LocalStack.
 ARCHITECTURES = [Architecture.arm64, Architecture.x86_64]
 
 

@@ -7,7 +7,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request as WerkzeugRequest
 
 from localstack.http import Request, Response, Router
-from localstack.http.client import SimpleRequestsClient, SimpleStreamingRequestsClient
+from localstack.http.client import SimpleRequestsClient
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.http.hypercorn import HypercornServer
 from localstack.http.proxy import Proxy, ProxyHandler, forward
@@ -213,19 +213,18 @@ class TestProxy:
 
         httpserver.expect_request("").respond_with_handler(_handler)
 
-        with SimpleStreamingRequestsClient() as client:
-            proxy = Proxy(httpserver.url_for("/").lstrip("/"), client)
+        proxy = Proxy(httpserver.url_for("/").lstrip("/"))
 
-            request = Request(path="/", method="GET", headers={"Host": "127.0.0.1:80"})
+        request = Request(path="/", method="GET", headers={"Host": "127.0.0.1:80"})
 
-            response = proxy.request(request)
+        response = proxy.request(request)
 
-            if chunked:
-                assert response.headers["Transfer-Encoding"] == "chunked"
-                assert "Content-Length" not in response.headers
-            else:
-                assert response.headers["Content-Length"] == str(len(body))
-                assert "Transfer-Encoding" not in response.headers
+        if chunked:
+            assert response.headers["Transfer-Encoding"] == "chunked"
+            assert "Content-Length" not in response.headers
+        else:
+            assert response.headers["Content-Length"] == str(len(body))
+            assert "Transfer-Encoding" not in response.headers
 
 
 @pytest.mark.parametrize("consume_data", [True, False])

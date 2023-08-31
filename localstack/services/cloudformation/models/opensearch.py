@@ -4,7 +4,10 @@ from localstack.aws.api.opensearch import (
     OpenSearchWarmPartitionInstanceType,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.cloudformation.deployment_utils import remove_none_values
+from localstack.services.cloudformation.deployment_utils import (
+    generate_default_name,
+    remove_none_values,
+)
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns
 from localstack.utils.collections import convert_to_typed_dict
@@ -39,6 +42,16 @@ class OpenSearchDomain(GenericBaseModel):
 
     def _domain_name(self):
         return self.props.get("DomainName") or self.logical_resource_id
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        domain_name = resource.get("Properties", {}).get("DomainName")
+        if not domain_name:
+            # name must have a minimum length of 3 and a maximum length of 28
+            # only lower case is valid for domain name, pattern: [a-z][a-z0-9\-]+
+            resource["Properties"]["DomainName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            ).lower()[0:28]
 
     @staticmethod
     def get_deploy_templates():

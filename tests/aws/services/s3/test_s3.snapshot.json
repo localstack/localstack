@@ -1227,7 +1227,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_delete_bucket_lifecycle_configuration": {
-    "recorded-date": "21-09-2022, 13:36:09",
+    "recorded-date": "26-08-2023, 00:27:02",
     "recorded-content": {
       "get-bucket-lifecycle-exc-1": {
         "Error": {
@@ -1278,7 +1278,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_delete_lifecycle_configuration_on_bucket_deletion": {
-    "recorded-date": "21-09-2022, 13:36:12",
+    "recorded-date": "26-08-2023, 00:27:25",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
         "Rules": [
@@ -3648,7 +3648,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3StaticWebsiteHosting::test_validate_website_configuration": {
-    "recorded-date": "28-09-2022, 22:44:53",
+    "recorded-date": "26-08-2023, 00:30:03",
     "recorded-content": {
       "invalid-website-conf-0": {
         "Error": {
@@ -3741,7 +3741,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3StaticWebsiteHosting::test_crud_website_configuration": {
-    "recorded-date": "28-09-2022, 23:23:11",
+    "recorded-date": "26-08-2023, 00:29:24",
     "recorded-content": {
       "get-no-such-website-config": {
         "Error": {
@@ -3778,7 +3778,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_http_methods": {
-    "recorded-date": "04-10-2022, 16:11:12",
+    "recorded-date": "26-08-2023, 00:30:55",
     "recorded-content": {
       "not-allowed-post": {
         "content": "<html>\n<head><title>405 Method Not Allowed</title></head>\n<body>\n<h1>405 Method Not Allowed</h1>\n<ul>\n<li>Code: MethodNotAllowed</li>\n<li>Message: The specified method is not allowed against this resource.</li>\n<li>Method: POST</li>\n<li>ResourceType: OBJECT</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n"
@@ -3789,21 +3789,21 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_index_lookup": {
-    "recorded-date": "04-10-2022, 16:45:08",
+    "recorded-date": "26-08-2023, 00:31:15",
     "recorded-content": {
       "404-no-trailing-slash": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: directory-wrong</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
       "404-with-trailing-slash": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: directory-wrong/index.html</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n"
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_404": {
-    "recorded-date": "04-10-2022, 16:51:12",
+    "recorded-date": "26-08-2023, 00:30:33",
     "recorded-content": {
       "404-no-such-key": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: index.html</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
       "404-no-such-key-nor-custom": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: index.html</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<h3>An Error Occurred While Attempting to Retrieve a Custom Error Document</h3>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: error.html</li>\n</ul>\n<hr/>\n</body>\n</html>\n"
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_no_such_website": {
-    "recorded-date": "04-10-2022, 16:56:34",
+    "recorded-date": "26-08-2023, 00:31:30",
     "recorded-content": {
       "no-such-bucket": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchBucket</li>\n<li>Message: The specified bucket does not exist</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
       "no-such-website-config": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchWebsiteConfiguration</li>\n<li>Message: The specified bucket does not have a website configuration</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",

@@ -13041,5 +13041,120 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities": {
+    "recorded-date": "30-08-2023, 09:57:12",
+    "recorded-content": {
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "arm64",
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "nodejs12.x",
+          "nodejs14.x",
+          "nodejs16.x",
+          "nodejs18.x",
+          "python3.7",
+          "python3.8",
+          "python3.9",
+          "python3.10",
+          "python3.11",
+          "ruby2.7",
+          "ruby3.2",
+          "java8",
+          "java8.al2",
+          "java11"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
+    "recorded-date": "30-08-2023, 09:59:24",
+    "recorded-content": {
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "arm64",
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "nodejs12.x",
+          "nodejs14.x",
+          "nodejs16.x",
+          "nodejs18.x",
+          "python3.7",
+          "python3.8",
+          "python3.9",
+          "python3.10",
+          "python3.11",
+          "ruby2.7",
+          "ruby3.2",
+          "java8",
+          "java8.al2",
+          "java11"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
+    "recorded-date": "30-08-2023, 09:59:27",
+    "recorded-content": {
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "arm64",
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "java17",
+          "dotnetcore3.1",
+          "dotnet6",
+          "go1.x",
+          "provided",
+          "provided.al2"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
   }
 }

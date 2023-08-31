@@ -484,6 +484,9 @@ def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_queue_arn, aws_cl
 
 @pytest.fixture
 def sns_create_http_endpoint(sns_create_topic, sns_subscription, aws_client):
+    # This fixture can be used with manual setup to expose the HTTPServer fixture to AWS. One example is to use a
+    # a service like localhost.run, and set up a specific port to start the `HTTPServer(port=40000)` for example,
+    # and tunnel `localhost:40000` to a specific domain that you can manually return from this fixture.
     http_servers = []
 
     def _create_http_endpoint(
@@ -869,6 +872,7 @@ def cleanup_stacks(aws_client):
         for stack in stacks:
             try:
                 aws_client.cloudformation.delete_stack(StackName=stack)
+                aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack)
             except Exception:
                 LOG.debug(f"Failed to cleanup stack '{stack}'")
 
@@ -1037,14 +1041,18 @@ def deploy_cfn_template(
 
     for entry in state:
         entry_stack_id = entry.get("stack_id")
-        entry_change_set_id = entry.get("change_set_id")
         try:
-            entry_change_set_id and cleanup_changesets([entry_change_set_id])
-            entry_stack_id and cleanup_stacks([entry_stack_id])
+            if entry_stack_id:
+                aws_client.cloudformation.delete_stack(StackName=entry_stack_id)
+                aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
+                    StackName=entry_stack_id,
+                    WaiterConfig={
+                        "Delay": 2,
+                        "MaxAttempts": 120,
+                    },
+                )
         except Exception as e:
-            LOG.debug(
-                f"Failed cleaning up change set {entry_change_set_id=} and stack {entry_stack_id=}: {e}"
-            )
+            LOG.debug(f"Failed cleaning up stack {entry_stack_id=}: {e}")
 
 
 @pytest.fixture
