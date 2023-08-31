@@ -290,7 +290,7 @@ jobs:
           environment:
             TEST_PATH: "tests/bootstrap"
             COVERAGE_ARGS: "-p"
-            PYTEST_ADDOPTS: "${{ env.TINYBIRD_PYTEST_ARGS }}-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s"
+            PYTEST_ADDOPTS: "${TINYBIRD_PYTEST_ARGS}-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s"
           command: |
             make test-coverage
       - store_test_results:
