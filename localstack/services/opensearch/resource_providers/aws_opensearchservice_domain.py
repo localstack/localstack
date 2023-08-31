@@ -180,6 +180,8 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
         Primary identifier fields:
           - /properties/DomainName
 
+
+
         Create-only properties:
           - /properties/DomainName
 
@@ -200,41 +202,51 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
 
         """
         model = request.desired_state
-
-        # Validations
-        assert model["DomainName"]
-
+        if tags := model.pop("Tags", []):
+            model["TagList"] = tags
+        opensearch_client = request.aws_client_factory.opensearch
         if not request.custom_context.get(REPEATED_INVOCATION):
             # resource is not ready
             # this is the first time this callback is invoked
             request.custom_context[REPEATED_INVOCATION] = True
 
-            # Defaults
+            # defaults
+            domain_name = model.get("DomainName")
+            if not domain_name:
+                domain_name = util.generate_default_name(
+                    request.stack_name, request.logical_resource_id
+                ).lower()[0:28]
+                model["DomainName"] = domain_name
 
-            # Idempotency
-            try:
-                request.aws_client_factory.opensearch.describe_domain(
-                    DomainName=model["DomainName"]
-                )
-            except request.aws_client_factory.opensearch.exceptions.ResourceNotFoundException:
-                pass
-            else:
-                # the resource already exists
-                # for now raise an exception
-                # TODO: return progress event
-                raise RuntimeError(f"opensearch domain {model['DomainName']} already exists")
-
-            # Create resource
-            res = request.aws_client_factory.opensearch.create_domain(
-                DomainName=model["DomainName"]
+            properties = util.remove_none_values(model)
+            cluster_config = properties.get("ClusterConfig")
+            if isinstance(cluster_config, dict):
+                # set defaults required for boto3 calls
+                cluster_config.setdefault("DedicatedMasterType", "m3.medium.search")
+                cluster_config.setdefault("WarmType", "ultrawarm1.medium.search")
+            opensearch_client.create_domain(**properties)
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
             )
-            model["Arn"] = res["DomainStatus"]["ARN"]
-            model["DomainArn"] = res["DomainStatus"]["ARN"]
-            return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+        opensearch_domain = opensearch_client.describe_domain(DomainName=model["DomainName"])
+        if opensearch_domain["DomainStatus"]["Processing"] is False:
+            # set data
+            model["Arn"] = opensearch_domain["DomainStatus"]["ARN"]
+            model["Id"] = opensearch_domain["DomainStatus"]["DomainId"]
+            model["DomainArn"] = opensearch_domain["DomainStatus"]["ARN"]
+            model["DomainEndpoint"] = opensearch_domain["DomainStatus"].get("Endpoint")
+            model["DomainEndpoints"] = opensearch_domain["DomainStatus"].get("Endpoints")
+            model["ServiceSoftwareOptions"] = opensearch_domain["DomainStatus"].get(
+                "ServiceSoftwareOptions"
+            )
+            model.setdefault("AdvancedSecurityOptions", {})["AnonymousAuthDisableDate"] = (
+                opensearch_domain["DomainStatus"]
+                .get("AdvancedSecurityOptions", {})
+                .get("AnonymousAuthDisableDate")
+            )
 
-        # check on the status of the domain to see if it has been created yet or not
-        res = request.aws_client_factory.opensearch.describe_domain(DomainName=model["DomainName"])
-        if res["DomainStatus"]["Processing"] is False:
             return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
         else:
             return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
@@ -263,28 +275,9 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
           - es:DeleteDomain
           - es:DescribeDomain
         """
-        name = request.desired_state["DomainName"]
-        # LOG.warning(f"deleting domain {request.custom_context=}")
-        assert name is not None
-        if not request.custom_context.get("started", False):
-            # first time in the loop
-            request.aws_client_factory.opensearch.delete_domain(DomainName=name)
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=request.desired_state,
-                custom_context={"started": True},
-            )
-
-        # we have entered the loop again so check the resource status
-        try:
-            request.aws_client_factory.opensearch.describe_domain(DomainName=name)
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS, resource_model=request.desired_state
-            )
-        except request.aws_client_factory.opensearch.exceptions.ResourceNotFoundException:
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS, resource_model=request.desired_state
-            )
+        opensearch_client = request.aws_client_factory.opensearch
+        opensearch_client.delete_domain(DomainName=request.previous_state["DomainName"])
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
         self,
