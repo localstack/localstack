@@ -95,7 +95,7 @@ class BucketCorsIndex:
     @staticmethod
     def _build_bucket_index() -> set[BucketName]:
         result = set()
-        for account_id, regions in moto_s3_backends.items():
+        for account_id, regions in list(moto_s3_backends.items()):
             result.update(regions["global"].buckets.keys())
         return result
 
