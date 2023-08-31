@@ -543,7 +543,8 @@ class KeyStore:
         return self._store.pop(object_key, default)
 
     def values(self, *_, **__) -> list[S3Object | S3DeleteMarker]:
-        return [value for value in self._store.values()]
+        # we create a shallow copy with dict to avoid size hanged during iteration
+        return [value for value in dict(self._store).values()]
 
     def is_empty(self) -> bool:
         return not self._store
@@ -623,15 +624,16 @@ class VersionedKeyStore:
 
     def values(self, with_versions: bool = False) -> list[S3Object | S3DeleteMarker]:
         if with_versions:
+            # we create a shallow copy with dict to avoid size hanged during iteration
             return [
                 object_version
-                for values in self._store.values()
-                for object_version in values.values()
+                for values in dict(self._store).values()
+                for object_version in dict(values).values()
             ]
 
         # if `with_versions` is False, then we need to return only the current version if it's not a DeleteMarker
         objects = []
-        for object_key, versions in self._store.items():
+        for object_key, versions in dict(self._store).items():
             # we're getting the last set object in the versions dictionary
             for version_id in reversed(versions):
                 current_object = versions[version_id]
@@ -684,8 +686,10 @@ class BucketCorsIndex:
     def _build_index() -> tuple[set[BucketName], dict[BucketName, CORSConfiguration]]:
         buckets = set()
         cors_index = {}
-        for account_id, regions in s3_stores.items():
-            for bucket_name, bucket in regions[config.DEFAULT_REGION].buckets.items():
+        # we create a shallow copy with dict to avoid size changed during iteration, as the store could have new account
+        # or region create from any other requests
+        for account_id, regions in dict(s3_stores).items():
+            for bucket_name, bucket in dict(regions[config.DEFAULT_REGION].buckets).items():
                 bucket: S3Bucket
                 buckets.add(bucket_name)
                 if bucket.cors_rules is not None:
