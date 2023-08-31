@@ -33,6 +33,8 @@ def test_domain(deploy_cfn_template, aws_client, snapshot):
         os.path.dirname(__file__), "../../../templates/opensearch_domain.yml"
     )
     result = deploy_cfn_template(template_path=template_path)
+    domain_endpoint = result.outputs["SearchDomainEndpoint"]
+    assert domain_endpoint
     domain_name = result.outputs["SearchDomain"]
     domain = aws_client.opensearch.describe_domain(DomainName=domain_name)
     assert domain["DomainStatus"]
