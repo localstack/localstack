@@ -18,21 +18,6 @@ from localstack.utils.container_utils.container_client import (
 LOG = logging.getLogger(__name__)
 
 
-# TODO: for now we duplicate this fixture since we can't enable the fixture plugin, and can't
-#  move the fixture to tests/conftest.py because some unit tests are dependent on its current path
-@pytest.fixture
-def cleanups():
-    cleanup_fns = []
-
-    yield cleanup_fns
-
-    for cleanup_callback in cleanup_fns[::-1]:
-        try:
-            cleanup_callback()
-        except Exception as e:
-            LOG.warning("Failed to execute cleanup", exc_info=e)
-
-
 class ContainerFactory:
     def __init__(self):
         self._containers: list[Container] = []
