@@ -18,6 +18,7 @@ from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
+    ContainerClient,
     ContainerConfiguration,
     ContainerException,
     NoSuchImage,
@@ -375,14 +376,15 @@ def extract_port_flags(user_flags, port_mappings: PortMappings):
 
 
 class Container:
-    def __init__(self, container_config: ContainerConfiguration):
+    def __init__(
+        self, container_config: ContainerConfiguration, docker_client: ContainerClient | None = None
+    ):
         self.config = container_config
         # marker to access the running container
         self.running_container: RunningContainer | None = None
+        self.container_client = docker_client or DOCKER_CLIENT
 
     def start(self, attach: bool = False) -> RunningContainer:
-        cfg = copy.deepcopy(self.config)
-
         # FIXME: this is pretty awkward, but additional_flags in the LocalstackContainer API was
         #  always a list of ["-e FOO=BAR", ...], whereas in the DockerClient it is expected to be
         #  a string. so we need to re-assemble it here. the better way would be to not use
@@ -398,7 +400,7 @@ class Container:
         self._ensure_container_network(cfg.network)
 
         try:
-            id = DOCKER_CLIENT.create_container_from_config(cfg)
+            id = self.container_client.create_container_from_config(cfg)
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
                 LOG.exception("Error while creating container")
@@ -409,7 +411,7 @@ class Container:
             raise
 
         try:
-            DOCKER_CLIENT.start_container(id, attach=attach)
+            self.container_client.start_container(id, attach=attach)
         except ContainerException as e:
             LOG.error(
                 "Error while starting LocalStack container: %s\n%s",
@@ -421,17 +423,16 @@ class Container:
 
         return RunningContainer(id, container_config=self.config)
 
-    @staticmethod
-    def _ensure_container_network(network: str | None = None):
+    def _ensure_container_network(self, network: str | None = None):
         """Makes sure the configured container network exists"""
         if network:
             if network in ["host", "bridge"]:
                 return
             try:
-                DOCKER_CLIENT.inspect_network(network)
+                self.container_client.inspect_network(network)
             except NoSuchNetwork:
                 LOG.debug("Container network %s not found, creating it", network)
-                DOCKER_CLIENT.create_network(network)
+                self.container_client.create_network(network)
 
 
 class RunningContainer:
@@ -439,11 +440,16 @@ class RunningContainer:
     Represents a LocalStack container that is running.
     """
 
-    def __init__(self, id: str, container_config: ContainerConfiguration):
+    def __init__(
+        self,
+        id: str,
+        container_config: ContainerConfiguration,
+        docker_client: ContainerClient | None = None,
+    ):
         self.id = id
         self.config = container_config
-        self.name = DOCKER_CLIENT.get_container_name(self.id)
-        self.running = True
+        self.container_client = docker_client or DOCKER_CLIENT
+        self.name = self.container_client.get_container_name(self.id)
 
     def __enter__(self):
         return self
@@ -451,29 +457,35 @@ class RunningContainer:
     def __exit__(self, exc_type, exc_value, traceback):
         self.shutdown()
 
+    def is_running(self) -> bool:
+        logs = self.get_logs()
+        if constants.READY_MARKER_OUTPUT in logs.splitlines():
+            return True
+
+        return False
+
+    def get_logs(self) -> str:
+        return self.container_client.get_container_logs(self.id)
+
     def wait_until_ready(self, timeout: float = None):
-        def is_container_running() -> bool:
-            logs = DOCKER_CLIENT.get_container_logs(self.id)
-            if constants.READY_MARKER_OUTPUT in logs.splitlines():
-                return True
-
-            return False
-
-        poll_condition(is_container_running, timeout)
+        poll_condition(self.is_running, timeout)
 
     def shutdown(self, timeout: int = 10):
-        if not DOCKER_CLIENT.is_container_running(self.name):
+        if not self.container_client.is_container_running(self.name):
             return
 
-        DOCKER_CLIENT.stop_container(container_name=self.id, timeout=timeout)
-        DOCKER_CLIENT.remove_container(container_name=self.id, force=True, check_existence=False)
-        self.running = False
+        self.container_client.stop_container(container_name=self.id, timeout=timeout)
+        self.container_client.remove_container(
+            container_name=self.id, force=True, check_existence=False
+        )
 
     def attach(self):
-        DOCKER_CLIENT.attach_to_container(container_name_or_id=self.id)
+        self.container_client.attach_to_container(container_name_or_id=self.id)
 
     def exec_in_container(self, *args, **kwargs):
-        return DOCKER_CLIENT.exec_in_container(container_name_or_id=self.id, *args, **kwargs)
+        return self.container_client.exec_in_container(
+            container_name_or_id=self.id, *args, **kwargs
+        )
 
 
 class LocalstackContainerServer(Server):
@@ -505,7 +517,7 @@ class LocalstackContainerServer(Server):
         if not self.is_container_running():
             return False
 
-        logs = DOCKER_CLIENT.get_container_logs(self.container.name)
+        logs = self.container.get_logs()
 
         if constants.READY_MARKER_OUTPUT not in logs.splitlines():
             return False
@@ -518,7 +530,7 @@ class LocalstackContainerServer(Server):
         if not isinstance(self.container, RunningContainer):
             return False
 
-        return DOCKER_CLIENT.is_container_running(self.container.name)
+        return self.container.is_running()
 
     def wait_is_container_running(self, timeout=None) -> bool:
         return poll_condition(self.is_container_running, timeout)
@@ -545,12 +557,12 @@ class LocalstackContainerServer(Server):
         return self.container
 
     def do_shutdown(self):
+
         if not isinstance(self.container, RunningContainer):
             raise ValueError(f"Container {self.container} not started")
+
         try:
-            DOCKER_CLIENT.stop_container(
-                self.container.name, timeout=10
-            )  # giving the container some time to stop
+            self.container.shutdown(timeout=10)
         except Exception as e:
             LOG.info("error cleaning up localstack container %s: %s", self.container.name, e)
 
