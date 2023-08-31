@@ -4594,6 +4594,28 @@ class TestS3:
         resp_dict = xmltodict.parse(resp.content)
         assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
 
+        # CopyObject
+        get_object_tagging_url = f"{bucket_url}/{key_name}?tagging"
+        resp = s3_http_client.get(get_object_tagging_url, headers=headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+
+        copy_object_url = f"{bucket_url}/copied-key"
+        copy_object_headers = {**headers, "x-amz-copy-source": f"{bucket_url}/{key_name}"}
+        resp = s3_http_client.put(copy_object_url, headers=copy_object_headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "CopyObjectResult" in resp_dict
+
+        multipart_key = "multipart-key"
+        create_multipart = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=multipart_key
+        )
+        upload_id = create_multipart["UploadId"]
+
+        upload_part_url = f"{bucket_url}/{multipart_key}?UploadId={upload_id}&PartNumber=1"
+        resp = s3_http_client.put(upload_part_url, headers=headers)
+        assert not resp.content, resp.content
+
     # This test doesn't work against AWS anymore because of some authorization error.
     @markers.aws.only_localstack
     def test_s3_delete_objects_trailing_slash(self, aws_http_client_factory, s3_bucket, aws_client):
