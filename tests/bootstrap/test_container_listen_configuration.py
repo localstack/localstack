@@ -2,29 +2,7 @@ import pytest
 import requests
 
 from localstack.config import in_docker
-from localstack.utils.container_utils.container_client import NoSuchNetwork
-from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.net import get_free_tcp_port
-from localstack.utils.strings import short_uid
-
-
-@pytest.fixture
-def ensure_network(cleanups):
-    def _ensure_network(name: str):
-        try:
-            DOCKER_CLIENT.inspect_network(name)
-        except NoSuchNetwork:
-            DOCKER_CLIENT.create_network(name)
-            cleanups.append(lambda: DOCKER_CLIENT.delete_network(name))
-
-    return _ensure_network
-
-
-@pytest.fixture
-def docker_network(ensure_network):
-    network_name = f"net-{short_uid()}"
-    ensure_network(network_name)
-    return network_name
 
 
 @pytest.mark.skipif(condition=in_docker(), reason="cannot run bootstrap tests in docker")
