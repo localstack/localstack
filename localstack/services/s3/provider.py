@@ -1867,7 +1867,7 @@ def apply_moto_patches():
         """
         return get_safe(self.querystring, "$.x-id.0") == "DeleteObjects" or fn(self)
 
-    @patch(moto_s3_responses.S3ResponseInstance.parse_bucket_name_from_url, pass_target=False)
+    @patch(moto_s3_responses.S3Response.parse_bucket_name_from_url, pass_target=False)
     def parse_bucket_name_from_url(self, request, url):
         """
         Requests going to moto will never be subdomain based, as they passed through the VirtualHost forwarder.
@@ -1876,7 +1876,7 @@ def apply_moto_patches():
         path = urlparse(url).path
         return path.split("/")[1]
 
-    @patch(moto_s3_responses.S3ResponseInstance.subdomain_based_buckets, pass_target=False)
+    @patch(moto_s3_responses.S3Response.subdomain_based_buckets, pass_target=False)
     def subdomain_based_buckets(self, request):
         """
         Requests going to moto will never be subdomain based, as they passed through the VirtualHost forwarder

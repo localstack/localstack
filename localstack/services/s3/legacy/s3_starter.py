@@ -1,13 +1,12 @@
 import logging
 import os
 import urllib
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from moto.s3 import models as s3_models
 from moto.s3 import responses as s3_responses
 from moto.s3.exceptions import MissingBucket, S3ClientError
 from moto.s3.responses import S3_ALL_MULTIPARTS, MalformedXML, minidom
-from moto.s3.utils import undo_clean_key_name
 
 from localstack import config
 from localstack.aws.connect import connect_to
@@ -287,9 +286,7 @@ def apply_patches():
         for k in keys:
             key_name = k["key_name"]
             version_id = k["version_id"]
-            success = self.backend.delete_object(
-                bucket_name, undo_clean_key_name(key_name), version_id
-            )
+            success = self.backend.delete_object(bucket_name, quote(key_name), version_id)
 
             if success:
                 deleted_names.append({"key": key_name, "version_id": version_id})
