@@ -202,8 +202,6 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
 
         """
         model = request.desired_state
-        if tags := model.pop("Tags", []):
-            model["TagList"] = tags
         opensearch_client = request.aws_client_factory.opensearch
         if not request.custom_context.get(REPEATED_INVOCATION):
             # resource is not ready
@@ -224,7 +222,12 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
                 # set defaults required for boto3 calls
                 cluster_config.setdefault("DedicatedMasterType", "m3.medium.search")
                 cluster_config.setdefault("WarmType", "ultrawarm1.medium.search")
-            opensearch_client.create_domain(**properties)
+
+            create_kwargs = {
+                **util.deselect_attributes(properties, ["Tags"]),
+                "TagList": properties.get("Tags"),
+            }
+            opensearch_client.create_domain(**create_kwargs)
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
                 resource_model=model,
