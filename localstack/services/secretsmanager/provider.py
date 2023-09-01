@@ -311,7 +311,7 @@ def fake_secret_update(
 ):
     fn(self, description, tags, kms_key_id, last_changed_date)
     if last_changed_date is not None:
-        self.last_changed_date = time.time()
+        self.last_changed_date = round(time.time(), 3)
 
 
 @patch(SecretsManagerBackend.get_secret_value)
