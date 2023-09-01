@@ -10,6 +10,7 @@ from localstack.testing.scenario.provisioning import InfraProvisioner
 @pytest.mark.skip(
     reason="requires pro",
 )
+@markers.acceptance_test_beta
 class TestEcsScenario:
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client):
