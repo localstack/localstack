@@ -423,7 +423,8 @@ class Container:
             )
             raise
 
-        return RunningContainer(id, container_config=self.config)
+        self.running_container = RunningContainer(id, container_config=self.config)
+        return self.running_container
 
     def _ensure_container_network(self, network: str | None = None):
         """Makes sure the configured container network exists"""
@@ -500,6 +501,8 @@ class RunningContainer:
             self.container_client.remove_container(
                 container_name=self.id, force=True, check_existence=False
             )
+        # wait for container to actually be gone
+        poll_condition(lambda: not self.is_running(), timeout=5)
 
     def attach(self):
         self.container_client.attach_to_container(container_name_or_id=self.id)

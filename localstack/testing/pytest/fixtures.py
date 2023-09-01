@@ -2165,7 +2165,7 @@ class ContainerFactory:
                 )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def container_factory(setup_host_config_dirs) -> Generator[ContainerFactory, None, None]:
     factory = ContainerFactory()
     yield factory
@@ -2178,22 +2178,32 @@ def setup_host_config_dirs():
 
 
 @pytest.fixture
-def ensure_network(cleanups):
+def ensure_network():
+    networks = []
+
     def _ensure_network(name: str):
         try:
             DOCKER_CLIENT.inspect_network(name)
         except NoSuchNetwork:
             DOCKER_CLIENT.create_network(name)
-            cleanups.append(lambda: DOCKER_CLIENT.delete_network(name))
+            networks.append(name)
 
-    return _ensure_network
+    yield _ensure_network
+
+    for name in networks:
+        details = DOCKER_CLIENT.inspect_network(name)
+        for container_id in details["Containers"]:
+            DOCKER_CLIENT.disconnect_container_from_network(
+                network_name=name, container_name_or_id=container_id
+            )
+        DOCKER_CLIENT.delete_network(name)
 
 
 @pytest.fixture
 def docker_network(ensure_network):
     network_name = f"net-{short_uid()}"
     ensure_network(network_name)
-    return network_name
+    yield network_name
 
 
 @pytest.fixture
@@ -2207,3 +2217,33 @@ def wait_for_localstack_ready():
         )
 
     return _wait_for
+
+
+@pytest.fixture
+def dns_query_from_container(container_factory):
+    """
+    Run the LocalStack container after installing dig
+    """
+    containers: list[RunningContainer] = []
+
+    def query(name: str, ip_address: str, port: int = 53, **kwargs) -> tuple[bytes, bytes]:
+        container = container_factory(
+            image_name="localstack/localstack",
+            command=["infinity"],
+            entrypoint="sleep",
+            **kwargs,
+        )
+        running_container = container.start()
+        containers.append(running_container)
+
+        command = [
+            "bash",
+            "-c",
+            f"apt-get install -y --no-install-recommends dnsutils >/dev/null && dig +short @{ip_address} -p {port} {name}",
+        ]
+        return running_container.exec_in_container(command=command)
+
+    yield query
+
+    for container in containers:
+        container.shutdown()

@@ -9,6 +9,7 @@ from typing import Any, List, MutableMapping, NamedTuple, Optional, Union
 from urllib.parse import urlparse
 
 import dns.resolver
+from dnslib import DNSRecord
 
 from .. import config, constants
 from .collections import CustomExpiryTTLCache
@@ -389,3 +390,17 @@ def create_network_interface_alias(address, interface=None):
                     f"Unable to create forward proxy on interface {interface}, address {address}: {e}"
                 )
     raise Exception("Unable to create network interface")
+
+
+def send_dns_query(
+    name: str,
+    port: int = 53,
+    ip_address: str = "127.0.0.1",
+    qtype: str = "A",
+    timeout: float = 1.0,
+    tcp: bool = False,
+) -> DNSRecord:
+    LOG.debug("querying %s:%d for name %s", ip_address, port, name)
+    request = DNSRecord.question(qname=name, qtype=qtype)
+    reply_bytes = request.send(dest=ip_address, port=port, tcp=tcp, timeout=timeout, ipv6=False)
+    return DNSRecord.parse(reply_bytes)

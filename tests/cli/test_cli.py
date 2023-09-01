@@ -1,10 +1,12 @@
 import json
+import logging
 import os.path
+import socket
+from contextlib import closing
 
 import pytest
 import requests
 from click.testing import CliRunner
-from dnslib import DNSRecord
 
 import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
@@ -15,8 +17,10 @@ from localstack.utils import bootstrap
 from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import poll_condition
 from localstack.utils.files import mkdir
-from localstack.utils.net import get_free_udp_port
+from localstack.utils.net import get_free_udp_port, send_dns_query
 from localstack.utils.run import run, to_str
+
+LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -184,22 +188,6 @@ class TestCliContainerLifecycle:
 
 @pytest.mark.skipif(condition=in_docker(), reason="cannot run CLI tests in docker")
 class TestDNSServer:
-    @staticmethod
-    def send_dns_query(
-        name: str,
-        port: int = 53,
-        ip_address: str = "127.0.0.1",
-        qtype: str = "A",
-        timeout: float = 1.0,
-        tcp: bool = False,
-    ) -> DNSRecord:
-        """
-        Helper method to send a DNS request from the host
-        """
-        request = DNSRecord.question(qname=name, qtype=qtype)
-        reply_bytes = request.send(dest=ip_address, port=port, tcp=tcp, timeout=timeout, ipv6=False)
-        return DNSRecord.parse(reply_bytes)
-
     def test_dns_server_custom_port(self, runner, container_client, monkeypatch):
         port = get_free_udp_port()
         monkeypatch.setenv("DEBUG", "1")
@@ -212,17 +200,38 @@ class TestDNSServer:
         inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
         assert f"{port}/udp" in inspect["HostConfig"]["PortBindings"]
 
-        reply = self.send_dns_query(name=LOCALHOST_HOSTNAME, port=port)
+        reply = send_dns_query(name=LOCALHOST_HOSTNAME, port=port)
         assert str(reply.a.rdata) == LOCALHOST_IP
 
-    @pytest.mark.skip(reason="TODO")
-    def test_dns_server_starts_if_host_port_bound(self, runner, container_client, monkeypatch):
+    def test_dns_server_starts_if_host_port_bound(
+        self, runner, container_client, monkeypatch, dns_query_from_container
+    ):
         port = get_free_udp_port()
         monkeypatch.setenv("DEBUG", "1")
         monkeypatch.setenv("DNS_PORT", str(port))
         monkeypatch.setattr(config, "DNS_PORT", port)
 
-        runner.invoke(cli, ["start", "-d"])
+        # bind the port
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("", port))
+
+        with closing(s):
+            runner.invoke(cli, ["start", "-d"])
+            runner.invoke(cli, ["wait", "-t", "60"])
+
+            inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
+            assert f"{port}/udp" not in inspect["HostConfig"]["PortBindings"]
+            ip_address = list(inspect["NetworkSettings"]["Networks"].values())[0]["IPAddress"]
+
+            with pytest.raises(TimeoutError):
+                send_dns_query(name=LOCALHOST_HOSTNAME, port=port)
+
+            # use a docker container to test the DNS
+            stdout, _ = dns_query_from_container(
+                name=LOCALHOST_HOSTNAME, ip_address=ip_address, port=port
+            )
+            assert ip_address in stdout.decode().splitlines()
 
 
 class TestHooks:
