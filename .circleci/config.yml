@@ -153,6 +153,31 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  acceptance-tests:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Acceptance tests (EXPERIMENTAL)
+          environment:
+            TEST_PATH: "tests/aws/services/stepfunctions/v2/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance.xml -o junit_suite_name='sfn_v2'" make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   itest-s3-stream-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -438,6 +463,9 @@ workflows:
       - preflight:
           requires:
             - install
+      - acceptance-tests:
+          requires:
+            - preflight
       - itest-lambda-legacy-local:
           requires:
             - preflight
@@ -491,6 +519,7 @@ workflows:
           requires:
             - itest-lambda-legacy-local
             - itest-sfn-v2-provider
+            - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
             - collect-not-implemented
@@ -502,6 +531,7 @@ workflows:
           requires:
             - itest-lambda-legacy-local
             - itest-sfn-v2-provider
+            - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests
