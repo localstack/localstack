@@ -5,7 +5,7 @@ from typing import Generator
 
 import pytest
 
-from localstack import config, constants
+from localstack import constants
 from localstack.utils.bootstrap import Container, RunningContainer, get_docker_image_to_start
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
@@ -39,7 +39,7 @@ class ContainerFactory:
 
         container_configuration = ContainerConfiguration(
             image_name=get_docker_image_to_start(),
-            name=config.MAIN_CONTAINER_NAME,
+            name=None,
             volumes=VolumeMappings(),
             remove=True,
             ports=port_configuration,
@@ -47,9 +47,6 @@ class ContainerFactory:
             command=shlex.split(os.environ.get("CMD", "")) or None,
             env_vars={},
         )
-
-        # allow for randomised container names
-        container_configuration.name = None
 
         # handle the convenience options
         if pro:
@@ -86,7 +83,7 @@ class ContainerFactory:
                 )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def container_factory() -> Generator[ContainerFactory, None, None]:
     factory = ContainerFactory()
     yield factory
@@ -107,15 +104,26 @@ def wait_for_localstack_ready():
 
 
 @pytest.fixture
-def ensure_network(cleanups):
+def ensure_network():
+    networks = []
+
     def _ensure_network(name: str):
         try:
             DOCKER_CLIENT.inspect_network(name)
         except NoSuchNetwork:
             DOCKER_CLIENT.create_network(name)
-            cleanups.append(lambda: DOCKER_CLIENT.delete_network(name))
+            networks.append(name)
 
-    return _ensure_network
+    yield _ensure_network
+
+    for network_name in networks:
+        # detach attached containers
+        details = DOCKER_CLIENT.inspect_network(network_name)
+        for container_id in details["Containers"]:
+            DOCKER_CLIENT.disconnect_container_from_network(
+                network_name=network_name, container_name_or_id=container_id
+            )
+        DOCKER_CLIENT.delete_network(network_name)
 
 
 @pytest.fixture
