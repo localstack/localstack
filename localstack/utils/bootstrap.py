@@ -561,8 +561,6 @@ def configure_container(container: LocalstackContainer):
     # mount docker socket
     container.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
-    container.privileged = True
-
 
 def configure_container_from_cli_params(container: LocalstackContainer, params: Dict[str, Any]):
     # TODO: consolidate with container_client.Util.parse_additional_flags
