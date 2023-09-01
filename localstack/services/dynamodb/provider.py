@@ -1072,9 +1072,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def describe_time_to_live(
         self, context: RequestContext, table_name: TableName
     ) -> DescribeTimeToLiveOutput:
-        backend = get_store(context.account_id, context.region)
+        if not self.table_exists(context.account_id, context.region, table_name):
+            raise ResourceNotFoundException(
+                f"Requested resource not found: Table: {table_name} not found"
+            )
 
+        backend = get_store(context.account_id, context.region)
         ttl_spec = backend.ttl_specifications.get(table_name)
+
         result = {"TimeToLiveStatus": "DISABLED"}
         if ttl_spec:
             if ttl_spec.get("Enabled"):
@@ -1094,6 +1099,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_name: TableName,
         time_to_live_specification: TimeToLiveSpecification,
     ) -> UpdateTimeToLiveOutput:
+        if not self.table_exists(context.account_id, context.region, table_name):
+            raise ResourceNotFoundException(
+                f"Requested resource not found: Table: {table_name} not found"
+            )
+
         # TODO: TTL status is maintained/mocked but no real expiry is happening for items
         backend = get_store(context.account_id, context.region)
         backend.ttl_specifications[table_name] = time_to_live_specification

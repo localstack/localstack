@@ -682,5 +682,26 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_global_timeout": {
+    "recorded-date": "29-08-2023, 13:08:44",
+    "recorded-content": {
+      "describe_execution": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<execution-name>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-name>",
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "TIMED_OUT",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
