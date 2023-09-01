@@ -21,6 +21,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerConfiguration,
     ContainerException,
+    NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
     PortMappings,
@@ -458,11 +459,11 @@ class RunningContainer:
         self.shutdown()
 
     def is_running(self) -> bool:
-        logs = self.get_logs()
-        if constants.READY_MARKER_OUTPUT in logs.splitlines():
+        try:
+            self.container_client.inspect_container(self.id)
             return True
-
-        return False
+        except NoSuchContainer:
+            return False
 
     def get_logs(self) -> str:
         return self.container_client.get_container_logs(self.id, safe=True)

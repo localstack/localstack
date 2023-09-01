@@ -7,13 +7,14 @@ from typing import Generator
 
 import pytest
 
-from localstack import config
-from localstack.utils.bootstrap import Container, get_docker_image_to_start
+from localstack import config, constants
+from localstack.utils.bootstrap import Container, RunningContainer, get_docker_image_to_start
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     PortMappings,
     VolumeMappings,
 )
+from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
 
@@ -94,3 +95,13 @@ def container_factory() -> Generator[ContainerFactory, None, None]:
 @pytest.fixture(scope="session", autouse=True)
 def setup_host_config_dirs():
     config.dirs.mkdirs()
+
+
+@pytest.fixture
+def wait_for_localstack_ready():
+    def _wait_for(container: RunningContainer, timeout: float | None = None):
+        container.wait_until_ready(timeout)
+
+        poll_condition(lambda: constants.READY_MARKER_OUTPUT in container.get_logs().splitlines())
+
+    return _wait_for

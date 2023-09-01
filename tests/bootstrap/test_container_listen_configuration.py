@@ -29,7 +29,7 @@ def docker_network(ensure_network):
 
 @pytest.mark.skipif(condition=in_docker(), reason="cannot run bootstrap tests in docker")
 class TestContainerConfiguration:
-    def test_defaults(self, container_factory):
+    def test_defaults(self, container_factory, wait_for_localstack_ready):
         """
         The default configuration is to listen on 0.0.0.0:4566
         """
@@ -37,12 +37,12 @@ class TestContainerConfiguration:
         container = container_factory()
         container.config.ports.add(port, 4566)
         with container.start(attach=False) as running_container:
-            running_container.wait_until_ready()
+            wait_for_localstack_ready(running_container)
 
             r = requests.get(f"http://127.0.0.1:{port}/_localstack/health")
             assert r.status_code == 200
 
-    def test_gateway_listen_single_value(self, container_factory):
+    def test_gateway_listen_single_value(self, container_factory, wait_for_localstack_ready):
         """
         Test using GATEWAY_LISTEN to change the hypercorn port
         """
@@ -55,13 +55,15 @@ class TestContainerConfiguration:
         )
         container.config.ports.add(port1, 5000)
         with container.start(attach=False) as running_container:
-            running_container.wait_until_ready()
+            wait_for_localstack_ready(running_container)
 
             # check the ports listening on 0.0.0.0
             r = requests.get(f"http://127.0.0.1:{port1}/_localstack/health")
             assert r.status_code == 200
 
-    def test_gateway_listen_multiple_values(self, container_factory, docker_network):
+    def test_gateway_listen_multiple_values(
+        self, container_factory, docker_network, wait_for_localstack_ready
+    ):
         """
         Test multiple container ports
         """
@@ -82,7 +84,7 @@ class TestContainerConfiguration:
         container.config.ports.add(port1, 5000)
         container.config.ports.add(port2, 2000)
         with container.start(attach=False) as running_container:
-            running_container.wait_until_ready()
+            wait_for_localstack_ready(running_container)
 
             # check the ports listening on 0.0.0.0
             r = requests.get(f"http://127.0.0.1:{port1}/_localstack/health")
