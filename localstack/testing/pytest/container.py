@@ -8,7 +8,6 @@ import pytest
 from localstack import config, constants
 from localstack.utils.bootstrap import Container, RunningContainer, get_docker_image_to_start
 from localstack.utils.container_utils.container_client import (
-    ContainerClient,
     ContainerConfiguration,
     NoSuchNetwork,
     PortMappings,
@@ -108,18 +107,13 @@ def wait_for_localstack_ready():
 
 
 @pytest.fixture
-def container_client() -> ContainerClient:
-    return DOCKER_CLIENT
-
-
-@pytest.fixture
-def ensure_network(cleanups, container_client):
+def ensure_network(cleanups):
     def _ensure_network(name: str):
         try:
-            container_client.inspect_network(name)
+            DOCKER_CLIENT.inspect_network(name)
         except NoSuchNetwork:
-            container_client.create_network(name)
-            cleanups.append(lambda: container_client.delete_network(name))
+            DOCKER_CLIENT.create_network(name)
+            cleanups.append(lambda: DOCKER_CLIENT.delete_network(name))
 
     return _ensure_network
 
