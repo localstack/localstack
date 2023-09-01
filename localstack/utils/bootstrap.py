@@ -422,7 +422,8 @@ class Container:
             )
             raise
 
-        return RunningContainer(id, container_config=self.config)
+        self.running_container = RunningContainer(id, container_config=self.config)
+        return self.running_container
 
     def _ensure_container_network(self, network: str | None = None):
         """Makes sure the configured container network exists"""
