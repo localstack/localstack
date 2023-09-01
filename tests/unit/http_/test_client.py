@@ -7,7 +7,7 @@ from pytest_httpserver import HTTPServer
 from requests.exceptions import SSLError
 
 from localstack.http import Request
-from localstack.http.client import SimpleRequestsClient, SimpleStreamingRequestsClient
+from localstack.http.client import SimpleRequestsClient
 from localstack.utils.ssl import create_ssl_cert
 
 
@@ -38,16 +38,15 @@ def ssl_httpserver(make_ssl_httpserver):
     server.clear()
 
 
-@pytest.mark.parametrize("client_class", [SimpleRequestsClient, SimpleStreamingRequestsClient])
 @pytest.mark.parametrize("verify", [True, False])
 @pytest.mark.parametrize("cert_env", [None, "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"])
-def test_http_clients_respect_verify(client_class, verify, cert_env, ssl_httpserver, monkeypatch):
+def test_http_clients_respect_verify(verify, cert_env, ssl_httpserver, monkeypatch):
     # If we want to test that a certain environment variable, setting the CA bundle, is set, we
     # just set the same path as requests uses anyway (the issues is caused just by the variables being set).
     if cert_env:
         monkeypatch.setenv(cert_env, certifi.where())
 
-    client = client_class()
+    client = SimpleRequestsClient()
     client.session.verify = verify
 
     # Configure the SSL http server fixture

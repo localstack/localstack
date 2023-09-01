@@ -139,7 +139,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
-from localstack.services.lambda_.api_utils import STATEMENT_ID_REGEX
+from localstack.services.lambda_.api_utils import ARCHITECTURES, STATEMENT_ID_REGEX
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
@@ -671,7 +671,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
                     f"satisfy constraint: Member must have length less than or equal to 1",
                 )
-            if architectures[0] not in [Architecture.x86_64, Architecture.arm64]:
+            if architectures[0] not in ARCHITECTURES:
                 raise ValidationException(
                     f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
                     f"satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: "

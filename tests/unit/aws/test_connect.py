@@ -1,6 +1,7 @@
 from unittest.mock import ANY, MagicMock, patch
 
 import boto3
+import botocore
 import pytest
 
 from localstack.aws.api import RequestContext
@@ -426,3 +427,16 @@ class TestClientFactory:
         clients.lambda_.list_functions()
 
         assert test_params == expected_result
+
+    def test_region_override(self):
+        # Boto has an odd behaviour when using a non-default (any other region than us-east-1) in config
+        # If the region in arg is non-default, it gives the arg the precedence
+        # But if the region in arg is default (us-east-1), it gives precedence to one in config
+        # This test asserts that this behaviour is handled by client factories and always give precedence to arg region
+
+        factory = ExternalClientFactory()
+
+        config = botocore.config.Config(region_name="eu-north-1")
+
+        assert factory(region_name="us-east-1", config=config).s3.meta.region_name == "us-east-1"
+        assert factory(region_name="us-west-1", config=config).s3.meta.region_name == "us-west-1"
