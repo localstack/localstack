@@ -220,7 +220,7 @@ def test_apigateway_invoke_localhost_with_path(deploy_cfn_template, aws_client):
 
 
 @pytest.mark.skip("Terminates with FAILED on cloud; convert to SFN v2 snapshot lambda test.")
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_retry_and_catch(deploy_cfn_template, aws_client):
     """
     Scenario:
