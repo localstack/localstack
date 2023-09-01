@@ -166,20 +166,6 @@ def create_signature_does_not_match_sig_v4(
     return ex
 
 
-def s3_presigned_url_response_handler(_: HandlerChain, context: RequestContext, response: Response):
-    """
-    Pre-signed URL with PUT method (typically object upload) should return an empty body
-    """
-    if (
-        not context.request.method == "PUT"
-        or not is_presigned_url_request(context)
-        or response.status_code >= 400
-    ):
-        return
-    else:
-        response.data = b""
-
-
 class S3PreSignedURLRequestHandler:
     @cached_property
     def _service(self) -> ServiceModel:
