@@ -297,7 +297,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
 
 
 @patch(MotoLogStream.put_log_events, pass_target=False)
-def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
+def moto_put_log_events(self, log_events):
     # TODO: call/patch upstream method here, instead of duplicating the code!
     self.last_ingestion_time = int(unix_time_millis())
     self.stored_bytes += sum([len(log_event["message"]) for log_event in log_events])
@@ -328,8 +328,8 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
         data = {
             "messageType": "DATA_MESSAGE",
             "owner": get_aws_account_id(),
-            "logGroup": log_group_name,
-            "logStream": log_stream_name,
+            "logGroup": self.log_group.name,
+            "logStream": self.log_stream_name,
             "subscriptionFilters": [self.filter_name],
             "logEvents": log_events,
         }
@@ -350,7 +350,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
             client.put_record(
                 StreamName=stream_name,
                 Data=payload_gz_encoded,
-                PartitionKey=log_group_name,
+                PartitionKey=self.log_group.name,
             )
         if ":firehose:" in self.destination_arn:
             client = connect_to().firehose
