@@ -179,6 +179,10 @@ class TestCliContainerLifecycle:
         # assert that container is running
         runner.invoke(cli, ["wait", "-t", "60"])
 
+    @pytest.mark.skip(reason="TODO")
+    def test_dns_server_starts_if_host_port_bound(self):
+        pass
+
 
 class TestHooks:
     def test_prepare_host_hook_called_with_correct_dirs(self, runner, monkeypatch):

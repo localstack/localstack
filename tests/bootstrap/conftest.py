@@ -11,9 +11,12 @@ from localstack import config, constants
 from localstack.utils.bootstrap import Container, RunningContainer, get_docker_image_to_start
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
+    NoSuchNetwork,
     PortMappings,
     VolumeMappings,
 )
+from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
@@ -38,7 +41,7 @@ class ContainerFactory:
 
         container_configuration = ContainerConfiguration(
             image_name=get_docker_image_to_start(),
-            name=config.MAIN_CONTAINER_NAME,
+            name=None,
             volumes=VolumeMappings(),
             remove=True,
             ports=port_configuration,
@@ -46,9 +49,6 @@ class ContainerFactory:
             command=shlex.split(os.environ.get("CMD", "")) or None,
             env_vars={},
         )
-
-        # allow for randomised container names
-        container_configuration.name = None
 
         # handle the convenience options
         if pro:
@@ -95,6 +95,25 @@ def container_factory() -> Generator[ContainerFactory, None, None]:
 @pytest.fixture(scope="session", autouse=True)
 def setup_host_config_dirs():
     config.dirs.mkdirs()
+
+
+@pytest.fixture
+def ensure_network(cleanups):
+    def _ensure_network(name: str):
+        try:
+            DOCKER_CLIENT.inspect_network(name)
+        except NoSuchNetwork:
+            DOCKER_CLIENT.create_network(name)
+            cleanups.append(lambda: DOCKER_CLIENT.delete_network(name))
+
+    return _ensure_network
+
+
+@pytest.fixture
+def docker_network(ensure_network):
+    network_name = f"net-{short_uid()}"
+    ensure_network(network_name)
+    return network_name
 
 
 @pytest.fixture

@@ -458,6 +458,25 @@ class RunningContainer:
     def __exit__(self, exc_type, exc_value, traceback):
         self.shutdown()
 
+    def ip_address(self, docker_network: str | None = None) -> str:
+        """
+        Get the IP address of the container
+
+        Optionally specify the docker network
+        """
+        # TODO: podman may not have this information
+        inspect_result = self.container_client.inspect_container(self.id)
+        if docker_network is None:
+            return list(inspect_result["NetworkSettings"]["Networks"].values())[0]["IPAddress"]
+        else:
+            for network, details in inspect_result["NetworkSettings"]["Networks"]:
+                if network == docker_network:
+                    return details["IPAddress"]
+
+        raise RuntimeError(
+            f"Cannot determine IP address for container {self.id} in network {docker_network}"
+        )
+
     def is_running(self) -> bool:
         try:
             self.container_client.inspect_container(self.id)
