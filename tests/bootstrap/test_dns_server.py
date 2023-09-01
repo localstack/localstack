@@ -4,7 +4,7 @@ import pytest
 
 from localstack.config import in_docker
 from localstack.constants import LOCALHOST_HOSTNAME
-from localstack.testing.pytest.fixtures import ContainerFactory
+from localstack.testing.pytest.container import ContainerFactory
 
 LOG = logging.getLogger(__name__)
 

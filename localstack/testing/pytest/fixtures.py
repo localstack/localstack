@@ -4,10 +4,9 @@ import json
 import logging
 import os
 import re
-import shlex
 import socket
 import time
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import botocore.auth
 import botocore.config
@@ -35,15 +34,7 @@ from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
-from localstack.utils.bootstrap import Container, RunningContainer, get_docker_image_to_start
 from localstack.utils.collections import ensure_list
-from localstack.utils.container_utils.container_client import (
-    ContainerConfiguration,
-    NoSuchNetwork,
-    PortMappings,
-    VolumeMappings,
-)
-from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.json import CustomEncoder, json_safe
@@ -2100,150 +2091,3 @@ def register_extension(s3_bucket, aws_client):
             except Exception:
                 continue
         cfn_client.deregister_type(Arn=arn)
-
-
-class ContainerFactory:
-    def __init__(self):
-        self._containers: list[Container] = []
-
-    def __call__(
-        self,
-        # convenience properties
-        pro: bool = False,
-        publish: list[int] | None = None,
-        # ContainerConfig properties
-        **kwargs,
-    ) -> Container:
-        port_configuration = PortMappings()
-        if publish:
-            for port in publish:
-                port_configuration.add(port)
-
-        container_configuration = ContainerConfiguration(
-            image_name=get_docker_image_to_start(),
-            name=None,
-            volumes=VolumeMappings(),
-            remove=True,
-            ports=port_configuration,
-            entrypoint=os.environ.get("ENTRYPOINT"),
-            command=shlex.split(os.environ.get("CMD", "")) or None,
-            env_vars={},
-        )
-
-        # handle the convenience options
-        if pro:
-            container_configuration.env_vars["GATEWAY_LISTEN"] = "0.0.0.0:4566,0.0.0.0:443"
-            container_configuration.env_vars["LOCALSTACK_API_KEY"] = "test"
-
-        # override values from kwargs
-        for key, value in kwargs.items():
-            setattr(container_configuration, key, value)
-
-        container = Container(container_configuration)
-
-        # track the container so we can remove it later
-        self._containers.append(container)
-        return container
-
-    def remove_all_containers(self):
-        failures = []
-        for container in self._containers:
-            if not container.running_container:
-                # container is not running
-                continue
-
-            try:
-                container.running_container.shutdown()
-            except Exception as e:
-                failures.append((container, e))
-
-        if failures:
-            for container, ex in failures:
-                LOG.error(
-                    f"Failed to remove container {container.running_container.id}",
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
-                )
-
-
-@pytest.fixture
-def container_factory(setup_host_config_dirs) -> Generator[ContainerFactory, None, None]:
-    factory = ContainerFactory()
-    yield factory
-    factory.remove_all_containers()
-
-
-@pytest.fixture(scope="session")
-def setup_host_config_dirs():
-    config.dirs.mkdirs()
-
-
-@pytest.fixture
-def ensure_network():
-    networks = []
-
-    def _ensure_network(name: str):
-        try:
-            DOCKER_CLIENT.inspect_network(name)
-        except NoSuchNetwork:
-            DOCKER_CLIENT.create_network(name)
-            networks.append(name)
-
-    yield _ensure_network
-
-    for name in networks:
-        details = DOCKER_CLIENT.inspect_network(name)
-        for container_id in details["Containers"]:
-            DOCKER_CLIENT.disconnect_container_from_network(
-                network_name=name, container_name_or_id=container_id
-            )
-        DOCKER_CLIENT.delete_network(name)
-
-
-@pytest.fixture
-def docker_network(ensure_network):
-    network_name = f"net-{short_uid()}"
-    ensure_network(network_name)
-    yield network_name
-
-
-@pytest.fixture
-def wait_for_localstack_ready():
-    def _wait_for(container: RunningContainer, timeout: float | None = None):
-        container.wait_until_ready(timeout)
-
-        poll_condition(
-            lambda: constants.READY_MARKER_OUTPUT in container.get_logs().splitlines(),
-            timeout=timeout,
-        )
-
-    return _wait_for
-
-
-@pytest.fixture
-def dns_query_from_container(container_factory):
-    """
-    Run the LocalStack container after installing dig
-    """
-    containers: list[RunningContainer] = []
-
-    def query(name: str, ip_address: str, port: int = 53, **kwargs) -> tuple[bytes, bytes]:
-        container = container_factory(
-            image_name="localstack/localstack",
-            command=["infinity"],
-            entrypoint="sleep",
-            **kwargs,
-        )
-        running_container = container.start()
-        containers.append(running_container)
-
-        command = [
-            "bash",
-            "-c",
-            f"apt-get install -y --no-install-recommends dnsutils >/dev/null && dig +short @{ip_address} -p {port} {name}",
-        ]
-        return running_container.exec_in_container(command=command)
-
-    yield query
-
-    for container in containers:
-        container.shutdown()
