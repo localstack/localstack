@@ -133,7 +133,7 @@ def docker_network(ensure_network):
 
 
 @pytest.fixture
-def dns_query_from_container(container_factory):
+def dns_query_from_container(container_factory: ContainerFactory, monkeypatch):
     """
     Run the LocalStack container after installing dig
     """
@@ -154,7 +154,14 @@ def dns_query_from_container(container_factory):
             "-c",
             f"apt-get install -y --no-install-recommends dnsutils >/dev/null && dig +short @{ip_address} -p {port} {name}",
         ]
-        return running_container.exec_in_container(command=command)
+        # The CmdDockerClient has its output set to a logfile. We must patch
+        # the client to ensure the output of the command goes to stdout. We use
+        # a monkeypatch.context here to make sure the scope of the patching is
+        # minimal.
+        with monkeypatch.context() as m:
+            m.setattr(running_container.container_client, "default_run_outfile", None)
+            stdout, stderr = running_container.exec_in_container(command=command)
+        return stdout, stderr
 
     yield query
 
