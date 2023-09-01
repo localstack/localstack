@@ -102,6 +102,9 @@ def wait_for_localstack_ready():
     def _wait_for(container: RunningContainer, timeout: float | None = None):
         container.wait_until_ready(timeout)
 
-        poll_condition(lambda: constants.READY_MARKER_OUTPUT in container.get_logs().splitlines())
+        poll_condition(
+            lambda: constants.READY_MARKER_OUTPUT in container.get_logs().splitlines(),
+            timeout=timeout,
+        )
 
     return _wait_for
