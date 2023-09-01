@@ -160,7 +160,7 @@ def wait_for_port_status(
     return retry(check, sleep=sleep_time, retries=retries)
 
 
-def port_can_be_bound(port: IntOrPort) -> bool:
+def port_can_be_bound(port: IntOrPort, address: str = "0.0.0.0") -> bool:
     """
     Return whether a local port (TCP or UDP) can be bound to. Note that this is a stricter check
     than is_port_open(...) above, as is_port_open() may return False if the port is
@@ -175,7 +175,7 @@ def port_can_be_bound(port: IntOrPort) -> bool:
         else:
             LOG.debug("Unsupported network protocol '%s' for port check", port.protocol)
             return False
-        sock.bind(("", port.port))
+        sock.bind((address, port.port))
         return True
     except OSError:
         # either the port is used or we don't have permission to bind it

@@ -29,9 +29,10 @@ from localstack.utils.container_utils.container_client import (
     VolumeMappings,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
-from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.docker_utils import DOCKER_CLIENT, container_ports_can_be_bound
 from localstack.utils.files import cache_dir, mkdir
 from localstack.utils.functions import call_safe
+from localstack.utils.net import Port
 from localstack.utils.run import is_command_available, run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
@@ -652,6 +653,22 @@ def configure_container(container: Container):
 
     if config.DEVELOP:
         container.config.ports.add(config.DEVELOP_PORT)
+
+    # dns server
+    dns_ports = [
+        Port(config.DNS_PORT, protocol="udp"),
+        Port(config.DNS_PORT, protocol="tcp"),
+    ]
+    if container_ports_can_be_bound(dns_ports, address=config.DNS_ADDRESS):
+        # expose the DNS server to the host
+        for port in dns_ports:
+            container.config.ports.add(port.port, protocol=port.protocol)
+
+    # expose the dns ports regardless
+    if not container.config.exposed_ports:
+        container.config.exposed_ports = []
+    for port in dns_ports:
+        container.config.exposed_ports += [str(port.port), f"{port.port}/{port.protocol}"]
 
     # environment variables
     # pass through environment variables defined in config
