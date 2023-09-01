@@ -223,10 +223,9 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
                 cluster_config.setdefault("DedicatedMasterType", "m3.medium.search")
                 cluster_config.setdefault("WarmType", "ultrawarm1.medium.search")
 
-            create_kwargs = {
-                **util.deselect_attributes(properties, ["Tags"]),
-                "TagList": properties.get("Tags"),
-            }
+            create_kwargs = {**util.deselect_attributes(properties, ["Tags"])}
+            if tags := properties.get("Tags"):
+                create_kwargs["TagList"] = tags
             opensearch_client.create_domain(**create_kwargs)
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
@@ -279,6 +278,8 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
           - es:DescribeDomain
         """
         opensearch_client = request.aws_client_factory.opensearch
+        # TODO the delete is currently synchronous;
+        #   if this changes, we should also reflect the OperationStatus here
         opensearch_client.delete_domain(DomainName=request.previous_state["DomainName"])
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
