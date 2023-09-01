@@ -651,8 +651,6 @@ def configure_container(container: Container):
     # mount docker socket
     container.config.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
-    container.config.privileged = True
-
 
 def configure_container_from_cli_params(container: Container, params: Dict[str, Any]):
     # TODO: consolidate with container_client.Util.parse_additional_flags
