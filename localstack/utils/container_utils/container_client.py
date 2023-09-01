@@ -772,7 +772,6 @@ class ContainerClient(metaclass=ABCMeta):
             remove=container_config.remove,
             interactive=container_config.interactive,
             tty=container_config.tty,
-            detach=container_config.detach,
             command=container_config.command,
             mount_volumes=container_config.volumes,
             ports=container_config.ports,
@@ -918,6 +917,12 @@ class ContainerClient(metaclass=ABCMeta):
         """Start a given, already created container
 
         :return: A tuple (stdout, stderr) if attach or interactive is set, otherwise a tuple (b"container_name_or_id", b"")
+        """
+
+    @abstractmethod
+    def attach_to_container(self, container_name_or_id: str):
+        """
+        Attach local standard input, output, and error streams to a running container
         """
 
     @abstractmethod

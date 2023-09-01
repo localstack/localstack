@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 from localstack import config
 from localstack.utils.analytics.cli import publish_invocation
+from localstack.utils.bootstrap import get_container_default_logfile_location
 from localstack.utils.json import CustomEncoder
 
 if sys.version_info >= (3, 8):
@@ -532,11 +533,10 @@ def cmd_logs(follow: bool, tail: int) -> None:
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.
     """
-    from localstack.utils.bootstrap import LocalstackContainer
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     container_name = config.MAIN_CONTAINER_NAME
-    logfile = LocalstackContainer(container_name).logfile
+    logfile = get_container_default_logfile_location(container_name)
 
     if not DOCKER_CLIENT.is_container_running(container_name):
         console.print("localstack container not running")
