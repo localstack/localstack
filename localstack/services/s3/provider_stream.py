@@ -12,7 +12,6 @@ from collections.abc import Iterator
 from io import BytesIO, RawIOBase
 from tempfile import SpooledTemporaryFile
 from typing import IO, Any, Optional, Tuple
-from urllib.parse import unquote
 from zoneinfo import ZoneInfo
 
 from moto.core.common_types import TYPE_RESPONSE
@@ -602,11 +601,6 @@ def apply_stream_patches():
         lock_until: Optional[str] = None,
         checksum_value: Optional[str] = None,
     ) -> StreamedFakeKey:
-        key_name = unquote(key_name)
-        # due to `call_moto_with_request`, it's possible we're passing a double URL encoded key name. Decode it twice
-        # if that's the case
-        if "%" in key_name:  # FIXME: fix it in `call_moto_with_request`
-            key_name = unquote(key_name)
         if storage is not None and storage not in s3_models.STORAGE_CLASS:
             raise s3_exceptions.InvalidStorageClass(storage=storage)
 
