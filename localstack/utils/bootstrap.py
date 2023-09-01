@@ -469,7 +469,7 @@ class RunningContainer:
         if docker_network is None:
             return list(inspect_result["NetworkSettings"]["Networks"].values())[0]["IPAddress"]
         else:
-            for network, details in inspect_result["NetworkSettings"]["Networks"]:
+            for network, details in inspect_result["NetworkSettings"]["Networks"].items():
                 if network == docker_network:
                     return details["IPAddress"]
 
