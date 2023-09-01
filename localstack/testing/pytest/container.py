@@ -1,7 +1,7 @@
 import logging
 import os
 import shlex
-from typing import Generator
+from typing import Generator, List
 
 import pytest
 
@@ -22,13 +22,13 @@ LOG = logging.getLogger(__name__)
 
 class ContainerFactory:
     def __init__(self):
-        self._containers: list[Container] = []
+        self._containers: List[Container] = []
 
     def __call__(
         self,
         # convenience properties
         pro: bool = False,
-        publish: list[int] | None = None,
+        publish: List[int] | None = None,
         # ContainerConfig properties
         **kwargs,
     ) -> Container:
