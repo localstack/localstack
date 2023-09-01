@@ -163,7 +163,7 @@ jobs:
       - run:
           name: Acceptance tests (EXPERIMENTAL)
           environment:
-            TEST_PATH: "tests/aws/services/stepfunctions/v2/"
+            TEST_PATH: "tests/"
             COVERAGE_ARGS: "-p"
           command: |
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance_test.xml -o junit_suite_name='acceptance_test'" make test-coverage
