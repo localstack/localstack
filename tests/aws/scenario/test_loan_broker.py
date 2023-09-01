@@ -15,12 +15,11 @@ import aws_cdk.aws_stepfunctions as sfn
 import aws_cdk.aws_stepfunctions_tasks as tasks
 import pytest
 
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import retry
+from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 RECIPIENT_LIST_STACK_NAME = "LoanBroker-RecipientList"
 PROJECT_NAME = "CDK Loan Broker"
@@ -191,12 +190,9 @@ class TestLoanBrokerScenario:
         )
         execution_arn = result["executionArn"]
 
-        def _execution_finished():
-            res = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
-            assert res["status"] == expected_result
-            return res
+        await_execution_terminated(aws_client.stepfunctions, execution_arn)
 
-        result = retry(_execution_finished, sleep=2, retries=100 if is_aws_cloud() else 10)
+        result = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
 
         snapshot.match("describe-execution-finished", result)
 

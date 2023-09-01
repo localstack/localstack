@@ -19,6 +19,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramRunning,
     ProgramState,
     ProgramStopped,
+    ProgramTimedOut,
 )
 
 LOG = logging.getLogger(__name__)
@@ -103,6 +104,14 @@ class Environment:
             self._program_state = ProgramError(error=error)
             for frame in self._frames:
                 frame.set_error(error=error)
+            self.program_state_event.set()
+            self.program_state_event.clear()
+
+    def set_timed_out(self) -> None:
+        with self._state_mutex:
+            self._program_state = ProgramTimedOut()
+            for frame in self._frames:
+                frame.set_timed_out()
             self.program_state_event.set()
             self.program_state_event.clear()
 
