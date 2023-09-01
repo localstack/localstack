@@ -37,6 +37,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramError,
     ProgramState,
     ProgramStopped,
+    ProgramTimedOut,
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
@@ -68,6 +69,8 @@ class Execution:
                 self.execution.exec_status = ExecutionStatus.FAILED
                 self.execution.error = exit_program_state.error["error"]
                 self.execution.cause = exit_program_state.error["cause"]
+            elif isinstance(exit_program_state, ProgramTimedOut):
+                self.execution.exec_status = ExecutionStatus.TIMED_OUT
             else:
                 raise RuntimeWarning(
                     f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
@@ -203,10 +206,10 @@ class Execution:
             exec_comm=Execution.BaseExecutionWorkerComm(self),
             context_object_init=ContextObjectInitData(
                 Execution=ContextObjectExecution(
-                    Id="TODO",
+                    Id=self.exec_arn,
                     Input=self.input_data,
                     Name=self.state_machine.name,
-                    RoleArn="TODO",
+                    RoleArn=self.role_arn,
                     StartTime=self.start_date.time().isoformat(),
                 ),
                 StateMachine=ContextObjectStateMachine(

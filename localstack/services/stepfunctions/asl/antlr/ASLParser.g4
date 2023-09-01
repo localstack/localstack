@@ -14,6 +14,7 @@ top_layer_stmt
     : comment_decl
     | startat_decl
     | states_decl
+    | timeout_seconds_decl
     ;
 
 startat_decl

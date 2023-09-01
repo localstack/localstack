@@ -709,6 +709,7 @@ class Preprocessor(ASLParserVisitor):
                     f"No '{States}' definition for Program in context: '{ctx.getText()}'."
                 ),
             ),
+            timeout_seconds=props.get(TimeoutSeconds),
             comment=props.get(typ=Comment),
         )
         return program

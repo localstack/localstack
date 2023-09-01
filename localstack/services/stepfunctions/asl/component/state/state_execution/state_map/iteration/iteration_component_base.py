@@ -62,7 +62,10 @@ class DistributedIterationComponent(IterationComponent, abc.ABC):
         input_items: list[json] = self._eval_input.input_items
 
         input_item_prog: Final[Program] = Program(
-            start_at=self._start_at, states=self._states, comment=self._comment
+            start_at=self._start_at,
+            states=self._states,
+            timeout_seconds=None,
+            comment=self._comment,
         )
         self._job_pool = JobPool(
             job_program=input_item_prog, job_inputs=self._eval_input.input_items
