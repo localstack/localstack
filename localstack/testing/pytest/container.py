@@ -1,7 +1,7 @@
 import logging
 import os
 import shlex
-from typing import Generator
+from typing import Generator, List, Optional
 
 import pytest
 
@@ -22,13 +22,13 @@ LOG = logging.getLogger(__name__)
 
 class ContainerFactory:
     def __init__(self):
-        self._containers: list[Container] = []
+        self._containers: List[Container] = []
 
     def __call__(
         self,
         # convenience properties
         pro: bool = False,
-        publish: list[int] | None = None,
+        publish: Optional[List[int]] = None,
         # ContainerConfig properties
         **kwargs,
     ) -> Container:
@@ -92,7 +92,7 @@ def container_factory() -> Generator[ContainerFactory, None, None]:
 
 @pytest.fixture
 def wait_for_localstack_ready():
-    def _wait_for(container: RunningContainer, timeout: float | None = None):
+    def _wait_for(container: RunningContainer, timeout: Optional[float] = None):
         container.wait_until_ready(timeout)
 
         poll_condition(
