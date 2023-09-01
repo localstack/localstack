@@ -38,7 +38,6 @@ def send_event_to_target(
     source_arn: str = None,
     source_service: str = None,
 ):
-    account_id = extract_account_id_from_arn(target_arn)
     region = extract_region_from_arn(target_arn)
 
     if target is None:
@@ -48,7 +47,7 @@ def send_event_to_target(
             role_arn=role, service_principal=source_service, region_name=region
         )
     else:
-        clients = connect_to(aws_access_key_id=account_id, region_name=region)
+        clients = connect_to(region_name=region)
 
     if ":lambda:" in target_arn:
         lambda_client = clients.lambda_.request_metadata(
@@ -78,6 +77,7 @@ def send_event_to_target(
         )
 
     elif ":states:" in target_arn:
+        account_id = extract_account_id_from_arn(target_arn)
         stepfunctions_client = connect_to(
             aws_access_key_id=account_id, region_name=region
         ).stepfunctions

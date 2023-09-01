@@ -105,7 +105,7 @@ class MetadataRequestInjector(Generic[T]):
         self, source_arn: str | None = None, service_principal: str | None = None
     ) -> T:
         """
-        Provides request metadata to this client.
+        Returns a new client instance preset with the given request metadata.
         Identical to providing _ServicePrincipal and _SourceArn directly as operation arguments but typing
         compatible.
 

@@ -459,7 +459,7 @@ class SqsNotifier(BaseNotifier):
             )
         # send test event
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
-        sqs_client = sqs_client.request_metadata(
+        sqs_client = connect_to().sqs.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -531,7 +531,7 @@ class SnsNotifier(BaseNotifier):
                 value="The destination topic does not exist",
             )
 
-        sns_client = sns_client.request_metadata(
+        sns_client = connect_to().sns.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -608,7 +608,7 @@ class LambdaNotifier(BaseNotifier):
                 name=target_arn,
                 value="The destination Lambda does not exist",
             )
-        lambda_client = lambda_client.request_metadata(
+        lambda_client = connect_to().lambda_.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
