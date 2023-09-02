@@ -9,6 +9,7 @@ from localstack import constants
 from localstack.utils.bootstrap import Container, RunningContainer, get_docker_image_to_start
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
+    ContainerConfigurator,
     NoSuchNetwork,
     PortMappings,
     VolumeMappings,
@@ -18,6 +19,9 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
+
+ENV_TEST_CONTAINER_MOUNT_SOURCES = "TEST_CONTAINER_MOUNT_SOURCES"
+"""Environment variable used to indicate that we should mount localstack source files into the container."""
 
 
 class ContainerFactory:
@@ -29,6 +33,7 @@ class ContainerFactory:
         # convenience properties
         pro: bool = False,
         publish: Optional[List[int]] = None,
+        configurators: Optional[List[ContainerConfigurator]] = None,
         # ContainerConfig properties
         **kwargs,
     ) -> Container:
@@ -51,13 +56,18 @@ class ContainerFactory:
         # handle the convenience options
         if pro:
             container_configuration.env_vars["GATEWAY_LISTEN"] = "0.0.0.0:4566,0.0.0.0:443"
-            container_configuration.env_vars["LOCALSTACK_API_KEY"] = "test"
+            container_configuration.env_vars["LOCALSTACK_API_KEY"] = os.environ.get(
+                "LOCALSTACK_API_KEY", "test"
+            )
 
         # override values from kwargs
         for key, value in kwargs.items():
             setattr(container_configuration, key, value)
 
         container = Container(container_configuration)
+
+        if configurators:
+            container.configure(configurators)
 
         # track the container so we can remove it later
         self._containers.append(container)
