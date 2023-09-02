@@ -403,7 +403,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["logs", container_name_or_id, "--follow"]
 
         process: subprocess.Popen = run(
-            cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.PIPE
+            cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.STDOUT
         )
 
         return CancellableProcessStream(process)

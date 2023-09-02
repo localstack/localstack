@@ -401,6 +401,9 @@ class VolumeMappings:
     def __iter__(self):
         return self.mappings.__iter__()
 
+    def __repr__(self):
+        return self.mappings.__repr__()
+
 
 VolumeType = Literal["bind", "volume"]
 
