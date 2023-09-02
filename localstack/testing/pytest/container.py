@@ -1,11 +1,11 @@
 import logging
 import os
 import shlex
-from typing import Generator
+from typing import Generator, List, Optional
 
 import pytest
 
-from localstack import config, constants
+from localstack import constants
 from localstack.utils.bootstrap import Container, RunningContainer, get_docker_image_to_start
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
@@ -22,13 +22,13 @@ LOG = logging.getLogger(__name__)
 
 class ContainerFactory:
     def __init__(self):
-        self._containers: list[Container] = []
+        self._containers: List[Container] = []
 
     def __call__(
         self,
         # convenience properties
         pro: bool = False,
-        publish: list[int] | None = None,
+        publish: Optional[List[int]] = None,
         # ContainerConfig properties
         **kwargs,
     ) -> Container:
@@ -39,7 +39,7 @@ class ContainerFactory:
 
         container_configuration = ContainerConfiguration(
             image_name=get_docker_image_to_start(),
-            name=config.MAIN_CONTAINER_NAME,
+            name=None,
             volumes=VolumeMappings(),
             remove=True,
             ports=port_configuration,
@@ -47,9 +47,6 @@ class ContainerFactory:
             command=shlex.split(os.environ.get("CMD", "")) or None,
             env_vars={},
         )
-
-        # allow for randomised container names
-        container_configuration.name = None
 
         # handle the convenience options
         if pro:
@@ -86,7 +83,7 @@ class ContainerFactory:
                 )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def container_factory() -> Generator[ContainerFactory, None, None]:
     factory = ContainerFactory()
     yield factory
@@ -95,7 +92,7 @@ def container_factory() -> Generator[ContainerFactory, None, None]:
 
 @pytest.fixture
 def wait_for_localstack_ready():
-    def _wait_for(container: RunningContainer, timeout: float | None = None):
+    def _wait_for(container: RunningContainer, timeout: Optional[float] = None):
         container.wait_until_ready(timeout)
 
         poll_condition(
@@ -107,15 +104,26 @@ def wait_for_localstack_ready():
 
 
 @pytest.fixture
-def ensure_network(cleanups):
+def ensure_network():
+    networks = []
+
     def _ensure_network(name: str):
         try:
             DOCKER_CLIENT.inspect_network(name)
         except NoSuchNetwork:
             DOCKER_CLIENT.create_network(name)
-            cleanups.append(lambda: DOCKER_CLIENT.delete_network(name))
+            networks.append(name)
 
-    return _ensure_network
+    yield _ensure_network
+
+    for network_name in networks:
+        # detach attached containers
+        details = DOCKER_CLIENT.inspect_network(network_name)
+        for container_id in details["Containers"]:
+            DOCKER_CLIENT.disconnect_container_from_network(
+                network_name=network_name, container_name_or_id=container_id
+            )
+        DOCKER_CLIENT.delete_network(network_name)
 
 
 @pytest.fixture
