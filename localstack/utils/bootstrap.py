@@ -449,7 +449,6 @@ class ContainerConfigurators:
             for _p in ports:
                 cfg.ports.add(_p.port)
 
-            cfg.env_vars["EDGE_PORT"] = str(ports[0].port)
             # gateway listen should be compiled s.t. even if we set "127.0.0.1:4566" from the host,
             # it will be correctly exposed on "0.0.0.0:4566" in the container.
             cfg.env_vars["GATEWAY_LISTEN"] = ",".join(
