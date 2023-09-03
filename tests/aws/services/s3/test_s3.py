@@ -3415,7 +3415,6 @@ class TestS3:
         # this will represent a ListBuckets call, calling the base endpoint
         resp = s3_http_client.get(endpoint_url)
         assert resp.ok
-        assert resp.ok
         assert b"<Bucket" in resp.content
 
         # the same ListBuckets call, but with subdomain based `host` header

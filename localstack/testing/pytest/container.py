@@ -116,13 +116,14 @@ def ensure_network():
 
     yield _ensure_network
 
-    for name in networks:
-        details = DOCKER_CLIENT.inspect_network(name)
-        for container_id in details["Containers"]:
+    for network_name in networks:
+        # detach attached containers
+        details = DOCKER_CLIENT.inspect_network(network_name)
+        for container_id in details.get("Containers", []):
             DOCKER_CLIENT.disconnect_container_from_network(
-                network_name=name, container_name_or_id=container_id
+                network_name=network_name, container_name_or_id=container_id
             )
-        DOCKER_CLIENT.delete_network(name)
+        DOCKER_CLIENT.delete_network(network_name)
 
 
 @pytest.fixture

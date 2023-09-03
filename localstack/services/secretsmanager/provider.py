@@ -311,24 +311,7 @@ def fake_secret_update(
 ):
     fn(self, description, tags, kms_key_id, last_changed_date)
     if last_changed_date is not None:
-        self.last_changed_date = time.time()
-
-
-class FakeSecretVersionStore(dict):
-    def __setitem__(self, key, value):
-        self.put_version(key, value, time.time())
-
-    def put_version(self, version_id: str, version: dict, create_date: Optional[float] = None):
-        if create_date and "createdate" in version:
-            version["createdate"] = create_date
-        super().__setitem__(version_id, version)
-
-
-@patch(FakeSecret.set_versions)
-def fake_secret_set_versions(_, self, versions):
-    self.versions = FakeSecretVersionStore()
-    for version_id, version in versions.items():
-        self.versions.put_version(version_id, version, self.created_date)
+        self.last_changed_date = round(time.time(), 3)
 
 
 @patch(SecretsManagerBackend.get_secret_value)

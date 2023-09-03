@@ -20,7 +20,6 @@ from moto.moto_api._internal import mock_random as random
 from moto.s3 import exceptions as s3_exceptions
 from moto.s3 import models as s3_models
 from moto.s3 import responses as s3_responses
-from moto.s3.utils import clean_key_name
 from readerwriterlock import rwlock
 from requests.structures import CaseInsensitiveDict
 
@@ -602,11 +601,6 @@ def apply_stream_patches():
         lock_until: Optional[str] = None,
         checksum_value: Optional[str] = None,
     ) -> StreamedFakeKey:
-        key_name = clean_key_name(key_name)
-        # due to `call_moto_with_request`, it's possible we're passing a double URL encoded key name. Decode it twice
-        # if that's the case
-        if "%" in key_name:  # FIXME: fix it in `call_moto_with_request`
-            key_name = clean_key_name(key_name)
         if storage is not None and storage not in s3_models.STORAGE_CLASS:
             raise s3_exceptions.InvalidStorageClass(storage=storage)
 
