@@ -40,6 +40,11 @@ class InfraProvisioner:
     """
     TODO: explore adding support for updates during tests
     TODO: explore asset handling
+
+    TODO: multi-step skipping (only create cluster, but cycle the rest by putting it into another stack
+    TODO: alternatively, just do an update on the whole stack
+    TODO: generic ECS container image (general docker image upload)
+    TODO: don't synth on re-use
     """
 
     cloudformation_stacks: dict[str, dict]
@@ -86,6 +91,8 @@ class InfraProvisioner:
                     Capability.CAPABILITY_NAMED_IAM,
                 ],
             )
+            # TODO: better reporting on stack failure
+            # TODO: increase timeout for AWS (currently fails after 3 min)
             self.aws_client.cloudformation.get_waiter("stack_create_complete").wait(
                 StackName=stack_name,
                 WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
