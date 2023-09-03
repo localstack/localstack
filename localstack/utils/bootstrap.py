@@ -13,8 +13,7 @@ from functools import wraps
 from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
 from localstack import config, constants
-from localstack.config import get_edge_port_http, is_env_true
-from localstack.constants import DEFAULT_VOLUME_DIR
+from localstack.config import HostAndPort, default_ip, is_env_true
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
@@ -386,11 +385,6 @@ class ContainerConfigurators:
     """
 
     @staticmethod
-    def noop(cfg: ContainerConfiguration):
-        """Does nothing"""
-        pass
-
-    @staticmethod
     def mount_docker_socket(cfg: ContainerConfiguration):
         source = config.DOCKER_SOCK
         target = "/var/run/docker.sock"
@@ -411,6 +405,14 @@ class ContainerConfigurators:
         return _cfg
 
     @staticmethod
+    def config_env_vars(cfg: ContainerConfiguration):
+        """Sets all env vars from config.CONFIG_ENV_VARS."""
+        for env_var in config.CONFIG_ENV_VARS:
+            value = os.environ.get(env_var, None)
+            if value is not None:
+                cfg.env_vars[env_var] = value
+
+    @staticmethod
     def random_gateway_port(cfg: ContainerConfiguration):
         """Gets a random port on the host and maps it to the default edge port 4566."""
         return ContainerConfigurators.gateway_listen(get_free_tcp_port())(cfg)
@@ -421,25 +423,38 @@ class ContainerConfigurators:
         cfg.ports.add(constants.DEFAULT_PORT_EDGE)
 
     @staticmethod
-    def gateway_listen(port: Union[int, List[int]]):
+    def gateway_listen(
+        port: Union[int, Iterable[int], HostAndPort, Iterable[HostAndPort]],
+    ):
         """
-        Uses the given ports to configure GATEWAY_LISTEN. For instance, ``gateway_listen(4566, 443)`` would
+        Uses the given ports to configure GATEWAY_LISTEN. For instance, ``gateway_listen([4566, 443])`` would
         result in the port mappings 4566:4566, 443:443, as well as ``GATEWAY_LISTEN=:4566,:443``.
 
-        :param port: a single or list of ports
+        :param port: a single or list of ports, can either be int ports or HostAndPort instances
         :return: a configurator
         """
+        if isinstance(port, int):
+            ports = [HostAndPort("", port)]
+        elif isinstance(port, HostAndPort):
+            ports = [port]
+        else:
+            ports = []
+            for p in port:
+                if isinstance(p, int):
+                    ports.append(HostAndPort("", p))
+                else:
+                    ports.append(p)
 
         def _cfg(cfg: ContainerConfiguration):
-            if isinstance(port, int):
-                ports = [port]
-            else:
-                ports = port
-
             for _p in ports:
-                cfg.ports.add(_p)
-            cfg.env_vars["EDGE_PORT"] = str(ports[0])
-            cfg.env_vars["GATEWAY_LISTEN"] = ",".join([f":{p}" for p in ports])
+                cfg.ports.add(_p.port)
+
+            cfg.env_vars["EDGE_PORT"] = str(ports[0].port)
+            # gateway listen should be compiled s.t. even if we set "127.0.0.1:4566" from the host,
+            # it will be correctly exposed on "0.0.0.0:4566" in the container.
+            cfg.env_vars["GATEWAY_LISTEN"] = ",".join(
+                [f"{p.host if p.host != default_ip else ''}:{p.port}" for p in ports]
+            )
 
         return _cfg
 
@@ -526,6 +541,34 @@ class ContainerConfigurators:
     def volume(volume: VolumeBind):
         def _cfg(cfg: ContainerConfiguration):
             cfg.volumes.add(volume)
+
+        return _cfg
+
+    @staticmethod
+    def cli_params(params: Dict[str, Any]):
+        """
+        Parse docker CLI parameters and add them to the config. The currently known CLI params are:
+
+        :param params:
+        :return:
+        """
+        # TODO: consolidate with container_client.Util.parse_additional_flags
+        def _cfg(cfg: ContainerConfiguration):
+            if params.get("network"):
+                cfg.network = params.get("network")
+
+            # parse environment variable flags
+            if params.get("env"):
+                for e in params.get("env"):
+                    if "=" in e:
+                        k, v = e.split("=", maxsplit=1)
+                        cfg.env_vars[k] = v
+                    else:
+                        # there's currently no way in our abstraction to only pass the variable name (as
+                        # you can do in docker) so we resolve the value here.
+                        cfg.env_vars[e] = os.getenv(e)
+
+            # TODO: volume and publish
 
         return _cfg
 
@@ -840,9 +883,8 @@ def configure_container(container: Container):
     Configuration routine for the LocalstackContainer.
     """
     port_configuration = PortMappings(bind_host=config.GATEWAY_LISTEN[0].host)
-    for addr in config.GATEWAY_LISTEN:
-        port_configuration.add(addr.port)
 
+    # base configuration
     container.config.image_name = get_docker_image_to_start()
     container.config.name = config.MAIN_CONTAINER_NAME
     container.config.volumes = VolumeMappings()
@@ -852,7 +894,10 @@ def configure_container(container: Container):
     container.config.command = shlex.split(os.environ.get("CMD", "")) or None
     container.config.env_vars = {}
 
-    # get additional configured flags
+    # gateway (previously edge port) mapping
+    container.configure(ContainerConfigurators.gateway_listen(config.GATEWAY_LISTEN))
+
+    # parse `DOCKER_FLAGS` and add them appropriately
     user_flags = config.DOCKER_FLAGS
     user_flags = extract_port_flags(user_flags, container.config.ports)
     if container.config.additional_flags is None:
@@ -863,52 +908,20 @@ def configure_container(container: Container):
     # get additional parameters from plugins
     hooks.configure_localstack_container.run(container)
 
-    # construct default port mappings
-    container.config.ports.add(get_edge_port_http())
-    for port in range(config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END):
-        container.config.ports.add(port)
-
     if config.DEVELOP:
         container.config.ports.add(config.DEVELOP_PORT)
 
-    # environment variables
-    # pass through environment variables defined in config
-    for env_var in config.CONFIG_ENV_VARS:
-        value = os.environ.get(env_var, None)
-        if value is not None:
-            container.config.env_vars[env_var] = value
-    container.config.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
-
-    # TODO this is default now, remove once a considerate time is passed
-    # to activate proper signal handling
-    container.config.env_vars["SET_TERM_HANDLER"] = "1"
-
-    configure_volume_mounts(container)
-
-    # mount docker socket
-    container.config.volumes.add((config.DOCKER_SOCK, config.DOCKER_SOCK))
-
-
-def configure_container_from_cli_params(container: Container, params: Dict[str, Any]):
-    # TODO: consolidate with container_client.Util.parse_additional_flags
-    # network flag
-    if params.get("network"):
-        container.config.network = params.get("network")
-
-    # parse environment variable flags
-    if params.get("env"):
-        for e in params.get("env"):
-            if "=" in e:
-                k, v = e.split("=", maxsplit=1)
-                container.config.env_vars[k] = v
-            else:
-                # there's currently no way in our abstraction to only pass the variable name (as you can do
-                # in docker) so we resolve the value here.
-                container.config.env_vars[e] = os.getenv(e)
-
-
-def configure_volume_mounts(container: Container):
-    container.config.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
+    container.configure(
+        [
+            # external service port range
+            ContainerConfigurators.service_port_range,
+            ContainerConfigurators.mount_localstack_volume(config.VOLUME_DIR),
+            ContainerConfigurators.mount_docker_socket,
+            # overwrites any env vars set in the config that were previously set by configurators (e.g.,
+            # `GATEWAY_LISTEN`)
+            ContainerConfigurators.config_env_vars,
+        ]
+    )
 
 
 @log_duration()
@@ -938,8 +951,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     container = Container(container_config)
 
     configure_container(container)
-    if cli_params:
-        configure_container_from_cli_params(container, cli_params or {})
+    container.configure(ContainerConfigurators.cli_params(cli_params or {}))
     ensure_container_image(console, container)
 
     status = console.status("Starting LocalStack container")
@@ -1020,8 +1032,7 @@ def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
     container_config = ContainerConfiguration(get_docker_image_to_start())
     container = Container(container_config)
     configure_container(container)
-    if cli_params:
-        configure_container_from_cli_params(container, cli_params)
+    container.configure(ContainerConfigurators.cli_params(cli_params or {}))
     ensure_container_image(console, container)
 
     container_config.detach = True
