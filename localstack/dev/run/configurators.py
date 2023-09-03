@@ -5,6 +5,7 @@ from tempfile import gettempdir
 from typing import Iterable, List
 
 from localstack import config, constants
+from localstack.utils.bootstrap import ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerConfiguration,
@@ -13,7 +14,6 @@ from localstack.utils.container_utils.container_client import (
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import get_user_cache_dir
-from localstack.utils.net import get_free_tcp_port
 from localstack.utils.run import run
 from localstack.utils.strings import md5
 
@@ -38,6 +38,34 @@ class VolumeFromParameters:
             if parts[3] == "ro":
                 volume.read_only = True
         return volume
+
+
+class PortsFromParameters:
+    def __init__(self, ports: Iterable[str]):
+        self.ports = ports or ()
+
+    def __call__(self, cfg: ContainerConfiguration):
+        for port_mapping in self.ports:
+            port_split = port_mapping.split(":")
+            protocol = "tcp"
+            if len(port_split) == 1:
+                host_port = container_port = port_split[0]
+            elif len(port_split) == 2:
+                host_port, container_port = port_split
+            elif len(port_split) == 3:
+                _, host_port, container_port = port_split
+            else:
+                raise ValueError(f"Invalid port string provided: {port_mapping}")
+            host_port_split = host_port.split("-")
+            if len(host_port_split) == 2:
+                host_port = [int(host_port_split[0]), int(host_port_split[1])]
+            elif len(host_port_split) == 1:
+                host_port = int(host_port)
+            else:
+                raise ValueError(f"Invalid port string provided: {port_mapping}")
+            if "/" in container_port:
+                container_port, protocol = container_port.split("/")
+            cfg.ports.add(host_port, int(container_port), protocol)
 
 
 class EnvironmentVariablesFromParameters:
@@ -87,11 +115,11 @@ class PortConfigurator:
         cfg.ports.bind_host = config.EDGE_BIND_HOST
 
         if self.randomize:
-            # TODO: randomize ports and set config accordingly (also set GATEWAY_LISTEN)
-            cfg.ports.add(get_free_tcp_port(), constants.DEFAULT_PORT_EDGE)
+            ContainerConfigurators.random_gateway_port(cfg)
+            ContainerConfigurators.random_service_port_range()(cfg)
         else:
-            cfg.ports.add(constants.DEFAULT_PORT_EDGE)
-            cfg.ports.add([config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END])
+            ContainerConfigurators.default_gateway_port(cfg)
+            ContainerConfigurators.service_port_range(cfg)
 
 
 class ImageConfigurator:
@@ -115,9 +143,6 @@ class ImageConfigurator:
 
 
 class SourceVolumeMountConfigurator:
-    site_packages_target_dir = "/opt/code/localstack/.venv/lib/python3.10/site-packages"
-    """Constant for the site-packages dir path within the container."""
-
     localstack_project_dir: str
     localstack_ext_project_dir: str
     venv_path: str
@@ -198,6 +223,11 @@ class CoverageRunScriptConfigurator:
 
 
 class CustomEntryPointConfigurator:
+    """
+    Creates a ``docker-entrypoint-<hash>.sh`` script from the given source and mounts it into the container.
+    It also configures the container to then use that entrypoint.
+    """
+
     def __init__(self, script: str, tmp_dir: str = None):
         self.script = script.lstrip(os.linesep)
         self.container_paths = ProContainerPaths()
@@ -296,8 +326,11 @@ class DependencyMountConfigurator:
     ):
         self.host_paths = host_paths
         self.pro = pro
-        self.venv_path = venv_path or Path(os.path.join(os.getcwd(), ".venv"))  # FIXME
-        self.container_paths = container_paths or None
+        # FIXME find a better way to determine the default venv
+        self.venv_path = venv_path or Path(os.path.join(os.getcwd(), ".venv"))
+        self.container_paths = container_paths or (
+            ProContainerPaths() if pro else CommunityContainerPaths()
+        )
 
     def __call__(self, cfg: ContainerConfiguration):
         # locate all relevant dependency directories
@@ -317,26 +350,19 @@ class DependencyMountConfigurator:
             if dep_path.name == "__pycache__":
                 continue
 
-            # if the dependency is not in the container, then don't mount it
-            # TODO: this could be useful though, but in that case i would just explicitly mount it using `-v`
             if dep_path.name not in container_path_index:
-                continue
-
-            # find the target path in the index
-            target_path = str(container_path_index[dep_path.name])
+                target_path = self.container_paths.dependency_source(dep_path.name)
+            else:
+                # find the target path in the index if it exists
+                target_path = str(container_path_index[dep_path.name])
 
             if self._has_mount(cfg.volumes, target_path):
                 continue
 
-            cfg.volumes.append(VolumeBind(str(dep_path), str(container_path_index[dep_path.name])))
+            cfg.volumes.append(VolumeBind(str(dep_path), target_path))
 
     def _has_mount(self, volumes: VolumeMappings, target_path: str) -> bool:
-        for volume in volumes:
-            # don't overwrite volumes that were already done via SourceVolumeMountConfigurator
-            if volume.container_dir == target_path:
-                return True
-
-        return False
+        return True if volumes.find_target_mapping(target_path) else False
 
 
 def _list_files_in_container_image(container_client: ContainerClient, image_name: str) -> list[str]:

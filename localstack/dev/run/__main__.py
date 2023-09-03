@@ -1,3 +1,4 @@
+import os
 from typing import Tuple
 
 import click
@@ -12,16 +13,19 @@ from localstack.utils.container_utils.container_client import (
     VolumeMappings,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
+from localstack.utils.files import cache_dir
 from localstack.utils.run import run_interactive
 from localstack.utils.strings import short_uid
 
 from .configurators import (
     ConfigEnvironmentConfigurator,
+    CoverageRunScriptConfigurator,
     DependencyMountConfigurator,
     EntryPointMountConfigurator,
     EnvironmentVariablesFromParameters,
     ImageConfigurator,
     PortConfigurator,
+    PortsFromParameters,
     SourceVolumeMountConfigurator,
     VolumeFromParameters,
 )
@@ -51,6 +55,13 @@ from .paths import HostPaths
     multiple=True,
     required=False,
 )
+@click.option(
+    "--publish",
+    "-p",
+    help="Additional ports that are published to the host",
+    multiple=True,
+    required=False,
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     image: str = None,
@@ -63,35 +74,29 @@ def run(
     mount_docker_socket: bool = True,
     env: Tuple = (),
     volume: Tuple = (),
+    publish: Tuple = (),
     command: str = None,
 ):
-    console.print(locals())
-
-    if command:
-        entrypoint = ""
-        command = list(command)
-    else:
-        entrypoint = None
-        command = None
-
     status = console.status("Configuring")
     status.start()
 
+    # overwrite the config variable here to defer import of cache_dir
+    if not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
+        config.VOLUME_DIR = str(cache_dir() / "volume")
+
     # setup important paths on the host
-    host_paths = HostPaths(volume_dir=volume_dir)
+    host_paths = HostPaths(volume_dir=volume_dir or config.VOLUME_DIR)
 
     # setup base configuration
     container_config = ContainerConfiguration(
         image_name=image,
         name=config.MAIN_CONTAINER_NAME if not randomize else f"localstack-{short_uid()}",
         remove=True,
-        entrypoint=entrypoint,
         interactive=True,
         tty=True,
         env_vars=dict(),
         volumes=VolumeMappings(),
         ports=PortMappings(),
-        command=command,
     )
 
     # setup configurators
@@ -100,7 +105,10 @@ def run(
         PortConfigurator(randomize),
         ConfigEnvironmentConfigurator(pro),
         ContainerConfigurators.mount_localstack_volume(host_paths.volume_dir),
+        CoverageRunScriptConfigurator(host_paths=host_paths),
     ]
+    if command:
+        configurators.append(ContainerConfigurators.custom_command(list(command)))
     if mount_docker_socket:
         configurators.append(ContainerConfigurators.mount_docker_socket)
     if mount_source:
@@ -119,6 +127,7 @@ def run(
     configurators.extend(
         [
             VolumeFromParameters(list(volume)),
+            PortsFromParameters(publish),
             EnvironmentVariablesFromParameters(env),
         ]
     )

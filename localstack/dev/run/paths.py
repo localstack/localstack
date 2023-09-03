@@ -1,3 +1,4 @@
+"""Utilities to resolve important paths on the host and in the container."""
 import os
 from pathlib import Path
 from typing import Optional, Union
