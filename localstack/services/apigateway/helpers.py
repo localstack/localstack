@@ -49,6 +49,7 @@ from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
+from localstack.utils.json import try_json
 from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 from localstack.utils.urls import localstack_host
@@ -461,6 +462,58 @@ class RequestParametersResolver:
         return {key.lower(): val for key, val in params.items()}
 
 
+class ResponseParametersResolver:
+    def resolve(self, context: ApiInvocationContext) -> Dict[str, str]:
+        """
+        Resolve integration response parameters into method response parameters.
+        Integration response parameters can map header, body,
+        or static values to the header type of the method response.
+
+        :return: dict with all method response parameters and their values
+        """
+        integration_request_params: Dict[str, Any] = self.integration_request_dict(context)
+
+        # "responseParameters" : {
+        #     "method.response.header.Location" : "integration.response.body.redirect.url",
+        #     "method.response.header.x-user-id" : "integration.response.header.x-userid"
+        # }
+        integration_responses = context.integration.get("integrationResponses", {})
+        # XXX Fix for other status codes context.response contains a response status code, but response
+        # can be a LambdaResponse or Response object and the field is not the same, normalize it or use introspection
+        response_params = integration_responses.get("200", {}).get("responseParameters", {})
+
+        # resolve all integration request parameters with the already resolved method
+        # request parameters
+        method_parameters = {}
+        for k, v in response_params.items():
+            if v.lower() in integration_request_params:
+                method_parameters[k] = integration_request_params[v.lower()]
+            else:
+                # static values
+                method_parameters[k] = v.replace("'", "")
+
+        # build the integration parameters
+        result: Dict[str, str] = {}
+        for k, v in method_parameters.items():
+            # headers
+            if k.startswith("method.response.header."):
+                header_name = k.split(".")[-1]
+                result[header_name] = v
+
+        return result
+
+    def integration_request_dict(self, context: ApiInvocationContext) -> Dict[str, Any]:
+        params: Dict[str, str] = {}
+
+        for k, v in context.headers.items():
+            params[f"integration.request.header.{k}"] = v
+
+        if context.data:
+            params["integration.request.body"] = try_json(context.data)
+
+        return {key.lower(): val for key, val in params.items()}
+
+
 def resolve_references(data: dict, rest_api_id, allow_recursive=True) -> dict:
     resolver = OpenAPISpecificationResolver(
         data, allow_recursive=allow_recursive, rest_api_id=rest_api_id
@@ -481,13 +534,12 @@ def make_error_response(message, code=400, error_type=None):
 
 def select_integration_response(matched_part: str, invocation_context: ApiInvocationContext):
     int_responses = invocation_context.integration.get("integrationResponses") or {}
-    select_by_pattern = [
+    if select_by_pattern := [
         response
         for response in int_responses.values()
         if response.get("selectionPattern")
         and re.match(response.get("selectionPattern"), matched_part)
-    ]
-    if select_by_pattern:
+    ]:
         selected_response = select_by_pattern[0]
         if len(select_by_pattern) > 1:
             LOG.warning(
@@ -495,7 +547,6 @@ def select_integration_response(matched_part: str, invocation_context: ApiInvoca
                 matched_part,
                 selected_response["statusCode"],
             )
-        return selected_response
     else:
         # choose default return code
         default_responses = [
@@ -510,7 +561,7 @@ def select_integration_response(matched_part: str, invocation_context: ApiInvoca
                 "Multiple default integration responses. Choosing %s (first).",
                 selected_response["statusCode"],
             )
-        return selected_response
+    return selected_response
 
 
 def make_accepted_response():
