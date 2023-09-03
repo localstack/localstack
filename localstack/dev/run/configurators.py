@@ -1,3 +1,6 @@
+"""
+Several ContainerConfigurator implementations to set up a development version of a localstack container.
+"""
 import gzip
 import os
 from pathlib import Path, PurePosixPath
@@ -21,26 +24,25 @@ from .paths import CommunityContainerPaths, ContainerPaths, HostPaths, ProContai
 
 
 class VolumeFromParameters:
+    """
+    Configures volumes from additional CLI input through the ``-v`` options.
+    """
+
     def __init__(self, params: List[str]):
         self.params = params
 
     def __call__(self, cfg: ContainerConfiguration):
         for param in self.params:
-            cfg.volumes.append(self._parse(param))
-
-    def _parse(self, param: str) -> VolumeBind:
-        parts = param.split(":")
-        if 1 > len(parts) > 3:
-            raise ValueError(f"Cannot parse volume bind {param}")
-
-        volume = VolumeBind(parts[0], parts[1])
-        if len(parts) == 3:
-            if parts[3] == "ro":
-                volume.read_only = True
-        return volume
+            cfg.volumes.append(VolumeBind.parse(param))
 
 
 class PortsFromParameters:
+    """
+    Configures ports from additional CLI input through the ``-p`` options.
+
+    TODO: reconcile with Utils.parse_additional_flags.
+    """
+
     def __init__(self, ports: Iterable[str]):
         self.ports = ports or ()
 
@@ -94,13 +96,10 @@ class ConfigEnvironmentConfigurator:
             cfg.env_vars = {}
 
         if self.pro:
+            # import localstack_ext config extends the list of config vars
             from localstack_ext import config as config_ext  # noqa
 
-        # set env vars from config
-        for env_var in config.CONFIG_ENV_VARS:
-            value = os.environ.get(env_var, None)
-            if value is not None:
-                cfg.env_vars[env_var] = value
+        ContainerConfigurators.config_env_vars(cfg)
 
 
 class PortConfigurator:
@@ -118,7 +117,7 @@ class PortConfigurator:
             ContainerConfigurators.random_gateway_port(cfg)
             ContainerConfigurators.random_service_port_range()(cfg)
         else:
-            ContainerConfigurators.default_gateway_port(cfg)
+            ContainerConfigurators.gateway_listen(config.GATEWAY_LISTEN)(cfg)
             ContainerConfigurators.service_port_range(cfg)
 
 
@@ -142,7 +141,37 @@ class ImageConfigurator:
                 cfg.image_name = constants.DOCKER_IMAGE_NAME
 
 
+class CustomEntryPointConfigurator:
+    """
+    Creates a ``docker-entrypoint-<hash>.sh`` script from the given source and mounts it into the container.
+    It also configures the container to then use that entrypoint.
+    """
+
+    def __init__(self, script: str, tmp_dir: str = None):
+        self.script = script.lstrip(os.linesep)
+        self.container_paths = ProContainerPaths()
+        self.tmp_dir = tmp_dir
+
+    def __call__(self, cfg: ContainerConfiguration):
+        h = md5(self.script)
+        tempdir = gettempdir() if not self.tmp_dir else self.tmp_dir
+        file_name = f"docker-entrypoint-{h}.sh"
+
+        file = Path(tempdir, file_name)
+        if not file.exists():
+            file.write_text(self.script)
+            file.chmod(0o777)
+        cfg.volumes.add(VolumeBind(str(file), f"/tmp/{file.name}"))
+        cfg.entrypoint = f"/tmp/{file.name}"
+
+
 class SourceVolumeMountConfigurator:
+    """
+    Mounts source code of localstack, localsack_ext, and moto into the container. It does this by assuming
+    that there is a "workspace" directory in which the source repositories are checked out into.
+    Depending on whether we want to start the pro container, the source paths for localstack are different.
+    """
+
     localstack_project_dir: str
     localstack_ext_project_dir: str
     venv_path: str
@@ -220,30 +249,6 @@ class CoverageRunScriptConfigurator:
         target = f"{self.container_paths.project_dir}/pyproject.toml"
         if source.exists():
             cfg.volumes.add(VolumeBind(str(source), target, read_only=True))
-
-
-class CustomEntryPointConfigurator:
-    """
-    Creates a ``docker-entrypoint-<hash>.sh`` script from the given source and mounts it into the container.
-    It also configures the container to then use that entrypoint.
-    """
-
-    def __init__(self, script: str, tmp_dir: str = None):
-        self.script = script.lstrip(os.linesep)
-        self.container_paths = ProContainerPaths()
-        self.tmp_dir = tmp_dir
-
-    def __call__(self, cfg: ContainerConfiguration):
-        h = md5(self.script)
-        tempdir = gettempdir() if not self.tmp_dir else self.tmp_dir
-        file_name = f"docker-entrypoint-{h}.sh"
-
-        file = Path(tempdir, file_name)
-        if not file.exists():
-            file.write_text(self.script)
-            file.chmod(0o777)
-        cfg.volumes.add(VolumeBind(str(file), f"/tmp/{file.name}"))
-        cfg.entrypoint = f"/tmp/{file.name}"
 
 
 class EntryPointMountConfigurator:
@@ -350,11 +355,12 @@ class DependencyMountConfigurator:
             if dep_path.name == "__pycache__":
                 continue
 
-            if dep_path.name not in container_path_index:
-                target_path = self.container_paths.dependency_source(dep_path.name)
-            else:
+            if dep_path.name in container_path_index:
                 # find the target path in the index if it exists
                 target_path = str(container_path_index[dep_path.name])
+            else:
+                # if the given dependency is not in
+                target_path = self.container_paths.dependency_source(dep_path.name)
 
             if self._has_mount(cfg.volumes, target_path):
                 continue

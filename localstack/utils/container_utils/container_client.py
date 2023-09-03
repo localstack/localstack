@@ -363,6 +363,18 @@ class VolumeBind:
 
         return ":".join(args)
 
+    @classmethod
+    def parse(cls, param: str) -> "VolumeBind":
+        parts = param.split(":")
+        if 1 > len(parts) > 3:
+            raise ValueError(f"Cannot parse volume bind {param}")
+
+        volume = cls(parts[0], parts[1])
+        if len(parts) == 3:
+            if "ro" in parts[3].split(","):
+                volume.read_only = True
+        return volume
+
 
 class VolumeMappings:
     mappings: List[Union[SimpleVolumeBind, VolumeBind]]

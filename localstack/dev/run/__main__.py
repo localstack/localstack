@@ -1,3 +1,4 @@
+import dataclasses
 import os
 from typing import Tuple
 
@@ -33,13 +34,49 @@ from .paths import HostPaths
 
 
 @click.command("run")
-@click.option("--image", type=str, required=False)
-@click.option("--volume-dir", type=click.Path(file_okay=False, dir_okay=True), required=False)
-@click.option("--pro", is_flag=True, default=False)
-@click.option("--randomize", is_flag=True, default=False)
-@click.option("--mount-source/--no-mount-source", is_flag=True, default=True)
-@click.option("--mount-dependencies/--no-mount-dependencies", is_flag=True, default=False)
-@click.option("--mount-entrypoints/--no-mount-entrypoints", is_flag=True, default=False)
+@click.option(
+    "--image",
+    type=str,
+    required=False,
+    help="Overwrite the container image to be used (defaults to localstack/localstack or "
+    "localstack/localstack-pro.",
+)
+@click.option(
+    "--volume-dir",
+    type=click.Path(file_okay=False, dir_okay=True),
+    required=False,
+    help="The localstack volume on the host, default: ~/.cache/localstack/volume",
+)
+@click.option(
+    "--pro/--community",
+    is_flag=True,
+    default=None,
+    help="Whether to start localstack pro or community. If not set, it will guess from the current directory",
+)
+@click.option(
+    "--randomize",
+    is_flag=True,
+    default=False,
+    help="Randomize container name and ports to start multiple instances",
+)
+@click.option(
+    "--mount-source/--no-mount-source",
+    is_flag=True,
+    default=True,
+    help="Mount source files from localstack, localstack-ext, and moto into the container.",
+)
+@click.option(
+    "--mount-dependencies/--no-mount-dependencies",
+    is_flag=True,
+    default=False,
+    help="Whether to mount the dependencies of the current .venv directory into the container. Note this only works if the dependencies are compatible with the python and platform version from the venv and the container.",
+)
+@click.option(
+    "--mount-entrypoints/--no-mount-entrypoints",
+    is_flag=True,
+    default=False,
+    help="Mount entrypoints",
+)
 @click.option("--mount-docker-socket/--no-docker-socket", is_flag=True, default=True)
 @click.option(
     "--env",
@@ -62,11 +99,23 @@ from .paths import HostPaths
     multiple=True,
     required=False,
 )
+@click.option(
+    "--entrypoint",
+    type=str,
+    required=False,
+    help="Additional entrypoint flag passed to docker",
+)
+@click.option(
+    "--network",
+    type=str,
+    required=False,
+    help="Docker network to start the container in",
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     image: str = None,
     volume_dir: str = None,
-    pro: bool = False,
+    pro: bool = None,
     randomize: bool = False,
     mount_source: bool = True,
     mount_dependencies: bool = False,
@@ -75,17 +124,105 @@ def run(
     env: Tuple = (),
     volume: Tuple = (),
     publish: Tuple = (),
+    entrypoint: str = None,
+    network: str = None,
     command: str = None,
 ):
+    """
+    A tool for localstack developers to start localstack containers. Run this in your localstack or
+    localstack-ext source tree to mount local source files or dependencies into the container.
+    Here are some examples::
+
+    \b
+        python -m localstack.dev.run
+        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_API_KEY=test
+        python -m localstack.dev.run -- bash -c 'echo "hello"'
+
+    Explanations and more examples:
+
+    Start a normal container localstack container. If you run this from the localstack-ext repo,
+    it will start localstack-pro::
+
+        python -m localstack.dev.run
+
+    If you start localstack-pro, you might also want to add the API KEY as environment variable::
+
+        python -m localstack.dev.run -e DEBUG=1 -e LOCALSTACK_API_KEY=test
+
+    If your local changes are making modifications to plux plugins (e.g., adding new providers or hooks),
+    then you also want to mount the newly generated entry_point.txt files into the container::
+
+        python -m localstack.dev.run --mount-entrypoints
+
+    Start a new container with randomized gateway and service ports, and randomized container name::
+
+        python -m localstack.dev.run --randomize
+
+    You can also run custom commands:
+
+        python -m localstack.dev.run bash -c 'echo "hello"'
+
+    Or use custom entrypoints:
+
+        python -m localstack.dev.run --entrypoint /bin/bash -- echo "hello"
+
+    You can also mount local dependencies (e.g., pytest and other test dependencies, and then use that
+    in the container)::
+
+    \b
+        python -m localstack.dev.run --mount-dependencies \\
+            -v ./tests:/opt/code/localstack/tests \\
+            -- .venv/bin/python -m pytest tests/unit/http_/
+
+    The script generally assumes that you are executing in either localstack or localstack-ext source
+    repositories that are organized like this::
+
+    \b
+        somedir                              <- your workspace directory
+        ├── localstack                       <- execute script in here
+        │   ├── ...
+        │   ├── localstack                   <- will be mounted into the container
+        │   ├── localstack_core.egg-info
+        │   ├── setup.cfg
+        │   ├── tests
+        │   └── ...
+        ├── localstack-ext                   <- or execute script in here
+        │   ├── ...
+        │   ├── localstack_ext               <- will be mounted into the container
+        │   ├── localstack_ext.egg-info
+        │   ├── setup.cfg
+        │   ├── tests
+        │   └── ...
+        ├── moto
+        │   ├── AUTHORS.md
+        │   ├── ...
+        │   ├── moto                         <- will be mounted into the container
+        │   ├── moto_ext.egg-info
+        │   ├── setup.cfg
+        │   ├── tests
+        │   └── ...
+
+    """
     status = console.status("Configuring")
     status.start()
 
-    # overwrite the config variable here to defer import of cache_dir
+    # set the VOLUME_DIR config variable like in the CLI
     if not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
         config.VOLUME_DIR = str(cache_dir() / "volume")
 
     # setup important paths on the host
-    host_paths = HostPaths(volume_dir=volume_dir or config.VOLUME_DIR)
+    host_paths = HostPaths(
+        # we assume that python -m localstack.dev.run is always executed in the repo source
+        workspace_dir=os.path.abspath(os.path.join(os.getcwd(), "..")),
+        volume_dir=volume_dir or config.VOLUME_DIR,
+    )
+
+    # auto-set pro flag
+    if pro is None:
+        if os.getcwd().endswith("localstack-ext"):
+            pro = True
+        else:
+            pro = False
 
     # setup base configuration
     container_config = ContainerConfiguration(
@@ -97,6 +234,7 @@ def run(
         env_vars=dict(),
         volumes=VolumeMappings(),
         ports=PortMappings(),
+        network=network,
     )
 
     # setup configurators
@@ -109,6 +247,8 @@ def run(
     ]
     if command:
         configurators.append(ContainerConfigurators.custom_command(list(command)))
+    if entrypoint:
+        container_config.entrypoint = entrypoint
     if mount_docker_socket:
         configurators.append(ContainerConfigurators.mount_docker_socket)
     if mount_source:
@@ -136,7 +276,7 @@ def run(
     for configurator in configurators:
         configurator(container_config)
     # print the config
-    console.print(container_config.__dict__)
+    print_config(container_config)
 
     # run the container
     docker = CmdDockerClient()
@@ -159,6 +299,19 @@ def run(
                 docker.remove_container(container_id)
             except Exception:
                 pass
+
+
+def print_config(cfg: ContainerConfiguration):
+    d = dataclasses.asdict(cfg)
+
+    d["volumes"] = [v.to_str() for v in d["volumes"].mappings]
+    d["ports"] = [p for p in d["ports"].to_list() if p != "-p"]
+
+    for k in list(d.keys()):
+        if d[k] is None:
+            d.pop(k)
+
+    console.print(d)
 
 
 def main():
