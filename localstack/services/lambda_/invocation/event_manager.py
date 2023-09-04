@@ -410,7 +410,14 @@ class LambdaEventManager:
     def enqueue_event(self, invocation: Invocation) -> None:
         message_body = SQSInvocation(invocation).encode()
         sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
-        sqs_client.send_message(QueueUrl=self.event_queue_url, MessageBody=message_body)
+        try:
+            sqs_client.send_message(QueueUrl=self.event_queue_url, MessageBody=message_body)
+        except Exception:
+            LOG.error(
+                f"Failed to enqueue Lambda event into queue {self.event_queue_url}."
+                f" Invocation: request_id={invocation.request_id}, invoked_arn={invocation.invoked_arn}",
+            )
+            raise
 
     def start(self) -> None:
         LOG.debug(
