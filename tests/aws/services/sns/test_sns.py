@@ -733,6 +733,9 @@ class TestSNSSubscriptionCrud:
     def test_subscribe_idempotency(
         self, aws_client, sns_create_topic, sqs_create_queue, sqs_queue_arn, snapshot
     ):
+        """
+        Test the idempotency of SNS subscribe calls for a given endpoint and its attributes
+        """
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         queue_arn = sqs_queue_arn(queue_url)
@@ -764,6 +767,15 @@ class TestSNSSubscriptionCrud:
             ReturnSubscriptionArn=True,
         )
         snapshot.match("subscribe-idempotent", subscribe_resp)
+
+        # no attributes are working as well
+        subscribe_resp = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            ReturnSubscriptionArn=True,
+        )
+        snapshot.match("subscribe-idempotent-no-attributes", subscribe_resp)
 
         get_attrs_resp = aws_client.sns.get_subscription_attributes(
             SubscriptionArn=subscribe_resp["SubscriptionArn"]

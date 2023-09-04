@@ -4166,7 +4166,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_idempotency": {
-    "recorded-date": "29-08-2023, 15:02:07",
+    "recorded-date": "04-09-2023, 09:33:37",
     "recorded-content": {
       "subscribe": {
         "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
@@ -4193,6 +4193,13 @@
         }
       },
       "subscribe-idempotent": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-idempotent-no-attributes": {
         "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
