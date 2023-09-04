@@ -74,6 +74,7 @@ jobs:
           pip install pytest pytest-tinybird
       - name: Run CLI tests
         env:
+          DEBUG: "1"
           PYTEST_ADDOPTS: "${{ env.TINYBIRD_PYTEST_ARGS }}-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s"
         run: |
           python -m pytest tests/cli/
