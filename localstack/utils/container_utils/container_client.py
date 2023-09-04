@@ -422,9 +422,9 @@ class VolumeInfo(NamedTuple):
 class ContainerConfiguration:
     image_name: str
     name: Optional[str] = None
-    volumes: Optional[VolumeMappings] = None
-    ports: Optional[PortMappings] = None
-    exposed_ports: Optional[List[str]] = None
+    volumes: VolumeMappings = dataclasses.field(default_factory=VolumeMappings)
+    ports: PortMappings = dataclasses.field(default_factory=PortMappings)
+    exposed_ports: List[str] = dataclasses.field(default_factory=list)
     entrypoint: Optional[str] = None
     additional_flags: Optional[str] = None
     command: Optional[List[str]] = None

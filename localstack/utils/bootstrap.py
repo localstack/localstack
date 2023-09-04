@@ -420,7 +420,7 @@ class ContainerConfigurators:
     @staticmethod
     def default_gateway_port(cfg: ContainerConfiguration):
         """Adds 4566 to the list of port mappings"""
-        cfg.ports.add(constants.DEFAULT_PORT_EDGE)
+        return ContainerConfigurators.gateway_listen(constants.DEFAULT_PORT_EDGE)(cfg)
 
     @staticmethod
     def gateway_listen(
@@ -546,10 +546,20 @@ class ContainerConfigurators:
     @staticmethod
     def cli_params(params: Dict[str, Any]):
         """
-        Parse docker CLI parameters and add them to the config. The currently known CLI params are:
+        Parse docker CLI parameters and add them to the config. The currently known CLI params are::
 
-        :param params:
-        :return:
+            --network=my-network     <- stored in "network"
+            -e FOO=BAR -e BAR=ed     <- stored in "env"
+
+        When parsed by click, the parameters would look like this::
+
+            {
+                "network": "my-network",
+                "env": ("FOO=BAR", "BAR=ed"),
+            }
+
+        :param params: a dict of parsed parameters
+        :return: a configurator
         """
         # TODO: consolidate with container_client.Util.parse_additional_flags
         def _cfg(cfg: ContainerConfiguration):
@@ -580,24 +590,27 @@ def get_gateway_port(container: Container) -> int:
     :param container: the localstack container
     :return: the gateway port reachable from the host
     """
-    edge_port = constants.DEFAULT_PORT_EDGE
+    candidates: List[int]
 
     gateway_listen = container.config.env_vars.get("GATEWAY_LISTEN")
     if gateway_listen:
-        for value in gateway_listen.split(","):
-            host_and_port = config.HostAndPort.parse(
+        candidates = [
+            HostAndPort.parse(
                 value,
                 default_host=constants.LOCALHOST_HOSTNAME,
                 default_port=constants.DEFAULT_PORT_EDGE,
-            )
-            edge_port = host_and_port.port
-            break
+            ).port
+            for value in gateway_listen.split(",")
+        ]
+    else:
+        candidates = [constants.DEFAULT_PORT_EDGE]
 
-    ports = container.config.ports.to_dict()
+    exposed = container.config.ports.to_dict()
 
-    port = ports.get(f"{edge_port}/tcp")
-    if port:
-        return port
+    for candidate in candidates:
+        port = exposed.get(f"{candidate}/tcp")
+        if port:
+            return port
 
     raise ValueError("no gateway port mapping found")
 
