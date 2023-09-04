@@ -9,7 +9,8 @@ from urllib.parse import urlparse
 
 import dns.resolver
 
-from .. import config, constants
+from localstack import config, constants
+
 from .collections import CustomExpiryTTLCache
 from .numbers import is_number
 from .objects import singleton_factory
@@ -245,10 +246,7 @@ def get_free_tcp_port_range(num_ports: int, max_attempts: int = 50) -> "PortRang
                 return False
         return True
 
-    attempts = 0
-    while attempts <= max_attempts:
-        attempts += 1
-
+    for _ in range(max_attempts):
         # try to find a suitable starting point (leave enough space at the end)
         port_range_start = random.randint(
             dynamic_port_range.start, dynamic_port_range.end - num_ports - 1
@@ -304,6 +302,15 @@ class PortRange:
     """Manages a range of ports that can be reserved and requested."""
 
     def __init__(self, start: int, end: int):
+        """
+        Create a new port range. The port range is inclusive, meaning ``PortRange(5000,5005)`` is 6 ports
+        including both 5000 and 5005. This is different from ``range`` which is not inclusive, i.e.::
+
+            PortRange(5000, 5005).as_range() == range(5000, 5005 + 1)
+
+        :param start: the start port (inclusive)
+        :param end: the end of the range (inclusive).
+        """
         self.start = start
         self.end = end
 
@@ -315,6 +322,11 @@ class PortRange:
         self._ports_lock = threading.RLock()
 
     def as_range(self) -> range:
+        """
+        Returns a ``range(start, end+1)`` object representing this port range.
+
+        :return: a range
+        """
         return range(self.start, self.end + 1)
 
     def reserve_port(self, port: Optional[IntOrPort] = None, duration: Optional[int] = None) -> int:
@@ -393,6 +405,13 @@ class PortRange:
         return port.port
 
     def _port_can_be_bound(self, port: IntOrPort) -> bool:
+        """
+        Internal check whether the port can be bound. Will open a socket connection and see if the port is
+        available. Can be overwritten by subclasses to provide a custom implementation.
+
+        :param port: the port to check
+        :return: true if the port is free on the system
+        """
         return port_can_be_bound(port)
 
     def __len__(self):

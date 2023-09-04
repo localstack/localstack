@@ -1,10 +1,12 @@
 import socket
+from unittest.mock import MagicMock
 
 import pytest as pytest
 
 from localstack import config
 from localstack.constants import LOCALHOST
 from localstack.testing.pytest import markers
+from localstack.utils import net
 from localstack.utils.common import short_uid
 from localstack.utils.net import (
     Port,
@@ -96,10 +98,27 @@ def test_get_free_tcp_port_range():
 
 
 def test_get_free_tcp_port_range_fails_if_reserved(monkeypatch):
-    monkeypatch.setattr(dynamic_port_range, "is_port_reserved", lambda *args, **kwargs: True)
+    mock = MagicMock()
+    mock.return_value = True
+
+    monkeypatch.setattr(dynamic_port_range, "is_port_reserved", mock)
 
     with pytest.raises(PortNotAvailableException):
         get_free_tcp_port_range(20)
+
+    assert mock.call_count == 50
+
+
+def test_get_free_tcp_port_range_fails_if_cannot_be_bound(monkeypatch):
+    mock = MagicMock()
+    mock.return_value = False
+
+    monkeypatch.setattr(net, "port_can_be_bound", mock)
+
+    with pytest.raises(PortNotAvailableException):
+        get_free_tcp_port_range(20, max_attempts=10)
+
+    assert mock.call_count == 10
 
 
 def test_port_range_iter():
