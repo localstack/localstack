@@ -146,7 +146,7 @@ class Poller:
 
     def stop(self):
         LOG.debug(
-            "Shutting down event poller %s %s",
+            "Stopping event poller %s %s",
             self.version_manager.function_version.qualified_arn,
             id(self),
         )
