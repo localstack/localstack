@@ -3,6 +3,8 @@ import logging
 import os
 from typing import Callable, Final
 
+from botocore.exceptions import ClientError
+
 from localstack.aws.api.stepfunctions import (
     CreateStateMachineOutput,
     ExecutionStatus,
@@ -123,7 +125,10 @@ def _await_on_execution_events(
     stepfunctions_client, execution_arn: str, check_func: Callable[[HistoryEventList], bool]
 ) -> None:
     def _run_check():
-        hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
+        try:
+            hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
+        except ClientError:
+            return False
         events: HistoryEventList = sorted(
             hist_resp.get("events", []), key=lambda event: event.get("timestamp")
         )
