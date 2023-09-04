@@ -1,4 +1,5 @@
 import os
+from operator import itemgetter
 
 from localstack.testing.pytest import markers
 
@@ -35,7 +36,15 @@ def test_domain(deploy_cfn_template, aws_client, snapshot):
     result = deploy_cfn_template(template_path=template_path)
     domain_endpoint = result.outputs["SearchDomainEndpoint"]
     assert domain_endpoint
+    domain_arn = result.outputs["SearchDomainArn"]
+    assert domain_arn
     domain_name = result.outputs["SearchDomain"]
+
     domain = aws_client.opensearch.describe_domain(DomainName=domain_name)
     assert domain["DomainStatus"]
     snapshot.match("describe_domain", domain)
+
+    assert domain_arn == domain["DomainStatus"]["ARN"]
+    tags_result = aws_client.opensearch.list_tags(ARN=domain_arn)
+    tags_result["TagList"].sort(key=itemgetter("Key"))
+    snapshot.match("list_tags", tags_result)

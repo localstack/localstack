@@ -23,6 +23,11 @@ Resources:
       LogPublishingOptions: {}
       NodeToNodeEncryptionOptions:
         Enabled: false
+      Tags:
+        - Key: foo
+          Value: bar
+        - Key: anotherkey
+          Value: hello
     UpdateReplacePolicy: "Retain"
     DeletionPolicy: "Delete"
 Outputs:
@@ -30,3 +35,5 @@ Outputs:
     Value: !Ref "Domain66AC69E0"
   SearchDomainEndpoint:
     Value: !GetAtt Domain66AC69E0.DomainEndpoint
+  SearchDomainArn:
+    Value: !GetAtt Domain66AC69E0.DomainArn
