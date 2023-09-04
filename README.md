@@ -55,14 +55,17 @@ Please make sure that you have a working [`docker` environment](https://docs.doc
 ### Brew (MacOS or Linux with Homebrew)
 Install the LocalStack CLI by using our [official LocalStack Brew Tap](https://github.com/localstack/homebrew-tap):
 ```
-$ brew install localstack/tap/localstack-cli
+brew install localstack/tap/localstack-cli
 ```
 
 ### Binary download (MacOS, Linux, Windows)
 If you do not have Brew on your machine, you can directly download the pre-built LocalStack CLI binary for your system:
 - Download the latest release for your platform on [localstack/localstack-cli](https://github.com/localstack/localstack-cli/releases/latest).
 - Extract the archive to a folder in your `PATH` variable:
-  - MacOS / Linux: ```sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin```
+  - MacOS / Linux:
+    ```
+    sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin
+    ```
 
 ### Python package (MacOS, Linux, Windows)
 LocalStack is built with Python.
