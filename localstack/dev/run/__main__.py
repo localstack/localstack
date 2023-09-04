@@ -171,7 +171,7 @@ def run(
 
     \b
         python -m localstack.dev.run --mount-dependencies \\
-            -v ./tests:/opt/code/localstack/tests \\
+            -v $PWD/tests:/opt/code/localstack/tests \\
             -- .venv/bin/python -m pytest tests/unit/http_/
 
     The script generally assumes that you are executing in either localstack or localstack-ext source

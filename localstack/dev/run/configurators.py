@@ -172,14 +172,6 @@ class SourceVolumeMountConfigurator:
     Depending on whether we want to start the pro container, the source paths for localstack are different.
     """
 
-    localstack_project_dir: str
-    localstack_ext_project_dir: str
-    venv_path: str
-    pro: bool
-    mount_source: bool
-    mount_dependencies: bool
-    mount_entrypoints: bool
-
     def __init__(
         self,
         *,
@@ -273,12 +265,10 @@ class EntryPointMountConfigurator:
         *,
         host_paths: HostPaths = None,
         container_paths: ContainerPaths = None,
-        venv_path: Path = None,
         pro: bool = False,
     ):
         self.host_paths = host_paths or HostPaths()
         self.pro = pro
-        self.venv_path = venv_path or Path(os.path.join(os.getcwd(), ".venv"))  # FIXME
         self.container_paths = container_paths or None
 
     def __call__(self, cfg: ContainerConfiguration):
@@ -326,13 +316,10 @@ class DependencyMountConfigurator:
         *,
         host_paths: HostPaths = None,
         container_paths: ContainerPaths = None,
-        venv_path: Path = None,
         pro: bool = False,
     ):
-        self.host_paths = host_paths
+        self.host_paths = host_paths or HostPaths()
         self.pro = pro
-        # FIXME find a better way to determine the default venv
-        self.venv_path = venv_path or Path(os.path.join(os.getcwd(), ".venv"))
         self.container_paths = container_paths or (
             ProContainerPaths() if pro else CommunityContainerPaths()
         )
@@ -346,7 +333,7 @@ class DependencyMountConfigurator:
         container_path_index = {p.name: p for p in paths if p.match(pattern)}
 
         # find dependencies from the host
-        for dep_path in self.venv_path.glob("lib/python3.*/site-packages/*"):
+        for dep_path in self.host_paths.venv_dir.glob("lib/python3.*/site-packages/*"):
             # filter out everything that heuristically cannot be a source directory
             if not dep_path.is_dir():
                 continue
@@ -359,7 +346,9 @@ class DependencyMountConfigurator:
                 # find the target path in the index if it exists
                 target_path = str(container_path_index[dep_path.name])
             else:
-                # if the given dependency is not in
+                # if the given dependency is not in the container, then we mount it anyway
+                # FIXME: we should also mount the dist-info directory. perhaps this method should be
+                #  re-written completely
                 target_path = self.container_paths.dependency_source(dep_path.name)
 
             if self._has_mount(cfg.volumes, target_path):
