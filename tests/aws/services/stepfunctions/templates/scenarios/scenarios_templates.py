@@ -44,3 +44,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_BREAK_CONDITION_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_break_condition_legacy.json5"
     )
+    CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_unsorted_choice_parameters.json5"
+    )
+    CHOICE_STATE_AWS_SCENARIO: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_aws_scenario.json5"
+    )

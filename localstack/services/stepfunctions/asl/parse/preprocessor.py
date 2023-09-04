@@ -101,20 +101,15 @@ from localstack.services.stepfunctions.asl.component.state.state import CommonSt
 from localstack.services.stepfunctions.asl.component.state.state_choice.choice_rule import (
     ChoiceRule,
 )
-from localstack.services.stepfunctions.asl.component.state.state_choice.choice_rule_stmt import (
-    ChoiceRuleStmt,
-)
 from localstack.services.stepfunctions.asl.component.state.state_choice.choices_decl import (
     ChoicesDecl,
-)
-from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison import (
-    Comparison,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_composite import (
     ComparisonComposite,
     ComparisonCompositeAnd,
     ComparisonCompositeNot,
     ComparisonCompositeOr,
+    ComparisonCompositeProps,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_func import (
     ComparisonFunc,
@@ -122,8 +117,11 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_operator_type import (
     ComparisonOperatorType,
 )
-from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_props import (
-    ComparisonProps,
+from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_variable import (
+    ComparisonVariable,
+)
+from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.variable import (
+    Variable,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.default_decl import (
     DefaultDecl,
@@ -176,7 +174,6 @@ from localstack.services.stepfunctions.asl.component.state.state_succeed.state_s
 )
 from localstack.services.stepfunctions.asl.component.state.state_type import StateType
 from localstack.services.stepfunctions.asl.component.state.state_wait.state_wait import StateWait
-from localstack.services.stepfunctions.asl.component.state.state_wait.variable import Variable
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.seconds import (
     Seconds,
 )
@@ -385,22 +382,6 @@ class Preprocessor(ASLParserVisitor):
         state_name = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return DefaultDecl(state_name=state_name)
 
-    def visitComparison(self, ctx: ASLParser.ComparisonContext) -> Comparison:
-        props = ComparisonProps()
-        for child in ctx.children:
-            cmp: Component = self.visit(child)
-            if not cmp:
-                continue
-            elif isinstance(cmp, ComparisonFunc):
-                props.function = cmp
-            elif isinstance(cmp, Variable):
-                props.variable = cmp
-        if not props.variable:
-            raise ValueError(f"No Variable declaration for Comparison: '{ctx.getText()}'.")
-        if not props.function:
-            raise ValueError(f"No Function declaration for Comparison: '{ctx.getText()}'.")
-        return Comparison(variable=props.variable, func=props.function)
-
     def visitChoice_operator(
         self, ctx: ASLParser.Choice_operatorContext
     ) -> ComparisonComposite.ChoiceOp:
@@ -441,18 +422,42 @@ class Preprocessor(ASLParserVisitor):
                     )
                 return ComparisonCompositeOr(rules=rules)
 
-    def visitChoice_rule_stmt(self, ctx: ASLParser.Choice_rule_stmtContext) -> ChoiceRuleStmt:
-        return self.visit(ctx.children[0])
-
-    def visitChoice_rule(self, ctx: ASLParser.Choice_ruleContext) -> ChoiceRule:
-        stmts: list[ChoiceRuleStmt] = list()
+    def visitChoice_rule_comparison_composite(
+        self, ctx: ASLParser.Choice_rule_comparison_compositeContext
+    ) -> ChoiceRule:
+        composite_stmts = ComparisonCompositeProps()
         for child in ctx.children:
             cmp: Optional[Component] = self.visit(child)
-            if not cmp:
-                continue
-            elif isinstance(cmp, ChoiceRuleStmt):
-                stmts.append(cmp)
-        return ChoiceRule(stmts=stmts)
+            composite_stmts.add(cmp)
+        return ChoiceRule(
+            comparison=composite_stmts.get(
+                typ=ComparisonComposite,
+                raise_on_missing=ValueError(
+                    f"Expecting a 'ComparisonComposite' definition at '{ctx.getText()}'."
+                ),
+            ),
+            next_stmt=composite_stmts.get(Next),
+        )
+
+    def visitChoice_rule_comparison_variable(
+        self, ctx: ASLParser.Choice_rule_comparison_variableContext
+    ) -> ChoiceRule:
+        comparison_stmts = TypedProps()
+        for child in ctx.children:
+            cmp: Optional[Component] = self.visit(child)
+            comparison_stmts.add(cmp)
+        variable: Variable = comparison_stmts.get(
+            typ=Variable,
+            raise_on_missing=ValueError(f"Expected a Variable declaration in '{ctx.getText()}'."),
+        )
+        comparison_func: ComparisonFunc = comparison_stmts.get(
+            typ=ComparisonFunc,
+            raise_on_missing=ValueError(
+                f"Expected a ComparisonFunc declaration in '{ctx.getText()}'."
+            ),
+        )
+        comparison_variable = ComparisonVariable(variable=variable, func=comparison_func)
+        return ChoiceRule(comparison=comparison_variable, next_stmt=comparison_stmts.get(Next))
 
     def visitChoices_decl(self, ctx: ASLParser.Choices_declContext) -> ChoicesDecl:
         rules: list[ChoiceRule] = list()
