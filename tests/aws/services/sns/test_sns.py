@@ -768,7 +768,7 @@ class TestSNSSubscriptionCrud:
         )
         snapshot.match("subscribe-idempotent", subscribe_resp)
 
-        # no attributes are working as well
+        # no attributes and empty attributes are working as well
         subscribe_resp = aws_client.sns.subscribe(
             TopicArn=topic_arn,
             Protocol="sqs",
@@ -777,10 +777,14 @@ class TestSNSSubscriptionCrud:
         )
         snapshot.match("subscribe-idempotent-no-attributes", subscribe_resp)
 
-        get_attrs_resp = aws_client.sns.get_subscription_attributes(
-            SubscriptionArn=subscribe_resp["SubscriptionArn"]
+        subscribe_resp = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            ReturnSubscriptionArn=True,
+            Attributes={},
         )
-        snapshot.match("get-sub-attrs-2", get_attrs_resp)
+        snapshot.match("subscribe-idempotent-empty-attributes", subscribe_resp)
 
         with pytest.raises(ClientError) as e:
             aws_client.sns.subscribe(
