@@ -5,6 +5,7 @@ import time
 from operator import itemgetter
 
 import pytest
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.apigateway import PutMode
@@ -2089,3 +2090,130 @@ class TestApiGatewayApiDocumentationPart:
             body=spec_file,
         )
         snapshot.match("import-documentation-parts", response)
+
+
+class TestApiGatewayGatewayResponse:
+    @markers.aws.validated
+    def test_gateway_response_crud(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(
+            SortingTransformer(key="items", sorting_fn=itemgetter("responseType"))
+        )
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test GatewayResponse",
+        )
+        api_id = response["id"]
+
+        response = aws_client.apigateway.get_gateway_response(
+            restApiId=api_id, responseType="MISSING_AUTHENTICATION_TOKEN"
+        )
+        snapshot.match("get-gateway-response-default", response)
+
+        # example from https://docs.aws.amazon.com/apigateway/latest/api/API_PutGatewayResponse.html
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            statusCode="404",
+            responseParameters={
+                "gatewayresponse.header.x-request-path": "method.request.path.petId",
+                "gatewayresponse.header.Access-Control-Allow-Origin": "'a.b.c'",
+                "gatewayresponse.header.x-request-query": "method.request.querystring.q",
+                "gatewayresponse.header.x-request-header": "method.request.header.Accept",
+            },
+            responseTemplates={
+                "application/json": '{\n     "message": $context.error.messageString,\n     "type":  "$context.error.responseType",\n     "stage":  "$context.stage",\n     "resourcePath":  "$context.resourcePath",\n     "stageVariables.a":  "$stageVariables.a",\n     "statusCode": "\'404\'"\n}'
+            },
+        )
+        snapshot.match("put-gateway-response", response)
+
+        response = aws_client.apigateway.get_gateway_responses(restApiId=api_id)
+        snapshot.match("get-gateway-responses", response)
+
+        response = aws_client.apigateway.get_gateway_response(
+            restApiId=api_id, responseType="MISSING_AUTHENTICATION_TOKEN"
+        )
+        snapshot.match("get-gateway-response", response)
+
+        response = aws_client.apigateway.delete_gateway_response(
+            restApiId=api_id, responseType="MISSING_AUTHENTICATION_TOKEN"
+        )
+        snapshot.match("delete-gateway-response", response)
+
+        response = aws_client.apigateway.get_gateway_response(
+            restApiId=api_id, responseType="MISSING_AUTHENTICATION_TOKEN"
+        )
+
+        snapshot.match("get-deleted-gw-response", response)
+
+    @markers.aws.validated
+    def test_gateway_response_validation(self, aws_client_factory, apigw_create_rest_api, snapshot):
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test GatewayResponse",
+        )
+        api_id = response["id"]
+        fake_id = f"apiid123{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(fake_id, "fake-api-id"))
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_gateway_responses(restApiId=fake_id)
+        snapshot.match("get-gateway-responses-no-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_gateway_response(restApiId=fake_id, responseType="DEFAULT_4XX")
+        snapshot.match("get-gateway-response-no-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_gateway_response(restApiId=fake_id, responseType="DEFAULT_4XX")
+        snapshot.match("delete-gateway-response-no-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=fake_id, responseType="DEFAULT_4XX", patchOperations=[]
+            )
+        snapshot.match("update-gateway-response-no-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_gateway_response(restApiId=api_id, responseType="DEFAULT_4XX")
+        snapshot.match("delete-gateway-response-not-set", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_gateway_response(restApiId=api_id, responseType="FAKE_RESPONSE_TYPE")
+        snapshot.match("get-gateway-response-wrong-response-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_gateway_response(
+                restApiId=api_id, responseType="FAKE_RESPONSE_TYPE"
+            )
+        snapshot.match("delete-gateway-response-wrong-response-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=api_id, responseType="FAKE_RESPONSE_TYPE", patchOperations=[]
+            )
+        snapshot.match("update-gateway-response-wrong-response-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.put_gateway_response(
+                restApiId=api_id,
+                responseType="FAKE_RESPONSE_TYPE",
+                statusCode="404",
+                responseParameters={},
+                responseTemplates={},
+            )
+        snapshot.match("put-gateway-response-wrong-response-type", e.value.response)
+
+    @markers.aws.validated
+    def test_update_gateway_response(self, aws_client, apigw_create_rest_api, snapshot):
+        pass
+        #
+        # with pytest.raises(ClientError) as e:
+        #     aws_client.apigateway.update_gateway_response(restApiId=api_id, responseType="DEFAULT_4XX", patchOperations=[
+        #         {
+        #             "op": "replace",
+        #             "path": "/statusCode",
+        #             "value": "444"
+        #         }
+        #     ])
+        # snapshot.match("update-gateway-response-not-set", e.value.response)
