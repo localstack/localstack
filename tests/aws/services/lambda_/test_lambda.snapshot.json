@@ -1989,7 +1989,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_event_error": {
-    "recorded-date": "04-10-2022, 19:28:11",
+    "recorded-date": "04-09-2023, 22:49:02",
     "recorded-content": {
       "creation_response": {
         "CreateEventSourceMappingResponse": null,
@@ -2014,7 +2014,14 @@
           "PackageType": "Zip",
           "RevisionId": "<request-id>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.10",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Pending",
           "StateReason": "The function is being created.",
           "StateReasonCode": "Creating",
@@ -2040,22 +2047,7 @@
       "log_events": [
         {
           "timestamp": "timestamp",
-          "message": "START RequestId: <request-id> Version: $LATEST\n",
-          "ingestionTime": "timestamp"
-        },
-        {
-          "timestamp": "timestamp",
-          "message": "[ERROR] CustomException: some error occurred\nTraceback (most recent call last):\n\u00a0\u00a0File \"/var/task/handler.py\", line 6, in handler\n\u00a0\u00a0\u00a0\u00a0raise CustomException(\"some error occurred\")",
-          "ingestionTime": "timestamp"
-        },
-        {
-          "timestamp": "timestamp",
-          "message": "END RequestId: <request-id>\n",
-          "ingestionTime": "timestamp"
-        },
-        {
-          "timestamp": "timestamp",
-          "message": "REPORT RequestId: <request-id>\tDuration: 3.11 ms\tBilled Duration: 4 ms\tMemory Size: 128 MB\tMax Memory Used: 37 MB\tInit Duration: 124.70 ms\t\n",
+          "message": "INIT_START Runtime Version: python:3.10.v11\tRuntime Version ARN: arn:aws:lambda:<region>::runtime:<resource:2>\n",
           "ingestionTime": "timestamp"
         },
         {
@@ -2075,7 +2067,27 @@
         },
         {
           "timestamp": "timestamp",
-          "message": "REPORT RequestId: <request-id>\tDuration: 10.92 ms\tBilled Duration: 11 ms\tMemory Size: 128 MB\tMax Memory Used: 37 MB\t\n",
+          "message": "REPORT RequestId: <request-id>\tDuration: 3.01 ms\tBilled Duration: 4 ms\tMemory Size: 128 MB\tMax Memory Used: 36 MB\tInit Duration: 110.10 ms\t\n",
+          "ingestionTime": "timestamp"
+        },
+        {
+          "timestamp": "timestamp",
+          "message": "START RequestId: <request-id> Version: $LATEST\n",
+          "ingestionTime": "timestamp"
+        },
+        {
+          "timestamp": "timestamp",
+          "message": "[ERROR] CustomException: some error occurred\nTraceback (most recent call last):\n\u00a0\u00a0File \"/var/task/handler.py\", line 6, in handler\n\u00a0\u00a0\u00a0\u00a0raise CustomException(\"some error occurred\")",
+          "ingestionTime": "timestamp"
+        },
+        {
+          "timestamp": "timestamp",
+          "message": "END RequestId: <request-id>\n",
+          "ingestionTime": "timestamp"
+        },
+        {
+          "timestamp": "timestamp",
+          "message": "REPORT RequestId: <request-id>\tDuration: 2.90 ms\tBilled Duration: 3 ms\tMemory Size: 128 MB\tMax Memory Used: 36 MB\t\n",
           "ingestionTime": "timestamp"
         }
       ]

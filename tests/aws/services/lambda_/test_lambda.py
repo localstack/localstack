@@ -1073,6 +1073,7 @@ class TestLambdaFeatures:
             return log_events
 
         events = retry(assert_events, retries=120, sleep=2)
+        # TODO: fix transformers for numbers etc or selectively match log events
         snapshot.match("log_events", events)
         # check if both request ids are identical, since snapshots currently do not support reference replacement for regexes
         start_messages = [e["message"] for e in events if e["message"].startswith("START")]

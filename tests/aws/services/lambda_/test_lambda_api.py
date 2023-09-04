@@ -68,7 +68,7 @@ def environment_length_bytes(e: dict) -> int:
     return string_length_bytes(serialized_environment)
 
 
-@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaFunction:
     @markers.snapshot.skip_snapshot_verify(
         # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
@@ -685,7 +685,7 @@ class TestLambdaFunction:
         )
 
 
-@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaImages:
     @pytest.fixture(scope="class")
     def login_docker_client(self, aws_client):
@@ -975,7 +975,7 @@ class TestLambdaImages:
         snapshot.match("second_publish_response", second_publish_response)
 
 
-@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaVersions:
     @markers.aws.validated
     def test_publish_version_on_create(
@@ -1183,7 +1183,7 @@ class TestLambdaVersions:
         snapshot.match("get_function_latest_result", get_function_latest_result)
 
 
-@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaAlias:
     @markers.aws.validated
     def test_alias_lifecycle(
@@ -1758,7 +1758,7 @@ class TestLambdaRevisions:
         assert rev3_added_permission != rev4_removed_permission
 
 
-@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaTag:
     @pytest.fixture(scope="function")
     def fn_arn(self, create_lambda_function, aws_client):
@@ -3773,7 +3773,7 @@ class TestLambdaSizeLimits:
 
 # TODO: test paging
 # TODO: test function name / ARN resolving
-@pytest.mark.skipif(is_old_provider(), reason="not implemented")
+@pytest.mark.skipif(condition=is_old_provider(), reason="not implemented")
 class TestCodeSigningConfig:
     @markers.aws.validated
     def test_function_code_signing_config(
@@ -3945,7 +3945,7 @@ class TestCodeSigningConfig:
         snapshot.match("list_functions_by_csc_invalid_cscarn", e.value.response)
 
 
-@pytest.mark.skipif(is_old_provider(), reason="not implemented")
+@pytest.mark.skipif(condition=is_old_provider(), reason="not implemented")
 class TestLambdaAccountSettings:
     @markers.aws.validated
     def test_account_settings(self, snapshot, aws_client):
@@ -4122,7 +4122,7 @@ class TestLambdaAccountSettings:
 
 
 class TestLambdaEventSourceMappings:
-    @pytest.mark.skipif(is_old_provider(), reason="new provider only")
+    @pytest.mark.skipif(condition=is_old_provider(), reason="new provider only")
     @markers.aws.validated
     def test_event_source_mapping_exceptions(self, snapshot, aws_client):
 
@@ -4253,7 +4253,7 @@ class TestLambdaEventSourceMappings:
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
-    @pytest.mark.skipif(is_old_provider(), reason="new provider only")
+    @pytest.mark.skipif(condition=is_old_provider(), reason="new provider only")
     @markers.aws.validated
     def test_create_event_source_validation(
         self, create_lambda_function, lambda_su_role, dynamodb_create_table, snapshot, aws_client
