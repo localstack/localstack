@@ -29,6 +29,7 @@ from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil
+from localstack.utils.aws.arns import lambda_function_name
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
 from localstack.utils.platform import Arch, get_arch, is_arm_compatible, standardized_arch
@@ -1002,15 +1003,28 @@ class TestLambdaFeatures:
         condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
     )
     @markers.aws.validated
-    def test_invocation_type_event(self, snapshot, invocation_echo_lambda, aws_client):
+    def test_invocation_type_event(
+        self, snapshot, invocation_echo_lambda, aws_client, check_lambda_logs
+    ):
         """Check invocation response for type event"""
+        function_arn = invocation_echo_lambda
+        function_name = lambda_function_name(invocation_echo_lambda)
         result = aws_client.lambda_.invoke(
-            FunctionName=invocation_echo_lambda, Payload=b"{}", InvocationType="Event"
+            FunctionName=function_arn, Payload=b"{}", InvocationType="Event"
         )
         result = read_streams(result)
         snapshot.match("invoke-result", result)
 
         assert 202 == result["StatusCode"]
+
+        # Assert that the function gets invoked by checking the logs.
+        # This also ensures that we wait until the invocation is done before deleting the function.
+        expected = [".*{}"]
+
+        def check_logs():
+            check_lambda_logs(function_name, expected_lines=expected)
+
+        retry(check_logs, retries=15)
 
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
@@ -1071,9 +1085,7 @@ class TestLambdaFeatures:
     def test_invocation_with_qualifier(
         self,
         s3_bucket,
-        check_lambda_logs,
         lambda_su_role,
-        wait_until_lambda_ready,
         create_lambda_function_aws,
         snapshot,
         aws_client,
