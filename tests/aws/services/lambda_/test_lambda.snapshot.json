@@ -3385,5 +3385,27 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_handler_error": {
+    "recorded-date": "04-09-2023, 23:08:48",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Handler fails",
+          "errorType": "Exception",
+          "requestId": "<uuid>",
+          "stackTrace": [
+            "  File \"/var/task/lambda_handler_error.py\", line 2, in handler\n    raise Exception(\"Handler fails\")\n"
+          ]
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
