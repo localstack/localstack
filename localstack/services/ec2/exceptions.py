@@ -1,3 +1,5 @@
+from typing import Any
+
 from localstack.aws.api import CommonServiceException
 
 
@@ -53,4 +55,22 @@ class InvalidLaunchTemplateIdError(CommonServiceException):
         super().__init__(
             code="InvalidLaunchTemplateId.VersionNotFound",
             message="Could not find launch template version",
+        )
+
+
+class InvalidSecurityGroupNotFound(CommonServiceException):
+    def __init__(self, name: Any):
+        super().__init__(
+            "InvalidGroup.NotFound",
+            f"The security group '{name}' does not exist",
+        )
+
+
+class InvalidGroupIdMalformed(CommonServiceException):
+    def __init__(
+        self,
+    ):
+        super().__init__(
+            "InvalidGroupId.Malformed",
+            "The security group ID '' is malformed",
         )

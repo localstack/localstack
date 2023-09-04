@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from botocore.parsers import ResponseParserError
 from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
-from moto.ec2.exceptions import InvalidVpcEndPointIdError
+from moto.ec2.exceptions import InvalidSecurityGroupNotFoundError, InvalidVpcEndPointIdError
 from moto.ec2.models import (
     EC2Backend,
     SubnetBackend,
@@ -34,6 +34,8 @@ from localstack.aws.api.ec2 import (
     DescribeReservedInstancesOfferingsResult,
     DescribeReservedInstancesRequest,
     DescribeReservedInstancesResult,
+    DescribeSecurityGroupRulesMaxResults,
+    DescribeSecurityGroupRulesResult,
     DescribeSubnetsRequest,
     DescribeSubnetsResult,
     DescribeTransitGatewaysRequest,
@@ -46,6 +48,7 @@ from localstack.aws.api.ec2 import (
     DnsOptionsSpecification,
     DnsRecordIpType,
     Ec2Api,
+    FilterList,
     InstanceType,
     IpAddressType,
     ModifyLaunchTemplateRequest,
@@ -59,12 +62,15 @@ from localstack.aws.api.ec2 import (
     PurchaseReservedInstancesOfferingResult,
     RecurringCharge,
     RecurringChargeFrequency,
+    ReferencedSecurityGroup,
     ReservedInstances,
     ReservedInstancesOffering,
     ReservedInstanceState,
     RevokeSecurityGroupEgressRequest,
     RevokeSecurityGroupEgressResult,
     RIProductDescription,
+    SecurityGroupRule,
+    SecurityGroupRuleIdList,
     String,
     SubnetConfigurationsList,
     Tenancy,
@@ -76,8 +82,10 @@ from localstack.aws.api.ec2 import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.ec2.exceptions import (
+    InvalidGroupIdMalformed,
     InvalidLaunchTemplateIdError,
     InvalidLaunchTemplateNameError,
+    InvalidSecurityGroupNotFound,
     MissingParameterError,
 )
 from localstack.services.ec2.models import get_ec2_backend
@@ -116,6 +124,104 @@ class Ec2Provider(Ec2Api, ABC):
                 for zone in filtered_zones
             ]
             return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
+        return call_moto(context)
+
+    @handler("DescribeSecurityGroupRules")
+    def describe_security_group_rules(
+        self,
+        context: RequestContext,
+        filters: FilterList = None,
+        security_group_rule_ids: SecurityGroupRuleIdList = None,
+        dry_run: Boolean = None,
+        next_token: String = None,
+        max_results: DescribeSecurityGroupRulesMaxResults = None,
+    ) -> DescribeSecurityGroupRulesResult:
+        backend = get_ec2_backend(context.account_id, context.region)
+        security_rules = []
+        for filter_criteria in filters:
+
+            group_id_values = (
+                filter_criteria.get("Values") if filter_criteria.get("Name") == "group-id" else ""
+            )
+
+            if group_id_values and any(value == "" for value in group_id_values):
+                raise InvalidGroupIdMalformed()
+
+            try:
+                security_group_rules = backend.describe_security_group_rules(group_id_values)
+            except InvalidSecurityGroupNotFoundError:
+                raise InvalidSecurityGroupNotFound(group_id_values)
+
+            for security_group in security_group_rules:
+                for rule in security_group_rules[security_group]:
+                    common_fields = {
+                        "SecurityGroupRuleId": rule.id,
+                        "GroupId": security_group,
+                        "IsEgress": rule.is_egress,
+                        "IpProtocol": rule.ip_protocol,
+                        "FromPort": rule.from_port,
+                        "ToPort": rule.to_port,
+                    }
+                    if all(
+                        not value
+                        for value in [rule.ip_ranges, rule.source_groups, rule.prefix_list_ids]
+                    ):
+                        security_rules.append(
+                            SecurityGroupRule(
+                                **common_fields,
+                            )
+                        )
+                        continue
+
+                    if rule.ip_ranges:
+                        security_rules.extend(
+                            [
+                                SecurityGroupRule(
+                                    CidrIpv4=ip_range.get("CidrIp", None),
+                                    CidrIpv6=ip_range.get("CidrIpv6", None),
+                                    PrefixListId=None,
+                                    ReferencedGroupInfo=None,
+                                    Description=ip_range.get("Description", None),
+                                    **common_fields,
+                                )
+                                for ip_range in rule.ip_ranges
+                            ]
+                        )
+
+                    if rule.source_groups:
+                        security_rules.extend(
+                            [
+                                SecurityGroupRule(
+                                    ReferencedGroupInfo=ReferencedSecurityGroup(
+                                        GroupId=source_group.get("GroupId", None),
+                                        UserId=source_group.get("OwnerId", None),
+                                    ),
+                                    Description=source_group.get("Description", None),
+                                    CidrIpv4=None,
+                                    CidrIpv6=None,
+                                    PrefixListId=None,
+                                    **common_fields,
+                                )
+                                for source_group in rule.source_groups
+                            ]
+                        )
+
+                    if rule.prefix_list_ids:
+                        security_rules.extend(
+                            [
+                                SecurityGroupRule(
+                                    PrefixListId=prefix_list_id.get("PrefixListId"),
+                                    Description=prefix_list_id.get("Description", None),
+                                    ReferencedGroupInfo=None,
+                                    CidrIpv4=None,
+                                    CidrIpv6=None,
+                                    **common_fields,
+                                )
+                                for prefix_list_id in rule.prefix_list_ids
+                            ]
+                        )
+        if security_rules:
+            return DescribeSecurityGroupRulesResult(SecurityGroupRules=security_rules)
         return call_moto(context)
 
     @handler("DescribeReservedInstancesOfferings", expand=False)
