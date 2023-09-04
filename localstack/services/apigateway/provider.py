@@ -873,7 +873,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # construct list of path regexes for validation
         path_regexes = [re.sub("{[^}]+}", ".+", path) for path in STAGE_UPDATE_PATHS]
 
-        patch_operations = patch_operations or []
+        # copy the patch operations to not mutate them, so that we're logging the correct input
+        patch_operations = copy.deepcopy(patch_operations) or []
         for patch_operation in patch_operations:
             patch_path = patch_operation["path"]
             path_valid = patch_path in STAGE_UPDATE_PATHS or any(
@@ -887,8 +888,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 raise BadRequestException(
                     f"Invalid method setting path: {patch_operation['path']}. Must be one of: {valid_paths}"
                 )
-        _patch_api_gateway_entity(moto_stage, patch_operations)
 
+            # TODO: check if there are other boolean, maybe add a global step in _patch_api_gateway_entity
+            if patch_path == "/tracingEnabled" and (value := patch_operation.get("value")):
+                patch_operation["value"] = value and value.lower() == "true" or False
+
+        _patch_api_gateway_entity(moto_stage, patch_operations)
         moto_stage.apply_operations(patch_operations)
 
         response = moto_stage.to_json()
