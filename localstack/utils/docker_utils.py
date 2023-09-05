@@ -133,14 +133,15 @@ def get_host_path_for_path_in_docker(path):
 
 
 def container_ports_can_be_bound(
-    ports: Union[IntOrPort, List[IntOrPort]], address: str = "0.0.0.0"
+    ports: Union[IntOrPort, List[IntOrPort]],
+    address: Optional[str] = None,
 ) -> bool:
     """Determine whether a given list of ports can be bound by Docker containers
 
     :param ports: single port or list of ports to check
     :return: True iff all ports can be bound
     """
-    port_mappings = PortMappings(bind_host=address)
+    port_mappings = PortMappings(bind_host=address or "")
     ports = ensure_list(ports)
     for port in ports:
         port = Port.wrap(port)
