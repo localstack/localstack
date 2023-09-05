@@ -20,8 +20,8 @@ pytestmark = pytest.mark.skipif(
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
-class TestSnfApi:
-    @markers.aws.unknown
+class TestSnfBase:
+    @markers.aws.validated
     def test_state_fail(
         self,
         aws_client,
