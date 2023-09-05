@@ -13,7 +13,6 @@ from localstack import config
 from localstack.aws.api.lambda_ import TooManyRequestsException
 from localstack.aws.connect import connect_to
 from localstack.services.lambda_.invocation.lambda_models import (
-    INTERNAL_RESOURCE_ACCOUNT,
     EventInvokeConfig,
     Invocation,
     InvocationResult,
@@ -32,9 +31,9 @@ LOG = logging.getLogger(__name__)
 def get_sqs_client(function_version, client_config=None):
     region_name = function_version.id.region
     return connect_to(
-        aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT,
+        aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
         region_name=region_name,
-        client_config=client_config,
+        config=client_config,
     ).sqs
 
 
