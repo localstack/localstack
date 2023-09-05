@@ -4,10 +4,10 @@ from multiprocessing.pool import ThreadPool
 from typing import List, Optional
 
 import click
-from click import ClickException
 from rich.console import Console
 
 from localstack import config
+from localstack.cli.exceptions import CLIError
 from localstack.packages import InstallTarget, Package
 from localstack.packages.api import NoSuchPackageException, PackagesPluginManager
 from localstack.utils.bootstrap import setup_logging
@@ -105,10 +105,10 @@ def install(
             )
     except NoSuchPackageException as e:
         LOG.debug(str(e), exc_info=e)
-        raise ClickException(str(e))
+        raise CLIError(str(e))
     except Exception as e:
         LOG.debug("one or more package installations failed.", exc_info=e)
-        raise ClickException("one or more package installations failed.")
+        raise CLIError("one or more package installations failed.")
 
 
 @cli.command(name="list")
