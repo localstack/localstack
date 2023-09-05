@@ -45,7 +45,7 @@ from localstack.constants import (
     MAC_NETWORK_INTERFACE,
     S3_ASSETS_BUCKET,
 )
-from localstack.services.dns_server_models import (
+from localstack.dns.models import (
     AliasTarget,
     DnsServerProtocol,
     DynamicRecord,

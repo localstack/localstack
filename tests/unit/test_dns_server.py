@@ -4,8 +4,8 @@ import dns
 import pytest
 
 from localstack import config
-from localstack.services.dns_server import DnsServer, get_fallback_dns_server
-from localstack.services.dns_server_models import AliasTarget, RecordType, SOARecord, TargetRecord
+from localstack.dns.models import AliasTarget, RecordType, SOARecord, TargetRecord
+from localstack.dns.server import DnsServer, get_fallback_dns_server
 from localstack.utils.net import get_free_udp_port
 from localstack.utils.sync import retry
 

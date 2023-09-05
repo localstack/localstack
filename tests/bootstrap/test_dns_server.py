@@ -35,7 +35,6 @@ def test_user_defined_network(
 ):
     ls_container = container_factory(env_vars={"DEBUG": "1"}, network=docker_network)
     ls_container.config.volumes.append(("/var/run/docker.sock", "/var/run/docker.sock"))
-    LOG.warning("starting container")
     running_ls_container = ls_container.start()
     wait_for_localstack_ready(running_ls_container)
 
