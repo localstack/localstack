@@ -8,8 +8,8 @@ LOG = logging.getLogger(__name__)
 
 
 class TestParallelBucketCreation:
-    @markers.aws.unknown
-    def test_parallel_bucket_creation(self, aws_client_factory):
+    @markers.aws.validated
+    def test_parallel_bucket_creation(self, aws_client_factory, cleanups):
         num_threads = 10
         create_barrier = threading.Barrier(num_threads)
         errored = False
@@ -20,6 +20,7 @@ class TestParallelBucketCreation:
             s3_client = aws_client_factory(
                 region_name="us-east-1", aws_access_key_id=f"{runner:012d}"
             ).s3
+            cleanups.append(lambda: s3_client.delete_bucket(Bucket=bucket_name))
             create_barrier.wait()
             try:
                 s3_client.create_bucket(Bucket=bucket_name)
