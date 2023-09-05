@@ -165,12 +165,15 @@ class ExecutionEnvironment:
         """
         with self.status_lock:
             if self.status != RuntimeStatus.INACTIVE:
-                raise InvalidStatusException("Runtime Handler can only be started when inactive")
+                raise InvalidStatusException(
+                    f"Execution environment can only be started when inactive. Current status {self.status}"
+                )
             self.status = RuntimeStatus.STARTING
             self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
             self.startup_timer.start()
             try:
                 self.runtime_executor.start(self.get_environment_variables())
+            # TODO: Distinguish between timeout and cancellation due to deletion, update,
             except Exception as e:
                 LOG.warning(
                     "Failed to start runtime environment for ID=%s with: %s",
@@ -193,7 +196,9 @@ class ExecutionEnvironment:
         """
         with self.status_lock:
             if self.status in [RuntimeStatus.INACTIVE, RuntimeStatus.STOPPED]:
-                raise InvalidStatusException("Runtime Handler cannot be shutdown before started")
+                raise InvalidStatusException(
+                    f"Execution environment cannot be shutdown before started. Current status {self.status}"
+                )
             self.runtime_executor.stop()
             self.status = RuntimeStatus.STOPPED
             self.keepalive_timer.cancel()
@@ -243,14 +248,16 @@ class ExecutionEnvironment:
     def errored(self) -> None:
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
-                raise InvalidStatusException("Runtime Handler can only error while starting")
+                raise InvalidStatusException(
+                    f"Execution environment can only error while starting. Current status {self.status}"
+                )
             self.status = RuntimeStatus.STARTUP_FAILED
         if self.startup_timer:
             self.startup_timer.cancel()
         try:
             self.runtime_executor.stop()
         except Exception:
-            LOG.debug("Unable to shutdown runtime handler '%s'", self.id)
+            LOG.debug("Unable to shutdown execution environment '%s'", self.id)
 
     def invoke(self, invocation: Invocation) -> InvocationResult:
         assert self.status == RuntimeStatus.RUNNING
