@@ -667,12 +667,6 @@ def configure_container(container: Container):
         for port in dns_ports:
             container.config.ports.add(port.port, protocol=port.protocol)
 
-    # expose the dns ports regardless
-    if not container.config.exposed_ports:
-        container.config.exposed_ports = []
-    for port in dns_ports:
-        container.config.exposed_ports += [str(port.port), f"{port.port}/{port.protocol}"]
-
     # environment variables
     # pass through environment variables defined in config
     for env_var in config.CONFIG_ENV_VARS:
