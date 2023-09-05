@@ -351,8 +351,8 @@ class LambdaService:
         :param function_version: Version reporting the state
         :param new_state: New state
         """
+        function_arn = function_version.qualified_arn
         try:
-            function_arn = function_version.qualified_arn
             old_version = None
             old_event_manager = None
             with self.lambda_version_manager_lock:
@@ -414,7 +414,7 @@ class LambdaService:
             ] = new_version_state
 
         except Exception:
-            LOG.exception("This no good")
+            LOG.exception("Failed to update function version for arn %s", function_arn)
 
     def update_alias(self, old_alias: VersionAlias, new_alias: VersionAlias, function: Function):
         # if pointer changed, need to restart provisioned

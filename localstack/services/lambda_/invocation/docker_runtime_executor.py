@@ -223,7 +223,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
     def get_image(self) -> str:
         if not self.function_version.config.runtime:
-            raise NotImplementedError("Custom images are currently not supported")
+            raise NotImplementedError("Container images are a Pro feature.")
         return (
             get_image_name_for_function(self.function_version)
             if config.LAMBDA_PREBUILD_IMAGES
