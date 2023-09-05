@@ -29,6 +29,15 @@ from localstack.utils.time import timestamp_millis
 LOG = logging.getLogger(__name__)
 
 
+def get_sqs_client(function_version, client_config=None):
+    region_name = function_version.id.region
+    return connect_to(
+        aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT,
+        region_name=region_name,
+        client_config=client_config,
+    ).sqs
+
+
 @dataclasses.dataclass
 class SQSInvocation:
     invocation: Invocation
@@ -107,12 +116,14 @@ class Poller:
 
     def run(self, *args, **kwargs):
         try:
-            config = Config(
+            client_config = Config(
                 connect_timeout=1,
                 read_timeout=3,
                 retries={"total_max_attempts": 1},
             )
-            sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT, config=config).sqs
+            sqs_client = get_sqs_client(
+                self.version_manager.function_version, client_config=client_config
+            )
             function_timeout = self.version_manager.function_version.config.timeout
             while not self._shutdown_event.is_set():
                 # TODO: Fix proper shutdown causing EndpointConnectionError
@@ -203,7 +214,7 @@ class Poller:
                     2**sqs_invocation.exception_retries, maximum_exception_retry_delay_seconds
                 )
                 # TODO: calculate delay seconds into max event age handling
-                sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+                sqs_client = get_sqs_client(self.version_manager.function_version)
                 sqs_client.send_message(
                     QueueUrl=self.event_queue_url,
                     MessageBody=sqs_invocation.encode(),
@@ -211,7 +222,7 @@ class Poller:
                 )
                 return
             finally:
-                sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+                sqs_client = get_sqs_client(self.version_manager.function_version)
                 sqs_client.delete_message(
                     QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
                 )
@@ -409,7 +420,7 @@ class LambdaEventManager:
 
     def enqueue_event(self, invocation: Invocation) -> None:
         message_body = SQSInvocation(invocation).encode()
-        sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+        sqs_client = get_sqs_client(self.version_manager.function_version)
         try:
             sqs_client.send_message(QueueUrl=self.event_queue_url, MessageBody=message_body)
         except Exception:
@@ -429,7 +440,7 @@ class LambdaEventManager:
             if self.stopped.is_set():
                 LOG.debug("Event manager already stopped before started.")
                 return
-            sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+            sqs_client = get_sqs_client(self.version_manager.function_version)
             function_id = self.version_manager.function_version.id
             # Truncate function name to ensure queue name limit of max 80 characters
             function_name_short = function_id.function_name[:47]
@@ -472,7 +483,7 @@ class LambdaEventManager:
             self.poller,
             id(self),
         )
-        with self.lifecycle_lock:
+        with (self.lifecycle_lock):
             if self.stopped.is_set():
                 LOG.debug("Event manager already stopped!")
                 return
@@ -485,13 +496,13 @@ class LambdaEventManager:
                     LOG.error("Poller did not shutdown %s", self.poller_thread)
                 self.poller = None
             if self.event_queue_url:
-                config = Config(
+                client_config = Config(
                     connect_timeout=1,
                     read_timeout=2,
                     retries={"total_max_attempts": 1},
                 )
-                sqs_client = connect_to(
-                    aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT, config=config
-                ).sqs
+                sqs_client = get_sqs_client(
+                    self.version_manager.function_version, client_config=client_config
+                )
                 sqs_client.delete_queue(QueueUrl=self.event_queue_url)
                 self.event_queue_url = None

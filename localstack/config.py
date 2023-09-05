@@ -735,6 +735,11 @@ if not DOCKER_BRIDGE_IP:
                 DOCKER_BRIDGE_IP = ip
                 break
 
+# AWS account used to store internal resources such as Lambda archives or internal SQS queues.
+# It should not be modified by the user, or visible to him, except as through a presigned url with the
+# get-function call.
+INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "949334387222"
+
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
 # -----
