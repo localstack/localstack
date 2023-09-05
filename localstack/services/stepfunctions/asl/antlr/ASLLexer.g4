@@ -146,7 +146,7 @@ STRINGDOLLAR
     ;
 
 STRINGPATHCONTEXTOBJ
-    : '"$$.' (ESC | SAFECODEPOINT)* '"'
+    : '"$$' (ESC | SAFECODEPOINT)* '"'
     ;
 
 STRINGPATH

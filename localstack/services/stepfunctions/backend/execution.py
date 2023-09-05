@@ -208,12 +208,12 @@ class Execution:
                 Execution=ContextObjectExecution(
                     Id=self.exec_arn,
                     Input=self.input_data,
-                    Name=self.state_machine.name,
+                    Name=self.name,
                     RoleArn=self.role_arn,
                     StartTime=self.start_date.time().isoformat(),
                 ),
                 StateMachine=ContextObjectStateMachine(
-                    Id="TODO",
+                    Id=self.state_machine.arn,
                     Name=self.state_machine.name,
                 ),
             ),
