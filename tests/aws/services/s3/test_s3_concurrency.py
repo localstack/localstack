@@ -8,7 +8,7 @@ LOG = logging.getLogger(__name__)
 
 
 class TestParallelBucketCreation:
-    @markers.aws.validated
+    @markers.aws.only_localstack
     def test_parallel_bucket_creation(self, aws_client_factory, cleanups):
         num_threads = 10
         create_barrier = threading.Barrier(num_threads)
