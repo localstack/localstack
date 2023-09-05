@@ -496,7 +496,7 @@ def backend_update_secret_version_stage(
 @patch(FakeSecret.reset_default_version)
 def fake_secret_reset_default_version(fn, self, secret_version, version_id):
     # fn(self, secret_version, version_id)
-
+    # FIXME: remove for the next moto bump (above 4.2.post1) and uncomment line above
     # remove all old AWSPREVIOUS stages
     for old_version in self.versions.values():
         if "AWSPREVIOUS" in old_version["version_stages"]:
@@ -509,6 +509,7 @@ def fake_secret_reset_default_version(fn, self, secret_version, version_id):
 
     self.versions[version_id] = secret_version
     self.default_version_id = version_id
+    # Remove until here ^
 
     # Remove versions with no version stages.
     versions_no_stages = [
