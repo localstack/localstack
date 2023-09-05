@@ -1,14 +1,17 @@
 import logging
 import os
 import shlex
-from typing import Generator, List, Optional
+import threading
+from typing import Callable, Generator, List, Optional
 
 import pytest
 
 from localstack import constants
 from localstack.utils.bootstrap import Container, RunningContainer, get_docker_image_to_start
 from localstack.utils.container_utils.container_client import (
+    CancellableStream,
     ContainerConfiguration,
+    ContainerConfigurator,
     NoSuchNetwork,
     PortMappings,
     VolumeMappings,
@@ -18,6 +21,9 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
+
+ENV_TEST_CONTAINER_MOUNT_SOURCES = "TEST_CONTAINER_MOUNT_SOURCES"
+"""Environment variable used to indicate that we should mount localstack source files into the container."""
 
 
 class ContainerFactory:
@@ -29,6 +35,7 @@ class ContainerFactory:
         # convenience properties
         pro: bool = False,
         publish: Optional[List[int]] = None,
+        configurators: Optional[List[ContainerConfigurator]] = None,
         # ContainerConfig properties
         **kwargs,
     ) -> Container:
@@ -51,13 +58,18 @@ class ContainerFactory:
         # handle the convenience options
         if pro:
             container_configuration.env_vars["GATEWAY_LISTEN"] = "0.0.0.0:4566,0.0.0.0:443"
-            container_configuration.env_vars["LOCALSTACK_API_KEY"] = "test"
+            container_configuration.env_vars["LOCALSTACK_API_KEY"] = os.environ.get(
+                "LOCALSTACK_API_KEY", "test"
+            )
 
         # override values from kwargs
         for key, value in kwargs.items():
             setattr(container_configuration, key, value)
 
         container = Container(container_configuration)
+
+        if configurators:
+            container.configure(configurators)
 
         # track the container so we can remove it later
         self._containers.append(container)
@@ -81,6 +93,69 @@ class ContainerFactory:
                     f"Failed to remove container {container.running_container.id}",
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
+
+
+class LogStreamFactory:
+    def __init__(self):
+        self.streams: list[CancellableStream] = []
+        self.stop_events: list[threading.Event] = []
+        self.mutex = threading.RLock()
+
+    def __call__(self, container: Container, callback: Callable[[str], None] = None) -> None:
+        """
+        Create and start a new log stream thread. The thread starts immediately and waits for the container
+        to move into a running state. Once it's running, it will attempt to stream the container logs. If
+        the container is already closed by then, an exception will be raised in the thread and it will
+        terminate.
+
+        :param container: the container to stream the logs from
+        :param callback: an optional callback called on each log line.
+        """
+        stop = threading.Event()
+        self.stop_events.append(stop)
+
+        def _can_continue():
+            if stop.is_set():
+                return True
+            if not container.running_container:
+                return False
+            return container.running_container.is_running()
+
+        def _run_stream_container_logs():
+            # wait until either the container is running or the test was terminated
+            poll_condition(_can_continue)
+            with self.mutex:
+                if stop.is_set():
+                    return
+
+                stream = container.running_container.stream_logs()
+                self.streams.append(stream)
+
+            # create a default logger
+            if callback is None:
+                log = logging.getLogger(f"container.{container.running_container.name}")
+                log.setLevel(level=logging.DEBUG)
+                _callback = log.debug
+            else:
+                _callback = callback
+
+            for line in stream:
+                _callback(line.decode("utf-8").rstrip(os.linesep))
+
+        t = threading.Thread(
+            target=_run_stream_container_logs,
+            name=threading._newname("log-stream-%d"),
+            daemon=True,
+        )
+        t.start()
+
+    def close(self):
+        with self.mutex:
+            for _event in self.stop_events:
+                _event.set()
+
+        for _stream in self.streams:
+            _stream.close()
 
 
 @pytest.fixture
@@ -131,3 +206,32 @@ def docker_network(ensure_network):
     network_name = f"net-{short_uid()}"
     ensure_network(network_name)
     return network_name
+
+
+@pytest.fixture
+def stream_container_logs() -> Generator[LogStreamFactory, None, None]:
+    """
+    Factory fixture for streaming logs of containers in the background. Invoke as follows::
+
+        def test_container(container_factory, stream_container_logs):
+            container: Container = container_factory(...)
+
+            with container.start() as running_container:
+                stream_container_logs(container)
+
+    This will start a background thread that streams the container logs to a python logger
+    ``containers.<container-name>``. You can find it in the logs as::
+
+        2023-09-03T18:49:06.236 DEBUG --- [log-stream-1] container.localstack-5a4c3678 : foobar
+        2023-09-03T18:49:06.236 DEBUG --- [log-stream-1] container.localstack-5a4c3678 : hello world
+
+    The function ``stream_container_logs`` also accepts a ``callback`` argument that can be used to
+    overwrite the default logging mechanism. For example, to print every log line directly to stdout, call::
+
+        stream_container_logs(container, callback=print)
+
+    :return: a factory to start log streams
+    """
+    factory = LogStreamFactory()
+    yield factory
+    factory.close()

@@ -232,6 +232,10 @@ class TestHostAndPort:
         h = config.HostAndPort.parse("1.2.3.4", default_host="", default_port=9876)
         assert h == HostAndPort(host="1.2.3.4", port=9876)
 
+    def test_parsing_with_empty_host(self):
+        h = config.HostAndPort.parse(":4566", default_host="", default_port=9876)
+        assert h == HostAndPort(host="", port=4566)
+
     def test_invalid_port(self):
         with pytest.raises(ValueError) as exc_info:
             config.HostAndPort.parse("0.0.0.0:not-a-port", default_host="127.0.0.1", default_port=0)

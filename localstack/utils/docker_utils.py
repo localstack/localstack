@@ -169,17 +169,8 @@ class _DockerPortRange(PortRange):
     PortRange which checks whether the port can be bound on the host instead of inside the container.
     """
 
-    def _try_reserve_port(self, port: IntOrPort, duration: int) -> int:
-        """Checks if the given port is currently not reserved."""
-        port = Port.wrap(port)
-        if not self.is_port_reserved(port) and container_ports_can_be_bound(port):
-            # reserve the port for a short period of time
-            self._ports_cache[port] = "__reserved__"
-            if duration:
-                self._ports_cache.set_expiry(port, duration)
-            return port.port
-        else:
-            raise PortNotAvailableException(f"The given port ({port}) is already reserved.")
+    def _port_can_be_bound(self, port: IntOrPort) -> bool:
+        return container_ports_can_be_bound(port)
 
 
 reserved_docker_ports = _DockerPortRange(PORT_START, PORT_END)
@@ -202,9 +193,22 @@ def is_container_port_reserved(port: IntOrPort) -> bool:
 
 
 def reserve_available_container_port(
-    duration: int = None, port_start: int = None, port_end: int = None, protocol: str = None
+    duration: int = None,
+    port_start: int = None,
+    port_end: int = None,
+    protocol: str = None,
 ) -> int:
-    """Determine and reserve a port that can then be bound by a Docker container"""
+    """
+    Determine a free port within the given port range that can be bound by a Docker container, and reserve
+    the port for the given number of seconds
+
+    :param duration: the number of seconds to reserve the port (default: ~6 seconds)
+    :param port_start: the start of the port range to check (default: 1024)
+    :param port_end: the end of the port range to check (default: 65536)
+    :param protocol: the network protocol (default: tcp)
+    :return: a random port
+    :raises PortNotAvailableException: if no port is available within the given range
+    """
 
     protocol = protocol or "tcp"
 
