@@ -10,6 +10,7 @@ from io import BytesIO
 from typing import Dict, TypeVar
 
 import pytest
+from botocore.config import Config
 from botocore.response import StreamingBody
 
 from localstack import config
@@ -1334,7 +1335,7 @@ class TestLambdaErrors:
         reason="Can only induce Lambda-internal Docker error in LocalStack"
     )
     def test_lambda_runtime_startup_timeout(
-        self, aws_client, create_lambda_function, snapshot, monkeypatch
+        self, aws_client_factory, create_lambda_function, snapshot, monkeypatch
     ):
         """Test Lambda that times out during runtime startup"""
         monkeypatch.setattr(
@@ -1350,8 +1351,12 @@ class TestLambdaErrors:
             runtime=Runtime.python3_10,
         )
 
-        with pytest.raises(aws_client.lambda_.exceptions.ServiceException) as e:
-            aws_client.lambda_.invoke(
+        client_config = Config(
+            retries={"total_max_attempts": 1},
+        )
+        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
+        with pytest.raises(no_retry_lambda_client.exceptions.ServiceException) as e:
+            no_retry_lambda_client.invoke(
                 FunctionName=function_name,
             )
         assert e.match(
@@ -1361,7 +1366,9 @@ class TestLambdaErrors:
 
 
 class TestLambdaCleanup:
-    @pytest.skip(reason="Not yet handled properly. Currently raises an InvalidStatusException.")
+    @pytest.mark.skip(
+        reason="Not yet handled properly. Currently raises an InvalidStatusException."
+    )
     @markers.aws.validated
     def test_delete_lambda_during_sync_invoke(self, aws_client, create_lambda_function, snapshot):
         """Test deleting a Lambda during a synchronous invocation.
