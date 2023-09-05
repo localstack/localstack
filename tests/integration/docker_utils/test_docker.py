@@ -37,7 +37,12 @@ from localstack.utils.docker_utils import (
     reserve_available_container_port,
     reserve_container_port,
 )
-from localstack.utils.net import Port, PortNotAvailableException, get_free_tcp_port
+from localstack.utils.net import (
+    Port,
+    PortNotAvailableException,
+    get_free_tcp_port,
+    get_free_udp_port,
+)
 from localstack.utils.strings import to_bytes
 from localstack.utils.threads import FuncThread
 from tests.integration.docker_utils.conftest import is_podman_test, skip_for_podman
@@ -1737,6 +1742,61 @@ class TestDockerPorts:
         if delta <= 1:
             time.sleep(1.01 - delta)
         assert is_port_available_for_containers(port)
+
+    @pytest.mark.skip(reason="TODO")
+    def test_multiple_port_mappings(
+        self, docker_client: ContainerClient, protocol, create_container
+    ):
+        localhost_ports = PortMappings("127.0.0.1")
+        all_interfaces_ports = PortMappings("0.0.0.0")
+
+        localhost_container_port = 1000
+        all_interfaces_container_port = 2000
+        if protocol == "tcp":
+            localhost_port = get_free_tcp_port()
+            all_interface_port = get_free_tcp_port()
+            localhost_ports.add(localhost_port, localhost_container_port, protocol=protocol)
+            all_interfaces_ports.add(
+                all_interface_port, all_interfaces_container_port, protocol=protocol
+            )
+        elif protocol == "udp":
+            localhost_port = get_free_udp_port()
+            all_interface_port = get_free_udp_port()
+            localhost_ports.add(localhost_port, localhost_container_port, protocol=protocol)
+            all_interfaces_ports.add(
+                all_interface_port, all_interfaces_container_port, protocol=protocol
+            )
+        else:
+            pytest.skip("skipping unspecified protocol")
+
+        container_id, _ = create_container(
+            "alpine",
+            command=["sleep", "5"],
+            entrypoint="",
+            ports=[localhost_ports, all_interfaces_ports],
+            remove=True,
+        )
+        inspect = docker_client.inspect_container(container_id)
+        port_mapping = inspect["HostConfig"]["PortBindings"]
+
+        assert set(port_mapping.keys()) == set(
+            [
+                f"{localhost_container_port}/{protocol}",
+                f"{all_interfaces_container_port}/{protocol}",
+            ]
+        )
+        assert port_mapping[f"{localhost_container_port}/{protocol}"] == [
+            {
+                "HostIp": "127.0.0.1",
+                "HostPort": str(localhost_port),
+            }
+        ]
+        assert port_mapping[f"{all_interfaces_container_port}/{protocol}"] == [
+            {
+                "HostIp": "0.0.0.0",
+                "HostPort": str(all_interface_port),
+            }
+        ]
 
 
 class TestDockerLabels:
