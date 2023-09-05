@@ -458,6 +458,17 @@ class ContainerConfigurators:
         return _cfg
 
     @staticmethod
+    def publish_dns_ports(cfg: ContainerConfiguration):
+        dns_ports = [
+            Port(config.DNS_PORT, protocol="udp"),
+            Port(config.DNS_PORT, protocol="tcp"),
+        ]
+        if container_ports_can_be_bound(dns_ports, address=config.DNS_ADDRESS):
+            # expose the DNS server to the host
+            for port in dns_ports:
+                cfg.ports.add(port.port, protocol=port.protocol)
+
+    @staticmethod
     def container_name(name: str):
         def _cfg(cfg: ContainerConfiguration):
             cfg.name = name
@@ -561,6 +572,7 @@ class ContainerConfigurators:
         :param params: a dict of parsed parameters
         :return: a configurator
         """
+
         # TODO: consolidate with container_client.Util.parse_additional_flags
         def _cfg(cfg: ContainerConfiguration):
             if params.get("network"):
@@ -942,22 +954,13 @@ def configure_container(container: Container):
     if config.DEVELOP:
         container.config.ports.add(config.DEVELOP_PORT)
 
-    # dns server
-    dns_ports = [
-        Port(config.DNS_PORT, protocol="udp"),
-        Port(config.DNS_PORT, protocol="tcp"),
-    ]
-    if container_ports_can_be_bound(dns_ports, address=config.DNS_ADDRESS):
-        # expose the DNS server to the host
-        for port in dns_ports:
-            container.config.ports.add(port.port, protocol=port.protocol)
-
     container.configure(
         [
             # external service port range
             ContainerConfigurators.service_port_range,
             ContainerConfigurators.mount_localstack_volume(config.VOLUME_DIR),
             ContainerConfigurators.mount_docker_socket,
+            ContainerConfigurators.publish_dns_ports,
             # overwrites any env vars set in the config that were previously set by configurators (e.g.,
             # `GATEWAY_LISTEN`)
             ContainerConfigurators.config_env_vars,
