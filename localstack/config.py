@@ -1052,7 +1052,7 @@ CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED
 CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
 
 # bind address of local DNS server
-DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or GATEWAY_LISTEN[0].host
+DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
 # port of the local DNS server
 DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
 
