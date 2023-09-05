@@ -2976,5 +2976,185 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_update_gateway_response": {
+    "recorded-date": "05-09-2023, 01:58:33",
+    "recorded-content": {
+      "update-gateway-response-not-set": {
+        "defaultResponse": false,
+        "responseParameters": {},
+        "responseTemplates": {
+          "application/json": "{\"message\":$context.error.messageString}"
+        },
+        "responseType": "DEFAULT_4XX",
+        "statusCode": "444",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "default-get-gateway-response": {
+        "defaultResponse": false,
+        "responseParameters": {},
+        "responseTemplates": {
+          "application/json": "{\"message\":$context.error.messageString}"
+        },
+        "responseType": "DEFAULT_4XX",
+        "statusCode": "444",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-gateway-response": {
+        "defaultResponse": false,
+        "responseParameters": {
+          "gatewayresponse.header.Access-Control-Allow-Origin": "'a.b.c'",
+          "gatewayresponse.header.x-request-header": "method.request.header.Accept",
+          "gatewayresponse.header.x-request-path": "method.request.path.petId",
+          "gatewayresponse.header.x-request-query": "method.request.querystring.q"
+        },
+        "responseTemplates": {
+          "application/json": {
+            "application/json": "{\"message\":$context.error.messageString}"
+          }
+        },
+        "responseType": "DEFAULT_4XX",
+        "statusCode": "404",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-gateway-response": {
+        "defaultResponse": false,
+        "responseParameters": {
+          "gatewayresponse.header.Access-Control-Allow-Origin": "'example.com'",
+          "gatewayresponse.header.x-request-header": "method.request.header.Accept",
+          "gatewayresponse.header.x-request-path": "method.request.path.petId",
+          "gatewayresponse.header.x-request-query": "method.request.querystring.q"
+        },
+        "responseTemplates": {
+          "application/json": {
+            "application/json": "{\"message\":$context.error.messageString}"
+          },
+          "application/xml": "<gatewayResponse><message>$context.error.messageString</message><type>$context.error.responseType</type></gatewayResponse>"
+        },
+        "responseType": "DEFAULT_4XX",
+        "statusCode": "444",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-gateway-response": {
+        "defaultResponse": false,
+        "responseParameters": {
+          "gatewayresponse.header.Access-Control-Allow-Origin": "'example.com'",
+          "gatewayresponse.header.x-request-header": "method.request.header.Accept",
+          "gatewayresponse.header.x-request-path": "method.request.path.petId",
+          "gatewayresponse.header.x-request-query": "method.request.querystring.q"
+        },
+        "responseTemplates": {
+          "application/json": {
+            "application/json": "{\"message\":$context.error.messageString}"
+          },
+          "application/xml": "<gatewayResponse><message>$context.error.messageString</message><type>$context.error.responseType</type></gatewayResponse>"
+        },
+        "responseType": "DEFAULT_4XX",
+        "statusCode": "444",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-gateway-add-status-code": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /statusCode"
+        },
+        "message": "Invalid patch path /statusCode",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-gateway-remove-status-code": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /statusCode"
+        },
+        "message": "Invalid patch path /statusCode",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-gateway-replace-invalid-parameter": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid parameter name specified"
+        },
+        "message": "Invalid parameter name specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-gateway-no-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path null"
+        },
+        "message": "Invalid patch path null",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-gateway-wrong-op": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong-op' at 'updateGatewayResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-gateway-wrong-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /wrongPath"
+        },
+        "message": "Invalid patch path /wrongPath",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-gateway-replace-invalid-parameter-0-none": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid null or empty value in responseTemplates"
+        },
+        "message": "Invalid null or empty value in responseTemplates",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-gateway-replace-invalid-parameter-1-none": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid null or empty value in responseParameters"
+        },
+        "message": "Invalid null or empty value in responseParameters",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
