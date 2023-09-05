@@ -39,12 +39,7 @@ from psutil._common import snicaddr
 
 # Note: avoid adding additional imports here, to avoid import issues when running the CLI
 from localstack import config
-from localstack.constants import (
-    LOCALHOST_HOSTNAME,
-    LOCALHOST_IP,
-    MAC_NETWORK_INTERFACE,
-    S3_ASSETS_BUCKET,
-)
+from localstack.constants import LOCALHOST_HOSTNAME, LOCALHOST_IP, S3_ASSETS_BUCKET
 from localstack.dns.models import (
     AliasTarget,
     DnsServerProtocol,
@@ -57,7 +52,7 @@ from localstack.dns.models import (
 from localstack.services.edge import run_module_as_sudo
 from localstack.utils import iputils
 from localstack.utils.files import load_file
-from localstack.utils.net import Port, create_network_interface_alias, port_can_be_bound
+from localstack.utils.net import Port, port_can_be_bound
 from localstack.utils.platform import in_docker
 from localstack.utils.run import is_root, run
 from localstack.utils.serving import Server
@@ -783,36 +778,9 @@ def setup_network_configuration():
     if not config.use_custom_dns():
         return
 
-    # set up interfaces
-    create_network_interfaces()
-
     # add entry to /etc/resolv.conf
-    if config.DNS_ADDRESS != "0.0.0.0" or in_docker():
-        add_resolv_entry()
-
-
-def create_network_interfaces():
     if in_docker():
-        config.DNS_ADDRESS = "0.0.0.0"
-        return
-
-    try:
-        run("ifconfig | grep {addr}".format(addr=config.DNS_ADDRESS), print_error=False)
-        # already exists -> nothing to do
-        return
-    except Exception:
-        pass
-
-    from localstack.services.edge import ensure_can_use_sudo
-
-    ensure_can_use_sudo()
-
-    # create network interface alias
-    try:
-        create_network_interface_alias(config.DNS_ADDRESS, interface=MAC_NETWORK_INTERFACE)
-    except Exception:
-        # fall back to localhost as bind address
-        config.DNS_ADDRESS = "127.0.0.1"
+        add_resolv_entry()
 
 
 def start_server(upstream_dns: str, port: int = config.DNS_PORT):
@@ -854,6 +822,9 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
         LOG.debug("Not starting DNS. DNS_ADDRESS=%s", config.DNS_ADDRESS)
         return
 
+    if in_docker():
+        config.DNS_ADDRESS = "0.0.0.0"
+
     upstream_dns = get_fallback_dns_server()
     if not upstream_dns:
         LOG.warning("Error starting the DNS server: No upstream dns server found.")
@@ -869,6 +840,7 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
         LOG.debug("Already in standalone mode and port binding still fails.")
         return
 
+    # For host mode
     env_vars = {}
     for env_var in config.CONFIG_ENV_VARS:
         if env_var.startswith("DNS_"):
@@ -887,6 +859,14 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
         env_vars=env_vars,
         arguments=["-p", str(port)],
     )
+
+
+def get_dns_server() -> DnsServerProtocol:
+    return DNS_SERVER
+
+
+def is_server_running() -> bool:
+    return DNS_SERVER is not None
 
 
 if __name__ == "__main__":

@@ -16,12 +16,13 @@ def start_dns_server():
         LOG.warning("Unable to start DNS: %s", e)
 
 
-@hooks.on_infra_start(priority=10)
+@hooks.on_infra_start()
 def setup_dns_configuration_on_host():
     try:
         from localstack.dns import server
 
-        # Prepare network interfaces for DNS server for the infra.
-        server.setup_network_configuration()
+        if server.is_server_running():
+            # Prepare network interfaces for DNS server for the infra.
+            server.setup_network_configuration()
     except Exception as e:
         LOG.warning("error setting up dns server: %s", e)
