@@ -44,7 +44,11 @@ from localstack.services.lambda_.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON39,
 )
 from localstack.services.s3 import constants as s3_constants
-from localstack.services.s3.utils import parse_expiration_header, rfc_1123_datetime
+from localstack.services.s3.utils import (
+    etag_to_base_64_content_md5,
+    parse_expiration_header,
+    rfc_1123_datetime,
+)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
@@ -3225,20 +3229,45 @@ class TestS3:
         snapshot.match("get-object-if-match", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Error format is wrong and missing keys")
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Error format is wrong and missing keys"
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
     def test_s3_invalid_content_md5(self, s3_bucket, snapshot, aws_client):
         # put object with invalid content MD5
         # TODO: implement ContentMD5 in ASF
+        content = "something"
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test-key",
+            Body=content,
+        )
+        md = hashlib.md5(content.encode("utf-8")).digest()
+        content_md5 = base64.b64encode(md).decode("utf-8")
+        base_64_content_md5 = etag_to_base_64_content_md5(response["ETag"])
+        assert content_md5 == base_64_content_md5
+
         hashes = ["__invalid__", "000", "not base64 encoded checksum", "MTIz"]
         for index, md5hash in enumerate(hashes):
             with pytest.raises(ClientError) as e:
                 aws_client.s3.put_object(
                     Bucket=s3_bucket,
                     Key="test-key",
-                    Body="something",
+                    Body=content,
                     ContentMD5=md5hash,
                 )
             snapshot.match(f"md5-error-{index}", e.value.response)
+
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test-key",
+            Body=content,
+            ContentMD5=base_64_content_md5,
+        )
+        snapshot.match("success-put-object-md5", response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

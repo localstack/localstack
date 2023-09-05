@@ -73,6 +73,7 @@ from localstack.aws.api.s3 import (
     IntelligentTieringConfigurationList,
     IntelligentTieringId,
     InvalidArgument,
+    InvalidDigest,
     InvalidPartOrder,
     InvalidStorageClass,
     InvalidTargetBucketForLogging,
@@ -156,6 +157,7 @@ from localstack.services.s3.presigned_url import validate_post_policy
 from localstack.services.s3.utils import (
     capitalize_header_name_from_snake_case,
     create_redirect_for_post_request,
+    etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_failed_precondition_copy_source,
@@ -184,7 +186,7 @@ from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import md5, short_uid
 from localstack.utils.time import parse_timestamp
 from localstack.utils.urls import localstack_host
 
@@ -516,6 +518,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html
         if checksum_algorithm := request.get("ChecksumAlgorithm"):
             verify_checksum(checksum_algorithm, context.request.data, request)
+
+        # TODO: handle ContentMD5 and ChecksumAlgorithm in a handler for all requests except requests with a streaming
+        #  body. We can use the specs to verify which operations needs to have the checksum validated
+        if content_md5 := request.get("ContentMD5"):
+            calculated_md5 = etag_to_base_64_content_md5(md5(context.request.data))
+            if calculated_md5 != content_md5:
+                raise InvalidDigest(
+                    "The Content-MD5 you specified was invalid.",
+                    Content_MD5=content_md5,
+                )
 
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
