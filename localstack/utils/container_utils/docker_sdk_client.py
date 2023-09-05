@@ -715,7 +715,7 @@ class SdkDockerClient(ContainerClient):
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[SimpleVolumeBind]] = None,
-        ports: Optional[PortMappings] = None,
+        ports: Optional[Union[PortMappings, List[PortMappings]]] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
