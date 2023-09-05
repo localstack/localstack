@@ -333,7 +333,7 @@ class ClientFactory(ABC):
                 aws_access_key_id=aws_access_key_id,
                 aws_secret_access_key=aws_secret_access_key,
                 aws_session_token=aws_session_token,
-                config=config,
+                config=config.merge(Config(retries={"max_attempts": 0})),
             )
 
         return self._get_client_post_hook(client)
