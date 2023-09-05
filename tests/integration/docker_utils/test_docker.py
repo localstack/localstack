@@ -1743,7 +1743,6 @@ class TestDockerPorts:
             time.sleep(1.01 - delta)
         assert is_port_available_for_containers(port)
 
-    @pytest.mark.skip(reason="TODO")
     def test_multiple_port_mappings(
         self, docker_client: ContainerClient, protocol, create_container
     ):

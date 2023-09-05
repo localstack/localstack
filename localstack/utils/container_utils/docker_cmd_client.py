@@ -713,7 +713,7 @@ class CmdDockerClient(ContainerClient):
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[SimpleVolumeBind]] = None,
-        ports: Optional[PortMappings] = None,
+        ports: Optional[Union[PortMappings, List[PortMappings]]] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -752,7 +752,10 @@ class CmdDockerClient(ContainerClient):
         if detach:
             cmd.append("--detach")
         if ports:
-            cmd += ports.to_list()
+            if isinstance(ports, PortMappings):
+                ports = [ports]
+            for port_mapping in ports:
+                cmd += port_mapping.to_list()
         if exposed_ports:
             cmd += list(itertools.chain.from_iterable(["--expose", port] for port in exposed_ports))
         if env_vars:
