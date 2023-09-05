@@ -625,6 +625,7 @@ def populate_legacy_edge_configuration(
 
 
 # How to access LocalStack
+GATEWAY_LISTEN: List[HostAndPort]
 (
     # -- Cosmetic
     LOCALSTACK_HOST,

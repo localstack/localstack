@@ -471,7 +471,7 @@ class EC2VPC(GenericBaseModel):
             resource["Properties"]["VpcId"] = vpc_id
             resource["Properties"]["CidrBlock"] = result["Vpc"]["CidrBlock"]
             resource["Properties"]["CidrBlockAssociations"] = [
-                cba["CidrBlock"] for cba in result["Vpc"]["CidrBlockAssociationSet"]
+                cba["AssociationId"] for cba in result["Vpc"]["CidrBlockAssociationSet"]
             ]
             # resource["Properties"]["Ipv6CidrBlocks"] = ?
             resource["Properties"]["DefaultNetworkAcl"] = _get_default_acl_for_vpc(
