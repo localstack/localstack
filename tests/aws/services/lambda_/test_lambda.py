@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
@@ -1357,6 +1358,61 @@ class TestLambdaErrors:
             r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
             r"retries: \d\): Internal error while executing lambda"
         )
+
+
+class TestLambdaCleanup:
+    @pytest.skip(reason="Not yet handled properly. Currently raises an InvalidStatusException.")
+    @markers.aws.validated
+    def test_delete_lambda_during_sync_invoke(self, aws_client, create_lambda_function, snapshot):
+        """Test deleting a Lambda during a synchronous invocation.
+
+        Unlike AWS, we will throw an error and clean up all containers to avoid dangling containers.
+        """
+        func_name = f"func-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_SLEEP_ENVIRONMENT,
+            runtime=Runtime.python3_10,
+            Timeout=30,
+        )
+
+        # Warm up the Lambda
+        invoke_result_1 = aws_client.lambda_.invoke(
+            FunctionName=func_name,
+            Payload=json.dumps({"sleep": 0}),
+            InvocationType="RequestResponse",
+        )
+        assert invoke_result_1["StatusCode"] == 200
+        assert "FunctionError" not in invoke_result_1
+
+        # Simultaneously invoke and delete the Lambda function
+        errored = False
+
+        def _invoke_function():
+            nonlocal errored
+            try:
+                invoke_result_2 = aws_client.lambda_.invoke(
+                    FunctionName=func_name,
+                    Payload=json.dumps({"sleep": 20}),
+                    InvocationType="RequestResponse",
+                )
+                assert invoke_result_2["StatusCode"] == 200
+                assert "FunctionError" not in invoke_result_2
+            except Exception:
+                LOG.exception("Invoke failed")
+                errored = True
+
+        thread = threading.Thread(target=_invoke_function)
+        thread.start()
+
+        # Ensure that the invoke has been sent before deleting the function
+        time.sleep(5)
+        delete_result = aws_client.lambda_.delete_function(FunctionName=func_name)
+        snapshot.match("delete-result", delete_result)
+
+        thread.join()
+
+        assert not errored
 
 
 class TestLambdaMultiAccounts:

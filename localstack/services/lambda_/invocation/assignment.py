@@ -70,7 +70,7 @@ class AssignmentService(OtherServiceEndpoint):
             yield execution_environment
             execution_environment.release()
         except InvalidStatusException as invalid_e:
-            LOG.error("Should not happen: %s", invalid_e)
+            LOG.error("InvalidStatusException: %s", invalid_e)
         except Exception as e:
             LOG.error("Failed invocation %s", e)
             self.stop_environment(execution_environment)

@@ -203,7 +203,9 @@ class ExecutionEnvironment:
         self.last_returned = datetime.now()
         with self.status_lock:
             if self.status != RuntimeStatus.RUNNING:
-                raise InvalidStatusException("Runtime Handler can only be set ready while running")
+                raise InvalidStatusException(
+                    f"Execution environment can only be set to status ready while running. Current status {self.status}"
+                )
             self.status = RuntimeStatus.READY
 
             if self.initialization_type == "on-demand":
