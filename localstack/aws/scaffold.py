@@ -60,6 +60,7 @@ def html_to_rst(html: str):
     doc = doc.replace("\_", "_")  # noqa: W605
     doc = doc.replace("\|", "|")  # noqa: W605
     doc = doc.replace("\ ", " ")  # noqa: W605
+    doc = doc.replace("\\", "\\\\")  # noqa: W605
     rst = doc.strip()
     return rst
 
@@ -511,8 +512,10 @@ def generate_code(service_name: str, doc: bool = False) -> str:
 
         # try to sort imports
         code = isort.code(code, config=isort.Config(profile="black", line_length=100))
-    except Exception:
-        pass
+    except ImportError:
+        click.echo(
+            "Skip code cleaning / formatting due to missing tools (autoflake, isort, black)..."
+        )
 
     return code
 
