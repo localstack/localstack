@@ -1,9 +1,7 @@
 import logging
-import os
 import random
 import re
 import socket
-import struct
 import threading
 from contextlib import closing
 from typing import Any, List, MutableMapping, NamedTuple, Optional, Union
@@ -17,9 +15,6 @@ from localstack import config, constants
 from .collections import CustomExpiryTTLCache
 from .numbers import is_number
 from .objects import singleton_factory
-from .platform import is_mac_os
-from .run import run
-from .strings import to_bytes
 from .sync import retry
 
 LOG = logging.getLogger(__name__)
@@ -473,54 +468,6 @@ def get_addressable_container_host(default_local_hostname: str = None) -> str:
     """
     default_local_hostname = default_local_hostname or constants.LOCALHOST_HOSTNAME
     return get_docker_host_from_container() if config.is_in_docker else default_local_hostname
-
-
-def get_ip_address(ifname):
-    import fcntl  # leave here for Windows compatibility
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(
-        fcntl.ioctl(s.fileno(), 0x8915, struct.pack("256s", to_bytes(ifname[:15])))[  # SIOCGIFADDR
-            20:24
-        ]
-    )
-
-
-def create_network_interface_alias(address, interface=None):
-    """Create network interface alias"""
-    sudo_cmd = "sudo"
-    if is_mac_os():
-        # try for Mac OS
-        interface = interface or constants.MAC_NETWORK_INTERFACE
-        run([sudo_cmd, "ifconfig", interface, "alias", address])
-        return
-    if config.is_linux():
-        # try for Linux
-        interfaces = os.listdir("/sys/class/net/")
-        interfaces = [i for i in interfaces if ":" not in i]
-        for interface in interfaces:
-            try:
-                iface_addr = get_ip_address(interface)
-                LOG.debug(f"Found network interface {interface} with address {iface_addr}")
-                assert iface_addr
-                assert interface not in ["lo"] and not iface_addr.startswith("127.")
-                run(
-                    [
-                        sudo_cmd,
-                        "ifconfig",
-                        f"{interface}:0",
-                        address,
-                        "netmask",
-                        "255.255.255.0",
-                        "up",
-                    ]
-                )
-                return
-            except Exception as e:
-                LOG.warning(
-                    f"Unable to create forward proxy on interface {interface}, address {address}: {e}"
-                )
-    raise Exception("Unable to create network interface")
 
 
 def send_dns_query(
