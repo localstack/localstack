@@ -4,7 +4,7 @@ import json
 import os.path
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import pytest
 import requests
@@ -36,8 +36,8 @@ class TinybirdReportRow:
 @dataclasses.dataclass
 class MarkerReport:
     prefix_filter: str
-    entries: list[MarkerReportEntry] = dataclasses.field(default_factory=list)
-    aggregated_report: dict[str, int] = dataclasses.field(default_factory=dict)
+    entries: "list[MarkerReportEntry]" = dataclasses.field(default_factory=list)
+    aggregated_report: "dict[str, int]" = dataclasses.field(default_factory=dict)
 
     def create_aggregated_report(self):
         for entry in self.entries:
@@ -73,7 +73,7 @@ def _get_svc_from_node_id(node_id: str) -> str:
     return ""
 
 
-def _get_aws_marker_from_markers(markers: list[str]) -> str:
+def _get_aws_marker_from_markers(markers: "list[str]") -> str:
     for marker in markers:
         if marker.startswith("aws_"):
             return marker
@@ -82,7 +82,7 @@ def _get_aws_marker_from_markers(markers: list[str]) -> str:
 
 @pytest.hookimpl
 def pytest_collection_modifyitems(
-    session: pytest.Session, config: "Config", items: List[pytest.Item]
+    session: pytest.Session, config: "Config", items: "list[pytest.Item]"
 ) -> None:
     """Generate a report about the pytest markers used"""
 
