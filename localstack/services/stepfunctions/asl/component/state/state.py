@@ -116,7 +116,7 @@ class CommonStateField(EvalComponent, ABC):
         )
 
         env.context_object_manager.context_object["State"] = State(
-            EnteredTime=datetime.datetime.now().isoformat(), Name=self.name, RetryCount=0
+            EnteredTime=datetime.datetime.now().isoformat(), Name=self.name
         )
 
         # Filter the input onto the stack.
