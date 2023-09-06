@@ -27,6 +27,7 @@ class TinybirdReportRow:
     node_id: str
     project_name: str
     # code_owners: str  # comma separated
+    file_path: str  # TODO: recreate data source at some point to remove this?
     service: str
     markers: str  # comma separated list
     aws_marker: str  # TODO: this is a bit redundant but easier for now to process
@@ -129,6 +130,7 @@ def pytest_collection_modifyitems(
                     timestamp=timestamp,
                     node_id=x.node_id,
                     project_name=project_name,
+                    file_path=x.file_path,
                     service=_get_svc_from_node_id(x.node_id),
                     markers=",".join(sorted(x.markers)),
                     aws_marker=_get_aws_marker_from_markers(x.markers),
