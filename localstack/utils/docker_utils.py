@@ -160,7 +160,9 @@ def container_ports_can_be_bound(
                 "Unexpected error when attempting to determine container port status: %s", e
             )
         return False
-    if to_str(result[0]).strip() != "test123":
+    # TODO(srw): sometimes the command output from the docker container is "None", particularly when this function is
+    #  invoked multiple times consecutively. Work out why.
+    if to_str(result[0] or "").strip() != "test123":
         LOG.warning(
             "Unexpected output when attempting to determine container port status: %s", result[0]
         )
