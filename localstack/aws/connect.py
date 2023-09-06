@@ -6,6 +6,7 @@ LocalStack providers.
 """
 import json
 import logging
+import os
 import re
 import threading
 from abc import ABC, abstractmethod
@@ -15,6 +16,7 @@ from typing import Any, Callable, Generic, Optional, TypedDict, TypeVar
 from boto3.session import Session
 from botocore.client import BaseClient
 from botocore.config import Config
+from botocore.waiter import Waiter
 
 from localstack import config as localstack_config
 from localstack.constants import (
@@ -27,9 +29,35 @@ from localstack.constants import (
 from localstack.utils.aws.aws_stack import get_local_service_url, get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.aws.request_context import get_region_from_request_context
+from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
+
+DEFAULT_DELAY = 5 if os.environ.get("TEST_TARGET") == "AWS_CLOUD" else 1
+DEFAULT_MAX_ATTEMPTS = 60 if os.environ.get("TEST_TARGET") == "AWS_CLOUD" else 120
+
+
+@patch(target=Waiter.wait, pass_target=True)
+def my_patch(fn, self, **kwargs):
+    """
+    We're patching defaults in here that will override the defaults specified in the waiter spec since these are usually way too long
+
+    Alternatively we could also try to find a solution where we patch the loader used in the generated clients
+    so that we can dynamically fix the waiter config when it's loaded instead of when it's being used for wait execution
+    """
+    patched_kwargs = {
+        **kwargs,
+        "WaiterConfig": {
+            # TODO: make these configurable
+            "Delay": DEFAULT_DELAY,
+            "MaxAttempts": DEFAULT_MAX_ATTEMPTS,
+            **kwargs.get(
+                "WaiterConfig", {}
+            ),  # we still allow client users to override these defaults
+        },
+    }
+    return fn(self, **patched_kwargs)
 
 
 def attribute_name_to_service_name(attribute_name):
