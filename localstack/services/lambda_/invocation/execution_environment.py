@@ -237,12 +237,15 @@ class ExecutionEnvironment:
         self.on_timeout(self.function_version.qualified_arn, self.id)
 
     def timed_out(self) -> None:
+        # TODO: add actionable hints (e.g., increase timeout LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT or debug env startup)
+        #   and clarify what are the next steps that are going to happen.
         LOG.warning(
             "Executor %s for function %s timed out during startup",
             self.id,
             self.function_version.qualified_arn,
         )
         self.startup_timer = None
+        # TODO: Print container logs if DEBUG enabled
         self.runtime_executor.stop()
 
     def errored(self) -> None:

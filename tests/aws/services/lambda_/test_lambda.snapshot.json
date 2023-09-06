@@ -3407,5 +3407,23 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_exit_segfault": {
+    "recorded-date": "06-09-2023, 12:13:47",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorType": "Runtime.ExitError",
+          "errorMessage": "RequestId: <uuid> Error: Runtime exited with error: signal: segmentation fault"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
