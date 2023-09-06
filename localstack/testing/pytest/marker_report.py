@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class MarkerReportEntry:
     node_id: str
     file_path: str
-    markers: list[str]
+    markers: "list[str]"
 
 
 @dataclasses.dataclass
