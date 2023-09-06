@@ -810,8 +810,6 @@ def start_server(upstream_dns: str, port: int = config.DNS_PORT):
 
 
 def stop_servers():
-    # TODO: delete alias:
-    # ifconfig en0 -alias 192.168.55.55
     if DNS_SERVER:
         DNS_SERVER.shutdown()
 

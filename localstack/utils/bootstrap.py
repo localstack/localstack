@@ -465,8 +465,19 @@ class ContainerConfigurators:
         ]
         if container_ports_can_be_bound(dns_ports, address=config.DNS_ADDRESS):
             # expose the DNS server to the host
+            # TODO: update ContainerConfiguration to support multiple PortMappings objects with different bind addresses
+            docker_flags = []
             for port in dns_ports:
-                cfg.ports.add(port.port, protocol=port.protocol)
+                docker_flags.extend(
+                    [
+                        "-p",
+                        f"{config.DNS_ADDRESS}:{port.port}:{port.port}/{port.protocol}",
+                    ]
+                )
+            if cfg.additional_flags is None:
+                cfg.additional_flags = " ".join(docker_flags)
+            else:
+                cfg.additional_flags += " ".join(docker_flags)
 
     @staticmethod
     def container_name(name: str):
