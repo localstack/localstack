@@ -5,6 +5,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from typing import ContextManager
 
 from localstack.services.lambda_.invocation.execution_environment import (
+    EnvironmentStartupTimeoutException,
     ExecutionEnvironment,
     InvalidStatusException,
 )
@@ -87,9 +88,10 @@ class AssignmentService(OtherServiceEndpoint):
             execution_environment.start()
         except StatusErrorException:
             raise
+        except EnvironmentStartupTimeoutException:
+            raise
         except Exception as e:
             message = f"Could not start new environment: {e}"
-            LOG.error(message, exc_info=LOG.isEnabledFor(logging.DEBUG))
             raise AssignmentException(message) from e
         return execution_environment
 

@@ -12,7 +12,6 @@ from typing import Callable, Dict, Optional
 from localstack import config
 from localstack.aws.api.lambda_ import TracingMode
 from localstack.aws.connect import connect_to
-from localstack.services.lambda_.invocation.executor_endpoint import StatusErrorException
 from localstack.services.lambda_.invocation.lambda_models import (
     Credentials,
     FunctionVersion,
@@ -38,10 +37,16 @@ class RuntimeStatus(Enum):
     READY = auto()
     RUNNING = auto()
     STARTUP_FAILED = auto()
+    STARTUP_TIMED_OUT = auto()
     STOPPED = auto()
 
 
 class InvalidStatusException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class EnvironmentStartupTimeoutException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
 
@@ -68,6 +73,7 @@ class ExecutionEnvironment:
     ):
         self.id = generate_runtime_id()
         self.status = RuntimeStatus.INACTIVE
+        # Lock for updating the runtime status
         self.status_lock = RLock()
         self.function_version = function_version
         self.initialization_type = initialization_type
@@ -171,20 +177,26 @@ class ExecutionEnvironment:
             self.status = RuntimeStatus.STARTING
             self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
             self.startup_timer.start()
-            try:
-                self.runtime_executor.start(self.get_environment_variables())
-            # TODO: Distinguish between timeout and cancellation due to deletion, update,
-            except Exception as e:
+
+        try:
+            self.runtime_executor.start(self.get_environment_variables())
+        # TODO: Distinguish between expected errors (e.g., timeout, cancellation due to deletion update) and
+        #  other unexpected exceptions. Improve control flow after implementing error reporting in Go init.
+        except Exception as e:
+            if self.status == RuntimeStatus.STARTUP_TIMED_OUT:
+                raise EnvironmentStartupTimeoutException(
+                    "Execution environment timed out during startup."
+                ) from e
+            else:
                 LOG.warning(
-                    "Failed to start runtime environment for ID=%s with: %s",
+                    "Failed to start execution environment %s: %s",
                     self.id,
                     e,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG)
-                    and not isinstance(e, StatusErrorException),
                 )
                 self.errored()
-                raise
+            raise
 
+        with self.status_lock:
             self.status = RuntimeStatus.READY
             if self.startup_timer:
                 self.startup_timer.cancel()
@@ -237,7 +249,9 @@ class ExecutionEnvironment:
         self.on_timeout(self.function_version.qualified_arn, self.id)
 
     def timed_out(self) -> None:
-        # TODO: De-emphasize the error part after fixing tests for test_lambda_runtime_exit
+        """Handle status updates if the startup of an execution environment times out.
+        Invoked asynchronously by the startup timer in a separate thread."""
+        # TODO: De-emphasize the error part after fixing control flow and tests for test_lambda_runtime_exit
         LOG.warning(
             "Executor %s for function %s timed out during startup."
             " Check for errors during the startup of your Lambda function and"
@@ -247,11 +261,24 @@ class ExecutionEnvironment:
         )
         if LOG.isEnabledFor(logging.DEBUG):
             logs = self.runtime_executor.get_logs()
-            LOG.debug(f"Logs from the execution environment {self.id}:\n{logs}")
+            LOG.debug(
+                f"Logs from the execution environment {self.id} after startup timeout:\n{logs}"
+            )
         self.startup_timer = None
-        self.runtime_executor.stop()
+        with self.status_lock:
+            if self.status != RuntimeStatus.STARTING:
+                raise InvalidStatusException(
+                    f"Execution environment can only time out while starting. Current status {self.status}"
+                )
+            self.status = RuntimeStatus.STARTUP_TIMED_OUT
+        try:
+            self.runtime_executor.stop()
+        except Exception as e:
+            LOG.debug("Unable to shutdown execution environment %s after timeout: %s", self.id, e)
 
     def errored(self) -> None:
+        """Handle status updates if the startup of an execution environment fails.
+        Invoked synchronously when an unexpected error occurs during startup."""
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException(
@@ -260,10 +287,14 @@ class ExecutionEnvironment:
             self.status = RuntimeStatus.STARTUP_FAILED
         if self.startup_timer:
             self.startup_timer.cancel()
+            self.startup_timer = None
+        if LOG.isEnabledFor(logging.DEBUG):
+            logs = self.runtime_executor.get_logs()
+            LOG.debug(f"Logs from the execution environment {self.id} after startup error:\n{logs}")
         try:
             self.runtime_executor.stop()
-        except Exception:
-            LOG.debug("Unable to shutdown execution environment '%s'", self.id)
+        except Exception as e:
+            LOG.debug("Unable to shutdown execution environment %s after error: %s", self.id, e)
 
     def invoke(self, invocation: Invocation) -> InvocationResult:
         assert self.status == RuntimeStatus.RUNNING

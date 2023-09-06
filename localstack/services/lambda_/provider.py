@@ -146,6 +146,9 @@ from localstack.services.lambda_.event_source_listeners.event_source_listener im
     EventSourceListener,
 )
 from localstack.services.lambda_.invocation import AccessDeniedException
+from localstack.services.lambda_.invocation.execution_environment import (
+    EnvironmentStartupTimeoutException,
+)
 from localstack.services.lambda_.invocation.lambda_models import (
     IMAGE_MAPPING,
     SNAP_START_SUPPORTED_RUNTIMES,
@@ -1262,6 +1265,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         except ServiceException:
             raise
+        except EnvironmentStartupTimeoutException as e:
+            raise LambdaServiceException("Internal error while executing lambda") from e
         except Exception as e:
             LOG.error("Error while invoking lambda", exc_info=e)
             raise LambdaServiceException("Internal error while executing lambda") from e

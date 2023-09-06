@@ -160,6 +160,7 @@ class ExecutorEndpoint:
                 f"Error while sending invocation {payload} to {invocation_url}. Error Code: {response.status_code}"
             )
         # Do not wait longer for an invoke than the maximum lambda timeout plus a buffer
+        # TODO: Can we really make this assumption for debugging?
         lambda_max_timeout_seconds = 900
         invoke_timeout_buffer_seconds = 5
         return self.invocation_future.result(
