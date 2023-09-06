@@ -188,7 +188,7 @@ class TestCliContainerLifecycle:
 
 @pytest.mark.skipif(condition=in_docker(), reason="cannot run CLI tests in docker")
 class TestDNSServer:
-    def test_dns_server_custom_port(self, runner, container_client, monkeypatch):
+    def test_dns_port_published(self, runner, container_client, monkeypatch):
         port = get_free_udp_port()
         monkeypatch.setenv("DEBUG", "1")
         monkeypatch.setenv("DNS_PORT", str(port))
@@ -200,9 +200,20 @@ class TestDNSServer:
         inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
         assert f"{port}/udp" in inspect["HostConfig"]["PortBindings"]
 
+    @pytest.mark.skip(reason="For this change, the tests run on the previous image")
+    def test_dns_server_custom_port(self, runner, container_client, monkeypatch):
+        port = get_free_udp_port()
+        monkeypatch.setenv("DEBUG", "1")
+        monkeypatch.setenv("DNS_PORT", str(port))
+        monkeypatch.setattr(config, "DNS_PORT", port)
+
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "60"])
+
         reply = send_dns_query(name=LOCALHOST_HOSTNAME, port=port)
         assert str(reply.a.rdata) == LOCALHOST_IP
 
+    @pytest.mark.skip(reason="For this change, the tests run on the previous image")
     def test_dns_server_starts_if_host_port_bound(
         self, runner, container_client, monkeypatch, dns_query_from_container
     ):
