@@ -42,6 +42,9 @@ SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
 S3_ASSETS_BUCKET = "localstack-assets"
 S3_ASSETS_BUCKET_URL = f"https://{S3_ASSETS_BUCKET}.s3.amazonaws.com"
 
+# default network interface name in Mac OS
+MAC_NETWORK_INTERFACE = "en0"
+
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
