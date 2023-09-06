@@ -81,6 +81,11 @@ class RuntimeExecutor(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_logs(self) -> str:
+        """Get all logs of a given execution environment"""
+        pass
+
     @classmethod
     @abstractmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:

@@ -381,6 +381,9 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         )
         return self.executor_endpoint.invoke(payload)
 
+    def get_logs(self) -> str:
+        return CONTAINER_CLIENT.get_container_logs(container_name_or_id=self.container_name)
+
     @classmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:
         time_before = time.perf_counter()

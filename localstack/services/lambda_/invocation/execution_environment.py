@@ -237,15 +237,18 @@ class ExecutionEnvironment:
         self.on_timeout(self.function_version.qualified_arn, self.id)
 
     def timed_out(self) -> None:
-        # TODO: add actionable hints (e.g., increase timeout LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT or debug env startup)
-        #   and clarify what are the next steps that are going to happen.
+        # TODO: De-emphasize the error part after fixing tests for test_lambda_runtime_exit
         LOG.warning(
-            "Executor %s for function %s timed out during startup",
+            "Executor %s for function %s timed out during startup."
+            " Check for errors during the startup of your Lambda function and"
+            " consider increasing the startup timeout via LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT.",
             self.id,
             self.function_version.qualified_arn,
         )
+        if LOG.isEnabledFor(logging.DEBUG):
+            logs = self.runtime_executor.get_logs()
+            LOG.debug(f"Logs from the execution environment {self.id}:\n{logs}")
         self.startup_timer = None
-        # TODO: Print container logs if DEBUG enabled
         self.runtime_executor.stop()
 
     def errored(self) -> None:
