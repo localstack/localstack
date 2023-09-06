@@ -244,23 +244,23 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#choice_rule.
-    def visitChoice_rule(self, ctx:ASLParser.Choice_ruleContext):
+    # Visit a parse tree produced by ASLParser#choice_rule_comparison_variable.
+    def visitChoice_rule_comparison_variable(self, ctx:ASLParser.Choice_rule_comparison_variableContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#choice_rule_stmt.
-    def visitChoice_rule_stmt(self, ctx:ASLParser.Choice_rule_stmtContext):
+    # Visit a parse tree produced by ASLParser#choice_rule_comparison_composite.
+    def visitChoice_rule_comparison_composite(self, ctx:ASLParser.Choice_rule_comparison_compositeContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#comparison.
-    def visitComparison(self, ctx:ASLParser.ComparisonContext):
+    # Visit a parse tree produced by ASLParser#comparison_variable_stmt.
+    def visitComparison_variable_stmt(self, ctx:ASLParser.Comparison_variable_stmtContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#comparison_stmt.
-    def visitComparison_stmt(self, ctx:ASLParser.Comparison_stmtContext):
+    # Visit a parse tree produced by ASLParser#comparison_composite_stmt.
+    def visitComparison_composite_stmt(self, ctx:ASLParser.Comparison_composite_stmtContext):
         return self.visitChildren(ctx)
 
 
