@@ -31,7 +31,7 @@ jobs:
           pip install pytest
       - name: Run CLI tests
         env:
-          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s --marker-report --marker-report-tinybird-upload"
+          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
           MARKER_REPORT_PROJECT_NAME: localstack
           MARKER_REPORT_TINYBIRD_TOKEN: ${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
