@@ -431,39 +431,39 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#choice_rule.
-    def enterChoice_rule(self, ctx:ASLParser.Choice_ruleContext):
+    # Enter a parse tree produced by ASLParser#choice_rule_comparison_variable.
+    def enterChoice_rule_comparison_variable(self, ctx:ASLParser.Choice_rule_comparison_variableContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#choice_rule.
-    def exitChoice_rule(self, ctx:ASLParser.Choice_ruleContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#choice_rule_stmt.
-    def enterChoice_rule_stmt(self, ctx:ASLParser.Choice_rule_stmtContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#choice_rule_stmt.
-    def exitChoice_rule_stmt(self, ctx:ASLParser.Choice_rule_stmtContext):
+    # Exit a parse tree produced by ASLParser#choice_rule_comparison_variable.
+    def exitChoice_rule_comparison_variable(self, ctx:ASLParser.Choice_rule_comparison_variableContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#comparison.
-    def enterComparison(self, ctx:ASLParser.ComparisonContext):
+    # Enter a parse tree produced by ASLParser#choice_rule_comparison_composite.
+    def enterChoice_rule_comparison_composite(self, ctx:ASLParser.Choice_rule_comparison_compositeContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#comparison.
-    def exitComparison(self, ctx:ASLParser.ComparisonContext):
+    # Exit a parse tree produced by ASLParser#choice_rule_comparison_composite.
+    def exitChoice_rule_comparison_composite(self, ctx:ASLParser.Choice_rule_comparison_compositeContext):
         pass
 
 
-    # Enter a parse tree produced by ASLParser#comparison_stmt.
-    def enterComparison_stmt(self, ctx:ASLParser.Comparison_stmtContext):
+    # Enter a parse tree produced by ASLParser#comparison_variable_stmt.
+    def enterComparison_variable_stmt(self, ctx:ASLParser.Comparison_variable_stmtContext):
         pass
 
-    # Exit a parse tree produced by ASLParser#comparison_stmt.
-    def exitComparison_stmt(self, ctx:ASLParser.Comparison_stmtContext):
+    # Exit a parse tree produced by ASLParser#comparison_variable_stmt.
+    def exitComparison_variable_stmt(self, ctx:ASLParser.Comparison_variable_stmtContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#comparison_composite_stmt.
+    def enterComparison_composite_stmt(self, ctx:ASLParser.Comparison_composite_stmtContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#comparison_composite_stmt.
+    def exitComparison_composite_stmt(self, ctx:ASLParser.Comparison_composite_stmtContext):
         pass
 
 

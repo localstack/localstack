@@ -8,7 +8,9 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.operator.operator import (
     Operator,
 )
-from localstack.services.stepfunctions.asl.component.state.state_wait.variable import NoSuchVariable
+from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.variable import (
+    NoSuchVariable,
+)
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 LOG = logging.getLogger(__name__)

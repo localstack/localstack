@@ -155,7 +155,7 @@ class StepFunctionsProvider(StepfunctionsApi):
             AmazonStateLanguageParser.parse(definition)
         except Exception as ex:
             # TODO: add message from static analyser, this just helps the user debug issues in the derivation.
-            raise InvalidDefinition(str(ex))
+            raise InvalidDefinition(f"Error '{str(ex)}' in definition '{definition}'.")
 
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput
