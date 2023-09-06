@@ -112,7 +112,7 @@ class InfraProvisioner:
                     )
 
     def get_stack_outputs(self, stack_name: str):
-        return self.cloudformation_stacks.get(stack_name, {}).get("Outputs")
+        return self.cloudformation_stacks.get(stack_name, {}).get("Outputs", {})
 
     def teardown(self):
         for fn in self.custom_cleanup_steps:
