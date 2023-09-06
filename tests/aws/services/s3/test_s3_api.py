@@ -438,8 +438,62 @@ class TestS3ObjectCRUD:
         list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
         snapshot.match("list-object-versions", list_object_versions)
 
-        # TODO: test with Next? xxx
-        # TODO: test with ListObject/ListObjectV2
+    @markers.aws.validated
+    def test_get_object_range(self, aws_client, s3_bucket, snapshot):
+        content = "0123456789"
+        key = "test-key-range"
+
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=content)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-8")
+        snapshot.match("get-0-8", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-1")
+        snapshot.match("get-1-1", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-0")
+        snapshot.match("get-1-0", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-")
+        snapshot.match("get-1-", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-1-")
+        snapshot.match("get--1-", resp)
+
+        # test suffix byte range, returning the 2 last bytes
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-2")
+        snapshot.match("get--2", resp)
+
+        # test suffix byte range, returning the 9 last bytes
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-9")
+        snapshot.match("get--9", resp)
+
+        # test suffix byte range, returning the 15 last bytes, which will return max 0
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-15")
+        snapshot.match("get--15", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-100")
+        snapshot.match("get-0-100", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-0")
+        snapshot.match("get-0-0", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0--1")
+        snapshot.match("get-0--1", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-1,3-4,7-9")
+        snapshot.match("get-multiple-ranges", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-")
+        snapshot.match("get--", resp)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-0")
+        snapshot.match("get--0", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=100-200")
+        snapshot.match("get-100-200", e.value.response)
 
 
 @pytest.mark.skipif(

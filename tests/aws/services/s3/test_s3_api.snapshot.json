@@ -2677,5 +2677,224 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_range": {
+    "recorded-date": "06-09-2023, 20:34:22",
+    "recorded-content": {
+      "get-0-8": {
+        "AcceptRanges": "bytes",
+        "Body": "012345678",
+        "ContentLength": 9,
+        "ContentRange": "bytes 0-8/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-1-1": {
+        "AcceptRanges": "bytes",
+        "Body": "1",
+        "ContentLength": 1,
+        "ContentRange": "bytes 1-1/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-1-0": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-1-": {
+        "AcceptRanges": "bytes",
+        "Body": "123456789",
+        "ContentLength": 9,
+        "ContentRange": "bytes 1-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get--1-": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get--2": {
+        "AcceptRanges": "bytes",
+        "Body": "89",
+        "ContentLength": 2,
+        "ContentRange": "bytes 8-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get--9": {
+        "AcceptRanges": "bytes",
+        "Body": "123456789",
+        "ContentLength": 9,
+        "ContentRange": "bytes 1-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get--15": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentRange": "bytes 0-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-0-100": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentRange": "bytes 0-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-0-0": {
+        "AcceptRanges": "bytes",
+        "Body": "0",
+        "ContentLength": 1,
+        "ContentRange": "bytes 0-0/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-0--1": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-multiple-ranges": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get--": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get--0": {
+        "Error": {
+          "ActualObjectSize": "10",
+          "Code": "InvalidRange",
+          "Message": "The requested range is not satisfiable",
+          "RangeRequested": "bytes=-0"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 416
+        }
+      },
+      "get-100-200": {
+        "Error": {
+          "ActualObjectSize": "10",
+          "Code": "InvalidRange",
+          "Message": "The requested range is not satisfiable",
+          "RangeRequested": "bytes=100-200"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 416
+        }
+      }
+    }
   }
 }

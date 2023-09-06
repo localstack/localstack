@@ -191,7 +191,7 @@ class ObjectRange(NamedTuple):
     end: int  # the end of the end
 
 
-def parse_range_header(range_header: str, object_size: int) -> ObjectRange:
+def parse_range_header(range_header: str, object_size: int) -> ObjectRange | None:
     """
     Takes a Range header, and returns a dataclass containing the necessary information to return only a slice of an
     S3 object
@@ -201,25 +201,34 @@ def parse_range_header(range_header: str, object_size: int) -> ObjectRange:
     """
     last = object_size - 1
     _, rspec = range_header.split("=")
-    # TODO: check with AWS
     if "," in rspec:
-        raise NotImplementedError("Multiple range specifiers not supported")
+        return None
 
-    begin, end = [int(i) if i else None for i in rspec.split("-")]
+    try:
+        begin, end = [int(i) if i else None for i in rspec.split("-")]
+    except ValueError:
+        # if we can't parse the Range header, S3 just treat the request as a non-range request
+        return None
+
+    if (begin is None and end == 0) or (begin is not None and begin > last):
+        raise InvalidRange(
+            "The requested range is not satisfiable",
+            ActualObjectSize=str(object_size),
+            RangeRequested=range_header,
+        )
+
     if begin is not None:  # byte range
         end = last if end is None else min(end, last)
     elif end is not None:  # suffix byte range
         begin = object_size - min(end, object_size)
         end = last
     else:
-        # TODO, find exception here
-        raise Exception("TODO")
-    if begin < 0 or end > last or begin > min(end, last):
-        raise InvalidRange(
-            "The requested range is not satisfiable",
-            ActualObjectSize=str(object_size),
-            RangeRequested=range_header,
-        )
+        # Treat as non-range request
+        return None
+
+    if begin > min(end, last):
+        # Treat as non-range request if after the logic is applied
+        return None
 
     return ObjectRange(
         content_range=f"bytes {begin}-{end}/{object_size}",
