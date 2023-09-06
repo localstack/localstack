@@ -7,7 +7,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_sns_topic_fifo_with_deduplication(deploy_cfn_template, aws_client):
     topic_name = f"topic-{short_uid()}.fifo"
 
@@ -24,7 +24,7 @@ def test_sns_topic_fifo_with_deduplication(deploy_cfn_template, aws_client):
     assert len([t for t in topic_arns if topic_name in t]) == 1
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_sns_topic_fifo_without_suffix_fails(deploy_cfn_template, aws_client):
     stack_name = f"stack-{short_uid()}"
     topic_name = f"topic-{short_uid()}"
@@ -46,7 +46,7 @@ def test_sns_topic_fifo_without_suffix_fails(deploy_cfn_template, aws_client):
         assert stack.get("StackStatus") == "CREATE_FAILED"
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_sns_subscription(deploy_cfn_template, aws_client):
     topic_name = f"topic-{short_uid()}"
     queue_name = f"topic-{short_uid()}"
@@ -64,7 +64,7 @@ def test_sns_subscription(deploy_cfn_template, aws_client):
     assert len(subscriptions["Subscriptions"]) > 0
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
 
     stack = deploy_cfn_template(
