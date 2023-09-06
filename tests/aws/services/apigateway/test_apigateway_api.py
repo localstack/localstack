@@ -5,6 +5,7 @@ import time
 from operator import itemgetter
 
 import pytest
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.apigateway import PutMode
@@ -2089,3 +2090,261 @@ class TestApiGatewayApiDocumentationPart:
             body=spec_file,
         )
         snapshot.match("import-documentation-parts", response)
+
+
+class TestApiGatewayGatewayResponse:
+    @markers.aws.validated
+    def test_gateway_response_crud(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(
+            SortingTransformer(key="items", sorting_fn=itemgetter("responseType"))
+        )
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test GatewayResponse",
+        )
+        api_id = response["id"]
+
+        response = aws_client.apigateway.get_gateway_response(
+            restApiId=api_id, responseType="MISSING_AUTHENTICATION_TOKEN"
+        )
+        snapshot.match("get-gateway-response-default", response)
+
+        # example from https://docs.aws.amazon.com/apigateway/latest/api/API_PutGatewayResponse.html
+        response = aws_client.apigateway.put_gateway_response(
+            restApiId=api_id,
+            responseType="MISSING_AUTHENTICATION_TOKEN",
+            statusCode="404",
+            responseParameters={
+                "gatewayresponse.header.x-request-path": "method.request.path.petId",
+                "gatewayresponse.header.Access-Control-Allow-Origin": "'a.b.c'",
+                "gatewayresponse.header.x-request-query": "method.request.querystring.q",
+                "gatewayresponse.header.x-request-header": "method.request.header.Accept",
+            },
+            responseTemplates={
+                "application/json": '{\n     "message": $context.error.messageString,\n     "type":  "$context.error.responseType",\n     "stage":  "$context.stage",\n     "resourcePath":  "$context.resourcePath",\n     "stageVariables.a":  "$stageVariables.a",\n     "statusCode": "\'404\'"\n}'
+            },
+        )
+        snapshot.match("put-gateway-response", response)
+
+        response = aws_client.apigateway.get_gateway_responses(restApiId=api_id)
+        snapshot.match("get-gateway-responses", response)
+
+        response = aws_client.apigateway.get_gateway_response(
+            restApiId=api_id, responseType="MISSING_AUTHENTICATION_TOKEN"
+        )
+        snapshot.match("get-gateway-response", response)
+
+        response = aws_client.apigateway.delete_gateway_response(
+            restApiId=api_id, responseType="MISSING_AUTHENTICATION_TOKEN"
+        )
+        snapshot.match("delete-gateway-response", response)
+
+        response = aws_client.apigateway.get_gateway_response(
+            restApiId=api_id, responseType="MISSING_AUTHENTICATION_TOKEN"
+        )
+
+        snapshot.match("get-deleted-gw-response", response)
+
+    @markers.aws.validated
+    def test_gateway_response_validation(self, aws_client_factory, apigw_create_rest_api, snapshot):
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test GatewayResponse",
+        )
+        api_id = response["id"]
+        fake_id = f"apiid123{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(fake_id, "fake-api-id"))
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_gateway_responses(restApiId=fake_id)
+        snapshot.match("get-gateway-responses-no-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_gateway_response(restApiId=fake_id, responseType="DEFAULT_4XX")
+        snapshot.match("get-gateway-response-no-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_gateway_response(restApiId=fake_id, responseType="DEFAULT_4XX")
+        snapshot.match("delete-gateway-response-no-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=fake_id, responseType="DEFAULT_4XX", patchOperations=[]
+            )
+        snapshot.match("update-gateway-response-no-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_gateway_response(restApiId=api_id, responseType="DEFAULT_4XX")
+        snapshot.match("delete-gateway-response-not-set", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_gateway_response(restApiId=api_id, responseType="FAKE_RESPONSE_TYPE")
+        snapshot.match("get-gateway-response-wrong-response-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_gateway_response(
+                restApiId=api_id, responseType="FAKE_RESPONSE_TYPE"
+            )
+        snapshot.match("delete-gateway-response-wrong-response-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=api_id, responseType="FAKE_RESPONSE_TYPE", patchOperations=[]
+            )
+        snapshot.match("update-gateway-response-wrong-response-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.put_gateway_response(
+                restApiId=api_id,
+                responseType="FAKE_RESPONSE_TYPE",
+                statusCode="404",
+                responseParameters={},
+                responseTemplates={},
+            )
+        snapshot.match("put-gateway-response-wrong-response-type", e.value.response)
+
+    @markers.aws.validated
+    def test_update_gateway_response(
+        self, aws_client, aws_client_factory, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test GatewayResponse",
+        )
+        api_id = response["id"]
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+
+        response = apigw_client.update_gateway_response(
+            restApiId=api_id,
+            responseType="DEFAULT_4XX",
+            patchOperations=[{"op": "replace", "path": "/statusCode", "value": "444"}],
+        )
+        snapshot.match("update-gateway-response-not-set", response)
+
+        response = apigw_client.get_gateway_response(restApiId=api_id, responseType="DEFAULT_4XX")
+        snapshot.match("default-get-gateway-response", response)
+
+        response = apigw_client.put_gateway_response(
+            restApiId=api_id,
+            responseType="DEFAULT_4XX",
+            statusCode="404",
+            responseParameters={
+                "gatewayresponse.header.x-request-path": "method.request.path.petId",
+                "gatewayresponse.header.Access-Control-Allow-Origin": "'a.b.c'",
+                "gatewayresponse.header.x-request-query": "method.request.querystring.q",
+                "gatewayresponse.header.x-request-header": "method.request.header.Accept",
+            },
+            responseTemplates={
+                "application/json": json.dumps(
+                    {"application/json": '{"message":$context.error.messageString}'}
+                )
+            },
+        )
+        snapshot.match("put-gateway-response", response)
+
+        response = apigw_client.update_gateway_response(
+            restApiId=api_id,
+            responseType="DEFAULT_4XX",
+            patchOperations=[
+                {"op": "replace", "path": "/statusCode", "value": "444"},
+                {
+                    "op": "replace",
+                    "path": "/responseParameters/gatewayresponse.header.Access-Control-Allow-Origin",
+                    "value": "'example.com'",
+                },
+                {
+                    "op": "add",
+                    "path": "/responseTemplates/application~1xml",
+                    "value": "<gatewayResponse><message>$context.error.messageString</message><type>$context.error.responseType</type></gatewayResponse>",
+                },
+            ],
+        )
+        snapshot.match("update-gateway-response", response)
+
+        response = apigw_client.get_gateway_response(restApiId=api_id, responseType="DEFAULT_4XX")
+        snapshot.match("get-gateway-response", response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=api_id,
+                responseType="DEFAULT_4XX",
+                patchOperations=[{"op": "add", "path": "/statusCode", "value": "444"}],
+            )
+
+        snapshot.match("update-gateway-add-status-code", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=api_id,
+                responseType="DEFAULT_4XX",
+                patchOperations=[
+                    {
+                        "op": "remove",
+                        "path": "/statusCode",
+                    }
+                ],
+            )
+
+        snapshot.match("update-gateway-remove-status-code", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=api_id,
+                responseType="DEFAULT_5XX",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/gatewayresponse.header.Access-Control-Allow-Origin",
+                        "value": "'example.com'",
+                    }
+                ],
+            )
+
+        snapshot.match("update-gateway-replace-invalid-parameter", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=api_id,
+                responseType="DEFAULT_4XX",
+                patchOperations=[{"op": "add", "value": "'example.com'"}],
+            )
+
+        snapshot.match("update-gateway-no-path", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=api_id,
+                responseType="DEFAULT_4XX",
+                patchOperations=[
+                    {"op": "wrong-op", "path": "/statusCode", "value": "'example.com'"}
+                ],
+            )
+
+        snapshot.match("update-gateway-wrong-op", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_gateway_response(
+                restApiId=api_id,
+                responseType="DEFAULT_4XX",
+                patchOperations=[{"op": "add", "path": "/wrongPath", "value": "'example.com'"}],
+            )
+
+        snapshot.match("update-gateway-wrong-path", e.value.response)
+
+        for index, path in enumerate(
+            (
+                "/responseTemplates/application~1xml",
+                "/responseParameters/gatewayresponse.header.Access-Control-Allow-Origin",
+            )
+        ):
+            with pytest.raises(ClientError) as e:
+                apigw_client.update_gateway_response(
+                    restApiId=api_id,
+                    responseType="DEFAULT_4XX",
+                    patchOperations=[{"op": "replace", "path": path, "value": None}],
+                )
+
+            snapshot.match(
+                f"update-gateway-replace-invalid-parameter-{index}-none", e.value.response
+            )
