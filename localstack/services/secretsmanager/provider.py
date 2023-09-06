@@ -445,8 +445,8 @@ def backend_update_secret(
     return json.dumps(resp)
 
 
-@patch(SecretsManagerResponse.update_secret)
-def response_update_secret(_, self):
+@patch(SecretsManagerResponse.update_secret, pass_target=False)
+def response_update_secret(self):
     secret_id = self._get_param("SecretId")
     description = self._get_param("Description")
     secret_string = self._get_param("SecretString")
@@ -495,7 +495,22 @@ def backend_update_secret_version_stage(
 
 @patch(FakeSecret.reset_default_version)
 def fake_secret_reset_default_version(fn, self, secret_version, version_id):
-    fn(self, secret_version, version_id)
+    # fn(self, secret_version, version_id)
+    # FIXME: remove for the next moto bump (above 4.2.post1) and uncomment line above
+    # remove all old AWSPREVIOUS stages
+    for old_version in self.versions.values():
+        if "AWSPREVIOUS" in old_version["version_stages"]:
+            old_version["version_stages"].remove("AWSPREVIOUS")
+
+    # set old AWSCURRENT secret to AWSPREVIOUS
+    if self.default_version_id in self.versions:
+        previous_current_version_id = self.default_version_id
+        self.versions[previous_current_version_id]["version_stages"] = ["AWSPREVIOUS"]  # type: ignore
+
+    self.versions[version_id] = secret_version
+    self.default_version_id = version_id
+    # Remove until here ^
+
     # Remove versions with no version stages.
     versions_no_stages = [
         version_id for version_id, version in self.versions.items() if not version["version_stages"]

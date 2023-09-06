@@ -1973,3 +1973,27 @@ class TestSecretsManager:
         exc_response = {"Error": response.json(), "Metadata": {"StatusCode": response.status_code}}
 
         sm_snapshot.match("no-client-request-exc", exc_response)
+
+    @markers.aws.validated
+    def test_create_secret_version_from_empty_secret(self, aws_client, snapshot, cleanups):
+        snapshot.add_transformer(snapshot.transform.resource_name("secret-version"), priority=-1)
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+
+        response = aws_client.secretsmanager.create_secret(
+            Name=f"test-version-{short_uid()}", Description=""
+        )
+        snapshot.match("create-empty-secret", response)
+        secret_id = response["ARN"]
+        cleanups.append(
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_id, ForceDeleteWithoutRecovery=True
+            )
+        )
+
+        response = aws_client.secretsmanager.describe_secret(SecretId=secret_id)
+        snapshot.match("describe-secret", response)
+
+        response = aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_id, SecretString="example-string-to-protect"
+        )
+        snapshot.match("put-secret-value", response)
