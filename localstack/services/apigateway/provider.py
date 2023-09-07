@@ -869,7 +869,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = call_moto(context)
         for stage in response["item"]:
             self._patch_stage_response(stage)
-            stage.pop("description", None)
+            if not stage.get("description"):
+                stage.pop("description", None)
         return Stages(**response)
 
     @handler("UpdateStage")
