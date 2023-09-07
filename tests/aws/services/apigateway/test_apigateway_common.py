@@ -588,7 +588,7 @@ class TestDeployments:
         response = client.get_deployment(restApiId=api_id, deploymentId=deployment_id)
         snapshot.match("get-deployment", response)
         response = client.get_stages(restApiId=api_id)
-        snapshot.match(f"get-stages", response)
+        snapshot.match("get-stages", response)
 
         for i in range(3):
             # asset that deleting the deployment fails if stage exists
