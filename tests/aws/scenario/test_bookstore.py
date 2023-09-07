@@ -96,10 +96,13 @@ def setup_lambda(s3_client: "S3Client", bucket_name: str, key_name: str, code_pa
 class TestBookstoreApplication:
     @pytest.fixture(scope="class")
     def patch_opensearch_strategy(self):
+        """patching the endpoint strategy for opensearch to path, to make the endpoint resolution in the lambda easier"""
         from _pytest.monkeypatch import MonkeyPatch
 
+        from localstack import config
+
         mpatch = MonkeyPatch()
-        mpatch.setenv("OPENSEARCH_ENDPOINT_STRATEGY", "path")
+        mpatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
         yield mpatch
         mpatch.undo()
 
@@ -145,7 +148,7 @@ class TestBookstoreApplication:
         infra.add_cdk_stack(stack)
 
         # set skip_teardown=True to prevent the stack to be deleted
-        with infra.provisioner(skip_teardown=True) as prov:
+        with infra.provisioner(skip_teardown=False) as prov:
             # here we could add some initial setup, e.g. pre-filling the app with data
             yield prov
 
