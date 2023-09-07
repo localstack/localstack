@@ -1030,6 +1030,7 @@ class TestCfnLambdaDestinations:
 
 
 @markers.aws.validated
+@pytest.mark.skipif(condition=is_old_provider())
 def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_bucket):
     bucket_key = "handler.zip"
     zip_file = create_lambda_archive(
