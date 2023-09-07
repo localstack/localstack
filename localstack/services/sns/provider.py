@@ -557,10 +557,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 "Invalid parameter: Invalid parameter: Endpoint Reason: FIFO SQS Queues can not be subscribed to standard SNS topics"
             )
-        # elif ".fifo" in topic_arn and ".fifo" not in endpoint:
-        #     raise InvalidParameterException(
-        #         "Invalid parameter: Invalid parameter: Endpoint Reason: Please use FIFO SQS queue"
-        #     )
+
         if attributes:
             for attr_name, attr_value in attributes.items():
                 validate_subscription_attribute(
@@ -577,10 +574,16 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store = self.get_store(account_id=parsed_topic_arn["account"], region_name=context.region)
 
         # An endpoint may only be subscribed to a topic once. Subsequent
-        # subscribe calls do nothing (subscribe is idempotent).
+        # subscribe calls do nothing (subscribe is idempotent), except if its attributes are different.
         for existing_topic_subscription in store.topic_subscriptions.get(topic_arn, []):
             sub = store.subscriptions.get(existing_topic_subscription, {})
             if sub.get("Endpoint") == endpoint:
+                for attr in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
+                    if attributes and sub.get(attr) != attributes.get(attr):
+                        raise InvalidParameterException(
+                            "Invalid parameter: Attributes Reason: Subscription already exists with different attributes"
+                        )
+
                 return SubscribeResponse(SubscriptionArn=sub["SubscriptionArn"])
 
         principal = sns_constants.DUMMY_SUBSCRIPTION_PRINCIPAL.replace(
@@ -595,6 +598,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             PendingConfirmation="true",
             Owner=context.account_id,
             RawMessageDelivery="false",  # default value, will be overriden if set
+            FilterPolicyScope="MessageAttributes",  # default value, will be overriden if set
             SubscriptionPrincipal=principal,  # dummy value, could be fetched with a call to STS?
         )
         if attributes:

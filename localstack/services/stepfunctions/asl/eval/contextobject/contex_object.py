@@ -14,7 +14,7 @@ class Execution(TypedDict):
 class State(TypedDict):
     EnteredTime: str  # Format: ISO 8601.
     Name: str
-    RetryCount: int
+    RetryCount: Optional[int]
 
 
 class StateMachine(TypedDict):

@@ -57,7 +57,10 @@ def match_headers(snapshot, snapshot_headers):
             "StatusCode": response.status_code,
             "Headers": headers,
         }
-        if response.headers.get("Content-Type") in ("application/xml", "text/xml"):
+        if (
+            response.headers.get("Content-Type") in ("application/xml", "text/xml")
+            and response.content
+        ):
             match_object["Body"] = xmltodict.parse(response.content)
         else:
             match_object["Body"] = response.text

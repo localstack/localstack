@@ -53,6 +53,7 @@ PROVIDER_DEFAULTS = {
     "AWS::IAM::Policy": "ResourceProvider",
     "AWS::IAM::InstanceProfile": "ResourceProvider",
     "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
+    "AWS::OpenSearchService::Domain": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }

@@ -4165,6 +4165,78 @@
       }
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_idempotency": {
+    "recorded-date": "04-09-2023, 09:45:33",
+    "recorded-content": {
+      "subscribe": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-sub-attrs": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
+          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-idempotent": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-idempotent-no-attributes": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-idempotent-empty-attributes": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-diff-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Subscription already exists with different attributes",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "subscribe-missing-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Subscription already exists with different attributes",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint[True]": {
     "recorded-date": "25-08-2023, 17:28:02",
     "recorded-content": {

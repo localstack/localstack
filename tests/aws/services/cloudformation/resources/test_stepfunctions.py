@@ -2,9 +2,12 @@ import json
 import os
 import urllib.parse
 
+import pytest
+
 from localstack.constants import PATH_USER_REQUEST
 from localstack.testing.pytest import markers
 from localstack.utils.sync import wait_until
+from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 
 @markers.aws.unknown
@@ -216,7 +219,8 @@ def test_apigateway_invoke_localhost_with_path(deploy_cfn_template, aws_client):
     assert "hello_with_path from stepfunctions" in execution_result["output"]
 
 
-@markers.aws.unknown
+@pytest.mark.skip("Terminates with FAILED on cloud; convert to SFN v2 snapshot lambda test.")
+@markers.aws.needs_fixing
 def test_retry_and_catch(deploy_cfn_template, aws_client):
     """
     Scenario:
@@ -242,13 +246,7 @@ def test_retry_and_catch(deploy_cfn_template, aws_client):
     execution = aws_client.stepfunctions.start_execution(stateMachineArn=statemachine_arn)
     execution_arn = execution["executionArn"]
 
-    def _sfn_finished_running():
-        return (
-            aws_client.stepfunctions.describe_execution(executionArn=execution_arn)["status"]
-            != "RUNNING"
-        )
-
-    assert wait_until(_sfn_finished_running)
+    await_execution_terminated(aws_client.stepfunctions, execution_arn)
 
     execution_result = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
     assert execution_result["status"] == "SUCCEEDED"

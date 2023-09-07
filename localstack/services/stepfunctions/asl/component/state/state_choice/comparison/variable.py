@@ -1,8 +1,6 @@
 from typing import Final
 
-from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_stmt import (
-    ComparisonStmt,
-)
+from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 
@@ -12,7 +10,7 @@ class NoSuchVariable:
         self.path: Final[str] = path
 
 
-class Variable(ComparisonStmt):
+class Variable(EvalComponent):
     def __init__(self, value: str):
         self.value: Final[str] = value
 

@@ -137,11 +137,7 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
 )
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError
-from localstack.aws.handlers import (
-    modify_service_response,
-    preprocess_request,
-    serve_custom_service_request_handlers,
-)
+from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -156,10 +152,7 @@ from localstack.services.s3.exceptions import (
 )
 from localstack.services.s3.models import BucketCorsIndex, S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
-from localstack.services.s3.presigned_url import (
-    s3_presigned_url_response_handler,
-    validate_post_policy,
-)
+from localstack.services.s3.presigned_url import validate_post_policy
 from localstack.services.s3.utils import (
     capitalize_header_name_from_snake_case,
     create_redirect_for_post_request,
@@ -241,7 +234,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         apply_moto_patches()
         preprocess_request.append(self._cors_handler)
         register_website_hosting_routes(router=ROUTER)
-        register_custom_handlers()
+        serve_custom_service_request_handlers.append(s3_cors_request_handler)
         # registering of virtual host routes happens with the hook on_infra_ready in virtual_host.py
         # create a AWS managed KMS key at start and save it in the store for persistence?
 
@@ -1874,7 +1867,7 @@ def apply_moto_patches():
         """
         return get_safe(self.querystring, "$.x-id.0") == "DeleteObjects" or fn(self)
 
-    @patch(moto_s3_responses.S3ResponseInstance.parse_bucket_name_from_url, pass_target=False)
+    @patch(moto_s3_responses.S3Response.parse_bucket_name_from_url, pass_target=False)
     def parse_bucket_name_from_url(self, request, url):
         """
         Requests going to moto will never be subdomain based, as they passed through the VirtualHost forwarder.
@@ -1883,7 +1876,7 @@ def apply_moto_patches():
         path = urlparse(url).path
         return path.split("/")[1]
 
-    @patch(moto_s3_responses.S3ResponseInstance.subdomain_based_buckets, pass_target=False)
+    @patch(moto_s3_responses.S3Response.subdomain_based_buckets, pass_target=False)
     def subdomain_based_buckets(self, request):
         """
         Requests going to moto will never be subdomain based, as they passed through the VirtualHost forwarder
@@ -1916,9 +1909,3 @@ def apply_moto_patches():
         return False
 
     setattr(moto_s3_models.FakeKey, "is_locked", property(key_is_locked))
-
-
-def register_custom_handlers():
-    serve_custom_service_request_handlers.append(s3_cors_request_handler)
-    # serve_custom_service_request_handlers.append(s3_presigned_url_request_handler)
-    modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)

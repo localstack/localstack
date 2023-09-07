@@ -69,7 +69,7 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout Community
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: localstack
 
@@ -131,7 +131,7 @@ jobs:
             return DEFAULT_REF
 
       - name: Checkout Pro
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: localstack/localstack-ext
           ref: ${{steps.determine-companion-ref.outputs.result}}

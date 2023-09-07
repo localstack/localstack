@@ -371,7 +371,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestStages::test_create_update_stages": {
-    "recorded-date": "09-08-2023, 15:09:29",
+    "recorded-date": "01-09-2023, 00:33:13",
     "recorded-content": {
       "create-stage": {
         "cacheClusterEnabled": false,
@@ -433,7 +433,7 @@
           }
         },
         "stageName": "s1",
-        "tracingEnabled": false,
+        "tracingEnabled": true,
         "variables": {
           "var1": "test",
           "var2": "test2"
@@ -465,7 +465,7 @@
           }
         },
         "stageName": "s1",
-        "tracingEnabled": false,
+        "tracingEnabled": true,
         "variables": {
           "var1": "test",
           "var2": "test2"

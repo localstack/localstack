@@ -2,41 +2,56 @@ from __future__ import annotations
 
 import abc
 from enum import Enum
-from typing import Final
+from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
 from localstack.services.stepfunctions.asl.component.state.state_choice.choice_rule import (
     ChoiceRule,
 )
-from localstack.services.stepfunctions.asl.component.state.state_choice.choice_rule_stmt import (
-    ChoiceRuleStmt,
-)
-from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_stmt import (
-    ComparisonStmt,
+from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison import (
+    Comparison,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
 
-class ComparisonComposite(ComparisonStmt, ChoiceRuleStmt, abc.ABC):
+class ComparisonCompositeProps(TypedProps):
+    def add(self, instance: Any) -> None:
+        inst_type = type(instance)
+
+        if issubclass(inst_type, ComparisonComposite):
+            super()._add(ComparisonComposite, instance)
+            return
+
+        super().add(instance)
+
+
+class ComparisonComposite(Comparison, abc.ABC):
     class ChoiceOp(Enum):
         And = ASLLexer.AND
         Or = ASLLexer.OR
         Not = ASLLexer.NOT
 
+    operator: Final[ComparisonComposite.ChoiceOp]
+
     def __init__(self, operator: ComparisonComposite.ChoiceOp):
-        self.operator: Final[ComparisonComposite.ChoiceOp] = operator
+        self.operator = operator
 
 
 class ComparisonCompositeSingle(ComparisonComposite, abc.ABC):
+    rule: Final[ChoiceRule]
+
     def __init__(self, operator: ComparisonComposite.ChoiceOp, rule: ChoiceRule):
         super(ComparisonCompositeSingle, self).__init__(operator=operator)
-        self.rule: Final[ChoiceRule] = rule
+        self.rule = rule
 
 
 class ComparisonCompositeMulti(ComparisonComposite, abc.ABC):
+    rules: Final[list[ChoiceRule]]
+
     def __init__(self, operator: ComparisonComposite.ChoiceOp, rules: list[ChoiceRule]):
         super(ComparisonCompositeMulti, self).__init__(operator=operator)
-        self.rules: Final[list[ChoiceRule]] = rules
+        self.rules = rules
 
 
 class ComparisonCompositeNot(ComparisonCompositeSingle):

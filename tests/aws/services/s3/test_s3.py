@@ -2816,8 +2816,7 @@ class TestS3:
         response = requests.put(url, data, headers=headers, verify=False)
         assert response.ok
         part_etag = response.headers.get("ETag")
-        xml_response = xmltodict.parse(response.content)
-        assert "UploadPartOutput" in xml_response
+        assert not response.content
 
         # validate that the object etag is the same as the pre-calculated one
         assert part_etag.strip('"') == precalculated_etag
@@ -3415,7 +3414,6 @@ class TestS3:
         endpoint_url = _endpoint_url()
         # this will represent a ListBuckets call, calling the base endpoint
         resp = s3_http_client.get(endpoint_url)
-        assert resp.ok
         assert resp.ok
         assert b"<Bucket" in resp.content
 
@@ -4593,6 +4591,28 @@ class TestS3:
         resp = s3_http_client.get(get_object_tagging_url, headers=headers)
         resp_dict = xmltodict.parse(resp.content)
         assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+
+        # CopyObject
+        get_object_tagging_url = f"{bucket_url}/{key_name}?tagging"
+        resp = s3_http_client.get(get_object_tagging_url, headers=headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+
+        copy_object_url = f"{bucket_url}/copied-key"
+        copy_object_headers = {**headers, "x-amz-copy-source": f"{bucket_url}/{key_name}"}
+        resp = s3_http_client.put(copy_object_url, headers=copy_object_headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "CopyObjectResult" in resp_dict
+
+        multipart_key = "multipart-key"
+        create_multipart = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=multipart_key
+        )
+        upload_id = create_multipart["UploadId"]
+
+        upload_part_url = f"{bucket_url}/{multipart_key}?UploadId={upload_id}&PartNumber=1"
+        resp = s3_http_client.put(upload_part_url, headers=headers)
+        assert not resp.content, resp.content
 
     # This test doesn't work against AWS anymore because of some authorization error.
     @markers.aws.only_localstack

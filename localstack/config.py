@@ -625,6 +625,7 @@ def populate_legacy_edge_configuration(
 
 
 # How to access LocalStack
+GATEWAY_LISTEN: List[HostAndPort]
 (
     # -- Cosmetic
     LOCALSTACK_HOST,
@@ -729,28 +730,10 @@ if not DOCKER_BRIDGE_IP:
     if is_in_docker:
         candidates = (DOCKER_BRIDGE_IP, "172.18.0.1")
         for ip in candidates:
+            # TODO: remove from here - should not perform I/O operations in top-level config.py
             if ping(ip):
                 DOCKER_BRIDGE_IP = ip
                 break
-
-# determine route to Docker host from container
-try:
-    DOCKER_HOST_FROM_CONTAINER = DOCKER_BRIDGE_IP
-    if not is_in_docker and not is_in_linux:
-        # If we're running outside docker, and would like the Lambda containers to be able
-        # to access services running on the local machine, set DOCKER_HOST_FROM_CONTAINER accordingly
-        if LOCALSTACK_HOSTNAME == LOCALHOST:
-            DOCKER_HOST_FROM_CONTAINER = "host.docker.internal"
-    # update LOCALSTACK_HOSTNAME if host.docker.internal is available
-    if is_in_docker:
-        try:
-            DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname("host.docker.internal")
-        except socket.error:
-            DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname("host.containers.internal")
-        if LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
-            LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
-except socket.error:
-    pass
 
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW

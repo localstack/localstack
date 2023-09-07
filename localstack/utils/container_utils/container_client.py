@@ -363,6 +363,18 @@ class VolumeBind:
 
         return ":".join(args)
 
+    @classmethod
+    def parse(cls, param: str) -> "VolumeBind":
+        parts = param.split(":")
+        if 1 > len(parts) > 3:
+            raise ValueError(f"Cannot parse volume bind {param}")
+
+        volume = cls(parts[0], parts[1])
+        if len(parts) == 3:
+            if "ro" in parts[3].split(","):
+                volume.read_only = True
+        return volume
+
 
 class VolumeMappings:
     mappings: List[Union[SimpleVolumeBind, VolumeBind]]
@@ -382,8 +394,27 @@ class VolumeMappings:
     ):
         self.mappings.append(mapping)
 
+    def find_target_mapping(
+        self, container_dir: str
+    ) -> Optional[Union[SimpleVolumeBind, VolumeBind]]:
+        """
+        Looks through the volumes and returns the one where the container dir matches ``container_dir``.
+        Returns None if there is no volume mapping to the given container directory.
+
+        :param container_dir: the target of the volume mapping, i.e., the path in the container
+        :return: the volume mapping or None
+        """
+        for volume in self.mappings:
+            target_dir = volume[1] if isinstance(volume, tuple) else volume.container_dir
+            if container_dir == target_dir:
+                return volume
+        return None
+
     def __iter__(self):
         return self.mappings.__iter__()
+
+    def __repr__(self):
+        return self.mappings.__repr__()
 
 
 VolumeType = Literal["bind", "volume"]
@@ -406,9 +437,9 @@ class VolumeInfo(NamedTuple):
 class ContainerConfiguration:
     image_name: str
     name: Optional[str] = None
-    volumes: Optional[VolumeMappings] = None
-    ports: Optional[PortMappings] = None
-    exposed_ports: Optional[List[str]] = None
+    volumes: VolumeMappings = dataclasses.field(default_factory=VolumeMappings)
+    ports: PortMappings = dataclasses.field(default_factory=PortMappings)
+    exposed_ports: List[str] = dataclasses.field(default_factory=list)
     entrypoint: Optional[str] = None
     additional_flags: Optional[str] = None
     command: Optional[List[str]] = None
@@ -430,6 +461,19 @@ class ContainerConfiguration:
     workdir: Optional[str] = None
     platform: Optional[str] = None
     ulimits: Optional[List[Ulimit]] = None
+
+
+class ContainerConfigurator(Protocol):
+    """Protocol for functional configurators. A ContainerConfigurator modifies, when called,
+    a ContainerConfiguration in place."""
+
+    def __call__(self, configuration: ContainerConfiguration):
+        """
+        Modify the given container configuration.
+
+        :param configuration: the configuration to modify
+        """
+        ...
 
 
 @dataclasses.dataclass
@@ -772,7 +816,6 @@ class ContainerClient(metaclass=ABCMeta):
             remove=container_config.remove,
             interactive=container_config.interactive,
             tty=container_config.tty,
-            detach=container_config.detach,
             command=container_config.command,
             mount_volumes=container_config.volumes,
             ports=container_config.ports,
@@ -918,6 +961,12 @@ class ContainerClient(metaclass=ABCMeta):
         """Start a given, already created container
 
         :return: A tuple (stdout, stderr) if attach or interactive is set, otherwise a tuple (b"container_name_or_id", b"")
+        """
+
+    @abstractmethod
+    def attach_to_container(self, container_name_or_id: str):
+        """
+        Attach local standard input, output, and error streams to a running container
         """
 
     @abstractmethod

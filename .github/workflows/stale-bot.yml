@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Triage Stale Issues
     steps:
-    - uses: aws-actions/stale-issue-cleanup@v4
+    - uses: aws-actions/stale-issue-cleanup@v6
       with:
         issue-types: issues
         ancient-issue-message: Hello 👋! It looks like this issue hasn’t been active in longer

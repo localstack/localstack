@@ -84,6 +84,7 @@ class OpenSearchDomain(GenericBaseModel):
             resource: dict,
         ):
             resource["PhysicalResourceId"] = result["DomainStatus"]["DomainName"]
+            resource["Properties"]["DomainEndpoint"] = result["DomainStatus"]["Endpoint"]
 
         return {
             "create": [

@@ -291,7 +291,7 @@ jobs:
             TEST_PATH: "tests/bootstrap"
             COVERAGE_ARGS: "-p"
           command: |
-            PYTEST_ARGS="-s ${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/bootstrap-tests.xml -o junit_suite_name=bootstrap-tests" make test-coverage
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/bootstrap-tests.xml -o junit_suite_name=bootstrap-tests" make test-coverage
       - store_test_results:
           path: target/reports/
       - run:

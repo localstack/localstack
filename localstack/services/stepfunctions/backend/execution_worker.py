@@ -1,3 +1,4 @@
+import copy
 import datetime
 from threading import Thread
 from typing import Final, Optional
@@ -46,7 +47,9 @@ class ExecutionWorker:
     def _execution_logic(self):
         program: Program = AmazonStateLanguageParser.parse(self.definition)
         self.env = Environment(context_object_init=self._context_object_init)
-        self.env.inp = self.input_data
+        self.env.inp = copy.deepcopy(
+            self.input_data
+        )  # The program will mutate the input_data, which is otherwise constant in regard to the execution value.
 
         self.env.event_history.add_event(
             hist_type_event=HistoryEventType.ExecutionStarted,

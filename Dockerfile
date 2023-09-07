@@ -44,16 +44,18 @@ ARG TARGETARCH
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
         # Install dependencies to add additional repos
-        apt-get install -y --no-install-recommends ca-certificates curl && \
-        # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
-        curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
-        apt-get update && \
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-            git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps \
-            # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
-            nodejs
+            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps
 
+# FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
+RUN --mount=type=cache,target=/var/cache/apt \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        nodejs
 
 SHELL [ "/bin/bash", "-c" ]
 
@@ -163,10 +165,6 @@ RUN --mount=type=cache,target=/root/.cache \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
-
-# link the extensions virtual environment into the localstack venv
-RUN echo /var/lib/localstack/lib/extensions/python_venv/lib/python3.10/site-packages > localstack-extensions-venv.pth && \
-    mv localstack-extensions-venv.pth .venv/lib/python*/site-packages/
 
 # link the python package installer virtual environments into the localstack venv
 RUN echo /var/lib/localstack/lib/python-packages/lib/python3.10/site-packages > localstack-var-python-packages-venv.pth && \

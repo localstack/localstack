@@ -1480,8 +1480,15 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         self._process_header_members(header_params, response, shape)
         # "HEAD" responses are basically "GET" responses without the actual body.
         # Do not process the body payload in this case (setting a body could also manipulate the headers)
-        # If the response is a redirection, the body should be empty as well
-        if operation_model.http.get("method") != "HEAD" and not 300 <= response.status_code < 400:
+        # - If the response is a redirection, the body should be empty as well
+        # - If the response is from a "PUT" request, the body should be empty except if there's a specific "payload"
+        #   field in the serialization (CopyObject and CopyObjectPart)
+        http_method = operation_model.http.get("method")
+        if (
+            http_method != "HEAD"
+            and not 300 <= response.status_code < 400
+            and not (http_method == "PUT" and shape and not shape.serialization.get("payload"))
+        ):
             self._serialize_payload(
                 payload_params,
                 response,

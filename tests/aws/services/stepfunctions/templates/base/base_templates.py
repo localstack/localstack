@@ -16,3 +16,6 @@ class BaseTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/raise_empty_failure.json5"
     )
     WAIT_AND_FAIL: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_and_fail.json5")
+    QUERY_CONTEXT_OBJECT_VALUES: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/query_context_object_values.json5"
+    )

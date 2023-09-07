@@ -1,7 +1,7 @@
 """
 Custom pytest mark typings
 """
-from typing import Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 import pytest
 
@@ -62,14 +62,17 @@ class Markers:
 
 
 # pytest plugin
+if TYPE_CHECKING:
+    from _pytest.config import Config
 
 
 @pytest.hookimpl
 def pytest_collection_modifyitems(
-    session: pytest.Session, config: Any, items: List[pytest.Item]
+    session: pytest.Session, config: "Config", items: List[pytest.Item]
 ) -> None:
     """Enforce that each test has exactly one aws compatibility marker"""
     marker_errors = []
+
     for item in items:
         # we should only concern ourselves with tests in tests/aws/
         if "tests/aws" not in item.fspath.dirname:

@@ -10,3 +10,12 @@ updates:
     labels:
       - "area: dependencies"
       - "semver: patch"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "alexrashed"
+    labels:
+      - "area: dependencies"
+      - "semver: patch"
