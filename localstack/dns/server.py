@@ -809,9 +809,6 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
         LOG.debug("Not starting DNS. DNS_ADDRESS=%s", config.DNS_ADDRESS)
         return
 
-    if in_docker():
-        config.DNS_ADDRESS = "0.0.0.0"
-
     upstream_dns = get_fallback_dns_server()
     if not upstream_dns:
         LOG.warning("Error starting the DNS server: No upstream dns server found.")
