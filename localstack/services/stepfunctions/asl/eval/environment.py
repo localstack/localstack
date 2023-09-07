@@ -45,9 +45,6 @@ class Environment:
             context_object=ContextObject(
                 Execution=context_object_init["Execution"],
                 StateMachine=context_object_init["StateMachine"],
-                State=None,
-                Task=None,
-                Map=None,
             )
         )
 

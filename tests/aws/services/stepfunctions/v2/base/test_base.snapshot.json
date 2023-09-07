@@ -1,6 +1,6 @@
 {
-  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfApi::test_state_fail": {
-    "recorded-date": "05-07-2023, 12:21:19",
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail": {
+    "recorded-date": "05-09-2023, 19:17:00",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -48,8 +48,54 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfApi::test_event_bridge_events_base": {
-    "recorded-date": "31-07-2023, 13:29:47",
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_empty": {
+    "recorded-date": "05-09-2023, 19:17:14",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "FailState"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {},
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_event_bridge_events_base": {
+    "recorded-date": "05-09-2023, 19:25:53",
     "recorded-content": {
       "stepfunctions_events": [
         {
@@ -119,81 +165,16 @@
       ]
     }
   },
-  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfApi::test_event_bridge_events_failure": {
-    "recorded-date": "31-07-2023, 14:05:25",
-    "recorded-content": {
-      "stepfunctions_events": [
-        {
-          "version": "0",
-          "id": "<uuid:1>",
-          "detail-type": "Step Functions Execution Status Change",
-          "source": "aws.states",
-          "account": "111111111111",
-          "time": "date",
-          "region": "<region>",
-          "resources": [
-            "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
-          ],
-          "detail": {
-            "executionArn": "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<resource:2>",
-            "name": "test_event_bridge_events-{short_uid()}",
-            "status": "RUNNING",
-            "startDate": "start-date",
-            "stopDate": "stop-date",
-            "input": {},
-            "output": null,
-            "stateMachineVersionArn": null,
-            "stateMachineAliasArn": null,
-            "inputDetails": {
-              "included": true
-            },
-            "outputDetails": null,
-            "error": null,
-            "cause": null
-          }
-        },
-        {
-          "version": "0",
-          "id": "<uuid:2>",
-          "detail-type": "Step Functions Execution Status Change",
-          "source": "aws.states",
-          "account": "111111111111",
-          "time": "date",
-          "region": "<region>",
-          "resources": [
-            "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>"
-          ],
-          "detail": {
-            "executionArn": "arn:aws:states:<region>:111111111111:execution:<resource:2>:<resource:1>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<resource:2>",
-            "name": "test_event_bridge_events-{short_uid()}",
-            "status": "FAILED",
-            "startDate": "start-date",
-            "stopDate": "stop-date",
-            "input": {},
-            "output": null,
-            "stateMachineVersionArn": null,
-            "stateMachineAliasArn": null,
-            "inputDetails": {
-              "included": true
-            },
-            "outputDetails": null,
-            "error": "SomeFailure",
-            "cause": "This state machines raises a 'SomeFailure' failure."
-          }
-        }
-      ]
-    }
-  },
-  "tests/integration/stepfunctions/v2/base/test_base.py::TestSnfApi::test_state_fail_empty": {
-    "recorded-date": "04-08-2023, 20:40:22",
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_query_context_object_values": {
+    "recorded-date": "05-09-2023, 19:18:47",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
-              "input": {},
+              "input": {
+                "message": "HelloWorld!"
+              },
               "inputDetails": {
                 "truncated": false
               },
@@ -208,67 +189,313 @@
             "id": 2,
             "previousEventId": 0,
             "stateEnteredEventDetails": {
-              "input": {},
+              "input": {
+                "message": "HelloWorld!"
+              },
               "inputDetails": {
                 "truncated": false
               },
-              "name": "FailState"
+              "name": "QueryValues1"
             },
             "timestamp": "timestamp",
-            "type": "FailStateEntered"
+            "type": "PassStateEntered"
           },
           {
-            "executionFailedEventDetails": {},
             "id": 3,
             "previousEventId": 2,
-            "timestamp": "timestamp",
-            "type": "ExecutionFailed"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfApi::test_state_fail_empty": {
-    "recorded-date": "08-08-2023, 13:13:34",
-    "recorded-content": {
-      "get_execution_history": {
-        "events": [
-          {
-            "executionStartedEventDetails": {
-              "input": {},
-              "inputDetails": {
-                "truncated": false
+            "stateExitedEventDetails": {
+              "name": "QueryValues1",
+              "output": {
+                "message": "HelloWorld!",
+                "query_values_1": {
+                  "execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "message": "HelloWorld!"
+                    },
+                    "StartTime": "start-time",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "execution_rolearn": "snf_role_arn",
+                  "execution_name": "<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "execution_input": {
+                    "message": "HelloWorld!"
+                  },
+                  "execution_starttime": "start-time",
+                  "state_name": "QueryValues1",
+                  "state_enteredtime": "entered-time",
+                  "statemachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "state": {
+                    "Name": "QueryValues1",
+                    "EnteredTime": "entered-time"
+                  },
+                  "context_object": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "message": "HelloWorld!"
+                      },
+                      "StartTime": "start-time",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "QueryValues1",
+                      "EnteredTime": "entered-time"
+                    }
+                  },
+                  "statemachine_name": "<ArnPart_0idx>"
+                }
               },
-              "roleArn": "snf_role_arn"
+              "outputDetails": {
+                "truncated": false
+              }
             },
-            "id": 1,
-            "previousEventId": 0,
             "timestamp": "timestamp",
-            "type": "ExecutionStarted"
+            "type": "PassStateExited"
           },
           {
-            "id": 2,
-            "previousEventId": 0,
+            "id": 4,
+            "previousEventId": 3,
             "stateEnteredEventDetails": {
-              "input": {},
+              "input": {
+                "message": "HelloWorld!",
+                "query_values_1": {
+                  "execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "message": "HelloWorld!"
+                    },
+                    "StartTime": "start-time",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "execution_rolearn": "snf_role_arn",
+                  "execution_name": "<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "execution_input": {
+                    "message": "HelloWorld!"
+                  },
+                  "execution_starttime": "start-time",
+                  "state_name": "QueryValues1",
+                  "state_enteredtime": "entered-time",
+                  "statemachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "state": {
+                    "Name": "QueryValues1",
+                    "EnteredTime": "entered-time"
+                  },
+                  "context_object": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "message": "HelloWorld!"
+                      },
+                      "StartTime": "start-time",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "QueryValues1",
+                      "EnteredTime": "entered-time"
+                    }
+                  },
+                  "statemachine_name": "<ArnPart_0idx>"
+                }
+              },
               "inputDetails": {
                 "truncated": false
               },
-              "name": "FailState"
+              "name": "QueryValues2"
             },
             "timestamp": "timestamp",
-            "type": "FailStateEntered"
+            "type": "PassStateEntered"
           },
           {
-            "executionFailedEventDetails": {},
-            "id": 3,
-            "previousEventId": 2,
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "QueryValues2",
+              "output": {
+                "message": "HelloWorld!",
+                "query_values_1": {
+                  "execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "message": "HelloWorld!"
+                    },
+                    "StartTime": "start-time",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "execution_rolearn": "snf_role_arn",
+                  "execution_name": "<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "execution_input": {
+                    "message": "HelloWorld!"
+                  },
+                  "execution_starttime": "start-time",
+                  "state_name": "QueryValues1",
+                  "state_enteredtime": "entered-time",
+                  "statemachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "state": {
+                    "Name": "QueryValues1",
+                    "EnteredTime": "entered-time"
+                  },
+                  "context_object": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "message": "HelloWorld!"
+                      },
+                      "StartTime": "start-time",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "QueryValues1",
+                      "EnteredTime": "entered-time"
+                    }
+                  },
+                  "statemachine_name": "<ArnPart_0idx>"
+                },
+                "query_values_2": {
+                  "context_object": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "message": "HelloWorld!"
+                      },
+                      "StartTime": "start-time",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "QueryValues2",
+                      "EnteredTime": "entered-time"
+                    }
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
             "timestamp": "timestamp",
-            "type": "ExecutionFailed"
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "message": "HelloWorld!",
+                "query_values_1": {
+                  "execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "message": "HelloWorld!"
+                    },
+                    "StartTime": "start-time",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "execution_rolearn": "snf_role_arn",
+                  "execution_name": "<ExecArnPart_0idx>",
+                  "statemachine_id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                  "execution_id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                  "execution_input": {
+                    "message": "HelloWorld!"
+                  },
+                  "execution_starttime": "start-time",
+                  "state_name": "QueryValues1",
+                  "state_enteredtime": "entered-time",
+                  "statemachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "state": {
+                    "Name": "QueryValues1",
+                    "EnteredTime": "entered-time"
+                  },
+                  "context_object": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "message": "HelloWorld!"
+                      },
+                      "StartTime": "start-time",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "QueryValues1",
+                      "EnteredTime": "entered-time"
+                    }
+                  },
+                  "statemachine_name": "<ArnPart_0idx>"
+                },
+                "query_values_2": {
+                  "context_object": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "message": "HelloWorld!"
+                      },
+                      "StartTime": "start-time",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "QueryValues2",
+                      "EnteredTime": "entered-time"
+                    }
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
           }
         ],
         "ResponseMetadata": {

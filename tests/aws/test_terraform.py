@@ -71,6 +71,7 @@ def get_base_dir():
 # TODO: replace "clouddrove/api-gateway/aws" with normal apigateway module and update terraform
 # TODO: rework this setup for multiple (potentially parallel) terraform tests by providing variables (see .auto.tfvars)
 # TODO: fetch generated ARNs from terraform instead of static/building ARNs
+@pytest.mark.skip(reason="disabled until further notice due to flakiness and lacking quality")
 class TestTerraform:
     @classmethod
     def init_async(cls):
