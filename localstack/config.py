@@ -1052,7 +1052,7 @@ CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED
 CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
 
 # defaults to true, i.e. by default boto clients created with our client factories won't perform retries unless explicitly configured to do so.
-DISABLE_BOTO_RETRIES = is_env_not_false("DISABLE_BOTO_RETRIES")
+DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
 # HINT: Please add deprecated environment variables to deprecations.py
 
