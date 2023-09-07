@@ -176,11 +176,12 @@ docker-cp-coverage:
 		docker rm -v $$id
 
 test:              		  ## Run automated tests
-	($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
+	($(VENV_RUN); DEBUG=$(DEBUG) DISABLE_BOTO_RETRIES=1 pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
 test-coverage:     		  ## Run automated tests and create coverage report
 	($(VENV_RUN); python -m coverage --version; \
 		DEBUG=$(DEBUG) \
+		DISABLE_BOTO_RETRIES=1 \
 		LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 \
 		python -m coverage run $(COVERAGE_ARGS) -m \
 		pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))

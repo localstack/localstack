@@ -324,6 +324,12 @@ class ClientFactory(ABC):
         :return: Boto3 client.
         """
         with self._create_client_lock:
+            default_config = (
+                Config(retries={"max_attempts": 0})
+                if localstack_config.DISABLE_BOTO_RETRIES
+                else Config()
+            )
+
             client = self._session.client(
                 service_name=service_name,
                 region_name=region_name,
@@ -333,7 +339,7 @@ class ClientFactory(ABC):
                 aws_access_key_id=aws_access_key_id,
                 aws_secret_access_key=aws_secret_access_key,
                 aws_session_token=aws_session_token,
-                config=config,
+                config=config.merge(default_config),
             )
 
         return self._get_client_post_hook(client)
