@@ -172,7 +172,7 @@ class ExecutionEnvironment:
         with self.status_lock:
             if self.status != RuntimeStatus.INACTIVE:
                 raise InvalidStatusException(
-                    f"Execution environment can only be started when inactive. Current status {self.status}"
+                    f"Execution environment {self.id} can only be started when inactive. Current status: {self.status}"
                 )
             self.status = RuntimeStatus.STARTING
             self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
@@ -209,7 +209,8 @@ class ExecutionEnvironment:
         with self.status_lock:
             if self.status in [RuntimeStatus.INACTIVE, RuntimeStatus.STOPPED]:
                 raise InvalidStatusException(
-                    f"Execution environment cannot be shutdown before started. Current status {self.status}"
+                    f"Execution environment {self.id} cannot be stopped when inactive or already stopped."
+                    f" Current status: {self.status}"
                 )
             self.runtime_executor.stop()
             self.status = RuntimeStatus.STOPPED
@@ -221,7 +222,8 @@ class ExecutionEnvironment:
         with self.status_lock:
             if self.status != RuntimeStatus.RUNNING:
                 raise InvalidStatusException(
-                    f"Execution environment can only be set to status ready while running. Current status {self.status}"
+                    f"Execution environment {self.id} can only be set to status ready while running."
+                    f" Current status: {self.status}"
                 )
             self.status = RuntimeStatus.READY
 
@@ -234,13 +236,16 @@ class ExecutionEnvironment:
     def reserve(self) -> None:
         with self.status_lock:
             if self.status != RuntimeStatus.READY:
-                raise InvalidStatusException("Reservation can only happen if status is ready")
+                raise InvalidStatusException(
+                    f"Execution environment {self.id} can only be reserved if ready. "
+                    f" Current status: {self.status}"
+                )
             self.status = RuntimeStatus.RUNNING
             self.keepalive_timer.cancel()
 
     def keepalive_passed(self) -> None:
         LOG.debug(
-            "Executor %s for function %s hasn't received any invocations in a while. Stopping.",
+            "Execution environment %s for function %s has not received any invocations in a while. Stopping.",
             self.id,
             self.function_version.qualified_arn,
         )
@@ -253,7 +258,7 @@ class ExecutionEnvironment:
         Invoked asynchronously by the startup timer in a separate thread."""
         # TODO: De-emphasize the error part after fixing control flow and tests for test_lambda_runtime_exit
         LOG.warning(
-            "Executor %s for function %s timed out during startup."
+            "Execution environment %s for function %s timed out during startup."
             " Check for errors during the startup of your Lambda function and"
             " consider increasing the startup timeout via LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT.",
             self.id,
@@ -268,7 +273,7 @@ class ExecutionEnvironment:
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException(
-                    f"Execution environment can only time out while starting. Current status {self.status}"
+                    f"Execution environment {self.id} can only time out while starting. Current status: {self.status}"
                 )
             self.status = RuntimeStatus.STARTUP_TIMED_OUT
         try:
@@ -282,7 +287,7 @@ class ExecutionEnvironment:
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException(
-                    f"Execution environment can only error while starting. Current status {self.status}"
+                    f"Execution environment {self.id} can only error while starting. Current status: {self.status}"
                 )
             self.status = RuntimeStatus.STARTUP_FAILED
         if self.startup_timer:
