@@ -762,18 +762,12 @@ class RunningContainer:
 
         Optionally specify the docker network
         """
-        # TODO: podman may not have this information
-        inspect_result = self.container_client.inspect_container(self.id)
         if docker_network is None:
-            return list(inspect_result["NetworkSettings"]["Networks"].values())[0]["IPAddress"]
+            return self.container_client.get_container_ip(container_name_or_id=self.id)
         else:
-            for network, details in inspect_result["NetworkSettings"]["Networks"].items():
-                if network == docker_network:
-                    return details["IPAddress"]
-
-        raise RuntimeError(
-            f"Cannot determine IP address for container {self.id} in network {docker_network}"
-        )
+            return self.container_client.get_container_ipv4_for_network(
+                container_name_or_id=self.id, container_network=docker_network
+            )
 
     def is_running(self) -> bool:
         try:
