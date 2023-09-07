@@ -1,3 +1,5 @@
+# source adapted from https://github.com/aws-samples/aws-bookstore-demo-app
+
 import os
 
 import boto3

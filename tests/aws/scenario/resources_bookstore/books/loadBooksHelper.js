@@ -16,7 +16,7 @@ if (process.env.LOCALSTACK_HOSTNAME) {
       region: 'us-east-1',
   };
   s3Client = new AWS.S3(localStackS3Config);
-  //s3.api.globalEndpoint = 's3.localhost.localstack.cloud';
+
   documentClient = new AWS.DynamoDB.DocumentClient({
         endpoint: `http://${process.env.LOCALSTACK_HOSTNAME}:${process.env.EDGE_PORT}`,
         region: 'us-east-1', // Change the region as per your setup
@@ -78,28 +78,7 @@ function getBooksData() {
  return s3Client.getObject(params).promise();
 }
 
-// Batch write books to DynamoDB
-// TODO this works on AWS but LS stops the lambda before the promise is finished
-/*
-function putItem(items_array) {
-  console.log("running 'putItem'...")
-  var tableName = process.env.TABLE_NAME; // [ProjectName]-Books
-  var params = {
-    RequestItems: {
-      [tableName]: items_array
-    }
-  };
-  console.log("...before batchwritepromise");
-  var batchWritePromise = documentClient.batchWrite(params);//.promise();
-  console.log("...after batchwritepromise");
-  batchWritePromise.then(function(data) {
-    console.log("Books imported");
-  }).catch(function(err) {
-    console.log("Error importing books");
-    console.log(err);
-  });
-  console.log("... finishing...")
-}*/
+
 function putItem(items_array) {
   var tableName = process.env.TABLE_NAME;
   var params = {
@@ -112,45 +91,3 @@ function putItem(items_array) {
       else console.log(data);
    });
 }
-
-
-//// Send response back to CloudFormation template runner
-//function sendResponse(event, callback, logStreamName, responseStatus, responseData) {
-//  const responseBody = JSON.stringify({
-//    Status: responseStatus,
-//    Reason: `See the details in CloudWatch Log Stream: ${logStreamName}`,
-//    PhysicalResourceId: logStreamName,
-//    StackId: event.StackId,
-//    RequestId: event.RequestId,
-//    LogicalResourceId: event.LogicalResourceId,
-//    Data: responseData,
-//  });
-//
-//  console.log("RESPONSE BODY:\n", responseBody);
-//
-//  const parsedUrl = url.parse(event.ResponseURL);
-//  const options = {
-//    hostname: parsedUrl.hostname,
-//    port: 443,
-//    path: parsedUrl.path,
-//    method: "PUT",
-//    headers: {
-//      "Content-Type": "",
-//      "Content-Length": responseBody.length,
-//    },
-//  };
-//
-//  const req = https.request(options, (res) => {
-//    console.log("STATUS:", res.statusCode);
-//    console.log("HEADERS:", JSON.stringify(res.headers));
-//    callback(null, "Successfully sent stack response!");
-//  });
-//
-//  req.on("error", (err) => {
-//    console.log("sendResponse Error:\n", err);
-//    callback(err);
-//  });
-//
-//  req.write(responseBody);
-//  req.end();
-//}
