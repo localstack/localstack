@@ -27,6 +27,9 @@
 /tests/aws/docker_utils/ @dfangl @dominikschubert
 /tests/unit/test_dockerclient.py @dfangl @dominikschubert
 
+# DNS server
+/localstack/dns @simonrw @dfangl
+
 # HTTP framework
 /localstack/http/ @thrau
 
