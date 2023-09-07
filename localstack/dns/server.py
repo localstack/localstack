@@ -39,7 +39,7 @@ from psutil._common import snicaddr
 
 # Note: avoid adding additional imports here, to avoid import issues when running the CLI
 from localstack import config
-from localstack.constants import LOCALHOST_HOSTNAME, LOCALHOST_IP, S3_ASSETS_BUCKET
+from localstack.constants import LOCALHOST_HOSTNAME, LOCALHOST_IP
 from localstack.dns.models import (
     AliasTarget,
     DnsServerProtocol,
@@ -244,16 +244,6 @@ class NonLoggingHandler(DNSHandler):
         except Exception:
             pass
 
-
-SKIP_PATTERNS = {
-    r".*(forums|console|docs|clientvpn|sso|boto3|(signin(\-reg)?))\.([^\.]+\.)?(aws\.amazon|amazonaws)\.com",
-    r".*captcha-prod\.s3\.amazonaws\.com",
-    r"^aws\.amazon\.com",
-    r"^github-production-release-.*\.s3\.amazonaws\.com",
-    r"^aws-glue-etl-artifacts\.s3\.amazonaws\.com",
-    rf"^{S3_ASSETS_BUCKET}\.s3\.amazonaws\.com",
-    r"^localstack-pods-.*\.s3\.amazonaws\.com",
-}
 
 NAME_PATTERNS_POINTING_TO_LOCALSTACK = [
     f".*{LOCALHOST_HOSTNAME}",
@@ -797,8 +787,6 @@ def start_server(upstream_dns: str, port: int = config.DNS_PORT):
     )
     for name in NAME_PATTERNS_POINTING_TO_LOCALSTACK:
         dns_server.add_host_pointing_to_localstack(name)
-    for skip_pattern in SKIP_PATTERNS:
-        dns_server.add_skip(skip_pattern)
     if config.DNS_LOCAL_NAME_PATTERNS:
         for skip_pattern in re.split(r"[,;\s]+", config.DNS_LOCAL_NAME_PATTERNS):
             dns_server.add_skip(skip_pattern)
