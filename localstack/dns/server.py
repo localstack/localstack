@@ -793,6 +793,7 @@ def start_server(upstream_dns: str, port: int = config.DNS_PORT):
     dns_server.start()
     if not dns_server.wait_is_up(timeout=5):
         LOG.warning("DNS server did not come up within 5 seconds.")
+        dns_server.shutdown()
         return
     DNS_SERVER = dns_server
 
