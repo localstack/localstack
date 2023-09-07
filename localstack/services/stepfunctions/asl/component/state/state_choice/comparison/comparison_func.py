@@ -3,11 +3,9 @@ from __future__ import annotations
 import json
 from typing import Final
 
+from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_operator_type import (
     ComparisonOperatorType,
-)
-from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_stmt import (
-    ComparisonStmt,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.operator.factory import (
     OperatorFactory,
@@ -18,7 +16,7 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class ComparisonFunc(ComparisonStmt):
+class ComparisonFunc(EvalComponent):
     def __init__(self, operator: ComparisonOperatorType, value: json):
         self.operator_type: Final[ComparisonOperatorType] = operator
         self.value: json = value

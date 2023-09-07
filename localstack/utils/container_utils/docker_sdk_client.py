@@ -7,7 +7,7 @@ import re
 import socket
 import threading
 from time import sleep
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, cast
 from urllib.parse import quote
 
 import docker
@@ -573,6 +573,11 @@ class SdkDockerClient(ContainerClient):
             raise NoSuchContainer(container_name_or_id)
         except APIError as e:
             raise ContainerException() from e
+
+    def attach_to_container(self, container_name_or_id: str):
+        client: DockerClient = self.client()
+        container = cast(Container, client.containers.get(container_name_or_id))
+        container.attach()
 
     def create_container(
         self,

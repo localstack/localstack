@@ -20,7 +20,7 @@ WAITER_CONFIG_AWS = {"Delay": 10, "MaxAttempts": 1000}
 WAITER_CONFIG_LS = {"Delay": 1, "MaxAttempts": 500}
 
 
-def cleanup_s3_bucket(s3_client: "S3Client", bucket_name: str):
+def cleanup_s3_bucket(s3_client: "S3Client", bucket_name: str, delete_bucket: bool = False):
     LOG.debug(f"Cleaning provisioned S3 Bucket {bucket_name}")
     try:
         objs = s3_client.list_objects_v2(Bucket=bucket_name)
@@ -29,6 +29,8 @@ def cleanup_s3_bucket(s3_client: "S3Client", bucket_name: str):
             LOG.debug(f"Deleting {objs_num} objects from {bucket_name}")
             obj_keys = [{"Key": o["Key"]} for o in objs["Contents"]]
             s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": obj_keys})
+        if delete_bucket:
+            s3_client.delete_bucket(Bucket=bucket_name)
     except Exception:
         LOG.warning(
             f"Failed to clean provisioned S3 Bucket {bucket_name}",
@@ -110,7 +112,7 @@ class InfraProvisioner:
                     )
 
     def get_stack_outputs(self, stack_name: str):
-        return self.cloudformation_stacks[stack_name]["Outputs"]
+        return self.cloudformation_stacks.get(stack_name, {}).get("Outputs", {})
 
     def teardown(self):
         for fn in self.custom_cleanup_steps:

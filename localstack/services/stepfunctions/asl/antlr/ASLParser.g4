@@ -233,23 +233,22 @@ choices_decl
 
 choice_rule
     : LBRACE
-      choice_rule_stmt (COMMA choice_rule_stmt)*
-      RBRACE
+      comparison_variable_stmt (COMMA comparison_variable_stmt)+
+      RBRACE  #choice_rule_comparison_variable
+    | LBRACE
+      comparison_composite_stmt (COMMA comparison_composite_stmt)*
+      RBRACE  #choice_rule_comparison_composite
     ;
 
-choice_rule_stmt
-    : comparison
-    | comparison_composite
+comparison_variable_stmt
+    : variable_decl
+    | comparison_func
     | next_decl
     ;
 
-comparison
-    : comparison_stmt (COMMA comparison_stmt)+
-    ;
-
-comparison_stmt
-    : variable_decl
-    | comparison_func
+comparison_composite_stmt
+    : comparison_composite
+    | next_decl
     ;
 
 comparison_composite

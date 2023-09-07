@@ -13,7 +13,6 @@ from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
 from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
-from moto.s3.utils import clean_key_name
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
@@ -441,11 +440,10 @@ def get_key_from_moto_bucket(
 ) -> FakeKey | FakeDeleteMarker:
     # TODO: rework the delete marker handling
     # we basically need to re-implement moto `get_object` to account for FakeDeleteMarker
-    clean_key = clean_key_name(key)
     if version_id is None:
-        fake_key = moto_bucket.keys.get(clean_key)
+        fake_key = moto_bucket.keys.get(key)
     else:
-        for key_version in moto_bucket.keys.getlist(clean_key, default=[]):
+        for key_version in moto_bucket.keys.getlist(key, default=[]):
             if str(key_version.version_id) == str(version_id):
                 fake_key = key_version
                 break

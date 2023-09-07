@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/resources/test_opensearch.py::test_domain": {
-    "recorded-date": "30-08-2023, 14:46:54",
+    "recorded-date": "31-08-2023, 17:42:29",
     "recorded-content": {
       "describe_domain": {
         "DomainStatus": {
@@ -87,6 +87,22 @@
           },
           "UpgradeProcessing": false
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags": {
+        "TagList": [
+          {
+            "Key": "anotherkey",
+            "Value": "hello"
+          },
+          {
+            "Key": "foo",
+            "Value": "bar"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

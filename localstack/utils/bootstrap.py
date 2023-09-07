@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import functools
 import logging
@@ -8,16 +10,19 @@ import signal
 import threading
 import time
 from functools import wraps
-from typing import Any, Dict, Iterable, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
 from localstack import config, constants
-from localstack.config import get_edge_port_http, is_env_true
-from localstack.constants import DEFAULT_VOLUME_DIR
+from localstack.config import HostAndPort, default_ip, is_env_true
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
+    CancellableStream,
+    ContainerClient,
     ContainerConfiguration,
+    ContainerConfigurator,
     ContainerException,
+    NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
     PortMappings,
@@ -28,8 +33,10 @@ from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, mkdir
 from localstack.utils.functions import call_safe
+from localstack.utils.net import get_free_tcp_port, get_free_tcp_port_range
 from localstack.utils.run import is_command_available, run, to_str
 from localstack.utils.serving import Server
+from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 from localstack.utils.tail import FileListener
 
@@ -107,6 +114,10 @@ def get_image_environment_variable(env_name: str) -> Optional[str]:
     except StopIteration:
         return None
     return found_env.split("=")[1]
+
+
+def get_container_default_logfile_location(container_name: str) -> str:
+    return os.path.join(config.dirs.tmp, f"{container_name}_container.log")
 
 
 def get_server_version_from_running_container() -> str:
@@ -368,144 +379,499 @@ def extract_port_flags(user_flags, port_mappings: PortMappings):
     return user_flags
 
 
-class LocalstackContainer:
-    config: ContainerConfiguration
+class ContainerConfigurators:
+    """
+    A set of useful container configurators that are typical for starting the localstack container.
+    """
 
-    def __init__(self, name: str = None):
-        self.config = self._get_default_configuration(name)
-        self.logfile = os.path.join(config.dirs.tmp, f"{self.config.name}_container.log")
+    @staticmethod
+    def mount_docker_socket(cfg: ContainerConfiguration):
+        source = config.DOCKER_SOCK
+        target = "/var/run/docker.sock"
+        if cfg.volumes.find_target_mapping(target):
+            return
+        cfg.volumes.add(VolumeBind(source, target))
+        cfg.env_vars["DOCKER_HOST"] = f"unix://{target}"
 
-        self.additional_flags = []  # TODO: see comment in run()
+    @staticmethod
+    def mount_localstack_volume(host_path: str | os.PathLike = None):
+        host_path = host_path or config.VOLUME_DIR
 
-    def _get_default_configuration(self, name: str = None) -> ContainerConfiguration:
-        """Returns a ContainerConfiguration populated with default values or values gathered from the
-        environment for starting the LocalStack container."""
-        return ContainerConfiguration(
-            image_name=get_docker_image_to_start(),
-            name=name or config.MAIN_CONTAINER_NAME,
-            volumes=VolumeMappings(),
-            remove=True,
-            # FIXME: update with https://github.com/localstack/localstack/pull/7991
-            ports=PortMappings(bind_host=config.EDGE_BIND_HOST),
-            entrypoint=os.environ.get("ENTRYPOINT"),
-            command=shlex.split(os.environ.get("CMD", "")) or None,
-            env_vars={},
-        )
+        def _cfg(cfg: ContainerConfiguration):
+            if cfg.volumes.find_target_mapping(constants.DEFAULT_VOLUME_DIR):
+                return
+            cfg.volumes.add(VolumeBind(str(host_path), constants.DEFAULT_VOLUME_DIR))
 
-    def run(self):
-        if isinstance(DOCKER_CLIENT, CmdDockerClient):
-            DOCKER_CLIENT.default_run_outfile = self.logfile
+        return _cfg
 
-        # FIXME: this is pretty awkward, but additional_flags in the LocalstackContainer API was always a
-        #  list of ["-e FOO=BAR", ...], whereas in the DockerClient it is expected to be a string. so we
-        #  need to re-assemble it here. the better way would be to not use additional_flags here all
-        #  together. it is still used in ext in `configure_pro_container` which could be refactored to use
-        #  the additional port bindings.
+    @staticmethod
+    def config_env_vars(cfg: ContainerConfiguration):
+        """Sets all env vars from config.CONFIG_ENV_VARS."""
+        for env_var in config.CONFIG_ENV_VARS:
+            value = os.environ.get(env_var, None)
+            if value is not None:
+                cfg.env_vars[env_var] = value
+
+    @staticmethod
+    def random_gateway_port(cfg: ContainerConfiguration):
+        """Gets a random port on the host and maps it to the default edge port 4566."""
+        return ContainerConfigurators.gateway_listen(get_free_tcp_port())(cfg)
+
+    @staticmethod
+    def default_gateway_port(cfg: ContainerConfiguration):
+        """Adds 4566 to the list of port mappings"""
+        return ContainerConfigurators.gateway_listen(constants.DEFAULT_PORT_EDGE)(cfg)
+
+    @staticmethod
+    def gateway_listen(
+        port: Union[int, Iterable[int], HostAndPort, Iterable[HostAndPort]],
+    ):
+        """
+        Uses the given ports to configure GATEWAY_LISTEN. For instance, ``gateway_listen([4566, 443])`` would
+        result in the port mappings 4566:4566, 443:443, as well as ``GATEWAY_LISTEN=:4566,:443``.
+
+        :param port: a single or list of ports, can either be int ports or HostAndPort instances
+        :return: a configurator
+        """
+        if isinstance(port, int):
+            ports = [HostAndPort("", port)]
+        elif isinstance(port, HostAndPort):
+            ports = [port]
+        else:
+            ports = []
+            for p in port:
+                if isinstance(p, int):
+                    ports.append(HostAndPort("", p))
+                else:
+                    ports.append(p)
+
+        def _cfg(cfg: ContainerConfiguration):
+            for _p in ports:
+                cfg.ports.add(_p.port)
+
+            # gateway listen should be compiled s.t. even if we set "127.0.0.1:4566" from the host,
+            # it will be correctly exposed on "0.0.0.0:4566" in the container.
+            cfg.env_vars["GATEWAY_LISTEN"] = ",".join(
+                [f"{p.host if p.host != default_ip else ''}:{p.port}" for p in ports]
+            )
+
+        return _cfg
+
+    @staticmethod
+    def container_name(name: str):
+        def _cfg(cfg: ContainerConfiguration):
+            cfg.name = name
+            cfg.env_vars["MAIN_CONTAINER_NAME"] = cfg.name
+
+        return _cfg
+
+    @staticmethod
+    def random_container_name(cfg: ContainerConfiguration):
+        cfg.name = f"localstack-{short_uid()}"
+        cfg.env_vars["MAIN_CONTAINER_NAME"] = cfg.name
+
+    @staticmethod
+    def default_container_name(cfg: ContainerConfiguration):
+        cfg.name = config.MAIN_CONTAINER_NAME
+        cfg.env_vars["MAIN_CONTAINER_NAME"] = cfg.name
+
+    @staticmethod
+    def service_port_range(cfg: ContainerConfiguration):
+        cfg.ports.add([config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END])
+        cfg.env_vars["EXTERNAL_SERVICE_PORTS_START"] = config.EXTERNAL_SERVICE_PORTS_START
+        cfg.env_vars["EXTERNAL_SERVICE_PORTS_END"] = config.EXTERNAL_SERVICE_PORTS_END
+
+    @staticmethod
+    def random_service_port_range(num: int = 50):
+        """
+        Tries to find a contiguous list of random ports on the host to map to the external service port
+        range in the container.
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            port_range = get_free_tcp_port_range(num)
+            cfg.ports.add([port_range.start, port_range.end])
+            cfg.env_vars["EXTERNAL_SERVICE_PORTS_START"] = str(port_range.start)
+            cfg.env_vars["EXTERNAL_SERVICE_PORTS_END"] = str(port_range.end)
+
+        return _cfg
+
+    @staticmethod
+    def debug(cfg: ContainerConfiguration):
+        cfg.env_vars["DEBUG"] = "1"
+
+    @staticmethod
+    def network(network: str):
+        def _cfg(cfg: ContainerConfiguration):
+            cfg.network = network
+
+        return _cfg
+
+    @staticmethod
+    def custom_command(cmd: List[str]):
+        """
+        Overwrites the container command and unsets the default entrypoint.
+
+        :param cmd: the command to run in the container
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            cfg.command = cmd
+            cfg.entrypoint = ""
+
+        return _cfg
+
+    @staticmethod
+    def env_vars(env_vars: Dict[str, str]):
+        def _cfg(cfg: ContainerConfiguration):
+            cfg.env_vars.update(env_vars)
+
+        return _cfg
+
+    @staticmethod
+    def port(*args, **kwargs):
+        def _cfg(cfg: ContainerConfiguration):
+            cfg.ports.add(*args, **kwargs)
+
+        return _cfg
+
+    @staticmethod
+    def volume(volume: VolumeBind):
+        def _cfg(cfg: ContainerConfiguration):
+            cfg.volumes.add(volume)
+
+        return _cfg
+
+    @staticmethod
+    def cli_params(params: Dict[str, Any]):
+        """
+        Parse docker CLI parameters and add them to the config. The currently known CLI params are::
+
+            --network=my-network     <- stored in "network"
+            -e FOO=BAR -e BAR=ed     <- stored in "env"
+
+        When parsed by click, the parameters would look like this::
+
+            {
+                "network": "my-network",
+                "env": ("FOO=BAR", "BAR=ed"),
+            }
+
+        :param params: a dict of parsed parameters
+        :return: a configurator
+        """
+        # TODO: consolidate with container_client.Util.parse_additional_flags
+        def _cfg(cfg: ContainerConfiguration):
+            if params.get("network"):
+                cfg.network = params.get("network")
+
+            # parse environment variable flags
+            if params.get("env"):
+                for e in params.get("env"):
+                    if "=" in e:
+                        k, v = e.split("=", maxsplit=1)
+                        cfg.env_vars[k] = v
+                    else:
+                        # there's currently no way in our abstraction to only pass the variable name (as
+                        # you can do in docker) so we resolve the value here.
+                        cfg.env_vars[e] = os.getenv(e)
+
+            # TODO: volume and publish
+
+        return _cfg
+
+
+def get_gateway_port(container: Container) -> int:
+    """
+    Heuristically determines for the given container the port the gateway will be reachable from the host.
+    Parses the container's ``GATEWAY_LISTEN`` if necessary and finds the appropriate port mapping.
+
+    :param container: the localstack container
+    :return: the gateway port reachable from the host
+    """
+    candidates: List[int]
+
+    gateway_listen = container.config.env_vars.get("GATEWAY_LISTEN")
+    if gateway_listen:
+        candidates = [
+            HostAndPort.parse(
+                value,
+                default_host=constants.LOCALHOST_HOSTNAME,
+                default_port=constants.DEFAULT_PORT_EDGE,
+            ).port
+            for value in gateway_listen.split(",")
+        ]
+    else:
+        candidates = [constants.DEFAULT_PORT_EDGE]
+
+    exposed = container.config.ports.to_dict()
+
+    for candidate in candidates:
+        port = exposed.get(f"{candidate}/tcp")
+        if port:
+            return port
+
+    raise ValueError("no gateway port mapping found")
+
+
+def get_gateway_url(
+    container: Container,
+    hostname: str = constants.LOCALHOST_HOSTNAME,
+    protocol: str = "http",
+) -> str:
+    """
+    Returns the localstack container's gateway URL reachable from the host. In most cases this will be
+    ``http://localhost.localstack.cloud:4566``.
+
+    :param container: the container
+    :param hostname: the hostname to use (default localhost.localstack.cloud)
+    :param protocol: the URI scheme (default http)
+    :return: a URL
+    `"""
+    return f"{protocol}://{hostname}:{get_gateway_port(container)}"
+
+
+class Container:
+    def __init__(
+        self, container_config: ContainerConfiguration, docker_client: ContainerClient | None = None
+    ):
+        self.config = container_config
+        # marker to access the running container
+        self.running_container: RunningContainer | None = None
+        self.container_client = docker_client or DOCKER_CLIENT
+
+    def configure(self, configurators: ContainerConfigurator | Iterable[ContainerConfigurator]):
+        """
+        Apply the given configurators to the config of this container.
+
+        :param configurators:
+        :return:
+        """
+        try:
+            iterator = iter(configurators)
+        except TypeError:
+            configurators(self.config)
+            return
+
+        for configurator in iterator:
+            configurator(self.config)
+
+    def start(self, attach: bool = False) -> RunningContainer:
+        # FIXME: this is pretty awkward, but additional_flags in the LocalstackContainer API was
+        #  always a list of ["-e FOO=BAR", ...], whereas in the DockerClient it is expected to be
+        #  a string. so we need to re-assemble it here. the better way would be to not use
+        #  additional_flags here all together. it is still used in ext in
+        #  `configure_pro_container` which could be refactored to use the additional port bindings.
         cfg = copy.deepcopy(self.config)
         if not cfg.additional_flags:
             cfg.additional_flags = ""
-        if self.additional_flags:
-            cfg.additional_flags += " " + " ".join(self.additional_flags)
 
-        # TODO: there could be a --network flag in `additional_flags`. we solve a similar problem for the
-        #  ports using `extract_port_flags`. maybe it would be better to consolidate all this into the
-        #  ContainerConfig object, like ContainerConfig.update_from_flags(str).
+        # TODO: there could be a --network flag in `additional_flags`. we solve a similar problem
+        #  for the ports using `extract_port_flags`. maybe it would be better to consolidate all
+        #  this into the ContainerConfig object, like ContainerConfig.update_from_flags(str).
         self._ensure_container_network(cfg.network)
 
         try:
-            return DOCKER_CLIENT.run_container_from_config(cfg)
+            id = self.container_client.create_container_from_config(cfg)
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
-                LOG.exception("Error while starting LocalStack container")
+                LOG.exception("Error while creating container")
             else:
                 LOG.error(
-                    "Error while starting LocalStack container: %s\n%s", e.message, to_str(e.stderr)
+                    "Error while creating container: %s\n%s", e.message, to_str(e.stderr or "?")
                 )
             raise
 
-    def _ensure_container_network(self, network: str):
+        try:
+            self.container_client.start_container(id, attach=attach)
+        except ContainerException as e:
+            LOG.error(
+                "Error while starting LocalStack container: %s\n%s",
+                e.message,
+                to_str(e.stderr),
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise
+
+        self.running_container = RunningContainer(id, container_config=self.config)
+        return self.running_container
+
+    def _ensure_container_network(self, network: str | None = None):
         """Makes sure the configured container network exists"""
         if network:
             if network in ["host", "bridge"]:
                 return
             try:
-                DOCKER_CLIENT.inspect_network(network)
+                self.container_client.inspect_network(network)
             except NoSuchNetwork:
                 LOG.debug("Container network %s not found, creating it", network)
-                DOCKER_CLIENT.create_network(network)
+                self.container_client.create_network(network)
 
-    def truncate_log(self):
-        with open(self.logfile, "wb") as fd:
-            fd.write(b"")
 
-    # these properties are there to not break code that configures the container by using these values
-    # that code should ideally be refactored soon-ish to use the config instead.
+class RunningContainer:
+    """
+    Represents a LocalStack container that is running.
+    """
 
-    @property
-    def env_vars(self) -> Dict[str, str]:
-        return self.config.env_vars
+    def __init__(
+        self,
+        id: str,
+        container_config: ContainerConfiguration,
+        docker_client: ContainerClient | None = None,
+    ):
+        self.id = id
+        self.config = container_config
+        self.container_client = docker_client or DOCKER_CLIENT
+        self.name = self.container_client.get_container_name(self.id)
+        self._shutdown = False
+        self._mutex = threading.Lock()
 
-    @property
-    def entrypoint(self) -> Optional[str]:
-        return self.config.entrypoint
+    def __enter__(self):
+        return self
 
-    @entrypoint.setter
-    def entrypoint(self, value: str):
-        self.config.entrypoint = value
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.shutdown()
 
-    @property
-    def name(self) -> str:
-        return self.config.name
+    def is_running(self) -> bool:
+        try:
+            self.container_client.inspect_container(self.id)
+            return True
+        except NoSuchContainer:
+            return False
 
-    @property
-    def volumes(self) -> VolumeMappings:
-        return self.config.volumes
+    def get_logs(self) -> str:
+        return self.container_client.get_container_logs(self.id, safe=True)
 
-    @property
-    def ports(self) -> PortMappings:
-        return self.config.ports
+    def stream_logs(self) -> CancellableStream:
+        return self.container_client.stream_container_logs(self.id)
+
+    def wait_until_ready(self, timeout: float = None) -> bool:
+        return poll_condition(self.is_running, timeout)
+
+    def shutdown(self, timeout: int = 10, remove: bool = True):
+        with self._mutex:
+            if self._shutdown:
+                return
+            self._shutdown = True
+
+        try:
+            self.container_client.stop_container(container_name=self.id, timeout=timeout)
+        except NoSuchContainer:
+            pass
+
+        if remove:
+            try:
+                self.container_client.remove_container(
+                    container_name=self.id, force=True, check_existence=False
+                )
+            except ContainerException as e:
+                if "is already in progress" in str(e):
+                    return
+                raise
+
+    def inspect(self) -> Dict[str, Union[Dict, str]]:
+        return self.container_client.inspect_container(container_name_or_id=self.id)
+
+    def attach(self):
+        self.container_client.attach_to_container(container_name_or_id=self.id)
+
+    def exec_in_container(self, *args, **kwargs):
+        return self.container_client.exec_in_container(
+            container_name_or_id=self.id, *args, **kwargs
+        )
+
+    def stopped(self) -> Container:
+        """
+        Convert this running instance to a stopped instance ready to be restarted
+        """
+        return Container(container_config=self.config, docker_client=self.container_client)
 
 
 class LocalstackContainerServer(Server):
-    container: LocalstackContainer
-
-    def __init__(self, container=None) -> None:
+    def __init__(self, container_configuration: ContainerConfiguration | None = None) -> None:
         super().__init__(config.EDGE_PORT, config.EDGE_BIND_HOST)
-        self.container = container or LocalstackContainer()
+
+        if container_configuration is None:
+            port_configuration = PortMappings(bind_host=config.GATEWAY_LISTEN[0].host)
+            for addr in config.GATEWAY_LISTEN:
+                port_configuration.add(addr.port)
+
+            container_configuration = ContainerConfiguration(
+                image_name=get_docker_image_to_start(),
+                name=config.MAIN_CONTAINER_NAME,
+                volumes=VolumeMappings(),
+                remove=True,
+                ports=port_configuration,
+                entrypoint=os.environ.get("ENTRYPOINT"),
+                command=shlex.split(os.environ.get("CMD", "")) or None,
+                env_vars={},
+            )
+
+        self.container: Container | RunningContainer = Container(container_configuration)
 
     def is_up(self) -> bool:
         """
         Checks whether the container is running, and the Ready marker has been printed to the logs.
         """
-
         if not self.is_container_running():
             return False
-        logs = DOCKER_CLIENT.get_container_logs(self.container.name)
+
+        logs = self.container.get_logs()
 
         if constants.READY_MARKER_OUTPUT not in logs.splitlines():
             return False
+
         # also checks the edge port health status
         return super().is_up()
 
     def is_container_running(self) -> bool:
-        return DOCKER_CLIENT.is_container_running(self.container.name)
+        # if we have not started the container then we are not up
+        if not isinstance(self.container, RunningContainer):
+            return False
+
+        return self.container.is_running()
 
     def wait_is_container_running(self, timeout=None) -> bool:
         return poll_condition(self.is_container_running, timeout)
 
+    def start(self) -> bool:
+        if isinstance(self.container, RunningContainer):
+            raise RuntimeError("cannot start container as container reference has been started")
+
+        return super().start()
+
     def do_run(self):
-        if DOCKER_CLIENT.is_container_running(self.container.name):
+        if self.is_container_running():
             raise ContainerExists(
                 'LocalStack container named "%s" is already running' % self.container.name
             )
 
-        return self.container.run()
+        config.dirs.mkdirs()
+        if not isinstance(self.container, Container):
+            raise ValueError(f"Invalid container type: {type(self.container)}")
+
+        LOG.debug("starting LocalStack container")
+        self.container = self.container.start(attach=False)
+        if isinstance(DOCKER_CLIENT, CmdDockerClient):
+            DOCKER_CLIENT.default_run_outfile = get_container_default_logfile_location(
+                self.container.config.name
+            )
+
+        # block the current thread
+        self.container.attach()
+        return self.container
+
+    def shutdown(self):
+        if not isinstance(self.container, RunningContainer):
+            raise ValueError(f"Container {self.container} not started")
+
+        return super().shutdown()
 
     def do_shutdown(self):
         try:
-            DOCKER_CLIENT.stop_container(
-                self.container.name, timeout=10
-            )  # giving the container some time to stop
+            self.container.shutdown(timeout=10)
+            self.container = self.container.stopped()
         except Exception as e:
             LOG.info("error cleaning up localstack container %s: %s", self.container.name, e)
 
@@ -524,66 +890,50 @@ def prepare_docker_start():
     config.dirs.mkdirs()
 
 
-def configure_container(container: LocalstackContainer):
+def configure_container(container: Container):
     """
     Configuration routine for the LocalstackContainer.
     """
-    # get additional configured flags
+    port_configuration = PortMappings(bind_host=config.GATEWAY_LISTEN[0].host)
+
+    # base configuration
+    container.config.image_name = get_docker_image_to_start()
+    container.config.name = config.MAIN_CONTAINER_NAME
+    container.config.volumes = VolumeMappings()
+    container.config.remove = True
+    container.config.ports = port_configuration
+    container.config.entrypoint = os.environ.get("ENTRYPOINT")
+    container.config.command = shlex.split(os.environ.get("CMD", "")) or None
+    container.config.env_vars = {}
+
+    # gateway (previously edge port) mapping
+    container.configure(ContainerConfigurators.gateway_listen(config.GATEWAY_LISTEN))
+
+    # parse `DOCKER_FLAGS` and add them appropriately
     user_flags = config.DOCKER_FLAGS
-    user_flags = extract_port_flags(user_flags, container.ports)
-    container.additional_flags.extend(shlex.split(user_flags))
+    user_flags = extract_port_flags(user_flags, container.config.ports)
+    if container.config.additional_flags is None:
+        container.config.additional_flags = user_flags
+    else:
+        container.config.additional_flags = f"{container.config.additional_flags} {user_flags}"
 
     # get additional parameters from plugins
     hooks.configure_localstack_container.run(container)
 
-    # construct default port mappings
-    container.ports.add(get_edge_port_http())
-    for port in range(config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END):
-        container.ports.add(port)
-
     if config.DEVELOP:
-        container.ports.add(config.DEVELOP_PORT)
+        container.config.ports.add(config.DEVELOP_PORT)
 
-    # environment variables
-    # pass through environment variables defined in config
-    for env_var in config.CONFIG_ENV_VARS:
-        value = os.environ.get(env_var, None)
-        if value is not None:
-            container.env_vars[env_var] = value
-    container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
-
-    # TODO this is default now, remove once a considerate time is passed
-    # to activate proper signal handling
-    container.env_vars["SET_TERM_HANDLER"] = "1"
-
-    configure_volume_mounts(container)
-
-    # mount docker socket
-    container.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
-
-    container.privileged = True
-
-
-def configure_container_from_cli_params(container: LocalstackContainer, params: Dict[str, Any]):
-    # TODO: consolidate with container_client.Util.parse_additional_flags
-    # network flag
-    if params.get("network"):
-        container.config.network = params.get("network")
-
-    # parse environment variable flags
-    if params.get("env"):
-        for e in params.get("env"):
-            if "=" in e:
-                k, v = e.split("=", maxsplit=1)
-                container.config.env_vars[k] = v
-            else:
-                # there's currently no way in our abstraction to only pass the variable name (as you can do
-                # in docker) so we resolve the value here.
-                container.config.env_vars[e] = os.getenv(e)
-
-
-def configure_volume_mounts(container: LocalstackContainer):
-    container.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
+    container.configure(
+        [
+            # external service port range
+            ContainerConfigurators.service_port_range,
+            ContainerConfigurators.mount_localstack_volume(config.VOLUME_DIR),
+            ContainerConfigurators.mount_docker_socket,
+            # overwrites any env vars set in the config that were previously set by configurators (e.g.,
+            # `GATEWAY_LISTEN`)
+            ContainerConfigurators.config_env_vars,
+        ]
+    )
 
 
 @log_duration()
@@ -609,10 +959,11 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     prepare_docker_start()
 
     # create and prepare container
-    container = LocalstackContainer()
+    container_config = ContainerConfiguration(get_docker_image_to_start())
+    container = Container(container_config)
+
     configure_container(container)
-    if cli_params:
-        configure_container_from_cli_params(container, cli_params or {})
+    container.configure(ContainerConfigurators.cli_params(cli_params or {}))
     ensure_container_image(console, container)
 
     status = console.status("Starting LocalStack container")
@@ -620,14 +971,16 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
 
     # printing the container log is the current way we're occupying the terminal
     def _init_log_printer(line):
-        """Prints the console rule separator on the first line, then re-configures the callback to print."""
+        """Prints the console rule separator on the first line, then re-configures the callback
+        to print."""
         status.stop()
         console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
         print(line)
         log_printer.callback = print
 
-    container.truncate_log()
-    log_printer = FileListener(container.logfile, callback=_init_log_printer)
+    logfile = get_container_default_logfile_location(container_config.name)
+    log_printer = FileListener(logfile, callback=_init_log_printer)
+    log_printer.truncate_file()
     log_printer.start()
 
     # Set up signal handler, to enable clean shutdown across different operating systems.
@@ -650,7 +1003,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     signal.signal(signal.SIGINT, shutdown_handler)
 
     # start the Localstack container as a Server
-    server = LocalstackContainerServer(container)
+    server = LocalstackContainerServer(container_config)
     try:
         server.start()
         server.join()
@@ -663,7 +1016,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
         shutdown_handler()
 
 
-def ensure_container_image(console, container: LocalstackContainer):
+def ensure_container_image(console, container: Container):
     try:
         DOCKER_CLIENT.inspect_image(container.config.image_name, pull=False)
         return
@@ -688,18 +1041,17 @@ def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
 
     # create and prepare container
     console.log("configuring container")
-    container = LocalstackContainer()
+    container_config = ContainerConfiguration(get_docker_image_to_start())
+    container = Container(container_config)
     configure_container(container)
-    if cli_params:
-        configure_container_from_cli_params(container, cli_params)
+    container.configure(ContainerConfigurators.cli_params(cli_params or {}))
     ensure_container_image(console, container)
 
-    container.config.detach = True
-    container.truncate_log()
+    container_config.detach = True
 
     # start the Localstack container as a Server
     console.log("starting container")
-    server = LocalstackContainerServer(container)
+    server = LocalstackContainerServer(container_config)
     server.start()
     server.wait_is_container_running()
     console.log("detaching")

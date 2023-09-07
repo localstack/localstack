@@ -281,7 +281,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                 container_config.env_vars[HOT_RELOADING_ENV_VARIABLE] = "/var/task"
                 if container_config.volumes is None:
                     container_config.volumes = VolumeMappings()
-                container_config.volumes.append(
+                container_config.volumes.add(
                     VolumeBind(
                         str(self.function_version.config.code.get_unzipped_code_location()),
                         "/var/task",

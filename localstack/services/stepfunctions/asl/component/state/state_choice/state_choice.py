@@ -51,9 +51,9 @@ class StateChoice(CommonStateField):
             rule.eval(env)
             res = env.stack.pop()
             if res is True:
-                if not rule.next:
+                if not rule.next_stmt:
                     raise RuntimeError(
                         f"Missing Next definition for state_choice rule '{rule}' in choices '{self}'."
                     )
-                self._next_state_name = rule.next.name
+                self._next_state_name = rule.next_stmt.name
                 break
