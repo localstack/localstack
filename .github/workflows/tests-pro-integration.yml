@@ -38,6 +38,20 @@ on:
       - master
       - 'v[0-9]+'
       - release/*
+  push:
+    paths:
+      - ".github/workflows/tests-pro-integration.yml"
+      - "localstack/**"
+      - "tests/**"
+      - "setup.py"
+      - "pyproject.toml"
+      - "setup.cfg"
+      - "Dockerfile"
+      - "Dockerfile.rh"
+      - "docker-compose.yml"
+      - "bin/**"
+    branches:
+      - master
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -173,7 +187,7 @@ jobs:
             localstack-ext/.venv
             localstack/.filesystem/var/lib/localstack
           # include the matrix group (to re-use the var-libs used in the specific test group)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg', '**/packages.py', '**/packages/*') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg', '**/packages.py', 'localstack/packages/*.py', 'localstack-ext/packages/*.py') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
 
       - name: Restore Lambda common runtime packages
         id: cached-lambda-common-restore
