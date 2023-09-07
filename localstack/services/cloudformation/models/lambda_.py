@@ -485,8 +485,40 @@ class LambdaAlias(GenericBaseModel):
         ):
             resource["PhysicalResourceId"] = result["AliasArn"]
 
+        def _apply_concurrency_config(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            if resource["Properties"].get("ProvisionedConcurrencyConfig"):
+                client = connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_
+                client.put_provisioned_concurrency_config(
+                    FunctionName=resource["Properties"]["FunctionName"],
+                    Qualifier=resource["PhysicalResourceId"].split(":")[-1],
+                    ProvisionedConcurrentExecutions=resource["Properties"][
+                        "ProvisionedConcurrencyConfig"
+                    ]["ProvisionedConcurrentExecutions"],
+                )
+
         return {
-            "create": {"function": "create_alias", "result_handler": _handle_result},
+            "create": [
+                {
+                    "function": "create_alias",
+                    "parameters": {
+                        "FunctionName": "FunctionName",
+                        "Name": "Name",
+                        "Description": "Description",
+                        "RoutingConfig": "RoutingConfig",
+                        "FunctionVersion": "FunctionVersion",
+                    },
+                    "result_handler": _handle_result,
+                },
+                {
+                    "function": _apply_concurrency_config,
+                },
+            ],
             "delete": {
                 "function": "delete_alias",
                 "parameters": {
