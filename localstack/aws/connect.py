@@ -6,7 +6,6 @@ LocalStack providers.
 """
 import json
 import logging
-import os
 import re
 import threading
 from abc import ABC, abstractmethod
@@ -34,9 +33,6 @@ from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
-DEFAULT_DELAY = 5 if os.environ.get("TEST_TARGET") == "AWS_CLOUD" else 1
-DEFAULT_MAX_ATTEMPTS = 60 if os.environ.get("TEST_TARGET") == "AWS_CLOUD" else 120
-
 
 @patch(target=Waiter.wait, pass_target=True)
 def my_patch(fn, self, **kwargs):
@@ -46,18 +42,22 @@ def my_patch(fn, self, **kwargs):
     Alternatively we could also try to find a solution where we patch the loader used in the generated clients
     so that we can dynamically fix the waiter config when it's loaded instead of when it's being used for wait execution
     """
-    patched_kwargs = {
-        **kwargs,
-        "WaiterConfig": {
-            # TODO: make these configurable
-            "Delay": DEFAULT_DELAY,
-            "MaxAttempts": DEFAULT_MAX_ATTEMPTS,
-            **kwargs.get(
-                "WaiterConfig", {}
-            ),  # we still allow client users to override these defaults
-        },
-    }
-    return fn(self, **patched_kwargs)
+
+    if localstack_config.DISABLE_CUSTOM_BOTO_WAITER_CONFIG:
+        return fn(self, **kwargs)
+    else:
+        patched_kwargs = {
+            **kwargs,
+            "WaiterConfig": {
+                # TODO: make these configurable
+                "Delay": localstack_config.BOTO_WAITER_DELAY,
+                "MaxAttempts": localstack_config.BOTO_WAITER_MAX_ATTEMPTS,
+                **kwargs.get(
+                    "WaiterConfig", {}
+                ),  # we still allow client users to override these defaults
+            },
+        }
+        return fn(self, **patched_kwargs)
 
 
 def attribute_name_to_service_name(attribute_name):

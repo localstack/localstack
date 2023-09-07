@@ -16,6 +16,7 @@ from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
 from localstack.services import infra
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import safe_requests
 from tests.aws.services.es.test_es import install_async as es_install_async
 from tests.aws.services.opensearch.test_opensearch import install_async as opensearch_install_async
@@ -36,7 +37,12 @@ if config.is_collect_metrics_mode():
 
 
 @pytest.hookimpl()
-def pytest_configure(config):
+def pytest_configure(config_):
+    # patch default boto waiter config when running on AWS
+    if is_aws_cloud():
+        config.DEFAULT_DELAY = 5
+        config.DEFAULT_MAX_ATTEMPTS = 60
+
     # first pytest lifecycle hook
     _start_monitor()
 
