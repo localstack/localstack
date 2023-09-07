@@ -591,5 +591,379 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_blocked_stack_deletion": {
+    "recorded-date": "06-09-2023, 11:01:18",
+    "recorded-content": {
+      "stack_post_create": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "CreationTime": "datetime",
+            "DeletionTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "NotificationARNs": [],
+            "Parameters": [
+              {
+                "ParameterKey": "Name",
+                "ParameterValue": "<policy-name>"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "ROLLBACK_FAILED",
+            "StackStatusReason": "The following resource(s) failed to delete: [BrokenPolicy]. ",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_post_fail_delete": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "CreationTime": "datetime",
+            "DeletionTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "NotificationARNs": [],
+            "Parameters": [
+              {
+                "ParameterKey": "Name",
+                "ParameterValue": "<policy-name>"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "DELETE_FAILED",
+            "StackStatusReason": "The following resource(s) failed to delete: [BrokenPolicy]. ",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_post_success_delete": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "CreationTime": "datetime",
+            "DeletionTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "NotificationARNs": [],
+            "Parameters": [
+              {
+                "ParameterKey": "Name",
+                "ParameterValue": "<policy-name>"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "DELETE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_events": {
+        "StackEvents": [
+          {
+            "EventId": "<uuid:1>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "BrokenPolicy-DELETE_SKIPPED-date",
+            "LogicalResourceId": "BrokenPolicy",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceProperties": {
+              "PolicyName": "<policy-name>",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": "*",
+                    "Resource": "*",
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            },
+            "ResourceStatus": "DELETE_SKIPPED",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:2>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:3>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "ResourceStatus": "DELETE_FAILED",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "BrokenPolicy-DELETE_FAILED-date",
+            "LogicalResourceId": "BrokenPolicy",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceProperties": {
+              "PolicyName": "<policy-name>",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": "*",
+                    "Resource": "*",
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            },
+            "ResourceStatus": "DELETE_FAILED",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "BrokenPolicy-DELETE_IN_PROGRESS-date",
+            "LogicalResourceId": "BrokenPolicy",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceProperties": {
+              "PolicyName": "<policy-name>",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": "*",
+                    "Resource": "*",
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            },
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:4>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:5>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "ResourceStatus": "ROLLBACK_FAILED",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "BrokenPolicy-DELETE_FAILED-date",
+            "LogicalResourceId": "BrokenPolicy",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceProperties": {
+              "PolicyName": "<policy-name>",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": "*",
+                    "Resource": "*",
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            },
+            "ResourceStatus": "DELETE_FAILED",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "BrokenPolicy-DELETE_IN_PROGRESS-date",
+            "LogicalResourceId": "BrokenPolicy",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceProperties": {
+              "PolicyName": "<policy-name>",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": "*",
+                    "Resource": "*",
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            },
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:6>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "BrokenPolicy-CREATE_FAILED-date",
+            "LogicalResourceId": "BrokenPolicy",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceProperties": {
+              "PolicyName": "<policy-name>",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": "*",
+                    "Resource": "*",
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            },
+            "ResourceStatus": "CREATE_FAILED",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "BrokenPolicy-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "BrokenPolicy",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceProperties": {
+              "PolicyName": "<policy-name>",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": "*",
+                    "Resource": "*",
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "BrokenPolicy-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "BrokenPolicy",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "PolicyName": "<policy-name>",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": "*",
+                    "Resource": "*",
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::IAM::Policy",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:7>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "resource-status-reason",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
