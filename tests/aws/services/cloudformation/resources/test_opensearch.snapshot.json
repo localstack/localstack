@@ -1,0 +1,113 @@
+{
+  "tests/aws/services/cloudformation/resources/test_opensearch.py::test_domain": {
+    "recorded-date": "31-08-2023, 17:42:29",
+    "recorded-content": {
+      "describe_domain": {
+        "DomainStatus": {
+          "ARN": "arn:aws:es:<region>:111111111111:domain/<domain-name:1>",
+          "AccessPolicies": "",
+          "AdvancedOptions": {
+            "override_main_response_version": "false",
+            "rest.action.multi.allow_explicit_index": "false"
+          },
+          "AdvancedSecurityOptions": {
+            "AnonymousAuthEnabled": false,
+            "Enabled": false,
+            "InternalUserDatabaseEnabled": false
+          },
+          "AutoTuneOptions": {
+            "State": "ENABLED",
+            "UseOffPeakWindow": false
+          },
+          "ChangeProgressDetails": {
+            "ChangeId": "<change-id:1>"
+          },
+          "ClusterConfig": {
+            "ColdStorageOptions": {
+              "Enabled": false
+            },
+            "DedicatedMasterEnabled": false,
+            "InstanceCount": 1,
+            "InstanceType": "r5.large.search",
+            "MultiAZWithStandbyEnabled": false,
+            "WarmEnabled": false,
+            "ZoneAwarenessEnabled": false
+          },
+          "CognitoOptions": {
+            "Enabled": false
+          },
+          "Created": true,
+          "Deleted": false,
+          "DomainEndpointOptions": {
+            "CustomEndpointEnabled": false,
+            "EnforceHTTPS": false,
+            "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07"
+          },
+          "DomainId": "<domain-id:1>",
+          "DomainName": "<domain-name:1>",
+          "EBSOptions": {
+            "EBSEnabled": true,
+            "Iops": 0,
+            "VolumeSize": 10,
+            "VolumeType": "gp2"
+          },
+          "EncryptionAtRestOptions": {
+            "Enabled": false
+          },
+          "Endpoint": "<endpoint:1>",
+          "EngineVersion": "OpenSearch_2.5",
+          "NodeToNodeEncryptionOptions": {
+            "Enabled": false
+          },
+          "OffPeakWindowOptions": {
+            "Enabled": true,
+            "OffPeakWindow": {
+              "WindowStartTime": {
+                "Hours": 2,
+                "Minutes": 0
+              }
+            }
+          },
+          "Processing": false,
+          "ServiceSoftwareOptions": {
+            "AutomatedUpdateDate": "datetime",
+            "Cancellable": false,
+            "CurrentVersion": "OpenSearch_2_5_R20230308-P4",
+            "Description": "There is no software update available for this domain.",
+            "NewVersion": "",
+            "OptionalDeployment": true,
+            "UpdateAvailable": false,
+            "UpdateStatus": "COMPLETED"
+          },
+          "SnapshotOptions": {
+            "AutomatedSnapshotStartHour": 0
+          },
+          "SoftwareUpdateOptions": {
+            "AutoSoftwareUpdateEnabled": false
+          },
+          "UpgradeProcessing": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags": {
+        "TagList": [
+          {
+            "Key": "anotherkey",
+            "Value": "hello"
+          },
+          {
+            "Key": "foo",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

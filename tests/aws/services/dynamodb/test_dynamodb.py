@@ -82,6 +82,15 @@ class TestDynamoDB:
 
     @markers.aws.only_localstack
     def test_time_to_live(self, aws_client, ddb_test_table):
+        # check response for inexistent table
+        response = testutil.send_describe_dynamodb_ttl_request("test")
+        assert json.loads(response._content)["__type"] == "ResourceNotFoundException"
+        assert response.status_code == 400
+
+        response = testutil.send_update_dynamodb_ttl_request("test", True)
+        assert json.loads(response._content)["__type"] == "ResourceNotFoundException"
+        assert response.status_code == 400
+
         # Insert some items to the table
         items = {
             "id1": {PARTITION_KEY: {"S": "id1"}, "data": {"S": "IT IS"}},

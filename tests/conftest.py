@@ -13,11 +13,13 @@ os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 pytest_plugins = [
     "localstack.testing.pytest.cloudtrail_tracking",
     "localstack.testing.pytest.fixtures",
+    "localstack.testing.pytest.container",
     "localstack.testing.pytest.snapshot",
     "localstack.testing.pytest.filters",
     "localstack.testing.pytest.fixture_conflicts",
     "localstack.testing.pytest.detect_thread_leakage",
     "localstack.testing.pytest.marking",
+    "localstack.testing.pytest.marker_report",
 ]
 
 

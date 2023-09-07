@@ -152,6 +152,10 @@ class ExecutionState(CommonStateField, abc.ABC):
 
         match res:
             case RetryOutcome.CanRetry:
+                retry_count = env.context_object_manager.context_object["State"].get(
+                    "RetryCount", 0
+                )
+                env.context_object_manager.context_object["State"]["RetryCount"] = retry_count + 1
                 self._eval_state(env)
             case _:
                 self._terminate_with_event(failure_event=failure_event, env=env)

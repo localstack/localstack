@@ -6,7 +6,9 @@ import traceback
 from typing import Dict, List, Optional, Tuple
 
 from localstack import config
+from localstack.cli.exceptions import CLIError
 from localstack.utils.analytics.cli import publish_invocation
+from localstack.utils.bootstrap import get_container_default_logfile_location
 from localstack.utils.json import CustomEncoder
 
 if sys.version_info >= (3, 8):
@@ -50,15 +52,15 @@ class ExceptionCmdHandler(click.Group):
             )
 
             if isinstance(e, DockerNotAvailable):
-                raise click.ClickException(
+                raise CLIError(
                     "Docker could not be found on the system.\n"
                     "Please make sure that you have a working docker environment on your machine."
                 )
             elif isinstance(e, ContainerException):
-                raise click.ClickException(e.message)
+                raise CLIError(e.message)
             else:
                 # If we have a generic exception, we wrap it in a ClickException
-                raise click.ClickException(str(e)) from e
+                raise CLIError(str(e)) from e
 
 
 def create_with_plugins() -> LocalstackCli:
@@ -345,7 +347,7 @@ def cmd_status_services(format_: str) -> None:
     except requests.ConnectionError:
         if config.DEBUG:
             console.print_exception()
-        raise click.ClickException(f"could not connect to LocalStack health endpoint at {url}")
+        raise CLIError(f"could not connect to LocalStack health endpoint at {url}")
 
 
 def _print_service_table(services: Dict[str, str]) -> None:
@@ -406,9 +408,9 @@ def cmd_start(
     with best-practice volume mounts and port mappings.
     """
     if docker and host:
-        raise click.ClickException("Please specify either --docker or --host")
+        raise CLIError("Please specify either --docker or --host")
     if host and detached:
-        raise click.ClickException("Cannot start detached in host mode")
+        raise CLIError("Cannot start detached in host mode")
 
     if not no_banner:
         print_banner()
@@ -438,7 +440,7 @@ def cmd_start(
         except ImportError:
             if config.DEBUG:
                 console.print_exception()
-            raise click.ClickException(
+            raise CLIError(
                 "It appears you have a light install of localstack which only supports running in docker.\n"
                 "If you would like to use --host, please install localstack with Python using "
                 "`pip install localstack[runtime]` instead."
@@ -461,7 +463,7 @@ def cmd_start(
             # `--network` is set.
             if config.MAIN_DOCKER_NETWORK:
                 if config.MAIN_DOCKER_NETWORK != network:
-                    raise click.ClickException(
+                    raise CLIError(
                         f"Values of MAIN_DOCKER_NETWORK={config.MAIN_DOCKER_NETWORK} and --network={network} "
                         f"do not match"
                     )
@@ -497,7 +499,7 @@ def cmd_stop() -> None:
         DOCKER_CLIENT.stop_container(container_name)
         console.print("container stopped: %s" % container_name)
     except NoSuchContainer:
-        raise click.ClickException(
+        raise CLIError(
             f'Expected a running LocalStack container named "{container_name}", but found none'
         )
 
@@ -532,11 +534,10 @@ def cmd_logs(follow: bool, tail: int) -> None:
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.
     """
-    from localstack.utils.bootstrap import LocalstackContainer
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     container_name = config.MAIN_CONTAINER_NAME
-    logfile = LocalstackContainer(container_name).logfile
+    logfile = get_container_default_logfile_location(container_name)
 
     if not DOCKER_CLIENT.is_container_running(container_name):
         console.print("localstack container not running")
@@ -586,7 +587,7 @@ def cmd_wait(timeout: Optional[float] = None) -> None:
     from localstack.utils.bootstrap import wait_container_is_ready
 
     if not wait_container_is_ready(timeout=timeout):
-        raise click.ClickException("timeout")
+        raise CLIError("timeout")
 
 
 @localstack.command(name="ssh", short_help="Obtain a shell in LocalStack")
@@ -605,7 +606,7 @@ def cmd_ssh() -> None:
     from localstack.utils.run import run
 
     if not DOCKER_CLIENT.is_container_running(config.MAIN_CONTAINER_NAME):
-        raise click.ClickException(
+        raise CLIError(
             f'Expected a running LocalStack container named "{config.MAIN_CONTAINER_NAME}", but found none'
         )
     try:
@@ -652,7 +653,7 @@ def cmd_update_localstack_cli() -> None:
     """
     if is_frozen_bundle():
         # "update" can only be performed if running from source / in a non-frozen interpreter
-        raise click.ClickException(
+        raise CLIError(
             "The LocalStack CLI can only update itself if installed via PIP. "
             "Please follow the instructions on https://docs.localstack.cloud/ to update your CLI."
         )
@@ -783,7 +784,7 @@ def localstack_completion(ctx: click.Context, shell: str) -> None:
 
     comp_cls = click.shell_completion.get_completion_class(shell)
     if comp_cls is None:
-        raise click.ClickException("Completion for given shell could not be found.")
+        raise CLIError("Completion for given shell could not be found.")
 
     # Click's program name is the base path of sys.argv[0]
     path = sys.argv[0]

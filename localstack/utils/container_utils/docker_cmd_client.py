@@ -403,7 +403,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["logs", container_name_or_id, "--follow"]
 
         process: subprocess.Popen = run(
-            cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.PIPE
+            cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.STDOUT
         )
 
         return CancellableProcessStream(process)
@@ -659,6 +659,11 @@ class CmdDockerClient(ContainerClient):
         cmd.append(container_name_or_id)
         LOG.debug("Start container with cmd: %s", cmd)
         return self._run_async_cmd(cmd, stdin, container_name_or_id)
+
+    def attach_to_container(self, container_name_or_id: str):
+        cmd = self._docker_cmd() + ["attach", container_name_or_id]
+        LOG.debug("Attaching to container %s", container_name_or_id)
+        return self._run_async_cmd(cmd, stdin=None, container_name=container_name_or_id)
 
     def _run_async_cmd(
         self, cmd: List[str], stdin: bytes, container_name: str, image_name=None

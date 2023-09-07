@@ -176,3 +176,7 @@
 /localstack/services/stepfunctions/ @dominikschubert
 /localstack/services/cloudformation/models/stepfunctions.py @dominikschubert
 /tests/aws/test_stepfunctions.py @dominikschubert
+
+# Bootstrap tests
+/tests/bootstrap @simonrw
+/localstack/testing/pytest/container.py @dominikschubert @simonrw

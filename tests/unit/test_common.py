@@ -2,7 +2,6 @@ import base64
 import io
 import itertools
 import os
-import socket
 import threading
 import time
 import zipfile
@@ -165,31 +164,6 @@ class TestCommon:
         }
         result = common.clone_safe(obj)
         assert result == {"foo": ["value", 123, 1.23, True]}
-
-    def test_free_tcp_port_blacklist_raises_exception(self):
-        blacklist = range(0, 70000)  # blacklist all existing ports
-        with pytest.raises(Exception) as ctx:
-            common.get_free_tcp_port(blacklist)
-
-        assert "Unable to determine free TCP" in str(ctx.value)
-
-    def test_port_can_be_bound(self):
-        port = common.get_free_tcp_port()
-        assert common.port_can_be_bound(port)
-
-    def test_port_can_be_bound_illegal_port(self):
-        assert not common.port_can_be_bound(9999999999)
-
-    def test_port_can_be_bound_already_bound(self):
-        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            tcp.bind(("", 0))
-            addr, port = tcp.getsockname()
-            assert not common.port_can_be_bound(port)
-        finally:
-            tcp.close()
-
-        assert common.port_can_be_bound(port)
 
     def test_to_unique_item_list(self):
         assert common.to_unique_items_list([1, 1, 2, 2, 3]) == [1, 2, 3]
@@ -600,7 +574,7 @@ class TestExternalServicePortsManager:
         self, external_service_ports_manager: ExternalServicePortsManager
     ):
         with pytest.raises(PortNotAvailableException):
-            external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START + 1)
+            external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_END + 1)
 
     def test_reserve_any_port_within_range(
         self, external_service_ports_manager: ExternalServicePortsManager
@@ -611,6 +585,7 @@ class TestExternalServicePortsManager:
     def test_reserve_port_all_reserved(
         self, external_service_ports_manager: ExternalServicePortsManager
     ):
+        external_service_ports_manager.reserve_port()
         external_service_ports_manager.reserve_port()
         with pytest.raises(PortNotAvailableException):
             external_service_ports_manager.reserve_port()

@@ -8,6 +8,7 @@ from localstack.aws.api.apigateway import (
     DocumentationVersion,
     DomainName,
     GatewayResponse,
+    GatewayResponseType,
     Model,
     RequestValidator,
     RestApi,
@@ -33,7 +34,7 @@ class RestApiContainer:
     # map doc version name -> DocumentationVersion
     documentation_versions: Dict[str, DocumentationVersion]
     # not used yet, still in moto
-    gateway_responses: Dict[str, GatewayResponse]
+    gateway_responses: Dict[GatewayResponseType, GatewayResponse]
     # maps Model name -> Model
     models: Dict[str, Model]
     # maps Model name -> resolved dict Model, so we don't need to load the JSON everytime

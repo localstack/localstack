@@ -1,3 +1,4 @@
+from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
 from localstack.testing.pytest import markers
 
 """
@@ -4339,9 +4340,27 @@ class TestLambdaTags:
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaLayer:
     @markers.aws.validated
-    def test_layer_exceptions(
-        self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client
-    ):
+    # AWS only allows a max of 15 compatible runtimes, split runtimes and run two tests
+    @pytest.mark.parametrize("runtimes", [RUNTIMES[:14], RUNTIMES[14:]])
+    def test_layer_compatibilities(self, snapshot, dummylayer, cleanups, aws_client, runtimes):
+        """Creates a single layer which is compatible with all"""
+        layer_name = f"testlayer-{short_uid()}"
+
+        publish_result = aws_client.lambda_.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=runtimes,
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=ARCHITECTURES,
+        )
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result["Version"]
+            )
+        )
+        snapshot.match("publish_result", publish_result)
+
+    @markers.aws.validated
+    def test_layer_exceptions(self, snapshot, dummylayer, cleanups, aws_client):
         """
         API-level exceptions and edge cases for lambda layers
         """

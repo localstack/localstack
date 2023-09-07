@@ -150,6 +150,12 @@ class StateTaskService(StateTask, abc.ABC):
                 )
 
                 return StateTaskServiceApiGateway()
+            case "sns":
+                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sns import (
+                    StateTaskServiceSns,
+                )
+
+                return StateTaskServiceSns()
 
             case unknown:
                 raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa

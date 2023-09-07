@@ -18,6 +18,7 @@ from botocore.config import Config
 
 from localstack import config as localstack_config
 from localstack.constants import (
+    AWS_REGION_US_EAST_1,
     INTERNAL_AWS_ACCESS_KEY_ID,
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
@@ -464,6 +465,14 @@ class ExternalClientFactory(ClientFactory):
             config = self._config
         else:
             config = self._config.merge(config)
+
+        # Boto has an odd behaviour when using a non-default (any other region than us-east-1) in config
+        # If the region in arg is non-default, it gives the arg the precedence
+        # But if the region in arg is default (us-east-1), it gives precedence to one in config
+        # Below: always give precedence to arg region
+        if config and config.region_name != AWS_REGION_US_EAST_1:
+            if region_name == AWS_REGION_US_EAST_1:
+                config = config.merge(Config(region_name=region_name))
 
         endpoint_url = endpoint_url or get_local_service_url(service_name)
         if service_name == "s3":

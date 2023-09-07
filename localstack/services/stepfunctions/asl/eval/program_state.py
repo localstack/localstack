@@ -51,3 +51,7 @@ class ProgramError(ProgramState):
     def __init__(self, error: Optional[ExecutionFailedEventDetails]):
         super().__init__()
         self.error = error
+
+
+class ProgramTimedOut(ProgramState):
+    pass

@@ -91,9 +91,8 @@ class TestCliContainerLifecycle:
         runner.invoke(cli, ["start", "-d"])
         runner.invoke(cli, ["wait", "-t", "60"])
 
-        result = runner.invoke(cli, ["logs", "--tail", "3"])
-        assert result.output.count("\n") == 3
-        assert constants.READY_MARKER_OUTPUT in result.output
+        result = runner.invoke(cli, ["logs", "--tail", "20"])
+        assert constants.READY_MARKER_OUTPUT in result.output.splitlines()
 
     def test_status_services(self, runner):
         result = runner.invoke(cli, ["status", "services"])

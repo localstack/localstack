@@ -56,9 +56,11 @@ class JobPool:
             except IndexError:
                 return None
 
+    def _is_terminated(self) -> bool:
+        return len(self._closed_jobs) == self._jobs_number or self._worker_exception is not None
+
     def _notify_on_termination(self):
-        all_cosed = len(self._closed_jobs) == self._jobs_number
-        if all_cosed or self._worker_exception is not None:
+        if self._is_terminated():
             self._termination_event.set()
 
     def get_worker_exception(self) -> Optional[Exception]:
@@ -84,4 +86,5 @@ class JobPool:
         return sorted(closed_jobs, key=lambda closed_job: closed_job.job_index)
 
     def await_jobs(self):
-        self._termination_event.wait()
+        if not self._is_terminated():
+            self._termination_event.wait()

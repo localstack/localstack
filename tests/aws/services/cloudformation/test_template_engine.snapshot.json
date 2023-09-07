@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/test_template_engine.py::TestTypes::test_implicit_type_conversion": {
-    "recorded-date": "12-08-2022, 16:14:04",
+    "recorded-date": "29-08-2023, 15:21:22",
     "recorded-content": {
       "queue": {
         "Attributes": {
@@ -18,7 +18,7 @@
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
-          "SqsManagedSseEnabled": "false",
+          "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
         },
         "ResponseMetadata": {

@@ -195,11 +195,7 @@ from localstack.aws.api.s3 import (
     VersioningConfiguration,
     WebsiteConfiguration,
 )
-from localstack.aws.handlers import (
-    modify_service_response,
-    preprocess_request,
-    serve_custom_service_request_handlers,
-)
+from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
@@ -220,10 +216,7 @@ from localstack.services.s3.exceptions import (
     UnexpectedContent,
 )
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
-from localstack.services.s3.presigned_url import (
-    s3_presigned_url_response_handler,
-    validate_post_policy,
-)
+from localstack.services.s3.presigned_url import validate_post_policy
 from localstack.services.s3.utils import (
     ObjectRange,
     add_expiration_days_to_datetime,
@@ -265,7 +258,7 @@ from localstack.services.s3.v3.models import (
     VersionedKeyStore,
     s3_stores,
 )
-from localstack.services.s3.v3.storage.core import LimitedIterableStream
+from localstack.services.s3.v3.storage.core import LimitedIterableStream, S3ObjectStore
 from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.services.s3.validation import (
     parse_grants_in_headers,
@@ -279,6 +272,7 @@ from localstack.services.s3.validation import (
     validate_website_configuration,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.strings import short_uid, to_str
 
@@ -288,14 +282,13 @@ STORAGE_CLASSES = get_class_attrs_from_spec_class(StorageClass)
 SSE_ALGORITHMS = get_class_attrs_from_spec_class(ServerSideEncryption)
 OBJECT_OWNERSHIPS = get_class_attrs_from_spec_class(ObjectOwnership)
 
-# TODO: pre-signed URLS -> REMAP parameters from querystring to headers???
-#  create a handler which handle pre-signed and remap before parsing the request!
+DEFAULT_S3_TMP_DIR = "/tmp/localstack-s3-storage"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):
-    def __init__(self) -> None:
+    def __init__(self, storage_backend: S3ObjectStore = None) -> None:
         super().__init__()
-        self._storage_backend = EphemeralS3ObjectStore()
+        self._storage_backend = storage_backend or EphemeralS3ObjectStore(DEFAULT_S3_TMP_DIR)
         self._notification_dispatcher = NotificationDispatcher()
         self._cors_handler = S3CorsHandler(BucketCorsIndex())
 
@@ -306,11 +299,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         preprocess_request.append(self._cors_handler)
         serve_custom_service_request_handlers.append(s3_cors_request_handler)
-        modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)
         register_website_hosting_routes(router=ROUTER)
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(s3_stores)
+        visitor.visit(AssetDirectory(self._storage_backend.root_directory))
+
+    def on_before_state_save(self):
+        self._storage_backend.flush()
 
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
+        self._storage_backend.close()
 
     def _notify(
         self,
@@ -435,6 +435,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     "Your previous request to create the named bucket succeeded and you already own it.",
                     BucketName=bucket_name,
                 )
+            else:
+                # CreateBucket is idempotent in us-east-1
+                return CreateBucketOutput(Location=f"/{bucket_name}")
 
         if (
             object_ownership := request.get("ObjectOwnership")
@@ -459,6 +462,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
         self._cors_handler.invalidate_cache()
+        self._storage_backend.create_bucket(bucket_name)
 
         # Location is always contained in response -> full url for LocationConstraint outside us-east-1
         location = (
@@ -490,6 +494,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.global_bucket_map.pop(bucket)
         self._cors_handler.invalidate_cache()
         self._expiration_cache.pop(bucket, None)
+        # clean up the storage backend
+        self._storage_backend.delete_bucket(bucket)
 
     def list_buckets(
         self,
@@ -1987,7 +1993,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_multipart.complete_multipart(parts)
 
         stored_multipart = self._storage_backend.get_multipart(bucket, s3_multipart)
-        stored_multipart.complete_multipart(parts_numbers)
+        stored_multipart.complete_multipart(
+            [s3_multipart.parts.get(part_number) for part_number in parts_numbers]
+        )
 
         s3_object = s3_multipart.object
 

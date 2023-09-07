@@ -3,6 +3,8 @@ import json
 import logging
 import os
 import threading
+from http.client import HTTPConnection
+from urllib.parse import urlparse
 
 import botocore.exceptions
 import pytest
@@ -29,6 +31,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import call_safe, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -482,12 +485,33 @@ class TestOpensearchProvider:
         assert response["DomainStatusList"][0]["DomainName"] == opensearch_domain
 
     @markers.aws.unknown
-    def test_gzip_responses(self, opensearch_endpoint):
-        gzip_response = requests.get(opensearch_endpoint, stream=True)
+    def test_gzip_responses(self, opensearch_endpoint, monkeypatch):
+        def send_plain_request(method, url):
+            """
+            It's basically impossible to send a request without an Accept-Encoding header with Python's standard
+            lib when using http.client.
+            This function sends a plain request by directly interacting with the HTTPConnection.
+            """
+            parsed = urlparse(url)
+            connection = HTTPConnection(host=parsed.hostname, port=parsed.port)
+            connection.putrequest(method, parsed.path, skip_accept_encoding=True)
+            connection.endheaders()
+            response = connection.getresponse()
+            connection.close()
+            return response
+
+        plain_response = send_plain_request("GET", opensearch_endpoint)
+        assert "cluster_name" in to_str(plain_response.read())
+
+        # ensure that requests with the "Accept-Encoding": "gzip" header receive gzip compressed responses
+        gzip_accept_headers = {"Accept-Encoding": "gzip"}
+        gzip_response = requests.get(opensearch_endpoint, headers=gzip_accept_headers, stream=True)
         # get the raw data, don't let requests decode the response
-        raw_data = b"".join(chunk for chunk in gzip_response.raw.stream(1024, decode_content=False))
+        raw_gzip_data = b"".join(
+            chunk for chunk in gzip_response.raw.stream(1024, decode_content=False)
+        )
         # force the gzip decoding here (which would raise an exception if it's not actually gzip)
-        assert gzip.decompress(raw_data)
+        assert gzip.decompress(raw_gzip_data)
 
     @markers.aws.unknown
     def test_domain_version(self, opensearch_domain, opensearch_create_domain, aws_client):

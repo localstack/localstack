@@ -69,7 +69,7 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout Community
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: localstack
 
@@ -131,7 +131,7 @@ jobs:
             return DEFAULT_REF
 
       - name: Checkout Pro
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: localstack/localstack-ext
           ref: ${{steps.determine-companion-ref.outputs.result}}
@@ -243,7 +243,7 @@ jobs:
           AWS_DEFAULT_REGION: "us-east-1"
           PYTEST_LOGLEVEL: debug
           TEST_PATH: "../localstack/tests/aws/"  # TODO: also include tests/integration/
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}--splits 2 --group ${{ matrix.group }} --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}--splits 2 --group ${{ matrix.group }} --durations-path ../localstack/.test_durations --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
         working-directory: localstack-ext
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)

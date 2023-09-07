@@ -61,7 +61,7 @@ jobs:
       CI_JOB_ID: ${{ github.job }}-${{ matrix.python-version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python
         id: setup-python
         uses: actions/setup-python@v4
@@ -76,4 +76,4 @@ jobs:
         env:
           PYTEST_ADDOPTS: "${{ env.TINYBIRD_PYTEST_ARGS }}-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s"
         run: |
-          python -m pytest tests/bootstrap/
+          python -m pytest tests/cli/

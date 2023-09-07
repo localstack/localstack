@@ -333,3 +333,48 @@ class TestBaseScenarios:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "exec_input",
+        [json.dumps({"result": {"done": True}}), json.dumps({"result": {"done": False}})],
+    )
+    def test_choice_unsorted_parameters(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        exec_input,
+    ):
+        template = ST.load_sfn_template(ST.CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS)
+        definition = json.dumps(template)
+
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_choice_aws_docs_scenario(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.CHOICE_STATE_AWS_SCENARIO)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"type": "Private", "value": 22})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )

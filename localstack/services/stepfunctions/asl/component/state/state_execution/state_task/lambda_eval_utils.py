@@ -35,8 +35,8 @@ def exec_lambda_function(env: Environment, parameters: dict) -> None:
     resp_payload = invocation_resp["Payload"].read()
     resp_payload_str = to_str(resp_payload)
     resp_payload_json: json = json.loads(resp_payload_str)
-    resp_payload_value = resp_payload_json if resp_payload_json is not None else dict()
-    invocation_resp["Payload"] = resp_payload_value
+    # resp_payload_value = resp_payload_json if resp_payload_json is not None else dict()
+    invocation_resp["Payload"] = resp_payload_json
 
     response = select_from_typed_dict(typed_dict=InvocationResponse, obj=invocation_resp)
     env.stack.append(response)
@@ -45,7 +45,10 @@ def exec_lambda_function(env: Environment, parameters: dict) -> None:
 def to_payload_type(payload: Any) -> Optional[bytes]:
     if isinstance(payload, bytes):
         return payload
-    if isinstance(payload, str):
+
+    if payload is None:
+        str_value = to_json_str(dict())
+    elif isinstance(payload, str):
         try:
             json.loads(payload)
             str_value = payload

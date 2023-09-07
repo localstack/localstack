@@ -41,6 +41,16 @@ def keys_lower(model: dict) -> dict:
     return {k.lower(): v for k, v in model.items()}
 
 
+def remove_none_values(obj):
+    """Remove None values (recursively) in the given object."""
+    if isinstance(obj, dict):
+        return {k: remove_none_values(v) for k, v in obj.items() if v is not None}
+    elif isinstance(obj, list):
+        return [o for o in obj if o is not None]
+    else:
+        return obj
+
+
 # FIXME: this shouldn't be necessary in the future
 param_validation = re.compile(
     r"Invalid type for parameter (?P<param>\w+), value: (?P<value>\w+), type: <class '(?P<wrong_class>\w+)'>, valid types: <class '(?P<valid_class>\w+)'>"

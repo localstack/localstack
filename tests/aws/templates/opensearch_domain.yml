@@ -1,15 +1,39 @@
-Parameters:
-  domainName:
-    Type: String
-    Default: DomainName
 Resources:
-  Domain:
-    Type: AWS::OpenSearchService::Domain
+  Domain66AC69E0:
+    Type: "AWS::OpenSearchService::Domain"
     Properties:
-      DomainName:
-        Ref: domainName
-      EngineVersion: OpenSearch_1.0
+      AdvancedOptions:
+        rest.action.multi.allow_explicit_index: "false"
       ClusterConfig:
-        InstanceType: 'm3.medium.search'
-        # test using string types instead of int
-        InstanceCount: "2"
+        DedicatedMasterEnabled: false
+        InstanceCount: 1
+        InstanceType: "r5.large.search"
+        ZoneAwarenessEnabled: false
+      DomainEndpointOptions:
+        EnforceHTTPS: false
+        TLSSecurityPolicy: "Policy-Min-TLS-1-0-2019-07"
+      EBSOptions:
+        EBSEnabled: true
+        Iops: 0
+        VolumeSize: 10
+        VolumeType: "gp2"
+      EncryptionAtRestOptions:
+        Enabled: false
+      EngineVersion: "OpenSearch_2.5"
+      LogPublishingOptions: {}
+      NodeToNodeEncryptionOptions:
+        Enabled: false
+      Tags:
+        - Key: foo
+          Value: bar
+        - Key: anotherkey
+          Value: hello
+    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: "Delete"
+Outputs:
+  SearchDomain:
+    Value: !Ref "Domain66AC69E0"
+  SearchDomainEndpoint:
+    Value: !GetAtt Domain66AC69E0.DomainEndpoint
+  SearchDomainArn:
+    Value: !GetAtt Domain66AC69E0.DomainArn
