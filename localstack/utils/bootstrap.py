@@ -477,7 +477,7 @@ class ContainerConfigurators:
             if cfg.additional_flags is None:
                 cfg.additional_flags = " ".join(docker_flags)
             else:
-                cfg.additional_flags += " ".join(docker_flags)
+                cfg.additional_flags += " " + " ".join(docker_flags)
 
     @staticmethod
     def container_name(name: str):
