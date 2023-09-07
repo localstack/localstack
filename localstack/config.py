@@ -1051,6 +1051,10 @@ CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED
 # e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
 CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
 
+# defaults to false
+# if `DISABLE_BOTO_RETRIES=1` is set, all our created boto clients will have retries disabled
+DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
@@ -1069,6 +1073,7 @@ CONFIG_ENV_VARS = [
     "DEFAULT_REGION",
     "DEVELOP",
     "DEVELOP_PORT",
+    "DISABLE_BOTO_RETRIES",
     "DISABLE_CORS_CHECKS",
     "DISABLE_CORS_HEADERS",
     "DISABLE_CUSTOM_CORS_APIGATEWAY",
