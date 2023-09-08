@@ -179,8 +179,6 @@ class Ec2Provider(Ec2Api, ABC):
                                 SecurityGroupRule(
                                     CidrIpv4=ip_range.get("CidrIp", None),
                                     CidrIpv6=ip_range.get("CidrIpv6", None),
-                                    PrefixListId=None,
-                                    ReferencedGroupInfo=None,
                                     Description=ip_range.get("Description", None),
                                     **common_fields,
                                 )
@@ -197,9 +195,6 @@ class Ec2Provider(Ec2Api, ABC):
                                         UserId=source_group.get("OwnerId", None),
                                     ),
                                     Description=source_group.get("Description", None),
-                                    CidrIpv4=None,
-                                    CidrIpv6=None,
-                                    PrefixListId=None,
                                     **common_fields,
                                 )
                                 for source_group in rule.source_groups
@@ -212,9 +207,6 @@ class Ec2Provider(Ec2Api, ABC):
                                 SecurityGroupRule(
                                     PrefixListId=prefix_list_id.get("PrefixListId"),
                                     Description=prefix_list_id.get("Description", None),
-                                    ReferencedGroupInfo=None,
-                                    CidrIpv4=None,
-                                    CidrIpv6=None,
                                     **common_fields,
                                 )
                                 for prefix_list_id in rule.prefix_list_ids
