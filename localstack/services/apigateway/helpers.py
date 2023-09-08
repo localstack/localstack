@@ -5,6 +5,7 @@ import json
 import logging
 import re
 import time
+import xml.etree.ElementTree as ET
 from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
@@ -551,6 +552,15 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
 # ---------------
 
 
+def is_valid_xml(xml_string):
+    try:
+        # Attempt to parse the XML string
+        ET.fromstring(xml_string.encode("utf-8"))
+        return True
+    except ET.ParseError:
+        return False
+
+
 def path_based_url(api_id: str, stage_name: str, path: str) -> str:
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
     pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
@@ -764,6 +774,10 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                     # if "path" is an attribute name pointing to an array in "subject", and we're running
                     # an "add" operation, then we should use the standard-compliant notation "/path/-"
                     operation["path"] = f"{path}/-"
+
+            if operation["op"] == "remove":
+                path = operation["path"]
+                common.assign_to_path(subject, path, value={}, delimiter="/")
 
             result = apply_patch(subject, [operation], in_place=in_place)
             if not in_place:

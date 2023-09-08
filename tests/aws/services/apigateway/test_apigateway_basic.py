@@ -1919,7 +1919,7 @@ class TestIntegrations:
         result = requests.post(url, data=json.dumps(test_data))
         assert 200 == result.status_code
 
-        parsed_json = xmltodict.parse(result.content)
+        parsed_json = json.loads(result.content)
         result = parsed_json["SendMessageResponse"]["SendMessageResult"]
 
         body_md5 = result["MD5OfMessageBody"]

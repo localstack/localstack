@@ -70,8 +70,29 @@ def apply_patches():
                 integration.timeout_in_millis = int(integration.timeout_in_millis)
             if skip_verification := (integration.tls_config or {}).get("insecureSkipVerification"):
                 integration.tls_config["insecureSkipVerification"] = str_to_bool(skip_verification)
+            return 200, {}, json.dumps(integration.to_json())
 
         return result
+
+    @patch(APIGatewayResponse.integration_responses)
+    def apigateway_response_integration_responses(fn, self, request, *args, **kwargs):
+        result = fn(self, request, *args, **kwargs)
+        if self.method not in ["PATCH"]:
+            return result
+
+        url_path_parts = self.path.split("/")
+        function_id = url_path_parts[2]
+        resource_id = url_path_parts[4]
+        method_type = url_path_parts[6]
+
+        integration = self.backend.get_integration(function_id, resource_id, method_type)
+        if not integration:
+            return result
+
+        if self.method == "PATCH":
+            patch_operations = self._get_param("patchOperations")
+            apply_json_patch_safe(integration.to_json(), patch_operations, in_place=True)
+            return 200, {}, json.dumps(integration.to_json())
 
     @patch(APIGatewayResponse.usage_plan_individual)
     def apigateway_response_usage_plan_individual(

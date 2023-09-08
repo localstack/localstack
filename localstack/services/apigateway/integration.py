@@ -673,10 +673,23 @@ class SQSIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
         integration = invocation_context.integration
         uri = integration.get("uri") or integration.get("integrationUri") or ""
-
-        template = integration["requestTemplates"].get(APPLICATION_JSON)
         account_id, queue = uri.split("/")[-2:]
         region_name = uri.split(":")[3]
+
+        headers = get_internal_mocked_headers(
+            service_name="sqs",
+            region_name=region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
+        )
+
+        # integration parameters can override headers
+        integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
+        headers.update(integration_parameters.get("headers", {}))
+        if "Accept" not in headers:
+            headers["Accept"] = "application/json"
+
+        template = integration.get("requestTemplates").get(APPLICATION_JSON)
         if "GetQueueUrl" in template or "CreateQueue" in template:
             request_templates = RequestTemplates()
             payload = request_templates.render(invocation_context)
@@ -686,14 +699,6 @@ class SQSIntegration(BackendIntegration):
             payload = request_templates.render(invocation_context)
             queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
             new_request = f"{payload}&QueueUrl={queue_url}"
-
-        # forward records to target kinesis stream
-        headers = get_internal_mocked_headers(
-            service_name="sqs",
-            region_name=region_name,
-            role_arn=invocation_context.integration.get("credentials"),
-            source_arn=get_source_arn(invocation_context),
-        )
 
         url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
         response = common.make_http_request(url, method="POST", headers=headers, data=new_request)
