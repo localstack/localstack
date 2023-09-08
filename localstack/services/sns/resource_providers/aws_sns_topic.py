@@ -1,7 +1,6 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Optional, Type, TypedDict
 
