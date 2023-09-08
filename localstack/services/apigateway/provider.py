@@ -76,6 +76,7 @@ from localstack.aws.api.apigateway import (
     RestApis,
     SecurityPolicy,
     Stage,
+    Stages,
     StatusCode,
     String,
     Tags,
@@ -849,6 +850,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not hasattr(stage, "documentation_version"):
             stage.documentation_version = request.get("documentationVersion")
 
+        # make sure we update the stage_name on the deployment entity in moto
+        deployment = moto_api.deployments.get(request["deploymentId"])
+        deployment.stage_name = stage.name
+
         response = stage.to_json()
         self._patch_stage_response(response)
         return response
@@ -857,6 +862,16 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = call_moto(context)
         self._patch_stage_response(response)
         return response
+
+    def get_stages(
+        self, context: RequestContext, rest_api_id: String, deployment_id: String = None
+    ) -> Stages:
+        response = call_moto(context)
+        for stage in response["item"]:
+            self._patch_stage_response(stage)
+            if not stage.get("description"):
+                stage.pop("description", None)
+        return Stages(**response)
 
     @handler("UpdateStage")
     def update_stage(
