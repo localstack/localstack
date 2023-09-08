@@ -226,11 +226,20 @@ def s3_empty_bucket(aws_client):
     # Boto resource would make this a straightforward task, but our internal client does not support Boto resource
     # FIXME: this won't work when bucket has more than 1000 objects
     def factory(bucket_name: str):
+        kwargs = {}
+        try:
+            aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+            kwargs["BypassGovernanceRetention"] = True
+        except ClientError:
+            pass
+
         response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
         objects = [{"Key": obj["Key"]} for obj in response.get("Contents", [])]
         if objects:
             aws_client.s3.delete_objects(
-                Bucket=bucket_name, Delete={"Objects": objects}, BypassGovernanceRetention=True
+                Bucket=bucket_name,
+                Delete={"Objects": objects},
+                **kwargs,
             )
 
         response = aws_client.s3.list_object_versions(Bucket=bucket_name)
@@ -242,7 +251,7 @@ def s3_empty_bucket(aws_client):
             aws_client.s3.delete_objects(
                 Bucket=bucket_name,
                 Delete={"Objects": object_versions},
-                BypassGovernanceRetention=True,
+                **kwargs,
             )
 
     yield factory
