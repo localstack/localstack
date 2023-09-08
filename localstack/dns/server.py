@@ -695,17 +695,17 @@ class DnsServer(Server, DnsServerProtocol):
         self.resolver.clear()
 
 
-def get_fallback_dns_server():
-    return config.DNS_SERVER or get_available_dns_server()
+def get_fallback_dns_server(host):
+    return config.DNS_SERVER or get_available_dns_server(host)
 
 
 @cache
-def get_available_dns_server():
+def get_available_dns_server(host: str):
     #  TODO check if more loop-checks are necessary than just not using our own DNS server
     with FALLBACK_DNS_LOCK:
         resolver = dns.resolver.Resolver()
         candidates = [
-            r for r in resolver.nameservers if r != config.DNS_ADDRESS
+            r for r in resolver.nameservers if r != host
         ]  # we do not want to get this dns server here, or a loop might happen
         result = None
         candidates.append(DEFAULT_FALLBACK_DNS_SERVER)
@@ -773,7 +773,7 @@ def setup_network_configuration():
         add_resolv_entry()
 
 
-def start_server(upstream_dns: str, port: int = config.DNS_PORT):
+def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
     global DNS_SERVER
 
     if DNS_SERVER:
@@ -781,10 +781,8 @@ def start_server(upstream_dns: str, port: int = config.DNS_PORT):
         LOG.debug("DNS servers are already started. Avoid starting again.")
         return
 
-    LOG.debug("Starting DNS servers (tcp/udp port %s on %s)..." % (port, config.DNS_ADDRESS))
-    dns_server = DnsServer(
-        port, protocols=["tcp", "udp"], host=config.DNS_ADDRESS, upstream_dns=upstream_dns
-    )
+    LOG.debug("Starting DNS servers (tcp/udp port %s on %s)..." % (port, host))
+    dns_server = DnsServer(port, protocols=["tcp", "udp"], host=host, upstream_dns=upstream_dns)
     for name in NAME_PATTERNS_POINTING_TO_LOCALSTACK:
         dns_server.add_host_pointing_to_localstack(name)
     if config.DNS_LOCAL_NAME_PATTERNS:
@@ -809,13 +807,18 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
         LOG.debug("Not starting DNS. DNS_ADDRESS=%s", config.DNS_ADDRESS)
         return
 
-    upstream_dns = get_fallback_dns_server()
+    # host to bind the DNS server to. In docker we always want to bind to "0.0.0.0"
+    host = config.DNS_ADDRESS
+    if in_docker():
+        host = "0.0.0.0"
+
+    upstream_dns = get_fallback_dns_server(host)
     if not upstream_dns:
         LOG.warning("Error starting the DNS server: No upstream dns server found.")
         return
 
     if port_can_be_bound(Port(port, "udp")):
-        start_server(port=port, upstream_dns=upstream_dns)
+        start_server(port=port, host=host, upstream_dns=upstream_dns)
         if not asynchronous:
             sleep_forever()
         return
