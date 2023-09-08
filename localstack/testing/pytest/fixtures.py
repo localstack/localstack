@@ -228,7 +228,7 @@ def s3_empty_bucket(aws_client):
     def factory(bucket_name: str):
         kwargs = {}
         try:
-            aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+            aws_client.s3.get_object_lock_configuration(Bucket=bucket_name)
             kwargs["BypassGovernanceRetention"] = True
         except ClientError:
             pass
