@@ -67,6 +67,7 @@ def delete_route53_resolver_endpoint(route53resolver_client, resolver_endpoint_i
     return _delete_resolver_endpoint
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ResolverEndpointType"])
 class TestRoute53Resolver:
 
     # TODO: make this class level?
@@ -545,6 +546,11 @@ class TestRoute53Resolver:
             )
         snapshot.match("resource_not_found_res", resource_not_found)
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..DestinationArn"  # arn of log group has a ":*" suffix which create_resolver_query_log_config seems to strip on AWS
+        ]
+    )
     @markers.aws.validated
     def test_create_resolver_query_log_config(self, cleanups, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("Name"))
@@ -581,6 +587,7 @@ class TestRoute53Resolver:
         )
         snapshot.match("delete_resolver_query_log_config_res", delete_resolver_config)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Message"])
     @markers.aws.validated
     def test_delete_non_existent_resolver_query_log_config(self, snapshot, aws_client):
         resolver_rqlc_id = "test_123_doesntexist"
@@ -592,8 +599,9 @@ class TestRoute53Resolver:
             )
         error_msg = resource_not_found.value.response["Error"]["Message"]
         match = re.search('Trace Id: "(.+)"', error_msg)
-        trace_id = match.groups()[0]
-        snapshot.add_transformer(snapshot.transform.regex(trace_id, "<trace-id>"))
+        if match:
+            trace_id = match.groups()[0]
+            snapshot.add_transformer(snapshot.transform.regex(trace_id, "<trace-id>"))
 
         snapshot.match(
             "resource_not_found_ex",
