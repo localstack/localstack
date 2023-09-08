@@ -235,6 +235,7 @@ from localstack.services.s3.utils import (
     get_system_metadata_from_request,
     get_unique_key_id,
     is_bucket_name_valid,
+    parse_copy_source_range_header,
     parse_post_object_tagging_xml,
     parse_range_header,
     parse_tagging_header,
@@ -1910,7 +1911,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         source_range = request.get("CopySourceRange")
         # TODO implement copy source IF (done in ASF provider)
-        range_data = parse_range_header(source_range, src_s3_object.size)
+        range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
         s3_part = S3Part(part_number=part_number)
 

@@ -5,6 +5,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.strings import long_uid, short_uid
@@ -438,8 +439,154 @@ class TestS3ObjectCRUD:
         list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
         snapshot.match("list-object-versions", list_object_versions)
 
-        # TODO: test with Next? xxx
-        # TODO: test with ListObject/ListObjectV2
+    @markers.aws.validated
+    def test_get_object_range(self, aws_client, s3_bucket, snapshot):
+        content = "0123456789"
+        key = "test-key-range"
+
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=content)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-8")
+        snapshot.match("get-0-8", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-1")
+        snapshot.match("get-1-1", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-0")
+        snapshot.match("get-1-0", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-")
+        snapshot.match("get-1-", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-1-")
+        snapshot.match("get--1-", resp)
+
+        # test suffix byte range, returning the 2 last bytes
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-2")
+        snapshot.match("get--2", resp)
+
+        # test suffix byte range, returning the 9 last bytes
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-9")
+        snapshot.match("get--9", resp)
+
+        # test suffix byte range, returning the 15 last bytes, which will return max 0
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-15")
+        snapshot.match("get--15", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-100")
+        snapshot.match("get-0-100", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-0")
+        snapshot.match("get-0-0", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0--1")
+        snapshot.match("get-0--1", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-1,3-4,7-9")
+        snapshot.match("get-multiple-ranges", resp)
+
+        if config.NATIVE_S3_PROVIDER or is_aws_cloud():
+            # FIXME: missing handling in moto for very wrong format of the range header
+            resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="0-1")
+            snapshot.match("get-wrong-format", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-")
+        snapshot.match("get--", resp)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-0")
+        snapshot.match("get--0", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=100-200")
+        snapshot.match("get-100-200", e.value.response)
+
+
+class TestS3Multipart:
+    # TODO: write a validated test for UploadPartCopy preconditions
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto does not handle the exceptions properly",
+    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PartNumberMarker"])  # TODO: invetigate this
+    def test_upload_part_copy_range(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+        src_key = "src-key"
+        content = "0123456789"
+        put_src_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body=content)
+        snapshot.match("put-src-object", put_src_object)
+        key = "test-upload-part-copy"
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        copy_source_key = f"{s3_bucket}/{src_key}"
+        parts = []
+        # not using parametrization here as it needs a lot of setup for only one operation tested
+        src_ranges_values = [
+            "0-8",
+            "1-1",
+            "0-0",
+        ]
+        for i, src_range in enumerate(src_ranges_values):
+            upload_part_copy = aws_client.s3.upload_part_copy(
+                Bucket=s3_bucket,
+                UploadId=upload_id,
+                Key=key,
+                PartNumber=i + 1,
+                CopySource=copy_source_key,
+                CopySourceRange=f"bytes={src_range}",
+            )
+            snapshot.match(f"upload-part-copy-{i + 1}", upload_part_copy)
+            parts.append({"ETag": upload_part_copy["CopyPartResult"]["ETag"], "PartNumber": i + 1})
+
+        list_parts = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key, UploadId=upload_id)
+        snapshot.match("list-parts", list_parts)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part_copy(
+                Bucket=s3_bucket,
+                UploadId=upload_id,
+                Key=key,
+                PartNumber=1,
+                CopySource=copy_source_key,
+                CopySourceRange="0-8",
+            )
+        snapshot.match("upload-part-copy-wrong-format", e.value.response)
+
+        wrong_src_ranges_values = [
+            "1-0",
+            "-1-",
+            "0--1",
+            "0-1,3-4,7-9",
+            "-",
+            "-0",
+            "0-100",
+            "100-200",
+            "1-",
+            "-2",
+            "-15",
+        ]
+        for src_range in wrong_src_ranges_values:
+            with pytest.raises(ClientError) as e:
+                aws_client.s3.upload_part_copy(
+                    Bucket=s3_bucket,
+                    UploadId=upload_id,
+                    Key=key,
+                    PartNumber=1,
+                    CopySource=copy_source_key,
+                    CopySourceRange=f"bytes={src_range}",
+                )
+            snapshot.match(f"upload-part-copy-range-exc-{src_range}", e.value.response)
 
 
 @pytest.mark.skipif(
