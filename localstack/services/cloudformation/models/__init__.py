@@ -7,7 +7,7 @@ __all__ = [
     "dynamodb",
     "ec2",
     "ecr",
-    "elasticsearch",
+    "es",
     "opensearch",
     "events",
     "iam",
