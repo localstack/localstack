@@ -274,18 +274,19 @@ class TestBookstoreApplication:
         outputs = infrastructure.get_stack_outputs("BookstoreStack")
         search_fn = outputs.get("SearchForBooksFn")
 
-        def _verify_cookbooks_search():
+        def _verify_search(category: str, expected_amount: int):
             res = aws_client.lambda_.invoke(
                 FunctionName=search_fn,
-                Payload=to_bytes(json.dumps({"queryStringParameters": {"q": "cookbooks"}})),
+                Payload=to_bytes(json.dumps({"queryStringParameters": {"q": category}})),
             )
             res = json.loads(to_str(res["Payload"].read()))
             search_res = json.loads(res["body"])["hits"]["total"]["value"]
-            assert search_res == 26
+            assert search_res == expected_amount
+            return res
 
         # it might take a little until the search is fully functional
-        # because we have a event source mapping
-        retry(_verify_cookbooks_search, retries=100, sleep=1)
+        # because we have an event source mapping
+        retry(lambda: _verify_search("cookbooks", 26), retries=100, sleep=1)
 
         # search for book with title "Spaghetti"
         search_payload = {"queryStringParameters": {"q": "Spaghetti"}}
@@ -298,23 +299,15 @@ class TestBookstoreApplication:
         search_result = json.loads(result["body"])
         snapshot.match("search_name_spaghetti", search_result)
 
+        # we witnessed a flaky test in CI where some search queries did not return the expected result
+        # assuming some entries might need longer to be indexed
         # search for author
-        search_payload["queryStringParameters"]["q"] = "aubree"
-        result = aws_client.lambda_.invoke(
-            FunctionName=search_fn,
-            Payload=to_bytes(json.dumps(search_payload)),
-        )
-        result = json.loads(to_str(result["Payload"].read()))
+        result = retry(lambda: _verify_search("aubree", 5), retries=20, sleep=1)
         search_result = json.loads(result["body"])
         snapshot.match("search_author_aubree", search_result)
 
         # search for category
-        search_payload["queryStringParameters"]["q"] = "Home Impro"
-        result = aws_client.lambda_.invoke(
-            FunctionName=search_fn,
-            Payload=to_bytes(json.dumps(search_payload)),
-        )
-        result = json.loads(to_str(result["Payload"].read()))
+        result = retry(lambda: _verify_search("Home Impro", 5), retries=20, sleep=1)
         search_result = json.loads(result["body"])
         snapshot.match("search_cat_home_impro", search_result)
 
