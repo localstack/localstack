@@ -46,7 +46,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps
+            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2
 
 # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
 RUN --mount=type=cache,target=/var/cache/apt \

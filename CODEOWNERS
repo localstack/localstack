@@ -33,6 +33,9 @@
 /tests/unit/test_docker_utils.py @dfangl @dominikschubert
 /tests/unit/test_dockerclient.py @dfangl @dominikschubert
 
+# DNS server
+/localstack/dns @simonrw @dfangl
+
 # HTTP framework
 /localstack/http/ @thrau
 /tests/unit/http_/ @thrau
