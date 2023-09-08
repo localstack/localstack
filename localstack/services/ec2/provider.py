@@ -112,6 +112,7 @@ class Ec2Provider(Ec2Api, ABC):
                     RegionName=zone.region_name,
                     ZoneName=zone.name,
                     ZoneId=zone.zone_id,
+                    ZoneType=zone.zone_type,
                 )
                 for zone in filtered_zones
             ]
