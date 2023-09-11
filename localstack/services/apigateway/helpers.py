@@ -5,7 +5,6 @@ import json
 import logging
 import re
 import time
-import xml.etree.ElementTree as ET
 from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
@@ -550,15 +549,6 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
-
-
-def is_valid_xml(xml_string):
-    try:
-        # Attempt to parse the XML string
-        ET.fromstring(xml_string.encode("utf-8"))
-        return True
-    except ET.ParseError:
-        return False
 
 
 def path_based_url(api_id: str, stage_name: str, path: str) -> str:
