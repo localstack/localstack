@@ -73,23 +73,41 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
         model = request.desired_state
         lambda_ = request.aws_client_factory.lambda_
 
-        create_params = {
-            k: v
-            for k, v in model.items()
-            if k in ["FunctionName", "FunctionVersion", "Name", "Description", "RoutingConfig"]
-        }
+        create_params = util.select_attributes(
+            model, ["FunctionName", "FunctionVersion", "Name", "Description", "RoutingConfig"]
+        )
 
-        result = lambda_.create_alias(**create_params)
-        model["Id"] = result["AliasArn"]
+        ctx = request.custom_context
+        if not ctx.get(REPEATED_INVOCATION):
+            result = lambda_.create_alias(**create_params)
+            model["Id"] = result["AliasArn"]
+            ctx[REPEATED_INVOCATION] = True
 
-        if model.get("ProvisionedConcurrencyConfig"):
-            lambda_.put_provisioned_concurrency_config(
+            if model.get("ProvisionedConcurrencyConfig"):
+                lambda_.put_provisioned_concurrency_config(
+                    FunctionName=model["FunctionName"],
+                    Qualifier=model["Id"].split(":")[-1],
+                    ProvisionedConcurrentExecutions=model["ProvisionedConcurrencyConfig"][
+                        "ProvisionedConcurrentExecutions"
+                    ],
+                )
+
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+            )
+
+        if ctx.get(REPEATED_INVOCATION) and model.get("ProvisionedConcurrencyConfig"):
+            # get provisioned config status
+            result = lambda_.get_provisioned_concurrency_config(
                 FunctionName=model["FunctionName"],
                 Qualifier=model["Id"].split(":")[-1],
-                ProvisionedConcurrentExecutions=model["ProvisionedConcurrencyConfig"][
-                    "ProvisionedConcurrentExecutions"
-                ],
             )
+            if result["Status"] == "IN_PROGRESS":
+                return ProgressEvent(
+                    status=OperationStatus.IN_PROGRESS,
+                    resource_model=model,
+                )
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
@@ -118,10 +136,15 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
         """
         model = request.desired_state
         lambda_ = request.aws_client_factory.lambda_
-        lambda_.delete_alias(
-            FunctionName=model["FunctionName"],
-            Name=model["Name"],
-        )
+
+        try:
+            lambda_.delete_alias(
+                FunctionName=model["FunctionName"],
+                Name=model["Name"],
+            )
+        except lambda_.exceptions.ResourceNotFoundException:
+            pass
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=None,
