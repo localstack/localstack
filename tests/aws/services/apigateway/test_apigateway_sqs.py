@@ -6,7 +6,6 @@ import requests
 
 from localstack.services.apigateway.helpers import (
     connect_api_gateway_to_sqs,
-    is_valid_xml,
     path_based_url,
 )
 from localstack.testing.pytest import markers
@@ -14,6 +13,7 @@ from localstack.utils.aws import queries
 from localstack.utils.aws import resources as resource_util
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
+from localstack.utils.xml import is_valid_xml
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
 from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 from tests.aws.services.apigateway.test_apigateway_basic import TEST_STAGE_NAME
