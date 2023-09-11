@@ -333,6 +333,28 @@ class PortMappings:
         return f"<PortMappings: {self.to_dict()}>"
 
 
+class PortBindings:
+    """
+    Defines a collection of PortMappings, grouped by their bind address
+    """
+
+    def __init__(self):
+        self.mappings: dict[str, PortMappings] = {}
+
+    def add(
+        self,
+        port: Union[int, PortRange],
+        mapped: Union[int, PortRange] = None,
+        protocol: PortProtocol = "tcp",
+        bind_address: str = "0.0.0.0",
+    ):
+        mappings = self.mappings.setdefault(bind_address, PortMappings(bind_host=bind_address))
+        mappings.add(port, mapped, protocol)
+
+    def __repr__(self) -> str:
+        return f"<PortBindings mappings: {self.mappings}>"
+
+
 SimpleVolumeBind = Tuple[str, str]
 """Type alias for a simple version of VolumeBind"""
 
