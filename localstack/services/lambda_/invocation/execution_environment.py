@@ -266,8 +266,10 @@ class ExecutionEnvironment:
         )
         if LOG.isEnabledFor(logging.DEBUG):
             logs = self.runtime_executor.get_logs()
+            prefix = f"[lambda {self.id}] "
+            prefixed_logs = logs.replace("\n", f"\n{prefix}")
             LOG.debug(
-                f"Logs from the execution environment {self.id} after startup timeout:\n{logs}"
+                f"Logs from the execution environment {self.id} after startup timeout:\n{prefix}{prefixed_logs}"
             )
         self.startup_timer = None
         with self.status_lock:
