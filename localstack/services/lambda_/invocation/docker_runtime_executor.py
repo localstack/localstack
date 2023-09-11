@@ -7,6 +7,7 @@ from typing import Callable, Dict, Literal, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, PackageType, Runtime
+from localstack.dns import server as dns_server
 from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.invocation.executor_endpoint import (
     INVOCATION_PORT,
@@ -268,7 +269,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             network=main_network,
             entrypoint=RAPID_ENTRYPOINT,
             platform=docker_platform(self.function_version.config.architectures[0]),
-            dns=config.LAMBDA_DOCKER_DNS,
             additional_flags=config.LAMBDA_DOCKER_FLAGS,
         )
         if self.function_version.config.package_type == PackageType.Zip:
@@ -290,6 +290,20 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                         "/var/task",
                     )
                 )
+
+        # set the dns server of the lambda container to the LocalStack container IP
+        # the dns server will automatically respond with the right target for transparent endpoint injection
+        if config.LAMBDA_DOCKER_DNS:
+            # Don't overwrite DNS container config if it is already set (e.g., using LAMBDA_DOCKER_DNS)
+            LOG.warning(
+                "Container DNS overriden to %s, connection to names pointing to LocalStack, like 'localhost.localstack.cloud' will need additional configuration.",
+                config.LAMBDA_DOCKER_DNS,
+            )
+            container_config.dns = config.LAMBDA_DOCKER_DNS
+        else:
+            if dns_server.is_server_running():
+                # Enable transparent endpoint injection by setting DNS to the embedded DNS re-writer in the Go init.
+                container_config.dns = self.get_endpoint_from_executor()
 
         lambda_hooks.start_docker_executor.run(container_config, self.function_version)
 
