@@ -649,11 +649,9 @@ class SdkDockerClient(ContainerClient):
                 # but the behavior should be identical
                 kwargs["ports"] = {port: [] for port in exposed_ports}
             if ports:
-                kwargs.setdefault("ports", {})
-                if isinstance(ports, PortMappings):
-                    ports = [ports]
+                ports = ensure_list(ports)
                 for port_mapping in ports:
-                    kwargs["ports"].update(port_mapping.to_dict())
+                    kwargs.setdefault("ports", {}).update(port_mapping.to_dict())
             if workdir:
                 kwargs["working_dir"] = workdir
             if privileged:
