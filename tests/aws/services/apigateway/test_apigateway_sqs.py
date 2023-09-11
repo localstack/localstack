@@ -4,10 +4,7 @@ import re
 
 import requests
 
-from localstack.services.apigateway.helpers import (
-    connect_api_gateway_to_sqs,
-    path_based_url,
-)
+from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs, path_based_url
 from localstack.testing.pytest import markers
 from localstack.utils.aws import queries
 from localstack.utils.aws import resources as resource_util
