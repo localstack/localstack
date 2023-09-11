@@ -16,10 +16,12 @@ from aws_cdk.aws_lambda_event_sources import SqsEventSource
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
+from localstack.utils.aws.arns import sqs_queue_arn
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from tests.aws.services.lambda_.functions import lambda_integration
@@ -39,7 +41,6 @@ class TestLambdaDLQ:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
         lambda_su_role,
         snapshot,
         aws_client,
@@ -57,7 +58,7 @@ class TestLambdaDLQ:
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=lambda_name,
@@ -146,7 +147,6 @@ class TestLambdaDestinationSqs:
         payload,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
         lambda_su_role,
         snapshot,
         aws_client,
@@ -160,7 +160,7 @@ class TestLambdaDestinationSqs:
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=Runtime.python3_9,
@@ -202,7 +202,6 @@ class TestLambdaDestinationSqs:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
         lambda_su_role,
         snapshot,
         monkeypatch,
@@ -219,7 +218,7 @@ class TestLambdaDestinationSqs:
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=Runtime.python3_9,
@@ -261,7 +260,6 @@ class TestLambdaDestinationSqs:
         snapshot,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
         lambda_su_role,
         monkeypatch,
         aws_client,
@@ -292,7 +290,7 @@ class TestLambdaDestinationSqs:
         snapshot.add_transformer(snapshot.transform.regex(message_id, "<test-msg-id>"))
 
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         create_lambda_function(
             handler_file=os.path.join(os.path.dirname(__file__), "functions/lambda_echofail.py"),
@@ -378,7 +376,6 @@ class TestLambdaDestinationSqs:
         snapshot,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
         lambda_su_role,
         monkeypatch,
         aws_client,
@@ -403,7 +400,7 @@ class TestLambdaDestinationSqs:
         message_id = f"retry-msg-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(message_id, "<test-msg-id>"))
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         create_lambda_function(
             handler_file=os.path.join(os.path.dirname(__file__), "functions/lambda_echofail.py"),

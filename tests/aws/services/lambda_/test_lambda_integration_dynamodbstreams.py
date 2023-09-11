@@ -5,6 +5,7 @@ import time
 import pytest
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.lambda_.lambda_api import INVALID_PARAMETER_VALUE_EXCEPTION
 from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import (
@@ -18,6 +19,7 @@ from localstack.testing.aws.lambda_utils import (
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
+from localstack.utils.aws.arns import sqs_queue_arn
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
@@ -286,7 +288,6 @@ class TestDynamoDBEventSourceMapping:
     def test_dynamodb_event_source_mapping_with_on_failure_destination_config(
         self,
         create_lambda_function,
-        sqs_queue_arn,
         sqs_create_queue,
         create_iam_role_with_policy,
         dynamodb_create_table,
@@ -326,7 +327,9 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("update_table_response", update_table_response)
         stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
         destination_queue = sqs_create_queue()
-        queue_failure_event_source_mapping_arn = sqs_queue_arn(destination_queue)
+        queue_failure_event_source_mapping_arn = sqs_queue_arn(
+            destination_queue, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+        )
         destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
         create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             FunctionName=function_name,

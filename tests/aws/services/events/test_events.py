@@ -1529,7 +1529,6 @@ class TestEvents:
         events_create_event_bus,
         events_put_rule,
         sqs_create_queue,
-        sqs_queue_arn,
         create_role,
         create_policy,
         events_allow_event_rule_to_sqs_queue,
@@ -1571,7 +1570,7 @@ class TestEvents:
         )
 
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = arns.sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         custom_event_bus = events_create_event_bus(Name=custom_bus_name)
         snapshot.match("create-custom-event-bus", custom_event_bus)
@@ -1794,7 +1793,6 @@ class TestEvents:
         self,
         aws_client,
         sqs_create_queue,
-        sqs_queue_arn,
         events_put_rule,
         events_allow_event_rule_to_sqs_queue,
         snapshot,
@@ -1814,7 +1812,7 @@ class TestEvents:
         # even if one entry was wrong
 
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = arns.sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         rule_on_default_bus = events_put_rule(
             Name=default_bus_rule_name,
@@ -1918,7 +1916,6 @@ class TestEvents:
         self,
         aws_client,
         sqs_create_queue,
-        sqs_queue_arn,
         events_put_rule,
         events_allow_event_rule_to_sqs_queue,
         snapshot,
@@ -1934,7 +1931,7 @@ class TestEvents:
         )
 
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = arns.sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         rule_on_default_bus = events_put_rule(
             Name=default_bus_rule_name,

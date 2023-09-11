@@ -2088,10 +2088,10 @@ class TestSqsProvider:
 
     @pytest.mark.xfail
     @markers.aws.unknown
-    def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_queue_arn, aws_client):
+    def test_redrive_policy_attribute_validity(self, sqs_create_queue, aws_client):
         dl_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dl_queue_name)
-        dl_target_arn = sqs_queue_arn(dl_queue_url)
+        dl_target_arn = arns.sqs_queue_arn(dl_queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         valid_max_receive_count = "42"
@@ -2428,7 +2428,7 @@ class TestSqsProvider:
 
     @markers.aws.validated
     def test_dead_letter_queue_with_fifo_and_content_based_deduplication(
-        self, sqs_create_queue, sqs_queue_arn, aws_client
+        self, sqs_create_queue, aws_client
     ):
         dlq_url = sqs_create_queue(
             QueueName=f"test-dlq-{short_uid()}.fifo",
@@ -2438,7 +2438,7 @@ class TestSqsProvider:
                 "MessageRetentionPeriod": "1209600",
             },
         )
-        dlq_arn = sqs_queue_arn(dlq_url)
+        dlq_arn = arns.sqs_queue_arn(dlq_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         queue_url = sqs_create_queue(
             QueueName=f"test-queue-{short_uid()}.fifo",

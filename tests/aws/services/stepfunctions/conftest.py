@@ -6,9 +6,11 @@ import pytest
 from jsonpath_ng.ext import parse
 
 from localstack.aws.api.stepfunctions import HistoryEventType
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import TransformContext
+from localstack.utils.aws.arns import sqs_queue_arn
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
     CallbackTemplates,
@@ -255,7 +257,7 @@ def sqs_send_heartbeat_and_task_success_state_machine(
 
 
 @pytest.fixture
-def sfn_events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_queue_arn, aws_client):
+def sfn_events_to_sqs_queue(events_create_rule, sqs_create_queue, aws_client):
     def _create(state_machine_arn: str) -> str:
         queue_name = f"test-queue-{short_uid()}"
         rule_name = f"test-rule-{short_uid()}"
@@ -270,7 +272,7 @@ def sfn_events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_queue_arn,
         rule_arn = events_create_rule(Name=rule_name, EventBusName="default", EventPattern=pattern)
 
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         queue_policy = {
             "Statement": [
                 {
