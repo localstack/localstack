@@ -1858,6 +1858,30 @@ class InstanceType(str):
     hpc7a_24xlarge = "hpc7a.24xlarge"
     hpc7a_48xlarge = "hpc7a.48xlarge"
     hpc7a_96xlarge = "hpc7a.96xlarge"
+    c7gd_medium = "c7gd.medium"
+    c7gd_large = "c7gd.large"
+    c7gd_xlarge = "c7gd.xlarge"
+    c7gd_2xlarge = "c7gd.2xlarge"
+    c7gd_4xlarge = "c7gd.4xlarge"
+    c7gd_8xlarge = "c7gd.8xlarge"
+    c7gd_12xlarge = "c7gd.12xlarge"
+    c7gd_16xlarge = "c7gd.16xlarge"
+    m7gd_medium = "m7gd.medium"
+    m7gd_large = "m7gd.large"
+    m7gd_xlarge = "m7gd.xlarge"
+    m7gd_2xlarge = "m7gd.2xlarge"
+    m7gd_4xlarge = "m7gd.4xlarge"
+    m7gd_8xlarge = "m7gd.8xlarge"
+    m7gd_12xlarge = "m7gd.12xlarge"
+    m7gd_16xlarge = "m7gd.16xlarge"
+    r7gd_medium = "r7gd.medium"
+    r7gd_large = "r7gd.large"
+    r7gd_xlarge = "r7gd.xlarge"
+    r7gd_2xlarge = "r7gd.2xlarge"
+    r7gd_4xlarge = "r7gd.4xlarge"
+    r7gd_8xlarge = "r7gd.8xlarge"
+    r7gd_12xlarge = "r7gd.12xlarge"
+    r7gd_16xlarge = "r7gd.16xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -2137,6 +2161,7 @@ class LocationType(str):
     region = "region"
     availability_zone = "availability-zone"
     availability_zone_id = "availability-zone-id"
+    outpost = "outpost"
 
 
 class LogDestinationType(str):
