@@ -1,5 +1,4 @@
 import logging
-import random
 import re
 
 import pytest
@@ -9,8 +8,11 @@ from localstack.aws.api.route53resolver import (
     ListResolverQueryLogConfigsResponse,
     ListResolverRuleAssociationsResponse,
 )
+from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
+from localstack.utils.functions import call_safe
 from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
@@ -21,25 +23,71 @@ def route53resolver_api_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.route53resolver_api())
 
 
-class TestRoute53Resolver:
-    @staticmethod
-    def get_create_resolver_endpoint_ip_address(client, hostId):
-        # getting list of existing (default) subnets
-        subnets = client.describe_subnets()["Subnets"]
-        subnet_ids = [s["SubnetId"] for s in subnets]
-        # construct IPs within CIDR range
-        ips = [re.sub(r"(.*)\.[0-9]+/.+", r"\1." + hostId, s["CidrBlock"]) for s in subnets]
-        return [
-            {"SubnetId": subnet_ids[0], "Ip": ips[0]},
-            {"SubnetId": subnet_ids[1], "Ip": ips[1]},
-        ]
+# TODO: extract this somewhere so that we can reuse it in other places
+def _cleanup_vpc(aws_client: ServiceLevelClientFactory, vpc_id: str):
+    """
+    perform a safe cleanup of a VPC
+    this method assumes that any existing network interfaces have already been detached
+    """
+    # delete security groups
+    sgs = aws_client.ec2.describe_security_groups(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
+    for sg in sgs["SecurityGroups"]:
+        if sg["GroupName"] != "default":  # default security group can't be deleted
+            call_safe(lambda: aws_client.ec2.delete_security_group(GroupId=sg["GroupId"]))
 
-    @staticmethod
-    def get_security_group_ids(client):
-        security_groups_ids = []
-        security_groups_response = client.describe_security_groups()["SecurityGroups"]
-        security_groups_ids = [sg["GroupId"] for sg in security_groups_response]
-        return security_groups_ids
+    # delete subnets
+    subnets = aws_client.ec2.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
+    for subnet in subnets["Subnets"]:
+        call_safe(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet["SubnetId"]))
+
+    # finally, delete the vpc
+    aws_client.ec2.delete_vpc(VpcId=vpc_id)
+
+
+def delete_route53_resolver_endpoint(route53resolver_client, resolver_endpoint_id: str):
+    """delete a route53resolver resolver endpoint and wait until it is actually deleted"""
+
+    def _delete_resolver_endpoint():
+        # deleting a resolver endpoint is an async operation, but we can't properly observe it since there's no "deleted" terminal state
+        route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
+
+        # retry until we can't get it anymore
+        def _is_endpoint_deleted():
+            try:
+                route53resolver_client.get_resolver_endpoint(
+                    ResolverEndpointId=resolver_endpoint_id
+                )
+            except Exception:
+                return True
+            else:
+                return False
+
+        poll_condition(_is_endpoint_deleted, timeout=180, interval=3 if is_aws_cloud() else 1)
+
+    return _delete_resolver_endpoint
+
+
+@markers.snapshot.skip_snapshot_verify(paths=["$..ResolverEndpointType"])
+class TestRoute53Resolver:
+
+    # TODO: make this class level?
+    @pytest.fixture(scope="function")
+    def setup_resources(self, aws_client, cleanups):
+        vpc = aws_client.ec2.create_vpc(CidrBlock="10.78.0.0/16")
+        vpc_id = vpc["Vpc"]["VpcId"]
+        cleanups.append(lambda: _cleanup_vpc(aws_client, vpc_id))
+
+        subnet1 = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="10.78.1.0/24")
+        subnet2 = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="10.78.2.0/24")
+
+        security_group = aws_client.ec2.create_security_group(
+            GroupName=f"test-sg-{short_uid()}", VpcId=vpc_id, Description="test sg"
+        )
+
+        yield vpc, subnet1, subnet2, security_group
+
+    def _construct_ip_for_cidr_and_host(self, cidr_block: str, host_id: str) -> str:
+        return re.sub(r"(.*)\.[0-9]+/.+", r"\1." + host_id, cidr_block)
 
     @staticmethod
     def _wait_associate_or_disassociate_resolver_rule(client, resolver_rule_id, vpc_id, action):
@@ -123,24 +171,32 @@ class TestRoute53Resolver:
             ("OUTBOUND", "10"),
         ],
     )
-    def test_create_resolver_endpoint(self, direction, hostId, cleanups, snapshot, aws_client):
+    def test_create_resolver_endpoint(
+        self, direction, hostId, cleanups, snapshot, aws_client, setup_resources
+    ):
+        vpc, subnet1, subnet2, security_group = setup_resources
+        subnet1_id = subnet1["Subnet"]["SubnetId"]
+        subnet2_id = subnet2["Subnet"]["SubnetId"]
+        security_group_id = security_group["GroupId"]
+
+        ip1 = self._construct_ip_for_cidr_and_host(subnet1["Subnet"]["CidrBlock"], hostId)
+        ip2 = self._construct_ip_for_cidr_and_host(subnet2["Subnet"]["CidrBlock"], hostId)
 
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
-        result = aws_client.route53resolver.create_resolver_endpoint(
+        create_resolver_endpoint_res = aws_client.route53resolver.create_resolver_endpoint(
             CreatorRequestId=request_id,
-            SecurityGroupIds=self.get_security_group_ids(aws_client.ec2),
+            SecurityGroupIds=[security_group_id],
             Direction=direction,
             Name=resolver_endpoint_name,
-            IpAddresses=self.get_create_resolver_endpoint_ip_address(aws_client.ec2, hostId),
+            IpAddresses=[
+                {"SubnetId": subnet1_id, "Ip": ip1},
+                {"SubnetId": subnet2_id, "Ip": ip2},
+            ],
         )
-
-        create_resolver_endpoint_res = result.get("ResolverEndpoint")
-        # clean up
+        resolver_endpoint = create_resolver_endpoint_res["ResolverEndpoint"]
         cleanups.append(
-            lambda: aws_client.route53resolver.delete_resolver_endpoint(
-                ResolverEndpointId=create_resolver_endpoint_res["Id"]
-            )
+            delete_route53_resolver_endpoint(aws_client.route53resolver, resolver_endpoint["Id"])
         )
 
         self._wait_created_endpoint_is_listed_with_status(
@@ -149,7 +205,15 @@ class TestRoute53Resolver:
         snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
 
     @markers.aws.validated
-    def test_route53resolver_bad_create_endpoint_security_groups(self, snapshot, aws_client):
+    def test_route53resolver_bad_create_endpoint_security_groups(
+        self, snapshot, aws_client, setup_resources
+    ):
+        vpc, subnet1, subnet2, security_group = setup_resources
+        subnet1_id = subnet1["Subnet"]["SubnetId"]
+        subnet2_id = subnet2["Subnet"]["SubnetId"]
+        ip1 = self._construct_ip_for_cidr_and_host(subnet1["Subnet"]["CidrBlock"], "43")
+        ip2 = self._construct_ip_for_cidr_and_host(subnet2["Subnet"]["CidrBlock"], "43")
+
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
         with pytest.raises(
@@ -160,32 +224,38 @@ class TestRoute53Resolver:
                 SecurityGroupIds=["test-invalid-sg-123"],
                 Direction="INBOUND",
                 Name=resolver_endpoint_name,
-                IpAddresses=self.get_create_resolver_endpoint_ip_address(aws_client.ec2, "43"),
+                IpAddresses=[
+                    {"SubnetId": subnet1_id, "Ip": ip1},
+                    {"SubnetId": subnet2_id, "Ip": ip2},
+                ],
             )
         snapshot.match("inavlid_param_request_res", inavlid_param_request_res.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
     def test_multiple_create_resolver_endpoint_with_same_req_id(
-        self, cleanups, snapshot, aws_client
+        self, cleanups, snapshot, aws_client, setup_resources
     ):
+        vpc, subnet1, subnet2, security_group = setup_resources
+        subnet1_id = subnet1["Subnet"]["SubnetId"]
+        subnet2_id = subnet2["Subnet"]["SubnetId"]
+        security_group_id = security_group["GroupId"]
+        ip1 = self._construct_ip_for_cidr_and_host(subnet1["Subnet"]["CidrBlock"], "41")
+        ip2 = self._construct_ip_for_cidr_and_host(subnet2["Subnet"]["CidrBlock"], "41")
+
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
-        ip_addresses = self.get_create_resolver_endpoint_ip_address(aws_client.ec2, "41")
-        security_groups_ids = self.get_security_group_ids(aws_client.ec2)
         result = aws_client.route53resolver.create_resolver_endpoint(
             CreatorRequestId=request_id,
-            SecurityGroupIds=security_groups_ids,
+            SecurityGroupIds=[security_group_id],
             Direction="INBOUND",
             Name=resolver_endpoint_name,
-            IpAddresses=ip_addresses,
+            IpAddresses=[{"SubnetId": subnet1_id, "Ip": ip1}, {"SubnetId": subnet2_id, "Ip": ip2}],
         )
-
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
-
         cleanups.append(
-            lambda: aws_client.route53resolver.delete_resolver_endpoint(
-                ResolverEndpointId=create_resolver_endpoint_res["Id"]
+            delete_route53_resolver_endpoint(
+                aws_client.route53resolver, create_resolver_endpoint_res["Id"]
             )
         )
 
@@ -199,10 +269,13 @@ class TestRoute53Resolver:
         ) as res_exists_ex:
             aws_client.route53resolver.create_resolver_endpoint(
                 CreatorRequestId=request_id,
-                SecurityGroupIds=security_groups_ids,
+                SecurityGroupIds=[security_group_id],
                 Direction="INBOUND",
                 Name=resolver_endpoint_name,
-                IpAddresses=ip_addresses,
+                IpAddresses=[
+                    {"SubnetId": subnet1_id, "Ip": ip1},
+                    {"SubnetId": subnet2_id, "Ip": ip2},
+                ],
             )
 
         snapshot.match(
@@ -215,20 +288,25 @@ class TestRoute53Resolver:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
-    def test_update_resolver_endpoint(self, cleanups, snapshot, aws_client):
+    def test_update_resolver_endpoint(self, cleanups, snapshot, aws_client, setup_resources):
+        vpc, subnet1, subnet2, security_group = setup_resources
+        subnet1_id = subnet1["Subnet"]["SubnetId"]
+        subnet2_id = subnet2["Subnet"]["SubnetId"]
+        security_group_id = security_group["GroupId"]
+        ip1 = self._construct_ip_for_cidr_and_host(subnet1["Subnet"]["CidrBlock"], "58")
+        ip2 = self._construct_ip_for_cidr_and_host(subnet2["Subnet"]["CidrBlock"], "58")
+
         request_id = short_uid()
         result = aws_client.route53resolver.create_resolver_endpoint(
             CreatorRequestId=request_id,
-            SecurityGroupIds=self.get_security_group_ids(aws_client.ec2),
+            SecurityGroupIds=[security_group_id],
             Direction="INBOUND",
-            IpAddresses=self.get_create_resolver_endpoint_ip_address(aws_client.ec2, "58"),
+            IpAddresses=[{"SubnetId": subnet1_id, "Ip": ip1}, {"SubnetId": subnet2_id, "Ip": ip2}],
         )
-
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
-
         cleanups.append(
-            lambda: aws_client.route53resolver.delete_resolver_endpoint(
-                ResolverEndpointId=create_resolver_endpoint_res["Id"]
+            delete_route53_resolver_endpoint(
+                aws_client.route53resolver, create_resolver_endpoint_res["Id"]
             )
         )
 
@@ -250,16 +328,27 @@ class TestRoute53Resolver:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
-    def test_delete_resolver_endpoint(self, cleanups, snapshot, aws_client):
+    def test_delete_resolver_endpoint(self, cleanups, snapshot, aws_client, setup_resources):
+        vpc, subnet1, subnet2, security_group = setup_resources
+        subnet1_id = subnet1["Subnet"]["SubnetId"]
+        subnet2_id = subnet2["Subnet"]["SubnetId"]
+        security_group_id = security_group["GroupId"]
+        ip1 = self._construct_ip_for_cidr_and_host(subnet1["Subnet"]["CidrBlock"], "48")
+        ip2 = self._construct_ip_for_cidr_and_host(subnet2["Subnet"]["CidrBlock"], "48")
+
         request_id = short_uid()
         result = aws_client.route53resolver.create_resolver_endpoint(
             CreatorRequestId=request_id,
-            SecurityGroupIds=self.get_security_group_ids(aws_client.ec2),
+            SecurityGroupIds=[security_group_id],
             Direction="INBOUND",
-            IpAddresses=self.get_create_resolver_endpoint_ip_address(aws_client.ec2, "48"),
+            IpAddresses=[{"SubnetId": subnet1_id, "Ip": ip1}, {"SubnetId": subnet2_id, "Ip": ip2}],
         )
-
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
+        cleanups.append(
+            delete_route53_resolver_endpoint(
+                aws_client.route53resolver, create_resolver_endpoint_res["Id"]
+            )
+        )
 
         self._wait_created_endpoint_is_listed_with_status(
             aws_client.route53resolver, request_id, "OPERATIONAL"
@@ -291,23 +380,27 @@ class TestRoute53Resolver:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds", "$..ShareStatus"])
-    def test_create_resolver_rule(self, cleanups, snapshot, aws_client):
+    def test_create_resolver_rule(self, cleanups, snapshot, aws_client, setup_resources):
+        vpc, subnet1, subnet2, security_group = setup_resources
+        subnet1_id = subnet1["Subnet"]["SubnetId"]
+        subnet2_id = subnet2["Subnet"]["SubnetId"]
+        security_group_id = security_group["GroupId"]
+        ip1 = self._construct_ip_for_cidr_and_host(subnet1["Subnet"]["CidrBlock"], "38")
+        ip2 = self._construct_ip_for_cidr_and_host(subnet2["Subnet"]["CidrBlock"], "38")
+
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
         result = aws_client.route53resolver.create_resolver_endpoint(
             CreatorRequestId=request_id,
-            SecurityGroupIds=self.get_security_group_ids(aws_client.ec2),
+            SecurityGroupIds=[security_group_id],
             Direction="OUTBOUND",
             Name=resolver_endpoint_name,
-            IpAddresses=self.get_create_resolver_endpoint_ip_address(aws_client.ec2, "38"),
+            IpAddresses=[{"SubnetId": subnet1_id, "Ip": ip1}, {"SubnetId": subnet2_id, "Ip": ip2}],
         )
-
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
-
-        # clean up
         cleanups.append(
-            lambda: aws_client.route53resolver.delete_resolver_endpoint(
-                ResolverEndpointId=create_resolver_endpoint_res["Id"]
+            delete_route53_resolver_endpoint(
+                aws_client.route53resolver, create_resolver_endpoint_res["Id"]
             )
         )
 
@@ -325,10 +418,8 @@ class TestRoute53Resolver:
                 {"Ip": "10.0.1.200", "Port": 123},
             ],
         )
-
         create_resolver_rule_res = create_resolver_rule_res.get("ResolverRule")
         snapshot.match("create_resolver_rule_res", create_resolver_rule_res)
-
         delete_resolver_rule_res = aws_client.route53resolver.delete_resolver_rule(
             ResolverRuleId=create_resolver_rule_res["Id"]
         )
@@ -336,22 +427,30 @@ class TestRoute53Resolver:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
-    def test_create_resolver_rule_with_invalid_direction(self, cleanups, snapshot, aws_client):
+    def test_create_resolver_rule_with_invalid_direction(
+        self, cleanups, snapshot, aws_client, setup_resources
+    ):
+        vpc, subnet1, subnet2, security_group = setup_resources
+        subnet1_id = subnet1["Subnet"]["SubnetId"]
+        subnet2_id = subnet2["Subnet"]["SubnetId"]
+        security_group_id = security_group["GroupId"]
+        ip1 = self._construct_ip_for_cidr_and_host(subnet1["Subnet"]["CidrBlock"], "28")
+        ip2 = self._construct_ip_for_cidr_and_host(subnet2["Subnet"]["CidrBlock"], "28")
+
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
         result = aws_client.route53resolver.create_resolver_endpoint(
             CreatorRequestId=request_id,
-            SecurityGroupIds=self.get_security_group_ids(aws_client.ec2),
+            SecurityGroupIds=[security_group_id],
             Direction="INBOUND",
             Name=resolver_endpoint_name,
-            IpAddresses=self.get_create_resolver_endpoint_ip_address(aws_client.ec2, "28"),
+            IpAddresses=[{"SubnetId": subnet1_id, "Ip": ip1}, {"SubnetId": subnet2_id, "Ip": ip2}],
         )
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
-        # clean up
         cleanups.append(
-            lambda: aws_client.route53resolver.delete_resolver_endpoint(
-                ResolverEndpointId=create_resolver_endpoint_res["Id"]
+            delete_route53_resolver_endpoint(
+                aws_client.route53resolver, create_resolver_endpoint_res["Id"]
             )
         )
 
@@ -377,24 +476,28 @@ class TestRoute53Resolver:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds", "$..ShareStatus"])
-    def test_multipe_create_resolver_rule(self, cleanups, snapshot, aws_client):
+    def test_multipe_create_resolver_rule(self, cleanups, snapshot, aws_client, setup_resources):
+        vpc, subnet1, subnet2, security_group = setup_resources
+        subnet1_id = subnet1["Subnet"]["SubnetId"]
+        subnet2_id = subnet2["Subnet"]["SubnetId"]
+        security_group_id = security_group["GroupId"]
+        ip1 = self._construct_ip_for_cidr_and_host(subnet1["Subnet"]["CidrBlock"], "18")
+        ip2 = self._construct_ip_for_cidr_and_host(subnet2["Subnet"]["CidrBlock"], "18")
+
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
         result = aws_client.route53resolver.create_resolver_endpoint(
             CreatorRequestId=request_id,
-            SecurityGroupIds=self.get_security_group_ids(aws_client.ec2),
+            SecurityGroupIds=[security_group_id],
             Direction="OUTBOUND",
             Name=resolver_endpoint_name,
-            IpAddresses=self.get_create_resolver_endpoint_ip_address(aws_client.ec2, "18"),
+            IpAddresses=[{"SubnetId": subnet1_id, "Ip": ip1}, {"SubnetId": subnet2_id, "Ip": ip2}],
         )
-
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
         resolver_endpoint_id = create_resolver_endpoint_res["Id"]
-
-        # clean up
         cleanups.append(
-            lambda: aws_client.route53resolver.delete_resolver_endpoint(
-                ResolverEndpointId=resolver_endpoint_id
+            delete_route53_resolver_endpoint(
+                aws_client.route53resolver, create_resolver_endpoint_res["Id"]
             )
         )
 
@@ -443,17 +546,35 @@ class TestRoute53Resolver:
             )
         snapshot.match("resource_not_found_res", resource_not_found)
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..DestinationArn"  # arn of log group has a ":*" suffix which create_resolver_query_log_config seems to strip on AWS
+        ]
+    )
     @markers.aws.validated
     def test_create_resolver_query_log_config(self, cleanups, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("Name"))
         request_id = short_uid()
+
+        log_group_name = f"test-r53resolver-lg-{short_uid()}"
+        aws_client.logs.create_log_group(logGroupName=log_group_name)
+        cleanups.append(lambda: aws_client.logs.delete_log_group(logGroupName=log_group_name))
+        log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)[
+            "logGroups"
+        ][0]["arn"]
+
         result = aws_client.route53resolver.create_resolver_query_log_config(
             Name=f"test-{short_uid()}",
-            DestinationArn="arn:aws:logs:us-east-1:123456789012:log-group:sampletest123",
+            DestinationArn=log_group_arn,
             CreatorRequestId=request_id,
         )
         create_rqlc = result.get("ResolverQueryLogConfig")
         resolver_config_id = create_rqlc["Id"]
+        cleanups.append(
+            lambda: aws_client.route53resolver.delete_resolver_query_log_config(
+                ResolverQueryLogConfigId=resolver_config_id
+            )
+        )
         if self._wait_created_log_config_is_listed_with_status(
             aws_client.route53resolver, resolver_config_id, "CREATED"
         ):
@@ -466,46 +587,58 @@ class TestRoute53Resolver:
         )
         snapshot.match("delete_resolver_query_log_config_res", delete_resolver_config)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Message"])
     @markers.aws.validated
     def test_delete_non_existent_resolver_query_log_config(self, snapshot, aws_client):
-        resolver_rqlc_id = "test_123"
+        resolver_rqlc_id = "test_123_doesntexist"
         with pytest.raises(
             aws_client.route53resolver.exceptions.ResourceNotFoundException
         ) as resource_not_found:
             aws_client.route53resolver.delete_resolver_query_log_config(
-                ResolverQueryLogConfigId=resolver_rqlc_id
+                ResolverQueryLogConfigId=resolver_rqlc_id,
             )
+        error_msg = resource_not_found.value.response["Error"]["Message"]
+        match = re.search('Trace Id: "(.+)"', error_msg)
+        if match:
+            trace_id = match.groups()[0]
+            snapshot.add_transformer(snapshot.transform.regex(trace_id, "<trace-id>"))
+
         snapshot.match(
-            "resource_not_found_ex_error_code",
-            resource_not_found.value.response.get("Error", {}).get("Code"),
-        )
-        snapshot.match(
-            "resource_not_found_ex_http_status_code",
-            resource_not_found.value.response.get("ResponseMetadata", {}).get("HTTPStatusCode"),
+            "resource_not_found_ex",
+            resource_not_found.value.response,
         )
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..SecurityGroupIds", "$..ShareStatus", "$..StatusMessage"]
     )
-    def test_associate_and_disassociate_resolver_rule(self, cleanups, snapshot, aws_client):
+    def test_associate_and_disassociate_resolver_rule(
+        self, cleanups, snapshot, aws_client, setup_resources
+    ):
+        vpc, subnet1, subnet2, security_group = setup_resources
+        subnet1_id = subnet1["Subnet"]["SubnetId"]
+        subnet2_id = subnet2["Subnet"]["SubnetId"]
+        security_group_id = security_group["GroupId"]
+        ip1 = self._construct_ip_for_cidr_and_host(subnet1["Subnet"]["CidrBlock"], "68")
+        ip2 = self._construct_ip_for_cidr_and_host(subnet2["Subnet"]["CidrBlock"], "68")
+
         snapshot.add_transformer(snapshot.transform.key_value("ResolverRuleId", "rslvr-rr-id"))
         snapshot.add_transformer(snapshot.transform.key_value("VPCId", "vpc-id"))
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
         result = aws_client.route53resolver.create_resolver_endpoint(
             CreatorRequestId=request_id,
-            SecurityGroupIds=self.get_security_group_ids(aws_client.ec2),
+            SecurityGroupIds=[security_group_id],
             Direction="OUTBOUND",
             Name=resolver_endpoint_name,
-            IpAddresses=self.get_create_resolver_endpoint_ip_address(aws_client.ec2, "68"),
+            IpAddresses=[{"SubnetId": subnet1_id, "Ip": ip1}, {"SubnetId": subnet2_id, "Ip": ip2}],
         )
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
         resolver_endpoint_id = create_resolver_endpoint_res["Id"]
         cleanups.append(
-            lambda: aws_client.route53resolver.delete_resolver_endpoint(
-                ResolverEndpointId=resolver_endpoint_id
+            delete_route53_resolver_endpoint(
+                aws_client.route53resolver, create_resolver_endpoint_res["Id"]
             )
         )
 
@@ -533,27 +666,28 @@ class TestRoute53Resolver:
 
         snapshot.match("create_resolver_rule_res", create_resolver_rule_res)
 
-        vpcs = aws_client.ec2.describe_vpcs()["Vpcs"]
-        vpcId = random.choice(vpcs)["VpcId"]
+        vpc_id = vpc["Vpc"]["VpcId"]
 
         associated_resolver_rule_res = aws_client.route53resolver.associate_resolver_rule(
             ResolverRuleId=resolver_rule_id,
             Name="test-associate-resolver-rule",
-            VPCId=random.choice(vpcs)["VpcId"],
+            VPCId=vpc_id,
         )["ResolverRuleAssociation"]
 
-        if self._wait_associate_or_disassociate_resolver_rule(
-            aws_client.route53resolver, resolver_rule_id, vpcId, "associate"
-        ):
-            associated_resolver_rule_res["Status"] = "COMPLETE"
-        snapshot.match("associated_resolver_rule_res", associated_resolver_rule_res)
+        assert self._wait_associate_or_disassociate_resolver_rule(
+            aws_client.route53resolver, resolver_rule_id, vpc_id, "associate"
+        )
+        rule_association = aws_client.route53resolver.get_resolver_rule_association(
+            ResolverRuleAssociationId=associated_resolver_rule_res["Id"]
+        )
+        snapshot.match("rule_association", rule_association)
 
         disassociate_resolver_rule_res = aws_client.route53resolver.disassociate_resolver_rule(
-            ResolverRuleId=resolver_rule_id, VPCId=vpcId
+            ResolverRuleId=resolver_rule_id, VPCId=vpc_id
         )
         # wait till resolver rule is disassociated
         self._wait_associate_or_disassociate_resolver_rule(
-            aws_client.route53resolver, resolver_rule_id, vpcId, "disassociate"
+            aws_client.route53resolver, resolver_rule_id, vpc_id, "disassociate"
         )
         snapshot.match("disassociate_resolver_rule_res", disassociate_resolver_rule_res)
 
