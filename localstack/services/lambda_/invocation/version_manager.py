@@ -1,6 +1,7 @@
 import concurrent.futures
 import logging
 import threading
+import time
 from concurrent.futures import Future
 from typing import TYPE_CHECKING
 
@@ -83,13 +84,19 @@ class LambdaVersionManager:
         new_state = None
         try:
             self.log_handler.start_subscriber()
+            time_before = time.perf_counter()
             get_runtime_executor().prepare_version(self.function_version)  # TODO: make pluggable?
+            LOG.debug(
+                "Version preparation of function %s took %0.2fms",
+                self.function_version.qualified_arn,
+                (time.perf_counter() - time_before) * 1000,
+            )
 
             # code and reason not set for success scenario because only failed states provide this field:
             # https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html#SSS-GetFunctionConfiguration-response-LastUpdateStatusReasonCode
             new_state = VersionState(state=State.Active)
             LOG.debug(
-                f"Changing Lambda '{self.function_arn}' (id {self.function_version.config.internal_revision}) to active"
+                f"Changing Lambda {self.function_arn} (id {self.function_version.config.internal_revision}) to active"
             )
         except Exception as e:
             new_state = VersionState(
@@ -98,7 +105,10 @@ class LambdaVersionManager:
                 reason=f"Error while creating lambda: {e}",
             )
             LOG.debug(
-                f"Changing Lambda '{self.function_arn}' to failed. Reason: %s", e, exc_info=True
+                f"Changing Lambda {self.function_arn} (id {self.function_version.config.internal_revision}) to "
+                f"failed. Reason: %s",
+                e,
+                exc_info=True,
             )
         finally:
             if new_state:

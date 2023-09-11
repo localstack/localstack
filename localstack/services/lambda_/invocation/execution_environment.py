@@ -179,7 +179,14 @@ class ExecutionEnvironment:
             self.startup_timer.start()
 
         try:
+            time_before = time.perf_counter()
             self.runtime_executor.start(self.get_environment_variables())
+            LOG.debug(
+                "Start of execution environment %s for function %s took %0.2fms",
+                self.id,
+                self.function_version.qualified_arn,
+                (time.perf_counter() - time_before) * 1000,
+            )
         # TODO: Distinguish between expected errors (e.g., timeout, cancellation due to deletion update) and
         #  other unexpected exceptions. Improve control flow after implementing error reporting in Go init.
         except Exception as e:

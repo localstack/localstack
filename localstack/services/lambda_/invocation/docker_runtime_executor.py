@@ -2,7 +2,6 @@ import dataclasses
 import json
 import logging
 import shutil
-import time
 from pathlib import Path
 from typing import Callable, Dict, Literal, Optional
 
@@ -386,7 +385,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
     @classmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:
-        time_before = time.perf_counter()
         lambda_hooks.prepare_docker_executor.run(function_version)
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
@@ -413,11 +411,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             if config.LAMBDA_PREBUILD_IMAGES:
                 target_path = function_version.config.code.get_unzipped_code_location()
                 prepare_image(target_path, function_version)
-            LOG.debug(
-                "Version preparation of version %s took %0.2fms",
-                function_version.qualified_arn,
-                (time.perf_counter() - time_before) * 1000,
-            )
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
