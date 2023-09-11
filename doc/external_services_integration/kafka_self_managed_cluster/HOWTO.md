@@ -40,7 +40,7 @@ $ awslocal lambda create-function \
         "Mode": "PassThrough"
     },
     "RevisionId": "d85469d2-8558-4d75-bc0e-5926f373e12c",
-    "-State": "Active",
+    "State": "Active",
     "LastUpdateStatus": "Successful",
     "PackageType": "Zip"
 }

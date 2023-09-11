@@ -212,7 +212,6 @@ class Runtime(str):
     nodejs12_x = "nodejs12.x"
     nodejs14_x = "nodejs14.x"
     nodejs16_x = "nodejs16.x"
-    nodejs18_x = "nodejs18.x"
     java8 = "java8"
     java8_al2 = "java8.al2"
     java11 = "java11"
@@ -231,11 +230,12 @@ class Runtime(str):
     ruby2_5 = "ruby2.5"
     ruby2_7 = "ruby2.7"
     provided = "provided"
+    provided_al2 = "provided.al2"
+    nodejs18_x = "nodejs18.x"
     python3_10 = "python3.10"
     java17 = "java17"
     ruby3_2 = "ruby3.2"
     python3_11 = "python3.11"
-    provided_al2 = "provided.al2"
 
 
 class SnapStartApplyOn(str):
