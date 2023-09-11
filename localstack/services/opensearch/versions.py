@@ -5,6 +5,7 @@ the latest install_versions from the github repository tags. Run::
     python -m localstack.services.opensearch.versions
 
 """
+
 from typing import Dict
 
 import semver
@@ -14,12 +15,13 @@ from localstack.utils.common import get_arch
 
 # Internal representation of the OpenSearch versions (without the "OpenSearch_" prefix)
 _opensearch_install_versions = {
-    "1.0": "1.0.0",
-    "1.1": "1.1.0",
-    "1.2": "1.2.4",
-    "1.3": "1.3.9",
-    "2.3": "2.3.0",
+    "2.7": "2.7.0",
     "2.5": "2.5.0",
+    "2.3": "2.3.0",
+    "1.3": "1.3.12",
+    "1.2": "1.2.4",
+    "1.1": "1.1.0",
+    "1.0": "1.0.0",
 }
 # Internal representation of the Elasticsearch versions (without the "Elasticsearch_" prefix)
 _elasticsearch_install_versions = {
@@ -217,6 +219,7 @@ compatible_versions = [
         SourceVersion="OpenSearch_2.3",
         TargetVersions=["OpenSearch_2.5"],
     ),
+    CompatibleVersionsMap(SourceVersion="OpenSearch_2.5", TargetVersions=["OpenSearch_2.7"]),
 ]
 
 
@@ -323,4 +326,4 @@ def fetch_latest_versions() -> Dict[str, str]:  # pragma: no cover
 if __name__ == "__main__":  # pragma: no cover
     from pprint import pprint
 
-    pprint(fetch_latest_versions())
+    pprint(fetch_latest_versions(), sort_dicts=False)

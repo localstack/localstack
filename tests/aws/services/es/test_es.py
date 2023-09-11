@@ -86,7 +86,7 @@ class TestElasticsearchProvider:
 
         versions = response["CompatibleElasticsearchVersions"]
 
-        assert len(versions) == 22
+        assert len(versions) == 23
 
         assert {
             "SourceVersion": "OpenSearch_1.0",
@@ -120,8 +120,8 @@ class TestElasticsearchProvider:
         response = aws_client.es.get_compatible_elasticsearch_versions(DomainName=opensearch_domain)
         assert "CompatibleElasticsearchVersions" in response
         versions = response["CompatibleElasticsearchVersions"]
-        # The default version is the latest version, which is not compatible with any previous versions
-        assert len(versions) == 0
+        # The default version is 2.5 version (current latest is 2.7)
+        assert len(versions) == 1
 
     @markers.skip_offline
     @markers.aws.unknown
