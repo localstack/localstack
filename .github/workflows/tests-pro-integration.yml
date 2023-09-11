@@ -41,8 +41,8 @@ on:
   push:
     paths:
       - ".github/workflows/tests-pro-integration.yml"
-      - "localstack/**"
-      - "tests/**"
+      - "localstack/**/packages.py"
+      - "localstack/packages/*.py"
       - "setup.py"
       - "pyproject.toml"
       - "setup.cfg"
