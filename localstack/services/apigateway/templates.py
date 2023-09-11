@@ -11,7 +11,7 @@ from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import select_integration_response
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
-from localstack.utils.json import extract_jsonpath, json_safe
+from localstack.utils.json import extract_jsonpath, json_safe, try_json
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -261,15 +261,26 @@ class ResponseTemplates(Templates):
         # get the configured integration response status codes,
         # e.g. ["200", "400", "500"]
         integration_status_codes = [str(code) for code in list(integration_responses.keys())]
+        # if there are no integration responses, we return the response as is
+        if not integration_status_codes:
+            return response.content
 
-        # we return the response as is if the integration response status code is not on
-        # the list of configured integration response status codes
-        if status_code not in integration_status_codes or not integration_status_codes:
-            return response._content
+        # The following code handles two use cases.If there is an integration response for the status code returned
+        # by the integration, we use the template configured for that status code (1) or the errorMessage (2) for
+        # lambda integrations.
+        # For an HTTP integration, API Gateway matches the regex to the HTTP status code to return
+        # For a Lambda function, API Gateway matches the regex to the errorMessage header to
+        # return a status code.
+        # For example, to set a 400 response for any error that starts with Malformed,
+        # set the method response status code to 400 and the Lambda error regex to Malformed.*.
+        match_resp = status_code
+        if isinstance(try_json(response._content), dict):
+            resp_dict = try_json(response._content)
+            if "errorMessage" in resp_dict:
+                match_resp = resp_dict.get("errorMessage")
 
-        # if there is integration response for the status code returned
-        # by the integration we use the template configured for that status code
-        selected_integration_response = select_integration_response(status_code, api_context)
+        selected_integration_response = select_integration_response(match_resp, api_context)
+        response.status_code = int(selected_integration_response.get("statusCode", 200))
         response_templates = selected_integration_response.get("responseTemplates", {})
 
         # we only support JSON templates for now - if there is no template we return

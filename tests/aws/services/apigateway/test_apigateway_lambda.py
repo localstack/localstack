@@ -4,6 +4,7 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
@@ -11,7 +12,11 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url, create_rest_resource
 from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_AWS_PROXY,
+    TEST_LAMBDA_PYTHON_ECHO,
+    TEST_LAMBDA_PYTHON_SELECT_PATTERN,
+)
 
 
 @markers.aws.validated
@@ -422,3 +427,119 @@ def test_lambda_aws_integration_with_request_template(
             restApiId=api_id, resourceId=resource_id, httpMethod="GET"
         )
     snapshot.match("get-integration-after-delete", e.value.response)
+
+
+@markers.aws.validated
+def test_lambda_selection_patterns(
+    aws_client, create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot
+):
+    # create invocation role
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
+
+    function_name = f"test-{short_uid()}"
+    create_function_response = create_lambda_function(
+        func_name=function_name,
+        handler_file=TEST_LAMBDA_PYTHON_SELECT_PATTERN,
+        handler="lambda_select_pattern.handler",
+        runtime=Runtime.python3_10,
+    )
+
+    lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+    target_uri = arns.apigateway_invocations_arn(lambda_arn, aws_client.apigateway.meta.region_name)
+
+    api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
+    resource_id, _ = create_rest_resource(
+        aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="{statusCode}"
+    )
+
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        authorizationType="NONE",
+    )
+
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        integrationHttpMethod="POST",
+        type="AWS",
+        uri=target_uri,
+        credentials=role_arn,
+        requestTemplates={"application/json": '{"statusCode": "$input.params(\'statusCode\')"}'},
+    )
+
+    # apigw 200 response
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="200",
+    )
+
+    # apigw 405 response
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="405",
+    )
+
+    # apigw 502 response
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="502",
+    )
+
+    # this is where selection patterns come into play
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="200",
+    )
+    # 4xx
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="405",
+        selectionPattern=".*400.*",
+    )
+    # 5xx
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="502",
+        selectionPattern=".*5\\d\\d.*",
+    )
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName="dev")
+
+    expected_codes = {
+        200: 200,
+        400: 405,
+        500: 502,
+    }
+
+    def invoke_api(status_code):
+        url = api_invoke_url(
+            api_id=api_id,
+            stage="dev",
+            path=f"/{status_code}",
+        )
+        resp = requests.get(url, verify=False)
+        assert resp.status_code == expected_codes[status_code]
+        return resp
+
+    # retry is necessary against AWS, probably IAM permission delay
+    status_codes = [200, 400, 500]
+    for status_code in status_codes:
+        response = retry(invoke_api, sleep=2, retries=10, status_code=status_code)
+        snapshot.match(f"lambda-selection-pattern-{status_code}", response.json())
