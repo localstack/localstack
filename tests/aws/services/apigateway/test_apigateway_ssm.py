@@ -1,11 +1,11 @@
 from localstack.testing.pytest import markers
+from localstack.utils.http import safe_requests as requests
 from tests.aws.services.apigateway.apigateway_fixtures import (
+    api_invoke_url,
+    create_rest_api_integration,
     create_rest_resource,
     create_rest_resource_method,
-    create_rest_api_integration,
-    api_invoke_url,
 )
-from localstack.utils.http import safe_requests as requests
 
 
 @markers.aws.validated
