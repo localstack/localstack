@@ -188,7 +188,7 @@ jobs:
           # include the matrix group (to re-use the var-libs used in the specific test group)
           key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg', 'localstack/**/packages.py', 'localstack-ext/**/packages.py', 'localstack/packages/*.py', 'localstack-ext/packages/*.py') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml','localstack-ext/**/packages.py','localstack-ext/packages/*.py', 'localstack/setup.cfg', 'localstack/**/packages.py',  'localstack/packages/*.py', ) }}-master-
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml','localstack-ext/**/packages.py','localstack-ext/packages/*.py', 'localstack/setup.cfg', 'localstack/**/packages.py',  'localstack/packages/*.py') }}-master-
 
 
       - name: Restore Lambda common runtime packages
