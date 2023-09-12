@@ -220,9 +220,9 @@ class ExecutionEnvironment:
                     f"Execution environment {self.id} cannot be stopped when inactive or already stopped."
                     f" Current status: {self.status}"
                 )
-            self.runtime_executor.stop()
             self.status = RuntimeStatus.STOPPED
-            self.keepalive_timer.cancel()
+        self.runtime_executor.stop()
+        self.keepalive_timer.cancel()
 
     # Status methods
     def release(self) -> None:
@@ -235,11 +235,9 @@ class ExecutionEnvironment:
                 )
             self.status = RuntimeStatus.READY
 
-            if self.initialization_type == "on-demand":
-                self.keepalive_timer = Timer(
-                    config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed
-                )
-                self.keepalive_timer.start()
+        if self.initialization_type == "on-demand":
+            self.keepalive_timer = Timer(config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed)
+            self.keepalive_timer.start()
 
     def reserve(self) -> None:
         with self.status_lock:
@@ -249,7 +247,8 @@ class ExecutionEnvironment:
                     f" Current status: {self.status}"
                 )
             self.status = RuntimeStatus.RUNNING
-            self.keepalive_timer.cancel()
+
+        self.keepalive_timer.cancel()
 
     def keepalive_passed(self) -> None:
         LOG.debug(
