@@ -187,7 +187,7 @@ jobs:
             localstack-ext/.venv
             localstack/.filesystem/var/lib/localstack
           # include the matrix group (to re-use the var-libs used in the specific test group)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg', '**/packages.py', 'localstack/packages/*.py', 'localstack-ext/packages/*.py') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg', 'localstack/**/packages.py', 'localstack-ext/**/packages.py', 'localstack/packages/*.py', 'localstack-ext/packages/*.py') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
 
       - name: Restore Lambda common runtime packages
         id: cached-lambda-common-restore
@@ -249,6 +249,7 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
+          DISABLE_BOTO_RETRIES: 1
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "local"
           LOCALSTACK_API_KEY: "test"
