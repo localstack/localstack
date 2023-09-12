@@ -95,6 +95,7 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
                 resource_model=model,
+                custom_context=ctx,
             )
 
         if ctx.get(REPEATED_INVOCATION) and model.get("ProvisionedConcurrencyConfig"):
