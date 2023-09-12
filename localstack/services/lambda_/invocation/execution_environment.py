@@ -175,8 +175,9 @@ class ExecutionEnvironment:
                     f"Execution environment {self.id} can only be started when inactive. Current status: {self.status}"
                 )
             self.status = RuntimeStatus.STARTING
-            self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
-            self.startup_timer.start()
+
+        self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
+        self.startup_timer.start()
 
         try:
             time_before = time.perf_counter()
@@ -205,9 +206,9 @@ class ExecutionEnvironment:
 
         with self.status_lock:
             self.status = RuntimeStatus.READY
-            if self.startup_timer:
-                self.startup_timer.cancel()
-                self.startup_timer = None
+        if self.startup_timer:
+            self.startup_timer.cancel()
+            self.startup_timer = None
 
     def stop(self) -> None:
         """
@@ -272,11 +273,8 @@ class ExecutionEnvironment:
             self.function_version.qualified_arn,
         )
         if LOG.isEnabledFor(logging.DEBUG):
-            logs = self.runtime_executor.get_logs()
-            prefix = f"[lambda {self.id}] "
-            prefixed_logs = logs.replace("\n", f"\n{prefix}")
             LOG.debug(
-                f"Logs from the execution environment {self.id} after startup timeout:\n{prefix}{prefixed_logs}"
+                f"Logs from the execution environment {self.id} after startup timeout:\n{self.get_prefixed_logs()}"
             )
         self.startup_timer = None
         with self.status_lock:
@@ -303,12 +301,20 @@ class ExecutionEnvironment:
             self.startup_timer.cancel()
             self.startup_timer = None
         if LOG.isEnabledFor(logging.DEBUG):
-            logs = self.runtime_executor.get_logs()
-            LOG.debug(f"Logs from the execution environment {self.id} after startup error:\n{logs}")
+            LOG.debug(
+                f"Logs from the execution environment {self.id} after startup error:\n{self.get_prefixed_logs()}"
+            )
         try:
             self.runtime_executor.stop()
         except Exception as e:
             LOG.debug("Unable to shutdown execution environment %s after error: %s", self.id, e)
+
+    def get_prefixed_logs(self) -> str:
+        """Returns prefixed lambda containers logs"""
+        logs = self.runtime_executor.get_logs()
+        prefix = f"[lambda {self.id}] "
+        prefixed_logs = logs.replace("\n", f"\n{prefix}")
+        return f"{prefix}{prefixed_logs}"
 
     def invoke(self, invocation: Invocation) -> InvocationResult:
         assert self.status == RuntimeStatus.RUNNING

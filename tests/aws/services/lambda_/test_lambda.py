@@ -1359,7 +1359,7 @@ class TestLambdaErrors:
         reason="Can only induce Lambda-internal Docker error in LocalStack"
     )
     def test_lambda_runtime_startup_timeout(
-        self, aws_client_factory, create_lambda_function, snapshot, monkeypatch
+        self, aws_client_factory, create_lambda_function, monkeypatch
     ):
         """Test Lambda that times out during runtime startup"""
         monkeypatch.setattr(
@@ -1376,7 +1376,37 @@ class TestLambdaErrors:
         )
 
         client_config = Config(
-            retries={"total_max_attempts": 1},
+            retries={"max_attempts": 0},
+        )
+        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
+        with pytest.raises(no_retry_lambda_client.exceptions.ServiceException) as e:
+            no_retry_lambda_client.invoke(
+                FunctionName=function_name,
+            )
+        assert e.match(
+            r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
+            r"retries: \d\): Internal error while executing lambda"
+        )
+
+    @markers.aws.only_localstack(
+        reason="Can only induce Lambda-internal Docker error in LocalStack"
+    )
+    def test_lambda_runtime_startup_error(
+        self, aws_client_factory, create_lambda_function, monkeypatch
+    ):
+        """Test Lambda that errors during runtime startup"""
+        monkeypatch.setattr(config, "LAMBDA_DOCKER_FLAGS", "invalid_flags")
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        client_config = Config(
+            retries={"max_attempts": 0},
         )
         no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
         with pytest.raises(no_retry_lambda_client.exceptions.ServiceException) as e:
