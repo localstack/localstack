@@ -48,6 +48,7 @@ class AssignmentService(OtherServiceEndpoint):
             for env in self.environments[version_arn].values()
             if env.initialization_type == provisioning_type
         )
+        execution_environment = None
         for environment in applicable_envs:
             try:
                 environment.reserve()
@@ -55,7 +56,8 @@ class AssignmentService(OtherServiceEndpoint):
                 break
             except InvalidStatusException:
                 pass
-        else:
+
+        if execution_environment is None:
             if provisioning_type == "provisioned-concurrency":
                 raise AssignmentException(
                     "No provisioned concurrency environment available despite lease."
