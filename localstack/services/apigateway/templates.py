@@ -187,6 +187,7 @@ class Templates:
             "path": {},
             "querystring": {},
         }
+
         return {
             "context": ctx,
             "stage_variables": api_context.stage_variables or {},

@@ -816,6 +816,10 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                     # an "add" operation, then we should use the standard-compliant notation "/path/-"
                     operation["path"] = f"{path}/-"
 
+            if operation["op"] == "remove":
+                path = operation["path"]
+                common.assign_to_path(subject, path, value={}, delimiter="/")
+
             result = apply_patch(subject, [operation], in_place=in_place)
             if not in_place:
                 subject = result

@@ -72,6 +72,7 @@ def apply_patches():
                 integration.timeout_in_millis = int(integration.timeout_in_millis)
             if skip_verification := (integration.tls_config or {}).get("insecureSkipVerification"):
                 integration.tls_config["insecureSkipVerification"] = str_to_bool(skip_verification)
+            return 200, {}, json.dumps(integration.to_json())
 
         return result
 
