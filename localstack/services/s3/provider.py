@@ -258,9 +258,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             s3_notif_ctx = S3EventNotificationContext.from_request_context(
                 context, key_name=key_name
             )
-        if notification_config := self.get_store(
-            context.account_id, context.region
-        ).bucket_notification_configs.get(s3_notif_ctx.bucket_name):
+        store = self.get_store(s3_notif_ctx.bucket_account_id, s3_notif_ctx.bucket_location)
+        if notification_config := store.bucket_notification_configs.get(s3_notif_ctx.bucket_name):
             self._notification_dispatcher.send_notifications(s3_notif_ctx, notification_config)
 
     def _verify_notification_configuration(
