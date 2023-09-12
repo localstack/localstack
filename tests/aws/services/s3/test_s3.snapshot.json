@@ -1791,7 +1791,7 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
     "recorded-date": "03-08-2023, 04:19:02",
     "recorded-content": {
-      "create-bucket-us-west-1": {
+      "create-bucket-us-west-2": {
         "Error": {
           "BucketName": "<bucket-name:1>",
           "Code": "BucketAlreadyOwnedByYou",
@@ -4254,7 +4254,7 @@
     "recorded-content": {
       "create-kms-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "Arn": "arn:aws:kms:us-east-2:111111111111:key/<uuid:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "<description:1>",
@@ -4303,7 +4303,7 @@
       "put-obj-different-region-kms-key": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Invalid arn <region>"
+          "Message": "Invalid arn us-east-2"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

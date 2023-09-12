@@ -3487,12 +3487,14 @@ class TestS3:
     def test_create_bucket_with_existing_name(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-{short_uid()}"
+        region_1 = "us-west-2"
+        region_2 = "us-east-2"
         s3_create_bucket(
             Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
+            CreateBucketConfiguration={"LocationConstraint": region_1},
         )
 
-        for loc_constraint in ["us-west-1", "us-east-2"]:
+        for loc_constraint in [region_1, region_2]:
             with pytest.raises(ClientError) as e:
                 aws_client.s3.create_bucket(
                     Bucket=bucket_name,
@@ -4147,14 +4149,17 @@ class TestS3:
     def test_s3_sse_validate_kms_key(
         self, s3_create_bucket, kms_create_key, monkeypatch, snapshot, aws_client
     ):
+        region_1 = "us-west-2"
+        region_2 = "us-east-2"
+
         snapshot.add_transformer(snapshot.transform.key_value("Description"))
         data = b"test-sse"
         bucket_name = f"bucket-test-kms-{short_uid()}"
         s3_create_bucket(
-            Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+            Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": region_1}
         )
         # create key in a different region than the bucket
-        kms_key = kms_create_key(region_name="us-east-1")
+        kms_key = kms_create_key(region_name=region_2)
         # snapshot the KMS key to save the UUID for replacement in Error message.
         snapshot.match("create-kms-key", kms_key)
 
@@ -4214,9 +4219,7 @@ class TestS3:
 
         # we create a wrong arn but with the right region to test error message
         wrong_id_arn = (
-            kms_key["Arn"]
-            .replace("us-east-1", "us-west-2")
-            .replace(kms_key["KeyId"], fake_key_uuid)
+            kms_key["Arn"].replace(region_2, region_1).replace(kms_key["KeyId"], fake_key_uuid)
         )
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object(
@@ -5534,19 +5537,20 @@ class TestS3MultiAccounts:
         return secondary_aws_client.s3
 
     @markers.aws.unknown
-    def test_shared_bucket_namespace(self, primary_client, secondary_client):
+    def test_shared_bucket_namespace(self, s3_create_bucket, secondary_client):
         # Ensure that the bucket name space is shared by all accounts and regions
-        primary_client.create_bucket(Bucket="foo")
+        bucket_name = f"test-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name)
 
         with pytest.raises(ClientError) as exc:
             secondary_client.create_bucket(
-                Bucket="foo",
+                Bucket=bucket_name,
                 CreateBucketConfiguration={"LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME},
             )
         exc.match("BucketAlreadyExists")
 
     @markers.aws.unknown
-    def test_cross_account_access(self, primary_client, secondary_client):
+    def test_cross_account_access(self, s3_create_bucket, primary_client, secondary_client):
         # Ensure that following operations can be performed across accounts
         # - ListObjects
         # - PutObject
@@ -5558,7 +5562,7 @@ class TestS3MultiAccounts:
         body2 = b"42"
 
         # First user creates a bucket and puts an object
-        primary_client.create_bucket(Bucket=bucket_name)
+        s3_create_bucket(Bucket=bucket_name)
         response = primary_client.list_buckets()
         assert bucket_name in [bucket["Name"] for bucket in response["Buckets"]]
         primary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body1)
