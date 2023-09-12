@@ -1,0 +1,46 @@
+Resources:
+  MyQueue:
+    Type: AWS::SQS::Queue
+
+  ScheduleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - scheduler.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: AllowSQS
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt MyQueue.Arn
+
+  MySchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      GroupName: !Ref MyScheduleGroup
+      FlexibleTimeWindow:
+        MaximumWindowInMinutes: 60
+        Mode: FLEXIBLE
+      Target:
+        Arn: !GetAtt MyQueue.Arn
+        RoleArn: !GetAtt ScheduleRole.Arn
+      ScheduleExpression: cron(0 0 * * ? *)
+
+  MyScheduleGroup:
+    Type: AWS::Scheduler::ScheduleGroup
+
+Outputs:
+    ScheduleName:
+        Value: !Ref MySchedule
+    ScheduleGroupName:
+        Value: !Ref MyScheduleGroup

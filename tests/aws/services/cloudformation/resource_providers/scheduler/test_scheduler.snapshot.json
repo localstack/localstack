@@ -1,0 +1,33 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/scheduler/test_scheduler.py::test_schedule_and_group": {
+    "recorded-date": "12-09-2023, 11:31:37",
+    "recorded-content": {
+      "Schedule": {
+        "DriftInformation": {
+          "StackResourceDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTimestamp": "timestamp",
+        "LogicalResourceId": "MySchedule",
+        "Metadata": {},
+        "PhysicalResourceId": "<physical_resource_id:1>",
+        "ResourceStatus": "CREATE_COMPLETE",
+        "ResourceType": "AWS::Scheduler::Schedule",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>"
+      },
+      "Group": {
+        "DriftInformation": {
+          "StackResourceDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTimestamp": "timestamp",
+        "LogicalResourceId": "MyScheduleGroup",
+        "Metadata": {},
+        "PhysicalResourceId": "<physical_resource_id:2>",
+        "ResourceStatus": "CREATE_COMPLETE",
+        "ResourceType": "AWS::Scheduler::ScheduleGroup",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>"
+      }
+    }
+  }
+}
