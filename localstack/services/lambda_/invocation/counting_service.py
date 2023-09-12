@@ -140,8 +140,8 @@ class CountingService:
                     provisioned_tracker.increment(qualified_arn)
                     lease_type = "provisioned-concurrency"
 
-        with on_demand_tracker.lock:
-            if not lease_type:
+        if not lease_type:
+            with on_demand_tracker.lock:
                 # 2) If reserved concurrency is set AND no provisioned concurrency available:
                 # => Check if enough reserved concurrency is available for the specific function.
                 if function.reserved_concurrent_executions is not None:
