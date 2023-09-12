@@ -78,6 +78,7 @@ class LambdaVersionManager:
 
         # async state
         self.provisioned_state = None
+        self.provisioned_state_lock = threading.RLock()
         self.state = None
 
     def start(self) -> None:
@@ -138,18 +139,18 @@ class LambdaVersionManager:
 
         :param provisioned_concurrent_executions: set to 0 to stop all provisioned environments
         """
+        with self.provisioned_state_lock:
+            # LocalStack limitation: cannot update provisioned concurrency while another update is in progress
+            if (
+                self.provisioned_state
+                and self.provisioned_state.status == ProvisionedConcurrencyStatusEnum.IN_PROGRESS
+            ):
+                raise ServiceException(
+                    "Updating provisioned concurrency configuration while IN_PROGRESS is not supported yet."
+                )
 
-        # LocalStack limitation: cannot update provisioned concurrency while another update is in progress
-        if (
-            self.provisioned_state
-            and self.provisioned_state.status == ProvisionedConcurrencyStatusEnum.IN_PROGRESS
-        ):
-            raise ServiceException(
-                "Updating provisioned concurrency configuration while IN_PROGRESS is not supported yet."
-            )
-
-        if not self.provisioned_state:
-            self.provisioned_state = ProvisionedConcurrencyState()
+            if not self.provisioned_state:
+                self.provisioned_state = ProvisionedConcurrencyState()
 
         def scale_environments(*args, **kwargs) -> None:
             futures = self.assignment_service.scale_provisioned_concurrency(
@@ -158,12 +159,13 @@ class LambdaVersionManager:
 
             concurrent.futures.wait(futures)
 
-            if provisioned_concurrent_executions == 0:
-                self.provisioned_state = None
-            else:
-                self.provisioned_state.available = provisioned_concurrent_executions
-                self.provisioned_state.allocated = provisioned_concurrent_executions
-                self.provisioned_state.status = ProvisionedConcurrencyStatusEnum.READY
+            with self.provisioned_state_lock:
+                if provisioned_concurrent_executions == 0:
+                    self.provisioned_state = None
+                else:
+                    self.provisioned_state.available = provisioned_concurrent_executions
+                    self.provisioned_state.allocated = provisioned_concurrent_executions
+                    self.provisioned_state.status = ProvisionedConcurrencyStatusEnum.READY
 
         self.provisioning_thread = start_thread(scale_environments)
         return self.provisioning_thread.result_future
