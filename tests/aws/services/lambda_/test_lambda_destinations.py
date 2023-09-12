@@ -96,6 +96,8 @@ class TestLambdaDLQ:
             FunctionName=lambda_name, DeadLetterConfig={}
         )
         snapshot.match("delete_dlq", update_function_config_response)
+        # TODO: test function update with running invocation => don't kill them all in that case
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=lambda_name)
         invoke_result = aws_client.lambda_.invoke(
             FunctionName=lambda_name, Payload=json.dumps(payload), LogType="Tail"
         )
