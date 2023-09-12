@@ -138,13 +138,18 @@ class SourceVolumeMountConfigurator:
                 )
 
         # moto code if available
-        source = self.host_paths.moto_project_dir / "moto"
-        if source.exists():
-            cfg.volumes.add(
-                VolumeBind(
-                    str(source), self.container_paths.dependency_source("moto"), read_only=True
-                )
-            )
+        self.try_mount_to_site_packages(cfg, self.host_paths.moto_project_dir / "moto")
+
+        # persistence plugin
+        self.try_mount_to_site_packages(
+            cfg,
+            self.host_paths.workspace_dir
+            / "localstack-plugin-persistence"
+            / "localstack_persistence",
+        )
+
+        # plux
+        self.try_mount_to_site_packages(cfg, self.host_paths.workspace_dir / "plux" / "plugin")
 
         # docker entrypoint
         if self.pro:
@@ -154,6 +159,24 @@ class SourceVolumeMountConfigurator:
         if source.exists():
             cfg.volumes.add(
                 VolumeBind(str(source), self.container_paths.docker_entrypoint, read_only=True)
+            )
+
+    def try_mount_to_site_packages(self, cfg: ContainerConfiguration, sources_path: Path):
+        """
+        Attempts to mount something like `~/workspace/plux/plugin` on the host into
+        ``.venv/.../site-packages/plugin``.
+
+        :param cfg:
+        :param sources_path:
+        :return:
+        """
+        if sources_path.exists():
+            cfg.volumes.add(
+                VolumeBind(
+                    str(sources_path),
+                    self.container_paths.dependency_source(sources_path.name),
+                    read_only=True,
+                )
             )
 
 
