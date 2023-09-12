@@ -169,7 +169,9 @@ class S3ProviderStream(S3Provider):
         if key_object.checksum_algorithm:
             response[f"Checksum{key_object.checksum_algorithm.upper()}"] = key_object.checksum_value
 
-        bucket_lifecycle_configurations = self.get_store(context).bucket_lifecycle_configuration
+        bucket_lifecycle_configurations = self.get_store(
+            context.account_id, context.region
+        ).bucket_lifecycle_configuration
         if (bucket_lifecycle_config := bucket_lifecycle_configurations.get(request["Bucket"])) and (
             rules := bucket_lifecycle_config.get("Rules")
         ):
