@@ -483,6 +483,7 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("AlarmName"),
+            TransformerUtility.key_value("Namespace"),
             KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
             TransformerUtility.key_value("Region", "region-name-full"),
         ]
