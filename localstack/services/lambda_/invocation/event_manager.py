@@ -97,6 +97,13 @@ def has_enough_time_for_retry(
     )
 
 
+CLIENT_CONFIG = Config(
+    connect_timeout=1,
+    read_timeout=5,
+    retries={"max_attempts": 0},
+)
+
+
 class Poller:
     version_manager: LambdaVersionManager
     event_queue_url: str
@@ -115,13 +122,8 @@ class Poller:
 
     def run(self, *args, **kwargs):
         try:
-            client_config = Config(
-                connect_timeout=1,
-                read_timeout=3,
-                retries={"total_max_attempts": 1},
-            )
             sqs_client = get_sqs_client(
-                self.version_manager.function_version, client_config=client_config
+                self.version_manager.function_version, client_config=CLIENT_CONFIG
             )
             function_timeout = self.version_manager.function_version.config.timeout
             while not self._shutdown_event.is_set():
@@ -147,6 +149,7 @@ class Poller:
             # TODO gateway shuts down before shutdown event even is set, so this log message might be sent regardless
             if isinstance(e, ConnectionRefusedError) and self._shutdown_event.is_set():
                 return
+            # TODO: investigate what causes ReadTimeoutError (fixed with increasing read timeout?)
             LOG.error(
                 "Error while polling lambda events for function %s: %s",
                 self.version_manager.function_version.qualified_arn,
@@ -495,13 +498,8 @@ class LambdaEventManager:
                     LOG.error("Poller did not shutdown %s", self.poller_thread)
                 self.poller = None
             if self.event_queue_url:
-                client_config = Config(
-                    connect_timeout=1,
-                    read_timeout=2,
-                    retries={"total_max_attempts": 1},
-                )
                 sqs_client = get_sqs_client(
-                    self.version_manager.function_version, client_config=client_config
+                    self.version_manager.function_version, client_config=CLIENT_CONFIG
                 )
                 sqs_client.delete_queue(QueueUrl=self.event_queue_url)
                 self.event_queue_url = None
