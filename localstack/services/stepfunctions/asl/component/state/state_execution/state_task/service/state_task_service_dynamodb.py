@@ -124,8 +124,12 @@ class StateTaskServiceDynamoDB(StateTaskService):
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         api_action = camel_to_snake_case(self.resource.api_action)
-
-        dynamodb_client = connect_to(config=Config(parameter_validation=False)).dynamodb
+        execution = env.context_object_manager.context_object["Execution"]
+        dynamodb_client = connect_to(
+            aws_access_key_id=execution.account_id,
+            region_name=execution.region_name,
+            config=Config(parameter_validation=False),
+        ).dynamodb
         response = getattr(dynamodb_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)
