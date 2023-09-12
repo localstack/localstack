@@ -167,12 +167,10 @@ class LambdaTopicPublisher(TopicPublisher):
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
-            account_id = extract_account_id_from_arn(subscriber["Endpoint"])
             region = extract_region_from_arn(subscriber["Endpoint"])
-
-            lambda_client = connect_to(
-                aws_access_key_id=account_id, region_name=region
-            ).lambda_.request_metadata(source_arn=subscriber["TopicArn"], service_principal="sns")
+            lambda_client = connect_to(region_name=region).lambda_.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal="sns"
+            )
             event = self.prepare_message(context.message, subscriber)
             inv_result = lambda_client.invoke(
                 FunctionName=subscriber["Endpoint"],
@@ -255,13 +253,10 @@ class SqsTopicPublisher(TopicPublisher):
             return
         try:
             queue_url: str = sqs_queue_url_for_arn(subscriber["Endpoint"])
-
-            account_id = extract_account_id_from_arn(subscriber["Endpoint"])
             region = extract_region_from_arn(subscriber["Endpoint"])
-
-            sqs_client = connect_to(
-                aws_access_key_id=account_id, region_name=region
-            ).sqs.request_metadata(source_arn=subscriber["TopicArn"], service_principal="sns")
+            sqs_client = connect_to(region_name=region).sqs.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal="sns"
+            )
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=message_body,
