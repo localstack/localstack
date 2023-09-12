@@ -38,6 +38,8 @@ on:
       - master
       - 'v[0-9]+'
       - release/*
+  schedule:
+    - cron: '0 4 * * *'  # run once a day at 4 AM UTC
   push:
     paths:
       - ".github/workflows/tests-pro-integration.yml"
@@ -46,10 +48,6 @@ on:
       - "setup.py"
       - "pyproject.toml"
       - "setup.cfg"
-      - "Dockerfile"
-      - "Dockerfile.rh"
-      - "docker-compose.yml"
-      - "bin/**"
     branches:
       - master
 
