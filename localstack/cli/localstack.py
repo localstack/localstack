@@ -396,9 +396,30 @@ def _print_service_table(services: Dict[str, str]) -> None:
     multiple=True,
     required=False,
 )
+@click.option(
+    "--publish",
+    "-p",
+    help="Additional port mappings that are passed to the LocalStack container",
+    multiple=True,
+    required=False,
+)
+@click.option(
+    "--volume",
+    "-v",
+    help="Additional volume mounts that are passed to the LocalStack container",
+    multiple=True,
+    required=False,
+)
 @publish_invocation
 def cmd_start(
-    docker: bool, host: bool, no_banner: bool, detached: bool, network: str = None, env: Tuple = ()
+    docker: bool,
+    host: bool,
+    no_banner: bool,
+    detached: bool,
+    network: str = None,
+    env: Tuple = (),
+    publish: Tuple = (),
+    volume: Tuple = (),
 ) -> None:
     """
     Start the LocalStack runtime.

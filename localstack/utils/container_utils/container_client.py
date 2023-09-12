@@ -371,7 +371,7 @@ class VolumeBind:
 
         volume = cls(parts[0], parts[1])
         if len(parts) == 3:
-            if "ro" in parts[3].split(","):
+            if "ro" in parts[2].split(","):
                 volume.read_only = True
         return volume
 
