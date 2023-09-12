@@ -172,7 +172,7 @@ jobs:
             /tmp/workspace
           paths:
             - repo/target/reports/
-            - repo/target/metric_reports
+            - repo/target/metric_reports/
             - repo/target/coverage/
       - store_test_results:
           path: target/reports/
@@ -402,6 +402,13 @@ jobs:
             python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
       - store_artifacts:
           path: parity_metrics/
+      - run:
+          name: store acceptance parity metrics
+          command: |
+            mkdir acceptance_parity_metrics
+            mv target/metric_reports/metric-report*acceptance* acceptance_parity_metrics/
+      - store_artifacts:
+          path: acceptance_parity_metrics/
       - store_artifacts:
           path: scripts/implementation_coverage_aggregated.csv
           destination: community/implementation_coverage_aggregated.csv
