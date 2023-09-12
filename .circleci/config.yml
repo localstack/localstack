@@ -404,7 +404,7 @@ jobs:
       - run:
           name: fetch isolated acceptance coverage
           command: |
-            cp target/coverage/coverage.acceptance.* .coverage.acceptance
+            cp target/coverage/.coverage.acceptance.* .coverage.acceptance
       - store_artifacts:
           path: .coverage.acceptance
 
