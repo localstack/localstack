@@ -641,6 +641,9 @@ class ResourceProviderExecutor:
 
                 event = self.execute_action(resource_provider, payload)
 
+                if event.status == OperationStatus.FAILED:
+                    return event
+
                 if event.status == OperationStatus.SUCCESS:
 
                     if not isinstance(resource_provider, LegacyResourceProvider):
