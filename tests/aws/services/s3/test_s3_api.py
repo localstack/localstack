@@ -5,24 +5,24 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.strings import long_uid, short_uid
 
 
-def is_native_provider():
-    return config.NATIVE_S3_PROVIDER
+def is_not_native_provider():
+    return not config.NATIVE_S3_PROVIDER
 
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
-)
 @markers.snapshot.skip_snapshot_verify(
-    condition=lambda: not is_native_provider(), paths=["$..ServerSideEncryption"]
+    condition=is_not_native_provider, paths=["$..ServerSideEncryption"]
 )
 class TestS3BucketCRUD:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_not_native_provider, paths=["$.delete-with-obj.Error.BucketName"]
+    )
     def test_delete_bucket_with_objects(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         key_name = "test-delete"
@@ -40,6 +40,14 @@ class TestS3BucketCRUD:
         # TODO: write a test with a multipart upload that is not completed?
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_not_native_provider,
+        paths=[
+            "$..Error.BucketName",
+            "$..Error.Message",
+            "$.delete-marker-by-version.DeleteMarker",
+        ],
+    )
     def test_delete_versioned_bucket_with_objects(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         # enable versioning on the bucket
@@ -75,15 +83,15 @@ class TestS3BucketCRUD:
         snapshot.match("success-delete-bucket", delete_bucket)
 
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
-)
 @markers.snapshot.skip_snapshot_verify(
-    condition=lambda: not is_native_provider(), paths=["$..ServerSideEncryption"]
+    condition=is_not_native_provider, paths=["$..ServerSideEncryption"]
 )
 class TestS3ObjectCRUD:
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not raise exceptions",
+    )
     def test_delete_object(self, s3_bucket, aws_client, snapshot):
         key_name = "test-delete"
         put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="test-delete")
@@ -102,6 +110,10 @@ class TestS3ObjectCRUD:
         snapshot.match("delete-nonexistent-object-versionid", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not raise exceptions",
+    )
     def test_delete_objects(self, s3_bucket, aws_client, snapshot):
         key_name = "test-delete"
         put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="test-delete")
@@ -131,6 +143,10 @@ class TestS3ObjectCRUD:
         snapshot.match("delete-objects", delete_objects)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not return proper headers",
+    )
     def test_delete_object_versioned(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(snapshot.transform.key_value("ArgumentValue"))
@@ -229,6 +245,10 @@ class TestS3ObjectCRUD:
         snapshot.match("delete-wrong-key", delete_wrong_key)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not return right values",
+    )
     def test_delete_objects_versioned(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(snapshot.transform.key_value("DeleteMarkerVersionId"))
@@ -304,11 +324,11 @@ class TestS3ObjectCRUD:
         )
         snapshot.match("delete-objects-version-id", delete_objects_marker)
 
-    @markers.aws.unknown
-    def test_delete_object_locked(self):
-        pass
-
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation raises the wrong exception",
+    )
     def test_get_object_with_version_unversioned_bucket(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         key_name = "test-version"
@@ -325,6 +345,10 @@ class TestS3ObjectCRUD:
         snapshot.match("get-obj-with-null-version", get_obj)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation deletes all versions when suspending versioning, when it should keep it",
+    )
     def test_put_object_on_suspended_bucket(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         # enable versioning on the bucket
@@ -372,6 +396,10 @@ class TestS3ObjectCRUD:
         snapshot.match("get-object-current", get_object)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation has the wrong behaviour",
+    )
     def test_delete_object_on_suspended_bucket(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         # enable versioning on the bucket
@@ -417,6 +445,14 @@ class TestS3ObjectCRUD:
         snapshot.match("list-suspended-after-put", list_object_versions)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_not_native_provider,
+        paths=[
+            "$..Delimiter",
+            "$..EncodingType",
+            "$..VersionIdMarker",
+        ],
+    )
     def test_list_object_versions_order_unversioned(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -438,16 +474,166 @@ class TestS3ObjectCRUD:
         list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
         snapshot.match("list-object-versions", list_object_versions)
 
-        # TODO: test with Next? xxx
-        # TODO: test with ListObject/ListObjectV2
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=config.STREAM_S3_PROVIDER,
+        reason="Range fix not applied in S3 Stream provider due to removal in the near future",
+    )
+    def test_get_object_range(self, aws_client, s3_bucket, snapshot):
+        content = "0123456789"
+        key = "test-key-range"
+
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=content)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-8")
+        snapshot.match("get-0-8", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-1")
+        snapshot.match("get-1-1", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-0")
+        snapshot.match("get-1-0", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-")
+        snapshot.match("get-1-", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-1-")
+        snapshot.match("get--1-", resp)
+
+        # test suffix byte range, returning the 2 last bytes
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-2")
+        snapshot.match("get--2", resp)
+
+        # test suffix byte range, returning the 9 last bytes
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-9")
+        snapshot.match("get--9", resp)
+
+        # test suffix byte range, returning the 15 last bytes, which will return max 0
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-15")
+        snapshot.match("get--15", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-100")
+        snapshot.match("get-0-100", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-0")
+        snapshot.match("get-0-0", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0--1")
+        snapshot.match("get-0--1", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-1,3-4,7-9")
+        snapshot.match("get-multiple-ranges", resp)
+
+        if config.NATIVE_S3_PROVIDER or is_aws_cloud():
+            # FIXME: missing handling in moto for very wrong format of the range header
+            resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="0-1")
+            snapshot.match("get-wrong-format", resp)
+
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-")
+        snapshot.match("get--", resp)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=-0")
+        snapshot.match("get--0", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=100-200")
+        snapshot.match("get-100-200", e.value.response)
 
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
-)
+class TestS3Multipart:
+    # TODO: write a validated test for UploadPartCopy preconditions
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto does not handle the exceptions properly",
+    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PartNumberMarker"])  # TODO: invetigate this
+    def test_upload_part_copy_range(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+        src_key = "src-key"
+        content = "0123456789"
+        put_src_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body=content)
+        snapshot.match("put-src-object", put_src_object)
+        key = "test-upload-part-copy"
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        copy_source_key = f"{s3_bucket}/{src_key}"
+        parts = []
+        # not using parametrization here as it needs a lot of setup for only one operation tested
+        src_ranges_values = [
+            "0-8",
+            "1-1",
+            "0-0",
+        ]
+        for i, src_range in enumerate(src_ranges_values):
+            upload_part_copy = aws_client.s3.upload_part_copy(
+                Bucket=s3_bucket,
+                UploadId=upload_id,
+                Key=key,
+                PartNumber=i + 1,
+                CopySource=copy_source_key,
+                CopySourceRange=f"bytes={src_range}",
+            )
+            snapshot.match(f"upload-part-copy-{i + 1}", upload_part_copy)
+            parts.append({"ETag": upload_part_copy["CopyPartResult"]["ETag"], "PartNumber": i + 1})
+
+        list_parts = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key, UploadId=upload_id)
+        snapshot.match("list-parts", list_parts)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part_copy(
+                Bucket=s3_bucket,
+                UploadId=upload_id,
+                Key=key,
+                PartNumber=1,
+                CopySource=copy_source_key,
+                CopySourceRange="0-8",
+            )
+        snapshot.match("upload-part-copy-wrong-format", e.value.response)
+
+        wrong_src_ranges_values = [
+            "1-0",
+            "-1-",
+            "0--1",
+            "0-1,3-4,7-9",
+            "-",
+            "-0",
+            "0-100",
+            "100-200",
+            "1-",
+            "-2",
+            "-15",
+        ]
+        for src_range in wrong_src_ranges_values:
+            with pytest.raises(ClientError) as e:
+                aws_client.s3.upload_part_copy(
+                    Bucket=s3_bucket,
+                    UploadId=upload_id,
+                    Key=key,
+                    PartNumber=1,
+                    CopySource=copy_source_key,
+                    CopySourceRange=f"bytes={src_range}",
+                )
+            snapshot.match(f"upload-part-copy-range-exc-{src_range}", e.value.response)
+
+
 class TestS3BucketVersioning:
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation not raising exceptions",
+    )
     def test_bucket_versioning_crud(self, aws_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         get_versioning_before = aws_client.s3.get_bucket_versioning(Bucket=s3_bucket)
@@ -496,12 +682,12 @@ class TestS3BucketVersioning:
         snapshot.match("get-versioning-no-bucket", e.value.response)
 
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
-)
 class TestS3BucketEncryption:
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not have default encryption",
+    )
     def test_s3_default_bucket_encryption(self, s3_bucket, aws_client, snapshot):
         get_default_encryption = aws_client.s3.get_bucket_encryption(Bucket=s3_bucket)
         snapshot.match("default-bucket-encryption", get_default_encryption)
@@ -516,6 +702,10 @@ class TestS3BucketEncryption:
         snapshot.match("get-bucket-no-encryption", bucket_versioning)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not have proper validation",
+    )
     def test_s3_default_bucket_encryption_exc(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         fake_bucket = f"fakebucket-{short_uid()}-{short_uid()}"
@@ -610,6 +800,9 @@ class TestS3BucketEncryption:
     @markers.aws.validated
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_not_native_provider, paths=["$..BucketKeyEnabled"]
+    )
     def test_s3_bucket_encryption_sse_kms(self, s3_bucket, kms_key, aws_client, snapshot):
 
         put_bucket_enc = aws_client.s3.put_bucket_encryption(
@@ -668,6 +861,10 @@ class TestS3BucketEncryption:
         snapshot.match("put-object-encrypted-bucket-key-disabled", put_object_encrypted)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not have S3 KMS managed key",
+    )
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -712,12 +909,14 @@ class TestS3BucketEncryption:
         snapshot.match("get-object-encrypted", get_object_encrypted)
 
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_not_native_provider, paths=["$..ServerSideEncryption"]
 )
 class TestS3BucketObjectTagging:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_not_native_provider, paths=["$.get-bucket-tags.TagSet[1].Value"]
+    )
     def test_bucket_tagging_crud(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
@@ -818,6 +1017,10 @@ class TestS3BucketObjectTagging:
         snapshot.match("get-obj-after-tags-deleted", get_object)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation do not catch exceptions",
+    )
     def test_object_tagging_exc(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         snapshot.add_transformer(snapshot.transform.regex(s3_bucket, replacement="<bucket:1>"))
@@ -860,6 +1063,10 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-obj-wrong-format", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation missing versioning implementation",
+    )
     def test_object_tagging_versioned(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         aws_client.s3.put_bucket_versioning(
@@ -985,6 +1192,10 @@ class TestS3BucketObjectTagging:
         snapshot.match("get-object-after-recreation", get_bucket_tags)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not raise exceptions",
+    )
     def test_tagging_validation(self, s3_bucket, aws_client, snapshot):
         object_key = "tagging-validation"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body=b"")
@@ -1066,12 +1277,12 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-object-tags-aws-prefixed", e.value.response)
 
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
-)
 class TestS3ObjectLock:
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not catch exception",
+    )
     def test_put_object_lock_configuration_on_existing_bucket(
         self, s3_bucket, aws_client, snapshot
     ):
@@ -1099,6 +1310,10 @@ class TestS3ObjectLock:
         snapshot.match("put-object-lock-existing-bucket-rule", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_not_native_provider,
+        paths=["$.get-lock-config.ObjectLockConfiguration.Rule.DefaultRetention.Years"],
+    )
     def test_get_put_object_lock_configuration(self, s3_create_bucket, aws_client, snapshot):
         s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
 
@@ -1134,6 +1349,10 @@ class TestS3ObjectLock:
         snapshot.match("get-lock-config-only-enabled", get_lock_config)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not catch exception",
+    )
     def test_put_object_lock_configuration_exc(self, s3_create_bucket, aws_client, snapshot):
         s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
         with pytest.raises(ClientError) as e:
@@ -1204,6 +1423,9 @@ class TestS3ObjectLock:
         snapshot.match("put-lock-config-both-days-years", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_not_native_provider, paths=["$..Error.BucketName"]
+    )
     def test_get_object_lock_configuration_exc(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
@@ -1215,6 +1437,10 @@ class TestS3ObjectLock:
         snapshot.match("get-lock-config-bucket-not-exists", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not raise exceptions",
+    )
     def test_disable_versioning_on_locked_bucket(self, s3_create_bucket, aws_client, snapshot):
         s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
         with pytest.raises(ClientError) as e:
@@ -1226,13 +1452,32 @@ class TestS3ObjectLock:
             )
         snapshot.match("disable-versioning-on-locked-bucket", e.value.response)
 
+    @markers.aws.validated
+    def test_delete_object_with_no_locking(self, s3_bucket, aws_client, snapshot):
+        key = "test-delete-no-lock"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
-)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, BypassGovernanceRetention=True)
+        snapshot.match("delete-object-bypass-no-lock", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, BypassGovernanceRetention=False)
+        snapshot.match("delete-object-bypass-no-lock-false", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_objects(
+                Bucket=s3_bucket, Delete={"Objects": [{"Key": key}]}, BypassGovernanceRetention=True
+            )
+        snapshot.match("delete-objects-bypass-no-lock", e.value.response)
+
+
 class TestS3BucketOwnershipControls:
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not have default ownership controls",
+    )
     def test_crud_bucket_ownership_controls(self, s3_create_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         default_s3_bucket = s3_create_bucket()
@@ -1265,6 +1510,10 @@ class TestS3BucketOwnershipControls:
         snapshot.match("get-ownership-at-creation", get_ownership_at_creation)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not have default ownership controls",
+    )
     def test_bucket_ownership_controls_exc(self, s3_create_bucket, aws_client, snapshot):
         default_s3_bucket = s3_create_bucket()
         get_default_ownership = aws_client.s3.get_bucket_ownership_controls(
@@ -1306,12 +1555,12 @@ class TestS3BucketOwnershipControls:
         snapshot.match("ownership-non-value-at-creation", e.value.response)
 
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
-)
 class TestS3PublicAccessBlock:
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not have default public access block",
+    )
     def test_crud_public_access_block(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         get_public_access_block = aws_client.s3.get_public_access_block(Bucket=s3_bucket)
@@ -1341,10 +1590,6 @@ class TestS3PublicAccessBlock:
         snapshot.match("idempotent-delete-public-access-block", delete_public_access_block)
 
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
-)
 class TestS3BucketPolicy:
     @markers.aws.validated
     def test_bucket_policy_crud(self, s3_bucket, snapshot, aws_client):
@@ -1387,6 +1632,10 @@ class TestS3BucketPolicy:
         snapshot.match("get-bucket-policy-after-delete", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Moto implementation does not raise Exception",
+    )
     def test_bucket_policy_exc(self, s3_bucket, snapshot, aws_client):
         # delete the OwnershipControls so that we can set a Policy
         aws_client.s3.delete_bucket_ownership_controls(Bucket=s3_bucket)
@@ -1405,10 +1654,6 @@ class TestS3BucketPolicy:
         snapshot.match("put-bucket-policy-empty-json", e.value.response)
 
 
-@pytest.mark.skipif(
-    condition=not config.NATIVE_S3_PROVIDER,
-    reason="These are WIP tests for the new native S3 provider",
-)
 class TestS3BucketAccelerateConfiguration:
     @markers.aws.validated
     def test_bucket_acceleration_configuration_crud(self, s3_bucket, snapshot, aws_client):
@@ -1434,6 +1679,13 @@ class TestS3BucketAccelerateConfiguration:
         snapshot.match("get-bucket-accelerate-config-disabled", response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_not_native_provider,
+        paths=[
+            "$.put-bucket-accelerate-config-dot-bucket.Error.Code",
+            "$.put-bucket-accelerate-config-dot-bucket.Error.Message",
+        ],
+    )
     def test_bucket_acceleration_configuration_exc(
         self, s3_bucket, s3_create_bucket, snapshot, aws_client
     ):

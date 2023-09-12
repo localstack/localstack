@@ -76,6 +76,7 @@ from localstack.aws.api.apigateway import (
     RestApis,
     SecurityPolicy,
     Stage,
+    Stages,
     StatusCode,
     String,
     Tags,
@@ -514,6 +515,46 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         parent_id = moto_resource.parent_id
         api_resources[parent_id].remove(resource_id)
 
+    def update_integration_response(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        status_code: StatusCode,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> IntegrationResponse:
+        # XXX: THIS IS NOT A COMPLETE IMPLEMENTATION, just the minimum required to get tests going
+        # TODO: validate patch operations
+
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        moto_resource = moto_rest_api.resources.get(resource_id)
+        if not moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        moto_method = moto_resource.resource_methods.get(http_method)
+        if not moto_method:
+            raise NotFoundException("Invalid Method identifier specified")
+
+        integration_response = moto_method.method_integration.integration_responses.get(status_code)
+        if not integration_response:
+            raise NotFoundException("Invalid Integration Response identifier specified")
+
+        for patch_operation in patch_operations:
+            op = patch_operation.get("op")
+            path = patch_operation.get("path")
+
+            # for path "/responseTemplates/application~1json"
+            if "/responseTemplates" in path:
+                value = patch_operation.get("value")
+                if not isinstance(value, str):
+                    raise BadRequestException(
+                        f"Invalid patch value  '{value}' specified for op '{op}'. Must be a string"
+                    )
+                param = path.removeprefix("/responseTemplates/")
+                param = param.replace("~1", "/")
+                integration_response.response_templates.pop(param)
+
     def update_resource(
         self,
         context: RequestContext,
@@ -849,6 +890,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not hasattr(stage, "documentation_version"):
             stage.documentation_version = request.get("documentationVersion")
 
+        # make sure we update the stage_name on the deployment entity in moto
+        deployment = moto_api.deployments.get(request["deploymentId"])
+        deployment.stage_name = stage.name
+
         response = stage.to_json()
         self._patch_stage_response(response)
         return response
@@ -857,6 +902,16 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = call_moto(context)
         self._patch_stage_response(response)
         return response
+
+    def get_stages(
+        self, context: RequestContext, rest_api_id: String, deployment_id: String = None
+    ) -> Stages:
+        response = call_moto(context)
+        for stage in response["item"]:
+            self._patch_stage_response(stage)
+            if not stage.get("description"):
+                stage.pop("description", None)
+        return Stages(**response)
 
     @handler("UpdateStage")
     def update_stage(

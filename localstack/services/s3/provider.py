@@ -646,6 +646,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: DeleteObjectRequest,
     ) -> DeleteObjectOutput:
         # TODO: implement DeleteMarker response
+        if request.get("BypassGovernanceRetention") is not None:
+            bucket_name = request["Bucket"]
+            moto_backend = get_moto_s3_backend(context)
+            bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
+            if not bucket.object_lock_enabled:
+                raise InvalidArgument(
+                    "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets.",
+                    ArgumentName="x-amz-bypass-governance-retention",
+                )
+
         if request["Bucket"] not in self.get_store(context).bucket_notification_configs:
             return call_moto(context)
 
@@ -674,6 +684,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
     ) -> DeleteObjectsOutput:
         # TODO: implement DeleteMarker response
+        if bypass_governance_retention is not None:
+            moto_backend = get_moto_s3_backend(context)
+            moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+            if not moto_bucket.object_lock_enabled:
+                raise InvalidArgument(
+                    "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets.",
+                    ArgumentName="x-amz-bypass-governance-retention",
+                )
+
         objects: List[ObjectIdentifier] = delete.get("Objects")
         deleted_objects = {}
         quiet = delete.get("Quiet", False)

@@ -1,5 +1,5 @@
 # builder: Stage to build a custom JRE (with jlink)
-FROM python:3.10.13-slim-bullseye@sha256:d8c9ac4b16de7e2a1ef24cd9d914e3152b52f01476790e1c9dcd68757abb28b5 as java-builder
+FROM python:3.10.13-slim-bullseye@sha256:9d1db839c73288a0c3a44000deffaaead48695cb5144daf9ae9f836235291398 as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -37,7 +37,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.10.13-slim-bullseye@sha256:d8c9ac4b16de7e2a1ef24cd9d914e3152b52f01476790e1c9dcd68757abb28b5 as base
+FROM python:3.10.13-slim-bullseye@sha256:9d1db839c73288a0c3a44000deffaaead48695cb5144daf9ae9f836235291398 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -46,7 +46,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps
+            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2
 
 # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
 RUN --mount=type=cache,target=/var/cache/apt \

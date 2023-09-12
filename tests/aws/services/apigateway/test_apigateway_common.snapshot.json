@@ -537,5 +537,406 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_delete_deployments[True]": {
+    "recorded-date": "07-09-2023, 19:27:48",
+    "recorded-content": {
+      "get-deployment": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-0": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-0": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-0": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-1": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-1": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-1": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:2>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-2": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-2": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-2": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:3>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_delete_deployments[False]": {
+    "recorded-date": "07-09-2023, 19:20:47",
+    "recorded-content": {
+      "get-deployment": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-0": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-0": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-0": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-1": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-1": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-1": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:2>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error-2": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployments-2": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "id": "<id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-2": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<id:3>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_update_deployments": {
+    "recorded-date": "11-09-2023, 12:12:50",
+    "recorded-content": {
+      "get-deployment-1": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:1>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-error": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-deployment-1-after-update": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deployment-2": {
+        "createdDate": "datetime",
+        "id": "<deployment-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stages-after-update": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:2>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "s1",
+            "tracingEnabled": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-deployment-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "delete-deployment-2-error": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Active stages pointing to this deployment must be moved or deleted"
+        },
+        "message": "Active stages pointing to this deployment must be moved or deleted",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

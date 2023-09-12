@@ -33,7 +33,7 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import long_uid, short_uid, to_str
-from localstack.utils.sync import wait_until
+from localstack.utils.sync import ShortCircuitWaitException, wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import (
     FUNCTION_MAX_UNZIPPED_SIZE,
@@ -2625,6 +2625,16 @@ class TestLambdaProvisionedConcurrency:
                 FunctionName=function_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
             )
         snapshot.match("put_provisioned_on_alias_versionconflict", e.value.response)
+
+        def _wait_provisioned():
+            status = aws_client.lambda_.get_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier=function_version
+            )["Status"]
+            if status == "FAILED":
+                raise ShortCircuitWaitException("terminal fail state")
+            return status == "READY"
+
+        assert wait_until(_wait_provisioned)
 
         delete_provisioned_version = aws_client.lambda_.delete_provisioned_concurrency_config(
             FunctionName=function_name, Qualifier=function_version

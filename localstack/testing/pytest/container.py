@@ -194,7 +194,7 @@ def ensure_network():
     for network_name in networks:
         # detach attached containers
         details = DOCKER_CLIENT.inspect_network(network_name)
-        for container_id in details["Containers"]:
+        for container_id in details.get("Containers", []):
             DOCKER_CLIENT.disconnect_container_from_network(
                 network_name=network_name, container_name_or_id=container_id
             )
@@ -206,6 +206,43 @@ def docker_network(ensure_network):
     network_name = f"net-{short_uid()}"
     ensure_network(network_name)
     return network_name
+
+
+@pytest.fixture
+def dns_query_from_container(container_factory: ContainerFactory, monkeypatch):
+    """
+    Run the LocalStack container after installing dig
+    """
+    containers: list[RunningContainer] = []
+
+    def query(name: str, ip_address: str, port: int = 53, **kwargs) -> tuple[bytes, bytes]:
+        container = container_factory(
+            image_name="localstack/localstack",
+            command=["infinity"],
+            entrypoint="sleep",
+            **kwargs,
+        )
+        running_container = container.start()
+        containers.append(running_container)
+
+        command = [
+            "bash",
+            "-c",
+            f"apt-get install -y --no-install-recommends dnsutils >/dev/null && dig +short @{ip_address} -p {port} {name}",
+        ]
+        # The CmdDockerClient has its output set to a logfile. We must patch
+        # the client to ensure the output of the command goes to stdout. We use
+        # a monkeypatch.context here to make sure the scope of the patching is
+        # minimal.
+        with monkeypatch.context() as m:
+            m.setattr(running_container.container_client, "default_run_outfile", None)
+            stdout, stderr = running_container.exec_in_container(command=command)
+        return stdout, stderr
+
+    yield query
+
+    for container in containers:
+        container.shutdown()
 
 
 @pytest.fixture

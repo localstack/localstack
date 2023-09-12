@@ -235,6 +235,7 @@ from localstack.services.s3.utils import (
     get_system_metadata_from_request,
     get_unique_key_id,
     is_bucket_name_valid,
+    parse_copy_source_range_header,
     parse_post_object_tagging_xml,
     parse_range_header,
     parse_tagging_header,
@@ -900,6 +901,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not (s3_bucket := store.buckets.get(bucket)):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
 
+        if bypass_governance_retention is not None and not s3_bucket.object_lock_enabled:
+            raise InvalidArgument(
+                "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets.",
+                ArgumentName="x-amz-bypass-governance-retention",
+            )
+
         if s3_bucket.versioning_status is None:
             if version_id and version_id != "null":
                 raise InvalidArgument(
@@ -968,6 +975,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store = self.get_store(context.account_id, context.region)
         if not (s3_bucket := store.buckets.get(bucket)):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if bypass_governance_retention is not None and not s3_bucket.object_lock_enabled:
+            raise InvalidArgument(
+                "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets.",
+                ArgumentName="x-amz-bypass-governance-retention",
+            )
 
         objects: list[ObjectIdentifier] = delete.get("Objects")
         if not objects:
@@ -1910,7 +1923,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         source_range = request.get("CopySourceRange")
         # TODO implement copy source IF (done in ASF provider)
-        range_data = parse_range_header(source_range, src_s3_object.size)
+        range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
         s3_part = S3Part(part_number=part_number)
 

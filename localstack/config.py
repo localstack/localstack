@@ -1051,6 +1051,39 @@ CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED
 # e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
 CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
 
+# bind address of local DNS server
+DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
+# port of the local DNS server
+DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
+
+# Comma-separated list of regex patterns for DNS names to resolve locally.
+# Any DNS name not matched against any of the patterns on this whitelist
+# will resolve to the real DNS entry, rather than the local one.
+DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()
+
+# IP address that AWS endpoints should resolve to in our local DNS server. By default,
+# hostnames resolve to 127.0.0.1, which allows to use the LocalStack APIs transparently
+# from the host machine. If your code is running in Docker, this should be configured
+# to resolve to the Docker bridge network address, e.g., DNS_RESOLVE_IP=172.17.0.1
+DNS_RESOLVE_IP = os.environ.get("DNS_RESOLVE_IP") or LOCALHOST_IP
+
+# fallback DNS server to send upstream requests to
+DNS_SERVER = os.environ.get("DNS_SERVER")
+DNS_VERIFICATION_DOMAIN = os.environ.get("DNS_VERIFICATION_DOMAIN") or "localstack.cloud"
+
+
+def use_custom_dns():
+    return str(DNS_ADDRESS) not in FALSE_STRINGS
+
+
+BOTO_WAITER_DELAY = int(os.environ.get("BOTO_WAITER_DELAY") or "1")
+BOTO_WAITER_MAX_ATTEMPTS = int(os.environ.get("BOTO_WAITER_MAX_ATTEMPTS") or "120")
+DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONFIG")
+
+# defaults to false
+# if `DISABLE_BOTO_RETRIES=1` is set, all our created boto clients will have retries disabled
+DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
@@ -1058,6 +1091,8 @@ CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDE
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
+    "BOTO_WAITER_DELAY",
+    "BOTO_WAITER_MAX_ATTEMPTS",
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
     "CFN_VERBOSE_ERRORS",
@@ -1069,11 +1104,19 @@ CONFIG_ENV_VARS = [
     "DEFAULT_REGION",
     "DEVELOP",
     "DEVELOP_PORT",
+    "DISABLE_BOTO_RETRIES",
     "DISABLE_CORS_CHECKS",
     "DISABLE_CORS_HEADERS",
+    "DISABLE_CUSTOM_BOTO_WAITER_CONFIG",
     "DISABLE_CUSTOM_CORS_APIGATEWAY",
     "DISABLE_CUSTOM_CORS_S3",
     "DISABLE_EVENTS",
+    "DNS_ADDRESS",
+    "DNS_PORT",
+    "DNS_LOCAL_NAME_PATTERNS",
+    "DNS_RESOLVE_IP",
+    "DNS_SERVER",
+    "DNS_VERIFICATION_DOMAIN",
     "DOCKER_BRIDGE_IP",
     "DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS",
     "DYNAMODB_ERROR_PROBABILITY",

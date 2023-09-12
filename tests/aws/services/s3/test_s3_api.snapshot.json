@@ -2677,5 +2677,516 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_range": {
+    "recorded-date": "07-09-2023, 17:40:46",
+    "recorded-content": {
+      "get-0-8": {
+        "AcceptRanges": "bytes",
+        "Body": "012345678",
+        "ContentLength": 9,
+        "ContentRange": "bytes 0-8/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-1-1": {
+        "AcceptRanges": "bytes",
+        "Body": "1",
+        "ContentLength": 1,
+        "ContentRange": "bytes 1-1/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-1-0": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-1-": {
+        "AcceptRanges": "bytes",
+        "Body": "123456789",
+        "ContentLength": 9,
+        "ContentRange": "bytes 1-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get--1-": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get--2": {
+        "AcceptRanges": "bytes",
+        "Body": "89",
+        "ContentLength": 2,
+        "ContentRange": "bytes 8-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get--9": {
+        "AcceptRanges": "bytes",
+        "Body": "123456789",
+        "ContentLength": 9,
+        "ContentRange": "bytes 1-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get--15": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentRange": "bytes 0-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-0-100": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentRange": "bytes 0-9/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-0-0": {
+        "AcceptRanges": "bytes",
+        "Body": "0",
+        "ContentLength": 1,
+        "ContentRange": "bytes 0-0/10",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-0--1": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-multiple-ranges": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-wrong-format": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get--": {
+        "AcceptRanges": "bytes",
+        "Body": "0123456789",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get--0": {
+        "Error": {
+          "ActualObjectSize": "10",
+          "Code": "InvalidRange",
+          "Message": "The requested range is not satisfiable",
+          "RangeRequested": "bytes=-0"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 416
+        }
+      },
+      "get-100-200": {
+        "Error": {
+          "ActualObjectSize": "10",
+          "Code": "InvalidRange",
+          "Message": "The requested range is not satisfiable",
+          "RangeRequested": "bytes=100-200"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 416
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_range": {
+    "recorded-date": "07-09-2023, 17:51:48",
+    "recorded-content": {
+      "put-src-object": {
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-multipart": {
+        "Bucket": "bucket",
+        "Key": "test-upload-part-copy",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-copy-1": {
+        "CopyPartResult": {
+          "ETag": "\"22975d8a5ed1b91445f6c55ac121505b\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-copy-2": {
+        "CopyPartResult": {
+          "ETag": "\"c4ca4238a0b923820dcc509a6f75849b\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-copy-3": {
+        "CopyPartResult": {
+          "ETag": "\"cfcd208495d565ef66e7dff9f98764da\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-upload-part-copy",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 3,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "\"22975d8a5ed1b91445f6c55ac121505b\"",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 9
+          },
+          {
+            "ETag": "\"c4ca4238a0b923820dcc509a6f75849b\"",
+            "LastModified": "datetime",
+            "PartNumber": 2,
+            "Size": 1
+          },
+          {
+            "ETag": "\"cfcd208495d565ef66e7dff9f98764da\"",
+            "LastModified": "datetime",
+            "PartNumber": 3,
+            "Size": 1
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-copy-wrong-format": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "0-8",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc-1-0": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=1-0",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc--1-": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=-1-",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc-0--1": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=0--1",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc-0-1,3-4,7-9": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=0-1,3-4,7-9",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc--": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=-",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc--0": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=-0",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc-0-100": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=0-100",
+          "Code": "InvalidArgument",
+          "Message": "Range specified is not valid for source object of size: 10"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc-100-200": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The specified copy range is invalid for the source object size"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc-1-": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=1-",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc--2": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=-2",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-copy-range-exc--15": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source-range",
+          "ArgumentValue": "bytes=-15",
+          "Code": "InvalidArgument",
+          "Message": "The x-amz-copy-source-range value must be of the form bytes=first-last where first and last are the zero-based offsets of the first and last bytes to copy"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_delete_object_with_no_locking": {
+    "recorded-date": "08-09-2023, 18:29:03",
+    "recorded-content": {
+      "delete-object-bypass-no-lock": {
+        "Error": {
+          "ArgumentName": "x-amz-bypass-governance-retention",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-object-bypass-no-lock-false": {
+        "Error": {
+          "ArgumentName": "x-amz-bypass-governance-retention",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-objects-bypass-no-lock": {
+        "Error": {
+          "ArgumentName": "x-amz-bypass-governance-retention",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
