@@ -240,12 +240,12 @@ class TestCloudwatch:
                 assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
         def _check_metrics():
-            rs = aws_client.cloudwatch.list_metrics()
+            rs = aws_client.cloudwatch.get_paginator("list_metrics").paginate().build_full_result()
             metrics = [m for m in rs["Metrics"] if m.get("Namespace") in namespaces]
             assert metrics
             assert len(metrics) == len(namespaces) * num_dimensions
 
-        retry(_check_metrics, retries=10, sleep_before=1)
+        retry(_check_metrics, sleep=2, retries=10, sleep_before=2)
 
     @markers.aws.validated
     def test_describe_alarms_converts_date_format_correctly(self, aws_client, cleanups):
