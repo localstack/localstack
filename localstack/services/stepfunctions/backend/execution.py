@@ -80,6 +80,10 @@ class Execution:
     name: Final[str]
     role_arn: Final[Arn]
     exec_arn: Final[Arn]
+
+    account_id: str
+    region_name: str
+
     state_machine: Final[StateMachineInstance]
     start_date: Final[Timestamp]
     input_data: Final[Optional[dict]]
@@ -102,6 +106,8 @@ class Execution:
         name: str,
         role_arn: Arn,
         exec_arn: Arn,
+        account_id: str,
+        region_name: str,
         state_machine: StateMachineInstance,
         start_date: Timestamp,
         input_data: Optional[dict] = None,
@@ -110,6 +116,8 @@ class Execution:
         self.name = name
         self.role_arn = role_arn
         self.exec_arn = exec_arn
+        self.account_id = account_id
+        self.region_name = region_name
         self.state_machine = state_machine
         self.start_date = start_date
         self.input_data = input_data
@@ -122,7 +130,9 @@ class Execution:
         self.exec_worker = None
         self.error = None
         self.cause = None
-        self._events_client = connect_to().events
+        self._events_client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).events
 
     def to_start_output(self) -> StartExecutionOutput:
         return StartExecutionOutput(executionArn=self.exec_arn, startDate=self.start_date)

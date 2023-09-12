@@ -351,6 +351,8 @@ class StepFunctionsProvider(StepfunctionsApi):
             name=exec_name,
             role_arn=state_machine_clone.role_arn,
             exec_arn=exec_arn,
+            account_id=context.account_id,
+            region_name=context.region,
             state_machine=state_machine_clone,
             start_date=datetime.datetime.now(),
             input_data=input_data,
