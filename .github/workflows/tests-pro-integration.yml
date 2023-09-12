@@ -181,14 +181,23 @@ jobs:
         if: inputs.disableCaching != true
         uses: actions/cache@v3
         with:
-          # TODO: maybe we should split these into two steps with different keys
           path: |
             localstack-ext/.venv
+          # include the matrix group (to re-use the var-libs used in the specific test group)
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
+          restore-keys: |
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg') }}-refs/heads/master-group-${{ matrix.group }}
+
+      - name: Cache Ext Dependencies (libs)
+        if: inputs.disableCaching != true
+        uses: actions/cache@v3
+        with:
+          path: |
             localstack/.filesystem/var/lib/localstack
           # include the matrix group (to re-use the var-libs used in the specific test group)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml','localstack-ext/**/packages.py','localstack-ext/packages/*.py', 'localstack/setup.cfg', 'localstack/**/packages.py',  'localstack/packages/*.py') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('localstack-ext/**/packages.py','localstack-ext/packages/*.py', 'localstack/**/packages.py',  'localstack/packages/*.py') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml','localstack-ext/**/packages.py','localstack-ext/packages/*.py', 'localstack/setup.cfg', 'localstack/**/packages.py',  'localstack/packages/*.py') }}-master-
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('localstack-ext/**/packages.py','localstack-ext/packages/*.py','localstack/**/packages.py',  'localstack/packages/*.py') }}-refs/heads/master-group-${{ matrix.group }}
 
 
       - name: Restore Lambda common runtime packages
