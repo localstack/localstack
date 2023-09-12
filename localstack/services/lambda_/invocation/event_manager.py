@@ -164,7 +164,7 @@ class Poller:
             id(self),
         )
         self._shutdown_event.set()
-        self.invoker_pool.shutdown(cancel_futures=True)
+        self.invoker_pool.shutdown(cancel_futures=True, wait=False)
 
     def handle_message(self, message: dict) -> None:
         failure_cause = None
