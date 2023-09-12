@@ -195,29 +195,34 @@ def setup_and_tear_down(aws_client):
         zip_file=zip_file,
         envvars={"Hello": TEST_RESULT_VALUE},
         client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_2,
         zip_file=zip_file,
         envvars={"Hello": TEST_RESULT_VALUE_2},
         client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_3,
         zip_file=zip_file,
         envvars={"Hello": "Replace Value"},
         client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_4,
         zip_file=zip_file,
         envvars={"Hello": TEST_RESULT_VALUE_4},
         client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_5,
         zip_file=zip_file2,
         client=aws_client.lambda_,
+        s3_client=aws_client.s3,
     )
 
     active_waiter = lambda_client.get_waiter("function_active_v2")

@@ -941,8 +941,6 @@ LAMBDA_INIT_POST_INVOKE_WAIT_MS = os.environ.get("LAMBDA_INIT_POST_INVOKE_WAIT_M
 # DEV: sbx_user1051 (default when not provided) Alternative system user or empty string to skip dropping privileges.
 LAMBDA_INIT_USER = os.environ.get("LAMBDA_INIT_USER")
 
-# Adding Stepfunctions default port
-LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 8083)
 # Stepfunctions lambda endpoint override
 STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get("STEPFUNCTIONS_LAMBDA_ENDPOINT", "").strip()
 
