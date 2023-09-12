@@ -88,12 +88,11 @@ jobs:
             TEST_PATH: "tests/unit"
             COVERAGE_ARGS: "-p"
           command: |
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" make test-coverage
+            COVERAGE_FILE="target/coverage/.coverage.unit.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" \
+            make test-coverage
       - store_test_results:
           path: target/reports/
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -115,10 +114,9 @@ jobs:
             TEST_PATH: "tests/aws/services/lambda_/ tests/aws/test_integration.py tests/aws/services/apigateway/test_apigateway_basic.py tests/aws/services/cloudformation/resources/test_lambda.py"
             COVERAGE_ARGS: "-p"
           command: |
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
+            COVERAGE_FILE="target/coverage/.coverage.lambdav1.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" \
+            make test-coverage
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -141,14 +139,40 @@ jobs:
             TEST_PATH: "tests/aws/services/stepfunctions/v2/"
             COVERAGE_ARGS: "-p"
           command: |
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
+            COVERAGE_FILE="target/coverage/.coverage.sfnv2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" \
+            make test-coverage
       - persist_to_workspace:
           root:
             /tmp/workspace
           paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  acceptance-tests:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Acceptance tests (EXPERIMENTAL)
+          environment:
+            TEST_PATH: "tests/aws/"
+            COVERAGE_ARGS: "-p"
+            LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.acceptance.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance_test.xml -o junit_suite_name='acceptance_test'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/reports/
+            - repo/target/metric_reports/
             - repo/target/coverage/
       - store_test_results:
           path: target/reports/
@@ -167,10 +191,9 @@ jobs:
             TEST_PATH: "tests/aws/services/s3/"
             COVERAGE_ARGS: "-p"
           command: |
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_stream.xml -o junit_suite_name='s3_stream'" make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
+            COVERAGE_FILE="target/coverage/.coverage.s3stream.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_stream.xml -o junit_suite_name='s3_stream'" \
+            make test-coverage
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -346,6 +369,13 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      # store (uncombined) coverage from acceptance tests
+      - run:
+          name: fetch isolated acceptance coverage
+          command: |
+            cp target/coverage/.coverage.acceptance.* .coverage.acceptance
+      - store_artifacts:
+          path: .coverage.acceptance
       - run:
           name: Collect coverage
           command: |
@@ -372,6 +402,13 @@ jobs:
             python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
       - store_artifacts:
           path: parity_metrics/
+      - run:
+          name: store acceptance parity metrics
+          command: |
+            mkdir acceptance_parity_metrics
+            mv target/metric_reports/metric-report*acceptance* acceptance_parity_metrics/
+      - store_artifacts:
+          path: acceptance_parity_metrics/
       - store_artifacts:
           path: scripts/implementation_coverage_aggregated.csv
           destination: community/implementation_coverage_aggregated.csv
@@ -380,6 +417,7 @@ jobs:
           destination: community/implementation_coverage_full.csv
       - store_artifacts:
           path: .coverage
+
 
   push:
     executor: ubuntu-machine-amd64
@@ -438,6 +476,9 @@ workflows:
       - preflight:
           requires:
             - install
+      - acceptance-tests:
+          requires:
+            - preflight
       - itest-lambda-legacy-local:
           requires:
             - preflight
@@ -491,6 +532,7 @@ workflows:
           requires:
             - itest-lambda-legacy-local
             - itest-sfn-v2-provider
+            - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
             - collect-not-implemented
@@ -502,6 +544,7 @@ workflows:
           requires:
             - itest-lambda-legacy-local
             - itest-sfn-v2-provider
+            - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests
