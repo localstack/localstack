@@ -49,7 +49,6 @@ def my_patch(fn, self, **kwargs):
         patched_kwargs = {
             **kwargs,
             "WaiterConfig": {
-                # TODO: make these configurable
                 "Delay": localstack_config.BOTO_WAITER_DELAY,
                 "MaxAttempts": localstack_config.BOTO_WAITER_MAX_ATTEMPTS,
                 **kwargs.get(
