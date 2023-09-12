@@ -10,7 +10,7 @@ from typing import IO, Optional, Tuple
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.api.lambda_ import (
     AccountLimit,
     AccountUsage,
@@ -116,7 +116,9 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     Runtime,
     RuntimeVersionConfig,
-    ServiceException,
+)
+from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
+from localstack.aws.api.lambda_ import (
     SnapStart,
     SnapStartApplyOn,
     SnapStartOptimizationStatus,
@@ -144,6 +146,9 @@ from localstack.services.lambda_.event_source_listeners.event_source_listener im
     EventSourceListener,
 )
 from localstack.services.lambda_.invocation import AccessDeniedException
+from localstack.services.lambda_.invocation.execution_environment import (
+    EnvironmentStartupTimeoutException,
+)
 from localstack.services.lambda_.invocation.lambda_models import (
     IMAGE_MAPPING,
     SNAP_START_SUPPORTED_RUNTIMES,
@@ -155,7 +160,6 @@ from localstack.services.lambda_.invocation.lambda_models import (
     FunctionUrlConfig,
     FunctionVersion,
     ImageConfig,
-    InvocationError,
     LambdaEphemeralStorage,
     Layer,
     LayerPolicy,
@@ -746,11 +750,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         account_id=context.account_id,
                     )
                 else:
-                    raise ServiceException("Gotta have s3 bucket or zip file")
+                    raise LambdaServiceException("Gotta have s3 bucket or zip file")
             elif package_type == PackageType.Image:
                 image = request_code.get("ImageUri")
                 if not image:
-                    raise ServiceException("Gotta have an image when package type is image")
+                    raise LambdaServiceException("Gotta have an image when package type is image")
                 image = create_image_code(image_uri=image)
 
                 image_config_req = request.get("ImageConfig", {})
@@ -1014,7 +1018,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             code = None
             image = create_image_code(image_uri=image)
         else:
-            raise ServiceException("Gotta have s3 bucket or zip file or image")
+            raise LambdaServiceException("Gotta have s3 bucket or zip file or image")
 
         old_function_version = function.versions.get("$LATEST")
         replace_kwargs = {"code": code} if code else {"image": image}
@@ -1248,29 +1252,31 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
 
         time_before = time.perf_counter()
-        result = self.lambda_service.invoke(
-            function_name=function_name,
-            qualifier=qualifier,
-            region=region,
-            account_id=account_id,
-            invocation_type=invocation_type,
-            client_context=client_context,
-            request_id=context.request_id,
-            payload=payload.read() if payload else None,
-        )
+        try:
+            invocation_result = self.lambda_service.invoke(
+                function_name=function_name,
+                qualifier=qualifier,
+                region=region,
+                account_id=account_id,
+                invocation_type=invocation_type,
+                client_context=client_context,
+                request_id=context.request_id,
+                payload=payload.read() if payload else None,
+            )
+        except ServiceException:
+            raise
+        except EnvironmentStartupTimeoutException as e:
+            raise LambdaServiceException("Internal error while executing lambda") from e
+        except Exception as e:
+            LOG.error("Error while invoking lambda", exc_info=e)
+            raise LambdaServiceException("Internal error while executing lambda") from e
+
         if invocation_type == InvocationType.Event:
             # This happens when invocation type is event
             return InvocationResponse(StatusCode=202)
         if invocation_type == InvocationType.DryRun:
             # This happens when invocation type is dryrun
             return InvocationResponse(StatusCode=204)
-        try:
-            invocation_result = result.result()
-        except Exception as e:
-            LOG.error("Error while invoking lambda", exc_info=e)
-            # TODO map to correct exception
-            raise ServiceException("Internal error while executing lambda") from e
-
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
 
         response = InvocationResponse(
@@ -1279,7 +1285,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             ExecutedVersion=invocation_result.executed_version,
         )
 
-        if isinstance(invocation_result, InvocationError):
+        if invocation_result.is_error:
             response["FunctionError"] = "Unhandled"
 
         if log_type == LogType.Tail:
@@ -2337,7 +2343,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn_count = 0
         code_size_sum = 0
         reserved_concurrency_sum = 0
-        # TODO: fix calculation (see lambda service get_available_fn_concurrency etc)
         for fn in state.functions.values():
             fn_count += 1
             for fn_version in fn.versions.values():
@@ -2442,6 +2447,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise InvalidParameterValueException(
                 "Requested Provisioned Concurrency should not be greater than the reservedConcurrentExecution for function",
                 Type="User",
+            )
+
+        if provisioned_concurrent_executions > config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS:
+            raise InvalidParameterValueException(
+                f"Specified ConcurrentExecutions for function is greater than account's unreserved concurrency"
+                f" [{config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS}]."
+            )
+
+        settings = self.get_account_settings(context)
+        unreserved_concurrent_executions = settings["AccountLimit"][
+            "UnreservedConcurrentExecutions"
+        ]
+        if (
+            provisioned_concurrent_executions
+            > unreserved_concurrent_executions - config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY
+        ):
+            raise InvalidParameterValueException(
+                f"Specified ConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below"
+                f" its minimum value of [{config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY}]."
             )
 
         provisioned_config = ProvisionedConcurrencyConfiguration(

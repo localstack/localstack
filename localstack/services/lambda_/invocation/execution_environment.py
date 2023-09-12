@@ -7,21 +7,23 @@ import time
 from datetime import date, datetime
 from enum import Enum, auto
 from threading import RLock, Timer
-from typing import TYPE_CHECKING, Dict, Literal, Optional
+from typing import Callable, Dict, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import TracingMode
 from localstack.aws.connect import connect_to
-from localstack.services.lambda_.invocation.executor_endpoint import ServiceEndpoint
-from localstack.services.lambda_.invocation.lambda_models import Credentials, FunctionVersion
+from localstack.services.lambda_.invocation.lambda_models import (
+    Credentials,
+    FunctionVersion,
+    InitializationType,
+    Invocation,
+    InvocationResult,
+)
 from localstack.services.lambda_.invocation.runtime_executor import (
     RuntimeExecutor,
     get_runtime_executor,
 )
 from localstack.utils.strings import to_str
-
-if TYPE_CHECKING:
-    from localstack.services.lambda_.invocation.version_manager import QueuedInvocation
 
 STARTUP_TIMEOUT_SEC = config.LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
@@ -34,14 +36,17 @@ class RuntimeStatus(Enum):
     STARTING = auto()
     READY = auto()
     RUNNING = auto()
-    FAILED = auto()
+    STARTUP_FAILED = auto()
+    STARTUP_TIMED_OUT = auto()
     STOPPED = auto()
 
 
-InitializationType = Literal["on-demand", "provisioned-concurrency"]
-
-
 class InvalidStatusException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class EnvironmentStartupTimeoutException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
 
@@ -51,7 +56,7 @@ def generate_runtime_id() -> str:
 
 
 # TODO: add status callback
-class RuntimeEnvironment:
+class ExecutionEnvironment:
     runtime_executor: RuntimeExecutor
     status_lock: RLock
     status: RuntimeStatus
@@ -64,19 +69,19 @@ class RuntimeEnvironment:
         self,
         function_version: FunctionVersion,
         initialization_type: InitializationType,
-        service_endpoint: ServiceEndpoint,
+        on_timeout: Callable[[str, str], None],
     ):
         self.id = generate_runtime_id()
         self.status = RuntimeStatus.INACTIVE
+        # Lock for updating the runtime status
         self.status_lock = RLock()
         self.function_version = function_version
         self.initialization_type = initialization_type
-        self.runtime_executor = get_runtime_executor()(
-            self.id, function_version, service_endpoint=service_endpoint
-        )
+        self.runtime_executor = get_runtime_executor()(self.id, function_version)
         self.last_returned = datetime.min
         self.startup_timer = None
         self.keepalive_timer = Timer(0, lambda *args, **kwargs: None)
+        self.on_timeout = on_timeout
 
     def get_log_group_name(self) -> str:
         return f"/aws/lambda/{self.function_version.id.function_name}"
@@ -166,21 +171,45 @@ class RuntimeEnvironment:
         """
         with self.status_lock:
             if self.status != RuntimeStatus.INACTIVE:
-                raise InvalidStatusException("Runtime Handler can only be started when inactive")
+                raise InvalidStatusException(
+                    f"Execution environment {self.id} can only be started when inactive. Current status: {self.status}"
+                )
             self.status = RuntimeStatus.STARTING
-            try:
-                self.runtime_executor.start(self.get_environment_variables())
-            except Exception as e:
+
+        self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
+        self.startup_timer.start()
+
+        try:
+            time_before = time.perf_counter()
+            self.runtime_executor.start(self.get_environment_variables())
+            LOG.debug(
+                "Start of execution environment %s for function %s took %0.2fms",
+                self.id,
+                self.function_version.qualified_arn,
+                (time.perf_counter() - time_before) * 1000,
+            )
+
+            with self.status_lock:
+                self.status = RuntimeStatus.READY
+        # TODO: Distinguish between expected errors (e.g., timeout, cancellation due to deletion update) and
+        #  other unexpected exceptions. Improve control flow after implementing error reporting in Go init.
+        except Exception as e:
+            if self.status == RuntimeStatus.STARTUP_TIMED_OUT:
+                raise EnvironmentStartupTimeoutException(
+                    "Execution environment timed out during startup."
+                ) from e
+            else:
                 LOG.warning(
-                    "Failed to start runtime environment for ID=%s with: %s",
+                    "Failed to start execution environment %s: %s",
                     self.id,
                     e,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
                 self.errored()
-                raise
-            self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
-            self.startup_timer.start()
+            raise
+        finally:
+            if self.startup_timer:
+                self.startup_timer.cancel()
+                self.startup_timer = None
 
     def stop(self) -> None:
         """
@@ -188,79 +217,116 @@ class RuntimeEnvironment:
         """
         with self.status_lock:
             if self.status in [RuntimeStatus.INACTIVE, RuntimeStatus.STOPPED]:
-                raise InvalidStatusException("Runtime Handler cannot be shutdown before started")
-            self.runtime_executor.stop()
+                raise InvalidStatusException(
+                    f"Execution environment {self.id} cannot be stopped when inactive or already stopped."
+                    f" Current status: {self.status}"
+                )
             self.status = RuntimeStatus.STOPPED
-            self.keepalive_timer.cancel()
+        self.runtime_executor.stop()
+        self.keepalive_timer.cancel()
 
     # Status methods
-    def set_ready(self) -> None:
-        with self.status_lock:
-            if self.status != RuntimeStatus.STARTING:
-                raise InvalidStatusException(
-                    f"Runtime Handler can only be set active while starting. Current status: {self.status}"
-                )
-            self.status = RuntimeStatus.READY
-            if self.startup_timer:
-                self.startup_timer.cancel()
-                self.startup_timer = None
-
-    def invocation_done(self) -> None:
+    def release(self) -> None:
         self.last_returned = datetime.now()
         with self.status_lock:
             if self.status != RuntimeStatus.RUNNING:
-                raise InvalidStatusException("Runtime Handler can only be set ready while running")
+                raise InvalidStatusException(
+                    f"Execution environment {self.id} can only be set to status ready while running."
+                    f" Current status: {self.status}"
+                )
             self.status = RuntimeStatus.READY
 
-            if self.initialization_type == "on-demand":
-                self.keepalive_timer = Timer(
-                    config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed
+        if self.initialization_type == "on-demand":
+            self.keepalive_timer = Timer(config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed)
+            self.keepalive_timer.start()
+
+    def reserve(self) -> None:
+        with self.status_lock:
+            if self.status != RuntimeStatus.READY:
+                raise InvalidStatusException(
+                    f"Execution environment {self.id} can only be reserved if ready. "
+                    f" Current status: {self.status}"
                 )
-                self.keepalive_timer.start()
+            self.status = RuntimeStatus.RUNNING
+
+        self.keepalive_timer.cancel()
 
     def keepalive_passed(self) -> None:
         LOG.debug(
-            "Executor %s for function %s hasn't received any invocations in a while. Stopping.",
+            "Execution environment %s for function %s has not received any invocations in a while. Stopping.",
             self.id,
             self.function_version.qualified_arn,
         )
         self.stop()
+        # Notify assignment service via callback to remove from environments list
+        self.on_timeout(self.function_version.qualified_arn, self.id)
 
     def timed_out(self) -> None:
+        """Handle status updates if the startup of an execution environment times out.
+        Invoked asynchronously by the startup timer in a separate thread."""
+        # TODO: De-emphasize the error part after fixing control flow and tests for test_lambda_runtime_exit
         LOG.warning(
-            "Executor %s for function %s timed out during startup",
+            "Execution environment %s for function %s timed out during startup."
+            " Check for errors during the startup of your Lambda function and"
+            " consider increasing the startup timeout via LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT.",
             self.id,
             self.function_version.qualified_arn,
         )
-        self.startup_timer = None
-        self.errored()
-
-    def errored(self) -> None:
+        if LOG.isEnabledFor(logging.DEBUG):
+            LOG.debug(
+                f"Logs from the execution environment {self.id} after startup timeout:\n{self.get_prefixed_logs()}"
+            )
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
-                raise InvalidStatusException("Runtime Handler can only error while starting")
-            self.status = RuntimeStatus.FAILED
-        if self.startup_timer:
-            self.startup_timer.cancel()
+                raise InvalidStatusException(
+                    f"Execution environment {self.id} can only time out while starting. Current status: {self.status}"
+                )
+            self.status = RuntimeStatus.STARTUP_TIMED_OUT
         try:
             self.runtime_executor.stop()
-        except Exception:
-            LOG.debug("Unable to shutdown runtime handler '%s'", self.id)
+        except Exception as e:
+            LOG.debug("Unable to shutdown execution environment %s after timeout: %s", self.id, e)
 
-    def invoke(self, invocation_event: "QueuedInvocation") -> None:
+    def errored(self) -> None:
+        """Handle status updates if the startup of an execution environment fails.
+        Invoked synchronously when an unexpected error occurs during startup."""
+        LOG.warning(
+            "Execution environment %s for function %s failed during startup."
+            " Check for errors during the startup of your Lambda function.",
+            self.id,
+            self.function_version.qualified_arn,
+        )
+        if LOG.isEnabledFor(logging.DEBUG):
+            LOG.debug(
+                f"Logs from the execution environment {self.id} after startup error:\n{self.get_prefixed_logs()}"
+            )
         with self.status_lock:
-            if self.status != RuntimeStatus.READY:
-                raise InvalidStatusException("Invoke can only happen if status is ready")
-            self.status = RuntimeStatus.RUNNING
-            self.keepalive_timer.cancel()
+            if self.status != RuntimeStatus.STARTING:
+                raise InvalidStatusException(
+                    f"Execution environment {self.id} can only error while starting. Current status: {self.status}"
+                )
+            self.status = RuntimeStatus.STARTUP_FAILED
+        try:
+            self.runtime_executor.stop()
+        except Exception as e:
+            LOG.debug("Unable to shutdown execution environment %s after error: %s", self.id, e)
 
+    def get_prefixed_logs(self) -> str:
+        """Returns prefixed lambda containers logs"""
+        logs = self.runtime_executor.get_logs()
+        prefix = f"[lambda {self.id}] "
+        prefixed_logs = logs.replace("\n", f"\n{prefix}")
+        return f"{prefix}{prefixed_logs}"
+
+    def invoke(self, invocation: Invocation) -> InvocationResult:
+        assert self.status == RuntimeStatus.RUNNING
         invoke_payload = {
-            "invoke-id": invocation_event.invocation.request_id,  # TODO: rename to request-id
-            "invoked-function-arn": invocation_event.invocation.invoked_arn,
-            "payload": to_str(invocation_event.invocation.payload),
+            "invoke-id": invocation.request_id,  # TODO: rename to request-id (requires change in lambda-init)
+            "invoked-function-arn": invocation.invoked_arn,
+            "payload": to_str(invocation.payload),
             "trace-id": self._generate_trace_header(),
         }
-        self.runtime_executor.invoke(payload=invoke_payload)
+        return self.runtime_executor.invoke(payload=invoke_payload)
 
     def get_credentials(self) -> Credentials:
         sts_client = connect_to().sts.request_metadata(service_principal="lambda")

@@ -2,7 +2,6 @@ import dataclasses
 import json
 import logging
 import shutil
-import time
 from pathlib import Path
 from typing import Callable, Dict, Literal, Optional
 
@@ -12,7 +11,6 @@ from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.invocation.executor_endpoint import (
     INVOCATION_PORT,
     ExecutorEndpoint,
-    ServiceEndpoint,
 )
 from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
 from localstack.services.lambda_.invocation.runtime_executor import (
@@ -30,6 +28,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     DockerNotAvailable,
     DockerPlatform,
+    NoSuchContainer,
     NoSuchImage,
     PortMappings,
     VolumeBind,
@@ -215,33 +214,29 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     executor_endpoint: Optional[ExecutorEndpoint]
     container_name: str
 
-    def __init__(
-        self, id: str, function_version: FunctionVersion, service_endpoint: ServiceEndpoint
-    ) -> None:
-        super(DockerRuntimeExecutor, self).__init__(
-            id=id, function_version=function_version, service_endpoint=service_endpoint
-        )
+    def __init__(self, id: str, function_version: FunctionVersion) -> None:
+        super(DockerRuntimeExecutor, self).__init__(id=id, function_version=function_version)
         self.ip = None
-        self.executor_endpoint = self._build_executor_endpoint(service_endpoint)
+        self.executor_endpoint = self._build_executor_endpoint()
         self.container_name = self._generate_container_name()
         LOG.debug("Assigning container name of %s to executor %s", self.container_name, self.id)
 
     def get_image(self) -> str:
         if not self.function_version.config.runtime:
-            raise NotImplementedError("Custom images are currently not supported")
+            raise NotImplementedError("Container images are a Pro feature.")
         return (
             get_image_name_for_function(self.function_version)
             if config.LAMBDA_PREBUILD_IMAGES
             else resolver.get_image_for_runtime(self.function_version.config.runtime)
         )
 
-    def _build_executor_endpoint(self, service_endpoint: ServiceEndpoint) -> ExecutorEndpoint:
+    def _build_executor_endpoint(self) -> ExecutorEndpoint:
         LOG.debug(
             "Creating service endpoint for function %s executor %s",
             self.function_version.qualified_arn,
             self.id,
         )
-        executor_endpoint = ExecutorEndpoint(self.id, service_endpoint=service_endpoint)
+        executor_endpoint = ExecutorEndpoint(self.id)
         LOG.debug(
             "Finished creating service endpoint for function %s executor %s",
             self.function_version.qualified_arn,
@@ -352,6 +347,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             self.ip = "127.0.0.1"
         self.executor_endpoint.container_address = self.ip
 
+        self.executor_endpoint.wait_for_startup()
+
     def stop(self) -> None:
         CONTAINER_CLIENT.stop_container(container_name=self.container_name, timeout=5)
         if config.LAMBDA_REMOVE_CONTAINERS:
@@ -382,11 +379,16 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             truncate(json.dumps(payload), config.LAMBDA_TRUNCATE_STDOUT),
             self.id,
         )
-        self.executor_endpoint.invoke(payload)
+        return self.executor_endpoint.invoke(payload)
+
+    def get_logs(self) -> str:
+        try:
+            return CONTAINER_CLIENT.get_container_logs(container_name_or_id=self.container_name)
+        except NoSuchContainer:
+            return "Container was not created"
 
     @classmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:
-        time_before = time.perf_counter()
         lambda_hooks.prepare_docker_executor.run(function_version)
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
@@ -413,11 +415,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             if config.LAMBDA_PREBUILD_IMAGES:
                 target_path = function_version.config.code.get_unzipped_code_location()
                 prepare_image(target_path, function_version)
-            LOG.debug(
-                "Version preparation of version %s took %0.2fms",
-                function_version.qualified_arn,
-                (time.perf_counter() - time_before) * 1000,
-            )
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:

@@ -735,6 +735,11 @@ if not DOCKER_BRIDGE_IP:
                 DOCKER_BRIDGE_IP = ip
                 break
 
+# AWS account used to store internal resources such as Lambda archives or internal SQS queues.
+# It should not be modified by the user, or visible to him, except as through a presigned url with the
+# get-function call.
+INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "949334387222"
+
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
 # -----
@@ -985,9 +990,11 @@ LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 
 # INTERNAL: 60 (default matching AWS) only applies to new lambda provider
 # Base delay in seconds for async retries. Further retries use: NUM_ATTEMPTS * LAMBDA_RETRY_BASE_DELAY_SECONDS
+# 300 (5min) is the maximum because NUM_ATTEMPTS can be at most 3 and SQS has a message timer limit of 15 min.
 # For example:
 # 1x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between initial invocation and first retry
 # 2x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between the first retry and the second retry
+# 3x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between the second retry and the third retry
 LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60)
 
 # PUBLIC: 0 (default)
