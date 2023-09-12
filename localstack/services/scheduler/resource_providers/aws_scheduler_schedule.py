@@ -158,27 +158,35 @@ class SchedulerScheduleProvider(ResourceProvider[SchedulerScheduleProperties]):
         """
         model = request.desired_state
 
-        # TODO: validations
-
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
+        if not model.get("Name"):
+            model["Name"] = util.generate_default_name(
+                request.stack_name, request.logical_resource_id
             )
 
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+        create_params = util.select_attributes(
+            model,
+            [
+                "Description",
+                "EndDate",
+                "FlexibleTimeWindow",
+                "GroupName",
+                "KmsKeyArn",
+                "Name",
+                "ScheduleExpression",
+                "ScheduleExpressionTimezone",
+                "StartDate",
+                "State",
+                "Target",
+            ],
+        )
 
-        raise NotImplementedError
+        result = request.aws_client_factory.scheduler.create_schedule(**create_params)
+        model["Arn"] = result["ScheduleArn"]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+        )
 
     def read(
         self,
@@ -203,7 +211,10 @@ class SchedulerScheduleProvider(ResourceProvider[SchedulerScheduleProperties]):
           - scheduler:DeleteSchedule
           - scheduler:GetSchedule
         """
-        raise NotImplementedError
+
+        delete_params = util.select_attributes(request.previous_state, ["Name", "GroupName"])
+        request.aws_client_factory.scheduler.delete_schedule(**delete_params)
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=None)
 
     def update(
         self,
