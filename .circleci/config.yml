@@ -162,6 +162,7 @@ jobs:
           environment:
             TEST_PATH: "tests/aws/"
             COVERAGE_ARGS: "-p"
+            LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
           command: |
             COVERAGE_FILE="target/coverage/.coverage.acceptance.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance_test.xml -o junit_suite_name='acceptance_test'" \
@@ -170,6 +171,8 @@ jobs:
           root:
             /tmp/workspace
           paths:
+            - repo/target/reports/
+            - repo/target/metric_reports
             - repo/target/coverage/
       - store_test_results:
           path: target/reports/
