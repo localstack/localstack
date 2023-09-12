@@ -186,7 +186,7 @@ jobs:
           # include the matrix group (to re-use the var-libs used in the specific test group)
           key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg') }}-refs/heads/master-group-${{ matrix.group }}
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg') }}-refs/heads/master-group-
 
       - name: Cache Ext Dependencies (libs)
         if: inputs.disableCaching != true
