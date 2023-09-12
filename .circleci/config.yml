@@ -366,6 +366,13 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      # store (uncombined) coverage from acceptance tests
+      - run:
+          name: fetch isolated acceptance coverage
+          command: |
+            cp target/coverage/.coverage.acceptance.* .coverage.acceptance
+      - store_artifacts:
+          path: .coverage.acceptance
       - run:
           name: Collect coverage
           command: |
@@ -400,13 +407,7 @@ jobs:
           destination: community/implementation_coverage_full.csv
       - store_artifacts:
           path: .coverage
-      # store (uncombined) coverage from acceptance tests
-      - run:
-          name: fetch isolated acceptance coverage
-          command: |
-            cp target/coverage/.coverage.acceptance.* .coverage.acceptance
-      - store_artifacts:
-          path: .coverage.acceptance
+
 
   push:
     executor: ubuntu-machine-amd64
