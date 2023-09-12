@@ -93,9 +93,6 @@ jobs:
             make test-coverage
       - store_test_results:
           path: target/reports/
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -120,9 +117,6 @@ jobs:
             COVERAGE_FILE="target/coverage/.coverage.lambdav1.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" \
             make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
       - persist_to_workspace:
           root:
             /tmp/workspace
