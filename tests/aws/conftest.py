@@ -11,11 +11,13 @@ import threading
 
 import pytest
 
-from localstack import config, constants
+from localstack import config as localstack_config
+from localstack import constants
 from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
 from localstack.services import infra
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import safe_requests
 from tests.aws.services.es.test_es import install_async as es_install_async
 from tests.aws.services.opensearch.test_opensearch import install_async as opensearch_install_async
@@ -31,12 +33,17 @@ startup_monitor_event = mp.Event()  # event that can be triggered to start local
 # collection of functions that should be executed to initialize tests
 test_init_functions = set()
 
-if config.is_collect_metrics_mode():
+if localstack_config.is_collect_metrics_mode():
     pytest_plugins = "localstack.testing.pytest.metric_collection"
 
 
 @pytest.hookimpl()
 def pytest_configure(config):
+    # patch default boto waiter config when running on AWS
+    if is_aws_cloud():
+        localstack_config.DEFAULT_DELAY = 5
+        localstack_config.DEFAULT_MAX_ATTEMPTS = 60
+
     # first pytest lifecycle hook
     _start_monitor()
 
@@ -125,8 +132,10 @@ def run_localstack():
     # configure
     os.environ[ENV_INTERNAL_TEST_RUN] = "1"
     safe_requests.verify_ssl = False
-    config.FORCE_SHUTDOWN = False
-    config.GATEWAY_LISTEN = [config.HostAndPort(host="0.0.0.0", port=constants.DEFAULT_PORT_EDGE)]
+    localstack_config.FORCE_SHUTDOWN = False
+    localstack_config.GATEWAY_LISTEN = [
+        localstack_config.HostAndPort(host="0.0.0.0", port=constants.DEFAULT_PORT_EDGE)
+    ]
 
     def watchdog():
         logger.info("waiting stop event")
