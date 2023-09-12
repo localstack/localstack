@@ -188,6 +188,9 @@ class ExecutionEnvironment:
                 self.function_version.qualified_arn,
                 (time.perf_counter() - time_before) * 1000,
             )
+
+            with self.status_lock:
+                self.status = RuntimeStatus.READY
         # TODO: Distinguish between expected errors (e.g., timeout, cancellation due to deletion update) and
         #  other unexpected exceptions. Improve control flow after implementing error reporting in Go init.
         except Exception as e:
@@ -203,12 +206,10 @@ class ExecutionEnvironment:
                 )
                 self.errored()
             raise
-
-        with self.status_lock:
-            self.status = RuntimeStatus.READY
-        if self.startup_timer:
-            self.startup_timer.cancel()
-            self.startup_timer = None
+        finally:
+            if self.startup_timer:
+                self.startup_timer.cancel()
+                self.startup_timer = None
 
     def stop(self) -> None:
         """
@@ -275,7 +276,6 @@ class ExecutionEnvironment:
             LOG.debug(
                 f"Logs from the execution environment {self.id} after startup timeout:\n{self.get_prefixed_logs()}"
             )
-        self.startup_timer = None
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException(
@@ -290,19 +290,22 @@ class ExecutionEnvironment:
     def errored(self) -> None:
         """Handle status updates if the startup of an execution environment fails.
         Invoked synchronously when an unexpected error occurs during startup."""
+        LOG.warning(
+            "Execution environment %s for function %s failed during startup."
+            " Check for errors during the startup of your Lambda function.",
+            self.id,
+            self.function_version.qualified_arn,
+        )
+        if LOG.isEnabledFor(logging.DEBUG):
+            LOG.debug(
+                f"Logs from the execution environment {self.id} after startup error:\n{self.get_prefixed_logs()}"
+            )
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException(
                     f"Execution environment {self.id} can only error while starting. Current status: {self.status}"
                 )
             self.status = RuntimeStatus.STARTUP_FAILED
-        if self.startup_timer:
-            self.startup_timer.cancel()
-            self.startup_timer = None
-        if LOG.isEnabledFor(logging.DEBUG):
-            LOG.debug(
-                f"Logs from the execution environment {self.id} after startup error:\n{self.get_prefixed_logs()}"
-            )
         try:
             self.runtime_executor.stop()
         except Exception as e:
