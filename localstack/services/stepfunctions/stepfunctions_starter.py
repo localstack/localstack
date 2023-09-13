@@ -51,18 +51,14 @@ class StepFunctionsServer(Server):
 
     def generate_shell_command(self) -> str:
         cmd = (
-            "java "
-            "-javaagent:aspectjweaver-1.9.7.jar "
-            "-Dorg.aspectj.weaver.loadtime.configuration=META-INF/aop.xml "
-            "-Dcom.amazonaws.sdk.disableCertChecking "
-            "-Xmx%s "
-            "-jar StepFunctionsLocal.jar "
-            "--aws-account %s "
-            "--region %s"
-        ) % (
-            MAX_HEAP_SIZE,
-            self.account_id,
-            self.region_name,
+            f"java "
+            f"-javaagent:aspectjweaver-1.9.7.jar "
+            f"-Dorg.aspectj.weaver.loadtime.configuration=META-INF/aop.xml "
+            f"-Dcom.amazonaws.sdk.disableCertChecking "
+            f"-Xmx{MAX_HEAP_SIZE} "
+            f"-jar StepFunctionsLocal.jar "
+            f"--aws-account {self.account_id} "
+            f"--aws-region {self.region_name} "
         )
 
         if config.STEPFUNCTIONS_LAMBDA_ENDPOINT.lower() != "default":
