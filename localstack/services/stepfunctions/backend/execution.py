@@ -210,6 +210,8 @@ class Execution:
             raise InvalidName()  # TODO.
 
         self.exec_worker = ExecutionWorker(
+            account_id=self.account_id,
+            region_name=self.region_name,
             role_arn=self.role_arn,
             definition=self.state_machine.definition,
             input_data=self.input_data,
@@ -221,8 +223,6 @@ class Execution:
                     Name=self.name,
                     RoleArn=self.role_arn,
                     StartTime=self.start_date.time().isoformat(),
-                    AccountId=self.account_id,
-                    RegionName=self.region_name,
                 ),
                 StateMachine=ContextObjectStateMachine(
                     Id=self.state_machine.arn,

@@ -26,8 +26,14 @@ LOG = logging.getLogger(__name__)
 
 
 class Environment:
-    def __init__(self, context_object_init: ContextObjectInitData):
+    def __init__(
+        self, account_id: str, region_name: str, context_object_init: ContextObjectInitData
+    ):
         super(Environment, self).__init__()
+
+        self.account_id = account_id
+        self.region_name = region_name
+
         self._state_mutex = threading.RLock()
         self._program_state: Optional[ProgramState] = None
         self.program_state_event = threading.Event()
@@ -54,7 +60,11 @@ class Environment:
             Execution=env.context_object_manager.context_object["Execution"],
             StateMachine=env.context_object_manager.context_object["StateMachine"],
         )
-        frame = cls(context_object_init=context_object_init)
+        frame = cls(
+            account_id=env.account_id,
+            region_name=env.region_name,
+            context_object_init=context_object_init,
+        )
         frame._is_frame = True
         frame.event_history = env.event_history
         frame.callback_pool_manager = env.callback_pool_manager

@@ -31,12 +31,16 @@ class ExecutionWorker:
 
     def __init__(
         self,
+        account_id: str,
+        region_name: str,
         role_arn: Arn,
         definition: Definition,
         input_data: Optional[dict],
         context_object_init: ContextObjectInitData,
         exec_comm: ExecutionWorkerComm,
     ):
+        self.account_id = account_id
+        self.region_name = region_name
         self.role_arn = role_arn
         self.definition = definition
         self.input_data = input_data
@@ -46,7 +50,11 @@ class ExecutionWorker:
 
     def _execution_logic(self):
         program: Program = AmazonStateLanguageParser.parse(self.definition)
-        self.env = Environment(context_object_init=self._context_object_init)
+        self.env = Environment(
+            account_id=self.account_id,
+            region_name=self.region_name,
+            context_object_init=self._context_object_init,
+        )
         self.env.inp = copy.deepcopy(
             self.input_data
         )  # The program will mutate the input_data, which is otherwise constant in regard to the execution value.

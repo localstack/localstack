@@ -5,10 +5,9 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 def get_boto_client(env: Environment, service: str):
-    execution = env.context_object_manager.context_object["Execution"]
     return connect_to.get_client(
-        aws_access_key_id=execution["AccountId"],
-        region_name=execution["RegionName"],
+        aws_access_key_id=env.account_id,
+        region_name=env.region_name,
         service_name=service,
         config=Config(parameter_validation=False),
     )

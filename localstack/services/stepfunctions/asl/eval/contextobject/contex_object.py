@@ -9,8 +9,6 @@ class Execution(TypedDict):
     Name: str
     RoleArn: str
     StartTime: str  # Format: ISO 8601.
-    AccountId: str
-    RegionName: str
 
 
 class State(TypedDict):
