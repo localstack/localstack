@@ -8,7 +8,6 @@ import pytest
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
@@ -22,7 +21,6 @@ from localstack.testing.aws.lambda_utils import (
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
-from localstack.utils.aws.arns import sqs_queue_arn
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import retry
 from tests.aws.services.lambda_.functions import lambda_integration
@@ -356,6 +354,7 @@ class TestKinesisSource:
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
         create_lambda_function,
+        sqs_get_queue_arn,
         sqs_create_queue,
         create_iam_role_with_policy,
         wait_for_stream_ready,
@@ -394,9 +393,7 @@ class TestKinesisSource:
         kinesis_arn = result["StreamARN"]
         wait_for_stream_ready(stream_name=kinesis_name)
         queue_event_source_mapping = sqs_create_queue()
-        destination_queue = sqs_queue_arn(
-            queue_event_source_mapping, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-        )
+        destination_queue = sqs_get_queue_arn(queue_event_source_mapping)
         destination_config = {"OnFailure": {"Destination": destination_queue}}
         message = {
             "input": "hello",

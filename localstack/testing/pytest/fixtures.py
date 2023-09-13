@@ -22,7 +22,6 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config, constants
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -33,7 +32,6 @@ from localstack.services.stores import (
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.utils import testutil
-from localstack.utils.aws.arns import sqs_queue_arn
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.collections import ensure_list
@@ -340,6 +338,16 @@ def sqs_queue(sqs_create_queue):
 
 
 @pytest.fixture
+def sqs_get_queue_arn(aws_client) -> Callable:
+    def _get_queue_arn(queue_url: str) -> str:
+        return aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])[
+            "Attributes"
+        ]["QueueArn"]
+
+    return _get_queue_arn
+
+
+@pytest.fixture
 def sqs_queue_exists(aws_client):
     def _queue_exists(queue_url: str) -> bool:
         """
@@ -452,11 +460,11 @@ def sns_allow_topic_sqs_queue(aws_client):
 
 
 @pytest.fixture
-def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, aws_client):
+def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_get_queue_arn, aws_client):
     subscriptions = []
 
     def _factory(topic_arn: str, queue_url: str, **kwargs) -> Dict[str, str]:
-        queue_arn = sqs_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         # connect sns topic to sqs
         subscription = aws_client.sns.subscribe(
