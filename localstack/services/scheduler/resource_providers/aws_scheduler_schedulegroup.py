@@ -74,9 +74,6 @@ class SchedulerScheduleGroupProvider(ResourceProvider[SchedulerScheduleGroupProp
 
         result = request.aws_client_factory.scheduler.create_schedule_group(**create_params)
         model["Arn"] = result["ScheduleGroupArn"]
-        model["CreationDate"] = result["CreationDate"]
-        model["LastModificationDate"] = result["LastModificationDate"]
-        model["State"] = result["State"]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
@@ -108,9 +105,9 @@ class SchedulerScheduleGroupProvider(ResourceProvider[SchedulerScheduleGroupProp
           - scheduler:GetScheduleGroup
           - scheduler:DeleteSchedule
         """
-        model = request.previous_state
+        model = request.desired_state
         request.aws_client_factory.scheduler.delete_schedule_group(Name=model["Name"])
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=None)
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
         self,

@@ -55,7 +55,9 @@ PROVIDER_DEFAULTS = {
     "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
     "AWS::Lambda::Alias": "ResourceProvider",
-    "AWS::SNS::Topic": "ResourceProvider"
+    "AWS::SNS::Topic": "ResourceProvider",
+    "AWS::Scheduler::Schedule": "ResourceProvider",
+    "AWS::Scheduler::ScheduleGroup": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }

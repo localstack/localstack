@@ -212,9 +212,9 @@ class SchedulerScheduleProvider(ResourceProvider[SchedulerScheduleProperties]):
           - scheduler:GetSchedule
         """
 
-        delete_params = util.select_attributes(request.previous_state, ["Name", "GroupName"])
+        delete_params = util.select_attributes(request.desired_state, ["Name", "GroupName"])
         request.aws_client_factory.scheduler.delete_schedule(**delete_params)
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=None)
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
         self,

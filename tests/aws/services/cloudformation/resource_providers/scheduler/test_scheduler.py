@@ -4,6 +4,7 @@ from localstack.testing.pytest import markers
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
 def test_schedule_and_group(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "templates/schedule.yml")
