@@ -156,6 +156,12 @@ class StateTaskService(StateTask, abc.ABC):
                 )
 
                 return StateTaskServiceSns()
+            case "events":
+                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_events import (
+                    StateTaskServiceEvents,
+                )
+
+                return StateTaskServiceEvents()
 
             case unknown:
                 raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa
