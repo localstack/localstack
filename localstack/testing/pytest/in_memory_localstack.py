@@ -38,7 +38,6 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
         "--start-localstack",
         action="store_true",
         default=False,
-        type=bool,
     )
 
 
