@@ -23,15 +23,6 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Cache LocalStack community dependencies (venv)
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          # we can re-use the venv from other actions, but shouldn't write one that may be used by others since we install additional deps
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.cfg') }}-marker-report-issue
-          restore-keys: |
-            ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.cfg') }}
-
       - name: Install dependencies
         run: make install-dev
 
