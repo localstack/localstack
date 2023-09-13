@@ -1,23 +1,28 @@
-"""
-Pytest configuration that spins up a single localstack instance that is shared across test modules.
-See: https://docs.pytest.org/en/6.2.x/fixture.html#conftest-py-sharing-fixtures-across-multiple-files
+"""Pytest plugin that spins up a single localstack instance in the current interpreter that is shared
+across the current test session.
 
-It is thread/process safe to run with pytest-parallel, however not for pytest-xdist.
-"""
+Use in your module as follows::
+
+    pytest_plugins = "localstack.testing.pytest.in_memory_localstack"
+
+    @pytest.hookimpl()
+    def pytest_configure(config):
+        config.option.start_localstack = True
+
+You can explicitly disable starting localstack by setting ``TEST_SKIP_LOCALSTACK_START=1`` or
+``TEST_TARGET=AWS_CLOUD``."""
 import logging
 import os
 import threading
 
 import pytest
-from _pytest.config import Config, PytestPluginManager
+from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
 from _pytest.main import Session
 
 from localstack import config as localstack_config
-from localstack import constants
 from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
-from localstack.testing.aws.util import is_aws_cloud
 
 LOG = logging.getLogger(__name__)
 
@@ -31,22 +36,18 @@ _started = threading.Event()
 def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
     parser.addoption(
         "--start-localstack",
+        action="store_true",
+        default=False,
         type=bool,
     )
-
-
-@pytest.hookimpl(trylast=True)
-def pytest_configure(config: Config):
-    localstack_config.FORCE_SHUTDOWN = False
-    localstack_config.GATEWAY_LISTEN = [
-        localstack_config.HostAndPort(host="0.0.0.0", port=constants.DEFAULT_PORT_EDGE)
-    ]
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: Session):
     if not session.config.option.start_localstack:
         return
+
+    from localstack.testing.aws.util import is_aws_cloud
 
     if is_env_true("TEST_SKIP_LOCALSTACK_START") or is_aws_cloud():
         LOG.info("TEST_SKIP_LOCALSTACK_START is set, not starting localstack")

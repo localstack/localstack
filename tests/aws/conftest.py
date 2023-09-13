@@ -6,12 +6,10 @@ from tests.aws.services.es.test_es import install_async as es_install_async
 from tests.aws.services.opensearch.test_opensearch import install_async as opensearch_install_async
 from tests.aws.test_terraform import TestTerraform
 
-pytest_plugins = [
-    "localstack.testing.pytest.in_memory_localstack",
-]
-
 
 def pytest_configure(config: Config):
+    # FIXME: note that this should be the same as in tests/integration/conftest.py since both are currently
+    #  run in the same CI test step, but only one localstack instance is started for both.
     config.option.start_localstack = True
     localstack_config.FORCE_SHUTDOWN = False
     localstack_config.GATEWAY_LISTEN = [
