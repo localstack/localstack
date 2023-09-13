@@ -84,7 +84,7 @@ def enrich_with_codeowners(
             commit_sha=commit_sha,
         ),
         aggregated={
-            k: v for k, v in input_data["aggregated_report"].items() if k not in {"parametrize"}
+            k: v for k, v in input_data["aggregated_report"].items() if k.startswith("aws_")
         },
         owners_aws_unknown=sorted(
             [
