@@ -69,7 +69,7 @@ def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github
     return TestEntry(
         pytest_node_id=entry["node_id"],
         file_path=rel_path,
-        owners=[o[1] for o in code_owners.of(rel_path)] or ["CODEOWNER_MISSING"],
+        owners=[o[1] for o in code_owners.of(rel_path)] or ["?"],
         file_url=f"https://github.com/{github_repo}/blob/{commit_sha}/{rel_path}",
     )
 
