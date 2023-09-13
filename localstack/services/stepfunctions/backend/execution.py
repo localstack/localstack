@@ -221,6 +221,8 @@ class Execution:
                     Name=self.name,
                     RoleArn=self.role_arn,
                     StartTime=self.start_date.time().isoformat(),
+                    AccountId=self.account_id,
+                    RegionName=self.region_name,
                 ),
                 StateMachine=ContextObjectStateMachine(
                     Id=self.state_machine.arn,

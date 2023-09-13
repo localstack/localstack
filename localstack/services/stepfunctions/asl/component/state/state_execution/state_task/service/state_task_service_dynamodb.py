@@ -1,10 +1,8 @@
 from typing import Final, Optional
 
-from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
-from localstack.aws.connect import connect_to
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
@@ -16,6 +14,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+from localstack.services.stepfunctions.backend.utils import get_boto_client
 from localstack.utils.strings import camel_to_snake_case
 
 
@@ -124,12 +123,7 @@ class StateTaskServiceDynamoDB(StateTaskService):
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         api_action = camel_to_snake_case(self.resource.api_action)
-        execution = env.context_object_manager.context_object["Execution"]
-        dynamodb_client = connect_to(
-            aws_access_key_id=execution.account_id,
-            region_name=execution.region_name,
-            config=Config(parameter_validation=False),
-        ).dynamodb
+        dynamodb_client = get_boto_client(env, "dynamodb")
         response = getattr(dynamodb_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)
