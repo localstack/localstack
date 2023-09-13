@@ -44,6 +44,9 @@
 /localstack/services/stores.py @viren-nadkarni
 /tests/unit/test_stores.py @viren-nadkarni
 
+# Internal Boto client lib
+/localstack/aws/connect.py @viren-nadkarni @dfangl
+
 # Dockerfile
 /Dockerfile @alexrashed
 
@@ -223,4 +226,3 @@
 /localstack/aws/api/transcribe/ @sannya-singal @ackdav
 /localstack/services/transcribe/ @sannya-singal @ackdav
 /tests/aws/services/transcribe/ @sannya-singal @ackdav
-
