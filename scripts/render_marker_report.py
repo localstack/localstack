@@ -64,17 +64,6 @@ def render_template(*, template: str, enriched_report: EnrichedReport) -> str:
     return jinja2.Template(source=template).render(data=enriched_report)
 
 
-# def find_test_files_without_owner() -> list[str]:
-#     ownerless_files = []
-#     owners = load_codeowners()
-#     for globbed in glob.glob("/home/dominik/work/localstack/localstack/tests/**/test_*.py", recursive=True):
-#         rel_path = Path(globbed).relative_to("/home/dominik/work/localstack/localstack")
-#         test_owners = owners.of(str(rel_path))
-#         if not test_owners:
-#             ownerless_files.append(rel_path)
-#     return ownerless_files
-
-
 def create_test_entry(entry, *, code_owners: CodeOwners, commit_sha: str, github_repo: str):
     rel_path = "".join(entry["file_path"].partition("tests/")[1:])
     return TestEntry(
