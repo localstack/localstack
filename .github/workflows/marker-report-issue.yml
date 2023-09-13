@@ -35,6 +35,7 @@ jobs:
       - name: Install dependencies
         run: make install-dev
 
+        # makes use of the marker report plugin localstack.testing.pytest.marker_report
       - name: Generate marker report
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s --co --disable-warnings --marker-report --marker-report-path './target'"
@@ -43,10 +44,10 @@ jobs:
         run: |
           . ./.venv/bin/activate
           pip install codeowners
-          python -m pytest tests/aws/
+          python -m pytest tests/
           mv ./target/marker-report*.json ./target/marker-report.json
 
-      - name: Enrich marker report with codeowners
+      - name: Enrich and render marker report
         env:
           MARKER_REPORT_PATH: ./target/marker-report.json
           CODEOWNERS_PATH: ./CODEOWNERS
