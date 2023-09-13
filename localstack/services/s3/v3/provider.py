@@ -304,7 +304,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(s3_stores)
-        visitor.visit(AssetDirectory(self._storage_backend.root_directory))
+        visitor.visit(AssetDirectory(self.service, self._storage_backend.root_directory))
 
     def on_before_state_save(self):
         self._storage_backend.flush()

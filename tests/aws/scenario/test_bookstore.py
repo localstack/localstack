@@ -93,6 +93,7 @@ def setup_lambda(s3_client: "S3Client", bucket_name: str, key_name: str, code_pa
             os.remove(tmp_zip_path)
 
 
+@markers.acceptance_test_beta
 class TestBookstoreApplication:
     @pytest.fixture(scope="class")
     def patch_opensearch_strategy(self):

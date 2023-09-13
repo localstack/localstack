@@ -1,4 +1,3 @@
-import abc
 import dataclasses
 import logging
 import shutil
@@ -7,7 +6,7 @@ import threading
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import IO, Dict, Optional, TypedDict
+from typing import IO, Dict, Literal, Optional, TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -65,12 +64,6 @@ IMAGE_MAPPING = {
 SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17]
 
 
-# this account will be used to store all the internal lambda function archives at
-# it should not be modified by the user, or visible to him, except as through a presigned url with the
-# get-function call.
-BUCKET_ACCOUNT = "949334387222"
-
-
 # TODO: maybe we should make this more "transient" by always initializing to Pending and *not* persisting it?
 @dataclasses.dataclass(frozen=True)
 class VersionState:
@@ -86,7 +79,11 @@ class Invocation:
     client_context: Optional[str]
     invocation_type: InvocationType
     invoke_time: datetime
+    # = invocation_id
     request_id: str
+
+
+InitializationType = Literal["on-demand", "provisioned-concurrency"]
 
 
 class ArchiveCode(metaclass=ABCMeta):
@@ -177,7 +174,7 @@ class S3Code(ArchiveCode):
         """
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
-            aws_access_key_id=BUCKET_ACCOUNT,
+            aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
         ).s3
         extra_args = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         s3_client.download_fileobj(
@@ -191,7 +188,7 @@ class S3Code(ArchiveCode):
         """
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
-            aws_access_key_id=BUCKET_ACCOUNT,
+            aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
             endpoint_url=endpoint_url,
         ).s3
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
@@ -253,7 +250,7 @@ class S3Code(ArchiveCode):
         self.destroy_cached()
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
-            aws_access_key_id=BUCKET_ACCOUNT,
+            aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
         ).s3
         kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         try:
@@ -457,16 +454,9 @@ class EventInvokeConfig:
 class InvocationResult:
     request_id: str
     payload: bytes | None
+    is_error: bool
+    logs: str | None
     executed_version: str | None = None
-    logs: str | None = None
-
-
-@dataclasses.dataclass
-class InvocationError:
-    request_id: str
-    payload: bytes | None
-    executed_version: str | None = None
-    logs: str | None = None
 
 
 @dataclasses.dataclass
@@ -482,31 +472,7 @@ class Credentials(TypedDict):
     Expiration: datetime
 
 
-class ServiceEndpoint(abc.ABC):
-    def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
-        """
-        Processes the result of an invocation
-        :param invoke_id: Invocation Id
-        :param invocation_result: Invocation Result
-        """
-        raise NotImplementedError()
-
-    def invocation_error(self, invoke_id: str, invocation_error: InvocationError) -> None:
-        """
-        Processes an error during an invocation
-        :param invoke_id: Invocation Id
-        :param invocation_error: Invocation Error
-        """
-        raise NotImplementedError()
-
-    def invocation_logs(self, invoke_id: str, invocation_logs: InvocationLogs) -> None:
-        """
-        Processes the logs of an invocation
-        :param invoke_id: Invocation Id
-        :param invocation_logs: Invocation logs
-        """
-        raise NotImplementedError()
-
+class OtherServiceEndpoint:
     def status_ready(self, executor_id: str) -> None:
         """
         Processes a status ready report by RAPID

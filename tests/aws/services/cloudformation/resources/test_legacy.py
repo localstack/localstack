@@ -374,7 +374,9 @@ class TestCloudFormation:
         assert lambda_arn in uri
 
     # TODO: refactor
-    @pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out")
+    @pytest.mark.skipif(
+        condition=is_new_provider(), reason="fails/times out. Check Lambda resource cleanup."
+    )
     @markers.aws.unknown
     def test_update_lambda_function(self, s3_create_bucket, deploy_cfn_template, aws_client):
         bucket_name = f"bucket-{short_uid()}"
@@ -746,7 +748,9 @@ class TestCloudFormation:
         assert not vpcs
 
     # TODO: evaluate (can we drop this?)
-    @pytest.mark.xfail(reason="GetAtt resolved old value")
+    @pytest.mark.skip(
+        reason="GetAtt resolved old value. Lambda resource cleanup leaking: poller stays alive."
+    )
     @markers.aws.validated
     def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
         lambda_role_name = f"lambda-role-{short_uid()}"

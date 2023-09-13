@@ -62,7 +62,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(kinesis_stores)
-        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "kinesis")))
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, "kinesis")))
 
     def on_before_state_load(self):
         # no need to restart servers, since that happens lazily in `server_manager.get_server_for_account`.

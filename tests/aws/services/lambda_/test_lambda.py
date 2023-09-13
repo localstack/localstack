@@ -3,16 +3,19 @@ import json
 import logging
 import os
 import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from typing import Dict, TypeVar
 
 import pytest
+from botocore.config import Config
 from botocore.response import StreamingBody
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.lambda_.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     RUNTIMES_AGGREGATED,
@@ -28,6 +31,7 @@ from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil
+from localstack.utils.aws.arns import lambda_function_name
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
 from localstack.utils.platform import Arch, get_arch, is_arm_compatible, standardized_arch
@@ -49,6 +53,13 @@ TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_python_
 TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
     THIS_FOLDER, "functions/lambda_unhandled_error.py"
 )
+TEST_LAMBDA_PYTHON_RUNTIME_ERROR = os.path.join(THIS_FOLDER, "functions/lambda_runtime_error.py")
+TEST_LAMBDA_PYTHON_RUNTIME_EXIT = os.path.join(THIS_FOLDER, "functions/lambda_runtime_exit.py")
+TEST_LAMBDA_PYTHON_RUNTIME_EXIT_SEGFAULT = os.path.join(
+    THIS_FOLDER, "functions/lambda_runtime_exit_segfault.py"
+)
+TEST_LAMBDA_PYTHON_HANDLER_ERROR = os.path.join(THIS_FOLDER, "functions/lambda_handler_error.py")
+TEST_LAMBDA_PYTHON_HANDLER_EXIT = os.path.join(THIS_FOLDER, "functions/lambda_handler_exit.py")
 TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
@@ -135,6 +146,26 @@ def read_streams(payload: T) -> T:
     return new_payload
 
 
+def check_concurrency_quota(aws_client: ServiceLevelClientFactory, min_concurrent_executions: int):
+    account_settings = aws_client.lambda_.get_account_settings()
+    concurrent_executions = account_settings["AccountLimit"]["ConcurrentExecutions"]
+    if concurrent_executions < min_concurrent_executions:
+        pytest.skip(
+            "Account limit for Lambda ConcurrentExecutions is too low:"
+            f" ({concurrent_executions}/{min_concurrent_executions})."
+            " Request a quota increase on AWS: https://console.aws.amazon.com/servicequotas/home"
+        )
+    else:
+        unreserved_concurrent_executions = account_settings["AccountLimit"][
+            "UnreservedConcurrentExecutions"
+        ]
+        if unreserved_concurrent_executions < min_concurrent_executions:
+            LOG.warning(
+                "Insufficient UnreservedConcurrentExecutions available for this test. "
+                "Ensure that no other tests use any reserved or provisioned concurrency."
+            )
+
+
 @pytest.fixture(autouse=True)
 def fixture_snapshot(snapshot):
     snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -167,7 +198,7 @@ pytestmark = markers.snapshot.skip_snapshot_verify(
 class TestLambdaBaseFeatures:
     @markers.snapshot.skip_snapshot_verify(paths=["$..LogResult"])
     @markers.aws.validated
-    def test_large_payloads(self, caplog, create_lambda_function, snapshot, aws_client):
+    def test_large_payloads(self, caplog, create_lambda_function, aws_client):
         """Testing large payloads sent to lambda functions (~5MB)"""
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         caplog.set_level(logging.INFO)
@@ -179,12 +210,13 @@ class TestLambdaBaseFeatures:
             runtime=Runtime.python3_10,
         )
         large_value = "test123456" * 100 * 1000 * 5
-        snapshot.add_transformer(snapshot.transform.regex(large_value, "<large-value>"))
         payload = {"test": large_value}  # 5MB payload
         result = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
         )
-        snapshot.match("invocation_response", result)
+        # do not use snapshots here - loading 5MB json takes ~14 sec
+        assert "FunctionError" not in result
+        assert payload == json.loads(to_str(result["Payload"].read()))
 
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
@@ -954,6 +986,13 @@ class TestLambdaFeatures:
         assert "END" in logs
         assert "REPORT" in logs
 
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..Message"])
+    @markers.aws.validated
+    def test_invoke_exceptions(self, aws_client, snapshot):
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.invoke(FunctionName="doesnotexist")
+        snapshot.match("invoke_function_doesnotexist", e.value.response)
+
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
     )
@@ -971,15 +1010,28 @@ class TestLambdaFeatures:
         condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
     )
     @markers.aws.validated
-    def test_invocation_type_event(self, snapshot, invocation_echo_lambda, aws_client):
+    def test_invocation_type_event(
+        self, snapshot, invocation_echo_lambda, aws_client, check_lambda_logs
+    ):
         """Check invocation response for type event"""
+        function_arn = invocation_echo_lambda
+        function_name = lambda_function_name(invocation_echo_lambda)
         result = aws_client.lambda_.invoke(
-            FunctionName=invocation_echo_lambda, Payload=b"{}", InvocationType="Event"
+            FunctionName=function_arn, Payload=b"{}", InvocationType="Event"
         )
         result = read_streams(result)
         snapshot.match("invoke-result", result)
 
         assert 202 == result["StatusCode"]
+
+        # Assert that the function gets invoked by checking the logs.
+        # This also ensures that we wait until the invocation is done before deleting the function.
+        expected = [".*{}"]
+
+        def check_logs():
+            check_lambda_logs(function_name, expected_lines=expected)
+
+        retry(check_logs, retries=15)
 
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
@@ -1028,6 +1080,7 @@ class TestLambdaFeatures:
             return log_events
 
         events = retry(assert_events, retries=120, sleep=2)
+        # TODO: fix transformers for numbers etc or selectively match log events
         snapshot.match("log_events", events)
         # check if both request ids are identical, since snapshots currently do not support reference replacement for regexes
         start_messages = [e["message"] for e in events if e["message"].startswith("START")]
@@ -1040,9 +1093,7 @@ class TestLambdaFeatures:
     def test_invocation_with_qualifier(
         self,
         s3_bucket,
-        check_lambda_logs,
         lambda_su_role,
-        wait_until_lambda_ready,
         create_lambda_function_aws,
         snapshot,
         aws_client,
@@ -1182,6 +1233,250 @@ class TestLambdaFeatures:
         retry(check_logs, retries=15)
 
 
+@pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
+class TestLambdaErrors:
+    @markers.aws.validated
+    def test_lambda_runtime_error(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that raises an exception during runtime startup."""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_RUNTIME_ERROR,
+            handler="lambda_runtime_error.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
+
+    @pytest.mark.skipif(
+        not is_aws_cloud(), reason="Not yet supported. Need to report exit in Lambda init binary."
+    )
+    @markers.aws.validated
+    def test_lambda_runtime_exit(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that exits during runtime startup."""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_RUNTIME_EXIT,
+            handler="lambda_runtime_exit.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
+
+    @pytest.mark.skipif(
+        not is_aws_cloud(), reason="Not yet supported. Need to report exit in Lambda init binary."
+    )
+    @markers.aws.validated
+    def test_lambda_runtime_exit_segfault(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that exits during runtime startup with a segmentation fault."""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_RUNTIME_EXIT_SEGFAULT,
+            handler="lambda_runtime_exit_segfault.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
+
+    @markers.aws.validated
+    def test_lambda_handler_error(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that raises an exception in the handler."""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_HANDLER_ERROR,
+            handler="lambda_handler_error.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
+
+    @pytest.mark.skipif(
+        not is_aws_cloud(), reason="Not yet supported. Need to report exit in Lambda init binary."
+    )
+    @markers.aws.validated
+    def test_lambda_handler_exit(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that exits in the handler."""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_HANDLER_EXIT,
+            handler="lambda_handler_exit.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
+
+    @pytest.mark.skipif(
+        not is_aws_cloud(), reason="Not yet supported. Need to raise error in Lambda init binary."
+    )
+    @markers.aws.validated
+    def test_lambda_runtime_wrapper_not_found(self, aws_client, create_lambda_function, snapshot):
+        """Test Lambda that points to a non-existing Lambda wrapper"""
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_10,
+            envvars={"AWS_LAMBDA_EXEC_WRAPPER": "/idontexist.sh"},
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+        )
+        snapshot.match("invocation_error", result)
+
+    @markers.aws.only_localstack(
+        reason="Can only induce Lambda-internal Docker error in LocalStack"
+    )
+    def test_lambda_runtime_startup_timeout(
+        self, aws_client_factory, create_lambda_function, monkeypatch
+    ):
+        """Test Lambda that times out during runtime startup"""
+        monkeypatch.setattr(
+            config, "LAMBDA_DOCKER_FLAGS", "-e LOCALSTACK_RUNTIME_ENDPOINT=http://somehost.invalid"
+        )
+        monkeypatch.setattr(config, "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT", 2)
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        client_config = Config(
+            retries={"max_attempts": 0},
+        )
+        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
+        with pytest.raises(no_retry_lambda_client.exceptions.ServiceException) as e:
+            no_retry_lambda_client.invoke(
+                FunctionName=function_name,
+            )
+        assert e.match(
+            r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
+            r"retries: \d\): Internal error while executing lambda"
+        )
+
+    @markers.aws.only_localstack(
+        reason="Can only induce Lambda-internal Docker error in LocalStack"
+    )
+    def test_lambda_runtime_startup_error(
+        self, aws_client_factory, create_lambda_function, monkeypatch
+    ):
+        """Test Lambda that errors during runtime startup"""
+        monkeypatch.setattr(config, "LAMBDA_DOCKER_FLAGS", "invalid_flags")
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        client_config = Config(
+            retries={"max_attempts": 0},
+        )
+        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
+        with pytest.raises(no_retry_lambda_client.exceptions.ServiceException) as e:
+            no_retry_lambda_client.invoke(
+                FunctionName=function_name,
+            )
+        assert e.match(
+            r"An error occurred \(ServiceException\) when calling the Invoke operation \(reached max "
+            r"retries: \d\): Internal error while executing lambda"
+        )
+
+
+class TestLambdaCleanup:
+    @pytest.mark.skip(
+        reason="Not yet handled properly. Currently raises an InvalidStatusException."
+    )
+    @markers.aws.validated
+    def test_delete_lambda_during_sync_invoke(self, aws_client, create_lambda_function, snapshot):
+        """Test deleting a Lambda during a synchronous invocation.
+
+        Unlike AWS, we will throw an error and clean up all containers to avoid dangling containers.
+        """
+        func_name = f"func-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_SLEEP_ENVIRONMENT,
+            runtime=Runtime.python3_10,
+            Timeout=30,
+        )
+
+        # Warm up the Lambda
+        invoke_result_1 = aws_client.lambda_.invoke(
+            FunctionName=func_name,
+            Payload=json.dumps({"sleep": 0}),
+            InvocationType="RequestResponse",
+        )
+        assert invoke_result_1["StatusCode"] == 200
+        assert "FunctionError" not in invoke_result_1
+
+        # Simultaneously invoke and delete the Lambda function
+        errored = False
+
+        def _invoke_function():
+            nonlocal errored
+            try:
+                invoke_result_2 = aws_client.lambda_.invoke(
+                    FunctionName=func_name,
+                    Payload=json.dumps({"sleep": 20}),
+                    InvocationType="RequestResponse",
+                )
+                assert invoke_result_2["StatusCode"] == 200
+                assert "FunctionError" not in invoke_result_2
+            except Exception:
+                LOG.exception("Invoke failed")
+                errored = True
+
+        thread = threading.Thread(target=_invoke_function)
+        thread.start()
+
+        # Ensure that the invoke has been sent before deleting the function
+        time.sleep(5)
+        delete_result = aws_client.lambda_.delete_function(FunctionName=func_name)
+        snapshot.match("delete-result", delete_result)
+
+        thread.join()
+
+        assert not errored
+
+
 class TestLambdaMultiAccounts:
     @pytest.fixture
     def primary_client(self, aws_client):
@@ -1314,6 +1609,7 @@ class TestLambdaMultiAccounts:
         assert secondary_client.delete_function(FunctionName=func_arn)
 
 
+# TODO: add check_concurrency_quota for all these tests
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaConcurrency:
     @markers.aws.validated
@@ -1349,7 +1645,6 @@ class TestLambdaConcurrency:
         )
         snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
 
-    @pytest.mark.skip(reason="Requires prefer-provisioned feature")
     @markers.aws.validated
     def test_lambda_concurrency_block(self, snapshot, create_lambda_function, aws_client):
         """
@@ -1574,6 +1869,10 @@ class TestLambdaConcurrency:
         get_provisioned_prewait = aws_client.lambda_.get_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=v1["Version"]
         )
+
+        # TODO: test invoke before provisioned concurrency actually updated
+        # maybe repeated executions to see when we get the provisioned invocation type
+
         snapshot.match("get_provisioned_prewait", get_provisioned_prewait)
         assert wait_until(concurrency_update_done(aws_client.lambda_, func_name, v1["Version"]))
         get_provisioned_postwait = aws_client.lambda_.get_provisioned_concurrency_config(
@@ -1590,9 +1889,10 @@ class TestLambdaConcurrency:
         assert result2 == "on-demand"
 
     @markers.aws.validated
-    def test_reserved_concurrency_async_queue(
-        self, create_lambda_function, snapshot, sqs_create_queue, aws_client
-    ):
+    def test_reserved_concurrency_async_queue(self, create_lambda_function, snapshot, aws_client):
+        min_concurrent_executions = 10 + 2
+        check_concurrency_quota(aws_client, min_concurrent_executions)
+
         func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
@@ -1608,30 +1908,29 @@ class TestLambdaConcurrency:
         snapshot.match("fn", fn)
         fn_arn = fn["FunctionArn"]
 
-        # sequential execution
+        # configure reserved concurrency for sequential execution
         put_fn_concurrency = aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=1
         )
         snapshot.match("put_fn_concurrency", put_fn_concurrency)
 
+        # warm up the Lambda function to mitigate flakiness due to cold start
+        aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+
+        # simultaneously queue two event invocations
         aws_client.lambda_.invoke(
-            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
+            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 15})
         )
         aws_client.lambda_.invoke(
             FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
         )
 
-        time.sleep(4)  # make sure one is already in the "queue" and one is being executed
+        # Ensure one event invocation is being executed and the other one is in the queue.
+        time.sleep(5)
 
         with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
             aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
         snapshot.match("too_many_requests_exc", e.value.response)
-
-        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
-            aws_client.lambda_.put_function_concurrency(
-                FunctionName=fn_arn, ReservedConcurrentExecutions=2
-            )
-        snapshot.match("put_function_concurrency_qualified_arn_exc", e.value.response)
 
         aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=2
@@ -1642,13 +1941,17 @@ class TestLambdaConcurrency:
             log_events = aws_client.logs.filter_log_events(
                 logGroupName=f"/aws/lambda/{func_name}",
             )["events"]
-            assert len([e["message"] for e in log_events if e["message"].startswith("REPORT")]) == 3
+            invocation_count = len(
+                [event["message"] for event in log_events if event["message"].startswith("REPORT")]
+            )
+            assert invocation_count == 4
 
         retry(assert_events, retries=120, sleep=2)
 
         # TODO: snapshot logs & request ID for correlation after request id gets propagated
         #  https://github.com/localstack/localstack/pull/7874
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Attributes.AWSTraceHeader"])
     @markers.aws.validated
     def test_reserved_concurrency(
         self, create_lambda_function, snapshot, sqs_create_queue, aws_client
@@ -1702,7 +2005,7 @@ class TestLambdaConcurrency:
         )
         snapshot.match("put_event_invoke_conf", put_event_invoke_conf)
 
-        time.sleep(3)  # just to be sure
+        time.sleep(3)  # just to be sure the event invoke config is active
 
         invoke_result = aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="Event")
         snapshot.match("invoke_result", invoke_result)
@@ -1870,6 +2173,8 @@ class TestLambdaVersions:
         snapshot.match("invocation_result_v1_end", invocation_result_v1)
 
 
+# TODO: test if routing is static for a single invocation:
+#  Do retries for an event invoke, take the same "path" for every retry?
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaAliases:
     @markers.aws.validated
