@@ -1,6 +1,6 @@
 {
   "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_create_group": {
-    "recorded-date": "13-09-2023, 16:46:35",
+    "recorded-date": "13-09-2023, 17:21:22",
     "recorded-content": {
       "create-group": {
         "Group": {
@@ -57,7 +57,7 @@
             "Name": "<name:1>"
           }
         ],
-        "NextToken": "e2DonpyRg2N0G5J/s4Avz353aP6nAK+EBp8cJBm1zuWHIWynhmlgGllet51zvPrRnS5WGmcXVzOwRYuOIYEN7gnQs9bu+Himl2vWYty+0nDKQPQ0WVSsvf1jxOj3DTCxGuCPBTmTE+vO+ShkqZ2ZIH9lWpkMrzyICmHSIC5J1sGE5eWkDoktOi8JH18ZX5x1ln7S4u3L5KRh",
+        "NextToken": "<next-token:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -77,7 +77,330 @@
       "list-groups-after-delete": {
         "GroupIdentifiers": [],
         "Groups": [],
-        "NextToken": "EUJ5qymezOTadQClV5BkOgolt5UK2ghi9QKr3u/nKuY//51Gw9E+tB/Eu7YEV7SFurFGHP9VBeTQHWq6NUw1K+JY9kNFJjlI4yLXN6C3vSyo2vO88mY6qX+JOHvySFRqQAzD6o9SCe1vZdFR5sCsBBx+k6s051C1gk9udBDY33ht77FBbT+wGrn+EbM1LKNi3IpKJXlyksf9",
+        "NextToken": "<next-token:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_resource_groups_tag_query": {
+    "recorded-date": "13-09-2023, 17:31:56",
+    "recorded-content": {
+      "create-group": {
+        "Group": {
+          "Description": "test-tag-query",
+          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "Name": "<name:1>"
+        },
+        "ResourceQuery": {
+          "Query": {
+            "ResourceTypeFilters": [
+              "AWS::AllSupported"
+            ],
+            "TagFilters": [
+              {
+                "Key": "Stage",
+                "Values": [
+                  "test-resource-group"
+                ]
+              }
+            ]
+          },
+          "Type": "TAG_FILTERS_1_0"
+        },
+        "Tags": {
+          "GroupTag": "GroupTag1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-group-resources-empty": {
+        "QueryErrors": [],
+        "ResourceIdentifiers": [],
+        "Resources": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-group-resources": {
+        "QueryErrors": [],
+        "ResourceIdentifiers": [
+          {
+            "ResourceArn": "arn:aws:s3:::<resource:1>",
+            "ResourceType": "AWS::S3::Bucket"
+          }
+        ],
+        "Resources": [
+          {
+            "Identifier": {
+              "ResourceArn": "arn:aws:s3:::<resource:1>",
+              "ResourceType": "AWS::S3::Bucket"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-tags": {
+        "Tags": {
+          "Stage": "test-resource-group"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-group-resources-after-queue-removal": {
+        "QueryErrors": [],
+        "ResourceIdentifiers": [
+          {
+            "ResourceArn": "arn:aws:s3:::<resource:1>",
+            "ResourceType": "AWS::S3::Bucket"
+          },
+          {
+            "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+            "ResourceType": "AWS::SQS::Queue"
+          }
+        ],
+        "Resources": [
+          {
+            "Identifier": {
+              "ResourceArn": "arn:aws:s3:::<resource:1>",
+              "ResourceType": "AWS::S3::Bucket"
+            }
+          },
+          {
+            "Identifier": {
+              "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+              "ResourceType": "AWS::SQS::Queue"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_resource_groups_different_region": {
+    "recorded-date": "13-09-2023, 17:51:28",
+    "recorded-content": {
+      "create-group": {
+        "Group": {
+          "Description": "test-tag-query",
+          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "Name": "<name:1>"
+        },
+        "ResourceQuery": {
+          "Query": {
+            "ResourceTypeFilters": [
+              "AWS::AllSupported"
+            ],
+            "TagFilters": [
+              {
+                "Key": "Stage",
+                "Values": [
+                  "test-resource-group"
+                ]
+              }
+            ]
+          },
+          "Type": "TAG_FILTERS_1_0"
+        },
+        "Tags": {
+          "GroupTag": "GroupTag1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-group-resources": {
+        "QueryErrors": [],
+        "ResourceIdentifiers": [
+          {
+            "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "ResourceType": "AWS::SQS::Queue"
+          }
+        ],
+        "Resources": [
+          {
+            "Identifier": {
+              "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "ResourceType": "AWS::SQS::Queue"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_resource_type_filters": {
+    "recorded-date": "13-09-2023, 17:56:20",
+    "recorded-content": {
+      "create-group": {
+        "Group": {
+          "Description": "test-tag-query",
+          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "Name": "<name:1>"
+        },
+        "ResourceQuery": {
+          "Query": {
+            "ResourceTypeFilters": [
+              "AWS::S3::Bucket"
+            ],
+            "TagFilters": [
+              {
+                "Key": "Stage",
+                "Values": [
+                  "test-resource-group"
+                ]
+              }
+            ]
+          },
+          "Type": "TAG_FILTERS_1_0"
+        },
+        "Tags": {
+          "GroupTag": "GroupTag1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-group-resources": {
+        "QueryErrors": [],
+        "ResourceIdentifiers": [
+          {
+            "ResourceArn": "arn:aws:s3:::<resource:1>",
+            "ResourceType": "AWS::S3::Bucket"
+          }
+        ],
+        "Resources": [
+          {
+            "Identifier": {
+              "ResourceArn": "arn:aws:s3:::<resource:1>",
+              "ResourceType": "AWS::S3::Bucket"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_cloudformation_query": {
+    "recorded-date": "13-09-2023, 18:41:46",
+    "recorded-content": {
+      "create-group": {
+        "Group": {
+          "Description": "test-cfn-query",
+          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "Name": "<name:1>"
+        },
+        "ResourceQuery": {
+          "Query": {
+            "ResourceTypeFilters": [
+              "AWS::AllSupported"
+            ],
+            "StackIdentifier": "<stack-identifier:1>"
+          },
+          "Type": "CLOUDFORMATION_STACK_1_0"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-group-resources": {
+        "QueryErrors": [],
+        "ResourceIdentifiers": [
+          {
+            "ResourceArn": "arn:aws:sns:<region>:111111111111:<resource:2>",
+            "ResourceType": "AWS::SNS::Topic"
+          }
+        ],
+        "Resources": [
+          {
+            "Identifier": {
+              "ResourceArn": "arn:aws:sns:<region>:111111111111:<resource:2>",
+              "ResourceType": "AWS::SNS::Topic"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-group-resources-after-destroy": {
+        "QueryErrors": [
+          {
+            "ErrorCode": "CLOUDFORMATION_STACK_INACTIVE",
+            "Message": "The specified CloudFormation stack cannot have the following statuses: DELETE_COMPLETE, ROLLBACK_COMPLETE, CREATE_FAILED."
+          }
+        ],
+        "ResourceIdentifiers": [],
+        "Resources": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-group-with-delete-stack": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Query not valid: The specified CloudFormation stack cannot have the following statuses: DELETE_COMPLETE, ROLLBACK_COMPLETE, CREATE_FAILED."
+        },
+        "Message": "Query not valid: The specified CloudFormation stack cannot have the following statuses: DELETE_COMPLETE, ROLLBACK_COMPLETE, CREATE_FAILED.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_search_resources": {
+    "recorded-date": "13-09-2023, 18:57:04",
+    "recorded-content": {
+      "queue-tags": {
+        "Tags": {
+          "Stage": "test-resource-group"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-group-resources-sqs": {
+        "QueryErrors": [],
+        "ResourceIdentifiers": [
+          {
+            "ResourceArn": "arn:aws:sqs:<region>:111111111111:test-queue-15628f71",
+            "ResourceType": "AWS::SQS::Queue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-group-resources-s3": {
+        "QueryErrors": [],
+        "ResourceIdentifiers": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
