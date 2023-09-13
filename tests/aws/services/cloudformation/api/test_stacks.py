@@ -173,7 +173,7 @@ class TestStacksApi:
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
         snapshot.match("stack_resources", resources)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_list_stack_resources_for_removed_resource(self, deploy_cfn_template, aws_client):
         template_path = os.path.join(
             os.path.dirname(__file__), "../../../templates/eventbridge_policy.yaml"
@@ -212,7 +212,7 @@ class TestStacksApi:
         statuses = set([res["ResourceStatus"] for res in resources])
         assert statuses == {"UPDATE_COMPLETE"}
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_update_stack_with_same_template_withoutchange(self, deploy_cfn_template, aws_client):
         template = load_file(
             os.path.join(os.path.dirname(__file__), "../../../templates/fifo_queue.json")

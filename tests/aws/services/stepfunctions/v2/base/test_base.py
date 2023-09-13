@@ -133,7 +133,7 @@ class TestSnfBase:
         )
 
     @pytest.mark.skip(reason="flaky")  # FIXME
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_event_bridge_events_failure(
         self,
         create_iam_role_for_sfn,

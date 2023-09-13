@@ -25,7 +25,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceDynamoDB:
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_put_get_item(
         self,
         aws_client,
@@ -58,7 +58,7 @@ class TestTaskServiceDynamoDB:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_put_delete_item(
         self,
         aws_client,
@@ -91,7 +91,7 @@ class TestTaskServiceDynamoDB:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_put_update_get_item(
         self,
         aws_client,

@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
@@ -19,7 +20,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestAwsSdk:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invalid_secret_name(
         self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):
@@ -35,7 +36,7 @@ class TestAwsSdk:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_no_such_bucket(
         self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):
@@ -53,9 +54,12 @@ class TestAwsSdk:
             exec_input,
         )
 
-    @pytest.mark.skip(reason="No parameters validation for dynamodb api calls being returned.")
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(),
+        reason="No parameters validation for dynamodb api calls being returned.",
+    )
     @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_dynamodb_invalid_param(
         self,
         aws_client,
@@ -82,7 +86,7 @@ class TestAwsSdk:
         )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_dynamodb_put_item_no_such_table(
         self,
         aws_client,

@@ -60,7 +60,7 @@ Resources:
           - startFnServiceRoleB86C6980
           - Arn
       Handler: index.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs16.x
     DependsOn:
       - startFnServiceRoleB86C6980
   stm:

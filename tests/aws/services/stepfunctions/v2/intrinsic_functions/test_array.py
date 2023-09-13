@@ -21,7 +21,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestArray:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_array_0(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
         create_and_test_on_inputs(
             aws_client.stepfunctions,
@@ -32,7 +32,7 @@ class TestArray:
             ["HelloWorld"],
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_array_2(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
         values = [
             "",
@@ -56,7 +56,7 @@ class TestArray:
             input_values,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_array_partition(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -74,7 +74,7 @@ class TestArray:
             input_values,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_array_contains(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -101,7 +101,7 @@ class TestArray:
             input_values,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_array_range(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -123,7 +123,7 @@ class TestArray:
             input_values,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_array_get_item(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -137,7 +137,7 @@ class TestArray:
             input_values,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_array_length(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -151,7 +151,7 @@ class TestArray:
             input_values,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_array_unique(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
