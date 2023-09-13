@@ -1,0 +1,88 @@
+{
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_create_group": {
+    "recorded-date": "13-09-2023, 16:46:35",
+    "recorded-content": {
+      "create-group": {
+        "Group": {
+          "Description": "description",
+          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "Name": "<name:1>"
+        },
+        "ResourceQuery": {
+          "Query": {
+            "ResourceTypeFilters": [
+              "AWS::AllSupported"
+            ],
+            "TagFilters": [
+              {
+                "Key": "resources_tag_key",
+                "Values": [
+                  "resources_tag_value"
+                ]
+              }
+            ]
+          },
+          "Type": "TAG_FILTERS_1_0"
+        },
+        "Tags": {
+          "resource_group_tag_key": "resource_group_tag_value"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-group": {
+        "Group": {
+          "Description": "description",
+          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "Name": "<name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-groups": {
+        "GroupIdentifiers": [
+          {
+            "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+            "GroupName": "<name:1>"
+          }
+        ],
+        "Groups": [
+          {
+            "Description": "description",
+            "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+            "Name": "<name:1>"
+          }
+        ],
+        "NextToken": "e2DonpyRg2N0G5J/s4Avz353aP6nAK+EBp8cJBm1zuWHIWynhmlgGllet51zvPrRnS5WGmcXVzOwRYuOIYEN7gnQs9bu+Himl2vWYty+0nDKQPQ0WVSsvf1jxOj3DTCxGuCPBTmTE+vO+ShkqZ2ZIH9lWpkMrzyICmHSIC5J1sGE5eWkDoktOi8JH18ZX5x1ln7S4u3L5KRh",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-group": {
+        "Group": {
+          "Description": "description",
+          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "Name": "<name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-groups-after-delete": {
+        "GroupIdentifiers": [],
+        "Groups": [],
+        "NextToken": "EUJ5qymezOTadQClV5BkOgolt5UK2ghi9QKr3u/nKuY//51Gw9E+tB/Eu7YEV7SFurFGHP9VBeTQHWq6NUw1K+JY9kNFJjlI4yLXN6C3vSyo2vO88mY6qX+JOHvySFRqQAzD6o9SCe1vZdFR5sCsBBx+k6s051C1gk9udBDY33ht77FBbT+wGrn+EbM1LKNi3IpKJXlyksf9",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
