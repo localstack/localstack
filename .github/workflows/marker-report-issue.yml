@@ -66,7 +66,6 @@ jobs:
       - name: Upload generated markdown
         uses: actions/upload-artifact@v3
         with:
-          name: marker-issue-content
           path: ./target/MARKER_REPORT_ISSUE.md
 
 # TODO: enable before merge
