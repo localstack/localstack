@@ -94,7 +94,7 @@ STATE_MACHINE_CATCH = {
                 {
                     "ErrorEquals": [
                         "Exception",
-                        "Lambda.needs_fixing",
+                        "Lambda.Unknown",
                         "ValueError",
                     ],
                     "ResultPath": "$.error",
