@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
@@ -32,7 +33,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceSqs:
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_send_message_no_such_queue(
         self,
         aws_client,
@@ -61,7 +62,7 @@ class TestTaskServiceSqs:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_send_message_no_such_queue_no_catch(
         self,
         aws_client,
@@ -90,8 +91,10 @@ class TestTaskServiceSqs:
             exec_input,
         )
 
-    @pytest.mark.skip("SQS does not raise error on empty body.")
-    @markers.aws.unknown
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="SQS does not raise error on empty body."
+    )
+    @markers.aws.validated
     def test_send_message_empty_body(
         self,
         aws_client,

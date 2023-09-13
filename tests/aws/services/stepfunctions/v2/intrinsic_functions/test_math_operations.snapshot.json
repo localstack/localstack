@@ -304,7 +304,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_add": {
-    "recorded-date": "13-02-2023, 14:51:11",
+    "recorded-date": "13-09-2023, 16:01:59",
     "recorded-content": {
       "exec_hist_resp_0": {
         "events": [
@@ -423,7 +423,7 @@
             "stateExitedEventDetails": {
               "name": "State_0",
               "output": {
-                "FunctionResult": 2
+                "FunctionResult": 3
               },
               "outputDetails": {
                 "truncated": false
@@ -435,7 +435,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "FunctionResult": 2
+                "FunctionResult": 3
               },
               "outputDetails": {
                 "truncated": false
@@ -496,7 +496,7 @@
             "stateExitedEventDetails": {
               "name": "State_0",
               "output": {
-                "FunctionResult": 2
+                "FunctionResult": 4
               },
               "outputDetails": {
                 "truncated": false
@@ -508,7 +508,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "FunctionResult": 2
+                "FunctionResult": 4
               },
               "outputDetails": {
                 "truncated": false
@@ -642,7 +642,7 @@
             "stateExitedEventDetails": {
               "name": "State_0",
               "output": {
-                "FunctionResult": -2
+                "FunctionResult": -3
               },
               "outputDetails": {
                 "truncated": false
@@ -654,7 +654,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "FunctionResult": -2
+                "FunctionResult": -3
               },
               "outputDetails": {
                 "truncated": false

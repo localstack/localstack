@@ -23,7 +23,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestMathOperations:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_math_random(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -76,7 +76,7 @@ class TestMathOperations:
             )
             sfn_snapshot.match(f"exec_hist_resp_{i}", exec_hist_resp)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_math_random_seeded(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -124,7 +124,7 @@ class TestMathOperations:
         exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
         sfn_snapshot.match("exec_hist_resp", exec_hist_resp)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_math_add(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):

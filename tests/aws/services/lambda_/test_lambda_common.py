@@ -250,7 +250,6 @@ class TestLambdaRuntimesCommon:
 
 
 # TODO: Split this and move to PRO
-@pytest.mark.whitebox
 @pytest.mark.skipif(
     condition=is_old_provider(),
     reason="Local executor does not support the majority of the runtimes",
@@ -271,7 +270,7 @@ class TestLambdaCallingLocalstack:
             "dotnet6",  # TODO: does not yet support transparent endpoint injection
         ],
     )
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_calling_localstack_from_lambda(self, multiruntime_lambda, tmp_path, aws_client):
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024,
