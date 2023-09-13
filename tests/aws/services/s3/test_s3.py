@@ -5498,6 +5498,20 @@ class TestS3:
         lowercase_headers = {k.lower(): v for k, v in response.headers.items()}
         snapshot.match("get-obj-content-len-headers", lowercase_headers)
 
+    @markers.aws.validated
+    def test_empty_bucket_fixture(self, s3_bucket, s3_empty_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        for i in range(3):
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=f"key{i}", Body="123")
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-obj", response)
+
+        s3_empty_bucket(s3_bucket)
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-obj-after-empty", response)
+
 
 class TestS3MultiAccounts:
     @pytest.fixture

@@ -23,12 +23,9 @@ from .configurators import (
     CoverageRunScriptConfigurator,
     DependencyMountConfigurator,
     EntryPointMountConfigurator,
-    EnvironmentVariablesFromParameters,
     ImageConfigurator,
     PortConfigurator,
-    PortsFromParameters,
     SourceVolumeMountConfigurator,
-    VolumeFromParameters,
 )
 from .paths import HostPaths
 
@@ -266,9 +263,9 @@ def run(
     # make sure anything coming from CLI arguments has priority
     configurators.extend(
         [
-            VolumeFromParameters(list(volume)),
-            PortsFromParameters(publish),
-            EnvironmentVariablesFromParameters(env),
+            ContainerConfigurators.volume_cli_params(volume),
+            ContainerConfigurators.port_cli_params(publish),
+            ContainerConfigurators.env_cli_params(env),
         ]
     )
 

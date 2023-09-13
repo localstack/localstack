@@ -3,8 +3,10 @@ import logging
 
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.exceptions import (
+    DeploymentNotFoundException,
     NoIntegrationDefined,
     RestAPINotFound,
+    StageStillActive,
     UsagePlanNotFoundException,
 )
 from moto.apigateway.responses import APIGatewayResponse
@@ -70,6 +72,7 @@ def apply_patches():
                 integration.timeout_in_millis = int(integration.timeout_in_millis)
             if skip_verification := (integration.tls_config or {}).get("insecureSkipVerification"):
                 integration.tls_config["insecureSkipVerification"] = str_to_bool(skip_verification)
+            return 200, {}, json.dumps(integration.to_json())
 
         return result
 
@@ -219,3 +222,17 @@ def apply_patches():
             if key.lower() == function_id.lower():
                 return self.apis[key]
         raise RestAPINotFound()
+
+    @patch(apigateway_models.RestAPI.delete_deployment, pass_target=False)
+    def patch_delete_deployment(self, deployment_id: str) -> apigateway_models.Deployment:
+        if deployment_id not in self.deployments:
+            raise DeploymentNotFoundException()
+        deployment = self.deployments[deployment_id]
+        if deployment.stage_name and (
+            (stage := self.stages.get(deployment.stage_name))
+            and stage.deployment_id == deployment.id
+        ):
+            # Stage is still active
+            raise StageStillActive()
+
+        return self.deployments.pop(deployment_id)

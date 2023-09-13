@@ -5,8 +5,13 @@ from typing import Any, Dict
 import pytest
 
 from localstack import constants
-from localstack.utils.bootstrap import Container, get_enabled_apis, get_gateway_port
-from localstack.utils.container_utils.container_client import ContainerConfiguration
+from localstack.utils.bootstrap import (
+    Container,
+    ContainerConfigurators,
+    get_enabled_apis,
+    get_gateway_port,
+)
+from localstack.utils.container_utils.container_client import ContainerConfiguration, VolumeBind
 
 
 @contextmanager
@@ -122,3 +127,35 @@ class TestGetGatewayPort:
         c.config.env_vars["GATEWAY_LISTEN"] = ":4566,:443"
         c.config.ports.add(443)
         assert get_gateway_port(c) == 443
+
+
+class TestContainerConfigurators:
+    def test_cli_params(self, monkeypatch):
+        monkeypatch.setenv("BAR", "BAZ")
+
+        c = ContainerConfiguration("localstack/localstack")
+        ContainerConfigurators.cli_params(
+            {
+                "network": "my-network",
+                "publish": ("4566", "5000:6000", "53:53/udp", "4510-4513:4610-4613"),
+                "volume": ("foo:/tmp/foo", "/bar:/tmp/bar:ro"),
+                "env": ("FOO=BAR", "BAR"),
+            }
+        )(c)
+
+        assert c.network == "my-network"
+        assert c.env_vars == {
+            "FOO": "BAR",
+            "BAR": "BAZ",
+        }
+        assert c.ports.to_dict() == {
+            "4566/tcp": 4566,
+            "4610/tcp": 4510,
+            "4611/tcp": 4511,
+            "4612/tcp": 4512,
+            "4613/tcp": 4513,
+            "53/udp": 53,
+            "6000/tcp": 5000,
+        }
+        assert VolumeBind(host_dir="foo", container_dir="/tmp/foo", read_only=False) in c.volumes
+        assert VolumeBind(host_dir="/bar", container_dir="/tmp/bar", read_only=True) in c.volumes

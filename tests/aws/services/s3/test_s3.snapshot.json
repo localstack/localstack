@@ -10213,5 +10213,57 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_empty_bucket_fixture": {
+    "recorded-date": "08-09-2023, 18:52:15",
+    "recorded-content": {
+      "list-obj": {
+        "Contents": [
+          {
+            "ETag": "\"202cb962ac59075b964b07152d234b70\"",
+            "Key": "key0",
+            "LastModified": "datetime",
+            "Size": 3,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"202cb962ac59075b964b07152d234b70\"",
+            "Key": "key1",
+            "LastModified": "datetime",
+            "Size": 3,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"202cb962ac59075b964b07152d234b70\"",
+            "Key": "key2",
+            "LastModified": "datetime",
+            "Size": 3,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 3,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-obj-after-empty": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 0,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -611,3 +611,56 @@ class TestDeployments:
             snapshot.match(f"get-deployments-{i}", response)
             response = client.get_stages(restApiId=api_id)
             snapshot.match(f"get-stages-{i}", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
+    def test_create_update_deployments(
+        self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.apigateway_api())
+        client = aws_client.apigateway
+
+        # create API, method, integration, deployment
+        api_id, _, root_id = create_rest_apigw()
+        client.put_method(
+            restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
+        )
+        client.put_integration(restApiId=api_id, resourceId=root_id, httpMethod="GET", type="MOCK")
+
+        # create deployment - stage can be passed as parameter, or created separately below
+        response = client.create_deployment(restApiId=api_id)
+        deployment_id_1 = response["id"]
+
+        # create stage
+        client.create_stage(restApiId=api_id, stageName="s1", deploymentId=deployment_id_1)
+
+        # get deployment and stages
+        response = client.get_deployment(restApiId=api_id, deploymentId=deployment_id_1)
+        snapshot.match("get-deployment-1", response)
+        response = client.get_stages(restApiId=api_id)
+        snapshot.match("get-stages", response)
+
+        # asset that deleting the deployment fails if stage exists
+        with pytest.raises(ClientError) as ctx:
+            client.delete_deployment(restApiId=api_id, deploymentId=deployment_id_1)
+        snapshot.match("delete-deployment-error", ctx.value.response)
+
+        # create another deployment with the previous stage, which should update the stage
+        response = client.create_deployment(restApiId=api_id, stageName="s1")
+        deployment_id_2 = response["id"]
+
+        # get deployments and stages
+        response = client.get_deployment(restApiId=api_id, deploymentId=deployment_id_1)
+        snapshot.match("get-deployment-1-after-update", response)
+        response = client.get_deployment(restApiId=api_id, deploymentId=deployment_id_2)
+        snapshot.match("get-deployment-2", response)
+        response = client.get_stages(restApiId=api_id)
+        snapshot.match("get-stages-after-update", response)
+
+        response = client.delete_deployment(restApiId=api_id, deploymentId=deployment_id_1)
+        snapshot.match("delete-deployment-1", response)
+
+        # asset that deleting the deployment fails if stage exists
+        with pytest.raises(ClientError) as ctx:
+            client.delete_deployment(restApiId=api_id, deploymentId=deployment_id_2)
+        snapshot.match("delete-deployment-2-error", ctx.value.response)

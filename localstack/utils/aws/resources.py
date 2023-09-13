@@ -134,6 +134,7 @@ def create_api_gateway(
                 integrations,
                 client=client,
             )
+
     # deploy the API gateway
     client.create_deployment(restApiId=api_id, stageName=stage_name)
     return api
@@ -152,6 +153,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=No
         client_error_code = integration.get("clientErrorCode") or "400"
         server_error_code = integration.get("serverErrorCode") or "500"
         request_parameters = integration.get("requestParameters") or {}
+
         # create integration
         client.put_integration(
             restApiId=api_id,
