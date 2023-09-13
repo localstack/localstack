@@ -2,9 +2,6 @@ name: Open marker report GH issue
 on:
   # only manual for now
   workflow_dispatch:
-  pull_request:  # TODO: remove before merge
-    branches:
-      - master
 
 jobs:
   marker-report-issue:
@@ -60,12 +57,15 @@ jobs:
         with:
           path: ./target/MARKER_REPORT_ISSUE.md
 
-# TODO: enable before merge
-#      - name: Create GH issue from template
-#        uses: JasonEtco/create-an-issue@v2
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        with:
-#          update_existing: true
-#          search_existing: all
-#          filename: .github/bot_templates/MARKER_REPORT_ISSUE.md
+      - name: Create GH issue from template
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.PRO_ACCESS_TOKEN }}
+        with:
+          # `update_existing` actually has 3 possible values:
+          # 1. not set => will always open duplicates
+          # 2. false => will not update and will not open duplicates (NOOP if title conflict detected)
+          # 3. true => will update an existing one if conflict detected
+#          update_existing: false
+#          search_existing: open
+          filename: ./target/MARKER_REPORT_ISSUE.md
