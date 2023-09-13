@@ -1,10 +1,11 @@
 import contextlib
+import logging
 
 import pytest
 from botocore.exceptions import ClientError
 from moto.ec2 import ec2_backends
 
-from localstack.constants import TEST_AWS_REGION_NAME
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
@@ -12,6 +13,7 @@ from localstack.utils.strings import short_uid
 # public amazon image used for ec2 launch templates
 PUBLIC_AMAZON_LINUX_IMAGE = "ami-06c39ed6b42908a36"
 PUBLIC_AMAZON_UBUNTU_IMAGE = "ami-03e08697c325f02ab"
+LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -415,3 +417,164 @@ def test_pickle_ec2_backend(pickle_backends, aws_client):
     _ = aws_client.ec2.describe_account_attributes()
     pickle_backends(ec2_backends)
     assert pickle_backends(ec2_backends)
+
+
+class TestDescribeSecurityGroupRules:
+    @markers.aws.validated
+    def test_security_group_rules_ipv4_description(self, ec2_create_security_group, aws_client):
+        security_group = ec2_create_security_group(
+            ip_permissions=[
+                {
+                    "FromPort": 443,
+                    "ToPort": 443,
+                    "IpProtocol": "tcp",
+                    "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "IPv4 test description"}],
+                }
+            ],
+            Description="Test SG With Ipv4 Description",
+        )
+        # Call the describe_security_group_rules method
+        result = aws_client.ec2.describe_security_group_rules(
+            Filters=[
+                {"Name": "group-id", "Values": [security_group["GroupId"]]},
+            ],
+        )
+        assert len(result["SecurityGroupRules"]) == 2
+        for rule in result["SecurityGroupRules"]:
+            if not rule["IsEgress"]:
+                assert rule["CidrIpv4"] == "0.0.0.0/0"
+                assert rule["Description"] == "IPv4 test description"
+
+    @markers.aws.validated
+    def test_security_group_rules_ipv6_description(self, ec2_create_security_group, aws_client):
+        security_group = ec2_create_security_group(
+            ip_permissions=[
+                {
+                    "FromPort": 443,
+                    "ToPort": 443,
+                    "IpProtocol": "tcp",
+                    "Ipv6Ranges": [
+                        {
+                            "CidrIpv6": "2001:db8:85a3::8a2e:370:7334/128",
+                            "Description": "IPv6 test description",
+                        }
+                    ],
+                }
+            ],
+            Description="Test SG With Ipv6 Description",
+        )
+
+        # Call the describe_security_group_rules method
+        result = aws_client.ec2.describe_security_group_rules(
+            Filters=[
+                {"Name": "group-id", "Values": [security_group["GroupId"]]},
+            ],
+        )
+        assert len(result["SecurityGroupRules"]) == 2
+        for rule in result["SecurityGroupRules"]:
+            if not rule["IsEgress"]:
+                assert rule["CidrIpv6"] == "2001:db8:85a3::8a2e:370:7334/128"
+                assert rule["Description"] == "IPv6 test description"
+
+    @markers.aws.validated
+    def test_security_group_rules_prefix_list_description(
+        self, ec2_create_security_group, aws_client
+    ):
+        security_group = ec2_create_security_group(
+            ip_permissions=[
+                {
+                    "FromPort": 443,
+                    "ToPort": 443,
+                    "IpProtocol": "tcp",
+                    "PrefixListIds": [
+                        {
+                            "PrefixListId": "test-prefix-list-id",
+                            "Description": "PrefixListId test Description",
+                        }
+                    ],
+                }
+            ],
+            Description="Test SG With PrefixListId Description",
+        )
+
+        # Call the describe_security_group_rules method
+        result = aws_client.ec2.describe_security_group_rules(
+            Filters=[
+                {"Name": "group-id", "Values": [security_group["GroupId"]]},
+            ],
+        )
+        assert len(result["SecurityGroupRules"]) == 2
+        for rule in result["SecurityGroupRules"]:
+            if not rule["IsEgress"]:
+                assert rule["PrefixListId"] == "test-prefix-list-id"
+                assert rule["Description"] == "PrefixListId test Description"
+
+    @markers.aws.validated
+    def test_security_group_rules_user_id_group_list_description(
+        self, ec2_create_security_group, aws_client
+    ):
+        security_group = ec2_create_security_group(
+            ip_permissions=[
+                {
+                    "FromPort": 443,
+                    "ToPort": 443,
+                    "IpProtocol": "tcp",
+                    "UserIdGroupPairs": [{"Description": "UserGroupID Test Description"}],
+                }
+            ],
+            Description="Test SG With UserIdGroupPairs Description",
+        )
+
+        # Call the describe_security_group_rules method
+        result = aws_client.ec2.describe_security_group_rules(
+            Filters=[
+                {"Name": "group-id", "Values": [security_group["GroupId"]]},
+            ],
+        )
+        assert len(result["SecurityGroupRules"]) == 2
+        for rule in result["SecurityGroupRules"]:
+            if not rule["IsEgress"]:
+                assert rule["Description"] == "UserGroupID Test Description"
+                assert rule["ReferencedGroupInfo"]["UserId"] == DEFAULT_AWS_ACCOUNT_ID
+
+    @markers.aws.validated
+    def test_describe_security_group_rules_with_invalid_group_id(self, aws_client):
+        with pytest.raises(ClientError) as e:
+            aws_client.ec2.describe_security_group_rules(
+                Filters=[
+                    {"Name": "group-id", "Values": [""]},
+                ],
+            )
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidGroupId.Malformed"
+
+    @markers.aws.validated
+    def test_describe_security_group_rules_with_nonexistent_group_id(self, aws_client):
+        with pytest.raises(ClientError) as e:
+            aws_client.ec2.describe_security_group_rules(
+                Filters=[
+                    {"Name": "group-id", "Values": ["non-existent-group"]},
+                ],
+            )
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidGroup.NotFound"
+
+    @markers.aws.validated
+    def test_security_group_rules_no_ip_permissions_description(
+        self, ec2_create_security_group, aws_client
+    ):
+        security_group = ec2_create_security_group(
+            Description="Test SG With No Security Rule Description"
+        )
+
+        # Call the describe_security_group_rules method
+        result = aws_client.ec2.describe_security_group_rules(
+            Filters=[
+                {"Name": "group-id", "Values": [security_group["GroupId"]]},
+            ],
+        )
+        assert len(result["SecurityGroupRules"]) == 2
+        for rule in result["SecurityGroupRules"]:
+            assert "Description" not in rule
