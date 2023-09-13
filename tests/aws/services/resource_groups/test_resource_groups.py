@@ -124,7 +124,9 @@ class TestResourceGroups:
         assert 0 == len(response["Groups"])
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Not implemented in moto (ListGroupResources)")
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Not implemented in moto (ListGroupResources)"
+    )
     def test_resource_groups_tag_query(
         self, aws_client, snapshot, resourcegroups_create_group, s3_bucket, sqs_create_queue
     ):
@@ -185,7 +187,9 @@ class TestResourceGroups:
         snapshot.match("list-group-resources-after-queue-removal", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Not implemented in moto (ListGroupResources)")
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Not implemented in moto (ListGroupResources)"
+    )
     def test_resource_groups_different_region(
         self, aws_client_factory, snapshot, resourcegroups_create_group, sqs_create_queue_in_region
     ):
@@ -225,7 +229,9 @@ class TestResourceGroups:
         snapshot.match("list-group-resources", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Not implemented in moto (ListGroupResources)")
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Not implemented in moto (ListGroupResources)"
+    )
     def test_resource_type_filters(
         self, aws_client, snapshot, resourcegroups_create_group, s3_bucket, sqs_create_queue
     ):
@@ -264,11 +270,18 @@ class TestResourceGroups:
         snapshot.match("list-group-resources", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Not implemented in moto (ListGroupResources)")
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Not implemented in moto (ListGroupResources)"
+    )
     def test_cloudformation_query(
         self, aws_client, deploy_cfn_template, snapshot, resourcegroups_create_group
     ):
-        snapshot.add_transformer(snapshot.transform.key_value("StackIdentifier"))
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("StackIdentifier"),
+                snapshot.transform.resource_name(),
+            ]
+        )
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../templates/deploy_template_2.yaml"
@@ -278,7 +291,6 @@ class TestResourceGroups:
         assert len(stack.outputs) == 3
         topic_arn = stack.outputs["MyTopic"]
 
-        snapshot.add_transformer(snapshot.transform.resource_name())
         group_name = f"resource_group-{short_uid()}"
         response = resourcegroups_create_group(
             Name=group_name,
@@ -324,8 +336,11 @@ class TestResourceGroups:
         snapshot.match("create-group-with-delete-stack", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Not implemented in moto (ListGroupResources)")
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Not implemented in moto (SearchResources)"
+    )
     def test_search_resources(self, aws_client, sqs_create_queue, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
         # create SQS queue with tags
         queue_url = sqs_create_queue(tags={"Stage": "test-resource-group"})
         queue_tags = aws_client.sqs.list_queue_tags(QueueUrl=queue_url)

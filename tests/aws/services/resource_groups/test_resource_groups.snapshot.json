@@ -374,7 +374,7 @@
     }
   },
   "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_search_resources": {
-    "recorded-date": "13-09-2023, 18:57:04",
+    "recorded-date": "13-09-2023, 19:06:38",
     "recorded-content": {
       "queue-tags": {
         "Tags": {
@@ -389,7 +389,7 @@
         "QueryErrors": [],
         "ResourceIdentifiers": [
           {
-            "ResourceArn": "arn:aws:sqs:<region>:111111111111:test-queue-15628f71",
+            "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
             "ResourceType": "AWS::SQS::Queue"
           }
         ],
