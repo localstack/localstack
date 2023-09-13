@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 import requests
 import websocket
@@ -77,6 +79,25 @@ class TestExceptionHandlers:
         response = requests.get(get_edge_url() + "/_raise_error")
         assert response.status_code == 404
         assert "<Error><Code>NoSuchBucket</Code>" in response.text
+
+
+class TestWerkzeugIntegration:
+    def test_response_close_handlers_called_with_router(self, cleanups):
+        closed = threading.Event()
+
+        def _test_route(_request):
+            r = Response("ok", 200)
+            r.call_on_close(closed.set)
+            return r
+
+        rule = ROUTER.add("/_test/test_route", _test_route)
+        cleanups.append(lambda: ROUTER.remove(rule))
+
+        response = requests.get(get_edge_url() + "/_test/test_route")
+        assert response.status_code == 200, response.text
+        assert response.text == "ok"
+
+        assert closed.wait(timeout=3), "expected closed.set to be called"
 
 
 class TestWebSocketIntegration:
