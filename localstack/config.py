@@ -1093,8 +1093,9 @@ DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
 # HINT: Please add deprecated environment variables to deprecations.py
 
-# list of environment variable names used for configuration.
+# List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # Make sure to keep this in sync with the above!
+# Do *not* include any internal developer configurations that apply to host-mode only in this list.
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
@@ -1173,7 +1174,6 @@ CONFIG_ENV_VARS = [
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
-    "LAMBDA_DEV_PORT_EXPOSE",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LAMBDA_STAY_OPEN_MODE",
