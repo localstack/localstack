@@ -75,6 +75,24 @@ def attribute_name_to_service_name(attribute_name):
     return attribute_name.replace("_", "-")
 
 
+@cache
+def _merge_boto_config(config_vars1: str, config_vars2: str) -> Config:
+    config_options = json.loads(config_vars1)
+    config_options.update(json.loads(config_vars2))
+    return Config(**config_options)
+
+
+def merge_boto_config(config1: Config, config2: Config) -> Config:
+    """
+    The caching mechanism of the Boto clients in ClientFactory._get_client() relies on hash values of args.
+    The Boto Config.merge() method returns a new Config object, which results in cache misses.
+    Therefore, this method must be used for all Config merges outside the ClientFactory._get_client() method.
+    """
+    return _merge_boto_config(
+        json.dumps(config1._user_provided_options), json.dumps(config2._user_provided_options)
+    )
+
+
 #
 # Data transfer object
 #
@@ -158,6 +176,8 @@ class MetadataRequestInjector(Generic[T]):
 #
 # Factory
 #
+
+
 class ServiceLevelClientFactory(TypedServiceClientFactory):
     """
     A service level client factory, preseeded with parameters for the boto3 client creation.
@@ -442,7 +462,7 @@ class InternalClientFactory(ClientFactory):
         if config is None:
             config = self._config
         else:
-            config = self._config.merge(config)
+            config = merge_boto_config(self._config, config)
 
         endpoint_url = endpoint_url or get_local_service_url(service_name)
         if service_name == "s3":
@@ -498,7 +518,7 @@ class ExternalClientFactory(ClientFactory):
         if config is None:
             config = self._config
         else:
-            config = self._config.merge(config)
+            config = merge_boto_config(self._config, config)
 
         # Boto has an odd behaviour when using a non-default (any other region than us-east-1) in config
         # If the region in arg is non-default, it gives the arg the precedence
@@ -506,7 +526,7 @@ class ExternalClientFactory(ClientFactory):
         # Below: always give precedence to arg region
         if config and config.region_name != AWS_REGION_US_EAST_1:
             if region_name == AWS_REGION_US_EAST_1:
-                config = config.merge(Config(region_name=region_name))
+                config = merge_boto_config(config, Config(region_name=region_name))
 
         endpoint_url = endpoint_url or get_local_service_url(service_name)
         if service_name == "s3":
@@ -567,7 +587,7 @@ class ExternalAwsClientFactory(ClientFactory):
         if config is None:
             config = self._config
         else:
-            config = self._config.merge(config)
+            config = merge_boto_config(self._config, config)
 
         return self._get_client(
             config=config,
