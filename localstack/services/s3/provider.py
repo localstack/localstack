@@ -70,6 +70,7 @@ from localstack.aws.api.s3 import (
     IntelligentTieringConfigurationList,
     IntelligentTieringId,
     InvalidArgument,
+    InvalidDigest,
     InvalidPartOrder,
     InvalidStorageClass,
     InvalidTargetBucketForLogging,
@@ -154,6 +155,7 @@ from localstack.services.s3.presigned_url import validate_post_policy
 from localstack.services.s3.utils import (
     capitalize_header_name_from_snake_case,
     create_redirect_for_post_request,
+    etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_failed_precondition_copy_source,
@@ -536,6 +538,23 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     StorageClassRequested=request.get("StorageClass"),
                 )
             raise
+
+        # TODO: handle ContentMD5 and ChecksumAlgorithm in a handler for all requests except requests with a streaming
+        #  body. We can use the specs to verify which operations needs to have the checksum validated
+        # verify content_md5
+        if content_md5 := request.get("ContentMD5"):
+            calculated_md5 = etag_to_base_64_content_md5(response["ETag"].strip('"'))
+            if calculated_md5 != content_md5:
+                moto_backend.delete_object(
+                    bucket_name=request["Bucket"],
+                    key_name=request["Key"],
+                    version_id=response.get("VersionId"),
+                    bypass=True,
+                )
+                raise InvalidDigest(
+                    "The Content-MD5 you specified was invalid.",
+                    Content_MD5=content_md5,
+                )
 
         # moto interprets the Expires in query string for presigned URL as an Expires header and use it for the object
         # we set it to the correctly parsed value in Request, else we remove it from moto metadata

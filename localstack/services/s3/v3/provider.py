@@ -99,6 +99,7 @@ from localstack.aws.api.s3 import (
     IntelligentTieringId,
     InvalidArgument,
     InvalidBucketName,
+    InvalidDigest,
     InvalidObjectState,
     InvalidPartNumber,
     InvalidPartOrder,
@@ -222,6 +223,7 @@ from localstack.services.s3.utils import (
     add_expiration_days_to_datetime,
     create_redirect_for_post_request,
     create_s3_kms_managed_key_for_region,
+    etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
     get_canned_acl,
     get_class_attrs_from_spec_class,
@@ -636,6 +638,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise InvalidRequest(
                 f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
             )
+
+        # TODO: handle ContentMD5 and ChecksumAlgorithm in a handler for all requests except requests with a streaming
+        #  body. We can use the specs to verify which operations needs to have the checksum validated
+        if content_md5 := request.get("ContentMD5"):
+            calculated_md5 = etag_to_base_64_content_md5(s3_stored_object.etag)
+            if calculated_md5 != content_md5:
+                self._storage_backend.remove(bucket_name, s3_object)
+                raise InvalidDigest(
+                    "The Content-MD5 you specified was invalid.",
+                    Content_MD5=content_md5,
+                )
 
         s3_bucket.objects.set(key, s3_object)
 
