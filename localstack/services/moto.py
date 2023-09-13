@@ -30,6 +30,7 @@ from localstack.aws.forwarder import (
 from localstack.aws.skeleton import DispatchTable
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Response
+from localstack.http.request import get_full_raw_path
 
 MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
 
@@ -112,7 +113,8 @@ def dispatch_to_moto(context: RequestContext) -> Response:
     dispatch = get_dispatcher(service.service_name, request.path)
 
     try:
-        response = dispatch(request, request.url, request.headers)
+        # we use the full_raw_path as moto might do some path decoding (in S3 for example)
+        response = dispatch(request, get_full_raw_path(request), request.headers)
         if not response:
             # some operations are only partially implemented by moto
             # e.g. the request will be resolved, but then the request method is not handled

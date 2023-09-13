@@ -531,19 +531,46 @@ class TestS3:
         condition=lambda: not is_native_provider(),
         paths=["$..ServerSideEncryption"],
     )
-    @pytest.mark.parametrize("key", ["file%2Fname", "test@key/"])
+    @pytest.mark.parametrize("key", ["file%2Fname", "test@key/", "test%123", "test%percent"])
     def test_put_get_object_special_character(self, s3_bucket, aws_client, snapshot, key):
         snapshot.add_transformer(snapshot.transform.s3_api())
         resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
         snapshot.match("put-object-special-char", resp)
         resp = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
-        # FIXME: Moto will by default clean up key name, but they will return the cleaned up key name in ListObject...
-        if "%" not in key or is_aws_cloud():
-            snapshot.match("list-object-special-char", resp)
+        snapshot.match("list-object-special-char", resp)
         resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
         snapshot.match("get-object-special-char", resp)
         resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
         snapshot.match("del-object-special-char", resp)
+
+    @markers.aws.validated
+    def test_url_encoded_key(self, s3_bucket, aws_client, snapshot):
+        """Boto adds a trailing slash always?"""
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        key = "test@key/"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test-non-encoded")
+        encoded_key = "test%40key/"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=encoded_key, Body=b"test-encoded")
+        encoded_key_no_trailing = "test%40key"
+        aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=encoded_key_no_trailing, Body=b"test-encoded-no-trailing"
+        )
+        # assert that one did not override the over, and that both key are different
+        assert (
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key)["Body"].read()
+            == b"test-non-encoded"
+        )
+        assert (
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=encoded_key)["Body"].read()
+            == b"test-encoded"
+        )
+        assert (
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=encoded_key_no_trailing)["Body"].read()
+            == b"test-encoded-no-trailing"
+        )
+
+        resp = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-object-encoded-char", resp)
 
     @markers.aws.validated
     @pytest.mark.parametrize("delimiter", ["/", "%2F"])
