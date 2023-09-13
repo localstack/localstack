@@ -2,6 +2,16 @@ name: Open marker report GH issue
 on:
   # only manual for now
   workflow_dispatch:
+    inputs:
+      updateExistingIssue:
+        description: 'Select the empty string "" to open duplicate issues, "true" to update duplicate issues and "false" to skip duplicate issues'
+        required: false
+        type: choice
+        default: ''
+        options:
+          - ''
+          - 'false'
+          - 'true'
 
 jobs:
   marker-report-issue:
@@ -66,6 +76,6 @@ jobs:
           # 1. not set => will always open duplicates
           # 2. false => will not update and will not open duplicates (NOOP if title conflict detected)
           # 3. true => will update an existing one if conflict detected
-#          update_existing: false
+          update_existing: ${{ inputs.updateExistingIssue || '' }}
 #          search_existing: open
           filename: ./target/MARKER_REPORT_ISSUE.md
