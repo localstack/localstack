@@ -2570,6 +2570,56 @@ class TestS3:
         snapshot.match("get_bucket_location_non_existent_bucket", exc.value.response)
 
     @markers.aws.validated
+    def test_bucket_operation_between_regions(
+        self,
+        s3_create_bucket,
+        aws_client_factory,
+        s3_create_bucket_with_client,
+        snapshot,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        region_1 = "us-west-2"
+        client_1 = aws_client_factory(region_name=region_1).s3
+        bucket_name = f"bucket-{short_uid()}"
+        s3_create_bucket_with_client(
+            client_1,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": region_1},
+        )
+
+        put_website_config = client_1.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+        snapshot.match("put-website-config-region-1", put_website_config)
+
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["*"],
+                    "AllowedMethods": ["GET"],
+                }
+            ]
+        }
+        put_cors_config = client_1.put_bucket_cors(
+            Bucket=bucket_name, CORSConfiguration=bucket_cors_config
+        )
+        snapshot.match("put-cors-config-region-1", put_cors_config)
+
+        region_2 = "us-east-1"
+        client_2 = aws_client_factory(region_name=region_2).s3
+
+        get_website_config = client_2.get_bucket_website(Bucket=bucket_name)
+        snapshot.match("get-website-config-region-2", get_website_config)
+
+        get_cors_config = client_2.get_bucket_cors(Bucket=bucket_name)
+        snapshot.match("get-cors-config-region-2", get_cors_config)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
