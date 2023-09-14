@@ -5,7 +5,6 @@ from itertools import takewhile
 from typing import Final, Optional
 
 from localstack.services.stepfunctions.asl.component.component import Component
-from localstack.utils.aws import aws_stack
 
 
 class ResourceCondition(str):
@@ -85,10 +84,12 @@ class Resource(Component, abc.ABC):
         self.account = resource_arn.account
 
     @staticmethod
-    def from_resource_arn(arn: str) -> Resource:
+    def from_resource_arn(account_id: str, region_name: str, arn: str) -> Resource:
         resource_arn = ResourceARN.from_arn(arn)
+        if not resource_arn.account:
+            resource_arn.account = account_id
         if not resource_arn.region:
-            resource_arn.region = aws_stack.get_region()
+            resource_arn.region = region_name
         match resource_arn.service, resource_arn.task_type:
             case "lambda", "function":
                 return LambdaResource(resource_arn=resource_arn)

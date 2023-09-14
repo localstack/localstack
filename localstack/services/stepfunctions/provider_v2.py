@@ -148,11 +148,11 @@ class StepFunctionsProvider(StepfunctionsApi):
         return None
 
     @staticmethod
-    def _validate_definition(definition: str):
+    def _validate_definition(account_id: str, region_name: str, definition: str):
         # Validate
         # TODO: pass through static analyser.
         try:
-            AmazonStateLanguageParser.parse(definition)
+            AmazonStateLanguageParser.parse(account_id, region_name, definition)
         except Exception as ex:
             # TODO: add message from static analyser, this just helps the user debug issues in the derivation.
             raise InvalidDefinition(f"Error '{str(ex)}' in definition '{definition}'.")
@@ -182,7 +182,11 @@ class StepFunctionsProvider(StepfunctionsApi):
             )
 
         state_machine_definition: str = request["definition"]
-        StepFunctionsProvider._validate_definition(definition=state_machine_definition)
+        StepFunctionsProvider._validate_definition(
+            account_id=context.account_id,
+            region_name=context.region,
+            definition=state_machine_definition,
+        )
 
         name: Optional[Name] = request["name"]
         arn = aws_stack_state_machine_arn(
@@ -498,7 +502,9 @@ class StepFunctionsProvider(StepfunctionsApi):
             )
 
         if definition is not None:
-            self._validate_definition(definition=definition)
+            self._validate_definition(
+                account_id=context.account_id, region_name=context.region, definition=definition
+            )
 
         revision_id = state_machine.create_revision(definition=definition, role_arn=role_arn)
 

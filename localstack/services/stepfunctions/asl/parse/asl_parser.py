@@ -11,13 +11,13 @@ from localstack.services.stepfunctions.asl.parse.preprocessor import Preprocesso
 
 class AmazonStateLanguageParser(abc.ABC):
     @staticmethod
-    def parse(src: str) -> Program:
+    def parse(account_id: str, region_name: str, src: str) -> Program:
         input_stream = InputStream(src)
         lexer = ASLLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = ASLParser(stream)
         parser._errHandler = antlr4.BailErrorStrategy()
         tree = parser.program_decl()
-        preprocessor = Preprocessor()
+        preprocessor = Preprocessor(account_id, region_name)
         program = preprocessor.visit(tree)
         return program

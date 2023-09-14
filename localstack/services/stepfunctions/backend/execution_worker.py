@@ -49,7 +49,9 @@ class ExecutionWorker:
         self.exec_comm = exec_comm
 
     def _execution_logic(self):
-        program: Program = AmazonStateLanguageParser.parse(self.definition)
+        program: Program = AmazonStateLanguageParser.parse(
+            self.account_id, self.region_name, self.definition
+        )
         self.env = Environment(
             account_id=self.account_id,
             region_name=self.region_name,
