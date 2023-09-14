@@ -371,7 +371,12 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
           - dynamodb:DeleteTable
           - dynamodb:DescribeTable
         """
-        raise NotImplementedError
+        model = request.desired_state
+        request.aws_client_factory.dynamodb.delete_table(TableName=model["TableName"])
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model={},
+        )
 
     def update(
         self,
