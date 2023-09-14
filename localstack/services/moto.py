@@ -30,6 +30,7 @@ from localstack.aws.forwarder import (
 from localstack.aws.skeleton import DispatchTable
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Response
+from localstack.http.request import get_full_raw_path, get_raw_current_url
 
 MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
 
@@ -110,9 +111,12 @@ def dispatch_to_moto(context: RequestContext) -> Response:
 
     # this is where we skip the HTTP roundtrip between the moto server and the boto client
     dispatch = get_dispatcher(service.service_name, request.path)
-
     try:
-        response = dispatch(request, request.url, request.headers)
+        # we use the full_raw_url as moto might do some path decoding (in S3 for example)
+        raw_url = get_raw_current_url(
+            request.scheme, request.host, request.root_path, get_full_raw_path(request)
+        )
+        response = dispatch(request, raw_url, request.headers)
         if not response:
             # some operations are only partially implemented by moto
             # e.g. the request will be resolved, but then the request method is not handled

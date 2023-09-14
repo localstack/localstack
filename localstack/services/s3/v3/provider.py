@@ -1291,7 +1291,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> ListObjectsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        # TODO: URL encode keys (is it done already in serializer?)
         common_prefixes = set()
         count = 0
         is_truncated = False
@@ -1334,7 +1333,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             # TODO: add RestoreStatus if present
             object_data = Object(
-                Key=s3_object.key,
+                Key=key,
                 ETag=s3_object.quoted_etag,
                 Owner=s3_bucket.owner,  # TODO: verify reality
                 Size=s3_object.size,
@@ -1393,7 +1392,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if continuation_token and continuation_token == "":
             raise InvalidArgument("The continuation token provided is incorrect")
 
-        # TODO: URL encode keys (is it done already in serializer?)
         common_prefixes = set()
         count = 0
         is_truncated = False
@@ -1447,7 +1445,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             # TODO: add RestoreStatus if present
             object_data = Object(
-                Key=s3_object.key,
+                Key=key,
                 ETag=s3_object.quoted_etag,
                 Size=s3_object.size,
                 LastModified=s3_object.last_modified,
@@ -1506,7 +1504,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> ListObjectVersionsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        # TODO: URL encode keys (is it done already in serializer?)
         common_prefixes = set()
         count = 0
         is_truncated = False
@@ -1557,7 +1554,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             if isinstance(version, S3DeleteMarker):
                 delete_marker = DeleteMarkerEntry(
-                    Key=version.key,
+                    Key=key,
                     Owner=s3_bucket.owner,
                     VersionId=version.version_id,
                     IsLatest=version.is_current,
@@ -1568,7 +1565,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             # TODO: add RestoreStatus if present
             object_version = ObjectVersion(
-                Key=version.key,
+                Key=key,
                 ETag=version.quoted_etag,
                 Owner=s3_bucket.owner,  # TODO: verify reality
                 Size=version.size,
