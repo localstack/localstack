@@ -1613,7 +1613,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_invalid_content_md5": {
-    "recorded-date": "03-08-2023, 04:17:53",
+    "recorded-date": "05-09-2023, 02:58:55",
     "recorded-content": {
       "md5-error-0": {
         "Error": {
@@ -1657,6 +1657,14 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      },
+      "success-put-object-md5": {
+        "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
@@ -10259,6 +10267,48 @@
         "MaxKeys": 1000,
         "Name": "<name:1>",
         "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_bucket_operation_between_regions": {
+    "recorded-date": "12-09-2023, 14:35:39",
+    "recorded-content": {
+      "put-website-config-region-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-cors-config-region-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-website-config-region-2": {
+        "IndexDocument": {
+          "Suffix": "index.html"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-cors-config-region-2": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ]
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

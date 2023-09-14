@@ -30,7 +30,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceSfn:
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_start_execution(
         self,
         aws_client,
@@ -70,7 +70,7 @@ class TestTaskServiceSfn:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_start_execution_input_json(
         self,
         aws_client,

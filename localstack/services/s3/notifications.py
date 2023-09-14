@@ -13,6 +13,7 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.events import PutEventsRequestEntry
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.s3 import (
+    AccountId,
     BucketName,
     BucketRegion,
     Event,
@@ -97,6 +98,8 @@ class S3EventNotificationContext:
     key_name: ObjectKey
     xray: str
     bucket_location: BucketRegion
+    bucket_account_id: AccountId
+    caller: AccountId
     key_size: int
     key_etag: str
     key_version_id: str
@@ -155,8 +158,10 @@ class S3EventNotificationContext:
             event_time=datetime.datetime.now(),
             account_id=request_context.account_id,
             region=request_context.region,
+            caller=request_context.account_id,  # TODO: use it for `userIdentity`
             bucket_name=bucket_name,
             bucket_location=bucket.location,
+            bucket_account_id=bucket.account_id,  # TODO: use it for bucket owner identity
             key_name=quote(key.name),
             key_etag=etag,
             key_size=key_size,
@@ -203,8 +208,10 @@ class S3EventNotificationContext:
             event_time=datetime.datetime.now(),
             account_id=request_context.account_id,
             region=request_context.region,
+            caller=request_context.account_id,  # TODO: use it for `userIdentity`
             bucket_name=bucket_name,
             bucket_location=s3_bucket.bucket_region,
+            bucket_account_id=s3_bucket.bucket_account_id,  # TODO: use it for bucket owner identity
             key_name=quote(s3_object.key),
             key_etag=etag,
             key_size=key_size,
@@ -377,7 +384,7 @@ class BaseNotifier:
             awsRegion=ctx.region,
             eventTime=timestamp_millis(ctx.event_time),
             eventName=ctx.event_type.removeprefix("s3:"),
-            userIdentity={"principalId": "AIDAJDPLRKLG7UEXAMPLE"},
+            userIdentity={"principalId": "AIDAJDPLRKLG7UEXAMPLE"},  # TODO: use the real one?
             requestParameters={
                 "sourceIPAddress": "127.0.0.1"
             },  # TODO sourceIPAddress was previously extracted from headers ("X-Forwarded-For")

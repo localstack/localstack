@@ -968,7 +968,7 @@ class TestSqsProvider:
         response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
         assert len(response["Messages"]) == 1
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_delete_message_batch_from_lambda(
         self, sqs_create_queue, create_lambda_function, aws_client
     ):
@@ -2087,7 +2087,7 @@ class TestSqsProvider:
         e.match("InvalidParameterValue")
 
     @pytest.mark.xfail
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_redrive_policy_attribute_validity(
         self, sqs_create_queue, sqs_get_queue_arn, aws_client
     ):
@@ -2504,7 +2504,7 @@ class TestSqsProvider:
             == result_send["MessageId"]
         )
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_dead_letter_queue_chain(self, sqs_create_queue, aws_client):
         # test a chain of 3 queues, with DLQ flow q1 -> q2 -> q3
 
@@ -2837,7 +2837,7 @@ class TestSqsProvider:
             == "5ae4d5d7636402d80f4eb6d213245a88"
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_inflight_message_requeue(self, sqs_create_queue, aws_client):
         visibility_timeout = 3
         queue_name = f"queue-{short_uid()}"
@@ -3982,7 +3982,7 @@ class TestSqsQueryApi:
         assert response.ok
         assert "foobar" in response.text
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_queue_url_format_path_strategy(self, sqs_create_queue, monkeypatch):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
         queue_name = f"path_queue_{short_uid()}"

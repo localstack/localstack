@@ -44,7 +44,11 @@ from localstack.services.lambda_.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON39,
 )
 from localstack.services.s3 import constants as s3_constants
-from localstack.services.s3.utils import parse_expiration_header, rfc_1123_datetime
+from localstack.services.s3.utils import (
+    etag_to_base_64_content_md5,
+    parse_expiration_header,
+    rfc_1123_datetime,
+)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
@@ -2570,6 +2574,56 @@ class TestS3:
         snapshot.match("get_bucket_location_non_existent_bucket", exc.value.response)
 
     @markers.aws.validated
+    def test_bucket_operation_between_regions(
+        self,
+        s3_create_bucket,
+        aws_client_factory,
+        s3_create_bucket_with_client,
+        snapshot,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        region_1 = "us-west-2"
+        client_1 = aws_client_factory(region_name=region_1).s3
+        bucket_name = f"bucket-{short_uid()}"
+        s3_create_bucket_with_client(
+            client_1,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": region_1},
+        )
+
+        put_website_config = client_1.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+        snapshot.match("put-website-config-region-1", put_website_config)
+
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["*"],
+                    "AllowedMethods": ["GET"],
+                }
+            ]
+        }
+        put_cors_config = client_1.put_bucket_cors(
+            Bucket=bucket_name, CORSConfiguration=bucket_cors_config
+        )
+        snapshot.match("put-cors-config-region-1", put_cors_config)
+
+        region_2 = "us-east-1"
+        client_2 = aws_client_factory(region_name=region_2).s3
+
+        get_website_config = client_2.get_bucket_website(Bucket=bucket_name)
+        snapshot.match("get-website-config-region-2", get_website_config)
+
+        get_cors_config = client_2.get_bucket_cors(Bucket=bucket_name)
+        snapshot.match("get-cors-config-region-2", get_cors_config)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
@@ -3225,20 +3279,45 @@ class TestS3:
         snapshot.match("get-object-if-match", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Error format is wrong and missing keys")
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Error format is wrong and missing keys"
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
     def test_s3_invalid_content_md5(self, s3_bucket, snapshot, aws_client):
         # put object with invalid content MD5
         # TODO: implement ContentMD5 in ASF
+        content = "something"
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test-key",
+            Body=content,
+        )
+        md = hashlib.md5(content.encode("utf-8")).digest()
+        content_md5 = base64.b64encode(md).decode("utf-8")
+        base_64_content_md5 = etag_to_base_64_content_md5(response["ETag"])
+        assert content_md5 == base_64_content_md5
+
         hashes = ["__invalid__", "000", "not base64 encoded checksum", "MTIz"]
         for index, md5hash in enumerate(hashes):
             with pytest.raises(ClientError) as e:
                 aws_client.s3.put_object(
                     Bucket=s3_bucket,
                     Key="test-key",
-                    Body="something",
+                    Body=content,
                     ContentMD5=md5hash,
                 )
             snapshot.match(f"md5-error-{index}", e.value.response)
+
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test-key",
+            Body=content,
+            ContentMD5=base_64_content_md5,
+        )
+        snapshot.match("success-put-object-md5", response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
