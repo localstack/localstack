@@ -882,6 +882,13 @@ class NoSuchBucketPolicy(ServiceException):
     BucketName: Optional[BucketName]
 
 
+class InvalidDigest(ServiceException):
+    code: str = "InvalidDigest"
+    sender_fault: bool = False
+    status_code: int = 400
+    Content_MD5: Optional[ContentMD5]
+
+
 AbortDate = datetime
 
 

@@ -200,7 +200,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_sqs.py::test_sqs_queue_as_lambda_dead_letter_queue": {
-    "recorded-date": "27-02-2023, 17:07:25",
+    "recorded-date": "09-08-2023, 15:06:36",
     "recorded-content": {
       "lambda-response-dlq-config": {
         "TargetArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"

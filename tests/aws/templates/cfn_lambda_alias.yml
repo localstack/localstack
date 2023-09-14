@@ -29,13 +29,19 @@ Resources:
     Properties:
       FunctionName: !Ref FunctionName
       Code:
-        ZipFile: exports.handler = function(event) =>  { console.log(event); };
+        ZipFile: |
+          exports.handler = function(event) {
+            return {
+              statusCode: 200,
+              body: "Hello, World!" 
+            };
+          };
       Role:
         Fn::GetAtt:
           - MyFnServiceRole
           - Arn
       Handler: index.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs18.x
     DependsOn:
       - MyFnServiceRole
 
@@ -51,6 +57,8 @@ Resources:
       FunctionName: !Ref FunctionName
       FunctionVersion: !GetAtt Version.Version
       Name: !Ref AliasName
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1
 
     DependsOn:
       - LambdaFunction

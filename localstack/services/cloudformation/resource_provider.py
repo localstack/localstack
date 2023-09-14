@@ -54,6 +54,7 @@ PROVIDER_DEFAULTS = {
     "AWS::IAM::InstanceProfile": "ResourceProvider",
     "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
+    "AWS::Lambda::Alias": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }
@@ -639,6 +640,9 @@ class ResourceProviderExecutor:
                 resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
 
                 event = self.execute_action(resource_provider, payload)
+
+                if event.status == OperationStatus.FAILED:
+                    return event
 
                 if event.status == OperationStatus.SUCCESS:
 

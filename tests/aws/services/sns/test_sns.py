@@ -19,6 +19,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
+    SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
@@ -28,7 +29,7 @@ from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import parse_arn, sqs_queue_arn
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
@@ -509,14 +510,14 @@ class TestSNSSubscriptionCrud:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         snapshot,
         aws_client,
         sns_subscription,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         subscribe_resp = sns_subscription(
             TopicArn=topic_arn,
@@ -546,14 +547,14 @@ class TestSNSSubscriptionCrud:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         sns_subscription,
         snapshot,
         aws_client,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
         subscription = sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
         snapshot.match("sub", subscription)
         subscription_arn = subscription["SubscriptionArn"]
@@ -600,7 +601,6 @@ class TestSNSSubscriptionCrud:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
         sns_create_sqs_subscription,
         snapshot,
         aws_client,
@@ -688,7 +688,7 @@ class TestSNSSubscriptionCrud:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         sns_subscription,
         snapshot,
         aws_client,
@@ -703,13 +703,13 @@ class TestSNSSubscriptionCrud:
         sorting_list = []
         for i in range(3):
             queue_url = sqs_create_queue()
-            queue_arn = sqs_queue_arn(queue_url)
+            queue_arn = sqs_get_queue_arn(queue_url)
             subscription = sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
             snapshot.match(f"sub-topic-1-{i}", subscription)
             sorting_list.append((topic_arn, queue_arn))
         for i in range(3):
             queue_url = sqs_create_queue()
-            queue_arn = sqs_queue_arn(queue_url)
+            queue_arn = sqs_get_queue_arn(queue_url)
             subscription = sns_subscription(
                 TopicArn=topic_arn_2, Protocol="sqs", Endpoint=queue_arn
             )
@@ -731,14 +731,14 @@ class TestSNSSubscriptionCrud:
 
     @markers.aws.validated
     def test_subscribe_idempotency(
-        self, aws_client, sns_create_topic, sqs_create_queue, sqs_queue_arn, snapshot
+        self, aws_client, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, snapshot
     ):
         """
         Test the idempotency of SNS subscribe calls for a given endpoint and its attributes
         """
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         subscribe_resp = aws_client.sns.subscribe(
             TopicArn=topic_arn,
@@ -886,6 +886,11 @@ class TestSNSSubscriptionLambda:
         snapshot,
         aws_client,
     ):
+        """Tests an async event chain: SNS => Lambda => SNS DLQ => SQS
+        1) SNS => Lambda: An SNS subscription triggers the Lambda function asynchronously.
+        2) Lambda => SNS DLQ: A failing Lambda function triggers the SNS DLQ after all retries are exhausted.
+        3) SNS DLQ => SQS: An SNS subscription forwards the DLQ message to SQS.
+        """
         snapshot.add_transformer(
             snapshot.transform.jsonpath(
                 "$..Messages..MessageAttributes.RequestID.Value", "request-id"
@@ -933,6 +938,12 @@ class TestSNSSubscriptionLambda:
             Endpoint=lambda_arn,
         )
 
+        # Set retries to zero to speed up the test
+        aws_client.lambda_.put_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=0,
+        )
+
         payload = {
             lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
         }
@@ -945,11 +956,8 @@ class TestSNSSubscriptionLambda:
             assert len(result["Messages"]) > 0
             return result
 
-        # check that the SQS queue subscribed to the SNS topic used as DLQ received the error from the lambda
-        # on AWS, event retries can be quite delayed, so we have to wait up to 6 minutes here
-        # reduced retries when using localstack to avoid tests flaking
-        retries = 120 if is_aws_cloud() else 3
-        messages = retry(receive_dlq, retries=retries, sleep=3)
+        sleep = 3 if is_aws_cloud() else 1
+        messages = retry(receive_dlq, retries=30, sleep=sleep)
 
         messages["Messages"][0]["Body"] = json.loads(messages["Messages"][0]["Body"])
         messages["Messages"][0]["Body"]["Message"] = json.loads(
@@ -963,7 +971,7 @@ class TestSNSSubscriptionLambda:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         create_lambda_function,
         lambda_su_role,
         sns_subscription,
@@ -972,7 +980,7 @@ class TestSNSSubscriptionLambda:
         aws_client,
     ):
         dlq_url = sqs_create_queue()
-        dlq_arn = sqs_queue_arn(dlq_url)
+        dlq_arn = sqs_get_queue_arn(dlq_url)
         topic_arn = sns_create_topic()["TopicArn"]
         sns_allow_topic_sqs_queue(
             sqs_queue_url=dlq_url, sqs_queue_arn=dlq_arn, sns_topic_arn=topic_arn
@@ -1419,7 +1427,7 @@ class TestSNSSubscriptionSQS:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         sqs_queue_exists,
         sns_create_sqs_subscription,
         sns_allow_topic_sqs_queue,
@@ -1441,7 +1449,7 @@ class TestSNSSubscriptionSQS:
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         dlq_url = sqs_create_queue()
-        dlq_arn = sqs_queue_arn(dlq_url)
+        dlq_arn = sqs_get_queue_arn(dlq_url)
 
         aws_client.sns.set_subscription_attributes(
             SubscriptionArn=subscription["SubscriptionArn"],
@@ -1564,7 +1572,7 @@ class TestSNSSubscriptionSQS:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         sqs_queue_exists,
         sns_create_sqs_subscription,
         sns_allow_topic_sqs_queue,
@@ -1580,7 +1588,7 @@ class TestSNSSubscriptionSQS:
         subscription_arn = subscription["SubscriptionArn"]
 
         dlq_url = sqs_create_queue()
-        dlq_arn = sqs_queue_arn(dlq_url)
+        dlq_arn = sqs_get_queue_arn(dlq_url)
 
         sns_allow_topic_sqs_queue(
             sqs_queue_url=dlq_url,
@@ -1921,7 +1929,7 @@ class TestSNSSubscriptionSQSFifo:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         sns_create_sqs_subscription,
         snapshot,
         aws_client,
@@ -1957,7 +1965,7 @@ class TestSNSSubscriptionSQSFifo:
         )
         snapshot.match("not-fifo-queue", subscription_not_fifo)
 
-        not_fifo_queue_arn = sqs_queue_arn(not_fifo_dlq_url)
+        not_fifo_queue_arn = sqs_get_queue_arn(not_fifo_dlq_url)
         aws_client.sns.set_subscription_attributes(
             SubscriptionArn=subscription_not_fifo["SubscriptionArn"],
             AttributeName="RedrivePolicy",
@@ -1967,7 +1975,7 @@ class TestSNSSubscriptionSQSFifo:
         subscription = sns_create_sqs_subscription(
             topic_arn=fifo_topic_arn, queue_url=fifo_queue_url
         )
-        queue_arn = sqs_queue_arn(queue_url=queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         with pytest.raises(ClientError) as e:
             aws_client.sns.set_subscription_attributes(
@@ -2017,7 +2025,7 @@ class TestSNSSubscriptionSQSFifo:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         sns_create_sqs_subscription,
         sns_allow_topic_sqs_queue,
         snapshot,
@@ -2065,7 +2073,7 @@ class TestSNSSubscriptionSQSFifo:
             QueueName=dlq_name,
             Attributes={"FifoQueue": "true"},
         )
-        dlq_arn = sqs_queue_arn(dlq_url)
+        dlq_arn = sqs_get_queue_arn(dlq_url)
 
         aws_client.sns.set_subscription_attributes(
             SubscriptionArn=subscription["SubscriptionArn"],
@@ -3302,11 +3310,11 @@ class TestSNSSMS:
 class TestSNSSubscriptionHttp:
     @markers.aws.manual_setup_required
     def test_redrive_policy_http_subscription(
-        self, sns_create_topic, sqs_create_queue, sqs_queue_arn, sns_subscription, aws_client
+        self, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, sns_subscription, aws_client
     ):
         dlq_name = f"dlq-{short_uid()}"
         dlq_url = sqs_create_queue(QueueName=dlq_name)
-        dlq_arn = sqs_queue_arn(dlq_url)
+        dlq_arn = sqs_get_queue_arn(dlq_url)
         topic_arn = sns_create_topic()["TopicArn"]
 
         # create HTTP endpoint and connect it to SNS topic
@@ -3598,12 +3606,9 @@ class TestSNSSubscriptionHttp:
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_dlq_external_http_endpoint(
         self,
-        sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
-        sns_subscription,
+        sqs_get_queue_arn,
         sns_create_http_endpoint,
-        sns_create_sqs_subscription,
         sns_allow_topic_sqs_queue,
         raw_message_delivery,
         aws_client,
@@ -3614,7 +3619,7 @@ class TestSNSSubscriptionHttp:
         )
 
         dlq_url = sqs_create_queue()
-        dlq_arn = sqs_queue_arn(dlq_url)
+        dlq_arn = sqs_get_queue_arn(dlq_url)
 
         sns_allow_topic_sqs_queue(
             sqs_queue_url=dlq_url, sqs_queue_arn=dlq_arn, sns_topic_arn=topic_arn
@@ -3859,7 +3864,7 @@ class TestSNSMultiAccounts:
         sns_secondary_client,
         sqs_primary_client,
         sqs_secondary_client,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
     ):
         """
         This test validates that we can publish to SQS queues that are not in the default account, and that another
@@ -3877,13 +3882,17 @@ class TestSNSMultiAccounts:
         queue_name = "sample_queue"
         queue_1 = sqs_primary_client.create_queue(QueueName=queue_name)
         queue_1_url = queue_1["QueueUrl"]
-        queue_1_arn = sqs_queue_arn(queue_1_url)
+        queue_1_arn = sqs_get_queue_arn(queue_1_url)
 
         # create a queue with the secondary AccountId
         queue_2 = sqs_secondary_client.create_queue(QueueName=queue_name)
         queue_2_url = queue_2["QueueUrl"]
         # test that we get the right queue URL at the same time, even if we use the primary client
-        queue_2_arn = sqs_queue_arn(queue_2_url)
+        queue_2_arn = sqs_queue_arn(
+            queue_2_url,
+            SECONDARY_TEST_AWS_ACCOUNT_ID,
+            TEST_AWS_REGION_NAME,
+        )
 
         # test that we can subscribe with the primary client to a queue from the same account
         sns_primary_client.subscribe(
@@ -4059,6 +4068,7 @@ class TestSNSPublishDelivery:
 
         aws_client.sns.publish(TopicArn=topic_arn, Subject=subject, Message=message)
 
+        # TODO: Wait until Lambda function actually executes and not only for SNS logs
         log_group_name = f"sns/{region}/{account_id}/{topic_name}"
 
         def get_log_events():

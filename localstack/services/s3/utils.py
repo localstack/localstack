@@ -1,3 +1,5 @@
+import base64
+import codecs
 import datetime
 import hashlib
 import logging
@@ -64,7 +66,14 @@ from localstack.services.s3.constants import (
 from localstack.services.s3.exceptions import InvalidRequest, MalformedXML
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
-from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
+from localstack.utils.strings import (
+    checksum_crc32,
+    checksum_crc32c,
+    hash_sha1,
+    hash_sha256,
+    to_bytes,
+    to_str,
+)
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -346,6 +355,17 @@ def verify_checksum(checksum_algorithm: str, data: bytes, request: Dict):
         raise InvalidRequest(
             f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
         )
+
+
+def etag_to_base_64_content_md5(etag: ETag) -> str:
+    """
+    Convert an ETag, representing an md5 hexdigest (might be quoted), to its base64 encoded representation
+    :param etag: an ETag, might be quoted
+    :return: the base64 value
+    """
+    # get the bytes digest from the hexdigest
+    byte_digest = codecs.decode(to_bytes(etag.strip('"')), "hex")
+    return to_str(base64.b64encode(byte_digest))
 
 
 def decode_aws_chunked_object(

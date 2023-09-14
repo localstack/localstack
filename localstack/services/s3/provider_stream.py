@@ -30,6 +30,7 @@ from localstack.aws.api.s3 import (
     CopyObjectOutput,
     CopyObjectRequest,
     InvalidArgument,
+    InvalidDigest,
     InvalidStorageClass,
     NoSuchUpload,
     PreconditionFailed,
@@ -44,6 +45,7 @@ from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.provider import S3Provider
 from localstack.services.s3.utils import (
     InvalidRequest,
+    etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_key_from_moto_bucket,
@@ -151,6 +153,21 @@ class S3ProviderStream(S3Provider):
         # the etag is recalculated
         response["ETag"] = key_object.etag
 
+        # verify content_md5
+        if content_md5 := request.get("ContentMD5"):
+            calculated_md5 = etag_to_base_64_content_md5(key_object.etag.strip('"'))
+            if calculated_md5 != content_md5:
+                moto_backend.delete_object(
+                    bucket_name=request["Bucket"],
+                    key_name=request["Key"],
+                    version_id=key_object.version_id,
+                    bypass=True,
+                )
+                raise InvalidDigest(
+                    "The Content-MD5 you specified was invalid.",
+                    Content_MD5=content_md5,
+                )
+
         if expires := request.get("Expires"):
             key_object.set_expiry(expires)
         elif "expires" in key_object.metadata:  # if it got added from query string parameter
@@ -169,7 +186,10 @@ class S3ProviderStream(S3Provider):
         if key_object.checksum_algorithm:
             response[f"Checksum{key_object.checksum_algorithm.upper()}"] = key_object.checksum_value
 
-        bucket_lifecycle_configurations = self.get_store(context).bucket_lifecycle_configuration
+        bucket_lifecycle_configurations = self.get_store(
+            moto_bucket.account_id,
+            moto_bucket.region_name,
+        ).bucket_lifecycle_configuration
         if (bucket_lifecycle_config := bucket_lifecycle_configurations.get(request["Bucket"])) and (
             rules := bucket_lifecycle_config.get("Rules")
         ):

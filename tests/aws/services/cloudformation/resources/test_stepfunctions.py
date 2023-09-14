@@ -10,7 +10,7 @@ from localstack.utils.sync import wait_until
 from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_statemachine_definitionsubstitution(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -44,7 +44,7 @@ def test_statemachine_definitionsubstitution(deploy_cfn_template, aws_client):
     assert "hello from statemachine" in execution_desc["output"]
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_nested_statemachine_with_sync2(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -76,7 +76,7 @@ def test_nested_statemachine_with_sync2(deploy_cfn_template, aws_client):
     assert output["Value"] == 3
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_apigateway_invoke(deploy_cfn_template, aws_client):
     deploy_result = deploy_cfn_template(
         template_path=os.path.join(
@@ -102,7 +102,7 @@ def test_apigateway_invoke(deploy_cfn_template, aws_client):
     assert "hello from stepfunctions" in execution_result["output"]
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_apigateway_invoke_with_path(deploy_cfn_template, aws_client):
     deploy_result = deploy_cfn_template(
         template_path=os.path.join(
@@ -128,7 +128,7 @@ def test_apigateway_invoke_with_path(deploy_cfn_template, aws_client):
     assert "hello_with_path from stepfunctions" in execution_result["output"]
 
 
-@markers.aws.unknown
+@markers.aws.only_localstack
 def test_apigateway_invoke_localhost(deploy_cfn_template, aws_client):
     """tests the same as above but with the "generic" localhost version of invoking the apigateway"""
     deploy_result = deploy_cfn_template(
@@ -174,7 +174,7 @@ def test_apigateway_invoke_localhost(deploy_cfn_template, aws_client):
     assert "hello from stepfunctions" in execution_result["output"]
 
 
-@markers.aws.unknown
+@markers.aws.only_localstack
 def test_apigateway_invoke_localhost_with_path(deploy_cfn_template, aws_client):
     """tests the same as above but with the "generic" localhost version of invoking the apigateway"""
     deploy_result = deploy_cfn_template(

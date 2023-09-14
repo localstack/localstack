@@ -83,7 +83,9 @@ class LambdaFunction(GenericBaseModel):
                 k: str(v) for k, v in environment_variables.items()
             }
         result = client.update_function_configuration(**update_config_props)
-        connect_to().lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
         return result
 
     @staticmethod

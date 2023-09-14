@@ -249,9 +249,10 @@ def cognito_user_pool_arn(user_pool_id, account_id=None, region_name=None):
     return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
+# TODO: Make account_id and region_name mandatory
 def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
     pattern = "arn:aws:kinesis:%s:%s:stream/%s"
-    return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
+    return _resource_arn(stream_name, pattern, account_id, region_name)
 
 
 def elasticsearch_domain_arn(domain_name, account_id=None, region_name=None):
@@ -264,7 +265,7 @@ def firehose_stream_arn(stream_name, account_id=None, region_name=None):
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def es_domain_arn(domain_name, account_id=None, region_name=None):
+def es_domain_arn(domain_name, account_id, region_name):
     pattern = "arn:aws:es:%s:%s:domain/%s"
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
@@ -311,6 +312,7 @@ def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: 
     return pattern % (region_name, account_id, name)
 
 
+# TODO make account ID and region mandatory
 def sqs_queue_arn(queue_name, account_id=None, region_name=None):
     account_id = account_id or get_aws_account_id()
     region_name = region_name or get_region()

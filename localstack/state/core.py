@@ -2,14 +2,17 @@
 import io
 from typing import IO, Any, Protocol, runtime_checkable
 
-StateContainer = Any
-"""While a StateContainer can in principle be anything, localstack currently supports by default the following
-containers:
 
-- BackendDict (moto backend state)
-- AccountRegionBundle (localstack stores)
-- AssetDirectory (folders on disk)
-"""
+class StateContainer(Protocol):
+    """While a StateContainer can in principle be anything, localstack currently supports by default the following
+    containers:
+
+    - BackendDict (moto backend state)
+    - AccountRegionBundle (localstack stores)
+    - AssetDirectory (folders on disk)
+    """
+
+    service_name: str
 
 
 class StateLifecycleHook:
@@ -70,12 +73,17 @@ class AssetDirectory:
     A state container manifested as a directory on the file system.
     """
 
+    service_name: str
     path: str
 
-    def __init__(self, path: str):
+    def __init__(self, service_name: str, path: str):
+        if not service_name:
+            raise ValueError("service name must be set")
+
         if not path:
             raise ValueError("path must be set")
 
+        self.service_name = service_name
         self.path = path
 
     def __str__(self):

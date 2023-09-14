@@ -37,7 +37,7 @@ def itemize(fn, data, parent_key=None, *args, **kwargs):
 class RedshiftProvider(RedshiftApi):
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(redshift_backends)
-        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "redshift")))
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, "redshift")))
 
     @handler("DescribeClusterSecurityGroups", expand=False)
     def describe_cluster_security_groups(

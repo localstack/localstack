@@ -20,6 +20,7 @@ import pytest
 import requests
 from constructs import Construct
 
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.testing.pytest import markers
 
 if TYPE_CHECKING:
@@ -87,7 +88,11 @@ def _add_endpoints(
 def setup_lambdas(
     s3_client: "S3Client", create_archive_for_lambda_resource: Callable, bucket_name: str
 ):
-    s3_client.create_bucket(Bucket=bucket_name)
+    options = {"Bucket": bucket_name}
+    region_name = s3_client.meta.region_name
+    if region_name != AWS_REGION_US_EAST_1:
+        options["CreateBucketConfiguration"] = {"LocationConstraint": region_name}
+    s3_client.create_bucket(**options)
     lambda_notes = ["createNote", "deleteNote", "getNote", "listNotes", "updateNote"]
     object_keys = []
     for note in lambda_notes:

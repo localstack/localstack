@@ -12,7 +12,6 @@ from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.sqs import (
     ActionNameList,
@@ -83,7 +82,6 @@ from localstack.services.sqs.utils import (
     is_message_deduplication_id_required,
     parse_queue_url,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.cloudwatch.cloudwatch_util import publish_sqs_metric
@@ -484,9 +482,7 @@ class SqsDeveloperEndpoints:
         self, request: Request, region: str, account_id: str, queue_name: str
     ) -> ReceiveMessageResult:
         try:
-            store = self.stores[account_id or get_aws_account_id()][
-                region or aws_stack.get_region()
-            ]
+            store = SqsProvider.get_store(account_id, region)
             queue = store.queues[queue_name]
         except KeyError:
             LOG.info(
@@ -560,8 +556,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._init_cloudwatch_metrics_reporting()
 
     @staticmethod
-    def get_store(account_id: str = None, region: str = None) -> SqsStore:
-        return sqs_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
+    def get_store(account_id: str, region: str) -> SqsStore:
+        return sqs_stores[account_id][region]
 
     def on_before_start(self):
         self._router_rules = ROUTER.add(SqsDeveloperEndpoints())

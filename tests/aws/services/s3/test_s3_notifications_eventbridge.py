@@ -11,7 +11,7 @@ from localstack.utils.sync import retry
 
 @pytest.fixture
 def basic_event_bridge_rule_to_sqs_queue(
-    s3_create_bucket, events_create_rule, sqs_create_queue, sqs_queue_arn, aws_client
+    s3_create_bucket, events_create_rule, sqs_create_queue, sqs_get_queue_arn, aws_client
 ):
     bus_name = "default"
     queue_name = f"test-queue-{short_uid()}"
@@ -43,7 +43,7 @@ def basic_event_bridge_rule_to_sqs_queue(
     rule_arn = events_create_rule(Name=rule_name, EventBusName=bus_name, EventPattern=pattern)
 
     queue_url = sqs_create_queue(QueueName=queue_name)
-    queue_arn = sqs_queue_arn(queue_url)
+    queue_arn = sqs_get_queue_arn(queue_url)
     queue_policy = {
         "Statement": [
             {

@@ -20,7 +20,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestTaskLambda:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invoke_bytes_payload(
         self,
         aws_client,
@@ -65,7 +65,7 @@ class TestTaskLambda:
             [],
         ],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invoke_json_values(
         self,
         aws_client,
@@ -99,7 +99,7 @@ class TestTaskLambda:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invoke_pipe(
         self,
         aws_client,
