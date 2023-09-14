@@ -3030,10 +3030,7 @@ class TestSqsProvider:
         result_recv = aws_client.sqs.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0)
         assert result_recv["Messages"][0]["MessageId"] == result_send["MessageId"]
 
-    # verification of community posted issue
-    # FIXME: \r gets lost
-    @pytest.mark.skip
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_message_with_carriage_return(self, sqs_create_queue, aws_client):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -4071,7 +4068,7 @@ class TestSqsQueryApi:
 
 class TestSQSMultiAccounts:
     @pytest.mark.parametrize("strategy", ["domain", "path"])
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_cross_account_access(
         self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
     ):
@@ -4105,7 +4102,7 @@ class TestSQSMultiAccounts:
         # - UntagQueue
 
     @pytest.mark.parametrize("strategy", ["domain", "path"])
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_cross_account_get_queue_url(
         self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
     ):
