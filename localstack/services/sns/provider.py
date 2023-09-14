@@ -8,7 +8,6 @@ from moto.sns import sns_backends
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend, Topic
 from moto.sns.utils import is_e164
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
@@ -48,6 +47,7 @@ from localstack.aws.api.sns import (
     topicARN,
     topicName,
 )
+from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request, Response, Router, route
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
@@ -937,8 +937,8 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
-        account_id = request.args.get("accountId", get_aws_account_id())
-        region = request.args.get("region", "us-east-1")
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
@@ -960,8 +960,8 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
     def on_delete(self, request: Request) -> Response:
-        account_id = request.args.get("accountId", get_aws_account_id())
-        region = request.args.get("region", "us-east-1")
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
@@ -996,8 +996,8 @@ class SNSServiceSMSMessagesApiResource:
 
     @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
-        account_id = request.args.get("accountId", get_aws_account_id())
-        region = request.args.get("region", "us-east-1")
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_phone_number = request.args.get("phoneNumber")
         store: SnsStore = sns_stores[account_id][region]
         if filter_phone_number:
@@ -1022,8 +1022,8 @@ class SNSServiceSMSMessagesApiResource:
 
     @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["DELETE"])
     def on_delete(self, request: Request) -> Response:
-        account_id = request.args.get("accountId", get_aws_account_id())
-        region = request.args.get("region", "us-east-1")
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_phone_number = request.args.get("phoneNumber")
         store: SnsStore = sns_stores[account_id][region]
         if filter_phone_number:

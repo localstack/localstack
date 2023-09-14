@@ -269,7 +269,7 @@ def sfn_events_to_sqs_queue(events_to_sqs_queue, aws_client):
 
 
 @pytest.fixture
-def events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_queue_arn, aws_client):
+def events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_get_queue_arn, aws_client):
     def _setup(event_pattern):
         queue_name = f"test-queue-{short_uid()}"
         rule_name = f"test-rule-{short_uid()}"
@@ -280,7 +280,7 @@ def events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_queue_arn, aws
         )
 
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
         queue_policy = {
             "Statement": [
                 {

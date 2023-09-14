@@ -338,13 +338,13 @@ def sqs_queue(sqs_create_queue):
 
 
 @pytest.fixture
-def sqs_queue_arn(aws_client):
-    def _get_arn(queue_url: str) -> str:
+def sqs_get_queue_arn(aws_client) -> Callable:
+    def _get_queue_arn(queue_url: str) -> str:
         return aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])[
             "Attributes"
         ]["QueueArn"]
 
-    return _get_arn
+    return _get_queue_arn
 
 
 @pytest.fixture
@@ -460,11 +460,11 @@ def sns_allow_topic_sqs_queue(aws_client):
 
 
 @pytest.fixture
-def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_queue_arn, aws_client):
+def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_get_queue_arn, aws_client):
     subscriptions = []
 
     def _factory(topic_arn: str, queue_url: str, **kwargs) -> Dict[str, str]:
-        queue_arn = sqs_queue_arn(queue_url=queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         # connect sns topic to sqs
         subscription = aws_client.sns.subscribe(
