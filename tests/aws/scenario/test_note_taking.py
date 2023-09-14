@@ -20,8 +20,13 @@ import pytest
 import requests
 from constructs import Construct
 
-from localstack.constants import AWS_REGION_US_EAST_1
+from localstack.constants import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.testing.pytest import markers
+from localstack.utils.aws.resources import create_s3_bucket
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -88,11 +93,7 @@ def _add_endpoints(
 def setup_lambdas(
     s3_client: "S3Client", create_archive_for_lambda_resource: Callable, bucket_name: str
 ):
-    options = {"Bucket": bucket_name}
-    region_name = s3_client.meta.region_name
-    if region_name != AWS_REGION_US_EAST_1:
-        options["CreateBucketConfiguration"] = {"LocationConstraint": region_name}
-    s3_client.create_bucket(**options)
+    create_s3_bucket(bucket_name=bucket_name, s3_client=s3_client)
     lambda_notes = ["createNote", "deleteNote", "getNote", "listNotes", "updateNote"]
     object_keys = []
     for note in lambda_notes:
@@ -160,8 +161,21 @@ class TestNoteTakingScenario:
             if os.path.exists(tmp_zip_path):
                 os.remove(tmp_zip_path)
 
+    @pytest.fixture(scope="class")
+    def setenv(self):
+        from _pytest.monkeypatch import MonkeyPatch
+
+        mkypatch = MonkeyPatch()
+        yield mkypatch.setenv
+        mkypatch.undo()
+
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client, create_archive_for_lambda_resource):
+    def infrastructure(self, aws_client, create_archive_for_lambda_resource, setenv):
+        # CDK Python seems to read credentials from the env. Ensure the correct values for testing are picked up:
+        setenv("AWS_ACCESS_KEY_ID", TEST_AWS_ACCESS_KEY_ID)
+        setenv("AWS_SECRET_ACCESS_KEY", TEST_AWS_SECRET_ACCESS_KEY)
+        setenv("AWS_DEFAULT_REGION", TEST_AWS_REGION_NAME)
+
         infra = InfraProvisioner(aws_client)
         app = cdk.App()
         stack = cdk.Stack(app, "NoteTakingStack")
@@ -362,7 +376,7 @@ class TestNoteTakingScenario:
         assert json.loads(response.text) == {"status": False, "error": "Item not found."}
 
     @markers.aws.unknown
-    def test_another_scenario(self, aws_client, infrastructure):
+    def test_another_scenario(self, infrastructure):
         # TODO test something different
         #   added to test the skipping of infra-teardown
         outputs = infrastructure.get_stack_outputs("NoteTakingStack")
