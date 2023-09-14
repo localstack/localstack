@@ -861,7 +861,12 @@ def start_dns_server_as_sudo(port: int):
 
 
 def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = False):
-    # start local DNS server, if present
+    if DNS_SERVER:
+        # already started - bail
+        LOG.error("DNS servers are already started. Avoid starting again.")
+        return
+
+    # check if DNS server is disabled
     if not config.use_custom_dns():
         LOG.debug("Not starting DNS. DNS_ADDRESS=%s", config.DNS_ADDRESS)
         return
