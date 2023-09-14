@@ -100,6 +100,14 @@ jobs:
           at: /tmp/workspace
       - prepare-pytest-tinybird
       - run:
+          # legacy tests are executed locally, new runners ship with Java 17, downgrade to Java 11 for stepfunctions
+          name: Install OpenJDK 11
+          command: |
+            sudo apt-get update && sudo apt-get install openjdk-11-jdk
+            sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java
+            sudo update-alternatives --set javac /usr/lib/jvm/java-11-openjdk-amd64/bin/javac
+            java -version
+      - run:
           name: Test 'local' Lambda executor
           environment:
             LAMBDA_EXECUTOR: "local"
