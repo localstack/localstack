@@ -42,8 +42,9 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_sessionstart(session: Session):
+def pytest_runtestloop(session: Session):
     if not session.config.option.start_localstack:
+        LOG.info("Configuration option to start LocalStack not set.")
         return
 
     from localstack.testing.aws.util import is_aws_cloud
