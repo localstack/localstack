@@ -1,10 +1,7 @@
 import json
 from typing import Final, Optional
 
-from botocore.config import Config
-
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
-from localstack.aws.connect import connect_externally_to
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
@@ -18,6 +15,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.backend.utils import get_boto_client
 from localstack.utils.strings import camel_to_snake_case
 
 
@@ -76,7 +74,7 @@ class StateTaskServiceEvents(StateTaskServiceCallback):
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         self._normalised_request_parameters(env=env, parameters=parameters)
         api_action = camel_to_snake_case(self.resource.api_action)
-        events_client = connect_externally_to(config=Config(parameter_validation=False)).events
+        events_client = get_boto_client(env, "events")
         response = getattr(events_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
 
