@@ -3,6 +3,11 @@ on:
   # only manual for now
   workflow_dispatch:
     inputs:
+      dryRun:
+        description: 'Execute a Dry-Run? A Dry-Run will not create any issues and only print the issue content in the logs instead'
+        required: false
+        type: boolean
+        default: false
       updateExistingIssue:
         description: 'Select the empty string "" to open duplicate issues, "true" to update duplicate issues and "false" to skip duplicate issues'
         required: false
@@ -68,6 +73,7 @@ jobs:
           path: ./target/MARKER_REPORT_ISSUE.md
 
       - name: Create GH issue from template
+        if: inputs.dryRun != true
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.PRO_ACCESS_TOKEN }}

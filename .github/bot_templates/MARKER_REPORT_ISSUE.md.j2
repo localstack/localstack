@@ -26,11 +26,11 @@ _Note_: The individual assignments here are based on the entries in the [CODEOWN
 ## unknown ({{ data.aggregated['aws_unknown'] }})
 
 {% for item in data.owners_aws_unknown -%}
-- [ ] `{{ item.pytest_node_id }}` ([file]({{ item.file_url }})) {{ " ".join(item.owners) }}
+- [ ] `{{ item.pytest_node_id }}` {{ " ".join(item.owners) }}
 {% endfor %}
 
 ## needs_fixing ({{ data.aggregated['aws_needs_fixing'] }})
 
 {% for item in data.owners_aws_needs_fixing -%}
-- [ ] `{{ item.pytest_node_id }}` ([file]({{ item.file_url }})) {{ " ".join(item.owners) }}
+- [ ] `{{ item.pytest_node_id }}` {{ " ".join(item.owners) }}
 {% endfor %}
