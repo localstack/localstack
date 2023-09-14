@@ -19,6 +19,7 @@ from constructs import Construct
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.testing.snapshots.transformer import GenericTransformer, KeyValueBasedTransformer
+from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.run import run
 from localstack.utils.strings import to_bytes, to_str
@@ -83,7 +84,7 @@ def setup_lambda(s3_client: "S3Client", bucket_name: str, key_name: str, code_pa
                     archive_name = os.path.relpath(file_path, temp_dir)
                     temp_zip.write(file_path, archive_name)
 
-        s3_client.create_bucket(Bucket=bucket_name)
+        create_s3_bucket(Bucket=bucket_name, s3_client=s3_client)
         s3_client.upload_file(Filename=tmp_zip_path, Bucket=bucket_name, Key=key_name)
 
     finally:
@@ -154,7 +155,7 @@ class TestBookstoreApplication:
             yield prov
 
     @markers.aws.validated
-    def test_setup(self, aws_client, infrastructure, snapshot, cleanups):
+    def test_setup(self, aws_client, infrastructure, snapshot, cleanups, s3_create_bucket):
         if infrastructure.skipped_provisioning:
             pytest.skip("setup only running once")
 
@@ -163,7 +164,7 @@ class TestBookstoreApplication:
 
         # pre-fill dynamodb
         # json-data is from https://aws-bookstore-demo.s3.amazonaws.com/data/books.json
-        aws_client.s3.create_bucket(Bucket=S3_BUCKET_BOOKS_INIT)
+        s3_create_bucket(Bucket=S3_BUCKET_BOOKS_INIT)
         cleanups.append(
             lambda: cleanup_s3_bucket(
                 aws_client.s3, bucket_name=S3_BUCKET_BOOKS_INIT, delete_bucket=True
