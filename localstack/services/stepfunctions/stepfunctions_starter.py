@@ -5,7 +5,7 @@ from typing import Any, Dict
 from localstack import config
 from localstack.services.stepfunctions.packages import stepfunctions_local_package
 from localstack.utils.aws import aws_stack
-from localstack.utils.net import get_free_tcp_port
+from localstack.utils.net import get_free_tcp_port, port_can_be_bound
 from localstack.utils.run import ShellCommandThread
 from localstack.utils.serving import Server
 from localstack.utils.threads import TMP_THREADS, FuncThread
@@ -138,7 +138,9 @@ class StepFunctionsServerManager:
     def _create_stepfunctions_server(
         self, account_id: str, region_name: str
     ) -> StepFunctionsServer:
-        port = get_free_tcp_port()
+        port = config.LOCAL_PORT_STEPFUNCTIONS
+        if not port_can_be_bound(port):
+            port = get_free_tcp_port()
         stepfunctions_local_package.install()
 
         server = StepFunctionsServer(
