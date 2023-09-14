@@ -3,7 +3,6 @@ import json
 import pytest
 
 from localstack.config import LEGACY_S3_PROVIDER
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -44,7 +43,7 @@ def basic_event_bridge_rule_to_sqs_queue(
     rule_arn = events_create_rule(Name=rule_name, EventBusName=bus_name, EventPattern=pattern)
 
     queue_url = sqs_create_queue(QueueName=queue_name)
-    queue_arn = sqs_get_queue_arn(queue_url, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    queue_arn = sqs_get_queue_arn(queue_url)
     queue_policy = {
         "Statement": [
             {
