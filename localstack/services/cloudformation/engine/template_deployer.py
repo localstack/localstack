@@ -22,6 +22,7 @@ from localstack.services.cloudformation.engine.template_utils import (
 )
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
+    OperationStatus,
     ResourceProviderExecutor,
     ResourceProviderPayload,
     get_resource_type,
@@ -1358,12 +1359,30 @@ class TemplateDeployer:
 
         progress_event = executor.deploy_loop(resource_provider_payload)  # noqa
 
+        # TODO: clean up the surrounding loop (do_apply_changes_in_loop) so that the responsibilities are clearer
+        stack_action = get_action_name_for_resource_change(action)
+        match progress_event.status:
+            case OperationStatus.FAILED:
+                stack.set_resource_status(resource_id, f"{stack_action}_FAILED")
+                # TODO: remove exception raising here?
+                # TODO: fix request token
+                raise Exception(
+                    f'Resource handler returned message: "{progress_event.message}" (RequestToken: 10c10335-276a-33d3-5c07-018b684c3d26, HandlerErrorCode: InvalidRequest){progress_event.error_code}'
+                )
+            case OperationStatus.SUCCESS:
+                stack.set_resource_status(resource_id, f"{stack_action}_COMPLETE")
+            case OperationStatus.PENDING:
+                # this isn't really a state we use at the moment
+                raise Exception(
+                    f"Usage of currently unsupported operation status detected: {OperationStatus.PENDING}"
+                )
+            case OperationStatus.IN_PROGRESS:
+                raise Exception("Resource deployment loop should not finish in this state")
+            case unknown_status:
+                raise Exception(f"Unknown operation status: {unknown_status}")
+
         # TODO: this is probably already done in executor, try removing this
         resource["Properties"] = progress_event.resource_model
-
-        # update resource status and physical resource id
-        stack_action = get_action_name_for_resource_change(action)
-        stack.set_resource_status(resource_id, f"{stack_action}_COMPLETE")
 
     def create_resource_provider_executor(self) -> ResourceProviderExecutor:
         return ResourceProviderExecutor(

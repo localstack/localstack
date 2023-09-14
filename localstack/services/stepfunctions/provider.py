@@ -41,7 +41,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return f"http://{LOCALHOST}:{server.port}"
 
     def accept_state_visitor(self, visitor: StateVisitor):
-        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, self.service)))
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, self.service)))
 
     def on_before_state_load(self):
         self.server_manager.shutdown_all()

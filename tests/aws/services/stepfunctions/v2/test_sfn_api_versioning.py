@@ -23,7 +23,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestSnfApiVersioning:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_with_publish(
         self,
         create_iam_role_for_sfn,
@@ -44,7 +44,7 @@ class TestSnfApiVersioning:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_with_version_description_no_publish(
         self,
         create_iam_role_for_sfn,
@@ -68,7 +68,7 @@ class TestSnfApiVersioning:
             )
         sfn_snapshot.match("validation_exception", validation_exception.value.response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_publish_describe_no_version_description(
         self,
         create_iam_role_for_sfn,
@@ -101,7 +101,7 @@ class TestSnfApiVersioning:
         )
         sfn_snapshot.match("describe_resp", describe_resp)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_publish_describe_with_version_description(
         self,
         create_iam_role_for_sfn,
@@ -138,7 +138,7 @@ class TestSnfApiVersioning:
         )
         sfn_snapshot.match("describe_resp", describe_resp)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_list_delete_version(
         self,
         create_iam_role_for_sfn,
@@ -194,7 +194,7 @@ class TestSnfApiVersioning:
         )
         sfn_snapshot.match("delete_version_resp_after_del", delete_version_resp_after_del)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_update_state_machine(
         self,
         create_iam_role_for_sfn,
@@ -271,7 +271,7 @@ class TestSnfApiVersioning:
             )
         sfn_snapshot.match("invalid_arn_2", invalid_arn_2.value.response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_publish_state_machine_version(
         self,
         create_iam_role_for_sfn,
@@ -367,7 +367,7 @@ class TestSnfApiVersioning:
             )
         sfn_snapshot.match("conflict_exception", conflict_exception.value)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_start_version_execution(
         self,
         create_iam_role_for_sfn,
@@ -432,7 +432,7 @@ class TestSnfApiVersioning:
         )
         sfn_snapshot.match("exec_version_list_resp", exec_version_list_resp)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_version_ids_between_deletions(
         self,
         create_iam_role_for_sfn,
@@ -481,7 +481,7 @@ class TestSnfApiVersioning:
         )
         sfn_snapshot.match("publish_res_v2_2", publish_res_v2_2)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_idempotent_publish(
         self,
         create_iam_role_for_sfn,
@@ -521,7 +521,7 @@ class TestSnfApiVersioning:
         )
         sfn_snapshot.match("list_versions_resp", list_versions_resp)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_empty_revision_with_publish_and_publish_on_creation(
         self,
         create_iam_role_for_sfn,
@@ -553,7 +553,7 @@ class TestSnfApiVersioning:
         )
         sfn_snapshot.match("update_resp_2", update_resp_2)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_empty_revision_with_publish_and_no_publish_on_creation(
         self,
         create_iam_role_for_sfn,

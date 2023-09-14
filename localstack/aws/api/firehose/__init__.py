@@ -113,6 +113,11 @@ class ContentEncoding(str):
     GZIP = "GZIP"
 
 
+class DefaultDocumentIdFormat(str):
+    FIREHOSE_DEFAULT = "FIREHOSE_DEFAULT"
+    NO_DOCUMENT_ID = "NO_DOCUMENT_ID"
+
+
 class DeliveryStreamEncryptionStatus(str):
     ENABLED = "ENABLED"
     ENABLING = "ENABLING"
@@ -425,6 +430,10 @@ class AmazonopensearchserviceBufferingHints(TypedDict, total=False):
     SizeInMBs: Optional[AmazonopensearchserviceBufferingSizeInMBs]
 
 
+class DocumentIdOptions(TypedDict, total=False):
+    DefaultDocumentIdFormat: DefaultDocumentIdFormat
+
+
 class AmazonopensearchserviceRetryOptions(TypedDict, total=False):
     DurationInSeconds: Optional[AmazonopensearchserviceRetryDurationInSeconds]
 
@@ -443,6 +452,7 @@ class AmazonopensearchserviceDestinationConfiguration(TypedDict, total=False):
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     VpcConfiguration: Optional[VpcConfiguration]
+    DocumentIdOptions: Optional[DocumentIdOptions]
 
 
 class AmazonopensearchserviceDestinationDescription(TypedDict, total=False):
@@ -459,6 +469,7 @@ class AmazonopensearchserviceDestinationDescription(TypedDict, total=False):
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     VpcConfigurationDescription: Optional[VpcConfigurationDescription]
+    DocumentIdOptions: Optional[DocumentIdOptions]
 
 
 class AmazonopensearchserviceDestinationUpdate(TypedDict, total=False):
@@ -473,6 +484,7 @@ class AmazonopensearchserviceDestinationUpdate(TypedDict, total=False):
     S3Update: Optional[S3DestinationUpdate]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    DocumentIdOptions: Optional[DocumentIdOptions]
 
 
 ColumnToJsonKeyMappings = Dict[NonEmptyStringWithoutWhitespace, NonEmptyString]
@@ -571,6 +583,7 @@ class ElasticsearchDestinationConfiguration(TypedDict, total=False):
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     VpcConfiguration: Optional[VpcConfiguration]
+    DocumentIdOptions: Optional[DocumentIdOptions]
 
 
 class RedshiftRetryOptions(TypedDict, total=False):
@@ -780,6 +793,7 @@ class ElasticsearchDestinationDescription(TypedDict, total=False):
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     VpcConfigurationDescription: Optional[VpcConfigurationDescription]
+    DocumentIdOptions: Optional[DocumentIdOptions]
 
 
 class RedshiftDestinationDescription(TypedDict, total=False):
@@ -895,6 +909,7 @@ class ElasticsearchDestinationUpdate(TypedDict, total=False):
     S3Update: Optional[S3DestinationUpdate]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    DocumentIdOptions: Optional[DocumentIdOptions]
 
 
 class ExtendedS3DestinationUpdate(TypedDict, total=False):

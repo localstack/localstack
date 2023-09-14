@@ -96,7 +96,7 @@ class TestTerraform:
         start_worker_thread(_run)
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_bucket_exists(self, aws_client):
         response = aws_client.s3.head_bucket(Bucket=BUCKET_NAME)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -116,7 +116,7 @@ class TestTerraform:
         assert response["Status"] == "Enabled"
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_sqs(self, aws_client):
         queue_url = aws_client.sqs.get_queue_url(QueueName=QUEUE_NAME)["QueueUrl"]
         response = aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
@@ -127,7 +127,7 @@ class TestTerraform:
         assert response["Attributes"]["ReceiveMessageWaitTimeSeconds"] == "10"
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_lambda(self, aws_client):
         account_id = get_aws_account_id()
         response = aws_client.lambda_.get_function(FunctionName=LAMBDA_NAME)
@@ -137,7 +137,7 @@ class TestTerraform:
         assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(account_id=account_id)
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_event_source_mapping(self, aws_client):
         queue_arn = QUEUE_ARN.format(account_id=get_aws_account_id())
         lambda_arn = LAMBDA_ARN.format(account_id=get_aws_account_id(), lambda_name=LAMBDA_NAME)
@@ -150,7 +150,7 @@ class TestTerraform:
 
     @markers.skip_offline
     @pytest.mark.xfail(reason="flaky")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_apigateway(self, aws_client):
         rest_apis = aws_client.apigateway.get_rest_apis()
 
@@ -180,7 +180,7 @@ class TestTerraform:
         assert res2[0]["resourceMethods"]["GET"]["methodIntegration"]["uri"]
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_route53(self, aws_client):
         response = aws_client.route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
@@ -190,7 +190,7 @@ class TestTerraform:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_acm(self, aws_client):
         certs = aws_client.acm.list_certificates()["CertificateSummaryList"]
         certs = [c for c in certs if c.get("DomainName") == "example.com"]
@@ -198,7 +198,7 @@ class TestTerraform:
 
     @markers.skip_offline
     @pytest.mark.xfail(reason="flaky")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_apigateway_escaped_policy(self, aws_client):
         rest_apis = aws_client.apigateway.get_rest_apis()
 
@@ -211,7 +211,7 @@ class TestTerraform:
         assert len(service_apis) == 1
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_dynamodb(self, aws_client):
         def _table_exists(tablename, dynamotables):
             return any(name for name in dynamotables["TableNames"] if name == tablename)
@@ -222,7 +222,7 @@ class TestTerraform:
         assert _table_exists("tf_dynamotable3", tables)
 
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_security_groups(self, aws_client):
         rules = aws_client.ec2.describe_security_groups(MaxResults=100)["SecurityGroups"]
         matching = [r for r in rules if r["Description"] == "TF SG with ingress / egress rules"]

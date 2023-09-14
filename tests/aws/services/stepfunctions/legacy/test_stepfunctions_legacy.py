@@ -7,6 +7,7 @@ import pytest
 from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
@@ -292,13 +293,14 @@ def get_machine_arn(sm_name, sfn_client):
 
 
 pytestmark = pytest.mark.skipif(
-    condition=is_new_provider(), reason="Test suite only for legacy provider."
+    condition=not is_aws_cloud() and is_new_provider(),
+    reason="Test suite only for legacy provider.",
 )
 
 
 @pytest.mark.usefixtures("setup_and_tear_down")
 class TestStateMachine:
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_create_choice_state_machine(self, custom_client):
         state_machines_before = custom_client.stepfunctions.list_state_machines()["stateMachines"]
         role_arn = arns.role_arn("sfn_role", SF_TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
@@ -338,7 +340,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, sfn_client=custom_client.stepfunctions)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_create_run_map_state_machine(self, custom_client):
         names = ["Bob", "Meg", "Joe"]
         test_input = [{"map": name} for name in names]
@@ -380,7 +382,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, custom_client.stepfunctions)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_create_run_state_machine(self, custom_client):
         state_machines_before = custom_client.stepfunctions.list_state_machines()["stateMachines"]
 
@@ -420,7 +422,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, custom_client.stepfunctions)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_try_catch_state_machine(self, custom_client):
         if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
             pytest.skip("skipping non us-east-1 temporarily")
@@ -462,7 +464,7 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, custom_client.stepfunctions)
 
     # TODO: validate against AWS
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_intrinsic_functions(self, custom_client):
         if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
             pytest.skip("skipping non us-east-1 temporarily")
@@ -508,7 +510,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, custom_client.stepfunctions)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_events_state_machine(self, custom_client):
         events = custom_client.events
         state_machines_before = custom_client.stepfunctions.list_state_machines()["stateMachines"]
@@ -549,7 +551,7 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, custom_client.stepfunctions)
         events.delete_event_bus(Name=bus_name)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_create_state_machines_in_parallel(self, cleanups, custom_client):
         """
         Perform a test that creates a series of state machines in parallel. Without concurrency control, using
@@ -643,7 +645,7 @@ STS_ROLE_POLICY_DOC = {
 
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 @pytest.mark.parametrize("statemachine_definition", (TEST_STATE_MACHINE_3,))  # TODO: add sync2 test
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_multiregion_nested(aws_client_factory, region_name, statemachine_definition):
     client1 = aws_client_factory(
         region_name=region_name, aws_access_key_id=SF_TEST_AWS_ACCOUNT_ID
@@ -723,7 +725,7 @@ def test_default_logging_configuration(create_state_machine, custom_client):
 
 
 @pytest.mark.skip("Does not work against Pro in new pipeline.")
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_aws_sdk_task(sfn_execution_role, custom_client):
     statemachine_definition = {
         "StartAt": "CreateTopicTask",
@@ -805,7 +807,7 @@ def test_aws_sdk_task(sfn_execution_role, custom_client):
 
 
 @pytest.mark.skip("Does not work against Pro in new pipeline.")
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_aws_sdk_task_delete_s3_object(s3_bucket, sfn_execution_role, custom_client):
     s3_key = "test-key"
     statemachine_definition = {

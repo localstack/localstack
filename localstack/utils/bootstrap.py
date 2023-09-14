@@ -570,14 +570,18 @@ class ContainerConfigurators:
         """
         Parse docker CLI parameters and add them to the config. The currently known CLI params are::
 
-            --network=my-network     <- stored in "network"
-            -e FOO=BAR -e BAR=ed     <- stored in "env"
+            --network=my-network       <- stored in "network"
+            -e FOO=BAR -e BAR=ed       <- stored in "env"
+            -p 4566:4566 -p 4510-4559  <- stored in "publish"
+            -v ./bar:/foo/bar          <- stored in "volume"
 
         When parsed by click, the parameters would look like this::
 
             {
                 "network": "my-network",
                 "env": ("FOO=BAR", "BAR=ed"),
+                "publish": ("4566:4566", "4510-4559"),
+                "volume": ("./bar:/foo/bar",),
             }
 
         :param params: a dict of parsed parameters
@@ -589,18 +593,97 @@ class ContainerConfigurators:
             if params.get("network"):
                 cfg.network = params.get("network")
 
-            # parse environment variable flags
-            if params.get("env"):
-                for e in params.get("env"):
-                    if "=" in e:
-                        k, v = e.split("=", maxsplit=1)
-                        cfg.env_vars[k] = v
-                    else:
-                        # there's currently no way in our abstraction to only pass the variable name (as
-                        # you can do in docker) so we resolve the value here.
-                        cfg.env_vars[e] = os.getenv(e)
+            # processed parsed -e, -p, and -v flags
+            ContainerConfigurators.env_cli_params(params.get("env"))(cfg)
+            ContainerConfigurators.port_cli_params(params.get("publish"))(cfg)
+            ContainerConfigurators.volume_cli_params(params.get("volume"))(cfg)
 
-            # TODO: volume and publish
+        return _cfg
+
+    @staticmethod
+    def env_cli_params(params: Iterable[str] = None):
+        """
+        Configures environment variables from additional CLI input through the ``-e`` options.
+
+        :param params: a list of environment variable declarations, e.g.,: ``("foo=bar", "baz=ed")``
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            if not params:
+                return
+
+            for e in params:
+                if "=" in e:
+                    k, v = e.split("=", maxsplit=1)
+                    cfg.env_vars[k] = v
+                else:
+                    # there's currently no way in our abstraction to only pass the variable name (as
+                    # you can do in docker) so we resolve the value here.
+                    cfg.env_vars[e] = os.getenv(e)
+
+        return _cfg
+
+    @staticmethod
+    def port_cli_params(params: Iterable[str] = None):
+        """
+        Configures port variables from additional CLI input through the ``-p`` options.
+
+        :param params: a list of port assignments, e.g.,: ``("4000-5000", "8080:80")``
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            if not params:
+                return
+
+            for port_mapping in params:
+                port_split = port_mapping.split(":")
+                protocol = "tcp"
+                if len(port_split) == 1:
+                    host_port = container_port = port_split[0]
+                elif len(port_split) == 2:
+                    host_port, container_port = port_split
+                elif len(port_split) == 3:
+                    _, host_port, container_port = port_split
+                else:
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
+
+                host_port_split = host_port.split("-")
+                if len(host_port_split) == 2:
+                    host_port = [int(host_port_split[0]), int(host_port_split[1])]
+                elif len(host_port_split) == 1:
+                    host_port = int(host_port)
+                else:
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
+
+                if "/" in container_port:
+                    container_port, protocol = container_port.split("/")
+
+                container_port_split = container_port.split("-")
+                if len(container_port_split) == 2:
+                    container_port = [int(container_port_split[0]), int(container_port_split[1])]
+                elif len(container_port_split) == 1:
+                    container_port = int(container_port)
+                else:
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
+
+                cfg.ports.add(host_port, container_port, protocol)
+
+        return _cfg
+
+    @staticmethod
+    def volume_cli_params(params: Iterable[str] = None):
+        """
+        Configures volumes from additional CLI input through the ``-v`` options.
+
+        :param params: a list of volume declarations, e.g.,: ``("./bar:/foo/bar",)``
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            for param in params:
+                cfg.volumes.append(VolumeBind.parse(param))
 
         return _cfg
 

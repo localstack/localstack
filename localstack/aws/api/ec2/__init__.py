@@ -1040,6 +1040,14 @@ class ImageAttributeName(str):
     imdsSupport = "imdsSupport"
 
 
+class ImageBlockPublicAccessDisabledState(str):
+    unblocked = "unblocked"
+
+
+class ImageBlockPublicAccessEnabledState(str):
+    block_new_sharing = "block-new-sharing"
+
+
 class ImageState(str):
     pending = "pending"
     available = "available"
@@ -13828,6 +13836,14 @@ class DisableFastSnapshotRestoresResult(TypedDict, total=False):
     Unsuccessful: Optional[DisableFastSnapshotRestoreErrorSet]
 
 
+class DisableImageBlockPublicAccessRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class DisableImageBlockPublicAccessResult(TypedDict, total=False):
+    ImageBlockPublicAccessState: Optional[ImageBlockPublicAccessDisabledState]
+
+
 class DisableImageDeprecationRequest(ServiceRequest):
     ImageId: ImageId
     DryRun: Optional[Boolean]
@@ -14188,6 +14204,15 @@ class EnableFastSnapshotRestoresResult(TypedDict, total=False):
     Unsuccessful: Optional[EnableFastSnapshotRestoreErrorSet]
 
 
+class EnableImageBlockPublicAccessRequest(ServiceRequest):
+    ImageBlockPublicAccessState: ImageBlockPublicAccessEnabledState
+    DryRun: Optional[Boolean]
+
+
+class EnableImageBlockPublicAccessResult(TypedDict, total=False):
+    ImageBlockPublicAccessState: Optional[ImageBlockPublicAccessEnabledState]
+
+
 class EnableImageDeprecationRequest(ServiceRequest):
     ImageId: ImageId
     DeprecateAt: MillisecondDateTime
@@ -14515,6 +14540,14 @@ class GetHostReservationPurchasePreviewResult(TypedDict, total=False):
     Purchase: Optional[PurchaseSet]
     TotalHourlyPrice: Optional[String]
     TotalUpfrontPrice: Optional[String]
+
+
+class GetImageBlockPublicAccessStateRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class GetImageBlockPublicAccessStateResult(TypedDict, total=False):
+    ImageBlockPublicAccessState: Optional[String]
 
 
 VirtualizationTypeSet = List[VirtualizationType]
@@ -21600,6 +21633,12 @@ class Ec2Api:
     ) -> DisableFastSnapshotRestoresResult:
         raise NotImplementedError
 
+    @handler("DisableImageBlockPublicAccess")
+    def disable_image_block_public_access(
+        self, context: RequestContext, dry_run: Boolean = None
+    ) -> DisableImageBlockPublicAccessResult:
+        raise NotImplementedError
+
     @handler("DisableImageDeprecation")
     def disable_image_deprecation(
         self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
@@ -21828,6 +21867,15 @@ class Ec2Api:
         source_snapshot_ids: SnapshotIdStringList,
         dry_run: Boolean = None,
     ) -> EnableFastSnapshotRestoresResult:
+        raise NotImplementedError
+
+    @handler("EnableImageBlockPublicAccess")
+    def enable_image_block_public_access(
+        self,
+        context: RequestContext,
+        image_block_public_access_state: ImageBlockPublicAccessEnabledState,
+        dry_run: Boolean = None,
+    ) -> EnableImageBlockPublicAccessResult:
         raise NotImplementedError
 
     @handler("EnableImageDeprecation")
@@ -22061,6 +22109,12 @@ class Ec2Api:
     def get_host_reservation_purchase_preview(
         self, context: RequestContext, host_id_set: RequestHostIdSet, offering_id: OfferingId
     ) -> GetHostReservationPurchasePreviewResult:
+        raise NotImplementedError
+
+    @handler("GetImageBlockPublicAccessState")
+    def get_image_block_public_access_state(
+        self, context: RequestContext, dry_run: Boolean = None
+    ) -> GetImageBlockPublicAccessStateResult:
         raise NotImplementedError
 
     @handler("GetInstanceTypesFromInstanceRequirements")

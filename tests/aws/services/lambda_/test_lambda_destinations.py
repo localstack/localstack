@@ -43,7 +43,11 @@ class TestLambdaDLQ:
         lambda_su_role,
         snapshot,
         aws_client,
+        monkeypatch,
     ):
+        if not is_aws_cloud():
+            monkeypatch.setattr(config, "LAMBDA_RETRY_BASE_DELAY_SECONDS", 5)
+
         """Creates a lambda with a defined dead letter queue, and check failed lambda invocation leads to a message"""
         # create DLQ and Lambda function
         snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -92,6 +96,8 @@ class TestLambdaDLQ:
             FunctionName=lambda_name, DeadLetterConfig={}
         )
         snapshot.match("delete_dlq", update_function_config_response)
+        # TODO: test function update with running invocation => don't kill them all in that case
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=lambda_name)
         invoke_result = aws_client.lambda_.invoke(
             FunctionName=lambda_name, Payload=json.dumps(payload), LogType="Tail"
         )
@@ -323,11 +329,14 @@ class TestLambdaDestinationSqs:
 
         # between 0 and 1 min the lambda should NOT have been retried yet
         # between 1 min and 3 min the lambda should have been retried once
-        time.sleep(test_delay_base / 2)
+        # TODO: parse log and calculate time diffs for better/more reliable matching
+        # SQS queue has a thread checking every second, hence we need a 1 second offset
+        test_delay_base_with_offset = test_delay_base + 1
+        time.sleep(test_delay_base_with_offset / 2)
         assert get_filtered_event_count() == 1
-        time.sleep(test_delay_base)
+        time.sleep(test_delay_base_with_offset)
         assert get_filtered_event_count() == 2
-        time.sleep(test_delay_base * 2)
+        time.sleep(test_delay_base_with_offset * 2)
         assert get_filtered_event_count() == 3
 
         # 1. event should be in queue
