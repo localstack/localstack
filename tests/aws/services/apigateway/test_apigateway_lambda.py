@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 import requests
@@ -8,15 +9,21 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
+from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url, create_rest_resource
 from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
+    TEST_LAMBDA_ERROR_RESPONSES,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_SELECT_PATTERN,
 )
+
+THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+REQUEST_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/request-template.vm")
+RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.vm")
 
 
 @markers.aws.validated
@@ -427,6 +434,108 @@ def test_lambda_aws_integration_with_request_template(
             restApiId=api_id, resourceId=resource_id, httpMethod="GET"
         )
     snapshot.match("get-integration-after-delete", e.value.response)
+
+
+@markers.aws.validated
+def test_lambda_aws_integration_response_with_mapping_templates(
+    create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client, region
+):
+    function_name = f"test-{short_uid()}"
+    stage_name = "api"
+    create_function_response = create_lambda_function(
+        func_name=function_name,
+        handler_file=TEST_LAMBDA_ERROR_RESPONSES,
+        handler="lambda_error_responses.handler",
+        runtime=LAMBDA_RUNTIME_PYTHON39,
+    )
+    # create invocation role
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
+
+    lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+    target_uri = arns.apigateway_invocations_arn(lambda_arn, region)
+
+    api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
+    resource_id, _ = create_rest_resource(
+        aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="test"
+    )
+
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        authorizationType="NONE",
+    )
+
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        statusCode="200",
+    )
+
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        statusCode="400",
+    )
+
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        integrationHttpMethod="POST",
+        type="AWS",
+        uri=target_uri,
+        credentials=role_arn,
+        requestTemplates={
+            "application/json": load_file(REQUEST_TEMPLATE_VM),
+        },
+    )
+
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        statusCode="200",
+        selectionPattern="",
+        responseTemplates={
+            "application/json": load_file(RESPONSE_TEMPLATE_VM),
+        },
+    )
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+    invocation_url = api_invoke_url(api_id=api_id, stage=stage_name, path="/test")
+
+    def invoke_api(url, body, status_code):
+        _response = requests.post(
+            url, data=json.dumps(body), verify=False, headers={"Content-Type": "application/json"}
+        )
+        content = _response.json()
+
+        assert _response.status_code == status_code
+        return {"statusCode": _response.status_code, "body": content}
+
+    response = retry(
+        invoke_api,
+        sleep=2,
+        retries=10,
+        url=invocation_url,
+        body={"httpStatus": "200"},
+        status_code=202,
+    )
+    snapshot.match("response-template-202", response)
+    response = retry(
+        invoke_api,
+        sleep=2,
+        retries=10,
+        url=invocation_url,
+        body={"httpStatus": "400", "errorMessage": "Test Bad request"},
+        status_code=400,
+    )
+    snapshot.match("response-template-400", response)
 
 
 @markers.aws.validated

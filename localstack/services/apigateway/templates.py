@@ -59,6 +59,17 @@ class MappingTemplates:
         return getattr(PassthroughBehavior, passthrough_behaviour, None)
 
 
+class AttributeDict(dict):
+    """
+    Wrapper returned by VelocityUtilApiGateway.parseJson to allow access to dict values as attributes (dot notation),
+    e.g.: $util.parseJson('$.foo').bar
+    """
+
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+
 class VelocityUtilApiGateway(VelocityUtil):
     """
     Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
@@ -103,6 +114,9 @@ class VelocityUtilApiGateway(VelocityUtil):
         if obj in (True, False):
             return str(obj).lower()
         return str(obj)
+
+    def parseJson(self, s):
+        return AttributeDict(json.loads(s))
 
 
 class VelocityInput:
@@ -186,6 +200,11 @@ class Templates:
             "header": {},
             "path": {},
             "querystring": {},
+        }
+
+        ctx["responseOverride"] = {
+            "header": {},
+            "status": 200,
         }
 
         return {
@@ -294,7 +313,11 @@ class ResponseTemplates(Templates):
 
         # we render the template with the context data and the response content
         variables = self.build_variables_mapping(api_context)
+        # update the response body
         response._content = self._render_as_json(template, variables)
+        if response_overrides := variables.get("context", {}).get("responseOverride", {}):
+            response.headers.update(response_overrides.get("header", {}).items())
+            response.status_code = response_overrides.get("status", 200)
 
         LOG.debug("Endpoint response body after transformations:\n%s", response._content)
         return response._content
