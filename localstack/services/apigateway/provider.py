@@ -91,10 +91,10 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.connect import connect_to
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
+from localstack.services.apigateway.exporter import OpenApiExporter
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ERROR_MODEL,
-    OpenApiExporter,
     OpenAPIExt,
     apply_json_patch_safe,
     get_apigateway_store,

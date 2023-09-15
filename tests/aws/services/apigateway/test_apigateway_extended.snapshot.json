@@ -347,5 +347,354 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETSTORE_SWAGGER]": {
+    "recorded-date": "15-09-2023, 03:09:35",
+    "recorded-content": {
+      "get-export": {
+        "body": {
+          "openapi": "3.0.1",
+          "info": {
+            "title": "PetStore",
+            "description": "Your first API with Amazon API Gateway. This is a sample API that integrates via HTTP with our demo Pet Store endpoints",
+            "version": "date"
+          },
+          "servers": [
+            {
+              "url": "https://ew246l06b4.execute-api.<region>.amazonaws.com/{basePath}",
+              "variables": {
+                "basePath": {
+                  "default": "local"
+                }
+              }
+            }
+          ],
+          "paths": {
+            "/pets": {
+              "get": {
+                "parameters": [
+                  {
+                    "name": "type",
+                    "in": "query",
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "page",
+                    "in": "query",
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "responses": {
+                  "200": {
+                    "description": "200 response",
+                    "headers": {
+                      "Access-Control-Allow-Origin": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/Pets"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "post": {
+                "operationId": "CreatePet",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/NewPet"
+                      }
+                    }
+                  },
+                  "required": true
+                },
+                "responses": {
+                  "200": {
+                    "description": "200 response",
+                    "headers": {
+                      "Access-Control-Allow-Origin": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/NewPetResponse"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "options": {
+                "responses": {
+                  "200": {
+                    "description": "200 response",
+                    "headers": {
+                      "Access-Control-Allow-Origin": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "Access-Control-Allow-Methods": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "Access-Control-Allow-Headers": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/Empty"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "/pets/{petId}": {
+              "get": {
+                "operationId": "GetPet",
+                "parameters": [
+                  {
+                    "name": "petId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "responses": {
+                  "200": {
+                    "description": "200 response",
+                    "headers": {
+                      "Access-Control-Allow-Origin": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/Pet"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "options": {
+                "parameters": [
+                  {
+                    "name": "petId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "responses": {
+                  "200": {
+                    "description": "200 response",
+                    "headers": {
+                      "Access-Control-Allow-Origin": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "Access-Control-Allow-Methods": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "Access-Control-Allow-Headers": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/Empty"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "/": {
+              "get": {
+                "responses": {
+                  "200": {
+                    "description": "200 response",
+                    "headers": {
+                      "Content-Type": {
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "content": {}
+                  }
+                }
+              }
+            }
+          },
+          "components": {
+            "schemas": {
+              "Pets": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              },
+              "Empty": {
+                "type": "object"
+              },
+              "NewPetResponse": {
+                "type": "object",
+                "properties": {
+                  "pet": {
+                    "$ref": "#/components/schemas/Pet"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
+              },
+              "Pet": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number"
+                  }
+                }
+              },
+              "NewPet": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "$ref": "#/components/schemas/PetType"
+                  },
+                  "price": {
+                    "type": "number"
+                  }
+                }
+              },
+              "PetType": {
+                "type": "string",
+                "enum": [
+                  "dog",
+                  "cat",
+                  "fish",
+                  "bird",
+                  "gecko"
+                ]
+              }
+            }
+          }
+        },
+        "contentDisposition": "attachment; filename=\"oas30_date.json\"",
+        "contentType": "application/octet-stream",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETS]": {
+    "recorded-date": "15-09-2023, 03:09:44",
+    "recorded-content": {
+      "get-export": {
+        "body": {
+          "openapi": "3.0.1",
+          "info": {
+            "title": "Simple PetStore (Swagger)",
+            "version": "1.0.0"
+          },
+          "servers": [
+            {
+              "url": "https://rtsuhzffy8.execute-api.<region>.amazonaws.com/{basePath}",
+              "variables": {
+                "basePath": {
+                  "default": "local"
+                }
+              }
+            }
+          ],
+          "paths": {
+            "/pets": {
+              "get": {
+                "responses": {
+                  "200": {
+                    "description": "200 response",
+                    "content": {}
+                  }
+                }
+              }
+            },
+            "/pets/{petId}": {
+              "get": {
+                "parameters": [
+                  {
+                    "name": "petId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "responses": {
+                  "200": {
+                    "description": "200 response",
+                    "content": {}
+                  }
+                }
+              }
+            }
+          },
+          "components": {}
+        },
+        "contentDisposition": "attachment; filename=\"oas30_1.0.0.json\"",
+        "contentType": "application/octet-stream",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

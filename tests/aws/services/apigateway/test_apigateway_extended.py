@@ -1,5 +1,4 @@
 # TODO: find a more meaningful name for this file, further refactor tests into different functional areas
-import json
 import os
 
 import pytest
@@ -26,13 +25,12 @@ TEST_IMPORT_PETS = os.path.join(THIS_FOLDER, "../../files/pets.json")
     ]
 )
 def test_export_swagger_openapi(aws_client, snapshot, import_file):
-    snapshot.add_transformers_list(
-        [snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")]
+    snapshot.add_transformer(
+        snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
     )
     spec_file = load_file(import_file)
     response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
     snapshot.match("import-api", response)
-    assert response.get("ResponseMetadata").get("HTTPStatusCode") == 201
     api_id = response["id"]
 
     aws_client.apigateway.create_deployment(restApiId=api_id, stageName="local")
@@ -48,27 +46,38 @@ def test_export_swagger_openapi(aws_client, snapshot, import_file):
     # snapshot.match("get-export-with-extensions", response)
 
 
-@markers.aws.unknown
-def test_export_oas30_openapi(aws_client):
-    spec_file = load_file(TEST_IMPORT_PETSTORE_SWAGGER)
+@markers.aws.validated
+@pytest.mark.parametrize(
+    "import_file",
+    [TEST_IMPORT_PETSTORE_SWAGGER, TEST_IMPORT_PETS],
+    ids=["TEST_IMPORT_PETSTORE_SWAGGER", "TEST_IMPORT_PETS"],
+)
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..body.servers..url",
+    ]
+)
+def test_export_oas30_openapi(aws_client, snapshot, import_file):
+    snapshot.add_transformer(
+        snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
+    )
+
+    spec_file = load_file(import_file)
     response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
-    assert response.get("ResponseMetadata").get("HTTPStatusCode") == 201
+    # snapshot.match("import-api", response)
+    api_id = response["id"]
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName="local")
 
     response = aws_client.apigateway.get_export(
-        restApiId=response["id"], stageName="local", exportType="oas30"
+        restApiId=api_id, stageName="local", exportType="oas30"
     )
-    spec_object = json.loads(response["body"].read())
-    # required keys
-    expected_keys = [
-        "openapi",
-        "info",
-    ]
-    assert all(k in spec_object.keys() for k in expected_keys)
-    assert spec_object["info"]["title"] == "PetStore"
-    assert spec_object["info"]["version"] is not None
-    # optional keys
-    optional_keys = ["paths"]
-    assert all(k in spec_object.keys() for k in optional_keys)
+    snapshot.match("get-export", response)
+
+    # response = aws_client.apigateway.get_export(
+    #   restApiId=api_id, stageName="local", exportType="oas30", parameters={"extensions": "apigateway"}
+    # )
+    # snapshot.match("get-export-with-extensions", response)
 
 
 @markers.aws.unknown
