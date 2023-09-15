@@ -49,7 +49,6 @@ def test_create_record_set_without_resource_record(deploy_cfn_template, route53_
 @markers.aws.validated
 def test_create_health_check(
     deploy_cfn_template,
-    route53_hosted_zone,
 ):
     deploy_cfn_template(
         template_path=os.path.join(

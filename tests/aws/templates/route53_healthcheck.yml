@@ -1,11 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Parameters:
-  PrimaryIpAddress:
-    Type: String
-    Description: The IP address of the primary record set
-    Default: 1.1.1.1
-
 Resources:
   HealthCheck:
     Type: 'AWS::Route53::HealthCheck'
