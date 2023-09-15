@@ -1,9 +1,12 @@
+import logging
 from typing import List
 
 from localstack.config import HostAndPort
 from localstack.http.hypercorn import GatewayServer
-from localstack.runtime.shutdown import SHUTDOWN_HANDLERS
+from localstack.runtime.shutdown import ON_AFTER_SERVICE_SHUTDOWN_HANDLERS
 from localstack.services.plugins import SERVICE_PLUGINS
+
+LOG = logging.getLogger(__name__)
 
 
 def serve_gateway(
@@ -24,7 +27,11 @@ def serve_gateway(
     # with the current way the infrastructure is started, this is the easiest way to shut down the server correctly
     # FIXME: but the infrastructure shutdown should be much cleaner, core components like the gateway should be handled
     #  explicitly by the thing starting the components, not implicitly by the components.
-    SHUTDOWN_HANDLERS.register(server.shutdown)
+    def _shutdown_gateway():
+        LOG.debug("[shutdown] Shutting down gateway server")
+        server.shutdown()
+
+    ON_AFTER_SERVICE_SHUTDOWN_HANDLERS.register(_shutdown_gateway)
 
     if not asynchronous:
         server.join()
