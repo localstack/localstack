@@ -132,13 +132,16 @@ def get_host_path_for_path_in_docker(path):
     return path
 
 
-def container_ports_can_be_bound(ports: Union[IntOrPort, List[IntOrPort]]) -> bool:
+def container_ports_can_be_bound(
+    ports: Union[IntOrPort, List[IntOrPort]],
+    address: Optional[str] = None,
+) -> bool:
     """Determine whether a given list of ports can be bound by Docker containers
 
     :param ports: single port or list of ports to check
     :return: True iff all ports can be bound
     """
-    port_mappings = PortMappings()
+    port_mappings = PortMappings(bind_host=address or "")
     ports = ensure_list(ports)
     for port in ports:
         port = Port.wrap(port)
@@ -157,7 +160,9 @@ def container_ports_can_be_bound(ports: Union[IntOrPort, List[IntOrPort]]) -> bo
                 "Unexpected error when attempting to determine container port status: %s", e
             )
         return False
-    if to_str(result[0]).strip() != "test123":
+    # TODO(srw): sometimes the command output from the docker container is "None", particularly when this function is
+    #  invoked multiple times consecutively. Work out why.
+    if to_str(result[0] or "").strip() != "test123":
         LOG.warning(
             "Unexpected output when attempting to determine container port status: %s", result[0]
         )

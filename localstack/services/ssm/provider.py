@@ -119,7 +119,7 @@ class SsmProvider(SsmApi, ABC):
         with_decryption: Boolean = None,
     ) -> GetParametersResult:
         if SsmProvider._has_secrets(names):
-            return SsmProvider._get_params_and_secrets(names)
+            return SsmProvider._get_params_and_secrets(context.account_id, context.region, names)
 
         norm_names = list([SsmProvider._normalize_name(name, validate=True) for name in names])
         request = {"Names": norm_names, "WithDecryption": bool(with_decryption)}
@@ -142,7 +142,7 @@ class SsmProvider(SsmApi, ABC):
             moto_res = call_moto_with_request(context, request)
         else:
             moto_res = call_moto(context)
-        SsmProvider._notify_event_subscribers(nname, "Create")
+        SsmProvider._notify_event_subscribers(context.account_id, context.region, nname, "Create")
         return PutParameterResult(**moto_res)
 
     def get_parameter(
@@ -159,7 +159,9 @@ class SsmProvider(SsmApi, ABC):
             service = details[3]
             if service == "secretsmanager":
                 resource_name = "/".join(details[4:])
-                result = SsmProvider._get_secrets_information(norm_name, resource_name)
+                result = SsmProvider._get_secrets_information(
+                    context.account_id, context.region, norm_name, resource_name
+                )
 
         if not result:
             result = call_moto_with_request(
@@ -173,7 +175,7 @@ class SsmProvider(SsmApi, ABC):
     def delete_parameter(
         self, context: RequestContext, name: PSParameterName
     ) -> DeleteParameterResult:
-        SsmProvider._notify_event_subscribers(name, "Delete")
+        SsmProvider._notify_event_subscribers(context.account_id, context.region, name, "Delete")
         call_moto(context)  # Return type is an emtpy type.
         return DeleteParameterResult()
 
@@ -184,7 +186,9 @@ class SsmProvider(SsmApi, ABC):
         labels: ParameterLabelList,
         parameter_version: PSParameterVersion = None,
     ) -> LabelParameterVersionResult:
-        SsmProvider._notify_event_subscribers(name, "LabelParameterVersion")
+        SsmProvider._notify_event_subscribers(
+            context.account_id, context.region, name, "LabelParameterVersion"
+        )
         return LabelParameterVersionResult(**call_moto(context))
 
     def create_patch_baseline(
@@ -354,9 +358,9 @@ class SsmProvider(SsmApi, ABC):
 
     @staticmethod
     def _get_secrets_information(
-        name: ParameterName, resource_name: str
+        account_id: str, region_name: str, name: ParameterName, resource_name: str
     ) -> Optional[GetParameterResult]:
-        client = connect_to().secretsmanager
+        client = connect_to(aws_access_key_id=account_id, region_name=region_name).secretsmanager
         try:
             secret_info = client.get_secret_value(SecretId=resource_name)
             secret_info.pop("ResponseMetadata", None)
@@ -380,14 +384,16 @@ class SsmProvider(SsmApi, ABC):
             return None
 
     @staticmethod
-    def _get_params_and_secrets(names: ParameterNameList) -> GetParametersResult:
-        ssm_client = connect_to().ssm
+    def _get_params_and_secrets(
+        account_id: str, region_name: str, names: ParameterNameList
+    ) -> GetParametersResult:
+        ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
         result = {"Parameters": [], "InvalidParameters": []}
 
         for name in names:
             if name.startswith(PARAM_PREFIX_SECRETSMANAGER):
                 secret = SsmProvider._get_secrets_information(
-                    name, name[len(PARAM_PREFIX_SECRETSMANAGER) + 1 :]
+                    account_id, region_name, name, name[len(PARAM_PREFIX_SECRETSMANAGER) + 1 :]
                 )
                 if secret is not None:
                     secret = secret["Parameter"]
@@ -407,9 +413,11 @@ class SsmProvider(SsmApi, ABC):
         return GetParametersResult(**result)
 
     @staticmethod
-    def _notify_event_subscribers(name: ParameterName, operation: str):
+    def _notify_event_subscribers(
+        account_id: str, region_name: str, name: ParameterName, operation: str
+    ):
         """Publish an EventBridge event to notify subscribers of changes."""
-        events = connect_to().events
+        events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
         detail = {"name": name, "operation": operation}
         event = {
             "Source": "aws.ssm",

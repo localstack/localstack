@@ -8,6 +8,7 @@ from typing import Any, List, MutableMapping, NamedTuple, Optional, Union
 from urllib.parse import urlparse
 
 import dns.resolver
+from dnslib import DNSRecord
 
 from localstack import config, constants
 
@@ -164,7 +165,7 @@ def wait_for_port_status(
     return retry(check, sleep=sleep_time, retries=retries)
 
 
-def port_can_be_bound(port: IntOrPort) -> bool:
+def port_can_be_bound(port: IntOrPort, address: str = "") -> bool:
     """
     Return whether a local port (TCP or UDP) can be bound to. Note that this is a stricter check
     than is_port_open(...) above, as is_port_open() may return False if the port is
@@ -179,7 +180,7 @@ def port_can_be_bound(port: IntOrPort) -> bool:
         else:
             LOG.debug("Unsupported network protocol '%s' for port check", port.protocol)
             return False
-        sock.bind(("", port.port))
+        sock.bind((address, port.port))
         return True
     except OSError:
         # either the port is used or we don't have permission to bind it
@@ -467,6 +468,20 @@ def get_addressable_container_host(default_local_hostname: str = None) -> str:
     """
     default_local_hostname = default_local_hostname or constants.LOCALHOST_HOSTNAME
     return get_docker_host_from_container() if config.is_in_docker else default_local_hostname
+
+
+def send_dns_query(
+    name: str,
+    port: int = 53,
+    ip_address: str = "127.0.0.1",
+    qtype: str = "A",
+    timeout: float = 1.0,
+    tcp: bool = False,
+) -> DNSRecord:
+    LOG.debug("querying %s:%d for name %s", ip_address, port, name)
+    request = DNSRecord.question(qname=name, qtype=qtype)
+    reply_bytes = request.send(dest=ip_address, port=port, tcp=tcp, timeout=timeout, ipv6=False)
+    return DNSRecord.parse(reply_bytes)
 
 
 dynamic_port_range = PortRange(DYNAMIC_PORT_RANGE_START, DYNAMIC_PORT_RANGE_END)

@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
@@ -59,7 +60,7 @@ class TestTimeouts:
         describe_execution = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
         sfn_snapshot.match("describe_execution", describe_execution)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_fixed_timeout_service_lambda(
         self,
         aws_client,
@@ -89,7 +90,7 @@ class TestTimeouts:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_fixed_timeout_service_lambda_with_path(
         self,
         aws_client,
@@ -123,7 +124,7 @@ class TestTimeouts:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_fixed_timeout_lambda(
         self,
         aws_client,
@@ -155,8 +156,10 @@ class TestTimeouts:
             exec_input,
         )
 
-    @pytest.mark.skip(reason="Add support for State Map event history first.")
-    @markers.aws.unknown
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Add support for State Map event history first."
+    )
+    @markers.aws.needs_fixing
     def test_service_lambda_map_timeout(
         self,
         aws_client,

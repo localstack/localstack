@@ -30,10 +30,10 @@ from localstack.utils.container_utils.container_client import (
     VolumeMappings,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
-from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.docker_utils import DOCKER_CLIENT, container_ports_can_be_bound
 from localstack.utils.files import cache_dir, mkdir
 from localstack.utils.functions import call_safe
-from localstack.utils.net import get_free_tcp_port, get_free_tcp_port_range
+from localstack.utils.net import Port, get_free_tcp_port, get_free_tcp_port_range
 from localstack.utils.run import is_command_available, run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.strings import short_uid
@@ -458,6 +458,28 @@ class ContainerConfigurators:
         return _cfg
 
     @staticmethod
+    def publish_dns_ports(cfg: ContainerConfiguration):
+        dns_ports = [
+            Port(config.DNS_PORT, protocol="udp"),
+            Port(config.DNS_PORT, protocol="tcp"),
+        ]
+        if container_ports_can_be_bound(dns_ports, address=config.DNS_ADDRESS):
+            # expose the DNS server to the host
+            # TODO: update ContainerConfiguration to support multiple PortMappings objects with different bind addresses
+            docker_flags = []
+            for port in dns_ports:
+                docker_flags.extend(
+                    [
+                        "-p",
+                        f"{config.DNS_ADDRESS}:{port.port}:{port.port}/{port.protocol}",
+                    ]
+                )
+            if cfg.additional_flags is None:
+                cfg.additional_flags = " ".join(docker_flags)
+            else:
+                cfg.additional_flags += " " + " ".join(docker_flags)
+
+    @staticmethod
     def container_name(name: str):
         def _cfg(cfg: ContainerConfiguration):
             cfg.name = name
@@ -548,36 +570,120 @@ class ContainerConfigurators:
         """
         Parse docker CLI parameters and add them to the config. The currently known CLI params are::
 
-            --network=my-network     <- stored in "network"
-            -e FOO=BAR -e BAR=ed     <- stored in "env"
+            --network=my-network       <- stored in "network"
+            -e FOO=BAR -e BAR=ed       <- stored in "env"
+            -p 4566:4566 -p 4510-4559  <- stored in "publish"
+            -v ./bar:/foo/bar          <- stored in "volume"
 
         When parsed by click, the parameters would look like this::
 
             {
                 "network": "my-network",
                 "env": ("FOO=BAR", "BAR=ed"),
+                "publish": ("4566:4566", "4510-4559"),
+                "volume": ("./bar:/foo/bar",),
             }
 
         :param params: a dict of parsed parameters
         :return: a configurator
         """
+
         # TODO: consolidate with container_client.Util.parse_additional_flags
         def _cfg(cfg: ContainerConfiguration):
             if params.get("network"):
                 cfg.network = params.get("network")
 
-            # parse environment variable flags
-            if params.get("env"):
-                for e in params.get("env"):
-                    if "=" in e:
-                        k, v = e.split("=", maxsplit=1)
-                        cfg.env_vars[k] = v
-                    else:
-                        # there's currently no way in our abstraction to only pass the variable name (as
-                        # you can do in docker) so we resolve the value here.
-                        cfg.env_vars[e] = os.getenv(e)
+            # processed parsed -e, -p, and -v flags
+            ContainerConfigurators.env_cli_params(params.get("env"))(cfg)
+            ContainerConfigurators.port_cli_params(params.get("publish"))(cfg)
+            ContainerConfigurators.volume_cli_params(params.get("volume"))(cfg)
 
-            # TODO: volume and publish
+        return _cfg
+
+    @staticmethod
+    def env_cli_params(params: Iterable[str] = None):
+        """
+        Configures environment variables from additional CLI input through the ``-e`` options.
+
+        :param params: a list of environment variable declarations, e.g.,: ``("foo=bar", "baz=ed")``
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            if not params:
+                return
+
+            for e in params:
+                if "=" in e:
+                    k, v = e.split("=", maxsplit=1)
+                    cfg.env_vars[k] = v
+                else:
+                    # there's currently no way in our abstraction to only pass the variable name (as
+                    # you can do in docker) so we resolve the value here.
+                    cfg.env_vars[e] = os.getenv(e)
+
+        return _cfg
+
+    @staticmethod
+    def port_cli_params(params: Iterable[str] = None):
+        """
+        Configures port variables from additional CLI input through the ``-p`` options.
+
+        :param params: a list of port assignments, e.g.,: ``("4000-5000", "8080:80")``
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            if not params:
+                return
+
+            for port_mapping in params:
+                port_split = port_mapping.split(":")
+                protocol = "tcp"
+                if len(port_split) == 1:
+                    host_port = container_port = port_split[0]
+                elif len(port_split) == 2:
+                    host_port, container_port = port_split
+                elif len(port_split) == 3:
+                    _, host_port, container_port = port_split
+                else:
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
+
+                host_port_split = host_port.split("-")
+                if len(host_port_split) == 2:
+                    host_port = [int(host_port_split[0]), int(host_port_split[1])]
+                elif len(host_port_split) == 1:
+                    host_port = int(host_port)
+                else:
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
+
+                if "/" in container_port:
+                    container_port, protocol = container_port.split("/")
+
+                container_port_split = container_port.split("-")
+                if len(container_port_split) == 2:
+                    container_port = [int(container_port_split[0]), int(container_port_split[1])]
+                elif len(container_port_split) == 1:
+                    container_port = int(container_port)
+                else:
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
+
+                cfg.ports.add(host_port, container_port, protocol)
+
+        return _cfg
+
+    @staticmethod
+    def volume_cli_params(params: Iterable[str] = None):
+        """
+        Configures volumes from additional CLI input through the ``-v`` options.
+
+        :param params: a list of volume declarations, e.g.,: ``("./bar:/foo/bar",)``
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            for param in params:
+                cfg.volumes.append(VolumeBind.parse(param))
 
         return _cfg
 
@@ -732,6 +838,19 @@ class RunningContainer:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.shutdown()
+
+    def ip_address(self, docker_network: str | None = None) -> str:
+        """
+        Get the IP address of the container
+
+        Optionally specify the docker network
+        """
+        if docker_network is None:
+            return self.container_client.get_container_ip(container_name_or_id=self.id)
+        else:
+            return self.container_client.get_container_ipv4_for_network(
+                container_name_or_id=self.id, container_network=docker_network
+            )
 
     def is_running(self) -> bool:
         try:
@@ -929,6 +1048,7 @@ def configure_container(container: Container):
             ContainerConfigurators.service_port_range,
             ContainerConfigurators.mount_localstack_volume(config.VOLUME_DIR),
             ContainerConfigurators.mount_docker_socket,
+            ContainerConfigurators.publish_dns_ports,
             # overwrites any env vars set in the config that were previously set by configurators (e.g.,
             # `GATEWAY_LISTEN`)
             ContainerConfigurators.config_env_vars,

@@ -15,6 +15,7 @@ from typing import Any, Callable, Generic, Optional, TypedDict, TypeVar
 from boto3.session import Session
 from botocore.client import BaseClient
 from botocore.config import Config
+from botocore.waiter import Waiter
 
 from localstack import config as localstack_config
 from localstack.constants import (
@@ -27,9 +28,35 @@ from localstack.constants import (
 from localstack.utils.aws.aws_stack import get_local_service_url, get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.aws.request_context import get_region_from_request_context
+from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
+
+
+@patch(target=Waiter.wait, pass_target=True)
+def my_patch(fn, self, **kwargs):
+    """
+    We're patching defaults in here that will override the defaults specified in the waiter spec since these are usually way too long
+
+    Alternatively we could also try to find a solution where we patch the loader used in the generated clients
+    so that we can dynamically fix the waiter config when it's loaded instead of when it's being used for wait execution
+    """
+
+    if localstack_config.DISABLE_CUSTOM_BOTO_WAITER_CONFIG:
+        return fn(self, **kwargs)
+    else:
+        patched_kwargs = {
+            **kwargs,
+            "WaiterConfig": {
+                "Delay": localstack_config.BOTO_WAITER_DELAY,
+                "MaxAttempts": localstack_config.BOTO_WAITER_MAX_ATTEMPTS,
+                **kwargs.get(
+                    "WaiterConfig", {}
+                ),  # we still allow client users to override these defaults
+            },
+        }
+        return fn(self, **patched_kwargs)
 
 
 def attribute_name_to_service_name(attribute_name):
@@ -105,7 +132,7 @@ class MetadataRequestInjector(Generic[T]):
         self, source_arn: str | None = None, service_principal: str | None = None
     ) -> T:
         """
-        Provides request metadata to this client.
+        Returns a new client instance preset with the given request metadata.
         Identical to providing _ServicePrincipal and _SourceArn directly as operation arguments but typing
         compatible.
 
@@ -324,6 +351,12 @@ class ClientFactory(ABC):
         :return: Boto3 client.
         """
         with self._create_client_lock:
+            default_config = (
+                Config(retries={"max_attempts": 0})
+                if localstack_config.DISABLE_BOTO_RETRIES
+                else Config()
+            )
+
             client = self._session.client(
                 service_name=service_name,
                 region_name=region_name,
@@ -333,7 +366,7 @@ class ClientFactory(ABC):
                 aws_access_key_id=aws_access_key_id,
                 aws_secret_access_key=aws_secret_access_key,
                 aws_session_token=aws_session_token,
-                config=config,
+                config=config.merge(default_config),
             )
 
         return self._get_client_post_hook(client)

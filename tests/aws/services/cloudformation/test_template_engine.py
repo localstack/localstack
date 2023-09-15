@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
 from localstack.testing.pytest import markers
@@ -117,7 +118,7 @@ class TestIntrinsicFunctions:
             ("Fn::Or", "1", "1", True),
         ],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_and_or_functions(
         self,
         intrinsic_fn,
@@ -289,7 +290,9 @@ class TestImports:
         output = [out["OutputValue"] for out in outputs if out["OutputKey"] == "MessageQueueUrl1"][
             0
         ]
-        assert arns.sqs_queue_arn(queue_url1) == output  # TODO
+        assert (
+            arns.sqs_queue_arn(queue_url1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME) == output
+        )  # TODO
         output = [out["OutputValue"] for out in outputs if out["OutputKey"] == "MessageQueueUrl2"][
             0
         ]
@@ -329,7 +332,7 @@ class TestSsmParameters:
         tags = aws_client.sns.list_tags_for_resource(ResourceArn=matching[0])
         snapshot.match("topic-tags", tags)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -345,7 +348,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_resolve_ssm_with_version(self, create_parameter, deploy_cfn_template, aws_client):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value_v0 = f"param-value-{short_uid()}"
@@ -371,7 +374,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value_v1
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -398,7 +401,7 @@ class TestSecretsManagerParameters:
             "resolve_secretsmanager.yaml",
         ],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_resolve_secretsmanager(self, create_secret, deploy_cfn_template, template_name):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"

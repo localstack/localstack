@@ -471,7 +471,7 @@ class TestPythonRuntimes:
         result = json.loads(to_str(result["Payload"].read()))
         assert result["version"] == runtime
 
-    # TODO remove once new error test is in place
+    # TODO: remove once old provider is gone. Errors tests: tests.aws.services.lambda_.test_lambda.TestLambdaErrors
     @pytest.mark.skipif(
         not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
     )

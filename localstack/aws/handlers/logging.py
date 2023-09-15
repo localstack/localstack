@@ -98,6 +98,9 @@ class ResponseLogger:
                     response.status_code,
                     context.service_exception.code,
                     extra={
+                        # context
+                        "account_id": context.account_id,
+                        "region": context.region,
                         # request
                         "input_type": context.operation.input_shape.name
                         if context.operation.input_shape
@@ -117,6 +120,9 @@ class ResponseLogger:
                     context.operation.name,
                     response.status_code,
                     extra={
+                        # context
+                        "account_id": context.account_id,
+                        "region": context.region,
                         # request
                         "input_type": context.operation.input_shape.name
                         if context.operation.input_shape

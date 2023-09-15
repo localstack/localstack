@@ -54,7 +54,9 @@ class TestConfigService:
             ConfigurationRecorderName=TEST_CONFIG_RECORDER_NAME
         )
 
-    def test_put_delivery_channel(self, aws_client, create_role, create_configuration_recorder):
+    def test_put_delivery_channel(
+        self, aws_client, s3_create_bucket, create_role, create_configuration_recorder
+    ):
         iam_role_name = "role-{}".format(short_uid())
         iam_role_arn = create_role(
             RoleName=iam_role_name, AssumeRolePolicyDocument=json.dumps(ASSUME_POLICY_DOCUMENT)
@@ -62,9 +64,8 @@ class TestConfigService:
 
         create_configuration_recorder(iam_role_arn)
 
-        s3_client = aws_client.s3
         test_bucket_name = f"test-bucket-{short_uid()}"
-        s3_client.create_bucket(Bucket=test_bucket_name)
+        s3_create_bucket(Bucket=test_bucket_name)
 
         sns_client = aws_client.sns
         sns_topic_arn = sns_client.create_topic(Name="test-sns-topic")["TopicArn"]

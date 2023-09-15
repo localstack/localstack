@@ -22,7 +22,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestTaskServiceLambda:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_raise_exception(
         self,
         aws_client,
@@ -52,7 +52,7 @@ class TestTaskServiceLambda:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_raise_exception_catch(
         self,
         aws_client,
@@ -82,7 +82,7 @@ class TestTaskServiceLambda:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_no_such_function(
         self,
         aws_client,
@@ -112,7 +112,7 @@ class TestTaskServiceLambda:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_no_such_function_catch(
         self,
         aws_client,
@@ -142,7 +142,7 @@ class TestTaskServiceLambda:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invoke_timeout(
         self,
         aws_client,

@@ -735,6 +735,11 @@ if not DOCKER_BRIDGE_IP:
                 DOCKER_BRIDGE_IP = ip
                 break
 
+# AWS account used to store internal resources such as Lambda archives or internal SQS queues.
+# It should not be modified by the user, or visible to him, except as through a presigned url with the
+# get-function call.
+INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "949334387222"
+
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
 # -----
@@ -985,9 +990,11 @@ LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 
 # INTERNAL: 60 (default matching AWS) only applies to new lambda provider
 # Base delay in seconds for async retries. Further retries use: NUM_ATTEMPTS * LAMBDA_RETRY_BASE_DELAY_SECONDS
+# 300 (5min) is the maximum because NUM_ATTEMPTS can be at most 3 and SQS has a message timer limit of 15 min.
 # For example:
 # 1x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between initial invocation and first retry
 # 2x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between the first retry and the second retry
+# 3x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between the second retry and the third retry
 LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60)
 
 # PUBLIC: 0 (default)
@@ -1051,13 +1058,49 @@ CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED
 # e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
 CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
 
+# bind address of local DNS server
+DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
+# port of the local DNS server
+DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
+
+# Comma-separated list of regex patterns for DNS names to resolve locally.
+# Any DNS name not matched against any of the patterns on this whitelist
+# will resolve to the real DNS entry, rather than the local one.
+DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()
+
+# IP address that AWS endpoints should resolve to in our local DNS server. By default,
+# hostnames resolve to 127.0.0.1, which allows to use the LocalStack APIs transparently
+# from the host machine. If your code is running in Docker, this should be configured
+# to resolve to the Docker bridge network address, e.g., DNS_RESOLVE_IP=172.17.0.1
+DNS_RESOLVE_IP = os.environ.get("DNS_RESOLVE_IP") or LOCALHOST_IP
+
+# fallback DNS server to send upstream requests to
+DNS_SERVER = os.environ.get("DNS_SERVER")
+DNS_VERIFICATION_DOMAIN = os.environ.get("DNS_VERIFICATION_DOMAIN") or "localstack.cloud"
+
+
+def use_custom_dns():
+    return str(DNS_ADDRESS) not in FALSE_STRINGS
+
+
+BOTO_WAITER_DELAY = int(os.environ.get("BOTO_WAITER_DELAY") or "1")
+BOTO_WAITER_MAX_ATTEMPTS = int(os.environ.get("BOTO_WAITER_MAX_ATTEMPTS") or "120")
+DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONFIG")
+
+# defaults to false
+# if `DISABLE_BOTO_RETRIES=1` is set, all our created boto clients will have retries disabled
+DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
-# list of environment variable names used for configuration.
+# List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # Make sure to keep this in sync with the above!
+# Do *not* include any internal developer configurations that apply to host-mode only in this list.
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
+    "BOTO_WAITER_DELAY",
+    "BOTO_WAITER_MAX_ATTEMPTS",
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
     "CFN_VERBOSE_ERRORS",
@@ -1069,11 +1112,19 @@ CONFIG_ENV_VARS = [
     "DEFAULT_REGION",
     "DEVELOP",
     "DEVELOP_PORT",
+    "DISABLE_BOTO_RETRIES",
     "DISABLE_CORS_CHECKS",
     "DISABLE_CORS_HEADERS",
+    "DISABLE_CUSTOM_BOTO_WAITER_CONFIG",
     "DISABLE_CUSTOM_CORS_APIGATEWAY",
     "DISABLE_CUSTOM_CORS_S3",
     "DISABLE_EVENTS",
+    "DNS_ADDRESS",
+    "DNS_PORT",
+    "DNS_LOCAL_NAME_PATTERNS",
+    "DNS_RESOLVE_IP",
+    "DNS_SERVER",
+    "DNS_VERIFICATION_DOMAIN",
     "DOCKER_BRIDGE_IP",
     "DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS",
     "DYNAMODB_ERROR_PROBABILITY",
@@ -1123,7 +1174,6 @@ CONFIG_ENV_VARS = [
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
-    "LAMBDA_DEV_PORT_EXPOSE",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LAMBDA_STAY_OPEN_MODE",

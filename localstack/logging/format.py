@@ -10,6 +10,9 @@ MAX_NAME_LEN = 26
 
 LOG_FORMAT = f"%(asctime)s.%(msecs)03d %(ls_level)5s --- [%(ls_thread){MAX_THREAD_NAME_LEN}s] %(ls_name)-{MAX_NAME_LEN}s : %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
+LOG_INPUT_FORMAT = "%(input_type)s(%(input)s, headers=%(request_headers)s)"
+LOG_OUTPUT_FORMAT = "%(output_type)s(%(output)s, headers=%(response_headers)s)"
+LOG_CONTEXT_FORMAT = "%(account_id)s/%(region)s"
 
 CUSTOM_LEVEL_NAMES = {
     50: "FATAL",
@@ -106,16 +109,16 @@ def compress_logger_name(name: str, length: int) -> str:
 
 
 class TraceLoggingFormatter(logging.Formatter):
-    aws_trace_log_format = (
-        LOG_FORMAT
-        + "; %(input_type)s(%(input)s, headers=%(request_headers)s); %(output_type)s(%(output)s, headers=%(response_headers)s)"
-    )
+    aws_trace_log_format = "; ".join([LOG_FORMAT, LOG_INPUT_FORMAT, LOG_OUTPUT_FORMAT])
 
     def __init__(self):
         super().__init__(fmt=self.aws_trace_log_format, datefmt=LOG_DATE_FORMAT)
 
 
 class AwsTraceLoggingFormatter(TraceLoggingFormatter):
+    aws_trace_log_format = "; ".join(
+        [LOG_FORMAT, LOG_CONTEXT_FORMAT, LOG_INPUT_FORMAT, LOG_OUTPUT_FORMAT]
+    )
     bytes_length_display_threshold = 512
 
     def __init__(self):

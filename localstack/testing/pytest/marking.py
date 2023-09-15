@@ -55,6 +55,9 @@ class Markers:
     multiruntime: MultiRuntimeMarker = pytest.mark.multiruntime
 
     # test selection
+    acceptance_test_beta = (
+        pytest.mark.acceptance_test
+    )  # for now with a _beta suffix to make clear they are not really used as acceptance tests yet
     skip_offline = pytest.mark.skip_offline
     only_on_amd64 = pytest.mark.only_on_amd64
     resource_heavy = pytest.mark.resource_heavy

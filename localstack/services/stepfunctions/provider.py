@@ -38,7 +38,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return f"http://{LOCALHOST}:{config.LOCAL_PORT_STEPFUNCTIONS}"
 
     def accept_state_visitor(self, visitor: StateVisitor):
-        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, self.service)))
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, self.service)))
 
     def on_before_start(self):
         start_stepfunctions()

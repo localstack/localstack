@@ -1001,7 +1001,18 @@ class TestAPIGateway:
         create_rest_apigw,
         create_iam_role_with_policy,
         aws_client,
+        snapshot,
     ):
+
+        snapshot.add_transformer(snapshot.transform.key_value("executionArn", "executionArn"))
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                jsonpath="$..startDate",
+                value_replacement="<startDate>",
+                reference_replacement=False,
+            )
+        )
+
         region_name = aws_client.apigateway._client_config.region_name
         aws_account_id = aws_client.sts.get_caller_identity()["Account"]
 
@@ -1112,11 +1123,13 @@ class TestAPIGateway:
                 def _invoke_start_step_function():
                     resp = requests.post(url, data=json.dumps(test_data))
                     assert resp.ok
-                    content = json.loads(to_str(resp.content.decode()))
+                    content = json.loads(resp.content)
                     assert "executionArn" in content
                     assert "startDate" in content
+                    return content
 
-                retry(_invoke_start_step_function, retries=15, sleep=0.8)
+                body = retry(_invoke_start_step_function, retries=15, sleep=0.8)
+                snapshot.match("start_execution_response", body)
 
             case "StartSyncExecution":
                 resp_template = {APPLICATION_JSON: "$input.path('$.output')"}
@@ -1128,10 +1141,12 @@ class TestAPIGateway:
                     input_data["name"] += "1"
                     resp = requests.post(url, data=json.dumps(input_data))
                     assert resp.ok
-                    content = json.loads(to_str(resp.content.decode()))
-                    assert test_data == content
+                    body = json.loads(resp.content)
+                    assert test_data == body
+                    return body
 
-                retry(_invoke_start_sync_step_function, retries=15, sleep=0.8)
+                body = retry(_invoke_start_sync_step_function, retries=15, sleep=0.8)
+                snapshot.match("start_sync_response", body)
 
             case "DeleteStateMachine":
                 _prepare_integration({}, {})
@@ -1139,9 +1154,12 @@ class TestAPIGateway:
 
                 def _invoke_step_function():
                     resp = requests.post(url, data=json.dumps({"stateMachineArn": sm_arn}))
+                    # If the action is successful, the service sends back an HTTP 200 response with an empty HTTP body.
                     assert resp.ok
+                    return json.loads(resp.content)
 
-                retry(_invoke_step_function, retries=15, sleep=0.8)
+                body = retry(_invoke_step_function, retries=15, sleep=1)
+                snapshot.match("delete_state_machine_response", body)
 
     @markers.aws.unknown
     def test_api_gateway_http_integration_with_path_request_parameter(
@@ -1262,36 +1280,103 @@ class TestAPIGateway:
         )
         assert response.get("pathPart") == "demo1"
 
-    @markers.aws.unknown
-    def test_response_headers_invocation_with_apigw(self, create_lambda_function, aws_client):
-        lambda_name = f"test_lambda_{short_uid()}"
-        lambda_resource = "/api/v1/{proxy+}"
-        lambda_path = "/api/v1/hello/world"
+    @markers.aws.validated
+    def test_response_headers_invocation_with_apigw(
+        self, aws_client, create_rest_apigw, create_lambda_function, create_role_with_policy
+    ):
 
-        create_lambda_function(
-            func_name=lambda_name,
-            zip_file=testutil.create_zip_file(
-                TEST_LAMBDA_NODEJS_APIGW_INTEGRATION, get_content=True
-            ),
-            runtime=Runtime.nodejs16_x,
+        _, role_arn = create_role_with_policy(
+            "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+        )
+
+        function_name = f"test_lambda_{short_uid()}"
+        create_function_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
             handler="apigw_integration.handler",
+            runtime=Runtime.nodejs18_x,
         )
 
-        lambda_uri = arns.lambda_function_arn(lambda_name)
-        target_uri = f"arn:aws:apigateway:{TEST_AWS_REGION_NAME}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
-        result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
-            "test_gateway",
-            target_uri,
-            path=lambda_resource,
-            stage_name=TEST_STAGE_NAME,
+        lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+        target_uri = arns.apigateway_invocations_arn(
+            lambda_arn, aws_client.apigateway.meta.region_name
         )
-        api_id = result["id"]
-        url = path_based_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path=lambda_path)
-        result = requests.get(url)
 
-        assert result.status_code == 300
-        assert result.headers["Content-Type"] == "application/xml"
-        body = xmltodict.parse(result.content)
+        api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
+        resource_id, _ = create_rest_resource(
+            aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="{proxy+}"
+        )
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            integrationHttpMethod="POST",
+            type="AWS_PROXY",
+            uri=target_uri,
+            credentials=role_arn,
+        )
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="400",
+        )
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="500",
+        )
+
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            selectionPattern="^2.*",
+        )
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="400",
+            selectionPattern="^4.*",
+        )
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="500",
+            selectionPattern="^5.*",
+        )
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName="api")
+
+        def invoke_api():
+            url = api_invoke_url(
+                api_id=api_id,
+                stage="api",
+                path="/hello/world",
+            )
+            result = requests.get(url)
+            return result
+
+        response = retry(invoke_api, retries=15, sleep=0.8)
+        assert response.status_code == 300
+        assert response.headers["Content-Type"] == "application/xml"
+        body = xmltodict.parse(response.content)
         assert body.get("message") == "completed"
 
     @markers.aws.unknown
@@ -1898,6 +1983,8 @@ class TestIntegrations:
             stage_name=TEST_STAGE_NAME,
             queue_arn=sqs_queue,
             path="/data",
+            account_id=TEST_AWS_ACCOUNT_ID,
+            region_name=TEST_AWS_REGION_NAME,
         )
 
         # create event source for sqs lambda processor
@@ -1919,7 +2006,7 @@ class TestIntegrations:
         result = requests.post(url, data=json.dumps(test_data))
         assert 200 == result.status_code
 
-        parsed_json = xmltodict.parse(result.content)
+        parsed_json = json.loads(result.content)
         result = parsed_json["SendMessageResponse"]["SendMessageResult"]
 
         body_md5 = result["MD5OfMessageBody"]
