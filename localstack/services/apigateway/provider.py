@@ -120,8 +120,8 @@ from localstack.utils.collections import (
     select_from_typed_dict,
 )
 from localstack.utils.json import parse_json_or_yaml
-from localstack.utils.strings import short_uid, str_to_bool, to_str
-from localstack.utils.time import now_utc
+from localstack.utils.strings import short_uid, str_to_bool, to_bytes, to_str
+from localstack.utils.time import TIMESTAMP_FORMAT_TZ, now_utc, timestamp
 
 LOG = logging.getLogger(__name__)
 
@@ -353,7 +353,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))
         rest_api = import_api_from_openapi_spec(rest_api, openapi_spec, context=context)
-
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(context=context)
@@ -1823,16 +1822,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         parameters: MapOfStringToString = None,
         accepts: String = None,
     ) -> ExportResponse:
-
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
         openapi_exporter = OpenApiExporter()
         result = openapi_exporter.export_api(
             api_id=rest_api_id, stage=stage_name, export_type=export_type, export_format=accepts
         )
 
+        accepts = accepts or APPLICATION_JSON
+
         if accepts == APPLICATION_JSON:
             result = json.dumps(result, indent=2)
 
-        return ExportResponse(contentType=accepts, body=result)
+        file_ext = accepts.split("/")[-1]
+        version = moto_rest_api.version or timestamp(
+            moto_rest_api.create_date, format=TIMESTAMP_FORMAT_TZ
+        )
+        return ExportResponse(
+            body=to_bytes(result),
+            contentType="application/octet-stream",
+            contentDisposition=f'attachment; filename="{export_type}_{version}.{file_ext}"',
+        )
 
     def get_api_keys(
         self,

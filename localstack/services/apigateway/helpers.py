@@ -27,6 +27,7 @@ from localstack.aws.api.apigateway import (
     DocumentationPart,
     DocumentationPartLocation,
     IntegrationType,
+    ListOfModel,
     Model,
     RequestValidator,
 )
@@ -876,7 +877,9 @@ def import_api_from_openapi_spec(
     # 1. validate the "mode" property of the spec document, "merge" or "overwrite"
     # 2. validate the document type, "swagger" or "openapi"
 
-    rest_api.version = str(resolved_schema.get("info", {}).get("version")) or None
+    rest_api.version = (
+        str(version) if (version := resolved_schema.get("info", {}).get("version")) else None
+    )
     # XXX for some reason this makes cf tests fail that's why is commented.
     # test_cfn_handle_serverless_api_resource
     # rest_api.name = resolved_schema.get("info", {}).get("title")
@@ -1517,19 +1520,88 @@ class OpenApiExporter:
     ) -> str:
         return self.exporters.get(export_type)(api_id, stage, export_format)
 
-    @classmethod
-    def _add_paths(cls, spec, resources):
+    @staticmethod
+    def _add_paths(spec, resources):
         for item in resources.get("items"):
             path = item.get("path")
             for method, method_config in item.get("resourceMethods", {}).items():
+                print(f"{path=}, {method_config=}")
                 method = method.lower()
-                integration_responses = (
-                    method_config.get("methodIntegration", {})
-                    .get("integrationResponses", {})
-                    .keys()
-                )
-                responses = dict.fromkeys(integration_responses, {})
-                spec.path(path=path, operations={method: {"responses": responses}})
+
+                # TODO: this is extension, integration is extensions
+                method_integration = method_config.get("methodIntegration", {})
+                integration_responses = method_integration.get("integrationResponses", {})
+                method_responses = method_config.get("methodResponses")
+                responses = {}
+                produces = set()
+                for status_code, values in method_responses.items():
+                    response = {"description": f"{status_code} response"}
+                    if response_parameters := values.get("responseParameters"):
+                        headers = {}
+                        for parameter in response_parameters:
+                            in_, name = parameter.removeprefix("method.response.").split(".")
+                            # TODO: other type?
+                            if in_ == "header":
+                                headers[name] = {"type": "string"}
+
+                        if headers:
+                            response["headers"] = headers
+                    if response_models := values.get("responseModels"):
+                        for content_type, model_name in response_models.items():
+                            produces.add(content_type)
+                            response["schema"] = model_name
+                    if integration_response := integration_responses.get(status_code, {}):
+                        produces.update(integration_response.get("responseTemplates", {}).keys())
+
+                    responses[status_code] = response
+
+                request_parameters = method_config.get("requestParameters", {})
+                parameters = []
+                for parameter, required in request_parameters.items():
+                    in_, name = parameter.removeprefix("method.request.").split(".")
+                    in_ = in_ if in_ != "querystring" else "query"
+                    parameters.append(
+                        {"name": name, "in": in_, "required": required, "type": "string"}
+                    )
+
+                request_models = method_config.get("requestModels", {})
+                for model_name in request_models.values():
+                    parameter = {
+                        "in": "body",
+                        "name": model_name,
+                        "required": True,
+                        "schema": {"$ref": f"#/definitions/{model_name}"},
+                    }
+                    parameters.append(parameter)
+
+                content_types = request_models | method_integration.get("requestTemplates", {})
+
+                method_operations = {"responses": responses}
+                if parameters:
+                    method_operations["parameters"] = parameters
+                if produces:
+                    method_operations["produces"] = list(produces)
+                if content_types:
+                    method_operations["consumes"] = list(content_types.keys())
+                if operation_name := method_config.get("operationName"):
+                    method_operations["operationId"] = operation_name
+
+                spec.path(path=path, operations={method: method_operations})
+
+    def _get_definitions(self, models: ListOfModel):
+        definitions = {}
+        for model in models:
+            model_def = json.loads(model["schema"])
+            self._resolve_refs(model_def)
+            definitions[model["name"]] = model_def
+        return definitions
+
+    def _resolve_refs(self, schema: dict):
+        if "$ref" in schema:
+            schema["$ref"] = f'#/definitions/{schema["$ref"].rsplit("/", maxsplit=1)[-1]}'
+        for value in schema.values():
+            if isinstance(value, dict):
+                self._resolve_refs(value)
 
     def _swagger_export(self, api_id: str, stage: str, export_format: str) -> str:
         """
@@ -1539,13 +1611,25 @@ class OpenApiExporter:
 
         rest_api = apigateway_client.get_rest_api(restApiId=api_id)
         resources = apigateway_client.get_resources(restApiId=api_id)
+        models = apigateway_client.get_models(restApiId=api_id)
+        definitions = self._get_definitions(models["items"])
+
+        info = {}
+        kwargs = {}
+        if (description := rest_api.get("description")) is not None:
+            info["description"] = description
+        if definitions:
+            kwargs["definitions"] = definitions
 
         spec = APISpec(
             title=rest_api.get("name"),
-            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
-            info=dict(description=rest_api.get("description")),
+            version=rest_api.get("version")
+            or timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
+            info=info,
             openapi_version=self.SWAGGER_VERSION,
             basePath=f"/{stage}",
+            schemes=["https"],
+            **kwargs,
         )
 
         self._add_paths(spec, resources)
