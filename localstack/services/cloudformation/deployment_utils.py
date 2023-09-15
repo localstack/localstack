@@ -171,7 +171,7 @@ def generate_default_name_without_stack(logical_resource_id: str):
 
 # TODO: handling of multiple valid types
 param_validation = re.compile(
-    r"Invalid type for parameter (?P<param>\w+), value: (?P<value>\w+), type: <class '(?P<wrong_class>\w+)'>, valid types: <class '(?P<valid_class>\w+)'>"
+    r"Invalid type for parameter (?P<param>[\w.]+), value: (?P<value>\w+), type: <class '(?P<wrong_class>\w+)'>, valid types: <class '(?P<valid_class>\w+)'>"
 )
 
 
