@@ -578,11 +578,14 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         for existing_topic_subscription in store.topic_subscriptions.get(topic_arn, []):
             sub = store.subscriptions.get(existing_topic_subscription, {})
             if sub.get("Endpoint") == endpoint:
-                for attr in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
-                    if attributes and sub.get(attr) != attributes.get(attr):
-                        raise InvalidParameterException(
-                            "Invalid parameter: Attributes Reason: Subscription already exists with different attributes"
-                        )
+                if attributes:
+                    # validate the subscription attributes aren't different
+                    for attr in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
+                        # if a new attribute is present and different from an existent one, raise
+                        if (new_attr := attributes.get(attr)) and sub.get(attr) != new_attr:
+                            raise InvalidParameterException(
+                                "Invalid parameter: Attributes Reason: Subscription already exists with different attributes"
+                            )
 
                 return SubscribeResponse(SubscriptionArn=sub["SubscriptionArn"])
 
