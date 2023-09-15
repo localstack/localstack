@@ -1342,7 +1342,14 @@ def create_user(aws_client):
     yield _create_user
 
     for username in usernames:
-        inline_policies = aws_client.iam.list_user_policies(UserName=username)["PolicyNames"]
+        try:
+            inline_policies = aws_client.iam.list_user_policies(UserName=username)["PolicyNames"]
+        except ClientError as e:
+            LOG.debug(
+                "Cannot list user policies: %s. User %s probably already deleted...", e, username
+            )
+            continue
+
         for inline_policy in inline_policies:
             try:
                 aws_client.iam.delete_user_policy(UserName=username, PolicyName=inline_policy)
@@ -1419,9 +1426,17 @@ def create_role(aws_client):
 
     for role_name, iam_client in role_names:
         # detach policies
-        attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
-            "AttachedPolicies"
-        ]
+        try:
+            attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
+                "AttachedPolicies"
+            ]
+        except ClientError as e:
+            LOG.debug(
+                "Cannot list attached role policies: %s. Role %s probably already deleted...",
+                e,
+                role_name,
+            )
+            continue
         for attached_policy in attached_policies:
             try:
                 iam_client.detach_role_policy(
