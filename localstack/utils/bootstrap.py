@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import copy
 import functools
 import logging
@@ -688,56 +686,6 @@ class ContainerConfigurators:
         return _cfg
 
 
-def get_gateway_port(container: Container) -> int:
-    """
-    Heuristically determines for the given container the port the gateway will be reachable from the host.
-    Parses the container's ``GATEWAY_LISTEN`` if necessary and finds the appropriate port mapping.
-
-    :param container: the localstack container
-    :return: the gateway port reachable from the host
-    """
-    candidates: List[int]
-
-    gateway_listen = container.config.env_vars.get("GATEWAY_LISTEN")
-    if gateway_listen:
-        candidates = [
-            HostAndPort.parse(
-                value,
-                default_host=constants.LOCALHOST_HOSTNAME,
-                default_port=constants.DEFAULT_PORT_EDGE,
-            ).port
-            for value in gateway_listen.split(",")
-        ]
-    else:
-        candidates = [constants.DEFAULT_PORT_EDGE]
-
-    exposed = container.config.ports.to_dict()
-
-    for candidate in candidates:
-        port = exposed.get(f"{candidate}/tcp")
-        if port:
-            return port
-
-    raise ValueError("no gateway port mapping found")
-
-
-def get_gateway_url(
-    container: Container,
-    hostname: str = constants.LOCALHOST_HOSTNAME,
-    protocol: str = "http",
-) -> str:
-    """
-    Returns the localstack container's gateway URL reachable from the host. In most cases this will be
-    ``http://localhost.localstack.cloud:4566``.
-
-    :param container: the container
-    :param hostname: the hostname to use (default localhost.localstack.cloud)
-    :param protocol: the URI scheme (default http)
-    :return: a URL
-    `"""
-    return f"{protocol}://{hostname}:{get_gateway_port(container)}"
-
-
 class Container:
     def __init__(
         self, container_config: ContainerConfiguration, docker_client: ContainerClient | None = None
@@ -763,7 +711,7 @@ class Container:
         for configurator in iterator:
             configurator(self.config)
 
-    def start(self, attach: bool = False) -> RunningContainer:
+    def start(self, attach: bool = False) -> "RunningContainer":
         # FIXME: this is pretty awkward, but additional_flags in the LocalstackContainer API was
         #  always a list of ["-e FOO=BAR", ...], whereas in the DockerClient it is expected to be
         #  a string. so we need to re-assemble it here. the better way would be to not use
@@ -997,6 +945,56 @@ class LocalstackContainerServer(Server):
 
 class ContainerExists(Exception):
     pass
+
+
+def get_gateway_port(container: Container) -> int:
+    """
+    Heuristically determines for the given container the port the gateway will be reachable from the host.
+    Parses the container's ``GATEWAY_LISTEN`` if necessary and finds the appropriate port mapping.
+
+    :param container: the localstack container
+    :return: the gateway port reachable from the host
+    """
+    candidates: List[int]
+
+    gateway_listen = container.config.env_vars.get("GATEWAY_LISTEN")
+    if gateway_listen:
+        candidates = [
+            HostAndPort.parse(
+                value,
+                default_host=constants.LOCALHOST_HOSTNAME,
+                default_port=constants.DEFAULT_PORT_EDGE,
+            ).port
+            for value in gateway_listen.split(",")
+        ]
+    else:
+        candidates = [constants.DEFAULT_PORT_EDGE]
+
+    exposed = container.config.ports.to_dict()
+
+    for candidate in candidates:
+        port = exposed.get(f"{candidate}/tcp")
+        if port:
+            return port
+
+    raise ValueError("no gateway port mapping found")
+
+
+def get_gateway_url(
+    container: Container,
+    hostname: str = constants.LOCALHOST_HOSTNAME,
+    protocol: str = "http",
+) -> str:
+    """
+    Returns the localstack container's gateway URL reachable from the host. In most cases this will be
+    ``http://localhost.localstack.cloud:4566``.
+
+    :param container: the container
+    :param hostname: the hostname to use (default localhost.localstack.cloud)
+    :param protocol: the URI scheme (default http)
+    :return: a URL
+    `"""
+    return f"{protocol}://{hostname}:{get_gateway_port(container)}"
 
 
 def prepare_docker_start():
