@@ -93,6 +93,11 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
             subscriptions = attributes["Subscription"]
             del attributes["Subscription"]
 
+        tags = []
+        if attributes.get("Tags") is not None:
+            subscriptions = attributes["Tags"]
+            del attributes["Tags"]
+
         # in case cloudformation didn't provide topic name
         if model.get("TopicName") is None:
             model["TopicName"] = f"topic-{short_uid()}"
@@ -109,6 +114,8 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
                 Protocol=subscription["Protocol"],
                 Endpoint=subscription["Endpoint"],
             )
+        if tags:
+            sns.tag_resource(ResourceArn=model["TopicArn"], Tags=tags)
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
