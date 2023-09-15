@@ -907,6 +907,10 @@ class RunningContainer:
 
 
 class ContainerLogPrinter:
+    """
+    Waits on a container to start and then uses ``stream_logs`` to print each line of the logs.
+    """
+
     def __init__(self, container: Container, callback: Callable[[str], None] = print):
         self.container = container
         self.callback = callback
@@ -937,6 +941,9 @@ class ContainerLogPrinter:
 
 
 class LocalstackContainerServer(Server):
+
+    container: Container | RunningContainer
+
     def __init__(
         self, container_configuration: ContainerConfiguration | Container | None = None
     ) -> None:
@@ -961,7 +968,7 @@ class LocalstackContainerServer(Server):
         if isinstance(container_configuration, Container):
             self.container = container_configuration
         else:
-            self.container: Container | RunningContainer = Container(container_configuration)
+            self.container = Container(container_configuration)
 
     def is_up(self) -> bool:
         """
