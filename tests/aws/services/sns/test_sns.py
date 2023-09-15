@@ -740,14 +740,23 @@ class TestSNSSubscriptionCrud:
         queue_url = sqs_create_queue()
         queue_arn = sqs_get_queue_arn(queue_url)
 
-        subscribe_resp = aws_client.sns.subscribe(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            Attributes={
+        def subscribe_queue_to_topic(attributes: dict = None) -> dict:
+            kwargs = {}
+            if attributes is not None:
+                kwargs["Attributes"] = attributes
+            response = aws_client.sns.subscribe(
+                TopicArn=topic_arn,
+                Protocol="sqs",
+                Endpoint=queue_arn,
+                ReturnSubscriptionArn=True,
+                **kwargs,
+            )
+            return response
+
+        subscribe_resp = subscribe_queue_to_topic(
+            {
                 "RawMessageDelivery": "true",
-            },
-            ReturnSubscriptionArn=True,
+            }
         )
         snapshot.match("subscribe", subscribe_resp)
 
@@ -756,60 +765,40 @@ class TestSNSSubscriptionCrud:
         )
         snapshot.match("get-sub-attrs", get_attrs_resp)
 
-        subscribe_resp = aws_client.sns.subscribe(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            Attributes={
+        subscribe_resp = subscribe_queue_to_topic(
+            {
+                "RawMessageDelivery": "true",
+            }
+        )
+        snapshot.match("subscribe-exact-same-raw", subscribe_resp)
+
+        subscribe_resp = subscribe_queue_to_topic(
+            {
                 "RawMessageDelivery": "true",
                 "FilterPolicyScope": "MessageAttributes",  # test if it also matches default values
-            },
-            ReturnSubscriptionArn=True,
+            }
         )
+
         snapshot.match("subscribe-idempotent", subscribe_resp)
 
         # no attributes and empty attributes are working as well
-        subscribe_resp = aws_client.sns.subscribe(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            ReturnSubscriptionArn=True,
-        )
+        subscribe_resp = subscribe_queue_to_topic()
         snapshot.match("subscribe-idempotent-no-attributes", subscribe_resp)
 
-        subscribe_resp = aws_client.sns.subscribe(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            ReturnSubscriptionArn=True,
-            Attributes={},
-        )
+        subscribe_resp = subscribe_queue_to_topic({})
         snapshot.match("subscribe-idempotent-empty-attributes", subscribe_resp)
 
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.subscribe(
-                TopicArn=topic_arn,
-                Protocol="sqs",
-                Endpoint=queue_arn,
-                Attributes={
-                    "RawMessageDelivery": "false",
-                    "FilterPolicyScope": "MessageBody",
-                },
-                ReturnSubscriptionArn=True,
-            )
-        snapshot.match("subscribe-diff-attributes", e.value.response)
+        subscribe_resp = subscribe_queue_to_topic({"FilterPolicyScope": "MessageAttributes"})
+        snapshot.match("subscribe-missing-attributes", subscribe_resp)
 
         with pytest.raises(ClientError) as e:
-            aws_client.sns.subscribe(
-                TopicArn=topic_arn,
-                Protocol="sqs",
-                Endpoint=queue_arn,
-                Attributes={
+            subscribe_queue_to_topic(
+                {
                     "RawMessageDelivery": "false",
-                },
-                ReturnSubscriptionArn=True,
+                    "FilterPolicyScope": "MessageBody",
+                }
             )
-        snapshot.match("subscribe-missing-attributes", e.value.response)
+        snapshot.match("subscribe-diff-attributes", e.value.response)
 
 
 class TestSNSSubscriptionLambda:
