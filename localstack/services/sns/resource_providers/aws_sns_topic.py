@@ -77,55 +77,44 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
         sns = request.aws_client_factory.sns
         # TODO: validations and iam checks
 
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            attributes = {k: v for k, v in model.items() if v is not None}
+        attributes = {k: v for k, v in model.items() if v is not None if k != "TopicName"}
 
-            # following attributes need to be str instead of bool for boto to work
-            if attributes.get("FifoTopic") is not None:
-                attributes["FifoTopic"] = str(attributes.get("FifoTopic"))
+        # following attributes need to be str instead of bool for boto to work
+        if attributes.get("FifoTopic") is not None:
+            attributes["FifoTopic"] = str(attributes.get("FifoTopic"))
 
-            if attributes.get("ContentBasedDeduplication") is not None:
-                attributes["ContentBasedDeduplication"] = str(
-                    attributes.get("ContentBasedDeduplication")
-                )
-
-            subscriptions = []
-            if attributes.get("Subscription") is not None:
-                subscriptions = attributes["Subscription"]
-                del attributes["Subscription"]
-
-            # in case cloudformation didn't provide topic name
-            if model.get("TopicName") is None:
-                model["TopicName"] = f"topic-{short_uid()}"
-
-            create_sns_response = sns.create_topic(Name=model["TopicName"], Attributes=attributes)
-            request.custom_context[REPEATED_INVOCATION] = True
-            model["TopicArn"] = create_sns_response["TopicArn"]
-
-            # now we add subscriptions if they exists
-            # TODO do we need to keep arns for unsubscribing before deleting topic
-            for subscription in subscriptions:
-                sns.subscribe(
-                    TopicArn=model["TopicArn"],
-                    Protocol=subscription["Protocol"],
-                    Endpoint=subscription["Endpoint"],
-                )
-
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS,
-                resource_model=model,
-                custom_context=request.custom_context,
+        if attributes.get("ContentBasedDeduplication") is not None:
+            attributes["ContentBasedDeduplication"] = str(
+                attributes.get("ContentBasedDeduplication")
             )
 
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+        subscriptions = []
+        if attributes.get("Subscription") is not None:
+            subscriptions = attributes["Subscription"]
+            del attributes["Subscription"]
 
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+        # in case cloudformation didn't provide topic name
+        if model.get("TopicName") is None:
+            model["TopicName"] = f"topic-{short_uid()}"
+
+        create_sns_response = sns.create_topic(Name=model["TopicName"], Attributes=attributes)
+        request.custom_context[REPEATED_INVOCATION] = True
+        model["TopicArn"] = create_sns_response["TopicArn"]
+
+        # now we add subscriptions if they exists
+        # TODO do we need to keep arns for unsubscribing before deleting topic
+        for subscription in subscriptions:
+            sns.subscribe(
+                TopicArn=model["TopicArn"],
+                Protocol=subscription["Protocol"],
+                Endpoint=subscription["Endpoint"],
+            )
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def read(
         self,
@@ -146,15 +135,15 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
         self,
         request: ResourceRequest[SNSTopicProperties],
     ) -> ProgressEvent[SNSTopicProperties]:
-        model = request.desired_state
-        sns = request.aws_client_factory.sns
-        sns.delete_topic(TopicArn=model["TopicArn"])
         """
         Delete a resource
 
         IAM permissions required:
           - sns:DeleteTopic
         """
+        model = request.desired_state
+        sns = request.aws_client_factory.sns
+        sns.delete_topic(TopicArn=model["TopicArn"])
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
