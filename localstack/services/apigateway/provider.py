@@ -1824,8 +1824,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> ExportResponse:
         moto_rest_api = get_moto_rest_api(context, rest_api_id)
         openapi_exporter = OpenApiExporter()
+        # FIXME: look into parser why `parameters` is always None
+        has_extension = context.request.values.get("extensions") == "apigateway"
         result = openapi_exporter.export_api(
-            api_id=rest_api_id, stage=stage_name, export_type=export_type, export_format=accepts
+            api_id=rest_api_id,
+            stage=stage_name,
+            export_type=export_type,
+            export_format=accepts,
+            with_extension=has_extension,
         )
 
         accepts = accepts or APPLICATION_JSON

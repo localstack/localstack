@@ -40,10 +40,13 @@ def test_export_swagger_openapi(aws_client, snapshot, import_file):
     )
     snapshot.match("get-export", response)
 
-    # response = aws_client.apigateway.get_export(
-    #     restApiId=api_id, stageName="local", exportType="swagger", parameters={"extensions": "apigateway"}
-    # )
-    # snapshot.match("get-export-with-extensions", response)
+    response = aws_client.apigateway.get_export(
+        restApiId=api_id,
+        stageName="local",
+        exportType="swagger",
+        parameters={"extensions": "apigateway"},
+    )
+    snapshot.match("get-export-with-extensions", response)
 
 
 @markers.aws.validated
@@ -64,7 +67,7 @@ def test_export_oas30_openapi(aws_client, snapshot, import_file):
 
     spec_file = load_file(import_file)
     response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
-    # snapshot.match("import-api", response)
+    snapshot.match("import-api", response)
     api_id = response["id"]
 
     aws_client.apigateway.create_deployment(restApiId=api_id, stageName="local")
@@ -74,13 +77,16 @@ def test_export_oas30_openapi(aws_client, snapshot, import_file):
     )
     snapshot.match("get-export", response)
 
-    # response = aws_client.apigateway.get_export(
-    #   restApiId=api_id, stageName="local", exportType="oas30", parameters={"extensions": "apigateway"}
-    # )
-    # snapshot.match("get-export-with-extensions", response)
+    response = aws_client.apigateway.get_export(
+        restApiId=api_id,
+        stageName="local",
+        exportType="oas30",
+        parameters={"extensions": "apigateway"},
+    )
+    snapshot.match("get-export-with-extensions", response)
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_create_domain_names(aws_client):
     domain_name = f"{short_uid()}-testDomain"
     test_certificate_name = "test.certificate"
@@ -101,7 +107,7 @@ def test_create_domain_names(aws_client):
     assert ex.value.response["Error"]["Code"] == "BadRequestException"
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_get_domain_names(aws_client):
     # create domain name
     domain_name = f"domain-{short_uid()}"
@@ -122,7 +128,7 @@ def test_get_domain_names(aws_client):
     assert added[0]["domainNameStatus"] == "AVAILABLE"
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_get_domain_name(aws_client):
     domain_name = f"{short_uid()}-testDomain"
     # adding a domain name

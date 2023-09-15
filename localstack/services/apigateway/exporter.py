@@ -1,6 +1,6 @@
 import abc
 import json
-from typing import Literal, Type
+from typing import Type
 
 from apispec import APISpec
 
@@ -9,7 +9,10 @@ from localstack.aws.connect import connect_to
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 # TODO:
-# - handle extensions
+# - handle more extensions
+#   see the list in OpenAPIExt
+#   currently handled:
+#     - x-amazon-apigateway-integration
 #
 
 
@@ -35,25 +38,40 @@ class _BaseOpenApiExporter(abc.ABC):
             if isinstance(value, dict):
                 self._resolve_refs(value, base_path)
 
+    @staticmethod
+    def _get_integration(method_integration) -> dict:
+        fields = {
+            "type",
+            "passthroughBehavior",
+            "requestParameters",
+            "requestTemplates",
+            "httpMethod",
+            "uri",
+        }
+        integration = {k: v for k, v in method_integration.items() if k in fields}
+        integration["type"] = integration["type"].lower()
+        integration["passthroughBehavior"] = integration["passthroughBehavior"].lower()
+        if responses := method_integration.get("integrationResponses"):
+            integration["responses"] = {"default": responses.get("200")}
+        return integration
+
     @abc.abstractmethod
-    def export(self, api_id: str, stage: str, export_format: str) -> str:
+    def export(self, api_id: str, stage: str, export_format: str, with_extension: bool) -> str:
         ...
 
     @staticmethod
     @abc.abstractmethod
-    def _add_paths(spec, resources):
+    def _add_paths(spec, resources, with_extension):
         ...
 
 
 class _OpenApiSwaggerExporter(_BaseOpenApiExporter):
     VERSION = "2.0"
 
-    @staticmethod
-    def _add_paths(spec, resources):
+    def _add_paths(self, spec, resources, with_extension):
         for item in resources.get("items"):
             path = item.get("path")
             for method, method_config in item.get("resourceMethods", {}).items():
-                print(f"{path=}, {method_config=}")
                 method = method.lower()
 
                 # TODO: this is extension, integration is extensions
@@ -102,21 +120,23 @@ class _OpenApiSwaggerExporter(_BaseOpenApiExporter):
                     }
                     parameters.append(parameter)
 
-                content_types = request_models | method_integration.get("requestTemplates", {})
-
                 method_operations = {"responses": responses}
                 if parameters:
                     method_operations["parameters"] = parameters
                 if produces:
                     method_operations["produces"] = list(produces)
-                if content_types:
+                if content_types := request_models | method_integration.get("requestTemplates", {}):
                     method_operations["consumes"] = list(content_types.keys())
                 if operation_name := method_config.get("operationName"):
                     method_operations["operationId"] = operation_name
+                if with_extension and method_integration:
+                    method_operations["x-amazon-apigateway-integration"] = self._get_integration(
+                        method_integration
+                    )
 
                 spec.path(path=path, operations={method: method_operations})
 
-    def export(self, api_id: str, stage: str, export_format: str) -> str:
+    def export(self, api_id: str, stage: str, export_format: str, with_extension: bool) -> str:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md
         """
@@ -140,7 +160,7 @@ class _OpenApiSwaggerExporter(_BaseOpenApiExporter):
             schemes=["https"],
         )
 
-        self._add_paths(spec, resources)
+        self._add_paths(spec, resources, with_extension)
         self._add_models(spec, models["items"], "#/definitions")
 
         return getattr(spec, self.export_formats.get(export_format))()
@@ -149,12 +169,10 @@ class _OpenApiSwaggerExporter(_BaseOpenApiExporter):
 class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
     VERSION = "3.0.1"
 
-    @staticmethod
-    def _add_paths(spec, resources):
+    def _add_paths(self, spec, resources, with_extension):
         for item in resources.get("items"):
             path = item.get("path")
             for method, method_config in item.get("resourceMethods", {}).items():
-                print(f"{path=}, {method_config=}")
                 method = method.lower()
 
                 # TODO: this is extension, integration is extensions
@@ -170,7 +188,7 @@ class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
                         headers = {}
                         for parameter in response_parameters:
                             in_, name = parameter.removeprefix("method.response.").split(".")
-                            # TODO: other type?
+                            # TODO: other type? query?
                             if in_ == "header":
                                 headers[name] = {"schema": {"type": "string"}}
 
@@ -209,10 +227,14 @@ class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
                     method_operations["requestBody"] = request_body
                 if operation_name := method_config.get("operationName"):
                     method_operations["operationId"] = operation_name
+                if with_extension and method_integration:
+                    method_operations["x-amazon-apigateway-integration"] = self._get_integration(
+                        method_integration
+                    )
 
                 spec.path(path=path, operations={method: method_operations})
 
-    def export(self, api_id: str, stage: str, export_format: str) -> str:
+    def export(self, api_id: str, stage: str, export_format: str, with_extension: bool) -> str:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
         """
@@ -236,7 +258,7 @@ class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
             servers=[{"variables": {"basePath": {"default": stage}}}],
         )
 
-        self._add_paths(spec, resources)
+        self._add_paths(spec, resources, with_extension)
         self._add_models(spec, models["items"], "#/components/schemas")
 
         response = getattr(spec, self.export_formats.get(export_format))()
@@ -255,8 +277,9 @@ class OpenApiExporter:
         self,
         api_id: str,
         stage: str,
-        export_type: Literal["swagger", "oas30"],
+        export_type: str,
         export_format: str = "application/json",
+        with_extension=False,
     ) -> str:
         exporter = self.exporters.get(export_type)()
-        return exporter.export(api_id, stage, export_format)
+        return exporter.export(api_id, stage, export_format, with_extension)
