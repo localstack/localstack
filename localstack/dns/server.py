@@ -835,6 +835,7 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
         dns_server.shutdown()
         return
     DNS_SERVER = dns_server
+    LOG.debug("DNS server startup finished!")
 
 
 def stop_servers():
@@ -858,6 +859,7 @@ def start_dns_server_as_sudo(port: int):
         return
 
     DNS_SERVER = dns_server
+    LOG.debug("DNS server startup finished (as sudo)!")
 
 
 def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = False):
