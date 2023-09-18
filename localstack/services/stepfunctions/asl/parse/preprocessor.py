@@ -129,6 +129,25 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.default_
 from localstack.services.stepfunctions.asl.component.state.state_choice.state_choice import (
     StateChoice,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import \
+    ItemReader
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.csv_header_location import (
+    CSVHeaderLocation,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.csv_headers import (
+    CSVHeaders,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.input_type import (
+    InputType,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.max_items_decl import (
+    MaxItems,
+    MaxItemsDecl,
+    MaxItemsPath,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
+    ReaderConfig,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
@@ -161,6 +180,13 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
     StateTaskService,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_factory import (
+    state_task_service_for,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import StateTask
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_factory import (
+    state_task_for,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_lambda import (
     StateTaskLambda,
@@ -325,16 +351,7 @@ class Preprocessor(ASLParserVisitor):
         match state_props.get(StateType):
             case StateType.Task:
                 resource: Resource = state_props.get(Resource)
-                if not resource:
-                    raise ValueError("No Resource declaration in State Task.")
-                if isinstance(resource, LambdaResource):
-                    state = StateTaskLambda()
-                elif isinstance(resource, ServiceResource):
-                    state = StateTaskService.for_service(service_name=resource.service_name)
-                else:
-                    raise NotImplementedError(
-                        f"Resource of type '{type(resource)}' are not supported: '{resource}'."
-                    )
+                state = state_task_for(resource)
             case StateType.Pass:
                 state = StatePass()
             case StateType.Choice:
@@ -543,6 +560,69 @@ class Preprocessor(ASLParserVisitor):
     def visitItem_selector_decl(self, ctx: ASLParser.Item_selector_declContext) -> ItemSelector:
         payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
         return ItemSelector(payload_tmpl=payload_tmpl)
+
+    def visitItem_reader_decl(self, ctx:ASLParser.Item_reader_declContext) -> ItemReader:
+        props = TypedProps()
+        for child in ctx.children[3:-1]:
+            cmp = self.visit(child)
+            props.add(cmp)
+        resource: Resource = props.get(typ=Resource, raise_on_missing=ValueError(f"Expected a Resource declaration at '{ctx.getText()}'."))
+        state_task: StateTask = state_task_for(resource=resource)
+        return ItemReader(
+            state_task=state_task,
+            parameters=props.get(Parameters),
+            reader_config=props.get(ReaderConfig)
+        )
+
+    def visitReader_config_decl(self, ctx: ASLParser.Reader_config_declContext) -> ReaderConfig:
+        props = TypedProps()
+        for child in ctx.children:
+            cmp = self.visit(child)
+            props.add(cmp)
+        return ReaderConfig(
+            input_type=props.get(
+                typ=InputType,
+                raise_on_missing=ValueError(
+                    f"Expected a InputType declaration at '{ctx.getText()}'."
+                ),
+            ),
+            max_items=props.get(typ=MaxItemsDecl),
+            csv_header_location=props.get(
+                CSVHeaderLocation,
+                raise_on_missing=ValueError(
+                    f"Expected a CSVHeaderLocation declaration at '{ctx.getText()}'."
+                ),
+            ),
+            csv_headers=props.get(CSVHeaders),
+        )
+
+    def visitInput_type_decl(self, ctx: ASLParser.Input_type_declContext) -> InputType:
+        input_type = self._inner_string_of(ctx.keyword_or_string())
+        return InputType(input_type=input_type)
+
+    def visitCsv_header_location_decl(
+        self, ctx: ASLParser.Csv_header_location_declContext
+    ) -> CSVHeaderLocation:
+        value = self._inner_string_of(ctx.keyword_or_string())
+        return CSVHeaderLocation(csv_header_location_value=value)
+
+    def visitCsv_headers_decl(self, ctx: ASLParser.Csv_headers_declContext) -> CSVHeaders:
+        csv_headers: list[str] = list()
+        for child in ctx.children[3:-1]:
+            maybe_str = Antlr4Utils.is_production(
+                pt=child, rule_index=ASLParser.RULE_keyword_or_string
+            )
+            if maybe_str is not None:
+                csv_headers.append(self._inner_string_of(maybe_str))
+        # TODO: check for empty headers behaviour.
+        return CSVHeaders(header_names=csv_headers)
+
+    def visitMax_items_path_decl(self, ctx: ASLParser.Max_items_path_declContext) -> MaxItemsPath:
+        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return MaxItemsPath(path=path)
+
+    def visitMax_items_decl(self, ctx: ASLParser.Max_items_declContext) -> MaxItems:
+        return MaxItems(max_items=int(ctx.INT().getText()))
 
     def visitRetry_decl(self, ctx: ASLParser.Retry_declContext) -> RetryDecl:
         retriers: list[RetrierDecl] = list()

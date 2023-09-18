@@ -106,6 +106,14 @@ RESULT: '"Result"';
 PARAMETERS: '"Parameters"';
 RESULTSELECTOR: '"ResultSelector"';
 
+ITEMREADER: '"ItemReader"';
+READERCONFIG: '"ReaderConfig"';
+INPUTTYPE: '"InputType"';
+CSVHEADERLOCATION: '"CSVHeaderLocation"';
+CSVHEADERS: '"CSVHeaders"';
+MAXITEMS: '"MaxItems"';
+MAXITEMSPATH: '"MaxItemsPath"';
+
 NEXT: '"Next"';
 END: '"End"';
 

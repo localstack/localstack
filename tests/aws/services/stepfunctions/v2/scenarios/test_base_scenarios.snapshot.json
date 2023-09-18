@@ -8863,5 +8863,62 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_list_objects_v2": {
+    "recorded-date": "17-09-2023, 21:11:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "<bucket_name>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "<bucket_name>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). The ItemReader, ItemBatcher and ResultWriter fields are not supported for INLINE maps",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_csv_headers_first_line": {
+    "recorded-date": "17-09-2023, 22:11:57",
+    "recorded-content": {}
   }
 }

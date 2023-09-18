@@ -557,6 +557,87 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#item_reader_decl.
+    def enterItem_reader_decl(self, ctx:ASLParser.Item_reader_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#item_reader_decl.
+    def exitItem_reader_decl(self, ctx:ASLParser.Item_reader_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#items_reader_field.
+    def enterItems_reader_field(self, ctx:ASLParser.Items_reader_fieldContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#items_reader_field.
+    def exitItems_reader_field(self, ctx:ASLParser.Items_reader_fieldContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#reader_config_decl.
+    def enterReader_config_decl(self, ctx:ASLParser.Reader_config_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#reader_config_decl.
+    def exitReader_config_decl(self, ctx:ASLParser.Reader_config_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#reader_config_field.
+    def enterReader_config_field(self, ctx:ASLParser.Reader_config_fieldContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#reader_config_field.
+    def exitReader_config_field(self, ctx:ASLParser.Reader_config_fieldContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#input_type_decl.
+    def enterInput_type_decl(self, ctx:ASLParser.Input_type_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#input_type_decl.
+    def exitInput_type_decl(self, ctx:ASLParser.Input_type_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#csv_header_location_decl.
+    def enterCsv_header_location_decl(self, ctx:ASLParser.Csv_header_location_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#csv_header_location_decl.
+    def exitCsv_header_location_decl(self, ctx:ASLParser.Csv_header_location_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#csv_headers_decl.
+    def enterCsv_headers_decl(self, ctx:ASLParser.Csv_headers_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#csv_headers_decl.
+    def exitCsv_headers_decl(self, ctx:ASLParser.Csv_headers_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#max_items_decl.
+    def enterMax_items_decl(self, ctx:ASLParser.Max_items_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#max_items_decl.
+    def exitMax_items_decl(self, ctx:ASLParser.Max_items_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#max_items_path_decl.
+    def enterMax_items_path_decl(self, ctx:ASLParser.Max_items_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#max_items_path_decl.
+    def exitMax_items_path_decl(self, ctx:ASLParser.Max_items_path_declContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#mode_decl.
     def enterMode_decl(self, ctx:ASLParser.Mode_declContext):
         pass

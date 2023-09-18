@@ -1,8 +1,11 @@
 import json
+import time
 
 import pytest
 
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer import RegexTransformer
+from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.conftest import SfnNoneRecursiveParallelTransformer
 from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
     ScenariosTemplate as ST,
@@ -370,6 +373,81 @@ class TestBaseScenarios:
         template = ST.load_sfn_template(ST.CHOICE_STATE_AWS_SCENARIO)
         definition = json.dumps(template)
         exec_input = json.dumps({"type": "Private", "value": 22})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.unknown
+    def test_map_item_reader_base_list_objects_v2(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "<bucket_name>"))
+        for i in range(3):
+            aws_client.s3.put_object(
+                Bucket=bucket_name,
+                Key=f"file_{i}.txt",
+                Body=f"{i}HelloWorld!"
+            )
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_LIST_OBJECTS_V2)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({
+            "Bucket": bucket_name
+        })
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.unknown
+    def test_map_item_reader_base_csv_headers_first_line(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        # bucket_name = f"test-{short_uid()}"
+        # aws_client.s3.create_bucket(Bucket=bucket_name)
+        key = "file.csv"
+        # aws_client.s3.create_bucket(Bucket=bucket_name, ACL="public-read")
+        aws_client.s3.put_object(
+            # ACL="public-read",
+            Bucket=bucket_name,
+            Key=key,
+            Body="Col1,Col2,Col3\nValue1,Value2,Value3\nValue4,Value5,Value6"
+        )
+        # aws_client.s3.put_bucket_acl(
+        #     Bucket=bucket_name,
+        #     # Key=key,
+        #     ACL="public-read"
+        # )
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({
+            "Bucket": bucket_name,
+            "Key": key
+        })
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
