@@ -16,7 +16,7 @@ from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries, resources
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import poll_condition, wait_until
 from tests.aws.services.kinesis.test_kinesis import get_shard_iterator
 
 PARTITION_KEY = "id"
@@ -1708,3 +1708,71 @@ class TestDynamoDB:
 
         response = aws_client.dynamodb.describe_continuous_backups(TableName=table_name)
         snapshot.match("describe-continuous-backup", response)
+
+    @markers.aws.validated
+    def test_stream_destination_records(
+        self, aws_client, dynamodb_create_table_with_parameters, kinesis_create_stream
+    ):
+        table_name = f"table-{short_uid()}"
+        dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )
+        stream_name = kinesis_create_stream()
+        aws_client.kinesis.get_waiter("stream_exists").wait(
+            StreamName=stream_name,
+        )
+
+        # get stream arn
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        aws_client.dynamodb.enable_kinesis_streaming_destination(
+            TableName=table_name,
+            StreamArn=stream_arn,
+        )
+
+        def check_destination_status():
+            response = aws_client.dynamodb.describe_kinesis_streaming_destination(
+                TableName=table_name,
+            )
+            return response["KinesisDataStreamDestinations"][0]["DestinationStatus"] == "ACTIVE"
+
+        wait = 30 if is_aws_cloud() else 5
+        max_retries = 10 if is_aws_cloud() else 2
+        wait_until(check_destination_status(), wait=wait, max_retries=max_retries)
+
+        # put item
+        aws_client.dynamodb.put_item(
+            TableName=table_name,
+            Item={PARTITION_KEY: {"S": "id1"}, "version": {"N": "1"}, "data": {"B": b"\x90"}},
+        )
+
+        iterator = get_shard_iterator(stream_name, aws_client.kinesis)
+
+        def assert_records():
+            # get stream records
+            response = aws_client.kinesis.get_records(
+                StreamARN=stream_arn,
+                ShardIterator=iterator,
+                Limit=1,
+            )
+            records = response["Records"]
+            assert len(records) > 0
+
+        sleep_secs = 1
+        retries = 5
+        if is_aws_cloud():
+            sleep_secs = 5
+            retries = 30
+
+        retry(
+            assert_records,
+            retries=retries,
+            sleep=sleep_secs,
+            sleep_before=2,
+        )

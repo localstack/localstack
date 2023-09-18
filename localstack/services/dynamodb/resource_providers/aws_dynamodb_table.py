@@ -275,14 +275,12 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                     request.stack_id, request.logical_resource_id
                 )
 
-            model["ProvisionedThroughput"] = (
-                get_ddb_provisioned_throughput(model)
-                if model.get("ProvisionedThroughput")
-                else None
-            )
-            model["GlobalSecondaryIndexes"] = (
-                get_ddb_global_sec_indexes(model) if model.get("GlobalSecondaryIndexes") else None
-            )
+            if model.get("ProvisionedThroughput"):
+                model["ProvisionedThroughput"] = get_ddb_provisioned_throughput(model)
+
+            if model.get("GlobalSecondaryIndexes"):
+                model["GlobalSecondaryIndexes"] = get_ddb_global_sec_indexes(model)
+
             model["StreamSpecification"] = {
                 **model.get("StreamSpecification", {}),
                 **{"StreamEnabled": True},
