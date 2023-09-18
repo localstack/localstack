@@ -8,6 +8,8 @@ from localstack.aws.api.apigateway import ListOfModel
 from localstack.aws.connect import connect_to
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
+from .helpers import OpenAPIExt
+
 # TODO:
 # - handle more extensions
 #   see the list in OpenAPIExt
@@ -39,7 +41,7 @@ class _BaseOpenApiExporter(abc.ABC):
                 self._resolve_refs(value, base_path)
 
     @staticmethod
-    def _get_integration(method_integration) -> dict:
+    def _get_integration(method_integration: dict) -> dict:
         fields = {
             "type",
             "passthroughBehavior",
@@ -56,12 +58,23 @@ class _BaseOpenApiExporter(abc.ABC):
         return integration
 
     @abc.abstractmethod
-    def export(self, api_id: str, stage: str, export_format: str, with_extension: bool) -> str:
+    def export(
+        self, api_id: str, stage: str, export_format: str, with_extension: bool
+    ) -> str | dict:
         ...
 
-    @staticmethod
     @abc.abstractmethod
-    def _add_paths(spec, resources, with_extension):
+    def _add_paths(self, spec: APISpec, resources: dict, with_extension: bool):
+        """
+        This method iterates over the different REST resources and its methods to add the APISpec paths using the
+        `apispec` module.
+        The path format is different between Swagger (OpenAPI 2.0) and OpenAPI 3.0
+        :param spec: an APISpec object representing the exported API Gateway REST API
+        :param resources: the API Gateway REST API resources (methods, methods integrations, responses...)
+        :param with_extension: flag to add the custom OpenAPI extension `apigateway`, allowing to properly import
+        integrations for example, or authorizers. (all the `x-amazon` fields contained in `OpenAPIExt`).
+        :return: None
+        """
         ...
 
 
@@ -74,7 +87,6 @@ class _OpenApiSwaggerExporter(_BaseOpenApiExporter):
             for method, method_config in item.get("resourceMethods", {}).items():
                 method = method.lower()
 
-                # TODO: this is extension, integration is extensions
                 method_integration = method_config.get("methodIntegration", {})
                 integration_responses = method_integration.get("integrationResponses", {})
                 method_responses = method_config.get("methodResponses")
@@ -130,7 +142,7 @@ class _OpenApiSwaggerExporter(_BaseOpenApiExporter):
                 if operation_name := method_config.get("operationName"):
                     method_operations["operationId"] = operation_name
                 if with_extension and method_integration:
-                    method_operations["x-amazon-apigateway-integration"] = self._get_integration(
+                    method_operations[OpenAPIExt.INTEGRATION] = self._get_integration(
                         method_integration
                     )
 
@@ -175,7 +187,6 @@ class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
             for method, method_config in item.get("resourceMethods", {}).items():
                 method = method.lower()
 
-                # TODO: this is extension, integration is extensions
                 method_integration = method_config.get("methodIntegration", {})
                 integration_responses = method_integration.get("integrationResponses", {})
                 method_responses = method_config.get("methodResponses")
@@ -228,7 +239,7 @@ class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
                 if operation_name := method_config.get("operationName"):
                     method_operations["operationId"] = operation_name
                 if with_extension and method_integration:
-                    method_operations["x-amazon-apigateway-integration"] = self._get_integration(
+                    method_operations[OpenAPIExt.INTEGRATION] = self._get_integration(
                         method_integration
                     )
 
