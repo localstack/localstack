@@ -7,10 +7,9 @@ import re
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 from urllib import parse as urlparse
 
-from apispec import APISpec
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
@@ -51,7 +50,6 @@ from localstack.utils.aws.aws_responses import requests_error_response_json, req
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.json import try_json
 from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
-from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -876,7 +874,9 @@ def import_api_from_openapi_spec(
     # 1. validate the "mode" property of the spec document, "merge" or "overwrite"
     # 2. validate the document type, "swagger" or "openapi"
 
-    rest_api.version = str(resolved_schema.get("info", {}).get("version")) or None
+    rest_api.version = (
+        str(version) if (version := resolved_schema.get("info", {}).get("version")) else None
+    )
     # XXX for some reason this makes cf tests fail that's why is commented.
     # test_cfn_handle_serverless_api_resource
     # rest_api.name = resolved_schema.get("info", {}).get("title")
@@ -1493,84 +1493,6 @@ def create_invocation_headers(invocation_context: ApiInvocationContext) -> Dict[
             ):
                 headers.update({header_name: req_parameter_value})
     return headers
-
-
-# TODO:
-# - handle extensions
-#
-
-TypeExporter = Callable[[str, str, str], str]
-
-
-class OpenApiExporter:
-    SWAGGER_VERSION = "2.0"
-    OPENAPI_VERSION = "3.0.1"
-
-    exporters: Dict[str, TypeExporter]
-
-    def __init__(self):
-        self.exporters = {"swagger": self._swagger_export, "oas30": self._oas30_export}
-        self.export_formats = {"application/json": "to_dict", "application/yaml": "to_yaml"}
-
-    def export_api(
-        self, api_id: str, stage: str, export_type: str, export_format: str = "application/json"
-    ) -> str:
-        return self.exporters.get(export_type)(api_id, stage, export_format)
-
-    @classmethod
-    def _add_paths(cls, spec, resources):
-        for item in resources.get("items"):
-            path = item.get("path")
-            for method, method_config in item.get("resourceMethods").items():
-                method = method.lower()
-                integration_responses = (
-                    method_config.get("methodIntegration", {})
-                    .get("integrationResponses", {})
-                    .keys()
-                )
-                responses = dict.fromkeys(integration_responses, {})
-                spec.path(path=path, operations={method: {"responses": responses}})
-
-    def _swagger_export(self, api_id: str, stage: str, export_format: str) -> str:
-        """
-        https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md
-        """
-        apigateway_client = connect_to().apigateway
-
-        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
-        resources = apigateway_client.get_resources(restApiId=api_id)
-
-        spec = APISpec(
-            title=rest_api.get("name"),
-            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
-            info=dict(description=rest_api.get("description")),
-            openapi_version=self.SWAGGER_VERSION,
-            basePath=f"/{stage}",
-        )
-
-        self._add_paths(spec, resources)
-
-        return getattr(spec, self.export_formats.get(export_format))()
-
-    def _oas30_export(self, api_id: str, stage: str, export_format: str) -> str:
-        """
-        https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
-        """
-        apigateway_client = connect_to().apigateway
-
-        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
-        resources = apigateway_client.get_resources(restApiId=api_id)
-
-        spec = APISpec(
-            title=rest_api.get("name"),
-            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
-            info=dict(description=rest_api.get("description")),
-            openapi_version=self.OPENAPI_VERSION,
-        )
-
-        self._add_paths(spec, resources)
-
-        return getattr(spec, self.export_formats.get(export_format))()
 
 
 def is_greedy_path(path_part: str) -> bool:
