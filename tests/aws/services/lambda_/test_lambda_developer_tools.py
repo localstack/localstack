@@ -224,7 +224,7 @@ class TestLambdaDNS:
             FunctionName=function_name,
             Payload=json.dumps(
                 {
-                    "url": f"http://localhost.localstack.cloud:{config.LOCALSTACK_HOST.port}/_localstack/health"
+                    "url": f"http://localhost.localstack.cloud:{config.GATEWAY_LISTEN[0].port}/_localstack/health"
                 }
             ),
         )
