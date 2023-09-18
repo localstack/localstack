@@ -95,7 +95,7 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
 
         tags = []
         if attributes.get("Tags") is not None:
-            subscriptions = attributes["Tags"]
+            tags = attributes["Tags"]
             del attributes["Tags"]
 
         # in case cloudformation didn't provide topic name
@@ -108,12 +108,11 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
 
         # now we add subscriptions if they exists
         for subscription in subscriptions:
-            if "Protocol" in subscription:
-                sns.subscribe(
-                    TopicArn=model["TopicArn"],
-                    Protocol=subscription["Protocol"],
-                    Endpoint=subscription["Endpoint"],
-                )
+            sns.subscribe(
+                TopicArn=model["TopicArn"],
+                Protocol=subscription["Protocol"],
+                Endpoint=subscription["Endpoint"],
+            )
         if tags:
             sns.tag_resource(ResourceArn=model["TopicArn"], Tags=tags)
 
