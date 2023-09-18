@@ -1173,16 +1173,13 @@ def import_api_from_openapi_spec(
             # Create the `IntegrationResponse` for the previously created `Integration`
             if method_integration_responses := method_integration.get("responses"):
                 for pattern, integration_responses in method_integration_responses.items():
-                    method_integration_response = method_integration_responses.get(pattern, {})
-                    integration_response_templates = method_integration_response.get(
-                        "responseTemplates"
-                    )
-                    integration_response_parameters = method_integration_response.get(
+                    integration_response_templates = integration_responses.get("responseTemplates")
+                    integration_response_parameters = integration_responses.get(
                         "responseParameters"
                     )
 
                     integration_response = integration.create_integration_response(
-                        status_code=method_integration_response.get("statusCode", 200),
+                        status_code=integration_responses.get("statusCode", 200),
                         selection_pattern=pattern if pattern != "default" else None,
                         response_templates=integration_response_templates,
                         response_parameters=integration_response_parameters,

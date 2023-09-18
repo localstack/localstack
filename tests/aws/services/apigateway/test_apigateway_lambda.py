@@ -16,7 +16,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url, cr
 from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
-    TEST_LAMBDA_ERROR_RESPONSES,
+    TEST_LAMBDA_MAPPING_RESPONSES,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_SELECT_PATTERN,
 )
@@ -444,7 +444,7 @@ def test_lambda_aws_integration_response_with_mapping_templates(
     stage_name = "api"
     create_function_response = create_lambda_function(
         func_name=function_name,
-        handler_file=TEST_LAMBDA_ERROR_RESPONSES,
+        handler_file=TEST_LAMBDA_MAPPING_RESPONSES,
         handler="lambda_error_responses.handler",
         runtime=LAMBDA_RUNTIME_PYTHON39,
     )
