@@ -223,7 +223,9 @@ class TestLambdaDNS:
         result = aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=json.dumps(
-                {"url": f"http://localhost.localstack.cloud:{config.EDGE_PORT}/_localstack/health"}
+                {
+                    "url": f"http://localhost.localstack.cloud:{config.LOCALSTACK_HOST.port}/_localstack/health"
+                }
             ),
         )
         assert "FunctionError" not in result

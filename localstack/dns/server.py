@@ -698,7 +698,7 @@ class DnsServer(Server, DnsServerProtocol):
 class SeparateProcessDNSServer(Server, DnsServerProtocol):
     def __init__(
         self,
-        port: int,
+        port: int = 53,
         host: str = "0.0.0.0",
     ) -> None:
         super().__init__(port, host)
@@ -835,7 +835,7 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
         dns_server.shutdown()
         return
     DNS_SERVER = dns_server
-    LOG.debug("DNS server startup finished!")
+    LOG.debug("DNS server startup finished.")
 
 
 def stop_servers():
@@ -859,7 +859,7 @@ def start_dns_server_as_sudo(port: int):
         return
 
     DNS_SERVER = dns_server
-    LOG.debug("DNS server startup finished (as sudo)!")
+    LOG.debug("DNS server startup finished (as sudo).")
 
 
 def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = False):
@@ -883,7 +883,7 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
     if in_docker():
         host = "0.0.0.0"
 
-    if port_can_be_bound(Port(port, "udp")):
+    if port_can_be_bound(Port(port, "udp"), address=host):
         start_server(port=port, host=host, upstream_dns=upstream_dns)
         if not asynchronous:
             sleep_forever()
