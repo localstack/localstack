@@ -478,11 +478,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
             moto_sns_backend = self.get_moto_backend(parsed_arn["account"], context.region)
             if is_endpoint_publish:
-                if target_arn not in moto_sns_backend.platform_endpoints:
+                if not (platform_endpoint := moto_sns_backend.platform_endpoints.get(target_arn)):
                     raise InvalidParameterException(
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
                     )
-                elif moto_sns_backend.platform_endpoints.get("Enabled") != "true":
+                elif not platform_endpoint.enabled:
                     raise EndpointDisabledException("Endpoint is disabled")
             else:
                 if topic_or_target_arn not in store.topic_subscriptions:
