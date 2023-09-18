@@ -1419,6 +1419,45 @@ class TestLambdaErrors:
             r"retries: \d\): Internal error while executing lambda"
         )
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    @pytest.mark.parametrize(
+        ["label", "payload"],
+        [
+            # Body taken from AWS CLI v2 call:
+            # aws lambda invoke --debug --function-name localstack-lambda-url-example \
+            #   --payload '{"body": "{\"num1\": \"10\", \"num2\": \"10\"}" }' output.txt
+            ("body", b"n\x87r\x9e\xe9\xb5\xd7I\xee\x9bmt"),
+            # Body taken from AWS CLI v2 call:
+            # aws lambda invoke --debug --function-name localstack-lambda-url-example \
+            #   --payload '{"message": "hello" }' output.txt
+            ("message", b"\x99\xeb,j\x07\xa1zYh"),
+        ],
+    )
+    def test_lambda_invoke_payload_encoding_error(
+        self, aws_client_factory, create_lambda_function, snapshot, label, payload
+    ):
+        """Test Lambda invoke with invalid encoding error.
+        This happens when using the AWS CLI v2 with an inline --payload '{"input": "my-input"}' without specifying
+        the flag --cli-binary-format raw-in-base64-out because base64 is the new default in v2. See AWS docs:
+        https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-options.html
+        """
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        client_config = Config(
+            retries={"max_attempts": 0},
+        )
+        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
+        with pytest.raises(no_retry_lambda_client.exceptions.InvalidRequestContentException) as e:
+            no_retry_lambda_client.invoke(FunctionName=function_name, Payload=payload)
+        snapshot.match(f"invoke_function_invalid_payload_{label}", e.value.response)
+
 
 class TestLambdaCleanup:
     @pytest.mark.skip(

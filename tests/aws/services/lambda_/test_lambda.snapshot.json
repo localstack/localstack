@@ -3425,5 +3425,39 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_invoke_payload_encoding_error[body-n\\x87r\\x9e\\xe9\\xb5\\xd7I\\xee\\x9bmt]": {
+    "recorded-date": "15-09-2023, 22:16:36",
+    "recorded-content": {
+      "invoke_function_invalid_payload_body": {
+        "Error": {
+          "Code": "InvalidRequestContentException",
+          "Message": "Could not parse request body into json: Could not parse payload into json: Invalid UTF-8 start byte 0x87\n at [Source: (byte[])\"n\ufffdr\ufffd\ufffd\ufffdI\ufffdmt\"; line: 1, column: 3]"
+        },
+        "Type": "User",
+        "message": "Could not parse request body into json: Could not parse payload into json: Invalid UTF-8 start byte 0x87\n at [Source: (byte[])\"n\ufffdr\ufffd\ufffd\ufffdI\ufffdmt\"; line: 1, column: 3]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_invoke_payload_encoding_error[message-\\x99\\xeb,j\\x07\\xa1zYh]": {
+    "recorded-date": "15-09-2023, 22:16:40",
+    "recorded-content": {
+      "invoke_function_invalid_payload_message": {
+        "Error": {
+          "Code": "InvalidRequestContentException",
+          "Message": "Could not parse request body into json: Could not parse payload into json: Unexpected character ((CTRL-CHAR, code 153)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (byte[])\"\ufffd\ufffd,j\u0007\ufffdzYh\"; line: 1, column: 2]"
+        },
+        "Type": "User",
+        "message": "Could not parse request body into json: Could not parse payload into json: Unexpected character ((CTRL-CHAR, code 153)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (byte[])\"\ufffd\ufffd,j\u0007\ufffdzYh\"; line: 1, column: 2]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
