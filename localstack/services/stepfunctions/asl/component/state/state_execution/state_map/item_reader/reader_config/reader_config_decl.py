@@ -39,10 +39,10 @@ class ReaderConfigOutput(TypedDict):
 
 
 class ReaderConfig(EvalComponent):
-    _input_type: Final[InputType]
-    _max_items: Final[MaxItemsDecl]
-    _csv_header_location: Final[CSVHeaderLocation]
-    _csv_headers: Optional[CSVHeaders]
+    input_type: Final[InputType]
+    max_items: Final[MaxItemsDecl]
+    csv_header_location: Final[CSVHeaderLocation]
+    csv_headers: Optional[CSVHeaders]
 
     def __init__(
         self,
@@ -51,21 +51,22 @@ class ReaderConfig(EvalComponent):
         csv_headers: Optional[CSVHeaders],
         max_items: Optional[MaxItemsDecl],
     ):
-        self._input_type = input_type
-        self._max_items = max_items or MaxItems()
-        self._csv_header_location = csv_header_location
-        self._csv_headers = csv_headers
+        self.input_type = input_type
+        self.max_items = max_items or MaxItems()
+        self.csv_header_location = csv_header_location
+        self.csv_headers = csv_headers
 
     def _eval_body(self, env: Environment) -> None:
-        self._max_items.eval(env=env)
+        self.max_items.eval(env=env)
         max_items_value: int = env.stack.pop()
 
         reader_config_output = ReaderConfigOutput(
-            InputType=InputTypeOutput(self._input_type.input_type_value),
+            InputType=InputTypeOutput(self.input_type.input_type_value),
             MaxItemsValue=max_items_value,
             CSVHeaderLocation=CSVHeaderLocationOutput(
-                self._csv_header_location.csv_header_location_value
+                self.csv_header_location.csv_header_location_value.value
             ),
-            CSVHeaders=self._csv_headers.header_names,
         )
+        if self.csv_headers:
+            reader_config_output["CSVHeaders"] = self.csv_headers.header_names
         env.stack.append(reader_config_output)

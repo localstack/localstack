@@ -24,16 +24,3 @@ class IterationComponent(EvalComponent, abc.ABC):
         self._start_at = start_at
         self._states = states
         self._comment = comment
-
-    @classmethod
-    def from_props(cls, props: TypedProps) -> IterationComponent:
-        if not props.get(States):
-            raise ValueError(f"Missing States declaration in props '{props}'.")
-        if not props.get(StartAt):
-            raise ValueError(f"Missing StartAt declaration in props '{props}'.")
-        iterator = cls(
-            start_at=props.get(StartAt),
-            states=props.get(States),
-            comment=props.get(Comment),
-        )
-        return iterator

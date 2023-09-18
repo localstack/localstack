@@ -9,15 +9,15 @@ from localstack.services.stepfunctions.asl.component.common.flow.start_at import
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.item_processor_worker import (
-    ItemProcessorWorker,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.inline_iteration_component import (
+    InlineIterationComponent,
+    InlineIterationComponentEvalInput,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.inline_item_processor_worker import (
+    InlineItemProcessorWorker,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.processor_config import (
     ProcessorConfig,
-)
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_component_base import (
-    DistributedIterationComponent,
-    DistributedIterationComponentEvalInput,
 )
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -26,7 +26,7 @@ from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 LOG = logging.getLogger(__name__)
 
 
-class ItemProcessorEvalInput(DistributedIterationComponentEvalInput):
+class InlineItemProcessorEvalInput(InlineIterationComponentEvalInput):
     item_selector: Final[Optional[ItemSelector]]
 
     def __init__(
@@ -42,9 +42,9 @@ class ItemProcessorEvalInput(DistributedIterationComponentEvalInput):
         self.item_selector = item_selector
 
 
-class ItemProcessor(DistributedIterationComponent):
+class InlineItemProcessor(InlineIterationComponent):
     _processor_config: Final[ProcessorConfig]
-    _eval_input: Optional[ItemProcessorEvalInput]
+    _eval_input: Optional[InlineItemProcessorEvalInput]
 
     def __init__(
         self,
@@ -57,7 +57,7 @@ class ItemProcessor(DistributedIterationComponent):
         self._processor_config = processor_config
 
     @classmethod
-    def from_props(cls, props: TypedProps) -> ItemProcessor:
+    def from_props(cls, props: TypedProps) -> InlineItemProcessor:
         if not props.get(States):
             raise ValueError(f"Missing States declaration in props '{props}'.")
         if not props.get(StartAt):
@@ -70,8 +70,8 @@ class ItemProcessor(DistributedIterationComponent):
         )
         return item_processor
 
-    def _create_worker(self, env: Environment) -> ItemProcessorWorker:
-        return ItemProcessorWorker(
+    def _create_worker(self, env: Environment) -> InlineItemProcessorWorker:
+        return InlineItemProcessorWorker(
             work_name=self._eval_input.state_name,
             job_pool=self._job_pool,
             env=env,

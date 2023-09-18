@@ -23,19 +23,38 @@ from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome 
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import (
+    ItemReader,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.item_processor import (
-    ItemProcessor,
-    ItemProcessorEvalInput,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.distributed_item_processor import (
+    DistributedItemProcessor,
+    DistributedItemProcessorEvalInput,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.inline_item_processor import (
+    InlineItemProcessor,
+    InlineItemProcessorEvalInput,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.item_processor_decl import (
+    ItemProcessorDecl,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.item_processor_factory import (
+    from_item_processor_decl,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_component import (
     IterationComponent,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_declaration import (
+    IterationDecl,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator import (
     Iterator,
     IteratorEvalInput,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator_decl import (
+    IteratorDecl,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
@@ -48,6 +67,7 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 class StateMap(ExecutionState):
     items_path: ItemsPath
     iteration_component: IterationComponent
+    item_reader: Optional[ItemReader]
     item_selector: Optional[ItemSelector]
     parameters: Optional[Parameters]
     max_concurrency: MaxConcurrency
@@ -65,6 +85,7 @@ class StateMap(ExecutionState):
     def from_state_props(self, state_props: StateProps) -> None:
         super(StateMap, self).from_state_props(state_props)
         self.items_path = state_props.get(ItemsPath) or ItemsPath()
+        self.item_reader = state_props.get(ItemReader)
         self.item_selector = state_props.get(ItemSelector)
         self.parameters = state_props.get(Parameters)
         self.max_concurrency = state_props.get(MaxConcurrency) or MaxConcurrency()
@@ -73,18 +94,24 @@ class StateMap(ExecutionState):
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
 
-        item_processor = state_props.get(ItemProcessor)
-        iterator = state_props.get(Iterator)
-        if item_processor and iterator:
-            raise ValueError(
-                f"Duplicate ItemProcessor/Iterator definitions in props '{state_props}'."
-            )
-        self.iteration_component = item_processor or iterator
+        # TODO: add check for itemreader used in distributed mode only.
 
-        # TODO: error if parameters and itemselector both declared?
+        iterator_decl = state_props.get(typ=IteratorDecl)
+        item_processor_decl = state_props.get(typ=ItemProcessorDecl)
 
-        if not self.iteration_component:
+        if iterator_decl and item_processor_decl:
+            raise ValueError(f"Cannot define both Iterator and ItemProcessor.")
+
+        iteration_decl = iterator_decl or item_processor_decl
+        if iteration_decl is None:
             raise ValueError(f"Missing ItemProcessor/Iterator definition in props '{state_props}'.")
+
+        if isinstance(iteration_decl, IteratorDecl):
+            self.iteration_component = Iterator.from_declaration(iteration_decl)
+        elif isinstance(iteration_decl, ItemProcessorDecl):
+            self.iteration_component = from_item_processor_decl(iteration_decl)
+        else:
+            raise ValueError(f"Unknown value for IteratorDecl '{iteration_decl}'.")
 
     def _handle_retry(self, ex: Exception, env: Environment) -> None:
         failure_event: FailureEvent = self._from_error(env=env, ex=ex)
@@ -141,19 +168,29 @@ class StateMap(ExecutionState):
             ),
         )
 
-        if isinstance(self.iteration_component, ItemProcessor):
-            eval_input = ItemProcessorEvalInput(
-                state_name=self.name,
-                max_concurrency=self.max_concurrency.num,
-                input_items=input_items,
-                item_selector=self.item_selector,
-            )
-        elif isinstance(self.iteration_component, Iterator):
+        if self.item_reader:
+            self.item_reader.eval(env=env)
+
+        if isinstance(self.iteration_component, Iterator):
             eval_input = IteratorEvalInput(
                 state_name=self.name,
                 max_concurrency=self.max_concurrency.num,
                 input_items=input_items,
                 parameters=self.parameters,
+            )
+        elif isinstance(self.iteration_component, InlineItemProcessor):
+            eval_input = InlineItemProcessorEvalInput(
+                state_name=self.name,
+                max_concurrency=self.max_concurrency.num,
+                input_items=input_items,
+                item_selector=self.item_selector,
+            )
+        elif isinstance(self.iteration_component, DistributedItemProcessor):
+            eval_input = DistributedItemProcessorEvalInput(
+                state_name=self.name,
+                max_concurrency=self.max_concurrency.num,
+                input_items=input_items,
+                item_selector=self.item_selector,
             )
         else:
             raise RuntimeError(

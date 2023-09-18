@@ -18,6 +18,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_csv_headers_first_line.json5"
     )
+    MAP_ITEM_READER_BASE_CSV_HEADERS_DECL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_csv_headers_decl.json5"
+    )
     MAP_STATE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_item_selector.json5"
     )

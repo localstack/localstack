@@ -106,7 +106,7 @@ result_decl
     ;
 
 result_path_decl
-    : RESULTPATH COLON (keyword_or_string | NULL) // TODO keywords too?
+    : RESULTPATH COLON (NULL | keyword_or_string)
     ;
 
 output_path_decl
@@ -297,8 +297,30 @@ processor_config_decl
     : PROCESSORCONFIG
       COLON
       LBRACE
-      mode_decl
+      processor_config_field (COMMA processor_config_field)*
       RBRACE
+    ;
+
+processor_config_field
+    : mode_decl
+    | execution_decl
+    ;
+
+mode_decl
+    : MODE COLON mode_type
+    ;
+
+mode_type
+    : INLINE
+    | DISTRIBUTED
+    ;
+
+execution_decl
+    : EXECUTIONTYPE COLON execution_type
+    ;
+
+execution_type
+    : STANDARD
     ;
 
 iterator_decl
@@ -371,14 +393,6 @@ max_items_decl
 
 max_items_path_decl
     : MAXITEMSPATH COLON STRINGPATH
-    ;
-
-mode_decl
-    : MODE COLON mode_type
-    ;
-
-mode_type
-    : INLINE
     ;
 
 retry_decl
@@ -543,9 +557,6 @@ keyword_or_string // TODO: check keywords can be used as strings.
     | STRINGPATH
     | STRING
     //
-    | TRUE
-    | FALSE
-    | NULL
     | COMMENT
     | STATES
     | STARTAT
@@ -616,6 +627,9 @@ keyword_or_string // TODO: check keywords can be used as strings.
     | PROCESSORCONFIG
     | MODE
     | INLINE
+    | DISTRIBUTED
+    | EXECUTIONTYPE
+    | STANDARD
     | ITEMPROCESSOR
     | ITERATOR
     | ITEMSELECTOR

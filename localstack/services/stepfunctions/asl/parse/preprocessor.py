@@ -129,8 +129,12 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.default_
 from localstack.services.stepfunctions.asl.component.state.state_choice.state_choice import (
     StateChoice,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import \
-    ItemReader
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.execution_type import (
+    ExecutionType,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import (
+    ItemReader,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.csv_header_location import (
     CSVHeaderLocation,
 )
@@ -151,12 +155,14 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.item_processor import (
-    ItemProcessor,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.item_processor_decl import (
+    ItemProcessorDecl,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.processor_config import (
     ProcessorConfig,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator import (
-    Iterator,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator_decl import (
+    IteratorDecl,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
@@ -184,7 +190,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_factory import (
     state_task_service_for,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import StateTask
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
+    StateTask,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_factory import (
     state_task_for,
 )
@@ -517,6 +525,13 @@ class Preprocessor(ASLParserVisitor):
     def visitMode_type(self, ctx: ASLParser.Mode_typeContext) -> int:
         return ctx.children[0].symbol.type
 
+    def visitExecution_decl(self, ctx: ASLParser.Execution_declContext) -> ExecutionType:
+        execution_type: int = self.visit(ctx.execution_type())
+        return ExecutionType(execution_type)
+
+    def visitExecution_type(self, ctx: ASLParser.Execution_typeContext) -> int:
+        return ctx.children[0].symbol.type
+
     def visitTimestamp_decl(self, ctx: ASLParser.Seconds_path_declContext) -> Timestamp:
         timestamp_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         timestamp = Timestamp.parse_timestamp(timestamp_str)
@@ -529,49 +544,81 @@ class Preprocessor(ASLParserVisitor):
     def visitProcessor_config_decl(
         self, ctx: ASLParser.Processor_config_declContext
     ) -> ProcessorConfig:
-        mode = ProcessorConfig.DEFAULT_MODE
-
+        props = TypedProps()
         for child in ctx.children:
             cmp = self.visit(child)
-            if not cmp:
-                continue
-            elif isinstance(cmp, Mode):
-                mode = cmp
-
-        return ProcessorConfig(mode=mode)
+            props.add(cmp)
+        return ProcessorConfig(
+            mode=props.get(typ=Mode) or ProcessorConfig.DEFAULT_MODE,
+            execution_type=props.get(typ=ExecutionType) or ProcessorConfig.DEFAULT_EXECUTION_TYPE,
+        )
 
     def visitItem_processor_item(self, ctx: ASLParser.Item_processor_itemContext) -> Component:
         return self.visit(ctx.children[0])
 
-    def visitItem_processor_decl(self, ctx: ASLParser.Item_processor_declContext) -> ItemProcessor:
+    def visitItem_processor_decl(
+        self, ctx: ASLParser.Item_processor_declContext
+    ) -> ItemProcessorDecl:
         props = TypedProps()
         for child in ctx.children:
             cmp = self.visit(child)
             props.add(cmp)
-        return ItemProcessor.from_props(props)
+        return ItemProcessorDecl(
+            comment=props.get(typ=Comment),
+            start_at=props.get(
+                typ=StartAt,
+                raise_on_missing=ValueError(
+                    f"Expected a StartAt declaration at '{ctx.getText()}'."
+                ),
+            ),
+            states=props.get(
+                typ=States,
+                raise_on_missing=ValueError(f"Expected a States declaration at '{ctx.getText()}'."),
+            ),
+            processor_config=props.get(
+                typ=ProcessorConfig,
+                raise_on_missing=ValueError(
+                    f"Expected a ProcessorConfig declaration at '{ctx.getText()}'."
+                ),
+            ),
+        )
 
-    def visitIterator_decl(self, ctx: ASLParser.Iterator_declContext) -> Iterator:
+    def visitIterator_decl(self, ctx: ASLParser.Iterator_declContext) -> IteratorDecl:
         props = TypedProps()
         for child in ctx.children:
             cmp = self.visit(child)
             props.add(cmp)
-        return Iterator.from_props(props)
+        return IteratorDecl(
+            comment=props.get(typ=Comment),
+            start_at=props.get(
+                typ=StartAt,
+                raise_on_missing=ValueError(
+                    f"Expected a StartAt declaration at '{ctx.getText()}'."
+                ),
+            ),
+            states=props.get(
+                typ=States,
+                raise_on_missing=ValueError(f"Expected a States declaration at '{ctx.getText()}'."),
+            ),
+        )
 
     def visitItem_selector_decl(self, ctx: ASLParser.Item_selector_declContext) -> ItemSelector:
         payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
         return ItemSelector(payload_tmpl=payload_tmpl)
 
-    def visitItem_reader_decl(self, ctx:ASLParser.Item_reader_declContext) -> ItemReader:
-        props = TypedProps()
+    def visitItem_reader_decl(self, ctx: ASLParser.Item_reader_declContext) -> ItemReader:
+        props = StateProps()
         for child in ctx.children[3:-1]:
             cmp = self.visit(child)
             props.add(cmp)
-        resource: Resource = props.get(typ=Resource, raise_on_missing=ValueError(f"Expected a Resource declaration at '{ctx.getText()}'."))
-        state_task: StateTask = state_task_for(resource=resource)
+        resource: Resource = props.get(
+            typ=Resource,
+            raise_on_missing=ValueError(f"Expected a Resource declaration at '{ctx.getText()}'."),
+        )
         return ItemReader(
-            state_task=state_task,
+            resource=resource,
             parameters=props.get(Parameters),
-            reader_config=props.get(ReaderConfig)
+            reader_config=props.get(ReaderConfig),
         )
 
     def visitReader_config_decl(self, ctx: ASLParser.Reader_config_declContext) -> ReaderConfig:

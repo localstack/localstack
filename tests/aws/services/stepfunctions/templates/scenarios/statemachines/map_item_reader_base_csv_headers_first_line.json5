@@ -13,7 +13,7 @@
         "Resource": "arn:aws:states:::s3:getObject",
         "Parameters": {
           "Bucket.$": "$.Bucket",
-          "Key": "$.Key"
+          "Key.$": "$.Key"
         }
       },
       "ItemProcessor": {

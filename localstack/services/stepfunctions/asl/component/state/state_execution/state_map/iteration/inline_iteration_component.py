@@ -26,7 +26,7 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.utils.threads import TMP_THREADS
 
 
-class DistributedIterationComponentEvalInput:
+class InlineIterationComponentEvalInput:
     state_name: Final[str]
     max_concurrency: Final[int]
     input_items: Final[list[json]]
@@ -37,8 +37,8 @@ class DistributedIterationComponentEvalInput:
         self.input_items = input_items
 
 
-class DistributedIterationComponent(IterationComponent, abc.ABC):
-    _eval_input: Optional[DistributedIterationComponentEvalInput]
+class InlineIterationComponent(IterationComponent, abc.ABC):
+    _eval_input: Optional[InlineIterationComponentEvalInput]
     _job_pool: Optional[JobPool]
 
     def __init__(

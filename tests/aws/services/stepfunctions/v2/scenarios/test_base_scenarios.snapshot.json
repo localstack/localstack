@@ -8918,7 +8918,203 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_csv_headers_first_line": {
-    "recorded-date": "17-09-2023, 22:11:57",
-    "recorded-content": {}
+    "recorded-date": "18-09-2023, 10:55:55",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "test-bucket-3463753e",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "test-bucket-3463753e",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/2098674c-583e-3ee0-92c2-c582345a6d10:7b408be5-caa0-377b-b445-3d4a0b7da708"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"Col1\":\"Value1\",\"Col2\":\"Value2\",\"Col3\":\"Value3\"},{\"Col1\":\"Value4\",\"Col2\":\"Value5\",\"Col3\":\"Value6\"},{\"Col1\":\"\",\"Col2\":\"\",\"Col3\":\"\"},{\"Col1\":\"true\",\"Col2\":\"1\",\"Col3\":\"'HelloWorld'\"},{\"Col1\":\"Null\",\"Col2\":\"None\",\"Col3\":\"\"},{\"Col1\":\"   \",\"Col2\":\"\",\"Col3\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"Col1\":\"Value1\",\"Col2\":\"Value2\",\"Col3\":\"Value3\"},{\"Col1\":\"Value4\",\"Col2\":\"Value5\",\"Col3\":\"Value6\"},{\"Col1\":\"\",\"Col2\":\"\",\"Col3\":\"\"},{\"Col1\":\"true\",\"Col2\":\"1\",\"Col3\":\"'HelloWorld'\"},{\"Col1\":\"Null\",\"Col2\":\"None\",\"Col3\":\"\"},{\"Col1\":\"   \",\"Col2\":\"\",\"Col3\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_csv_headers_decl": {
+    "recorded-date": "18-09-2023, 11:27:18",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "test-bucket-cc761191",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "test-bucket-cc761191",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/2098674c-583e-3ee0-92c2-c582345a6d10:4db15213-973b-3eb1-b8c8-1f8c21218469"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"H1\":\"Value1\",\"H2\":\"Value2\",\"H3\":\"Value3\"},{\"H1\":\"Value4\",\"H2\":\"Value5\",\"H3\":\"Value6\"},{\"H1\":\"\",\"H2\":\"\",\"H3\":\"\"},{\"H1\":\"true\",\"H2\":\"1\",\"H3\":\"'HelloWorld'\"},{\"H1\":\"Null\",\"H2\":\"None\",\"H3\":\"\"},{\"H1\":\"   \",\"H2\":\"\",\"H3\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"H1\":\"Value1\",\"H2\":\"Value2\",\"H3\":\"Value3\"},{\"H1\":\"Value4\",\"H2\":\"Value5\",\"H3\":\"Value6\"},{\"H1\":\"\",\"H2\":\"\",\"H3\":\"\"},{\"H1\":\"true\",\"H2\":\"1\",\"H3\":\"'HelloWorld'\"},{\"H1\":\"Null\",\"H2\":\"None\",\"H3\":\"\"},{\"H1\":\"   \",\"H2\":\"\",\"H3\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

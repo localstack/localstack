@@ -1,6 +1,6 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.12.0
+# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.13.1
 from antlr4 import *
-if __name__ is not None and "." in __name__:
+if "." in __name__:
     from .ASLParser import ASLParser
 else:
     from ASLParser import ASLParser
@@ -299,6 +299,31 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#processor_config_field.
+    def visitProcessor_config_field(self, ctx:ASLParser.Processor_config_fieldContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#mode_decl.
+    def visitMode_decl(self, ctx:ASLParser.Mode_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#mode_type.
+    def visitMode_type(self, ctx:ASLParser.Mode_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#execution_decl.
+    def visitExecution_decl(self, ctx:ASLParser.Execution_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#execution_type.
+    def visitExecution_type(self, ctx:ASLParser.Execution_typeContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#iterator_decl.
     def visitIterator_decl(self, ctx:ASLParser.Iterator_declContext):
         return self.visitChildren(ctx)
@@ -356,16 +381,6 @@ class ASLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLParser#max_items_path_decl.
     def visitMax_items_path_decl(self, ctx:ASLParser.Max_items_path_declContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ASLParser#mode_decl.
-    def visitMode_decl(self, ctx:ASLParser.Mode_declContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ASLParser#mode_type.
-    def visitMode_type(self, ctx:ASLParser.Mode_typeContext):
         return self.visitChildren(ctx)
 
 

@@ -91,6 +91,9 @@ HEARTBEATSECONDSPATH: '"HeartbeatSecondsPath"';
 PROCESSORCONFIG: '"ProcessorConfig"';
 MODE: '"Mode"';
 INLINE: '"INLINE"';
+DISTRIBUTED: '"DISTRIBUTED"';
+EXECUTIONTYPE: '"ExecutionType"';
+STANDARD: '"STANDARD"';
 
 ITEMPROCESSOR: '"ItemProcessor"';
 ITERATOR: '"Iterator"';

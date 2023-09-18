@@ -1,27 +1,5 @@
 from __future__ import annotations
 
-import abc
-
-from localstack.aws.api.stepfunctions import (
-    HistoryEventExecutionDataDetails,
-    HistoryEventType,
-    TaskScheduledEventDetails,
-    TaskStartedEventDetails,
-    TaskSucceededEventDetails,
-    TaskTimedOutEventDetails,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
-    FailureEvent,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
-    StatesErrorName,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
-    StatesErrorNameType,
-)
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
-    ServiceResource,
-)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
     StateTaskService,
 )
@@ -46,15 +24,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sqs import (
     StateTaskServiceSqs,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
-    StateTask,
-)
-from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
-# TODO: improve on factory constructor (don't use SubtypeManager)
+# TODO: improve on factory constructor (don't use SubtypeManager: cannot reuse state task instances).
 def state_task_service_for(service_name: str) -> StateTaskService:
     match service_name:
         case "aws-sdk":

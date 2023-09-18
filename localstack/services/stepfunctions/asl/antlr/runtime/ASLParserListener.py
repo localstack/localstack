@@ -1,6 +1,6 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.12.0
+# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.13.1
 from antlr4 import *
-if __name__ is not None and "." in __name__:
+if "." in __name__:
     from .ASLParser import ASLParser
 else:
     from ASLParser import ASLParser
@@ -530,6 +530,51 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#processor_config_field.
+    def enterProcessor_config_field(self, ctx:ASLParser.Processor_config_fieldContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#processor_config_field.
+    def exitProcessor_config_field(self, ctx:ASLParser.Processor_config_fieldContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#mode_decl.
+    def enterMode_decl(self, ctx:ASLParser.Mode_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#mode_decl.
+    def exitMode_decl(self, ctx:ASLParser.Mode_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#mode_type.
+    def enterMode_type(self, ctx:ASLParser.Mode_typeContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#mode_type.
+    def exitMode_type(self, ctx:ASLParser.Mode_typeContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#execution_decl.
+    def enterExecution_decl(self, ctx:ASLParser.Execution_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#execution_decl.
+    def exitExecution_decl(self, ctx:ASLParser.Execution_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#execution_type.
+    def enterExecution_type(self, ctx:ASLParser.Execution_typeContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#execution_type.
+    def exitExecution_type(self, ctx:ASLParser.Execution_typeContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#iterator_decl.
     def enterIterator_decl(self, ctx:ASLParser.Iterator_declContext):
         pass
@@ -635,24 +680,6 @@ class ASLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLParser#max_items_path_decl.
     def exitMax_items_path_decl(self, ctx:ASLParser.Max_items_path_declContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#mode_decl.
-    def enterMode_decl(self, ctx:ASLParser.Mode_declContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#mode_decl.
-    def exitMode_decl(self, ctx:ASLParser.Mode_declContext):
-        pass
-
-
-    # Enter a parse tree produced by ASLParser#mode_type.
-    def enterMode_type(self, ctx:ASLParser.Mode_typeContext):
-        pass
-
-    # Exit a parse tree produced by ASLParser#mode_type.
-    def exitMode_type(self, ctx:ASLParser.Mode_typeContext):
         pass
 
 
