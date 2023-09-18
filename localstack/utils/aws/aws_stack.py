@@ -419,7 +419,7 @@ def get_s3_hostname():
 
 def generate_presigned_url(*args, **kwargs):
     warnings.warn(
-        "`generate_presigned_url` is obsolete. Use the Boto client `generate_presigned_url` method",
+        "`aws_stack.generate_presigned_url` is obsolete. Use the Boto client `generate_presigned_url` method",
         DeprecationWarning,
     )
 
