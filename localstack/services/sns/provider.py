@@ -341,9 +341,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 for e in moto_sns_backend.platform_endpoints.values():
                     if e.token == token:
                         if custom_user_data and custom_user_data != e.custom_user_data:
-                            raise CommonServiceException(
-                                code="DuplicateEndpoint",
-                                message=f"Endpoint already exist for token: {token} with different attributes",
+                            raise InvalidParameterException(
+                                f"Endpoint {e.arn} already exists with the same Token, but different attributes."
                             )
                         else:
                             return CreateEndpointResponse(EndpointArn=e.arn)

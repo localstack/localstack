@@ -3122,9 +3122,9 @@ class TestSNSPlatformEndpoint:
                     PlatformApplicationArn=platform_arn, **kwargs
                 )
             )
-        # Assert endpointarn is returned in every call create platform call
-        for i in range(len(responses)):
-            assert "EndpointArn" in responses[i]
+        # Assert EndpointArn is returned in every call create platform call
+        assert all("EndpointArn" in response for response in responses)
+        endpoint_arn = responses[0]["EndpointArn"]
 
         with pytest.raises(ClientError) as e:
             aws_client.sns.create_platform_endpoint(
@@ -3132,10 +3132,10 @@ class TestSNSPlatformEndpoint:
                 Token=token,
                 CustomUserData="different-user-data",
             )
-        assert e.value.response["Error"]["Code"] == "DuplicateEndpoint"
+        assert e.value.response["Error"]["Code"] == "InvalidParameter"
         assert (
             e.value.response["Error"]["Message"]
-            == f"Endpoint already exist for token: {token} with different attributes"
+            == f"Endpoint {endpoint_arn} already exists with the same Token, but different attributes."
         )
 
     @markers.aws.needs_fixing
