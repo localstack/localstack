@@ -1711,7 +1711,11 @@ class TestDynamoDB:
 
     @markers.aws.validated
     def test_stream_destination_records(
-        self, aws_client, dynamodb_create_table_with_parameters, kinesis_create_stream
+        self,
+        aws_client,
+        dynamodb_create_table_with_parameters,
+        kinesis_create_stream,
+        wait_for_stream_ready,
     ):
         table_name = f"table-{short_uid()}"
         dynamodb_create_table_with_parameters(
@@ -1722,9 +1726,7 @@ class TestDynamoDB:
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
         stream_name = kinesis_create_stream()
-        aws_client.kinesis.get_waiter("stream_exists").wait(
-            StreamName=stream_name,
-        )
+        wait_for_stream_ready(stream_name)
 
         # get stream arn
         stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
@@ -1746,15 +1748,19 @@ class TestDynamoDB:
         max_retries = 10 if is_aws_cloud() else 2
         wait_until(check_destination_status(), wait=wait, max_retries=max_retries)
 
-        # put item
-        aws_client.dynamodb.put_item(
-            TableName=table_name,
-            Item={PARTITION_KEY: {"S": "id1"}, "version": {"N": "1"}, "data": {"B": b"\x90"}},
-        )
-
         iterator = get_shard_iterator(stream_name, aws_client.kinesis)
 
         def assert_records():
+            # put item could not trigger the event at the beginning so it's best to try to put it again
+            aws_client.dynamodb.put_item(
+                TableName=table_name,
+                Item={
+                    PARTITION_KEY: {"S": f"id{short_uid()}"},
+                    "version": {"N": "1"},
+                    "data": {"B": b"\x90"},
+                },
+            )
+
             # get stream records
             response = aws_client.kinesis.get_records(
                 StreamARN=stream_arn,
