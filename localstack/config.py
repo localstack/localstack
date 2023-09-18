@@ -774,6 +774,9 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 # Delay between data persistence (in seconds)
 KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
 
+# Kinesis mock log level override when inconsistent with LS_LOG (e.g., when LS_LOG=debug)
+KINESIS_MOCK_LOG_LEVEL = os.environ.get("KINESIS_MOCK_LOG_LEVEL", "").strip()
+
 # DEPRECATED: 1 (default) only applies to old lambda provider
 # Whether to handle Kinesis Lambda event sources as synchronous invocations.
 SYNCHRONOUS_KINESIS_EVENTS = is_env_not_false("SYNCHRONOUS_KINESIS_EVENTS")  # DEPRECATED
@@ -1152,6 +1155,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",
+    "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
     "LAMBDA_CODE_EXTRACT_TIME",
     "LAMBDA_CONTAINER_REGISTRY",
