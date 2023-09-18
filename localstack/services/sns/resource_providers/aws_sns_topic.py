@@ -107,13 +107,13 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
         model["TopicArn"] = create_sns_response["TopicArn"]
 
         # now we add subscriptions if they exists
-        # TODO do we need to keep arns for unsubscribing before deleting topic
         for subscription in subscriptions:
-            sns.subscribe(
-                TopicArn=model["TopicArn"],
-                Protocol=subscription["Protocol"],
-                Endpoint=subscription["Endpoint"],
-            )
+            if "Protocol" in subscription:
+                sns.subscribe(
+                    TopicArn=model["TopicArn"],
+                    Protocol=subscription["Protocol"],
+                    Endpoint=subscription["Endpoint"],
+                )
         if tags:
             sns.tag_resource(ResourceArn=model["TopicArn"], Tags=tags)
 
