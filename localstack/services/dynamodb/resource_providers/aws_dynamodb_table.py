@@ -294,50 +294,17 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                 model["StreamArn"] = result["TableDescription"]["LatestStreamArn"]
 
             request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
 
-        description = request.aws_client_factory.dynamodb.describe_table(
-            TableName=model["TableName"]
-        )
-        if description["Table"]["TableStatus"] != "ACTIVE":
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
-
-        if model.get("KinesisStreamSpecification"):
-            description = (
-                request.aws_client_factory.dynamodb.describe_kinesis_streaming_destination(
-                    model["TableName"]
-                )
-            )
-            stream_destinations = description["KinesisDataStreamDestinations"]
-            if not stream_destinations:
+            if model.get("KinesisStreamSpecification"):
                 request.aws_client_factory.dynamodb.enable_kinesis_streaming_destination(
                     **get_ddb_kinesis_stream_specification(model)
                 )
-                return ProgressEvent(
-                    status=OperationStatus.IN_PROGRESS,
-                    resource_model=model,
-                    custom_context=request.custom_context,
-                )
-            elif stream_destinations[0]["DestinationStatus"] == "FAILED":
-                return ProgressEvent(
-                    status=OperationStatus.FAILED,
-                    resource_model=model,
-                    message="Kinesis stream destination failed",
-                )
-            elif stream_destinations[0]["DestinationStatus"] != "ACTIVE":
-                return ProgressEvent(
-                    status=OperationStatus.IN_PROGRESS,
-                    resource_model=model,
-                    custom_context=request.custom_context,
-                )
+
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
