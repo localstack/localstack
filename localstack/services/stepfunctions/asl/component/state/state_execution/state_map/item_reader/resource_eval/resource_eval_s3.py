@@ -1,4 +1,6 @@
-from typing import Final
+from __future__ import annotations
+
+from typing import Callable, Final
 
 from botocore.config import Config
 
@@ -12,15 +14,12 @@ from localstack.utils.strings import camel_to_snake_case, to_str
 
 class ResourceEvalS3(ResourceEval):
     _HANDLER_REFLECTION_PREFIX: Final[str] = "_handle_"
+    _API_ACTION_HANDLER_TYPE = Callable[[Environment], None]
 
     @staticmethod
     def _get_s3_client():
         # TODO:connect_externally_to is being deprecated, update to new pattern.
         return connect_externally_to(config=Config(parameter_validation=False)).s3
-
-    @staticmethod
-    def _get_handler_for_api_action(api_action: str):
-        return ResourceEvalS3._HANDLER_REFLECTION_PREFIX + api_action.strip()
 
     @staticmethod
     def _handle_get_object(env: Environment) -> None:
@@ -30,11 +29,22 @@ class ResourceEvalS3(ResourceEval):
         content = to_str(response["Body"].read())
         env.stack.append(content)
 
-    def eval_resource(self, env: Environment) -> None:
-        api_action = camel_to_snake_case(self.resource.api_action)
-        reflection_resolver = self._get_handler_for_api_action(api_action=api_action)
-        resolver_handler = getattr(self, reflection_resolver)
-        if resolver_handler is not None:
-            resolver_handler(env=env)
-        else:
+    @staticmethod
+    def _handle_list_objects_v2(env: Environment) -> None:
+        s3_client = ResourceEvalS3._get_s3_client()
+        parameters = env.stack.pop()
+        response = s3_client.list_objects_v2(**parameters)
+        contents = response["Contents"]
+        env.stack.append(contents)
+
+    def _get_api_action_handler(self) -> ResourceEvalS3._API_ACTION_HANDLER_TYPE:
+        api_action = camel_to_snake_case(self.resource.api_action).strip()
+        handler_name = ResourceEvalS3._HANDLER_REFLECTION_PREFIX + api_action
+        resolver_handler = getattr(self, handler_name)
+        if resolver_handler is None:
             raise ValueError(f"Unknown s3 action '{api_action}'.")
+        return resolver_handler
+
+    def eval_resource(self, env: Environment) -> None:
+        resolver_handler = self._get_api_action_handler()
+        resolver_handler(env)

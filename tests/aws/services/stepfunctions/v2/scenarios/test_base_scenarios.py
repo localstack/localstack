@@ -392,7 +392,7 @@ class TestBaseScenarios:
         sfn_snapshot,
     ):
         bucket_name = s3_create_bucket()
-        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "<bucket_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket_name"))
         for i in range(3):
             aws_client.s3.put_object(
                 Bucket=bucket_name, Key=f"file_{i}.txt", Body=f"{i}HelloWorld!"
