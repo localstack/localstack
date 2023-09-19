@@ -445,7 +445,7 @@ def test_lambda_aws_integration_response_with_mapping_templates(
     create_function_response = create_lambda_function(
         func_name=function_name,
         handler_file=TEST_LAMBDA_MAPPING_RESPONSES,
-        handler="lambda_error_responses.handler",
+        handler="lambda_mapping_responses.handler",
         runtime=LAMBDA_RUNTIME_PYTHON39,
     )
     # create invocation role
