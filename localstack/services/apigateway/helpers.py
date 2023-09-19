@@ -1172,26 +1172,22 @@ def import_api_from_openapi_spec(
 
             # Create the `IntegrationResponse` for the previously created `Integration`
             if method_integration_responses := method_integration.get("responses"):
-                default_method_integration_response = method_integration_responses.get(
-                    "default", {}
-                )
-                integration_response_templates = default_method_integration_response.get(
-                    "responseTemplates"
-                )
-                integration_response_parameters = default_method_integration_response.get(
-                    "responseParameters"
-                )
+                for pattern, integration_responses in method_integration_responses.items():
+                    integration_response_templates = integration_responses.get("responseTemplates")
+                    integration_response_parameters = integration_responses.get(
+                        "responseParameters"
+                    )
 
-                integration_response = integration.create_integration_response(
-                    status_code=default_method_integration_response.get("statusCode", 200),
-                    selection_pattern=None,
-                    response_templates=integration_response_templates,
-                    response_parameters=integration_response_parameters,
-                    content_handling=None,
-                )
-                # moto set the responseTemplates to an empty dict when it should be None if not defined
-                if integration_response_templates is None:
-                    integration_response.response_templates = None
+                    integration_response = integration.create_integration_response(
+                        status_code=integration_responses.get("statusCode", 200),
+                        selection_pattern=pattern if pattern != "default" else None,
+                        response_templates=integration_response_templates,
+                        response_parameters=integration_response_parameters,
+                        content_handling=None,
+                    )
+                    # moto set the responseTemplates to an empty dict when it should be None if not defined
+                    if integration_response_templates is None:
+                        integration_response.response_templates = None
 
             resource.resource_methods[method_name].method_integration = integration
 

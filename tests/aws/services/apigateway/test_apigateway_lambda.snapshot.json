@@ -1034,5 +1034,24 @@
         ]
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration_response_with_mapping_templates": {
+    "recorded-date": "17-09-2023, 09:11:22",
+    "recorded-content": {
+      "response-template-202": {
+        "body": {
+          "body": "noerror",
+          "statusCode": 200
+        },
+        "statusCode": 202
+      },
+      "response-template-400": {
+        "body": {
+          "body": "customerror",
+          "statusCode": 200
+        },
+        "statusCode": 400
+      }
+    }
   }
 }
