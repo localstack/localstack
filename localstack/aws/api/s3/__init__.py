@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import IO, Dict, Iterable, Iterator, List, Optional, Union
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import IO, Dict, Iterable, Iterator, List, Optional, TypedDict, Union
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
