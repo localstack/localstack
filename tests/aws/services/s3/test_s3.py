@@ -28,7 +28,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.aws.api.s3 import StorageClass
-from localstack.config import LEGACY_S3_PROVIDER, NATIVE_S3_PROVIDER, STREAM_S3_PROVIDER
+from localstack.config import LEGACY_S3_PROVIDER, NATIVE_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
@@ -2810,7 +2810,7 @@ class TestS3:
     @markers.aws.only_localstack
     @pytest.mark.xfail(
         reason="Not implemented in other providers than stream",
-        condition=not STREAM_S3_PROVIDER or not NATIVE_S3_PROVIDER,
+        condition=not NATIVE_S3_PROVIDER,
     )
     def test_put_object_chunked_newlines_with_checksum(self, s3_bucket, aws_client):
         # Boto still does not support chunk encoding, which means we can't test with the client nor

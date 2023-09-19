@@ -475,10 +475,6 @@ class TestS3ObjectCRUD:
         snapshot.match("list-object-versions", list_object_versions)
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=config.STREAM_S3_PROVIDER,
-        reason="Range fix not applied in S3 Stream provider due to removal in the near future",
-    )
     def test_get_object_range(self, aws_client, s3_bucket, snapshot):
         content = "0123456789"
         key = "test-key-range"
