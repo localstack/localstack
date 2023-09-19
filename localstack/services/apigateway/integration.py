@@ -1,12 +1,12 @@
 import base64
+import copy
 import json
 import logging
-import re
 from abc import ABC, abstractmethod
 from functools import lru_cache
 from http import HTTPStatus
 from typing import Any, Dict
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from botocore.exceptions import ClientError
@@ -21,7 +21,9 @@ from localstack.aws.connect import (
     connect_to,
     dump_dto,
 )
+from localstack.aws.forwarder import create_aws_request_context
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
+from localstack.http.proxy import forward
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
@@ -44,11 +46,7 @@ from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_exec
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_region_from_arn
-from localstack.utils.aws.aws_responses import (
-    LambdaResponse,
-    request_response_stream,
-    requests_response,
-)
+from localstack.utils.aws.aws_responses import LambdaResponse, requests_response
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import dict_multi_values, remove_attributes
@@ -554,6 +552,64 @@ class S3Integration(BackendIntegration):
         r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
     )
     TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
+    # TODO: URI path/ -> basically forward directly to S3
+    # TODO: URI action/ -> map ActionName with client.meta.method_to_api_mapping to get client method then use the body as parameters
+
+    def _invoke_path(
+        self,
+        invocation_context: ApiInvocationContext,
+        http_method: str,
+        uri_path: str,
+        integration_parameters: IntegrationParameters,
+        mocked_headers: dict,
+        region_name: str,
+        payload: bytes = None,
+    ) -> Response:
+        # TODO: might need some rendering
+        url = urljoin(config.service_url("s3"), f"/{uri_path}")
+        payload = payload if http_method in ("PUT", "POST") else None
+        headers = mocked_headers.update(integration_parameters.get("headers", {}))
+
+        response = make_http_request(url, method=http_method, headers=headers, data=payload)
+        return response
+
+    def _invoke_action(
+        self,
+        invocation_context: ApiInvocationContext,
+        http_method: str,
+        uri_path: str,
+        integration_parameters: IntegrationParameters,
+        mocked_headers: dict,
+        region_name: str,
+    ) -> Response:
+        parsed_uri = urlparse(f"/{uri_path}")
+        # it actually just needs to be resolved? lol
+        # parameters = parse_qs(parsed_uri.query)
+        request_parameters = copy.copy(integration_parameters.get("querystring", {}))
+        for header, value in integration_parameters.get("headers", {}).items():
+            # pretty annoying that we need to map values here, not sure how to do it cleanly? need some kind of map?
+            # it should depend on the op, but let's see
+            request_parameters[header] = value
+
+        for param, value in integration_parameters.get("path", {}).items():
+            request_parameters[param] = value
+
+        # TODO: test payload?
+
+        operation = parsed_uri.path.strip("/")
+        service_url = config.service_url("s3")
+        request_context = create_aws_request_context(
+            service_name="s3",
+            action=operation,
+            parameters=request_parameters,
+            region=region_name,
+            endpoint_url=service_url,
+        )
+        request_context.request.headers = mocked_headers.update(request_context.request.headers)
+        # TODO: something with httpMethod?? need validation
+
+        response = forward(request_context.request, forward_base_url=service_url)
+        return response
 
     def invoke(self, invocation_context: ApiInvocationContext):
         invocation_path = invocation_context.path_with_query_string
@@ -561,38 +617,93 @@ class S3Integration(BackendIntegration):
         path_params = invocation_context.path_params
         relative_path, query_string_params = extract_query_string_params(path=invocation_path)
         uri = integration.get("uri") or integration.get("integrationUri") or ""
-
-        s3 = connect_to().s3
-        uri = apply_request_parameters(
+        http_method = integration.get("httpMethod")
+        populated_uri = apply_request_parameters(
             uri,
             integration=integration,
             path_params=path_params,
             query_params=query_string_params,
         )
-        uri_match = re.match(self.TARGET_REGEX_PATH_S3_URI, uri) or re.match(
-            self.TARGET_REGEX_ACTION_S3_URI, uri
-        )
-        if not uri_match:
+
+        if (len(uri_split := populated_uri.split("/", maxsplit=1))) < 2:
             msg = "Request URI does not match s3 specifications"
             LOG.warning(msg)
             return make_error_response(msg, 400)
 
-        bucket, object_key = uri_match.group("bucket", "object")
-        LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
-        try:
-            object = s3.get_object(Bucket=bucket, Key=object_key)
-        except s3.exceptions.NoSuchKey:
-            msg = f"Object {object_key} not found"
-            LOG.debug(msg)
-            return make_error_response(msg, 404)
+        uri_arn, uri_path = uri_split
+        region_name = "us-east-1"  # get region from ARN
+        # TODO: can you pass headers too?
 
-        headers = aws_stack.mock_aws_request_headers(service="s3")
+        integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
 
-        if object.get("ContentType"):
-            headers["Content-Type"] = object["ContentType"]
+        mocked_headers = get_internal_mocked_headers(
+            service_name="s3",
+            region_name=region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
+        )
+
+        # TODO: use Accept?
+        accepts = integration_parameters.get("headers", {}).get("Accepts")
+        template = integration.get("requestTemplates", {}).get(accepts, APPLICATION_JSON)
+
+        if uri_arn.endswith("path"):
+            response = self._invoke_path(
+                invocation_context=invocation_context,
+                http_method=http_method,
+                uri_path=uri_path,
+                integration_parameters=integration_parameters,
+                mocked_headers=mocked_headers,
+                region_name=region_name,
+                payload=template or invocation_context.data,
+            )
+        elif uri_arn.endswith("action"):
+            response = self._invoke_action(
+                invocation_context=invocation_context,
+                http_method=http_method,
+                uri_path=uri_path,
+                integration_parameters=integration_parameters,
+                mocked_headers=mocked_headers,
+                region_name=region_name,
+            )
+        else:
+            msg = "Request URI does not match s3 specifications"
+            LOG.warning(msg)
+            return make_error_response(msg, 400)
+
+        # TODO: add all the Binary Media Type handling, see passthrough...
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/integrating-api-with-aws-services-s3.html#api-items-in-folder-as-s3-objects-in-bucket
+        # apply custom response template
+        # max file size is 10MB
+        invocation_context.response = response
+        self.response_templates.render(invocation_context)
+
+        #
+        # uri_match = re.match(self.TARGET_REGEX_PATH_S3_URI, uri) or re.match(
+        #     self.TARGET_REGEX_ACTION_S3_URI, uri
+        # )
+        # if not uri_match:
+        #     msg = "Request URI does not match s3 specifications"
+        #     LOG.warning(msg)
+        #     return make_error_response(msg, 400)
+        #
+        # bucket, object_key = uri_match.group("bucket", "object")
+        # LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
+        # try:
+        #     # TODO: we actually should forward everything to get the proper response? create AWS context from it?
+        #     object = s3.get_object(Bucket=bucket, Key=object_key)
+        # except s3.exceptions.NoSuchKey:
+        #     msg = f"Object {object_key} not found"
+        #     LOG.debug(msg)
+        #     return make_error_response(msg, 404)
+        #
+        # headers = aws_stack.mock_aws_request_headers(service="s3")
+        #
+        # if object.get("ContentType"):
+        #     headers["Content-Type"] = object["ContentType"]
 
         # stream used so large files do not fill memory
-        response = request_response_stream(stream=object["Body"], headers=headers)
+        # response = request_response_stream(stream=object["Body"], headers=headers)
         return response
 
 
