@@ -247,6 +247,7 @@ class NonLoggingHandler(DNSHandler):
 
 NAME_PATTERNS_POINTING_TO_LOCALSTACK = [
     f".*{LOCALHOST_HOSTNAME}",
+    f".*{config.LOCALSTACK_HOST.host}",
 ]
 
 
