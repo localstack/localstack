@@ -159,17 +159,16 @@ class StateMap(ExecutionState):
 
     def _eval_execution(self, env: Environment) -> None:
         self.items_path.eval(env)
-        input_items: list[json] = env.stack.pop()
+        if self.item_reader:
+            self.item_reader.eval(env=env)
 
+        input_items: list[json] = env.stack.pop()
         env.event_history.add_event(
             hist_type_event=HistoryEventType.MapStateStarted,
             event_detail=EventDetails(
                 mapStateStartedEventDetails=MapStateStartedEventDetails(length=len(input_items))
             ),
         )
-
-        if self.item_reader:
-            self.item_reader.eval(env=env)
 
         if isinstance(self.iteration_component, Iterator):
             eval_input = IteratorEvalInput(

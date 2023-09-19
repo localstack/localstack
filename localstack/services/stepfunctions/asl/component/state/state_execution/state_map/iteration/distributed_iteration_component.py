@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import json
 import threading
-from typing import Any, Final, Optional
+from typing import Any, Final, Iterable, Optional
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventType,
@@ -83,9 +83,6 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         env.stack.append(outputs)
 
     def _eval_body(self, env: Environment) -> None:
-        # TODO: sort out env events dumping and updating map run values.
-        env.event_history = EventHistory()
-
         env.event_history.add_event(
             hist_type_event=HistoryEventType.MapRunStarted,
             event_detail=EventDetails(
@@ -93,9 +90,13 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             ),
         )
 
+        execution_event_history = env.event_history
         try:
+            # TODO: investigate if this is truly propagated also to eventual sub programs in map run states.
+            env.event_history = EventHistory()
             self._map_run(env=env)
         except Exception as ex:
+            env.event_history = execution_event_history
             env.event_history.add_event(
                 hist_type_event=HistoryEventType.MapRunFailed,
                 event_detail=EventDetails(
@@ -105,6 +106,8 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
                 ),
             )
             raise ex
+        finally:
+            env.event_history = execution_event_history
 
         # TODO: review workflow of program stops and maprunstops
         # program_state = env.program_state()

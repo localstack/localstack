@@ -1,5 +1,6 @@
 import csv
 import io
+from collections import OrderedDict
 
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
     CSVHeaderLocationOutput,
@@ -34,7 +35,9 @@ class ResourceOutputTransformerCSV(ResourceOutputTransformer):
 
         transformed_outputs = list()
         for row in csv_reader:
-            transformed_output = {header: row for header, row in zip(headers, row)}
+            transformed_output = OrderedDict()
+            for i, header in enumerate(headers):
+                transformed_output[header] = row[i] if i < len(row) else ""
             transformed_outputs.append(transformed_output)
 
         env.stack.append(transformed_outputs)

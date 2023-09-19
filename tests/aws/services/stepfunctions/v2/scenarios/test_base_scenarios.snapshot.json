@@ -8918,14 +8918,14 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_csv_headers_first_line": {
-    "recorded-date": "18-09-2023, 10:55:55",
+    "recorded-date": "19-09-2023, 17:05:58",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "Bucket": "test-bucket-3463753e",
+                "Bucket": "bucket-name",
                 "Key": "file.csv"
               },
               "inputDetails": {
@@ -8943,7 +8943,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "Bucket": "test-bucket-3463753e",
+                "Bucket": "bucket-name",
                 "Key": "file.csv"
               },
               "inputDetails": {
@@ -8966,7 +8966,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/2098674c-583e-3ee0-92c2-c582345a6d10:7b408be5-caa0-377b-b445-3d4a0b7da708"
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/2098674c-583e-3ee0-92c2-c582345a6d10:f6e8fdfa-e461-3f0a-8c3c-88f3aee0188b"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
