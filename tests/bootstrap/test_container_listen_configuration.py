@@ -5,8 +5,11 @@ from localstack.config import in_docker
 from localstack.testing.pytest.container import ContainerFactory
 from localstack.utils.net import get_free_tcp_port
 
+pytestmarks = pytest.mark.skipif(
+    condition=in_docker(), reason="cannot run bootstrap tests in docker"
+)
 
-@pytest.mark.skipif(condition=in_docker(), reason="cannot run bootstrap tests in docker")
+
 class TestContainerConfiguration:
     def test_defaults(self, container_factory: ContainerFactory, wait_for_localstack_ready):
         """
