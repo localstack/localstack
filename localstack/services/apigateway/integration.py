@@ -553,7 +553,7 @@ class S3Integration(BackendIntegration):
     )
     TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
     # TODO: URI path/ -> basically forward directly to S3
-    # TODO: URI action/ -> map ActionName with client.meta.method_to_api_mapping to get client method then use the body as parameters
+    # TODO: URI action/ -> map ActionName to recreate a request to forward
 
     def _invoke_path(
         self,
@@ -632,7 +632,6 @@ class S3Integration(BackendIntegration):
 
         uri_arn, uri_path = uri_split
         region_name = "us-east-1"  # get region from ARN
-        # TODO: can you pass headers too?
 
         integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
 
@@ -643,8 +642,7 @@ class S3Integration(BackendIntegration):
             source_arn=get_source_arn(invocation_context),
         )
 
-        # TODO: use Accept?
-        accepts = integration_parameters.get("headers", {}).get("Accepts")
+        accepts = integration_parameters.get("headers", {}).get("Accept")
         template = integration.get("requestTemplates", {}).get(accepts, APPLICATION_JSON)
 
         if uri_arn.endswith("path"):
@@ -671,7 +669,7 @@ class S3Integration(BackendIntegration):
             LOG.warning(msg)
             return make_error_response(msg, 400)
 
-        # TODO: add all the Binary Media Type handling, see passthrough...
+        # TODO: add all the Binary Media Type handling, see passthrough:
         # https://docs.aws.amazon.com/apigateway/latest/developerguide/integrating-api-with-aws-services-s3.html#api-items-in-folder-as-s3-objects-in-bucket
         # apply custom response template
         # max file size is 10MB
