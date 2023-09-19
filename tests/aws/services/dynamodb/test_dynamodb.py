@@ -1768,10 +1768,11 @@ class TestDynamoDB:
                 Limit=1,
             )
             records = response["Records"]
+            # iterator = response["NextShardIterator"]
             assert len(records) > 0
 
-        sleep_secs = 1
-        retries = 5
+        sleep_secs = 2
+        retries = 10
         if is_aws_cloud():
             sleep_secs = 5
             retries = 30

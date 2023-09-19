@@ -207,13 +207,10 @@ class EventForwarder:
             hash_keys = list(filter(lambda key: key["KeyType"] == "HASH", table_def["KeySchema"]))
             partition_key = hash_keys[0]["AttributeName"]
 
-            stream_account_id = extract_account_id_from_arn(stream_arn)
             stream_region_name = extract_region_from_arn(stream_arn)
-            kinesis = connect_to(
-                aws_access_key_id=stream_account_id,
-                aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-                region_name=stream_region_name,
-            ).kinesis
+            kinesis = connect_to(region_name=stream_region_name).kinesis.request_metadata(
+                service_principal="dynamodb", source_arn=event_source_arn
+            )
             kinesis.put_record(
                 StreamName=stream_name,
                 Data=json.dumps(record, cls=BytesEncoder),
