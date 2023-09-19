@@ -1957,9 +1957,11 @@ class TestLambdaConcurrency:
         aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
 
         # simultaneously queue two event invocations
+        # The first event invoke gets executed immediately
         aws_client.lambda_.invoke(
             FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 15})
         )
+        # The second event invoke gets throttled and re-scheduled with an internal retry
         aws_client.lambda_.invoke(
             FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
         )
@@ -1967,12 +1969,15 @@ class TestLambdaConcurrency:
         # Ensure one event invocation is being executed and the other one is in the queue.
         time.sleep(5)
 
+        # Synchronous invocations raise an exception because insufficient reserved concurrency is available
         with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
             aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
         snapshot.match("too_many_requests_exc", e.value.response)
 
+        # ReservedConcurrentExecutions=2 is insufficient because the throttled async event invoke might be
+        # re-scheduled before the synchronous invoke while the first async invoke is still running.
         aws_client.lambda_.put_function_concurrency(
-            FunctionName=func_name, ReservedConcurrentExecutions=2
+            FunctionName=func_name, ReservedConcurrentExecutions=3
         )
         aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
 
