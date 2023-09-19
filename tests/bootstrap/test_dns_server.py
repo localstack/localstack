@@ -32,8 +32,11 @@ def test_default_network(
     wait_for_localstack_ready(running_container)
 
     container_ip = running_container.ip_address()
-    stdout, _ = dns_query_from_container(name=LOCALHOST_HOSTNAME, ip_address=container_ip)
 
+    stdout, _ = dns_query_from_container(name=LOCALHOST_HOSTNAME, ip_address=container_ip)
+    assert container_ip in stdout.decode().splitlines()
+
+    stdout, _ = dns_query_from_container(name=f"foo.{LOCALHOST_HOSTNAME}", ip_address=container_ip)
     assert container_ip in stdout.decode().splitlines()
 
 
@@ -59,7 +62,11 @@ def test_user_defined_network(
     stdout, _ = dns_query_from_container(
         name=LOCALHOST_HOSTNAME, ip_address=container_ip, network=docker_network
     )
+    assert container_ip in stdout.decode().splitlines()
 
+    stdout, _ = dns_query_from_container(
+        name=f"foo.{LOCALHOST_HOSTNAME}", ip_address=container_ip, network=docker_network
+    )
     assert container_ip in stdout.decode().splitlines()
 
 
@@ -90,5 +97,11 @@ def test_resolve_localstack_host(
     stdout, _ = dns_query_from_container(name=LOCALHOST_HOSTNAME, ip_address=container_ip)
     assert container_ip in stdout.decode().splitlines()
 
+    stdout, _ = dns_query_from_container(name=f"foo.{LOCALHOST_HOSTNAME}", ip_address=container_ip)
+    assert container_ip in stdout.decode().splitlines()
+
     stdout, _ = dns_query_from_container(name=localstack_host, ip_address=container_ip)
+    assert container_ip in stdout.decode().splitlines()
+
+    stdout, _ = dns_query_from_container(name=f"foo.{localstack_host}", ip_address=container_ip)
     assert container_ip in stdout.decode().splitlines()
