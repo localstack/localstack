@@ -458,6 +458,8 @@ class TestBaseScenarios:
         sfn_snapshot,
     ):
         bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
         key = "file.csv"
         csv_headers = ["H1", "H2", "H3"]
         csv_file = (
