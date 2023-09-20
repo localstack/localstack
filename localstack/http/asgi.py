@@ -296,6 +296,8 @@ class WsgiStartResponse:
         if not self.started:
             raise ValueError("not started the response yet")
         if getattr(self.send.__self__, "closed", None):
+            # the connection has been closed from the client side, set finalized=True to avoid sending more responses
+            self.finalized = True
             raise BrokenPipeError("Connection closed")
         await self.send({"type": "http.response.body", "body": data, "more_body": True})
         self.sent += len(data)
