@@ -399,12 +399,11 @@ jobs:
             pip install pycobertura
             coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack/services/*/**" --omit="*/**/__init__.py"
             coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack/services/*/**"  --omit="*/**/__init__.py"
+            pycobertura --help
             pycobertura show --format html -s localstack/ acceptance.coverage.report.xml -o coverage-acceptance.html
+            echo "'show' successfully executed"
             pycobertura diff --format html -s1 localstack/ -s2 localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html
-      - store_artifacts:
-          path: coverage-acceptance.html
-      - store_artifacts:
-          path: coverage-diff.html
+            echo "finished script"
       - run:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
@@ -414,6 +413,10 @@ jobs:
             IMPLEMENTATION_COVERAGE_FILE=scripts/implementation_coverage_full.csv \
             SOURCE_TYPE=community \
             python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
+      - store_artifacts:
+          path: coverage-acceptance.html
+      - store_artifacts:
+          path: coverage-diff.html
       - store_artifacts:
           path: parity_metrics/
       - run:
