@@ -9161,5 +9161,105 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json": {
+    "recorded-date": "20-09-2023, 10:11:53",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/2098674c-583e-3ee0-92c2-c582345a6d10:84e4f915-6fc7-3d41-8d3c-349f0432c61b"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"false\",\"statement_date\":\"6/7/2022\",\"statement_source\":\"television\"},{\"verdict\":\"mostly-true\",\"statement_date\":\"5/18/2016\",\"statement_source\":\"news\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"false\",\"statement_date\":\"6/7/2022\",\"statement_source\":\"television\"},{\"verdict\":\"mostly-true\",\"statement_date\":\"5/18/2016\",\"statement_source\":\"news\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

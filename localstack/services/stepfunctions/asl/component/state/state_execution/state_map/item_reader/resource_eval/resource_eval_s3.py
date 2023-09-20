@@ -18,7 +18,7 @@ class ResourceEvalS3(ResourceEval):
 
     @staticmethod
     def _get_s3_client():
-        # TODO:connect_externally_to is being deprecated, update to new pattern.
+        # TODO: connect_externally_to is being deprecated, update to new pattern.
         return connect_externally_to(config=Config(parameter_validation=False)).s3
 
     @staticmethod

@@ -485,3 +485,46 @@ class TestBaseScenarios:
             definition,
             exec_input,
         )
+
+    @markers.aws.unknown
+    def test_map_item_reader_base_json(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.json"
+        json_file = json.dumps(
+            [
+                {"verdict": "true", "statement_date": "6/11/2008", "statement_source": "speech"},
+                {
+                    "verdict": "false",
+                    "statement_date": "6/7/2022",
+                    "statement_source": "television",
+                },
+                {
+                    "verdict": "mostly-true",
+                    "statement_date": "5/18/2016",
+                    "statement_source": "news",
+                },
+            ]
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )

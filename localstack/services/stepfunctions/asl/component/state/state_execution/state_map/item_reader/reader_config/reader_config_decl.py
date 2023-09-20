@@ -55,6 +55,9 @@ class ReaderConfig(EvalComponent):
         self.max_items = max_items or MaxItems()
         self.csv_header_location = csv_header_location
         self.csv_headers = csv_headers
+        # TODO: verify behaviours:
+        #  - csv fields are declared with json input type
+        #  - headers are declared with first_fow location set
 
     def _eval_body(self, env: Environment) -> None:
         self.max_items.eval(env=env)
@@ -63,10 +66,11 @@ class ReaderConfig(EvalComponent):
         reader_config_output = ReaderConfigOutput(
             InputType=InputTypeOutput(self.input_type.input_type_value),
             MaxItemsValue=max_items_value,
-            CSVHeaderLocation=CSVHeaderLocationOutput(
-                self.csv_header_location.csv_header_location_value.value
-            ),
         )
+        if self.csv_header_location:
+            reader_config_output[
+                "CSVHeaderLocation"
+            ] = self.csv_header_location.csv_header_location_value.value
         if self.csv_headers:
             reader_config_output["CSVHeaders"] = self.csv_headers.header_names
         env.stack.append(reader_config_output)

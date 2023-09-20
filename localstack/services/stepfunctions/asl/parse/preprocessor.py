@@ -634,12 +634,7 @@ class Preprocessor(ASLParserVisitor):
                 ),
             ),
             max_items=props.get(typ=MaxItemsDecl),
-            csv_header_location=props.get(
-                CSVHeaderLocation,
-                raise_on_missing=ValueError(
-                    f"Expected a CSVHeaderLocation declaration at '{ctx.getText()}'."
-                ),
-            ),
+            csv_header_location=props.get(CSVHeaderLocation),
             csv_headers=props.get(CSVHeaders),
         )
 
