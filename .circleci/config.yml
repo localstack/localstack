@@ -373,6 +373,7 @@ jobs:
       - run:
           name: fetch isolated acceptance coverage
           command: |
+            # might need to combine coverage files in future
             cp target/coverage/.coverage.acceptance.* .coverage.acceptance
       - store_artifacts:
           path: .coverage.acceptance
@@ -391,6 +392,19 @@ jobs:
             coverage report || true
             coverage html || true
             coveralls || true
+      - run:
+          name: Create Coverage Diff
+          command: |
+            source .venv/bin/activate
+            pip install pycobertura
+            coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack/services/*/**" --omit="*/**/__init__.py"
+            coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack/services/*/**"  --omit="*/**/__init__.py"
+            pycobertura show --format html -s localstack/ acceptance.coverage.report.xml -o coverage-acceptance.html
+            pycobertura diff --format html -s1 localstack/ -s2 localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html
+      - store_artifacts:
+          path: coverage-acceptance.html
+      - store_artifacts:
+          path: coverage-diff.html
       - run:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
