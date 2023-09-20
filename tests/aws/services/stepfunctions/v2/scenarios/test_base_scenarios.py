@@ -1,11 +1,9 @@
 import json
-import time
 
 import pytest
 
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
-from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.conftest import SfnNoneRecursiveParallelTransformer
 from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
     ScenariosTemplate as ST,

@@ -3,22 +3,17 @@ from __future__ import annotations
 import abc
 import json
 import threading
-from typing import Any, Final, Iterable, Optional
+from typing import Any, Final, Optional
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventType,
     MapRunFailedEventDetails,
     MapRunStartedEventDetails,
 )
-from localstack.services.stepfunctions.asl.component.common.comment import Comment
-from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.inline_iteration_component import (
     InlineIterationComponent,
     InlineIterationComponentEvalInput,
-)
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_component import (
-    IterationComponent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_worker import (
     IterationWorker,
@@ -30,7 +25,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
 )
-from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory

@@ -7,6 +7,7 @@ from localstack.services.stepfunctions.asl.component.component import Component
 class InputTypeValue(enum.Enum):
     CSV = "CSV"
     JSON = "JSON"
+    # TODO: add support for MANIFEST
 
 
 class InputType(Component):

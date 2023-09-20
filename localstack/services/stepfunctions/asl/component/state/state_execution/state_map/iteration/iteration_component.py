@@ -7,7 +7,6 @@ from localstack.services.stepfunctions.asl.component.common.comment import Comme
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.states import States
-from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
 
 class IterationComponent(EvalComponent, abc.ABC):

@@ -1,10 +1,7 @@
 import abc
-from typing import Any, Final, Optional
+from typing import Final
 
-from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
-from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
-    Resource,
     ServiceResource,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment

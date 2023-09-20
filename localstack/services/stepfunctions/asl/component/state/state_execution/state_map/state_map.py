@@ -46,9 +46,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_component import (
     IterationComponent,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_declaration import (
-    IterationDecl,
-)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator import (
     Iterator,
     IteratorEvalInput,
@@ -100,7 +97,7 @@ class StateMap(ExecutionState):
         item_processor_decl = state_props.get(typ=ItemProcessorDecl)
 
         if iterator_decl and item_processor_decl:
-            raise ValueError(f"Cannot define both Iterator and ItemProcessor.")
+            raise ValueError("Cannot define both Iterator and ItemProcessor.")
 
         iteration_decl = iterator_decl or item_processor_decl
         if iteration_decl is None:

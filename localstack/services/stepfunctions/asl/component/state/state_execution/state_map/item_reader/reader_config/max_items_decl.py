@@ -3,7 +3,6 @@ from typing import Final
 
 from jsonpath_ng import parse
 
-from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 

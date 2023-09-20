@@ -1,7 +1,7 @@
 import copy
 import datetime
 import threading
-from typing import Final, Iterable, Optional
+from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
     HistoryEvent,
