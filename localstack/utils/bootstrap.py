@@ -941,7 +941,6 @@ class ContainerLogPrinter:
 
 
 class LocalstackContainerServer(Server):
-
     container: Container | RunningContainer
 
     def __init__(
@@ -1066,9 +1065,6 @@ def configure_container(container: Container):
     container.config.command = shlex.split(os.environ.get("CMD", "")) or None
     container.config.env_vars = {}
 
-    # gateway (previously edge port) mapping
-    container.configure(ContainerConfigurators.gateway_listen(config.GATEWAY_LISTEN))
-
     # parse `DOCKER_FLAGS` and add them appropriately
     user_flags = config.DOCKER_FLAGS
     user_flags = extract_port_flags(user_flags, container.config.ports)
@@ -1090,9 +1086,12 @@ def configure_container(container: Container):
             ContainerConfigurators.mount_localstack_volume(config.VOLUME_DIR),
             ContainerConfigurators.mount_docker_socket,
             ContainerConfigurators.publish_dns_ports,
-            # overwrites any env vars set in the config that were previously set by configurators (e.g.,
-            # `GATEWAY_LISTEN`)
+            # overwrites any env vars set in the config that were previously set by configurators
             ContainerConfigurators.config_env_vars,
+            # ensure that GATEWAY_LISTEN is taken from the config and not
+            # overridden by the `config_env_vars` configurator
+            # (when not specified in the environment).
+            ContainerConfigurators.gateway_listen(config.GATEWAY_LISTEN),
         ]
     )
 
