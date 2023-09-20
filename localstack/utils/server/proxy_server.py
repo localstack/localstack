@@ -115,7 +115,7 @@ class TLSProxyServer(Server):
     ):
         super().__init__(port, host)
         self.target_host, _, self.target_port = target.partition(":")
-        self.thread_pool = ThreadPoolExecutor()
+        self.thread_pool = ThreadPoolExecutor(32)
         self.client_certs = client_certs
         self.socket = None
 
@@ -141,9 +141,12 @@ class TLSProxyServer(Server):
                         s_read, _, _ = select.select(sockets, [], [])
 
                         for s in s_read:
-                            data = s.recv(TLS_BUFFER_SIZE)
+                            data = s.recv(1024)
                             if not data:
                                 return
+                            pending_data = s.pending()
+                            if pending_data:
+                                data += s.recv(pending_data)
 
                             if s == source_socket:
                                 target_socket.sendall(data)
