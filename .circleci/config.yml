@@ -373,7 +373,7 @@ jobs:
       - run:
           name: fetch isolated acceptance coverage
           command: |
-            # might need to combine coverage files in future
+          # might need to combine coverage files in future
             cp target/coverage/.coverage.acceptance.* .coverage.acceptance
       - store_artifacts:
           path: .coverage.acceptance
@@ -399,11 +399,10 @@ jobs:
             pip install pycobertura
             coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack/services/*/**" --omit="*/**/__init__.py"
             coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack/services/*/**"  --omit="*/**/__init__.py"
-            pycobertura --help
             pycobertura show --format html -s localstack/ acceptance.coverage.report.xml -o coverage-acceptance.html
-            echo "'show' successfully executed"
-            pycobertura diff --format html -s1 localstack/ -s2 localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html
-            echo "finished script"
+          # pycobertura will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
+          # but we still want cirecleci to continue with the tasks, so we return 0 always
+            bash -c "pycobertura diff --format html -s1 localstack/ -s2 localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html; if [[ \$? -eq 0 ]] ; then exit 1 ; else exit 0 ; fi"
       - run:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
