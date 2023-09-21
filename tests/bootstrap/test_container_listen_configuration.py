@@ -66,7 +66,11 @@ class TestContainerConfiguration:
         assert f"checking service health s3:{gateway_listen_port}" in logs
 
     def test_gateway_listen_multiple_values(
-        self, container_factory: ContainerFactory, docker_network, wait_for_localstack_ready
+        self,
+        container_factory: ContainerFactory,
+        docker_network,
+        wait_for_localstack_ready,
+        stream_container_logs,
     ):
         """
         Test multiple container ports
@@ -75,19 +79,26 @@ class TestContainerConfiguration:
         port2 = get_free_tcp_port()
 
         container = container_factory(
-            env_vars={
-                "GATEWAY_LISTEN": ",".join(
-                    [
-                        "0.0.0.0:5000",
-                        "0.0.0.0:2000",
-                    ]
-                )
-            },
-            network=docker_network,
+            configurators=[
+                ContainerConfigurators.debug,
+                ContainerConfigurators.mount_docker_socket,
+                ContainerConfigurators.network(docker_network),
+                ContainerConfigurators.env_vars(
+                    {
+                        "GATEWAY_LISTEN": ",".join(
+                            [
+                                "0.0.0.0:5000",
+                                "0.0.0.0:2000",
+                            ]
+                        )
+                    }
+                ),
+            ]
         )
         container.config.ports.add(port1, 5000)
         container.config.ports.add(port2, 2000)
         running_container = container.start(attach=False)
+        stream_container_logs(container)
         wait_for_localstack_ready(running_container)
 
         # check the ports listening on 0.0.0.0
@@ -96,3 +107,13 @@ class TestContainerConfiguration:
 
         r = requests.get(f"http://127.0.0.1:{port2}/_localstack/health")
         assert r.ok
+
+        # check a service is able to run
+        client = boto3.client(
+            "s3", endpoint_url=f"http://127.0.0.1:{port1}", region_name="us-east-1"
+        )
+        client.list_buckets()
+
+        # get the container logs
+        logs = running_container.get_logs()
+        assert "checking service health s3:5000" in logs
