@@ -98,13 +98,14 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
             self._env.close_frame(env_frame)
 
     def eval(self) -> None:
-        self._map_run_record.execution_counter.running.count()
-        self._map_run_record.execution_counter.total.count()
         job: Optional[Job] = self._job_pool.next_job()
         while job is not None:
+            self._map_run_record.execution_counter.total.count()
+            self._map_run_record.execution_counter.running.count()
             self._eval_job(job=job)
             if self.stopped():
-                self._map_run_record.execution_counter.succeeded.count()
                 break
             job = self._job_pool.next_job()
-        self._map_run_record.execution_counter.running.offset(-1)
+            self._map_run_record.execution_counter.succeeded.count()
+            self._map_run_record.execution_counter.results_written.count()
+            self._map_run_record.execution_counter.running.offset(-1)

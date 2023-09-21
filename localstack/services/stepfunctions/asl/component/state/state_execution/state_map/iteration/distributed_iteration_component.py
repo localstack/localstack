@@ -9,6 +9,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventType,
     MapRunFailedEventDetails,
     MapRunStartedEventDetails,
+    MapRunStatus,
 )
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
@@ -140,6 +141,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             # TODO: investigate if this is truly propagated also to eventual sub programs in map run states.
             env.event_history = EventHistory()
             self._map_run(env=env)
+            self._map_run_record.set_stop(status=MapRunStatus.SUCCEEDED)
 
         except FailureEventException as failure_event_ex:
             map_run_fail_event_detail = MapRunFailedEventDetails()
@@ -157,6 +159,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
                 hist_type_event=HistoryEventType.MapRunFailed,
                 event_detail=EventDetails(mapRunFailedEventDetails=map_run_fail_event_detail),
             )
+            self._map_run_record.set_stop(status=MapRunStatus.FAILED)
             raise failure_event_ex
 
         except Exception as ex:
@@ -165,6 +168,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
                 hist_type_event=HistoryEventType.MapRunFailed,
                 event_detail=EventDetails(mapRunFailedEventDetails=MapRunFailedEventDetails()),
             )
+            self._map_run_record.set_stop(status=MapRunStatus.FAILED)
             raise ex
         finally:
             env.event_history = execution_event_history

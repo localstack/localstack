@@ -80,6 +80,7 @@ class Environment:
         frame._is_frame = True
         frame.event_history = env.event_history
         frame.callback_pool_manager = env.callback_pool_manager
+        frame.map_run_record_pool_manager = env.map_run_record_pool_manager
         frame.heap = env.heap
         frame._program_state = copy.deepcopy(env._program_state)
         return frame

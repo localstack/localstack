@@ -88,7 +88,9 @@ class ItemCounter(ProgressCounter):
 
 class MapRunRecord:
     update_event: Final[threading.Event]
-    state_machine_arn: Final[Arn]
+    map_state_machine_arn: Final[
+        LongArn
+    ]  # This is the original state machine arn plut the map run arn postfix.
     execution_arn: Final[Arn]
     map_run_arn: Final[LongArn]
     max_concurrency: int
@@ -103,9 +105,13 @@ class MapRunRecord:
 
     def __init__(self, state_machine_arn: Arn, execution_arn: Arn, max_concurrency: int):
         self.update_event = threading.Event()
-        self.state_machine_arn = state_machine_arn
+        (
+            map_state_machine_arn,
+            map_run_arn,
+        ) = self._generate_map_run_arns(state_machine_arn=state_machine_arn)
+        self.map_run_arn = map_run_arn
+        self.map_state_machine_arn = map_state_machine_arn
         self.execution_arn = execution_arn
-        self.map_run_arn = MapRunRecord._generate_map_run_arn(state_machine_arn=state_machine_arn)
         self.max_concurrency = max_concurrency
         self.execution_counter = ExecutionCounter()
         self.item_counter = ItemCounter()
@@ -113,16 +119,22 @@ class MapRunRecord:
         self.status = MapRunStatus.RUNNING
         self.stop_date = None
         self.tolerated_failure_count = 0
-        self.tolerated_failure_percentage = 0
+        self.tolerated_failure_percentage = 0.0
 
     @staticmethod
-    def _generate_map_run_arn(state_machine_arn: Arn) -> LongArn:
+    def _generate_map_run_arns(state_machine_arn: Arn) -> tuple[LongArn, LongArn]:
         # Generate a new MapRunArn given the StateMachineArn, such that:
-        # SMA: arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>
+        # inp: arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>
         # MRA: arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>
+        # SMA: arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>
         map_run_arn = state_machine_arn.replace(":stateMachine:", ":mapRun:")
-        map_run_arn = f"{map_run_arn}/{long_uid()}:{long_uid()}"
-        return map_run_arn
+        part_1 = long_uid()
+        map_run_arn = f"{map_run_arn}/{part_1}:{long_uid()}"
+        return f"{state_machine_arn}/{part_1}", map_run_arn
+
+    def set_stop(self, status: MapRunStatus):
+        self.status = status
+        self.stop_date = datetime.datetime.now()
 
     def describe(self) -> DescribeMapRunOutput:
         describe_output = DescribeMapRunOutput(
@@ -145,7 +157,7 @@ class MapRunRecord:
         list_item = MapRunListItem(
             executionArn=self.execution_arn,
             mapRunArn=self.map_run_arn,
-            stateMachineArn=self.state_machine_arn,
+            stateMachineArn=self.map_state_machine_arn,
             startDate=self.start_date,
         )
         if self.stop_date:
