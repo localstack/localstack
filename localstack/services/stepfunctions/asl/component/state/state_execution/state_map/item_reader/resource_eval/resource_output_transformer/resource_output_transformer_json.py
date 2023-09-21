@@ -37,7 +37,7 @@ class ResourceOutputTransformerJson(ResourceOutputTransformer):
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(
                     mapRunFailedEventDetails=MapRunFailedEventDetails(
-                        error=StatesErrorNameType.StatesItemReaderFailed.to_name(),
+                        error=error_name.error_name,
                         cause="Attempting to map over non-iterable node.",
                     )
                 ),

@@ -2,6 +2,13 @@ import csv
 import io
 from collections import OrderedDict
 
+from localstack.aws.api.stepfunctions import HistoryEventType, MapRunFailedEventDetails
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
+    FailureEventException,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import StatesErrorName
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import StatesErrorNameType
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
     CSVHeaderLocationOutput,
     ReaderConfigOutput,
@@ -10,6 +17,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     ResourceOutputTransformer,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
 
 class ResourceOutputTransformerCSV(ResourceOutputTransformer):
@@ -28,11 +36,27 @@ class ResourceOutputTransformerCSV(ResourceOutputTransformer):
             case unknown:
                 raise ValueError(f"Unknown CSVHeaderLocation value '{unknown}'.")
 
+        if len(set(headers)) < len(headers):
+            error_name = StatesErrorName(typ=StatesErrorNameType.StatesItemReaderFailed)
+            failure_event = FailureEvent(
+                error_name=error_name,
+                event_type=HistoryEventType.TaskFailed,
+                event_details=EventDetails(
+                    mapRunFailedEventDetails=MapRunFailedEventDetails(
+                        error=error_name.error_name,
+                        cause="CSV headers cannot contain duplicates.",
+                    )
+                ),
+            )
+            raise FailureEventException(failure_event=failure_event)
+
         transformed_outputs = list()
         for row in csv_reader:
-            transformed_output = OrderedDict()
+            transformed_output = dict()
             for i, header in enumerate(headers):
                 transformed_output[header] = row[i] if i < len(row) else ""
-            transformed_outputs.append(transformed_output)
+            transformed_outputs.append(
+                OrderedDict(sorted(transformed_output.items(), key=lambda item: (item[0].isalpha(), item[0])))
+            )
 
         env.stack.append(transformed_outputs)

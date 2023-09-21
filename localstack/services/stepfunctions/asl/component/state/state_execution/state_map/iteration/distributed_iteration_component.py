@@ -87,7 +87,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
                     self._workers.remove(worker)
 
     def _map_run(self, env: Environment) -> None:
-        input_items: list[json] = self._eval_input.input_items
+        input_items: list[json] = env.stack.pop()
 
         input_item_prog: Final[Program] = Program(
             start_at=self._start_at,
@@ -96,7 +96,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             comment=self._comment,
         )
         self._job_pool = JobPool(
-            job_program=input_item_prog, job_inputs=self._eval_input.input_items
+            job_program=input_item_prog, job_inputs=input_items
         )
 
         # TODO: add watch on map_run_record update event and adjust the number of running workers accordingly.

@@ -300,7 +300,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_map_state_break_condition(
         self,
         aws_client,

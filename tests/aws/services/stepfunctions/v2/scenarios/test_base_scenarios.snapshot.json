@@ -276,7 +276,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_break_condition": {
-    "recorded-date": "17-07-2023, 16:56:59",
+    "recorded-date": "21-09-2023, 17:39:44",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -715,7 +715,10 @@
             "type": "MapStateFailed"
           },
           {
-            "executionFailedEventDetails": {},
+            "executionFailedEventDetails": {
+              "cause": "This state machines raises a 'SomeFailure' failure.",
+              "error": "SomeFailure"
+            },
             "id": 36,
             "previousEventId": 35,
             "timestamp": "timestamp",
