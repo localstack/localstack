@@ -16,6 +16,7 @@ from . import (
     service,
 )
 
+handle_runtime_shutdown = internal.RuntimeShutdownHandler()
 enforce_cors = cors.CorsEnforcer()
 preprocess_request = chain.CompositeHandler()
 add_cors_response_headers = cors.CorsResponseEnricher()

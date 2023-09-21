@@ -157,6 +157,15 @@ class CountingService:
                         on_demand_tracker.increment(unqualified_function_arn)
                         lease_type = "on-demand"
                     else:
+                        extras = {
+                            "available_reserved_concurrency": available_reserved_concurrency,
+                            "reserved_concurrent_executions": function.reserved_concurrent_executions,
+                            "provisioned_concurrency_sum": calculate_provisioned_concurrency_sum(
+                                function
+                            ),
+                            "on_demand_running_invocation_count": on_demand_running_invocation_count,
+                        }
+                        LOG.debug("Insufficient reserved concurrency available: %s", extras)
                         raise TooManyRequestsException(
                             "Rate Exceeded.",
                             Reason="ReservedFunctionConcurrentInvocationLimitExceeded",
@@ -196,6 +205,12 @@ class CountingService:
                                 unqualified_function_arn,
                                 available_unreserved_concurrency,
                             )
+                        extras = {
+                            "available_unreserved_concurrency": available_unreserved_concurrency,
+                            "lambda_limits_concurrent_executions": config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS,
+                            "total_used_concurrency": total_used_concurrency,
+                        }
+                        LOG.debug("Insufficient unreserved concurrency available: %s", extras)
                         raise TooManyRequestsException(
                             "Rate Exceeded.",
                             Reason="ReservedFunctionConcurrentInvocationLimitExceeded",

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Optional
 from localstack import config
 from localstack.aws.api.lambda_ import (
     InvalidParameterValueException,
+    InvalidRequestContentException,
     InvocationType,
     LastUpdateStatus,
     ResourceConflictException,
@@ -291,6 +292,16 @@ class LambdaService:
         # empty payloads have to work as well
         if payload is None:
             payload = b"{}"
+        else:
+            # detect invalid payloads early before creating an execution environment
+            try:
+                to_str(payload)
+            except Exception as e:
+                # MAYBE: improve parity of detailed exception message (quite cumbersome)
+                raise InvalidRequestContentException(
+                    f"Could not parse request body into json: Could not parse payload into json: {e}",
+                    Type="User",
+                )
         if invocation_type is None:
             invocation_type = InvocationType.RequestResponse
         if invocation_type == InvocationType.DryRun:
