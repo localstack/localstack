@@ -106,6 +106,11 @@ class SchedulerScheduleGroupProvider(ResourceProvider[SchedulerScheduleGroupProp
           - scheduler:DeleteSchedule
         """
         model = request.desired_state
+        schedules = request.aws_client_factory.scheduler.list_schedules(
+            ScheduleGroupArn=model["Arn"]
+        )["Schedules"]
+        for schedule in schedules:
+            request.aws_client_factory.scheduler.delete_schedule(Name=schedule["Name"])
         request.aws_client_factory.scheduler.delete_schedule_group(Name=model["Name"])
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 

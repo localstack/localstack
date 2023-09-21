@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/resource_providers/scheduler/test_scheduler.py::test_schedule_and_group": {
-    "recorded-date": "12-09-2023, 13:56:13",
+    "recorded-date": "21-09-2023, 10:21:19",
     "recorded-content": {
       "Schedule": {
         "DriftInformation": {
@@ -27,6 +27,44 @@
         "ResourceType": "AWS::Scheduler::ScheduleGroup",
         "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>"
+      },
+      "ScheduleDesc": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:aws:scheduler:<region>:111111111111:schedule/<physical_resource_id:2>/<physical_resource_id:1>",
+        "CreationDate": "datetime",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "<physical_resource_id:2>",
+        "LastModificationDate": "datetime",
+        "Name": "<physical_resource_id:1>",
+        "ScheduleExpression": "cron(0 0 * * ? *)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "arn:aws:iam::111111111111:role/<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "GroupDesc": {
+        "Arn": "arn:aws:scheduler:<region>:111111111111:schedule-group/<physical_resource_id:2>",
+        "CreationDate": "datetime",
+        "LastModificationDate": "datetime",
+        "Name": "<physical_resource_id:2>",
+        "State": "ACTIVE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   }

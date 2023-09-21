@@ -4,7 +4,14 @@ from localstack.testing.pytest import markers
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..DriftInformation",
+        "$..Metadata",
+        "$..ActionAfterCompletion",
+        "$..ScheduleExpressionTimezone",
+    ]
+)
 def test_schedule_and_group(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "templates/schedule.yml")
@@ -23,3 +30,11 @@ def test_schedule_and_group(deploy_cfn_template, aws_client, snapshot):
         StackName=stack.stack_name, LogicalResourceId="MyScheduleGroup"
     )["StackResourceDetail"]
     snapshot.match("Group", group)
+
+    schedule = aws_client.scheduler.get_schedule(
+        Name=stack.outputs["ScheduleName"], GroupName=stack.outputs["ScheduleGroupName"]
+    )
+    snapshot.match("ScheduleDesc", schedule)
+
+    group = aws_client.scheduler.get_schedule_group(Name=stack.outputs["ScheduleGroupName"])
+    snapshot.match("GroupDesc", group)
