@@ -25,10 +25,25 @@ def sort_dict_helper(d):
 
 
 def create_initial_coverage(path_to_initial_metrics: str) -> dict:
+    """
+    Iterates over all csv files in `path_to_initial_metrics` and creates a dict collecting all status_codes that have been
+    triggered for each service-operation combination:
+
+        { "service_name":
+            {
+                "operation_name_1": { "status_code": False},
+                "operation_name2": {"status_code_1": False, "status_code_2": False}
+            },
+          "service_name_2": ....
+        }
+    :param path_to_initial_metrics: path to the metrics
+    :returns: Dict
+    """
     pathlist = Path(path_to_initial_metrics).rglob("*.csv")
     coverage = {}
     for path in pathlist:
         with open(path, "r") as csv_obj:
+            print(f"Processing integration test coverage metrics: {path}")
             csv_dict_reader = csv.DictReader(csv_obj)
             for metric in csv_dict_reader:
                 service = metric.get("service")
@@ -45,11 +60,33 @@ def create_initial_coverage(path_to_initial_metrics: str) -> dict:
 def mark_coverage_acceptance_test(
     path_to_acceptance_metrics: str, coverage_collection: dict
 ) -> dict:
+    """
+    Iterates over all csv files in `path_to_acceptance_metrics` and updates the information in the `coverage_collection`
+    dict about which API call was covered by the acceptance metrics
+
+        { "service_name":
+            {
+                "operation_name_1": { "status_code": True},
+                "operation_name2": {"status_code_1": False, "status_code_2": True}
+            },
+          "service_name_2": ....
+        }
+
+    If any API calls are identified, that have not been covered with the initial run, those will be collected separately.
+    Normally, this should never happen, because acceptance tests should be a subset of integrations tests.
+    Could, however, be useful to identify issues, or when comparing test runs locally.
+
+    :param path_to_acceptance_metrics: path to the metrics
+    :param coverage_collection: Dict with the coverage collection about the initial test integration run
+
+    :returns:  dict with additional recorded coverage, only covered by the acceptance test suite
+    """
     pathlist = Path(path_to_acceptance_metrics).rglob("*.csv")
     additional_tested = {}
     add_to_additional = False
     for path in pathlist:
         with open(path, "r") as csv_obj:
+            print(f"Processing acceptance test coverage metrics: {path}")
             csv_dict_reader = csv.DictReader(csv_obj)
             for metric in csv_dict_reader:
                 service = metric.get("service")
@@ -81,7 +118,15 @@ def mark_coverage_acceptance_test(
 
 def create_readable_report(
     coverage_collection: dict, additional_tested_collection: dict, output_dir: str
-):
+) -> None:
+    """
+    Helper function to create a very simple HTML view out of the collected metrics.
+    The file will be named "report_metric_coverage.html"
+
+    :params coverage_collection: the dict with the coverage collection
+    :params additional_tested_collection: dict with coverage of APIs only for acceptance tests
+    :params output_dir: the directory where the outcoming html file should be stored to.
+    """
     service_overview_coverage = """
     <table>
       <tr>
@@ -130,7 +175,7 @@ def create_readable_report(
         <th>Return Code</th>
         <th>Covered By Acceptance Test</th>
       </tr>"""
-        for service, operations in coverage_collection.items():
+        for service, operations in additional_tested_collection.items():
             for op_name, details in operations.items():
                 for response_code, covered in details.items():
                     additional_test_details += "    <tr>\n"
