@@ -7,8 +7,12 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
     FailureEventException,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import StatesErrorName
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import StatesErrorNameType
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
     CSVHeaderLocationOutput,
     ReaderConfigOutput,
@@ -56,7 +60,11 @@ class ResourceOutputTransformerCSV(ResourceOutputTransformer):
             for i, header in enumerate(headers):
                 transformed_output[header] = row[i] if i < len(row) else ""
             transformed_outputs.append(
-                OrderedDict(sorted(transformed_output.items(), key=lambda item: (item[0].isalpha(), item[0])))
+                OrderedDict(
+                    sorted(
+                        transformed_output.items(), key=lambda item: (item[0].isalpha(), item[0])
+                    )
+                )
             )
 
         env.stack.append(transformed_outputs)

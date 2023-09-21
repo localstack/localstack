@@ -1,15 +1,9 @@
 """Concurrency synchronization utilities"""
 import functools
-import sys
 import threading
 import time
 from collections import defaultdict
-from typing import Callable, TypeVar
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
+from typing import Callable, Literal, TypeVar
 
 
 class ShortCircuitWaitException(Exception):

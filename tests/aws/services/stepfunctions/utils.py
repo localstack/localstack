@@ -244,18 +244,12 @@ def create(
     return state_machine_arn
 
 
-def create_and_record_execution(
+def launch_and_record_execution(
     stepfunctions_client,
-    create_iam_role_for_sfn,
-    create_state_machine,
     sfn_snapshot,
-    definition,
+    state_machine_arn,
     execution_input,
 ):
-    state_machine_arn = create(
-        create_iam_role_for_sfn, create_state_machine, sfn_snapshot, definition
-    )
-
     exec_resp = stepfunctions_client.start_execution(
         stateMachineArn=state_machine_arn, input=execution_input
     )
@@ -280,6 +274,25 @@ def create_and_record_execution(
         pass
 
     sfn_snapshot.match("get_execution_history", get_execution_history)
+
+
+def create_and_record_execution(
+    stepfunctions_client,
+    create_iam_role_for_sfn,
+    create_state_machine,
+    sfn_snapshot,
+    definition,
+    execution_input,
+):
+    state_machine_arn = create(
+        create_iam_role_for_sfn, create_state_machine, sfn_snapshot, definition
+    )
+    launch_and_record_execution(
+        stepfunctions_client,
+        sfn_snapshot,
+        state_machine_arn,
+        execution_input,
+    )
 
 
 def create_and_record_events(
@@ -342,4 +355,20 @@ def create_and_record_events(
 
     poll_condition(_get_events, timeout=60)
 
+    sfn_snapshot.match("stepfunctions_events", stepfunctions_events)
+
+
+def record_sqs_events(aws_client, queue_url, sfn_snapshot, num_events):
+    stepfunctions_events = list()
+
+    def _get_events():
+        received = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        for message in received.get("Messages", []):
+            body = json.loads(message["Body"])
+            stepfunctions_events.append(body)
+        stepfunctions_events.sort(key=lambda e: e["time"])
+        return len(stepfunctions_events) == num_events
+
+    poll_condition(_get_events, timeout=60)
+    stepfunctions_events.sort(key=lambda e: json.dumps(e.get("detail", dict())))
     sfn_snapshot.match("stepfunctions_events", stepfunctions_events)

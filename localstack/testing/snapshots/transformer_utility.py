@@ -57,7 +57,7 @@ class TransformerUtility:
         :return: KeyValueBasedTransformer
         """
         return KeyValueBasedTransformer(
-            lambda k, v: v if k == key else None,
+            lambda k, v: v if k == key and (v is not None and v != "") else None,
             replacement=value_replacement or _replace_camel_string_with_hyphen(key),
             replace_reference=reference_replacement,
         )
@@ -483,6 +483,7 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("AlarmName"),
+            TransformerUtility.key_value("Namespace"),
             KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
             TransformerUtility.key_value("Region", "region-name-full"),
         ]

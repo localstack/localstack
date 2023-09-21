@@ -1,0 +1,14 @@
+{
+  "Comment": "EVENTS_PUT_EVENTS",
+  "StartAt": "PutEvents",
+  "States": {
+    "PutEvents": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::events:putEvents",
+      "Parameters": {
+        "Entries.$": "$.Entries"
+      },
+      "End": true
+    }
+  }
+}

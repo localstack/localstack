@@ -30,7 +30,6 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
-# TODO: improve on factory constructor (don't use SubtypeManager)
 class StateTaskService(StateTask, abc.ABC):
     resource: ServiceResource
 

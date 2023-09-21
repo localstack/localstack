@@ -1,18 +1,11 @@
 import functools
-import sys
-from typing import Any, NamedTuple, Optional, Type, Union
-
-from localstack.aws.connect import InternalRequestParameters
-from localstack.utils.strings import long_uid
-
-if sys.version_info >= (3, 8):
-    from typing import Protocol, TypedDict
-else:
-    from typing_extensions import Protocol, TypedDict
+from typing import Any, NamedTuple, Optional, Protocol, Type, TypedDict, Union
 
 from botocore.model import OperationModel, ServiceModel
 
+from localstack.aws.connect import InternalRequestParameters
 from localstack.http import Request, Response
+from localstack.utils.strings import long_uid
 
 # FIXME: deprecated, use localstack.http.Request and localstack.http.Response instead
 HttpRequest = Request

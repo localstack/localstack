@@ -1,4 +1,3 @@
-import json
 from typing import Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType, MapStateStartedEventDetails

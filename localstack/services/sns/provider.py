@@ -8,7 +8,6 @@ from moto.sns import sns_backends
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend, Topic
 from moto.sns.utils import is_e164
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
@@ -17,6 +16,7 @@ from localstack.aws.api.sns import (
     CreateEndpointResponse,
     CreatePlatformApplicationResponse,
     CreateTopicResponse,
+    EndpointDisabledException,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
@@ -48,6 +48,7 @@ from localstack.aws.api.sns import (
     topicARN,
     topicName,
 )
+from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request, Response, Router, route
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
@@ -335,17 +336,16 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         try:
             result: CreateEndpointResponse = call_moto(context)
         except CommonServiceException as e:
-            # TODO: this was unclear in the old provider, check against aws and moto
             if "DuplicateEndpoint" in e.code:
                 moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
                 for e in moto_sns_backend.platform_endpoints.values():
                     if e.token == token:
                         if custom_user_data and custom_user_data != e.custom_user_data:
-                            # TODO: check error against aws
-                            raise CommonServiceException(
-                                code="DuplicateEndpoint",
-                                message=f"Endpoint already exist for token: {token} with different attributes",
+                            raise InvalidParameterException(
+                                f"Endpoint {e.arn} already exists with the same Token, but different attributes."
                             )
+                        else:
+                            return CreateEndpointResponse(EndpointArn=e.arn)
             raise
         return result
 
@@ -478,10 +478,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
             moto_sns_backend = self.get_moto_backend(parsed_arn["account"], context.region)
             if is_endpoint_publish:
-                if target_arn not in moto_sns_backend.platform_endpoints:
+                if not (platform_endpoint := moto_sns_backend.platform_endpoints.get(target_arn)):
                     raise InvalidParameterException(
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
                     )
+                elif not platform_endpoint.enabled:
+                    raise EndpointDisabledException("Endpoint is disabled")
             else:
                 if topic_or_target_arn not in store.topic_subscriptions:
                     raise NotFoundException(
@@ -578,11 +580,14 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         for existing_topic_subscription in store.topic_subscriptions.get(topic_arn, []):
             sub = store.subscriptions.get(existing_topic_subscription, {})
             if sub.get("Endpoint") == endpoint:
-                for attr in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
-                    if attributes and sub.get(attr) != attributes.get(attr):
-                        raise InvalidParameterException(
-                            "Invalid parameter: Attributes Reason: Subscription already exists with different attributes"
-                        )
+                if attributes:
+                    # validate the subscription attributes aren't different
+                    for attr in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
+                        # if a new attribute is present and different from an existent one, raise
+                        if (new_attr := attributes.get(attr)) and sub.get(attr) != new_attr:
+                            raise InvalidParameterException(
+                                "Invalid parameter: Attributes Reason: Subscription already exists with different attributes"
+                            )
 
                 return SubscribeResponse(SubscriptionArn=sub["SubscriptionArn"])
 
@@ -937,8 +942,8 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
-        account_id = request.args.get("accountId", get_aws_account_id())
-        region = request.args.get("region", "us-east-1")
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
@@ -960,8 +965,8 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
     def on_delete(self, request: Request) -> Response:
-        account_id = request.args.get("accountId", get_aws_account_id())
-        region = request.args.get("region", "us-east-1")
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
@@ -996,8 +1001,8 @@ class SNSServiceSMSMessagesApiResource:
 
     @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
-        account_id = request.args.get("accountId", get_aws_account_id())
-        region = request.args.get("region", "us-east-1")
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_phone_number = request.args.get("phoneNumber")
         store: SnsStore = sns_stores[account_id][region]
         if filter_phone_number:
@@ -1022,8 +1027,8 @@ class SNSServiceSMSMessagesApiResource:
 
     @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["DELETE"])
     def on_delete(self, request: Request) -> Response:
-        account_id = request.args.get("accountId", get_aws_account_id())
-        region = request.args.get("region", "us-east-1")
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_phone_number = request.args.get("phoneNumber")
         store: SnsStore = sns_stores[account_id][region]
         if filter_phone_number:

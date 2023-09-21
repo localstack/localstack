@@ -3,22 +3,15 @@ import logging
 import os
 import sys
 import traceback
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TypedDict
 
-from localstack import config
+import click
+
+from localstack import __version__, config
 from localstack.cli.exceptions import CLIError
 from localstack.utils.analytics.cli import publish_invocation
 from localstack.utils.bootstrap import get_container_default_logfile_location
 from localstack.utils.json import CustomEncoder
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
-
-import click
-
-from localstack import __version__
 
 from .console import BANNER, console
 from .plugin import LocalstackCli, load_cli_plugins

@@ -95,9 +95,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             timeout_seconds=None,
             comment=self._comment,
         )
-        self._job_pool = JobPool(
-            job_program=input_item_prog, job_inputs=input_items
-        )
+        self._job_pool = JobPool(job_program=input_item_prog, job_inputs=input_items)
 
         # TODO: add watch on map_run_record update event and adjust the number of running workers accordingly.
         max_concurrency = self._map_run_record.max_concurrency

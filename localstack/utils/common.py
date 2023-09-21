@@ -177,9 +177,6 @@ from localstack.utils.sync import (  # noqa
 )
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
-from localstack.utils.tail import FileListener  # noqa
-
-# TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.threads import (  # noqa
     TMP_PROCESSES,
     TMP_THREADS,

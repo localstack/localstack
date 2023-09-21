@@ -418,6 +418,11 @@ def get_s3_hostname():
 
 
 def generate_presigned_url(*args, **kwargs):
+    warnings.warn(
+        "`aws_stack.generate_presigned_url` is obsolete. Use the Boto client `generate_presigned_url` method",
+        DeprecationWarning,
+    )
+
     endpoint_url = kwargs.pop("endpoint_url", None)
     s3_client = connect_to_service(
         "s3",

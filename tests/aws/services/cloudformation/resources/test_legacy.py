@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
@@ -326,8 +327,7 @@ class TestCloudFormation:
         s3_client = aws_client_factory(region_name=region).s3
         bucket_name = f"target-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
-        # the queue is always created in us-east-1
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         if create_bucket_first:
             s3_client.create_bucket(
                 Bucket=bucket_name,
@@ -374,7 +374,9 @@ class TestCloudFormation:
         assert lambda_arn in uri
 
     # TODO: refactor
-    @pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out")
+    @pytest.mark.skipif(
+        condition=is_new_provider(), reason="fails/times out. Check Lambda resource cleanup."
+    )
     @markers.aws.unknown
     def test_update_lambda_function(self, s3_create_bucket, deploy_cfn_template, aws_client):
         bucket_name = f"bucket-{short_uid()}"
@@ -746,7 +748,9 @@ class TestCloudFormation:
         assert not vpcs
 
     # TODO: evaluate (can we drop this?)
-    @pytest.mark.xfail(reason="GetAtt resolved old value")
+    @pytest.mark.skip(
+        reason="GetAtt resolved old value. Lambda resource cleanup leaking: poller stays alive."
+    )
     @markers.aws.validated
     def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
         lambda_role_name = f"lambda-role-{short_uid()}"
