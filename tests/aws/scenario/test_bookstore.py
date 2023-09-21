@@ -84,7 +84,7 @@ def setup_lambda(s3_client: "S3Client", bucket_name: str, key_name: str, code_pa
                     archive_name = os.path.relpath(file_path, temp_dir)
                     temp_zip.write(file_path, archive_name)
 
-        create_s3_bucket(Bucket=bucket_name, s3_client=s3_client)
+        create_s3_bucket(bucket_name=bucket_name, s3_client=s3_client)
         s3_client.upload_file(Filename=tmp_zip_path, Bucket=bucket_name, Key=key_name)
 
     finally:
