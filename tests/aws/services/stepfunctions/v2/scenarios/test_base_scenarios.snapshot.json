@@ -8865,7 +8865,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_list_objects_v2": {
-    "recorded-date": "19-09-2023, 17:59:53",
+    "recorded-date": "21-09-2023, 13:54:23",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -8911,7 +8911,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/2098674c-583e-3ee0-92c2-c582345a6d10:ee5b5444-40aa-3435-a232-2b305c1bb5d9"
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -8934,7 +8934,7 @@
             "previousEventId": 5,
             "stateExitedEventDetails": {
               "name": "MapState",
-              "output": "[{\"Etag\":\"\\\"26c6f5d46cc21753686a70d9344a5b4a\\\"\",\"Key\":\"file_0.txt\",\"LastModified\":1.695139177E9,\"Size\":12,\"StorageClass\":\"STANDARD\"},{\"Etag\":\"\\\"d424f035c9b92b4c1ef56f3d7871c713\\\"\",\"Key\":\"file_1.txt\",\"LastModified\":1.695139177E9,\"Size\":12,\"StorageClass\":\"STANDARD\"},{\"Etag\":\"\\\"5f65b1d6d6607017705c4b0bed8b26fe\\\"\",\"Key\":\"file_2.txt\",\"LastModified\":1.695139177E9,\"Size\":12,\"StorageClass\":\"STANDARD\"}]",
+              "output": "[{\"Etag\": \"<Etag-file_0.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_0.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}, {\"Etag\": \"<Etag-file_1.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_1.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}, {\"Etag\": \"<Etag-file_2.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_2.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}]",
               "outputDetails": {
                 "truncated": false
               }
@@ -8944,7 +8944,7 @@
           },
           {
             "executionSucceededEventDetails": {
-              "output": "[{\"Etag\":\"\\\"26c6f5d46cc21753686a70d9344a5b4a\\\"\",\"Key\":\"file_0.txt\",\"LastModified\":1.695139177E9,\"Size\":12,\"StorageClass\":\"STANDARD\"},{\"Etag\":\"\\\"d424f035c9b92b4c1ef56f3d7871c713\\\"\",\"Key\":\"file_1.txt\",\"LastModified\":1.695139177E9,\"Size\":12,\"StorageClass\":\"STANDARD\"},{\"Etag\":\"\\\"5f65b1d6d6607017705c4b0bed8b26fe\\\"\",\"Key\":\"file_2.txt\",\"LastModified\":1.695139177E9,\"Size\":12,\"StorageClass\":\"STANDARD\"}]",
+              "output": "[{\"Etag\": \"<Etag-file_0.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_0.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}, {\"Etag\": \"<Etag-file_1.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_1.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}, {\"Etag\": \"<Etag-file_2.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_2.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}]",
               "outputDetails": {
                 "truncated": false
               }
@@ -8963,7 +8963,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_csv_headers_first_line": {
-    "recorded-date": "19-09-2023, 17:05:58",
+    "recorded-date": "21-09-2023, 14:07:17",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -9011,7 +9011,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/2098674c-583e-3ee0-92c2-c582345a6d10:f6e8fdfa-e461-3f0a-8c3c-88f3aee0188b"
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9063,14 +9063,14 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_csv_headers_decl": {
-    "recorded-date": "18-09-2023, 11:27:18",
+    "recorded-date": "21-09-2023, 14:07:46",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "Bucket": "test-bucket-cc761191",
+                "Bucket": "bucket-name",
                 "Key": "file.csv"
               },
               "inputDetails": {
@@ -9088,7 +9088,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "Bucket": "test-bucket-cc761191",
+                "Bucket": "bucket-name",
                 "Key": "file.csv"
               },
               "inputDetails": {
@@ -9111,7 +9111,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/2098674c-583e-3ee0-92c2-c582345a6d10:4db15213-973b-3eb1-b8c8-1f8c21218469"
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",
@@ -9163,7 +9163,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json": {
-    "recorded-date": "20-09-2023, 10:11:53",
+    "recorded-date": "21-09-2023, 14:08:16",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -9211,7 +9211,7 @@
           {
             "id": 4,
             "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/2098674c-583e-3ee0-92c2-c582345a6d10:84e4f915-6fc7-3d41-8d3c-349f0432c61b"
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
             },
             "previousEventId": 3,
             "timestamp": "timestamp",

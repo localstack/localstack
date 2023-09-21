@@ -37,8 +37,8 @@ class Environment:
     _is_frame: bool = False
 
     event_history: EventHistory
-    callback_pool_manager: Final[CallbackPoolManager]
-    map_run_record_pool_manager: Final[MapRunRecordPoolManager]
+    callback_pool_manager: CallbackPoolManager
+    map_run_record_pool_manager: MapRunRecordPoolManager
 
     heap: dict[str, Any] = dict()
     stack: list[Any] = list()

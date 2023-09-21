@@ -58,13 +58,15 @@ class DistributedItemProcessor(DistributedIterationComponent):
 
     @classmethod
     def from_props(cls, props: TypedProps) -> DistributedItemProcessor:
-        if not props.get(States):
-            raise ValueError(f"Missing States declaration in props '{props}'.")
-        if not props.get(StartAt):
-            raise ValueError(f"Missing StartAt declaration in props '{props}'.")
         item_processor = cls(
-            start_at=props.get(StartAt),
-            states=props.get(States),
+            start_at=props.get(
+                typ=StartAt,
+                raise_on_missing=ValueError(f"Missing StartAt declaration in props '{props}'."),
+            ),
+            states=props.get(
+                typ=States,
+                raise_on_missing=ValueError(f"Missing States declaration in props '{props}'."),
+            ),
             comment=props.get(Comment),
             processor_config=props.get(ProcessorConfig),
         )
@@ -76,4 +78,5 @@ class DistributedItemProcessor(DistributedIterationComponent):
             job_pool=self._job_pool,
             env=env,
             item_selector=self._eval_input.item_selector,
+            map_run_record=self._map_run_record,
         )

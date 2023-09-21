@@ -10,10 +10,15 @@ from localstack.aws.api.stepfunctions import (
     MapRunFailedEventDetails,
     MapRunStartedEventDetails,
 )
+from localstack.services.stepfunctions.asl.component.common.comment import Comment
+from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.inline_iteration_component import (
     InlineIterationComponent,
     InlineIterationComponentEvalInput,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
+    MapRunRecord,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_worker import (
     IterationWorker,
@@ -25,10 +30,10 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
 )
+from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory
-from localstack.utils.threads import TMP_THREADS
 
 
 class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
@@ -36,14 +41,39 @@ class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
 
 
 class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
+    _mutex: Final[threading.Lock]
+    _map_run_record: Optional[MapRunRecord]
+    _workers: list[IterationWorker]
+
+    def __init__(self, start_at: StartAt, states: States, comment: Comment):
+        super().__init__(start_at=start_at, states=states, comment=comment)
+        self._mutex = threading.Lock()
+        self._map_run_record = None
+        self._workers = list()
+
     @abc.abstractmethod
     def _create_worker(self, env: Environment) -> IterationWorker:
         ...
 
-    def _map_run(self, env: Environment) -> None:
-        self._eval_input = env.stack.pop()
+    def _launch_worker(self, env: Environment) -> IterationWorker:
+        worker = super()._launch_worker(env=env)
+        self._workers.append(worker)
+        return worker
 
-        max_concurrency: int = self._eval_input.max_concurrency
+    def _set_active_workers(self, workers_number: int, env: Environment) -> None:
+        with self._mutex:
+            current_workers_number = len(self._workers)
+            workers_diff = workers_number - current_workers_number
+            if workers_diff > 0:
+                for _ in range(workers_diff):
+                    self._launch_worker(env=env)
+            elif workers_diff < 0:
+                deletion_workers = list(self._workers)[workers_diff:]
+                for worker in deletion_workers:
+                    worker.sig_stop()
+                    self._workers.remove(worker)
+
+    def _map_run(self, env: Environment) -> None:
         input_items: list[json] = self._eval_input.input_items
 
         input_item_prog: Final[Program] = Program(
@@ -56,14 +86,12 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             job_program=input_item_prog, job_inputs=self._eval_input.input_items
         )
 
-        number_of_workers = (
+        # TODO: add watch on map_run_record update event and adjust the number of running workers accordingly.
+        max_concurrency = self._map_run_record.max_concurrency
+        workers_number = (
             len(input_items) if max_concurrency == MaxConcurrency.DEFAULT else max_concurrency
         )
-        for _ in range(number_of_workers):
-            worker = self._create_worker(env=env)
-            worker_thread = threading.Thread(target=worker.eval)
-            TMP_THREADS.append(worker_thread)
-            worker_thread.start()
+        self._set_active_workers(workers_number=workers_number, env=env)
 
         self._job_pool.await_jobs()
 
@@ -77,10 +105,20 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         env.stack.append(outputs)
 
     def _eval_body(self, env: Environment) -> None:
+        self._eval_input = env.stack.pop()
+        self._map_run_record = MapRunRecord(
+            state_machine_arn=env.context_object_manager.context_object["StateMachine"]["Id"],
+            execution_arn=env.context_object_manager.context_object["Execution"]["Id"],
+            max_concurrency=self._eval_input.max_concurrency,
+        )
+        env.map_run_record_pool_manager.add(self._map_run_record)
+
         env.event_history.add_event(
             hist_type_event=HistoryEventType.MapRunStarted,
             event_detail=EventDetails(
-                mapRunStartedEventDetails=MapRunStartedEventDetails(mapRunArn="TODO")
+                mapRunStartedEventDetails=MapRunStartedEventDetails(
+                    mapRunArn=self._map_run_record.map_run_arn
+                )
             ),
         )
 
@@ -93,11 +131,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             env.event_history = execution_event_history
             env.event_history.add_event(
                 hist_type_event=HistoryEventType.MapRunFailed,
-                event_detail=EventDetails(
-                    mapRunFailedEventDetails=MapRunFailedEventDetails(
-                        error="TODO ERROR", cause="TODO CAUSE"
-                    )
-                ),
+                event_detail=EventDetails(mapRunFailedEventDetails=MapRunFailedEventDetails()),
             )
             raise ex
         finally:

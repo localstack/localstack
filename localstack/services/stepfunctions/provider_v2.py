@@ -1,6 +1,7 @@
 import copy
 import datetime
 import json
+import logging
 from typing import Optional
 
 from localstack.aws.api import RequestContext
@@ -93,6 +94,8 @@ from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.utils.aws.arns import ArnData, parse_arn
 from localstack.utils.aws.arns import state_machine_arn as aws_stack_state_machine_arn
 from localstack.utils.strings import long_uid
+
+LOG = logging.getLogger(__name__)
 
 
 class StepFunctionsProvider(StepfunctionsApi):
@@ -635,7 +638,6 @@ class StepFunctionsProvider(StepfunctionsApi):
                 "Updating of ToleratedFailureCount and ToleratedFailurePercentage is currently unsupported."
             )
         # TODO: investigate behaviour of empty requests.
-
         store = self.get_store(context)
         for execution in store.executions.values():
             map_run_record: Optional[
@@ -646,6 +648,9 @@ class StepFunctionsProvider(StepfunctionsApi):
                     max_concurrency=max_concurrency,
                     tolerated_failure_count=tolerated_failure_count,
                     tolerated_failure_percentage=tolerated_failure_percentage,
+                )
+                LOG.warning(
+                    "StepFunctions UpdateMapRun changes are currently not being reflected in the MapRun instances."
                 )
                 return UpdateMapRunOutput()
         raise ResourceNotFound()

@@ -25,7 +25,11 @@ class Counter:
         self._mutex = threading.Lock()
         self._count = 0
 
-    def count(self, increment: int = 1):
+    def offset(self, offset: int) -> None:
+        with self._mutex:
+            self._count = self._count + offset
+
+    def count(self, increment: int = 1) -> None:
         with self._mutex:
             self._count += increment
 
@@ -101,7 +105,7 @@ class MapRunRecord:
         self.update_event = threading.Event()
         self.state_machine_arn = state_machine_arn
         self.execution_arn = execution_arn
-        self.map_run_arn = f"{execution_arn}/{long_uid()}:{long_uid()}"
+        self.map_run_arn = MapRunRecord._generate_map_run_arn(state_machine_arn=state_machine_arn)
         self.max_concurrency = max_concurrency
         self.execution_counter = ExecutionCounter()
         self.item_counter = ItemCounter()
@@ -110,6 +114,15 @@ class MapRunRecord:
         self.stop_date = None
         self.tolerated_failure_count = 0
         self.tolerated_failure_percentage = 0
+
+    @staticmethod
+    def _generate_map_run_arn(state_machine_arn: Arn) -> LongArn:
+        # Generate a new MapRunArn given the StateMachineArn, such that:
+        # SMA: arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>
+        # MRA: arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>
+        map_run_arn = state_machine_arn.replace(":stateMachine:", ":mapRun:")
+        map_run_arn = f"{map_run_arn}/{long_uid()}:{long_uid()}"
+        return map_run_arn
 
     def describe(self) -> DescribeMapRunOutput:
         describe_output = DescribeMapRunOutput(

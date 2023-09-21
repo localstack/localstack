@@ -1,14 +1,21 @@
 import json
+from collections import OrderedDict
 
 import pytest
 
+from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from tests.aws.services.stepfunctions.conftest import SfnNoneRecursiveParallelTransformer
 from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
     ScenariosTemplate as ST,
 )
-from tests.aws.services.stepfunctions.utils import create_and_record_execution, is_old_provider
+from tests.aws.services.stepfunctions.utils import (
+    await_execution_terminated,
+    create,
+    create_and_record_execution,
+    is_old_provider,
+)
 
 pytestmark = pytest.mark.skipif(
     condition=is_old_provider(), reason="Test suite for v2 provider only."
@@ -380,7 +387,13 @@ class TestBaseScenarios:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: Investigate why in distributed mode input length is always zero.
+            "$..mapStateStartedEventDetails.length"
+        ]
+    )
+    @markers.aws.validated
     def test_map_item_reader_base_list_objects_v2(
         self,
         aws_client,
@@ -400,16 +413,56 @@ class TestBaseScenarios:
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name})
-        create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
-            create_state_machine,
-            sfn_snapshot,
-            definition,
-            exec_input,
+
+        state_machine_arn = create(
+            create_iam_role_for_sfn, create_state_machine, sfn_snapshot, definition
         )
 
-    @markers.aws.unknown
+        exec_resp = aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn, input=exec_input
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        execution_arn = exec_resp["executionArn"]
+
+        await_execution_terminated(
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        )
+
+        execution_history = aws_client.stepfunctions.get_execution_history(
+            executionArn=execution_arn
+        )
+        map_run_arn = JSONPathUtils.extract_json(
+            "$..mapRunStartedEventDetails.mapRunArn", execution_history
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_map_run_arn(map_run_arn, 0))
+
+        output_str = execution_history["events"][-1]["executionSucceededEventDetails"]["output"]
+        output_json = json.loads(output_str)
+        output_norm = []
+        for output_value in output_json:
+            norm_output_value = OrderedDict()
+            norm_output_value["Etag"] = f"<Etag-{output_value['Key']}>"
+            norm_output_value["LastModified"] = "<date>"
+            norm_output_value["Key"] = output_value["Key"]
+            norm_output_value["Size"] = output_value["Size"]
+            norm_output_value["StorageClass"] = output_value["StorageClass"]
+            output_norm.append(norm_output_value)
+        output_norm.sort(key=lambda value: value["Key"])
+        output_norm_str = json.dumps(output_norm)
+        execution_history["events"][-2]["stateExitedEventDetails"]["output"] = output_norm_str
+        execution_history["events"][-1]["executionSucceededEventDetails"][
+            "output"
+        ] = output_norm_str
+
+        sfn_snapshot.match("get_execution_history", execution_history)
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: Investigate why in distributed mode input length is always zero.
+            "$..mapStateStartedEventDetails.length"
+        ]
+    )
+    @markers.aws.validated
     def test_map_item_reader_base_csv_headers_first_line(
         self,
         aws_client,
@@ -446,7 +499,13 @@ class TestBaseScenarios:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: Investigate why in distributed mode input length is always zero.
+            "$..mapStateStartedEventDetails.length"
+        ]
+    )
+    @markers.aws.validated
     def test_map_item_reader_base_csv_headers_decl(
         self,
         aws_client,
@@ -484,7 +543,13 @@ class TestBaseScenarios:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: Investigate why in distributed mode input length is always zero.
+            "$..mapStateStartedEventDetails.length"
+        ]
+    )
+    @markers.aws.validated
     def test_map_item_reader_base_json(
         self,
         aws_client,

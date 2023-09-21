@@ -55,6 +55,13 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
     def _create_worker(self, env: Environment) -> IterationWorker:
         ...
 
+    def _launch_worker(self, env: Environment) -> IterationWorker:
+        worker = self._create_worker(env=env)
+        worker_thread = threading.Thread(target=worker.eval)
+        TMP_THREADS.append(worker_thread)
+        worker_thread.start()
+        return worker
+
     def _eval_body(self, env: Environment) -> None:
         self._eval_input = env.stack.pop()
 
@@ -75,10 +82,7 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
             len(input_items) if max_concurrency == MaxConcurrency.DEFAULT else max_concurrency
         )
         for _ in range(number_of_workers):
-            worker = self._create_worker(env=env)
-            worker_thread = threading.Thread(target=worker.eval)
-            TMP_THREADS.append(worker_thread)
-            worker_thread.start()
+            self._launch_worker(env=env)
 
         self._job_pool.await_jobs()
 
