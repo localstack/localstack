@@ -3096,10 +3096,9 @@ class TestSNSPlatformEndpoint:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-    @markers.aws.only_localstack
-    @pytest.mark.skip(
-        reason="Idempotency not supported in Moto backend. See bug https://github.com/spulec/moto/issues/2333"
-    )
+    @markers.aws.needs_fixing
+    # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
+    # Error responses are from reported https://github.com/spulec/moto/issues/2333
     def test_create_platform_endpoint_check_idempotency(
         self, sns_create_platform_application, aws_client
     ):
@@ -3108,11 +3107,12 @@ class TestSNSPlatformEndpoint:
             Platform="GCM",
             Attributes={"PlatformCredential": "123"},
         )
+        token = "test1"
         kwargs_list = [
-            {"Token": "test1", "CustomUserData": "test-data"},
-            {"Token": "test1", "CustomUserData": "test-data"},
-            {"Token": "test1"},
-            {"Token": "test1"},
+            {"Token": token, "CustomUserData": "test-data"},
+            {"Token": token, "CustomUserData": "test-data"},
+            {"Token": token},
+            {"Token": token},
         ]
         platform_arn = response["PlatformApplicationArn"]
         responses = []
@@ -3122,9 +3122,57 @@ class TestSNSPlatformEndpoint:
                     PlatformApplicationArn=platform_arn, **kwargs
                 )
             )
-        # Assert endpointarn is returned in every call create platform call
-        for i in range(len(responses)):
-            assert "EndpointArn" in responses[i]
+        # Assert EndpointArn is returned in every call create platform call
+        assert all("EndpointArn" in response for response in responses)
+        endpoint_arn = responses[0]["EndpointArn"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.create_platform_endpoint(
+                PlatformApplicationArn=platform_arn,
+                Token=token,
+                CustomUserData="different-user-data",
+            )
+        assert e.value.response["Error"]["Code"] == "InvalidParameter"
+        assert (
+            e.value.response["Error"]["Message"]
+            == f"Endpoint {endpoint_arn} already exists with the same Token, but different attributes."
+        )
+
+    @markers.aws.needs_fixing
+    # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
+    def test_publish_disabled_endpoint(self, sns_create_platform_application, aws_client):
+        response = sns_create_platform_application(
+            Name=f"test-{short_uid()}",
+            Platform="GCM",
+            Attributes={"PlatformCredential": "123"},
+        )
+        platform_arn = response["PlatformApplicationArn"]
+        response = aws_client.sns.create_platform_endpoint(
+            PlatformApplicationArn=platform_arn,
+            Token="test1",
+        )
+        endpoint_arn = response["EndpointArn"]
+
+        get_attrs = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+        assert get_attrs["Attributes"]["Enabled"] == "true"
+
+        aws_client.sns.set_endpoint_attributes(
+            EndpointArn=endpoint_arn, Attributes={"Enabled": "false"}
+        )
+
+        get_attrs = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+        assert get_attrs["Attributes"]["Enabled"] == "false"
+
+        with pytest.raises(ClientError) as e:
+            message = {
+                "GCM": '{ "notification": {"title": "Title of notification", "body": "It works" } }'
+            }
+            aws_client.sns.publish(
+                TargetArn=endpoint_arn, MessageStructure="json", Message=json.dumps(message)
+            )
+
+        assert e.value.response["Error"]["Code"] == "EndpointDisabled"
+        assert e.value.response["Error"]["Message"] == "Endpoint is disabled"
 
     @markers.aws.only_localstack  # needs real credentials for GCM/FCM
     @pytest.mark.xfail(reason="Need to implement credentials validation when creating platform")

@@ -16,6 +16,7 @@ from localstack.aws.api.sns import (
     CreateEndpointResponse,
     CreatePlatformApplicationResponse,
     CreateTopicResponse,
+    EndpointDisabledException,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
@@ -335,17 +336,16 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         try:
             result: CreateEndpointResponse = call_moto(context)
         except CommonServiceException as e:
-            # TODO: this was unclear in the old provider, check against aws and moto
             if "DuplicateEndpoint" in e.code:
                 moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
                 for e in moto_sns_backend.platform_endpoints.values():
                     if e.token == token:
                         if custom_user_data and custom_user_data != e.custom_user_data:
-                            # TODO: check error against aws
-                            raise CommonServiceException(
-                                code="DuplicateEndpoint",
-                                message=f"Endpoint already exist for token: {token} with different attributes",
+                            raise InvalidParameterException(
+                                f"Endpoint {e.arn} already exists with the same Token, but different attributes."
                             )
+                        else:
+                            return CreateEndpointResponse(EndpointArn=e.arn)
             raise
         return result
 
@@ -478,10 +478,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
             moto_sns_backend = self.get_moto_backend(parsed_arn["account"], context.region)
             if is_endpoint_publish:
-                if target_arn not in moto_sns_backend.platform_endpoints:
+                if not (platform_endpoint := moto_sns_backend.platform_endpoints.get(target_arn)):
                     raise InvalidParameterException(
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
                     )
+                elif not platform_endpoint.enabled:
+                    raise EndpointDisabledException("Endpoint is disabled")
             else:
                 if topic_or_target_arn not in store.topic_subscriptions:
                     raise NotFoundException(
