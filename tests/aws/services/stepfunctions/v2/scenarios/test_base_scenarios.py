@@ -387,12 +387,6 @@ class TestBaseScenarios:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # TODO: Investigate why in distributed mode input length is always zero.
-            "$..mapStateStartedEventDetails.length"
-        ]
-    )
     @markers.aws.validated
     def test_map_item_reader_base_list_objects_v2(
         self,
@@ -456,12 +450,6 @@ class TestBaseScenarios:
 
         sfn_snapshot.match("get_execution_history", execution_history)
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # TODO: Investigate why in distributed mode input length is always zero.
-            "$..mapStateStartedEventDetails.length"
-        ]
-    )
     @markers.aws.validated
     def test_map_item_reader_base_csv_headers_first_line(
         self,
@@ -499,12 +487,6 @@ class TestBaseScenarios:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # TODO: Investigate why in distributed mode input length is always zero.
-            "$..mapStateStartedEventDetails.length"
-        ]
-    )
     @markers.aws.validated
     def test_map_item_reader_base_csv_headers_decl(
         self,
@@ -543,12 +525,149 @@ class TestBaseScenarios:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # TODO: Investigate why in distributed mode input length is always zero.
-            "$..mapStateStartedEventDetails.length"
-        ]
-    )
+    @markers.aws.validated
+    def test_map_item_reader_csv_headers_decl_duplicate_headers(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.csv"
+        csv_headers = ["H1", "H1", "H3"]
+        csv_file = (
+            "Value1,Value2,Value3\n"
+            "Value4,Value5,Value6\n"
+            ",,,\n"
+            "true,1,'HelloWorld'\n"
+            "Null,None,\n"
+            "   \n"
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_DECL)
+        template["States"]["MapState"]["ItemReader"]["ReaderConfig"]["CSVHeaders"] = csv_headers
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_item_reader_csv_headers_first_row_typed_headers(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.csv"
+        csv_file = (
+            "0,True,{}\n"
+            "Value4,Value5,Value6\n"
+            ",,,\n"
+            "true,1,'HelloWorld'\n"
+            "Null,None,\n"
+            "   \n"
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_item_reader_csv_headers_decl_extra_fields(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.csv"
+        csv_headers = ["H1"]
+        csv_file = (
+            "Value1,Value2,Value3\n"
+            "Value4,Value5,Value6\n"
+            ",,,\n"
+            "true,1,'HelloWorld'\n"
+            "Null,None,\n"
+            "   \n"
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_DECL)
+        template["States"]["MapState"]["ItemReader"]["ReaderConfig"]["CSVHeaders"] = csv_headers
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_item_reader_csv_first_row_extra_fields(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.csv"
+        csv_file = (
+            "H1,\n" "Value4,Value5,Value6\n" ",,,\n" "true,1,'HelloWorld'\n" "Null,None,\n" "   \n"
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @markers.aws.validated
     def test_map_item_reader_base_json(
         self,
@@ -577,6 +696,35 @@ class TestBaseScenarios:
                 },
             ]
         )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_item_reader_json_no_json_list_object(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.json"
+        json_file = json.dumps({"Hello": "world"})
         aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON)

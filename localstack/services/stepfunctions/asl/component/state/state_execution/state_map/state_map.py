@@ -141,7 +141,7 @@ class StateMap(ExecutionState):
         env.event_history.add_event(hist_type_event=HistoryEventType.MapStateFailed)
 
         event_details = None
-        if isinstance(self.iteration_component, Iterator) and isinstance(ex, FailureEventException):
+        if isinstance(ex, FailureEventException):
             event_details = EventDetails(
                 executionFailedEventDetails=ex.get_execution_failed_event_details()
             )
@@ -157,15 +157,21 @@ class StateMap(ExecutionState):
     def _eval_execution(self, env: Environment) -> None:
         self.items_path.eval(env)
         if self.item_reader:
-            self.item_reader.eval(env=env)
-
-        input_items: list[json] = env.stack.pop()
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.MapStateStarted,
-            event_detail=EventDetails(
-                mapStateStartedEventDetails=MapStateStartedEventDetails(length=len(input_items))
-            ),
-        )
+            env.event_history.add_event(
+                hist_type_event=HistoryEventType.MapStateStarted,
+                event_detail=EventDetails(
+                    mapStateStartedEventDetails=MapStateStartedEventDetails(length=0)
+                ),
+            )
+            input_items = None
+        else:
+            input_items = env.stack.pop()
+            env.event_history.add_event(
+                hist_type_event=HistoryEventType.MapStateStarted,
+                event_detail=EventDetails(
+                    mapStateStartedEventDetails=MapStateStartedEventDetails(length=len(input_items))
+                ),
+            )
 
         if isinstance(self.iteration_component, Iterator):
             eval_input = IteratorEvalInput(
@@ -185,7 +191,7 @@ class StateMap(ExecutionState):
             eval_input = DistributedItemProcessorEvalInput(
                 state_name=self.name,
                 max_concurrency=self.max_concurrency.num,
-                input_items=input_items,
+                item_reader=self.item_reader,
                 item_selector=self.item_selector,
             )
         else:

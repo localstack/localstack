@@ -20,11 +20,6 @@ class ResourceOutputTransformerCSV(ResourceOutputTransformer):
         csv_file = io.StringIO(resource_value)
         csv_reader = csv.reader(csv_file)
 
-        # TODO check these scenarios:
-        #     - [] duplicate headers in csv either given or first row
-        #     - [] non str headers in given or first row
-        #     - [] more headers than fields
-        #     - [] more fields than headers
         match reader_config["CSVHeaderLocation"]:
             case CSVHeaderLocationOutput.FIRST_ROW:
                 headers = next(csv_reader)

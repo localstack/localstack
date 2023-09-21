@@ -1,9 +1,12 @@
-from typing import Optional
+from typing import Final, Optional
 
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import EvalTimeoutError
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import (
+    ItemReader,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
@@ -28,6 +31,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
 
 
 class DistributedItemProcessorWorker(InlineItemProcessorWorker):
+    _item_reader: Final[ItemReader]
     _map_run_record: MapRunRecord
 
     def __init__(
@@ -35,12 +39,14 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
         work_name: str,
         job_pool: JobPool,
         env: Environment,
+        item_reader: ItemReader,
         item_selector: Optional[ItemSelector],
         map_run_record: MapRunRecord,
     ):
         super().__init__(
             work_name=work_name, job_pool=job_pool, env=env, item_selector=item_selector
         )
+        self._item_reader = item_reader
         self._map_run_record = map_run_record
 
     def _eval_job(self, job: Job) -> None:

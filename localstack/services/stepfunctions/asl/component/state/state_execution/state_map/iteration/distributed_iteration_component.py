@@ -11,11 +11,16 @@ from localstack.aws.api.stepfunctions import (
     MapRunStartedEventDetails,
 )
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEventException,
+)
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
 from localstack.services.stepfunctions.asl.component.program.program import Program
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import (
+    ItemReader,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.inline_iteration_component import (
     InlineIterationComponent,
-    InlineIterationComponentEvalInput,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
     MapRunRecord,
@@ -36,11 +41,19 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory
 
 
-class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
-    pass
+class DistributedIterationComponentEvalInput:
+    state_name: Final[str]
+    max_concurrency: Final[int]
+    item_reader: Final[ItemReader]
+
+    def __init__(self, state_name: str, max_concurrency: int, item_reader: ItemReader):
+        self.state_name = state_name
+        self.max_concurrency = max_concurrency
+        self.item_reader = item_reader
 
 
 class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
+    _eval_input: Optional[DistributedIterationComponentEvalInput]
     _mutex: Final[threading.Lock]
     _map_run_record: Optional[MapRunRecord]
     _workers: list[IterationWorker]
@@ -106,6 +119,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
 
     def _eval_body(self, env: Environment) -> None:
         self._eval_input = env.stack.pop()
+
         self._map_run_record = MapRunRecord(
             state_machine_arn=env.context_object_manager.context_object["StateMachine"]["Id"],
             execution_arn=env.context_object_manager.context_object["Execution"]["Id"],
@@ -124,9 +138,29 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
 
         execution_event_history = env.event_history
         try:
+            self._eval_input.item_reader.eval(env=env)
             # TODO: investigate if this is truly propagated also to eventual sub programs in map run states.
             env.event_history = EventHistory()
             self._map_run(env=env)
+
+        except FailureEventException as failure_event_ex:
+            map_run_fail_event_detail = MapRunFailedEventDetails()
+
+            maybe_error_cause_pair = failure_event_ex.extract_error_cause_pair()
+            if maybe_error_cause_pair:
+                error, cause = maybe_error_cause_pair
+                if error:
+                    map_run_fail_event_detail["error"] = error
+                if cause:
+                    map_run_fail_event_detail["cause"] = cause
+
+            env.event_history = execution_event_history
+            env.event_history.add_event(
+                hist_type_event=HistoryEventType.MapRunFailed,
+                event_detail=EventDetails(mapRunFailedEventDetails=map_run_fail_event_detail),
+            )
+            raise failure_event_ex
+
         except Exception as ex:
             env.event_history = execution_event_history
             env.event_history.add_event(
