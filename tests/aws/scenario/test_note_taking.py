@@ -163,6 +163,7 @@ class TestNoteTakingScenario:
 
     @pytest.fixture(scope="class")
     def setenv(self):
+        # Workaround for the inability to use the standard `monkeypatch` fixture in `class` scope
         from _pytest.monkeypatch import MonkeyPatch
 
         mkypatch = MonkeyPatch()
