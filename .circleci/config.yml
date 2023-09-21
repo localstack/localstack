@@ -372,8 +372,8 @@ jobs:
       # store (uncombined) coverage from acceptance tests
       - run:
           name: fetch isolated acceptance coverage
-          command: |
           # might need to combine coverage files in future
+          command: |
             cp target/coverage/.coverage.acceptance.* .coverage.acceptance
       - store_artifacts:
           path: .coverage.acceptance
@@ -393,16 +393,31 @@ jobs:
             coverage html || true
             coveralls || true
       - run:
-          name: Create Coverage Diff
+          name: Create Coverage Diff (Code Coverage)
+          # pycobertura diff will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
+          # but we still want cirecleci to continue with the tasks, so we return 0 always
           command: |
             source .venv/bin/activate
             pip install pycobertura
             coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack/services/*/**" --omit="*/**/__init__.py"
             coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack/services/*/**"  --omit="*/**/__init__.py"
             pycobertura show --format html -s localstack/ acceptance.coverage.report.xml -o coverage-acceptance.html
-          # pycobertura will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
-          # but we still want cirecleci to continue with the tasks, so we return 0 always
             bash -c "pycobertura diff --format html -s1 localstack/ -s2 localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html; if [[ \$? -eq 0 ]] ; then exit 1 ; else exit 0 ; fi"
+      - run:
+          name: store acceptance parity metrics
+          command: |
+            mkdir acceptance_parity_metrics
+            mv target/metric_reports/metric-report*acceptance* acceptance_parity_metrics/
+      - run:
+          name: Create Metric Coverage Diff (API Coverage)
+          environment:
+            COVERAGE_DIR_ALL: "parity_metrics"
+            COVERAGE_DIR_ACCEPTANCE: "acceptance_parity_metrics"
+            OUTPUT_DIR: "./api-coverage"
+          command: |
+            source .venv/bin/activate
+            mkdir api-coverage
+            python -m scripts.metrics_coverage.diff_metrics_coverage
       - run:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
@@ -413,16 +428,13 @@ jobs:
             SOURCE_TYPE=community \
             python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
       - store_artifacts:
+          path: api-coverage
+      - store_artifacts:
           path: coverage-acceptance.html
       - store_artifacts:
           path: coverage-diff.html
       - store_artifacts:
           path: parity_metrics/
-      - run:
-          name: store acceptance parity metrics
-          command: |
-            mkdir acceptance_parity_metrics
-            mv target/metric_reports/metric-report*acceptance* acceptance_parity_metrics/
       - store_artifacts:
           path: acceptance_parity_metrics/
       - store_artifacts:

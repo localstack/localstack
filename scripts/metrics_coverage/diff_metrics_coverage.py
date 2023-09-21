@@ -4,7 +4,8 @@ from pathlib import Path
 
 
 def print_usage():
-    return """
+    print(
+        """
     Helper script to an output report for the metrics coverage diff.
 
     Set the env `COVERAGE_DIR_ALL` which points to a folder containing metrics-raw-data reports for the initial tests.
@@ -13,6 +14,7 @@ def print_usage():
 
     Use `OUTPUT_DIR` env to set the path where the report will be stored
     """
+    )
 
 
 def sort_dict_helper(d):
@@ -173,15 +175,17 @@ def create_readable_report(
 
 
 def main():
-    coverage_path_all = os.environ.get("COVERAGE_DIR_ALL", "")
-    coverage_path_acceptance = os.environ.get("COVERAGE_DIR_ACCEPTANCE", "")
-    output_dir = os.environ.get("OUTPUT_DIR", "")
-    if not coverage_path_all or not coverage_path_acceptance:
+    coverage_path_all = os.environ.get("COVERAGE_DIR_ALL")
+    coverage_path_acceptance = os.environ.get("COVERAGE_DIR_ACCEPTANCE")
+    output_dir = os.environ.get("OUTPUT_DIR")
+
+    if not coverage_path_all or not coverage_path_acceptance or not output_dir:
         print_usage()
+        return
+
     print(
         f"COVERAGE_DIR_ALL={coverage_path_all}, COVERAGE_DIR_ACCEPTANCE={coverage_path_acceptance}, OUTPUTDIR={output_dir}"
     )
-
     coverage_collection = create_initial_coverage(coverage_path_all)
     additional_tested = mark_coverage_acceptance_test(coverage_path_acceptance, coverage_collection)
 
