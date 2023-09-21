@@ -1,7 +1,7 @@
 # A simple module to track deprecations over time / versions, and some simple functions guiding affected users.
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
 from localstack.utils.analytics import log
@@ -27,6 +27,28 @@ class EnvVarDeprecation:
         :return: true if the environment is affected / is using a deprecated config
         """
         return os.environ.get(self.env_var) is not None
+
+
+@dataclass
+class EnvVarValueDeprecation(EnvVarDeprecation):
+    """
+    Extension of EnvVarDeprecation to define a deprecation for a specific value of an environment variable config.
+    """
+
+    # The value or list of values considered to be deprecated
+    deprecation_value: str | list[str] = field(default_factory=list)
+
+    @property
+    def is_affected(self) -> bool:
+        """Checks whether an environment is affected.
+        :return: true if the value of the environment is affected
+        """
+        value = os.environ.get(self.env_var)
+        if value is None:
+            return False
+        if isinstance(self.deprecation_value, str):
+            return value == self.deprecation_value
+        return value in self.deprecation_value
 
 
 #
@@ -255,6 +277,14 @@ DEPRECATIONS = [
         "ES_ENDPOINT_STRATEGY",
         "0.14.0",
         "This option is marked for removal. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
+    ),
+    EnvVarValueDeprecation(
+        "PROVIDER_OVERRIDE_LAMBDA",
+        "2.3.0",
+        "PROVIDER_OVERRIDE_LAMBDA=v1/legacy is deprecated and will be removed with the next major release (3.0). "
+        "For more details, refer to our Lambda migration guide "
+        "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
+        ["v1", "legacy"],
     ),
 ]
 
