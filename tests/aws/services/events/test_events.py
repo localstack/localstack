@@ -13,6 +13,7 @@ from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -432,7 +433,17 @@ class TestEvents:
     # TODO: further unify/parameterize the tests for the different target types below
 
     @markers.aws.unknown
-    def test_put_events_with_target_sns(self, sns_subscription, aws_client, clean_up):
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_put_events_with_target_sns(
+        self,
+        monkeypatch,
+        sns_subscription,
+        aws_client,
+        clean_up,
+        strategy,
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_name = "test-%s" % short_uid()
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -442,7 +453,7 @@ class TestEvents:
         topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
@@ -490,7 +501,10 @@ class TestEvents:
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
     @markers.aws.unknown
-    def test_put_events_into_event_bus(self, aws_client, clean_up):
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_put_events_into_event_bus(self, monkeypatch, aws_client, clean_up, strategy):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -609,6 +623,7 @@ class TestEvents:
             sleep=1,
             function_name=function_name,
             expected_length=1,
+            logs_client=aws_client.logs,
         )
         actual_event = events[0]
         self.assert_valid_event(actual_event)
@@ -633,7 +648,6 @@ class TestEvents:
         self,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
         sns_subscription,
         httpserver: HTTPServer,
         aws_client,
@@ -690,8 +704,10 @@ class TestEvents:
             Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
         )
 
-        queue_arn = arns.sqs_queue_arn(queue_name)
-        fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        fifo_queue_arn = arns.sqs_queue_arn(
+            fifo_queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+        )
 
         event = {"env": "testing"}
         event_json = json.dumps(event)
@@ -953,7 +969,7 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         # create firehose target bucket
-        resources.get_or_create_bucket(s3_bucket)
+        resources.get_or_create_bucket(s3_bucket, s3_client=aws_client.s3)
 
         # create firehose delivery stream to s3
         stream = aws_client.firehose.create_delivery_stream(
@@ -1020,7 +1036,7 @@ class TestEvents:
 
         sqs_client = aws_client_factory(region_name="eu-west-1").sqs
         sqs_client.create_queue(QueueName=queue_name)
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         events_client.create_event_bus(Name=bus_name)
 
@@ -1056,7 +1072,7 @@ class TestEvents:
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
         stream_name = "stream-{}".format(short_uid())
-        stream_arn = arns.kinesis_stream_arn(stream_name)
+        stream_arn = arns.kinesis_stream_arn(stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         aws_client.kinesis.create_stream(StreamName=stream_name, ShardCount=1)
 
@@ -1129,7 +1145,7 @@ class TestEvents:
         bus_name = f"bus-{short_uid()}"
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         aws_client.events.create_event_bus(Name=bus_name)
         aws_client.events.put_rule(
@@ -1189,10 +1205,10 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         queue_url_1 = aws_client.sqs.create_queue(QueueName=queue_name_1)["QueueUrl"]
-        queue_arn_1 = arns.sqs_queue_arn(queue_name_1)
+        queue_arn_1 = arns.sqs_queue_arn(queue_name_1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         aws_client.events.create_event_bus(Name=bus_name)
 
@@ -1280,14 +1296,17 @@ class TestEvents:
         assert response.get("Entries")
 
     @markers.aws.unknown
-    def test_trigger_event_on_ssm_change(self, aws_client, clean_up):
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_trigger_event_on_ssm_change(self, monkeypatch, aws_client, clean_up, strategy):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
 
         # create queue
         queue_name = "queue-{}".format(short_uid())
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         # put rule listening on SSM changes
         ssm_prefix = "/test/local/"
@@ -1313,14 +1332,18 @@ class TestEvents:
             Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
         )
 
+        param_suffix = short_uid()
+
         # change SSM param to trigger event
-        aws_client.ssm.put_parameter(Name=f"{ssm_prefix}/test123", Value="value1", Type="String")
+        aws_client.ssm.put_parameter(
+            Name=f"{ssm_prefix}/test-{param_suffix}", Value="value1", Type="String"
+        )
 
         def assert_message():
             resp = aws_client.sqs.receive_message(QueueUrl=queue_url)
             result = resp.get("Messages")
             body = json.loads(result[0]["Body"])
-            assert body == {"name": "/test/local/test123", "operation": "Create"}
+            assert body == {"name": f"/test/local/test-{param_suffix}", "operation": "Create"}
 
         # assert that message has been received
         retry(assert_message, retries=7, sleep=0.3)
@@ -1335,7 +1358,7 @@ class TestEvents:
         target_id = f"target-{short_uid()}"
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         pattern = {
             "Source": [{"exists": True}],
@@ -1506,7 +1529,7 @@ class TestEvents:
         events_create_event_bus,
         events_put_rule,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         create_role,
         create_policy,
         events_allow_event_rule_to_sqs_queue,
@@ -1548,7 +1571,7 @@ class TestEvents:
         )
 
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         custom_event_bus = events_create_event_bus(Name=custom_bus_name)
         snapshot.match("create-custom-event-bus", custom_event_bus)
@@ -1771,7 +1794,7 @@ class TestEvents:
         self,
         aws_client,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         events_put_rule,
         events_allow_event_rule_to_sqs_queue,
         snapshot,
@@ -1791,7 +1814,7 @@ class TestEvents:
         # even if one entry was wrong
 
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         rule_on_default_bus = events_put_rule(
             Name=default_bus_rule_name,
@@ -1895,7 +1918,7 @@ class TestEvents:
         self,
         aws_client,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         events_put_rule,
         events_allow_event_rule_to_sqs_queue,
         snapshot,
@@ -1911,7 +1934,7 @@ class TestEvents:
         )
 
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         rule_on_default_bus = events_put_rule(
             Name=default_bus_rule_name,

@@ -70,7 +70,7 @@ You can directly install the LocalStack CLI in your Python environment using `pi
 
 #### Prerequisites
 
-* `python` (Python 3.7 up to 3.11 supported)
+* `python` (Python 3.8 up to 3.11 supported)
 
 #### Installation
 ```

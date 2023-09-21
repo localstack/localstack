@@ -12,7 +12,7 @@ from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.http import Request, Router
 from localstack.http.dispatcher import Handler
 from localstack.services.lambda_.api_utils import FULL_FN_ARN_PATTERN
-from localstack.services.lambda_.invocation.lambda_models import InvocationError, InvocationResult
+from localstack.services.lambda_.invocation.lambda_models import InvocationResult
 from localstack.services.lambda_.invocation.lambda_service import LambdaService
 from localstack.services.lambda_.invocation.models import lambda_stores
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
@@ -77,7 +77,7 @@ class FunctionUrlRouter:
 
         match = FULL_FN_ARN_PATTERN.search(lambda_url_config.function_arn).groupdict()
 
-        result_ft = self.lambda_service.invoke(
+        result = self.lambda_service.invoke(
             function_name=match.get("function_name"),
             qualifier=match.get("qualifier"),
             account_id=match.get("account_id"),
@@ -87,9 +87,7 @@ class FunctionUrlRouter:
             payload=to_bytes(json.dumps(event)),
             request_id=gen_amzn_requestid(),
         )
-        result = result_ft.result(timeout=900)
-
-        if isinstance(result, InvocationError):
+        if result.is_error:
             response = HttpResponse("Internal Server Error", HTTPStatus.BAD_GATEWAY)
         else:
             response = lambda_result_to_response(result)

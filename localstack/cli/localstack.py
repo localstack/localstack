@@ -3,22 +3,15 @@ import logging
 import os
 import sys
 import traceback
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TypedDict
 
-from localstack import config
+import click
+
+from localstack import __version__, config
 from localstack.cli.exceptions import CLIError
 from localstack.utils.analytics.cli import publish_invocation
 from localstack.utils.bootstrap import get_container_default_logfile_location
 from localstack.utils.json import CustomEncoder
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
-
-import click
-
-from localstack import __version__
 
 from .console import BANNER, console
 from .plugin import LocalstackCli, load_cli_plugins
@@ -396,9 +389,30 @@ def _print_service_table(services: Dict[str, str]) -> None:
     multiple=True,
     required=False,
 )
+@click.option(
+    "--publish",
+    "-p",
+    help="Additional port mappings that are passed to the LocalStack container",
+    multiple=True,
+    required=False,
+)
+@click.option(
+    "--volume",
+    "-v",
+    help="Additional volume mounts that are passed to the LocalStack container",
+    multiple=True,
+    required=False,
+)
 @publish_invocation
 def cmd_start(
-    docker: bool, host: bool, no_banner: bool, detached: bool, network: str = None, env: Tuple = ()
+    docker: bool,
+    host: bool,
+    no_banner: bool,
+    detached: bool,
+    network: str = None,
+    env: Tuple = (),
+    publish: Tuple = (),
+    volume: Tuple = (),
 ) -> None:
     """
     Start the LocalStack runtime.

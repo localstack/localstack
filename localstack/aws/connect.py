@@ -9,7 +9,7 @@ import logging
 import re
 import threading
 from abc import ABC, abstractmethod
-from functools import cache, partial
+from functools import lru_cache, partial
 from typing import Any, Callable, Generic, Optional, TypedDict, TypeVar
 
 from boto3.session import Session
@@ -49,7 +49,6 @@ def my_patch(fn, self, **kwargs):
         patched_kwargs = {
             **kwargs,
             "WaiterConfig": {
-                # TODO: make these configurable
                 "Delay": localstack_config.BOTO_WAITER_DELAY,
                 "MaxAttempts": localstack_config.BOTO_WAITER_MAX_ATTEMPTS,
                 **kwargs.get(
@@ -58,6 +57,36 @@ def my_patch(fn, self, **kwargs):
             },
         }
         return fn(self, **patched_kwargs)
+
+
+# patch the botocore.Config object to be comparable and hashable.
+# this solution does not validates the hashable (https://docs.python.org/3/glossary.html#term-hashable) definition on python
+# It would do so only when someone accesses the internals of the Config option to change the dict directly.
+# Since this is not a proper way to use the config object (but via config.merge), this should be fine
+def make_hash(o):
+    if isinstance(o, (set, tuple, list)):
+        return tuple([make_hash(e) for e in o])
+
+    elif not isinstance(o, dict):
+        return hash(o)
+
+    new_o = {}
+    for k, v in o.items():
+        new_o[k] = make_hash(v)
+
+    return hash(frozenset(sorted(new_o.items())))
+
+
+def config_equality_patch(self, other: object):
+    return type(self) == type(other) and self._user_provided_options == other._user_provided_options
+
+
+def config_hash_patch(self):
+    return make_hash(self._user_provided_options)
+
+
+Config.__eq__ = config_equality_patch
+Config.__hash__ = config_hash_patch
 
 
 def attribute_name_to_service_name(attribute_name):
@@ -133,7 +162,7 @@ class MetadataRequestInjector(Generic[T]):
         self, source_arn: str | None = None, service_principal: str | None = None
     ) -> T:
         """
-        Provides request metadata to this client.
+        Returns a new client instance preset with the given request metadata.
         Identical to providing _ServicePrincipal and _SourceArn directly as operation arguments but typing
         compatible.
 
@@ -315,10 +344,10 @@ class ClientFactory(ABC):
         """
         return client
 
-    # TODO @cache here might result in a memory leak, as it keeps a reference to `self`
+    # TODO @lru_cache here might result in a memory leak, as it keeps a reference to `self`
     # We might need an alternative caching decorator with a weak ref to `self`
     # Otherwise factories might never be garbage collected
-    @cache
+    @lru_cache(maxsize=256)
     def _get_client(
         self,
         service_name: str,

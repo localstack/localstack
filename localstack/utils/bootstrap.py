@@ -10,7 +10,7 @@ import signal
 import threading
 import time
 from functools import wraps
-from typing import Any, Dict, Iterable, List, Optional, Set, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Union
 
 from localstack import config, constants
 from localstack.config import HostAndPort, default_ip, is_env_true
@@ -38,7 +38,6 @@ from localstack.utils.run import is_command_available, run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
-from localstack.utils.tail import FileListener
 
 LOG = logging.getLogger(__name__)
 
@@ -570,14 +569,18 @@ class ContainerConfigurators:
         """
         Parse docker CLI parameters and add them to the config. The currently known CLI params are::
 
-            --network=my-network     <- stored in "network"
-            -e FOO=BAR -e BAR=ed     <- stored in "env"
+            --network=my-network       <- stored in "network"
+            -e FOO=BAR -e BAR=ed       <- stored in "env"
+            -p 4566:4566 -p 4510-4559  <- stored in "publish"
+            -v ./bar:/foo/bar          <- stored in "volume"
 
         When parsed by click, the parameters would look like this::
 
             {
                 "network": "my-network",
                 "env": ("FOO=BAR", "BAR=ed"),
+                "publish": ("4566:4566", "4510-4559"),
+                "volume": ("./bar:/foo/bar",),
             }
 
         :param params: a dict of parsed parameters
@@ -589,18 +592,97 @@ class ContainerConfigurators:
             if params.get("network"):
                 cfg.network = params.get("network")
 
-            # parse environment variable flags
-            if params.get("env"):
-                for e in params.get("env"):
-                    if "=" in e:
-                        k, v = e.split("=", maxsplit=1)
-                        cfg.env_vars[k] = v
-                    else:
-                        # there's currently no way in our abstraction to only pass the variable name (as
-                        # you can do in docker) so we resolve the value here.
-                        cfg.env_vars[e] = os.getenv(e)
+            # processed parsed -e, -p, and -v flags
+            ContainerConfigurators.env_cli_params(params.get("env"))(cfg)
+            ContainerConfigurators.port_cli_params(params.get("publish"))(cfg)
+            ContainerConfigurators.volume_cli_params(params.get("volume"))(cfg)
 
-            # TODO: volume and publish
+        return _cfg
+
+    @staticmethod
+    def env_cli_params(params: Iterable[str] = None):
+        """
+        Configures environment variables from additional CLI input through the ``-e`` options.
+
+        :param params: a list of environment variable declarations, e.g.,: ``("foo=bar", "baz=ed")``
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            if not params:
+                return
+
+            for e in params:
+                if "=" in e:
+                    k, v = e.split("=", maxsplit=1)
+                    cfg.env_vars[k] = v
+                else:
+                    # there's currently no way in our abstraction to only pass the variable name (as
+                    # you can do in docker) so we resolve the value here.
+                    cfg.env_vars[e] = os.getenv(e)
+
+        return _cfg
+
+    @staticmethod
+    def port_cli_params(params: Iterable[str] = None):
+        """
+        Configures port variables from additional CLI input through the ``-p`` options.
+
+        :param params: a list of port assignments, e.g.,: ``("4000-5000", "8080:80")``
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            if not params:
+                return
+
+            for port_mapping in params:
+                port_split = port_mapping.split(":")
+                protocol = "tcp"
+                if len(port_split) == 1:
+                    host_port = container_port = port_split[0]
+                elif len(port_split) == 2:
+                    host_port, container_port = port_split
+                elif len(port_split) == 3:
+                    _, host_port, container_port = port_split
+                else:
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
+
+                host_port_split = host_port.split("-")
+                if len(host_port_split) == 2:
+                    host_port = [int(host_port_split[0]), int(host_port_split[1])]
+                elif len(host_port_split) == 1:
+                    host_port = int(host_port)
+                else:
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
+
+                if "/" in container_port:
+                    container_port, protocol = container_port.split("/")
+
+                container_port_split = container_port.split("-")
+                if len(container_port_split) == 2:
+                    container_port = [int(container_port_split[0]), int(container_port_split[1])]
+                elif len(container_port_split) == 1:
+                    container_port = int(container_port)
+                else:
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
+
+                cfg.ports.add(host_port, container_port, protocol)
+
+        return _cfg
+
+    @staticmethod
+    def volume_cli_params(params: Iterable[str] = None):
+        """
+        Configures volumes from additional CLI input through the ``-v`` options.
+
+        :param params: a list of volume declarations, e.g.,: ``("./bar:/foo/bar",)``
+        :return: a configurator
+        """
+
+        def _cfg(cfg: ContainerConfiguration):
+            for param in params:
+                cfg.volumes.append(VolumeBind.parse(param))
 
         return _cfg
 
@@ -824,8 +906,46 @@ class RunningContainer:
         return Container(container_config=self.config, docker_client=self.container_client)
 
 
+class ContainerLogPrinter:
+    """
+    Waits on a container to start and then uses ``stream_logs`` to print each line of the logs.
+    """
+
+    def __init__(self, container: Container, callback: Callable[[str], None] = print):
+        self.container = container
+        self.callback = callback
+
+        self._closed = threading.Event()
+        self._stream: Optional[CancellableStream] = None
+
+    def _can_start_streaming(self):
+        if self._closed.is_set():
+            raise IOError("Already stopped")
+        if not self.container.running_container:
+            return False
+        return self.container.running_container.is_running()
+
+    def run(self):
+        try:
+            poll_condition(self._can_start_streaming)
+        except IOError:
+            return
+        self._stream = self.container.running_container.stream_logs()
+        for line in self._stream:
+            self.callback(line.rstrip(b"\r\n").decode("utf-8"))
+
+    def close(self):
+        self._closed.set()
+        if self._stream:
+            self._stream.close()
+
+
 class LocalstackContainerServer(Server):
-    def __init__(self, container_configuration: ContainerConfiguration | None = None) -> None:
+    container: Container | RunningContainer
+
+    def __init__(
+        self, container_configuration: ContainerConfiguration | Container | None = None
+    ) -> None:
         super().__init__(config.EDGE_PORT, config.EDGE_BIND_HOST)
 
         if container_configuration is None:
@@ -844,7 +964,10 @@ class LocalstackContainerServer(Server):
                 env_vars={},
             )
 
-        self.container: Container | RunningContainer = Container(container_configuration)
+        if isinstance(container_configuration, Container):
+            self.container = container_configuration
+        else:
+            self.container = Container(container_configuration)
 
     def is_up(self) -> bool:
         """
@@ -942,9 +1065,6 @@ def configure_container(container: Container):
     container.config.command = shlex.split(os.environ.get("CMD", "")) or None
     container.config.env_vars = {}
 
-    # gateway (previously edge port) mapping
-    container.configure(ContainerConfigurators.gateway_listen(config.GATEWAY_LISTEN))
-
     # parse `DOCKER_FLAGS` and add them appropriately
     user_flags = config.DOCKER_FLAGS
     user_flags = extract_port_flags(user_flags, container.config.ports)
@@ -966,9 +1086,12 @@ def configure_container(container: Container):
             ContainerConfigurators.mount_localstack_volume(config.VOLUME_DIR),
             ContainerConfigurators.mount_docker_socket,
             ContainerConfigurators.publish_dns_ports,
-            # overwrites any env vars set in the config that were previously set by configurators (e.g.,
-            # `GATEWAY_LISTEN`)
+            # overwrites any env vars set in the config that were previously set by configurators
             ContainerConfigurators.config_env_vars,
+            # ensure that GATEWAY_LISTEN is taken from the config and not
+            # overridden by the `config_env_vars` configurator
+            # (when not specified in the environment).
+            ContainerConfigurators.gateway_listen(config.GATEWAY_LISTEN),
         ]
     )
 
@@ -1015,10 +1138,7 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
         print(line)
         log_printer.callback = print
 
-    logfile = get_container_default_logfile_location(container_config.name)
-    log_printer = FileListener(logfile, callback=_init_log_printer)
-    log_printer.truncate_file()
-    log_printer.start()
+    log_printer = ContainerLogPrinter(container, callback=_init_log_printer)
 
     # Set up signal handler, to enable clean shutdown across different operating systems.
     #  There are subtle differences across operating systems and terminal emulators when it
@@ -1033,16 +1153,19 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
             shutdown_event.set()
         print("Shutting down...")
         server.shutdown()
-        log_printer.close()
 
     shutdown_event = threading.Event()
     shutdown_event_lock = threading.RLock()
     signal.signal(signal.SIGINT, shutdown_handler)
 
     # start the Localstack container as a Server
-    server = LocalstackContainerServer(container_config)
+    server = LocalstackContainerServer(container)
+    log_printer_thread = threading.Thread(
+        target=log_printer.run, name="container-log-printer", daemon=True
+    )
     try:
         server.start()
+        log_printer_thread.start()
         server.join()
         error = server.get_error()
         if error:
@@ -1051,6 +1174,8 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     except KeyboardInterrupt:
         print("ok, bye!")
         shutdown_handler()
+    finally:
+        log_printer.close()
 
 
 def ensure_container_image(console, container: Container):

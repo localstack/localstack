@@ -4166,7 +4166,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_idempotency": {
-    "recorded-date": "04-09-2023, 09:45:33",
+    "recorded-date": "15-09-2023, 17:29:11",
     "recorded-content": {
       "subscribe": {
         "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
@@ -4187,6 +4187,13 @@
           "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-exact-same-raw": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4213,18 +4220,14 @@
           "HTTPStatusCode": 200
         }
       },
-      "subscribe-diff-attributes": {
-        "Error": {
-          "Code": "InvalidParameter",
-          "Message": "Invalid parameter: Attributes Reason: Subscription already exists with different attributes",
-          "Type": "Sender"
-        },
+      "subscribe-missing-attributes": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 400
+          "HTTPStatusCode": 200
         }
       },
-      "subscribe-missing-attributes": {
+      "subscribe-diff-attributes": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Attributes Reason: Subscription already exists with different attributes",

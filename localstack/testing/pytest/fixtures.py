@@ -338,13 +338,13 @@ def sqs_queue(sqs_create_queue):
 
 
 @pytest.fixture
-def sqs_queue_arn(aws_client):
-    def _get_arn(queue_url: str) -> str:
+def sqs_get_queue_arn(aws_client) -> Callable:
+    def _get_queue_arn(queue_url: str) -> str:
         return aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])[
             "Attributes"
         ]["QueueArn"]
 
-    return _get_arn
+    return _get_queue_arn
 
 
 @pytest.fixture
@@ -460,11 +460,11 @@ def sns_allow_topic_sqs_queue(aws_client):
 
 
 @pytest.fixture
-def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_queue_arn, aws_client):
+def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_get_queue_arn, aws_client):
     subscriptions = []
 
     def _factory(topic_arn: str, queue_url: str, **kwargs) -> Dict[str, str]:
-        queue_arn = sqs_queue_arn(queue_url=queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         # connect sns topic to sqs
         subscription = aws_client.sns.subscribe(
@@ -1342,7 +1342,14 @@ def create_user(aws_client):
     yield _create_user
 
     for username in usernames:
-        inline_policies = aws_client.iam.list_user_policies(UserName=username)["PolicyNames"]
+        try:
+            inline_policies = aws_client.iam.list_user_policies(UserName=username)["PolicyNames"]
+        except ClientError as e:
+            LOG.debug(
+                "Cannot list user policies: %s. User %s probably already deleted...", e, username
+            )
+            continue
+
         for inline_policy in inline_policies:
             try:
                 aws_client.iam.delete_user_policy(UserName=username, PolicyName=inline_policy)
@@ -1419,9 +1426,17 @@ def create_role(aws_client):
 
     for role_name, iam_client in role_names:
         # detach policies
-        attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
-            "AttachedPolicies"
-        ]
+        try:
+            attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
+                "AttachedPolicies"
+            ]
+        except ClientError as e:
+            LOG.debug(
+                "Cannot list attached role policies: %s. Role %s probably already deleted...",
+                e,
+                role_name,
+            )
+            continue
         for attached_policy in attached_policies:
             try:
                 iam_client.detach_role_policy(

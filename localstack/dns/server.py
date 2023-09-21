@@ -695,6 +695,48 @@ class DnsServer(Server, DnsServerProtocol):
         self.resolver.clear()
 
 
+class SeparateProcessDNSServer(Server, DnsServerProtocol):
+    def __init__(
+        self,
+        port: int = 53,
+        host: str = "0.0.0.0",
+    ) -> None:
+        super().__init__(port, host)
+
+    @property
+    def protocol(self):
+        return "udp"
+
+    def health(self):
+        """
+        Runs a health check on the server. The default implementation performs is_port_open on the server URL.
+        """
+        try:
+            request = dns.message.make_query("localhost.localstack.cloud", "A")
+            answers = dns.query.udp(request, "127.0.0.1", port=self.port, timeout=0.5).answer
+            return len(answers) > 0
+        except Exception:
+            return False
+
+    def do_start_thread(self):
+        # For host mode
+        env_vars = {}
+        for env_var in config.CONFIG_ENV_VARS:
+            if env_var.startswith("DNS_"):
+                value = os.environ.get(env_var, None)
+                if value is not None:
+                    env_vars[env_var] = value
+
+        # note: running in a separate process breaks integration with Route53 (to be fixed for local dev mode!)
+        thread = run_module_as_sudo(
+            "localstack.dns.server",
+            asynchronous=True,
+            env_vars=env_vars,
+            arguments=["-p", str(self.port)],
+        )
+        return thread
+
+
 def get_fallback_dns_server():
     return config.DNS_SERVER or get_available_dns_server()
 
@@ -793,6 +835,7 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
         dns_server.shutdown()
         return
     DNS_SERVER = dns_server
+    LOG.debug("DNS server startup finished.")
 
 
 def stop_servers():
@@ -800,8 +843,32 @@ def stop_servers():
         DNS_SERVER.shutdown()
 
 
+def start_dns_server_as_sudo(port: int):
+    global DNS_SERVER
+    LOG.debug(
+        "Starting the DNS on its privileged port (%s) needs root permissions. Trying to start DNS with sudo.",
+        config.DNS_PORT,
+    )
+
+    dns_server = SeparateProcessDNSServer(port)
+    dns_server.start()
+
+    if not dns_server.wait_is_up(timeout=5):
+        LOG.warning("DNS server did not come up within 5 seconds.")
+        dns_server.shutdown()
+        return
+
+    DNS_SERVER = dns_server
+    LOG.debug("DNS server startup finished (as sudo).")
+
+
 def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = False):
-    # start local DNS server, if present
+    if DNS_SERVER:
+        # already started - bail
+        LOG.error("DNS servers are already started. Avoid starting again.")
+        return
+
+    # check if DNS server is disabled
     if not config.use_custom_dns():
         LOG.debug("Not starting DNS. DNS_ADDRESS=%s", config.DNS_ADDRESS)
         return
@@ -816,7 +883,7 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
     if in_docker():
         host = "0.0.0.0"
 
-    if port_can_be_bound(Port(port, "udp")):
+    if port_can_be_bound(Port(port, "udp"), address=host):
         start_server(port=port, host=host, upstream_dns=upstream_dns)
         if not asynchronous:
             sleep_forever()
@@ -826,25 +893,7 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
         LOG.debug("Already in standalone mode and port binding still fails.")
         return
 
-    # For host mode
-    env_vars = {}
-    for env_var in config.CONFIG_ENV_VARS:
-        if env_var.startswith("DNS_"):
-            value = os.environ.get(env_var, None)
-            if value is not None:
-                env_vars[env_var] = value
-
-    LOG.debug(
-        "Starting the DNS on its privileged port (%s) needs root permissions. Trying to start DNS with sudo.",
-        config.DNS_PORT,
-    )
-    # note: running in a separate process breaks integration with Route53 (to be fixed for local dev mode!)
-    run_module_as_sudo(
-        "localstack.services.dns_server",
-        asynchronous=asynchronous,
-        env_vars=env_vars,
-        arguments=["-p", str(port)],
-    )
+    start_dns_server_as_sudo(port)
 
 
 def get_dns_server() -> DnsServerProtocol:

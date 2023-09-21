@@ -405,8 +405,8 @@ class OpensearchProvider(OpensearchApi):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(opensearch_stores)
-        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "opensearch")))
-        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "elasticsearch")))
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, "opensearch")))
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, "elasticsearch")))
 
     def on_after_state_load(self):
         """Starts clusters whose metadata has been restored."""

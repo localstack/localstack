@@ -59,7 +59,7 @@ def test_update_using_template_url(deploy_cfn_template, s3_create_bucket, aws_cl
 
 
 @markers.aws.validated
-@pytest.mark.xfail(reason="Not supported")
+@pytest.mark.skip(reason="Not supported")
 def test_update_with_previous_template(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -77,8 +77,8 @@ def test_update_with_previous_template(deploy_cfn_template, aws_client):
     aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
-@markers.aws.validated
-@pytest.mark.xfail(reason="Not raising the correct error")
+@markers.aws.needs_fixing
+@pytest.mark.skip(reason="templates are not partially not valid => re-evaluate")
 @pytest.mark.parametrize(
     "capability",
     [
@@ -123,7 +123,7 @@ def test_update_with_capabilities(capability, deploy_cfn_template, snapshot, aws
 
 
 @markers.aws.validated
-@pytest.mark.xfail(reason="Not raising the correct error")
+@pytest.mark.skip(reason="Not raising the correct error")
 def test_update_with_resource_types(deploy_cfn_template, snapshot, aws_client):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_parameter.yml")
@@ -166,7 +166,7 @@ def test_update_with_resource_types(deploy_cfn_template, snapshot, aws_client):
 
 
 @markers.aws.validated
-@pytest.mark.xfail(reason="Update value not being applied")
+@pytest.mark.skip(reason="Update value not being applied")
 def test_set_notification_arn_with_update(deploy_cfn_template, sns_create_topic, aws_client):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_parameter.yml")
@@ -191,7 +191,7 @@ def test_set_notification_arn_with_update(deploy_cfn_template, sns_create_topic,
 
 
 @markers.aws.validated
-@pytest.mark.xfail(reason="Update value not being applied")
+@pytest.mark.skip(reason="Update value not being applied")
 def test_update_tags(deploy_cfn_template, aws_client):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_parameter.yml")
@@ -220,7 +220,7 @@ def test_update_tags(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-@pytest.mark.xfail(reason="The correct error is not being raised")
+@pytest.mark.skip(reason="The correct error is not being raised")
 def test_no_template_error(deploy_cfn_template, snapshot, aws_client):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_parameter.yml")
@@ -276,7 +276,7 @@ def test_update_with_previous_parameter_value(deploy_cfn_template, snapshot, aws
 
 
 @markers.aws.validated
-@pytest.mark.xfail(reason="The correct error is not being raised")
+@pytest.mark.skip(reason="The correct error is not being raised")
 def test_update_with_role_without_permissions(
     deploy_cfn_template, snapshot, create_role, aws_client
 ):
@@ -315,7 +315,7 @@ def test_update_with_role_without_permissions(
 
 
 @markers.aws.validated
-@pytest.mark.xfail(reason="The correct error is not being raised")
+@pytest.mark.skip(reason="The correct error is not being raised")
 def test_update_with_invalid_rollback_configuration_errors(
     deploy_cfn_template, snapshot, aws_client
 ):
@@ -358,7 +358,7 @@ def test_update_with_invalid_rollback_configuration_errors(
 
 
 @markers.aws.validated
-@pytest.mark.xfail(reason="The update value is not being applied")
+@pytest.mark.skip(reason="The update value is not being applied")
 def test_update_with_rollback_configuration(deploy_cfn_template, aws_client):
 
     aws_client.cloudwatch.put_metric_alarm(

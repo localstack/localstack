@@ -1,5 +1,4 @@
 # TODO: find a more meaningful name for this file, further refactor tests into different functional areas
-import json
 import os
 
 import pytest
@@ -11,67 +10,83 @@ from localstack.utils.strings import short_uid
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "../../files/petstore-swagger.json")
+TEST_IMPORT_PETS = os.path.join(THIS_FOLDER, "../../files/pets.json")
 
 
-@markers.aws.unknown
-def test_export_swagger_openapi(aws_client):
-    spec_file = load_file(TEST_IMPORT_PETSTORE_SWAGGER)
+@markers.aws.validated
+@pytest.mark.parametrize(
+    "import_file",
+    [TEST_IMPORT_PETSTORE_SWAGGER, TEST_IMPORT_PETS],
+    ids=["TEST_IMPORT_PETSTORE_SWAGGER", "TEST_IMPORT_PETS"],
+)
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..body.host",
+    ]
+)
+def test_export_swagger_openapi(aws_client, snapshot, import_file):
+    snapshot.add_transformer(
+        snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
+    )
+    spec_file = load_file(import_file)
     response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
-    assert response.get("ResponseMetadata").get("HTTPStatusCode") == 201
+    snapshot.match("import-api", response)
+    api_id = response["id"]
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName="local")
 
     response = aws_client.apigateway.get_export(
-        restApiId=response["id"], stageName="local", exportType="swagger"
+        restApiId=api_id, stageName="local", exportType="swagger"
     )
-    spec_object = json.loads(response["body"].read())
-
-    # required keys
-    expected_keys = [
-        "swagger",
-        "info",
-        "paths",
-    ]
-    assert all(k in spec_object.keys() for k in expected_keys)
-    assert spec_object["info"]["title"] == "PetStore"
-    assert spec_object["info"]["version"] is not None
-    assert spec_object["paths"] == {
-        "/": {"get": {"responses": {"200": {}}}},
-        "/pets": {
-            "get": {"responses": {"200": {}}},
-            "post": {"responses": {"200": {}}},
-            "options": {"responses": {"200": {}}},
-        },
-        "/pets/{petId}": {"get": {"responses": {"200": {}}}, "options": {"responses": {"200": {}}}},
-    }
-
-    # optional keys
-    optional_keys = ["basePath"]
-    assert all(k in spec_object.keys() for k in optional_keys)
-
-
-@markers.aws.unknown
-def test_export_oas30_openapi(aws_client):
-    spec_file = load_file(TEST_IMPORT_PETSTORE_SWAGGER)
-    response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
-    assert response.get("ResponseMetadata").get("HTTPStatusCode") == 201
+    snapshot.match("get-export", response)
 
     response = aws_client.apigateway.get_export(
-        restApiId=response["id"], stageName="local", exportType="oas30"
+        restApiId=api_id,
+        stageName="local",
+        exportType="swagger",
+        parameters={"extensions": "apigateway"},
     )
-    spec_object = json.loads(response["body"].read())
-    # required keys
-    expected_keys = [
-        "openapi",
-        "info",
+    snapshot.match("get-export-with-extensions", response)
+
+
+@markers.aws.validated
+@pytest.mark.parametrize(
+    "import_file",
+    [TEST_IMPORT_PETSTORE_SWAGGER, TEST_IMPORT_PETS],
+    ids=["TEST_IMPORT_PETSTORE_SWAGGER", "TEST_IMPORT_PETS"],
+)
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..body.servers..url",
     ]
-    assert all(k in spec_object.keys() for k in expected_keys)
-    assert spec_object["info"]["title"] == "PetStore"
-    assert spec_object["info"]["version"] is not None
-    # optional keys
-    optional_keys = ["paths"]
-    assert all(k in spec_object.keys() for k in optional_keys)
+)
+def test_export_oas30_openapi(aws_client, snapshot, import_file):
+    snapshot.add_transformer(
+        snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
+    )
+
+    spec_file = load_file(import_file)
+    response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
+    snapshot.match("import-api", response)
+    api_id = response["id"]
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName="local")
+
+    response = aws_client.apigateway.get_export(
+        restApiId=api_id, stageName="local", exportType="oas30"
+    )
+    snapshot.match("get-export", response)
+
+    response = aws_client.apigateway.get_export(
+        restApiId=api_id,
+        stageName="local",
+        exportType="oas30",
+        parameters={"extensions": "apigateway"},
+    )
+    snapshot.match("get-export-with-extensions", response)
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_create_domain_names(aws_client):
     domain_name = f"{short_uid()}-testDomain"
     test_certificate_name = "test.certificate"
@@ -92,7 +107,7 @@ def test_create_domain_names(aws_client):
     assert ex.value.response["Error"]["Code"] == "BadRequestException"
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_get_domain_names(aws_client):
     # create domain name
     domain_name = f"domain-{short_uid()}"
@@ -113,7 +128,7 @@ def test_get_domain_names(aws_client):
     assert added[0]["domainNameStatus"] == "AVAILABLE"
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_get_domain_name(aws_client):
     domain_name = f"{short_uid()}-testDomain"
     # adding a domain name

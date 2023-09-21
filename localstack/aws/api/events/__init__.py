@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -21,6 +15,7 @@ ArchiveName = str
 ArchiveStateReason = str
 Arn = str
 AuthHeaderParameters = str
+AuthHeaderParametersSensitive = str
 Boolean = bool
 CapacityProvider = str
 CapacityProviderStrategyItemBase = int
@@ -49,6 +44,7 @@ EventSourceName = str
 EventSourceNamePrefix = str
 HeaderKey = str
 HeaderValue = str
+HeaderValueSensitive = str
 HealthCheck = str
 HomeRegion = str
 HttpsEndpoint = str
@@ -72,6 +68,7 @@ PlacementStrategyField = str
 Principal = str
 QueryStringKey = str
 QueryStringValue = str
+QueryStringValueSensitive = str
 RedshiftSecretManagerArn = str
 ReferenceId = str
 ReplayArn = str
@@ -91,6 +88,7 @@ SageMakerPipelineParameterName = str
 SageMakerPipelineParameterValue = str
 ScheduleExpression = str
 SecretsManagerSecretArn = str
+SensitiveString = str
 Sql = str
 StatementId = str
 StatementName = str
@@ -380,7 +378,7 @@ class ConnectionApiKeyAuthResponseParameters(TypedDict, total=False):
 
 class ConnectionBodyParameter(TypedDict, total=False):
     Key: Optional[String]
-    Value: Optional[String]
+    Value: Optional[SensitiveString]
     IsValueSecret: Optional[Boolean]
 
 
@@ -389,7 +387,7 @@ ConnectionBodyParametersList = List[ConnectionBodyParameter]
 
 class ConnectionQueryStringParameter(TypedDict, total=False):
     Key: Optional[QueryStringKey]
-    Value: Optional[QueryStringValue]
+    Value: Optional[QueryStringValueSensitive]
     IsValueSecret: Optional[Boolean]
 
 
@@ -398,7 +396,7 @@ ConnectionQueryStringParametersList = List[ConnectionQueryStringParameter]
 
 class ConnectionHeaderParameter(TypedDict, total=False):
     Key: Optional[HeaderKey]
-    Value: Optional[HeaderValue]
+    Value: Optional[HeaderValueSensitive]
     IsValueSecret: Optional[Boolean]
 
 
@@ -469,12 +467,12 @@ class CreateArchiveResponse(TypedDict, total=False):
 
 class CreateConnectionApiKeyAuthRequestParameters(TypedDict, total=False):
     ApiKeyName: AuthHeaderParameters
-    ApiKeyValue: AuthHeaderParameters
+    ApiKeyValue: AuthHeaderParametersSensitive
 
 
 class CreateConnectionOAuthClientRequestParameters(TypedDict, total=False):
     ClientID: AuthHeaderParameters
-    ClientSecret: AuthHeaderParameters
+    ClientSecret: AuthHeaderParametersSensitive
 
 
 class CreateConnectionOAuthRequestParameters(TypedDict, total=False):
@@ -486,7 +484,7 @@ class CreateConnectionOAuthRequestParameters(TypedDict, total=False):
 
 class CreateConnectionBasicAuthRequestParameters(TypedDict, total=False):
     Username: AuthHeaderParameters
-    Password: AuthHeaderParameters
+    Password: AuthHeaderParametersSensitive
 
 
 class CreateConnectionAuthRequestParameters(TypedDict, total=False):
@@ -1405,12 +1403,12 @@ class UpdateArchiveResponse(TypedDict, total=False):
 
 class UpdateConnectionApiKeyAuthRequestParameters(TypedDict, total=False):
     ApiKeyName: Optional[AuthHeaderParameters]
-    ApiKeyValue: Optional[AuthHeaderParameters]
+    ApiKeyValue: Optional[AuthHeaderParametersSensitive]
 
 
 class UpdateConnectionOAuthClientRequestParameters(TypedDict, total=False):
     ClientID: Optional[AuthHeaderParameters]
-    ClientSecret: Optional[AuthHeaderParameters]
+    ClientSecret: Optional[AuthHeaderParametersSensitive]
 
 
 class UpdateConnectionOAuthRequestParameters(TypedDict, total=False):
@@ -1422,7 +1420,7 @@ class UpdateConnectionOAuthRequestParameters(TypedDict, total=False):
 
 class UpdateConnectionBasicAuthRequestParameters(TypedDict, total=False):
     Username: Optional[AuthHeaderParameters]
-    Password: Optional[AuthHeaderParameters]
+    Password: Optional[AuthHeaderParametersSensitive]
 
 
 class UpdateConnectionAuthRequestParameters(TypedDict, total=False):

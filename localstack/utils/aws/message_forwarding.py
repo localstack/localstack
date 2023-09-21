@@ -39,6 +39,7 @@ def send_event_to_target(
     source_service: str = None,
 ):
     region = extract_region_from_arn(target_arn)
+
     if target is None:
         target = {}
     if role:
@@ -76,7 +77,10 @@ def send_event_to_target(
         )
 
     elif ":states:" in target_arn:
-        stepfunctions_client = connect_to(region_name=region).stepfunctions
+        account_id = extract_account_id_from_arn(target_arn)
+        stepfunctions_client = connect_to(
+            aws_access_key_id=account_id, region_name=region
+        ).stepfunctions
         stepfunctions_client.start_execution(stateMachineArn=target_arn, input=json.dumps(event))
 
     elif ":firehose:" in target_arn:
@@ -213,9 +217,11 @@ def send_event_to_api_destination(target_arn, event, http_parameters: Optional[D
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
 
     # ARN format: ...:api-destination/{name}/{uuid}
+    account_id = extract_account_id_from_arn(target_arn)
     region = extract_region_from_arn(target_arn)
+
     api_destination_name = target_arn.split(":")[-1].split("/")[1]
-    events_client = connect_to(region_name=region).events
+    events_client = connect_to(aws_access_key_id=account_id, region_name=region).events
     destination = events_client.describe_api_destination(Name=api_destination_name)
 
     # get destination endpoint details

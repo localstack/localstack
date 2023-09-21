@@ -255,22 +255,32 @@ def sqs_send_heartbeat_and_task_success_state_machine(
 
 
 @pytest.fixture
-def sfn_events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_queue_arn, aws_client):
+def sfn_events_to_sqs_queue(events_to_sqs_queue, aws_client):
     def _create(state_machine_arn: str) -> str:
-        queue_name = f"test-queue-{short_uid()}"
-        rule_name = f"test-rule-{short_uid()}"
-        target_id = f"test-target-{short_uid()}"
-
-        pattern = {
+        event_pattern = {
             "source": ["aws.states"],
             "detail": {
                 "stateMachineArn": [state_machine_arn],
             },
         }
-        rule_arn = events_create_rule(Name=rule_name, EventBusName="default", EventPattern=pattern)
+        return events_to_sqs_queue(event_pattern=event_pattern)
+
+    return _create
+
+
+@pytest.fixture
+def events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_get_queue_arn, aws_client):
+    def _setup(event_pattern):
+        queue_name = f"test-queue-{short_uid()}"
+        rule_name = f"test-rule-{short_uid()}"
+        target_id = f"test-target-{short_uid()}"
+
+        rule_arn = events_create_rule(
+            Name=rule_name, EventBusName="default", EventPattern=event_pattern
+        )
 
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
         queue_policy = {
             "Statement": [
                 {
@@ -292,4 +302,4 @@ def sfn_events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_queue_arn,
 
         return queue_url
 
-    return _create
+    return _setup

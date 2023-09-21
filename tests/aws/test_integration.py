@@ -6,6 +6,7 @@ import time
 
 import pytest
 
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
@@ -48,7 +49,7 @@ def handler(event, *args):
 """
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def scheduled_test_lambda(aws_client):
     # Note: create scheduled Lambda here - assertions will be run in test_scheduled_lambda() below..
 
@@ -77,7 +78,6 @@ def scheduled_test_lambda(aws_client):
     aws_client.lambda_.delete_function(FunctionName=scheduled_lambda_name)
 
 
-@pytest.mark.usefixtures("scheduled_test_lambda")
 class TestIntegration:
     @markers.aws.unknown
     def test_firehose_s3(self, firehose_create_delivery_stream, s3_create_bucket, aws_client):
@@ -167,7 +167,9 @@ class TestIntegration:
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration={
                 "RoleARN": arns.iam_resource_arn("firehose"),
-                "KinesisStreamARN": arns.kinesis_stream_arn(kinesis_stream_name),
+                "KinesisStreamARN": arns.kinesis_stream_arn(
+                    kinesis_stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+                ),
             },
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
@@ -540,7 +542,7 @@ class TestIntegration:
             assert get_lambda_logs(scheduled_test_lambda, aws_client.logs)
 
         # wait for up to 1 min for invocations to get triggered
-        retry(check_invocation, retries=14, sleep=5)
+        retry(check_invocation, retries=16, sleep=5)
 
 
 @markers.aws.unknown

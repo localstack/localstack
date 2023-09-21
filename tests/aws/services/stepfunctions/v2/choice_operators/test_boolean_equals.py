@@ -19,7 +19,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestBooleanEquals:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_boolean_equals(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -32,7 +32,7 @@ class TestBooleanEquals:
             comparisons=TYPE_COMPARISONS,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_boolean_equals_path(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
