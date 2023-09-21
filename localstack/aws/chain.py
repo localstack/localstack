@@ -1,46 +1,50 @@
 """
 The core concepts of the HandlerChain.
 """
+from __future__ import annotations
+
 import logging
 from typing import Any, Callable, List, Optional
 
-from localstack.http import Response
+from werkzeug import Response
 
 from .api import RequestContext
 
 LOG = logging.getLogger(__name__)
 
 Handler = Callable[["HandlerChain", RequestContext, Response], None]
-"""The signature of request or response handler in the handler chain. Receives the HandlerChain, the RequestContext,
-and the Response object to be populated."""
+"""The signature of request or response handler in the handler chain. Receives the HandlerChain, the
+RequestContext, and the Response object to be populated."""
 
 ExceptionHandler = Callable[["HandlerChain", Exception, RequestContext, Response], None]
-"""The signature of an exception handler in the handler chain. Receives the HandlerChain, the exception that was
-raised by the request handler, the RequestContext, and the Response object to be populated."""
+"""The signature of an exception handler in the handler chain. Receives the HandlerChain, the exception that
+was raised by the request handler, the RequestContext, and the Response object to be populated."""
 
 
 class HandlerChain:
     """
-    Implements a variant of the chain-of-responsibility pattern to process an incoming HTTP request. A handler chain
-    consists of request handlers, response handlers, and exception handlers. Each request should have its own
-    HandlerChain instance, since the handler chain holds state for the handling of a request. A chain can be in three
-    states that can be controlled by the handlers.
+    Implements a variant of the chain-of-responsibility pattern to process an incoming HTTP request. A handler
+    chain consists of request handlers, response handlers, finalizers, and exception handlers. Each request
+    should have its own HandlerChain instance, since the handler chain holds state for the handling of a
+    request. A chain can be in three states that can be controlled by the handlers.
 
     * Running - the implicit state where all handlers are executed sequentially
-    * Stopped - a handler has called ``chain.stop()``. This stops the execution of all request handlers, and proceeds
-      immediately to executing the response handlers. Response handlers will be run, even if the chain has been stopped.
-    * Terminated - a handler has called ``chain.terminate()`. This stops the execution of all request handlers, and all
-      response handlers, and returns immediately.
+    * Stopped - a handler has called ``chain.stop()``. This stops the execution of all request handlers, and
+      proceeds immediately to executing the response handlers. Response handlers and finalizers will be run,
+      even if the chain has been stopped.
+    * Terminated - a handler has called ``chain.terminate()`. This stops the execution of all request
+      handlers, and all response handlers, but runs the finalizers at the end.
 
     If an exception occurs during the execution of request handlers, the chain by default stops the chain,
-    then runs each exception handler, and finally runs the response handlers. Exceptions that happen during the
-    execution of response or exception handlers are logged but do not modify the control flow of the chain.
-
+    then runs each exception handler, and finally runs the response handlers. Exceptions that happen during
+    the execution of response or exception handlers are logged but do not modify the control flow of the
+    chain.
     """
 
     # handlers
     request_handlers: List[Handler]
     response_handlers: List[Handler]
+    finalizers: List[Handler]
     exception_handlers: List[ExceptionHandler]
 
     # behavior configuration
@@ -61,12 +65,14 @@ class HandlerChain:
         self,
         request_handlers: List[Handler] = None,
         response_handlers: List[Handler] = None,
+        finalizers: List[Handler] = None,
         exception_handlers: List[ExceptionHandler] = None,
     ) -> None:
         super().__init__()
         self.request_handlers = request_handlers or list()
         self.response_handlers = response_handlers or list()
         self.exception_handlers = exception_handlers or list()
+        self.finalizers = finalizers or list()
 
         self.stopped = False
         self.terminated = False
@@ -85,34 +91,38 @@ class HandlerChain:
         self.context = context
         self.response = response
 
-        for handler in self.request_handlers:
-            try:
-                handler(self, self.context, response)
-            except Exception as e:
-                # prepare the continuation behavior, but exception handlers could overwrite it
-                if self.raise_on_error:
-                    self.error = e
-                if self.stop_on_error:
-                    self.stopped = True
+        try:
+            for handler in self.request_handlers:
+                try:
+                    handler(self, self.context, response)
+                except Exception as e:
+                    # prepare the continuation behavior, but exception handlers could overwrite it
+                    if self.raise_on_error:
+                        self.error = e
+                    if self.stop_on_error:
+                        self.stopped = True
 
-                # call exception handlers safely
-                self._call_exception_handlers(e, response)
+                    # call exception handlers safely
+                    self._call_exception_handlers(e, response)
 
-            # decide next step
-            if self.error:
-                raise self.error
-            if self.terminated:
-                return
-            if self.stopped:
-                break
+                # decide next step
+                if self.error:
+                    raise self.error
+                if self.terminated:
+                    return
+                if self.stopped:
+                    break
 
-        # call response filters
-        self._call_response_handlers(response)
+            # call response filters
+            self._call_response_handlers(response)
+        finally:
+            self._call_finalizers(response)
 
     def respond(self, status_code: int = 200, payload: Any = None):
         """
-        Convenience method for handlers to stop the chain and set the given status and payload to the current response
-        object.
+        Convenience method for handlers to stop the chain and set the given status and payload to the
+        current response object.
+
         :param status_code: the HTTP status code
         :param payload: the payload of the response
         """
@@ -160,6 +170,17 @@ class HandlerChain:
                 else:
                     LOG.warning(msg + ": %s", e)
 
+    def _call_finalizers(self, response):
+        for handler in self.finalizers:
+            try:
+                handler(self, self.context, response)
+            except Exception as e:
+                msg = "exception while running request finalizer"
+                if LOG.isEnabledFor(logging.DEBUG):
+                    LOG.exception(msg)
+                else:
+                    LOG.warning(msg + ": %s", e)
+
     def _call_exception_handlers(self, e, response):
         for exception_handler in self.exception_handlers:
             try:
@@ -175,7 +196,8 @@ class HandlerChain:
 
 class CompositeHandler(Handler):
     """
-    A handler that sequentially invokes a list of Handlers, forming a stripped-down version of a handler chain.
+    A handler that sequentially invokes a list of Handlers, forming a stripped-down version of a handler
+    chain.
     """
 
     handlers: List[Handler]
@@ -219,9 +241,9 @@ class CompositeHandler(Handler):
 
 class CompositeResponseHandler(CompositeHandler):
     """
-    A CompositeHandler that by default does not return on stop, meaning that all handlers in the composite will be
-    executed, even if one of the handlers has called ``chain.stop()``. This mimics how response handlers are executed
-    in the ``HandlerChain``.
+    A CompositeHandler that by default does not return on stop, meaning that all handlers in the composite
+    will be executed, even if one of the handlers has called ``chain.stop()``. This mimics how response
+    handlers are executed in the ``HandlerChain``.
     """
 
     def __init__(self) -> None:

@@ -65,13 +65,18 @@ class LocalstackAwsGateway(Gateway):
             [
                 handlers.modify_service_response,
                 handlers.parse_service_response,
-                handlers.set_close_connection_header,
                 handlers.run_custom_response_handlers,
                 handlers.add_cors_response_headers,
                 handlers.log_response,
                 handlers.count_service_request,
                 handlers.pop_request_context,
                 metric_collector.update_metric_collection,
+            ]
+        )
+
+        self.finalizers.extend(
+            [
+                handlers.set_close_connection_header,
             ]
         )
 
