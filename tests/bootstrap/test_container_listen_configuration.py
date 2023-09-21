@@ -117,3 +117,46 @@ class TestContainerConfiguration:
         # get the container logs
         logs = running_container.get_logs()
         assert "checking service health s3:5000" in logs
+
+    def test_localstack_host_service_health(
+        self,
+        container_factory: ContainerFactory,
+        docker_network,
+        wait_for_localstack_ready,
+        stream_container_logs,
+    ):
+        """
+        Test multiple container ports
+        """
+        host_port = get_free_tcp_port()
+
+        container = container_factory(
+            configurators=[
+                ContainerConfigurators.debug,
+                ContainerConfigurators.mount_docker_socket,
+                ContainerConfigurators.network(docker_network),
+                ContainerConfigurators.env_vars(
+                    {
+                        "LOCALSTACK_HOST": "localhost:5000",
+                    }
+                ),
+            ],
+        )
+        container.config.ports.add(host_port, 5000)
+        running_container = container.start(attach=False)
+        stream_container_logs(container)
+        wait_for_localstack_ready(running_container)
+
+        # check the ports listening on 0.0.0.0
+        r = requests.get(f"http://127.0.0.1:{host_port}/_localstack/health")
+        assert r.ok
+
+        # check a service is able to run
+        client = boto3.client(
+            "s3", endpoint_url=f"http://127.0.0.1:{host_port}", region_name="us-east-1"
+        )
+        client.list_buckets()
+
+        # get the container logs
+        logs = running_container.get_logs()
+        assert "checking service health s3:5000" in logs
