@@ -35,7 +35,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         LOG.warning(
-            "The 'v1' (current default) stepfunctions provider will be deprecated with the next major release (3.0). Set 'PROVIDER_OVERRIDE_STEPFUNCTIONS=v2' to opt-in to the new StepFunctions provider."
+            "The 'v1' (current default) StepFunctions provider will be deprecated with the next major release (3.0). Set 'PROVIDER_OVERRIDE_STEPFUNCTIONS=v2' to opt-in to the new StepFunctions provider."
         )
 
     def get_forward_url(self) -> str:
