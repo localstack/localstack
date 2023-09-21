@@ -100,19 +100,20 @@ class Directories:
     def for_container() -> "Directories":
         """
         Returns Localstack directory paths as they are defined within the container. Everything shared and writable
-        lives in /var/lib/localstack or /tmp/localstack.
+        lives in /var/lib/localstack or {tempfile.gettempdir()}/localstack.
 
         :returns: Directories object
         """
         defaults = Directories.defaults()
+        tmp_dir = os.path.join(tempfile.gettempdir(), "localstack")
 
         return Directories(
             static_libs=defaults.static_libs,
             var_libs=defaults.var_libs,
             cache=defaults.cache,
-            tmp=defaults.tmp,
+            tmp=tmp_dir,
             functions=defaults.functions,
-            data=defaults.data if PERSISTENCE else os.path.join(defaults.tmp, "state"),
+            data=defaults.data if PERSISTENCE else os.path.join(tmp_dir, "state"),
             config=defaults.config,
             logs=defaults.logs,
             init=defaults.init,
