@@ -240,7 +240,7 @@ def invoke_function(
                 raise
 
             LOG.debug("Converting parameters to allowed types")
-            LOG.debug(f"Report: %s", report)
+            LOG.debug("Report: %s", report)
             converted_params = fix_boto_parameters_based_on_report(params, report)
             LOG.debug("Original parameters:  %s", params)
             LOG.debug("Converted parameters: %s", converted_params)
