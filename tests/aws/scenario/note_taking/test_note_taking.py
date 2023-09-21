@@ -82,12 +82,9 @@ class TestNoteTakingScenario:
     STACK_NAME = "NoteTakingStack"
 
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client):
-        infra = InfraProvisioner(aws_client)
-        app = cdk.App()
-        stack = cdk.Stack(app, self.STACK_NAME)
-
-        bucket_name = "notes-sample-scenario-test"
+    def infrastructure(self, aws_client, infrastructure_setup):
+        infra = infrastructure_setup(namespace="NoteTaking")
+        stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
         # manually upload lambda to s3
         def _create_lambdas():
@@ -97,18 +94,13 @@ class TestNoteTakingScenario:
                 code_path = os.path.join(os.path.dirname(__file__), f"./functions/{note}.js")
                 load_nodejs_lambda_to_s3(
                     aws_client.s3,
-                    bucket_name,
+                    infra.get_asset_bucket(),
                     key_name=f"{note}.zip",
                     code_path=code_path,
                     additional_resources=additional_resources,
                 )
 
         infra.add_custom_setup_provisioning_step(_create_lambdas)
-
-        # add custom tear down for deleting bucket + content
-        infra.add_custom_teardown(
-            lambda: cleanup_s3_bucket(aws_client.s3, bucket_name, delete_bucket=True)
-        )
 
         table = dynamodb.Table(
             stack,
@@ -121,7 +113,7 @@ class TestNoteTakingScenario:
         _add_endpoints(
             resource=notes_endpoint,
             stack=stack,
-            bucket_name=bucket_name,
+            bucket_name=cdk.Fn.join("-", ["localstack", "testing", stack.account, stack.region]),
             table=table,
             endpoints=[
                 Endpoint(http_method="GET", endpoint_id="listNotes", grant_actions="dynamodb:Scan"),
@@ -139,7 +131,7 @@ class TestNoteTakingScenario:
         _add_endpoints(
             resource=single_note_endpoint,
             stack=stack,
-            bucket_name=bucket_name,
+            bucket_name=cdk.Fn.join("-", ["localstack", "testing", stack.account, stack.region]),
             table=table,
             endpoints=[
                 Endpoint(
@@ -160,8 +152,6 @@ class TestNoteTakingScenario:
 
         cdk.CfnOutput(stack, "GatewayUrl", value=api.url)
         cdk.CfnOutput(stack, "Region", value=stack.region)
-
-        infra.add_cdk_stack(stack)
 
         with infra.provisioner() as prov:
             yield prov

@@ -1,6 +1,6 @@
 {
   "tests/aws/scenario/lambda_destination/test_lambda_destination_scenario.py::TestLambdaDestinationScenario::test_infra": {
-    "recorded-date": "28-09-2023, 17:02:11",
+    "recorded-date": "04-10-2023, 16:04:47",
     "recorded-content": {
       "get_fn_1": {
         "Code": {
@@ -11,7 +11,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "hLDLYox4U0BIeMfEseajdAXewXsYzX96/9hDluIV4+c=",
+          "CodeSha256": "<code-sha-256>",
           "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
@@ -19,7 +19,7 @@
           },
           "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
+          "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
           "MemorySize": 128,
@@ -60,7 +60,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "ME/6XWe4KO4tnxm4Yp/Z6p0EsHPWPJcwm4k4BjesvoI=",
+          "CodeSha256": "<code-sha-256>",
           "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
@@ -68,7 +68,7 @@
           },
           "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:2>",
           "FunctionName": "<function-name:2>",
-          "Handler": "handler.handler",
+          "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
           "MemorySize": 128,
@@ -111,6 +111,7 @@
         },
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
         "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 60,
         "MaximumRetryAttempts": 0,
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -167,7 +168,7 @@
               }
             ]
           },
-          "SubscriptionsConfirmed": "1",
+          "SubscriptionsConfirmed": "0",
           "SubscriptionsDeleted": "0",
           "SubscriptionsPending": "0",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
@@ -180,9 +181,9 @@
     }
   },
   "tests/aws/scenario/lambda_destination/test_lambda_destination_scenario.py::TestLambdaDestinationScenario::test_destination_sns": {
-    "recorded-date": "28-09-2023, 17:09:34",
+    "recorded-date": "04-10-2023, 16:05:34",
     "recorded-content": {
-      "successfull_invoke": {
+      "successful_invoke": {
         "Payload": "",
         "StatusCode": 202,
         "ResponseMetadata": {

@@ -13,6 +13,7 @@ from aws_cdk.aws_lambda_event_sources import DynamoEventSource
 from constructs import Construct
 
 from localstack.testing.pytest import markers
+from localstack.testing.scenario.provisioning import cleanup_s3_bucket
 from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_s3
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.testing.snapshots.transformer import GenericTransformer, KeyValueBasedTransformer
@@ -39,7 +40,6 @@ Scenarios:
 
 S3_BUCKET_BOOKS_INIT = "book-init-data-store-scenario-test"
 S3_KEY_BOOKS_INIT = "books.json"
-SEARCH_BUCKET = "search-books-store-scenario-test"
 SEARCH_KEY = "search.zip"
 SEARCH_UPDATE_KEY = "search_update.zip"
 
@@ -59,17 +59,20 @@ class TestBookstoreApplication:
         mpatch.undo()
 
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client, patch_opensearch_strategy):
-        infra = InfraProvisioner(aws_client)
+    def infrastructure(self, aws_client, infrastructure_setup, patch_opensearch_strategy):
+        infra = infrastructure_setup("Bookstore")
+
         search_book_fn_path = os.path.join(os.path.dirname(__file__), "functions/search.py")
         search_update_fn_path = os.path.join(
             os.path.dirname(__file__), "functions/update_search_cluster.py"
         )
+        # custom provisioning
         additional_packages = ["requests", "requests-aws4auth", "urllib3==1.26.6"]
+        asset_bucket = infra.get_asset_bucket()
         infra.add_custom_setup_provisioning_step(
             lambda: load_python_lambda_to_s3(
                 aws_client.s3,
-                bucket_name=SEARCH_BUCKET,
+                bucket_name=asset_bucket,
                 key_name=SEARCH_KEY,
                 code_path=search_book_fn_path,
                 additional_python_packages=additional_packages,
@@ -78,18 +81,18 @@ class TestBookstoreApplication:
         infra.add_custom_setup_provisioning_step(
             lambda: load_python_lambda_to_s3(
                 aws_client.s3,
-                bucket_name=SEARCH_BUCKET,
+                bucket_name=asset_bucket,
                 key_name=SEARCH_UPDATE_KEY,
                 code_path=search_update_fn_path,
                 additional_python_packages=additional_packages,
             )
         )
-        app = cdk.App()
-        stack = cdk.Stack(app, "BookstoreStack")
+
+        # CDK-based provisioning
+        stack = cdk.Stack(infra.cdk_app, "BookstoreStack")
         books_api = BooksApi(
             stack,
             "BooksApi",
-            search_bucket=SEARCH_BUCKET,
             search_key=SEARCH_KEY,
             search_update_key=SEARCH_UPDATE_KEY,
         )
@@ -102,15 +105,8 @@ class TestBookstoreApplication:
         cdk.CfnOutput(stack, "InitBooksTableFn", value=books_api.load_books_helper_fn.function_name)
         cdk.CfnOutput(stack, "SearchForBooksFn", value=books_api.search_book_fn.function_name)
 
-        infra.add_custom_teardown(
-            lambda: cleanup_s3_bucket(aws_client.s3, bucket_name=SEARCH_BUCKET, delete_bucket=True)
-        )
-
-        infra.add_cdk_stack(stack)
-
         # set skip_teardown=True to prevent the stack to be deleted
-        with infra.provisioner(skip_teardown=False) as prov:
-            # here we could add some initial setup, e.g. pre-filling the app with data
+        with infra.provisioner(skip_teardown=True) as prov:
             yield prov
 
     @markers.aws.validated
@@ -387,7 +383,6 @@ class BooksApi(Construct):
         stack: cdk.Stack,
         id: str,
         *,
-        search_bucket: str,
         search_key: str,
         search_update_key: str,
     ):
@@ -461,7 +456,11 @@ class BooksApi(Construct):
         )
 
         # lambda to search for book
-        bucket = cdk.aws_s3.Bucket.from_bucket_name(stack, "bucket_name", bucket_name=search_bucket)
+        bucket = cdk.aws_s3.Bucket.from_bucket_name(
+            stack,
+            "bucket_name",
+            bucket_name=cdk.Fn.join("-", ["localstack", "testing", stack.account, stack.region]),
+        )
         self.search_book_fn = awslambda.Function(
             stack,
             "SearchBookLambda",
