@@ -1,8 +1,10 @@
+import boto3
 import pytest
 import requests
 
 from localstack.config import in_docker
 from localstack.testing.pytest.container import ContainerFactory
+from localstack.utils.bootstrap import ContainerConfigurators
 from localstack.utils.net import get_free_tcp_port
 
 
@@ -22,25 +24,46 @@ class TestContainerConfiguration:
         assert r.status_code == 200
 
     def test_gateway_listen_single_value(
-        self, container_factory: ContainerFactory, wait_for_localstack_ready
+        self,
+        container_factory: ContainerFactory,
+        wait_for_localstack_ready,
+        stream_container_logs,
     ):
         """
         Test using GATEWAY_LISTEN to change the hypercorn port
         """
         port1 = get_free_tcp_port()
+        gateway_listen_port = 5000
 
         container = container_factory(
-            env_vars={
-                "GATEWAY_LISTEN": "0.0.0.0:5000",
-            },
+            configurators=[
+                ContainerConfigurators.debug,
+                ContainerConfigurators.mount_docker_socket,
+                ContainerConfigurators.env_vars(
+                    {
+                        "GATEWAY_LISTEN": f"0.0.0.0:{gateway_listen_port}",
+                    }
+                ),
+            ],
         )
-        container.config.ports.add(port1, 5000)
+        container.config.ports.add(port1, gateway_listen_port)
         running_container = container.start(attach=False)
+        stream_container_logs(container)
         wait_for_localstack_ready(running_container)
 
         # check the ports listening on 0.0.0.0
         r = requests.get(f"http://127.0.0.1:{port1}/_localstack/health")
         assert r.status_code == 200
+
+        # check a service is able to run
+        client = boto3.client(
+            "s3", endpoint_url=f"http://127.0.0.1:{port1}", region_name="us-east-1"
+        )
+        client.list_buckets()
+
+        # get the container logs
+        logs = running_container.get_logs()
+        assert f"checking service health s3:{gateway_listen_port}" in logs
 
     def test_gateway_listen_multiple_values(
         self, container_factory: ContainerFactory, docker_network, wait_for_localstack_ready
