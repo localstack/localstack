@@ -3,6 +3,7 @@ from unittest.mock import ANY, MagicMock, patch
 import boto3
 import botocore
 import pytest
+from botocore.config import Config
 
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
@@ -248,9 +249,43 @@ class TestClientFactory:
         # TODO does it really make sense to test the caching?
         # TODO pretty ugly way of accessing the internal client
         factory = InternalClientFactory()
-        assert factory().s3._client == factory().s3._client
+        assert factory().s3._client is factory().s3._client
         factory_2 = InternalClientFactory()
         assert factory().s3._client != factory_2().s3._client
+
+    def test_client_caching_with_config(self):
+        """Test client caching. Same factory for the same service should result in the same client.
+        Different factories should result in different (identity wise) clients"""
+        # This test might get flaky if some internal boto3 caching is introduced at some point
+        config = Config(read_timeout=2, signature_version=botocore.UNSIGNED)
+        second_config = Config(read_timeout=2, signature_version=botocore.UNSIGNED)
+        third_config = Config(read_timeout=3, signature_version=botocore.UNSIGNED)
+        factory = InternalClientFactory()
+        client_1 = factory(config=config).s3._client
+        client_2 = factory(config=config).s3._client
+        client_3 = factory(config=second_config).s3._client
+        client_4 = factory(config=third_config).s3._client
+        assert client_1 is client_2
+        assert client_2 is client_3
+        assert client_3 is not client_4
+
+    def test_client_caching_with_merged_configs(self):
+        """Test client caching. Same factory for the same service should result in the same client.
+        Different factories should result in different (identity wise) clients"""
+        # This test might get flaky if some internal boto3 caching is introduced at some point
+        config_1 = Config(read_timeout=2)
+        config_2 = Config(signature_version=botocore.UNSIGNED)
+        config_3 = config_1.merge(config_2)
+        config_4 = config_1.merge(config_2)
+        factory = InternalClientFactory()
+        client_1 = factory(config=config_1).s3._client
+        client_2 = factory(config=config_2).s3._client
+        client_3 = factory(config=config_3).s3._client
+        client_4 = factory(config=config_4).s3._client
+        assert client_1 is not client_2
+        assert client_2 is not client_3
+        assert client_1 is not client_3
+        assert client_3 is client_4
 
     def test_internal_request_parameters(self, create_dummy_request_parameter_gateway):
         internal_dto = None

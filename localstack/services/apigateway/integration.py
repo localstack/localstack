@@ -402,17 +402,16 @@ class LambdaIntegration(BackendIntegration):
         except ClientError as e:
             raise IntegrationAccessError() from e
 
-        response = LambdaResponse()
         # default lambda status code is 200
+        response = LambdaResponse()
         response.status_code = 200
         response._content = result
 
         if asynchronous:
             response._content = ""
 
-        invocation_context.response = response
-
         # response template
+        invocation_context.response = response
         self.response_templates.render(invocation_context)
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
 
@@ -920,7 +919,6 @@ class EventBridgeIntegration(BackendIntegration):
 
         invocation_context.response = response
 
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
+        self.response_templates.render(invocation_context)
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response

@@ -5,7 +5,6 @@ and manipulate python collection (dicts, list, sets).
 
 import logging
 import re
-import sys
 from collections.abc import Mapping
 from typing import (
     Any,
@@ -18,18 +17,15 @@ from typing import (
     Sized,
     Tuple,
     Type,
+    TypedDict,
     TypeVar,
     Union,
     cast,
+    get_args,
+    get_origin,
 )
 
 import cachetools
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict, get_args, get_origin
-else:
-    from typing_extensions import TypedDict, get_args, get_origin
-
 
 LOG = logging.getLogger(__name__)
 

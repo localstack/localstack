@@ -11,18 +11,12 @@ import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
-
-from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
-
-if sys.version_info >= (3, 8):
-    from typing import Literal, Protocol, get_args
-else:
-    from typing_extensions import Literal, Protocol, get_args
+from typing import Dict, List, Literal, NamedTuple, Optional, Protocol, Tuple, Union, get_args
 
 from localstack import config
 from localstack.utils.collections import HashableList, ensure_list
 from localstack.utils.files import TMP_FILES, rm_rf, save_file
+from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
 from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)

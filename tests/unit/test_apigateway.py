@@ -408,6 +408,36 @@ def test_render_template_values():
         assert escaped == expected
 
 
+class TestVelocityUtilApiGatewayFunctions:
+    def test_parse_json(self):
+        util = VelocityUtilApiGateway()
+
+        # write table tests for the following input
+        a = {"array": "[1,2,3]"}
+        obj = util.parseJson(a["array"])
+        assert obj[0] == 1
+
+        o = {"object": '{"key1":"var1","key2":{"arr":[1,2,3]}}'}
+        obj = util.parseJson(o["object"])
+        assert obj.key2.arr[0] == 1
+
+        s = '"string"'
+        obj = util.parseJson(s)
+        assert obj == "string"
+
+        n = {"number": "1"}
+        obj = util.parseJson(n["number"])
+        assert obj == 1
+
+        b = {"boolean": "true"}
+        obj = util.parseJson(b["boolean"])
+        assert obj is True
+
+        z = {"zero_length_array": "[]"}
+        obj = util.parseJson(z["zero_length_array"])
+        assert obj == []
+
+
 class TestJSONPatch(unittest.TestCase):
     def test_apply_json_patch(self):
         apply = apply_json_patch_safe
