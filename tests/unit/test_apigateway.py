@@ -70,15 +70,15 @@ class TestApiGatewayPaths:
                 "/{param1}/{param2}/baz",
             ),
             ("/foo/bar/baz", ["/foo123/{param1}/baz"], None),
-            ("/foo/bar/baz", ["/foo/{param1}/baz", "/foo/{param1}/{param2}"], None),
+            ("/foo/bar/baz", ["/foo/{param1}/baz", "/foo/{param1}/{param2}"], "/foo/{param1}/baz"),
         ],
     )
     def test_path_matches(self, path, path_parts, expected):
         default_resource = {"resourceMethods": {"GET": {}}}
 
         path_map = {path_part: default_resource for path_part in path_parts}
-        path, _ = get_resource_for_path(path, "GET", path_map)
-        assert path == expected
+        matched_path, _ = get_resource_for_path(path, "GET", path_map)
+        assert matched_path == expected
 
     def test_path_routing_with_method(self):
         """Not using parametrization as testing a simple scenario, AWS validated"""
