@@ -1120,7 +1120,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_lambda_task_filter_parameters_input": {
-    "recorded-date": "22-09-2023, 22:29:31",
+    "recorded-date": "22-09-2023, 22:36:51",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1210,7 +1210,11 @@
           {
             "id": 7,
             "lambdaFunctionSucceededEventDetails": {
-              "output": "\"HelloWorld!\"",
+              "output": {
+                "loop": {
+                  "count": 0
+                }
+              },
               "outputDetails": {
                 "truncated": false
               }
@@ -1228,7 +1232,11 @@
                 "loop": {
                   "count": 0
                 },
-                "result": "HelloWorld!"
+                "result": {
+                  "loop": {
+                    "count": 0
+                  }
+                }
               },
               "outputDetails": {
                 "truncated": false
@@ -1243,7 +1251,11 @@
                 "loop": {
                   "count": 0
                 },
-                "result": "HelloWorld!"
+                "result": {
+                  "loop": {
+                    "count": 0
+                  }
+                }
               },
               "outputDetails": {
                 "truncated": false

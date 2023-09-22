@@ -155,7 +155,7 @@ class TestTaskLambda:
         function_name = f"lambda_func_{short_uid()}"
         create_res = create_lambda_function(
             func_name=function_name,
-            handler_file=ST.LAMBDA_RETURN_BYTES_STR,
+            handler_file=ST.LAMBDA_ID_FUNCTION,
             runtime="python3.9",
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
