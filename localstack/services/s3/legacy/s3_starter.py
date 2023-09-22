@@ -11,6 +11,7 @@ from moto.s3.responses import S3_ALL_MULTIPARTS, MalformedXML, minidom
 from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.services.infra import start_moto_server
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.legacy import s3_listener, s3_utils
 from localstack.utils.collections import get_safe
@@ -29,6 +30,15 @@ TMP_TAG = {}
 
 # Key for tracking patch applience
 PATCHES_APPLIED = "S3_PATCHED"
+
+
+class S3LifecycleHook(ServiceLifecycleHook):
+    def on_after_init(self):
+        LOG.warning(
+            "The deprecated 'v1'/'legacy' S3 provider will be removed with the next major release (3.0). "
+            "Remove 'PROVIDER_OVERRIDE_S3' to use the S3 'v2' provider (current default). "
+            "or set 'PROVIDER_OVERRIDE_S3=v3' to opt-in to the new 'v3' S3 provider."
+        )
 
 
 def check_s3(expect_shutdown=False, print_error=False):
