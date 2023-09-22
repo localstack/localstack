@@ -1725,7 +1725,7 @@ class TestDynamoDB:
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
-        stream_name = kinesis_create_stream()
+        stream_name = kinesis_create_stream(ShardCount=1)
         wait_for_stream_ready(stream_name)
 
         # get stream arn
@@ -1744,7 +1744,7 @@ class TestDynamoDB:
             )
             return response["KinesisDataStreamDestinations"][0]["DestinationStatus"] == "ACTIVE"
 
-        wait = 30 if is_aws_cloud() else 5
+        wait = 30 if is_aws_cloud() else 3
         max_retries = 10 if is_aws_cloud() else 2
         wait_until(check_destination_status(), wait=wait, max_retries=max_retries)
 
@@ -1763,12 +1763,9 @@ class TestDynamoDB:
 
             # get stream records
             response = aws_client.kinesis.get_records(
-                StreamARN=stream_arn,
                 ShardIterator=iterator,
-                Limit=1,
             )
             records = response["Records"]
-            # iterator = response["NextShardIterator"]
             assert len(records) > 0
 
         sleep_secs = 2
