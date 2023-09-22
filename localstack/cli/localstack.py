@@ -12,7 +12,6 @@ from localstack.cli.exceptions import CLIError
 from localstack.utils.analytics.cli import publish_invocation
 from localstack.utils.bootstrap import get_container_default_logfile_location
 from localstack.utils.json import CustomEncoder
-from localstack.utils.run import run_interactive
 
 from .console import BANNER, console
 from .plugin import LocalstackCli, load_cli_plugins
@@ -623,10 +622,7 @@ def cmd_ssh() -> None:
         raise CLIError(
             f'Expected a running LocalStack container named "{config.MAIN_CONTAINER_NAME}", but found none'
         )
-    try:
-        run_interactive(["docker", "exec", "-it", config.MAIN_CONTAINER_NAME, "bash"])
-    except KeyboardInterrupt:
-        pass
+    os.execlp("docker", "docker", "exec", "-it", config.MAIN_CONTAINER_NAME, "bash")
 
 
 @localstack.group(name="update", short_help="Update LocalStack")
