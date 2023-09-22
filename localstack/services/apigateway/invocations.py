@@ -284,13 +284,9 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
 # in Pro (potentially to be replaced with a runtime hook in the future).
 def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
     # define local aliases from invocation context
-    # invocation_path = invocation_context.path_with_query_string
     method = invocation_context.method
     headers = invocation_context.headers
-    # resource_path = invocation_context.resource_path
     integration = invocation_context.integration
-    # extract integration type and path parameters
-    # relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
     integration_type = integration_type_orig.upper()
     integration_method = integration.get("httpMethod")
