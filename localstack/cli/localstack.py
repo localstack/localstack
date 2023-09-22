@@ -617,17 +617,12 @@ def cmd_ssh() -> None:
     `MAIN_CONTAINER_NAME`.
     """
     from localstack.utils.docker_utils import DOCKER_CLIENT
-    from localstack.utils.run import run
 
     if not DOCKER_CLIENT.is_container_running(config.MAIN_CONTAINER_NAME):
         raise CLIError(
             f'Expected a running LocalStack container named "{config.MAIN_CONTAINER_NAME}", but found none'
         )
-    try:
-        process = run("docker exec -it %s bash" % config.MAIN_CONTAINER_NAME, tty=True)
-        process.wait()
-    except KeyboardInterrupt:
-        pass
+    os.execlp("docker", "docker", "exec", "-it", config.MAIN_CONTAINER_NAME, "bash")
 
 
 @localstack.group(name="update", short_help="Update LocalStack")
