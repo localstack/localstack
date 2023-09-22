@@ -63,6 +63,10 @@ class Route53HealthCheckProvider(ResourceProvider[Route53HealthCheckProperties])
         """
         model = request.desired_state
         create_params = util.select_attributes(model, ["HealthCheckConfig", "CallerReference"])
+        if not create_params.get("CallerReference"):
+            create_params["CallerReference"] = util.generate_default_name_without_stack(
+                request.logical_resource_id
+            )
         result = request.aws_client_factory.route53.create_health_check(**create_params)
         model["HealthCheckId"] = result["HealthCheck"]["Id"]
         return ProgressEvent(
