@@ -55,7 +55,7 @@ jobs:
 
       - name: Sync Card Status
         if: ${{steps.determine-status.outputs.result}}
-        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        uses: leonsteinhaeuser/project-beta-automations@v2.2.1
         env:
           DEBUG_LOG: "true"
         with:
