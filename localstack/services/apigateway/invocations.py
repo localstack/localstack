@@ -148,7 +148,6 @@ class RequestValidator:
 
 
 def validate_api_key(api_key: str, invocation_context: ApiInvocationContext):
-
     usage_plan_ids = []
     client = connect_to(
         aws_access_key_id=invocation_context.account_id, region_name=invocation_context.region_name

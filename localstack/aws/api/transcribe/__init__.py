@@ -1029,7 +1029,6 @@ class UpdateVocabularyResponse(TypedDict, total=False):
 
 
 class TranscribeApi:
-
     service = "transcribe"
     version = "2017-10-26"
 

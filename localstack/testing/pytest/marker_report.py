@@ -117,7 +117,6 @@ def pytest_collection_modifyitems(
             json.dump(dataclasses.asdict(report), fd, indent=2, sort_keys=True)
 
     if config.option.marker_report_tinybird_upload:
-
         project_name = os.environ.get("MARKER_REPORT_PROJECT_NAME", "localstack")
         datasource_name = "pytest_markers__v0"
         token = os.environ.get("MARKER_REPORT_TINYBIRD_TOKEN")

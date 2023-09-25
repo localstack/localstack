@@ -868,7 +868,6 @@ class UpdateResourceShareResponse(TypedDict, total=False):
 
 
 class RamApi:
-
     service = "ram"
     version = "2018-01-04"
 

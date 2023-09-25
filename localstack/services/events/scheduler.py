@@ -33,7 +33,6 @@ class Job:
 
 
 class JobScheduler:
-
     _instance = None
 
     def __init__(self):

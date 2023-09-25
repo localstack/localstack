@@ -27,7 +27,6 @@ def get_outdated_snapshots_for_directory(
     outdated_snapshots = {}
 
     def do_get_outdated_snapshots(path: str):
-
         if not path.endswith("/"):
             path = f"{path}/"
         for file in os.listdir(path):

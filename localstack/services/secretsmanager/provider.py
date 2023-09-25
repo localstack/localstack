@@ -333,7 +333,6 @@ def moto_smb_get_secret_value(fn, self, secret_id, version_id, version_stage):
 
 @patch(SecretsManagerBackend.create_secret)
 def moto_smb_create_secret(fn, self, name, *args, **kwargs):
-
     # Creating a secret with a SecretId equal to one that is scheduled for
     # deletion should raise an 'InvalidRequestException'.
     secret: Optional[FakeSecret] = self.secrets.get(name)

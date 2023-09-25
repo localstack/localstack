@@ -355,7 +355,6 @@ class Ec2Provider(Ec2Api, ABC):
         context: RequestContext,
         request: CreateLaunchTemplateRequest,
     ) -> CreateLaunchTemplateResult:
-
         # parameter validation
         if not request["LaunchTemplateData"]:
             raise MissingParameterError(parameter="LaunchTemplateData")
@@ -372,7 +371,6 @@ class Ec2Provider(Ec2Api, ABC):
         context: RequestContext,
         request: ModifyLaunchTemplateRequest,
     ) -> ModifyLaunchTemplateResult:
-
         backend = get_ec2_backend(context.account_id, context.region)
         template_id = (
             request["LaunchTemplateId"]

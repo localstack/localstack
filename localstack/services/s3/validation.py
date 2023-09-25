@@ -390,7 +390,6 @@ def validate_cors_configuration(cors_configuration: CORSConfiguration):
     optional_rule_fields = {"AllowedHeaders", "ExposeHeaders", "MaxAgeSeconds", "ID"}
 
     for rule in rules:
-
         if not validate_dict_fields(rule, required_rule_fields, optional_rule_fields):
             raise MalformedXML()
 

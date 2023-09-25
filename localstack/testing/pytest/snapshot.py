@@ -69,9 +69,7 @@ def pytest_runtest_call(item: Item) -> None:
         paths = []
 
         if not is_aws():  # only skip for local tests
-
             for m in item.iter_markers(name="skip_snapshot_verify"):
-
                 skip_paths = m.kwargs.get("paths", [])
 
                 skip_condition = m.kwargs.get("condition")

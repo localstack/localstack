@@ -2115,7 +2115,6 @@ class UpdateTimeToLiveOutput(TypedDict, total=False):
 
 
 class DynamodbApi:
-
     service = "dynamodb"
     version = "2012-08-10"
 

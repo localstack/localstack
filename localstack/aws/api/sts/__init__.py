@@ -251,7 +251,6 @@ class GetSessionTokenResponse(TypedDict, total=False):
 
 
 class StsApi:
-
     service = "sts"
     version = "2011-06-15"
 

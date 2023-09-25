@@ -10,7 +10,6 @@ class TestExtensionsModules:
     @pytest.mark.skip(reason="feature not supported")
     @markers.aws.validated
     def test_module_usage(self, deploy_cfn_template, register_extension, snapshot, aws_client):
-
         artifact_path = os.path.join(
             os.path.dirname(__file__),
             "../artifacts/extensions/modules/localstack-testing-testmodule-module.zip",

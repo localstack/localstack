@@ -2158,7 +2158,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
     ) -> CreateCodeSigningConfigResponse:
-
         state = lambda_stores[context.account_id][context.region]
         # TODO: can there be duplicates?
         csc_id = f"csc-{get_random_hex(17)}"  # e.g. 'csc-077c33b4c19e26036'
@@ -2582,7 +2581,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         configs = []
         for qualifier, pc_config in fn.provisioned_concurrency_configs.items():
-
             if api_utils.qualifier_is_alias(qualifier):
                 alias = fn.aliases.get(qualifier)
                 fn_arn = api_utils.qualified_lambda_arn(

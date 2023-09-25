@@ -438,7 +438,6 @@ class TestCloudWatchLogs:
     def test_put_subscription_filter_kinesis(
         self, logs_log_group, logs_log_stream, create_iam_role_with_policy, aws_client
     ):
-
         kinesis_name = f"test-kinesis-{short_uid()}"
         filter_name = "Destination"
         aws_client.kinesis.create_stream(StreamName=kinesis_name, ShardCount=1)

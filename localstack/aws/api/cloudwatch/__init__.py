@@ -1097,7 +1097,6 @@ class UntagResourceOutput(TypedDict, total=False):
 
 
 class CloudwatchApi:
-
     service = "cloudwatch"
     version = "2010-08-01"
 

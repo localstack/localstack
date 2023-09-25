@@ -17486,7 +17486,6 @@ class WithdrawByoipCidrResult(TypedDict, total=False):
 
 
 class Ec2Api:
-
     service = "ec2"
     version = "2016-11-15"
 
