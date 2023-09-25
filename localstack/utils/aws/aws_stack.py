@@ -354,6 +354,12 @@ def connect_to_service(
             event_system = new_client.meta.events
             event_system.register_first("before-sign.*.*", _handler)
 
+            # this make the client call the gateway directly
+            from localstack.aws.client import GatewayShortCircuit
+            from localstack.runtime import components
+
+            GatewayShortCircuit.modify_client(new_client, components.gateway())
+
         if cache:
             BOTO_CLIENTS_CACHE[cache_key] = new_client
 

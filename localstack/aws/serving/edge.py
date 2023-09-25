@@ -3,8 +3,8 @@ from typing import List
 
 from localstack.config import HostAndPort
 from localstack.http.hypercorn import GatewayServer
+from localstack.runtime import components
 from localstack.runtime.shutdown import ON_AFTER_SERVICE_SHUTDOWN_HANDLERS
-from localstack.services.plugins import SERVICE_PLUGINS
 
 LOG = logging.getLogger(__name__)
 
@@ -16,12 +16,8 @@ def serve_gateway(
     Implementation of the edge.do_start_edge_proxy interface to start a Hypercorn server instance serving the
     LocalstackAwsGateway.
     """
-    from localstack.aws.app import LocalstackAwsGateway
-
-    gateway = LocalstackAwsGateway(SERVICE_PLUGINS)
-
     # start serving gateway
-    server = GatewayServer(gateway, listen, use_ssl)
+    server = GatewayServer(components.gateway(), listen, use_ssl)
     server.start()
 
     # with the current way the infrastructure is started, this is the easiest way to shut down the server correctly
