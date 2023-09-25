@@ -62,7 +62,7 @@ jobs:
           const message = isIssue ? issueMessage : prMessage;
           if (isIssue) {
               const issueNumber = context.payload.issue.number;
-              await github.issues.createComment({
+              await github.rest.issues.createComment({
                   owner: context.payload.repository.owner.login,
                   repo: context.payload.repository.name,
                   issue_number: issueNumber,
@@ -71,7 +71,7 @@ jobs:
           }
           else {
             const pullNumber = context.payload.pull_request.number;
-              await github.pulls.createReview({
+              await github.rest.pulls.createReview({
                   owner: context.payload.repository.owner.login,
                   repo: context.payload.repository.name,
                   pull_number: pullNumber,
