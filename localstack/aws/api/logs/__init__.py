@@ -7,6 +7,7 @@ AccountId = str
 AccountPolicyDocument = str
 AmazonResourceName = str
 Arn = str
+ClientToken = str
 DataProtectionPolicyDocument = str
 Days = int
 DefaultValue = float
@@ -854,6 +855,7 @@ class PutQueryDefinitionRequest(ServiceRequest):
     queryDefinitionId: Optional[QueryId]
     logGroupNames: Optional[LogGroupNames]
     queryString: QueryDefinitionString
+    clientToken: Optional[ClientToken]
 
 
 class PutQueryDefinitionResponse(TypedDict, total=False):
@@ -1303,6 +1305,7 @@ class LogsApi:
         query_string: QueryDefinitionString,
         query_definition_id: QueryId = None,
         log_group_names: LogGroupNames = None,
+        client_token: ClientToken = None,
     ) -> PutQueryDefinitionResponse:
         raise NotImplementedError
 
