@@ -242,7 +242,11 @@ def s3_legacy():
     from localstack.services.s3.legacy import s3_listener, s3_starter
 
     return Service(
-        "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
+        "s3",
+        listener=s3_listener.UPDATE_S3,
+        start=s3_starter.start_s3,
+        check=s3_starter.check_s3,
+        lifecycle_hook=s3_starter.S3LifecycleHook(),
     )
 
 
@@ -251,7 +255,11 @@ def s3_v1():
     from localstack.services.s3.legacy import s3_listener, s3_starter
 
     return Service(
-        "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
+        "s3",
+        listener=s3_listener.UPDATE_S3,
+        start=s3_starter.start_s3,
+        check=s3_starter.check_s3,
+        lifecycle_hook=s3_starter.S3LifecycleHook(),
     )
 
 

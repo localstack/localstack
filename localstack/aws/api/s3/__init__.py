@@ -140,7 +140,6 @@ SSECustomerKeyMD5 = str
 SSEKMSEncryptionContext = str
 SSEKMSKeyId = str
 Setting = bool
-Size = int
 SkipValidation = bool
 StartAfter = str
 Suffix = str
@@ -2006,6 +2005,9 @@ class GetObjectAclRequest(ServiceRequest):
     VersionId: Optional[ObjectVersionId]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+
+
+Size = int
 
 
 class ObjectPart(TypedDict, total=False):

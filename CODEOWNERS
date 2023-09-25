@@ -71,6 +71,7 @@
 ######################
 ### SERVICE OWNERS ###
 ######################
+
 # acm
 /localstack/aws/api/acm/ @alexrashed
 /localstack/services/acm/ @alexrashed
@@ -92,6 +93,7 @@
 /localstack/services/cloudformation/models/cloudformation.py @dominikschubert @pinzon @simonrw
 /tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw
 /tests/unit/test_cloudformation.py @dominikschubert @pinzon @simonrw
+/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw
 
 # cloudwatch
 /localstack/aws/api/cloudwatch/ @steffyP @silv-io
@@ -223,4 +225,3 @@
 /localstack/aws/api/transcribe/ @sannya-singal @ackdav
 /localstack/services/transcribe/ @sannya-singal @ackdav
 /tests/aws/services/transcribe/ @sannya-singal @ackdav
-

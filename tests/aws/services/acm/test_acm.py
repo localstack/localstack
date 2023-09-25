@@ -2,10 +2,9 @@ import pytest
 from moto import settings as moto_settings
 from moto.ec2 import utils as ec2_utils
 
-from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
@@ -45,10 +44,7 @@ class TestACM:
             )
             assert "CertificateArn" in result
 
-            expected_arn = "arn:aws:acm:{0}:{1}:certificate".format(
-                aws_stack.get_region(),
-                get_aws_account_id(),
-            )
+            expected_arn = f"arn:aws:acm:{TEST_AWS_REGION_NAME}:{TEST_AWS_ACCOUNT_ID}:certificate"
             acm_cert_arn = result["CertificateArn"].split("/")[0]
             assert expected_arn == acm_cert_arn
 
