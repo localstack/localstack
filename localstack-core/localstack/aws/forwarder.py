@@ -4,27 +4,24 @@ DynamoDBLocal) from a service provider.
 """
 
 from typing import Any, Callable, Mapping, Optional, Union
-from urllib.parse import urlsplit
 
 from botocore.awsrequest import AWSPreparedRequest, prepare_request_dict
 from botocore.config import Config as BotoConfig
 from werkzeug.datastructures import Headers
 
 from localstack.aws.api.core import (
-    Request,
     RequestContext,
     ServiceRequest,
     ServiceRequestHandler,
     ServiceResponse,
 )
-from localstack.aws.client import parse_response, raise_service_exception
+from localstack.aws.client import create_http_request, parse_response, raise_service_exception
 from localstack.aws.connect import connect_to
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
 from localstack.aws.spec import load_service
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Response
 from localstack.http.proxy import Proxy
-from localstack.utils.strings import to_str
 
 
 class AwsRequestProxy:
@@ -273,29 +270,3 @@ def create_aws_request_context(
     context.service_request = parameters
 
     return context
-
-
-def create_http_request(aws_request: AWSPreparedRequest) -> Request:
-    # create HttpRequest from AWSRequest
-    split_url = urlsplit(aws_request.url)
-    host = split_url.netloc.split(":")
-    if len(host) == 1:
-        server = (to_str(host[0]), None)
-    elif len(host) == 2:
-        server = (to_str(host[0]), int(host[1]))
-    else:
-        raise ValueError
-
-    # prepare the RequestContext
-    headers = Headers()
-    for k, v in aws_request.headers.items():
-        headers[k] = to_str(v, "latin-1")
-
-    return Request(
-        method=aws_request.method,
-        path=split_url.path,
-        query_string=split_url.query,
-        headers=headers,
-        body=aws_request.body,
-        server=server,
-    )
