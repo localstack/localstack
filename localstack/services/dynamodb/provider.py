@@ -214,7 +214,7 @@ class EventForwarder:
             kinesis.put_record(
                 StreamName=stream_name,
                 Data=json.dumps(record, cls=BytesEncoder),
-                PartitionKeyt=partition_key,
+                PartitionKey=partition_key,
             )
 
     @classmethod
