@@ -877,6 +877,21 @@ class GatewayDomain(GenericBaseModel):
             resource: dict,
         ):
             resource["PhysicalResourceId"] = result["domainName"]
+            hosted_zones = connect_to().route53.list_hosted_zones()
+            """
+            The hardcoded value is the only one that should be returned but due limitations it is not possible to
+            use it.
+            """
+            if hosted_zones["HostedZones"]:
+                resource["Properties"]["DistributionHostedZoneId"] = hosted_zones["HostedZones"][0][
+                    "Id"
+                ]
+            else:
+                resource["Properties"]["DistributionHostedZoneId"] = "Z2FDTNDATAQYW2"
+
+            resource["Properties"]["DistributionDomainName"] = result.get(
+                "distributionDomainName"
+            ) or result.get("domainName")
 
         return {
             "create": {
