@@ -718,12 +718,10 @@ def get_resource_for_path(
         for match in matches:
             match_methods = list(match[1].get("resourceMethods", {}).keys())
             # only look for path matches if the request method is in the resource
-            if method in match_methods or "ANY" in match_methods:
+            if method.upper() in match_methods or "ANY" in match_methods:
                 # check if we have an exact match (exact matches take precedence) if the method is the same
-                if match[0] == path:
-                    return match
-                elif path_matches_pattern(path, match[0]):
-                    # not an exact match but parameters can fit in
+                if match[0] == path or path_matches_pattern(path, match[0]):
+                    # either an exact match or not an exact match but parameters can fit in
                     return match
 
                 filtered_matches.append(match)
@@ -1360,12 +1358,7 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
     if not resource:
         return None
     methods = resource.get("resourceMethods") or {}
-    method_name = invocation_context.method.upper()
-    return (
-        methods.get(method_name)
-        or methods.get("ANY")
-        or methods.get("X-AMAZON-APIGATEWAY-ANY-METHOD")
-    )
+    return methods.get(invocation_context.method.upper()) or methods.get("ANY")
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):
