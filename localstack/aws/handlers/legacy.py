@@ -90,7 +90,7 @@ class GenericProxyHandler(Handler):
             headers=request.headers,
         )
 
-        if type(result) == int:
+        if isinstance(result, int):
             chain.respond(status_code=result)
             return
 

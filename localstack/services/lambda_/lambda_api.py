@@ -840,7 +840,7 @@ def do_list_functions():
     store = get_lambda_store_v1()
     this_region = aws_stack.get_region()
     for f_arn, func in store.lambdas.items():
-        if type(func) != LambdaFunction:
+        if type(func) != LambdaFunction:  # noqa: E721
             continue
 
         # filter out functions of current region

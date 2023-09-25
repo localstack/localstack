@@ -12,7 +12,7 @@ class TestFixBotoParametersBasedOnReport:
         fixed_params = fix_boto_parameters_based_on_report(params, message)
         value = fixed_params["LaunchTemplate"]["Version"]
         assert value == "1"
-        assert type(value) == str
+        assert isinstance(value, str)
 
     def test_top_level_parameters_are_converted(self):
         params = {"Version": 1}
@@ -21,4 +21,4 @@ class TestFixBotoParametersBasedOnReport:
         fixed_params = fix_boto_parameters_based_on_report(params, message)
         value = fixed_params["Version"]
         assert value == "1"
-        assert type(value) == str
+        assert isinstance(value, str)

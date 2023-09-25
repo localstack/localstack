@@ -237,7 +237,7 @@ class Router(Generic[E]):
         """
         Dispatcher for overloaded ``add`` methods.
         """
-        if "path" in kwargs or type(args[0]) == str:
+        if "path" in kwargs or isinstance(args[0], str):
             return self._add_endpoint(*args, **kwargs)
 
         if "fn" in kwargs or callable(args[0]):
