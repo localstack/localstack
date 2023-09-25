@@ -1271,7 +1271,10 @@ def populate_config_env_var_names():
     CONFIG_ENV_VARS += [
         key
         for key in [key.upper() for key in os.environ]
-        if key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_")
+        if (key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_"))
+        # explicitly exclude LOCALSTACK_CLI (it's prefixed with "LOCALSTACK_",
+        # but is only used in the CLI (should not be forwarded to the container)
+        and key != "LOCALSTACK_CLI"
     ]
 
     # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
