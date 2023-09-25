@@ -55,7 +55,8 @@ PROVIDER_DEFAULTS = {
     "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
     "AWS::Lambda::Alias": "ResourceProvider",
-    "AWS::SNS::Topic": "ResourceProvider"
+    "AWS::SNS::Topic": "ResourceProvider",
+    "AWS::Route53::HostedZone": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }

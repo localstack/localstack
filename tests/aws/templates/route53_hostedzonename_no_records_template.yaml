@@ -1,0 +1,11 @@
+Parameters:
+  Name:
+    Type: String
+  HostedZoneName:
+    Type: String
+
+Resources:
+  myHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref Name
