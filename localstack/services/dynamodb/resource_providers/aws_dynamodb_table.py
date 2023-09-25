@@ -194,21 +194,11 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
         model = request.desired_state
 
         if not request.custom_context.get(REPEATED_INVOCATION):
-            properties = [
-                "TableName",
-                "AttributeDefinitions",
-                "KeySchema",
-                "BillingMode",
-                "ProvisionedThroughput",
-                "LocalSecondaryIndexes",
-                "GlobalSecondaryIndexes",
-                "StreamSpecification",
-                "Tags",
-            ]
+            request.custom_context[REPEATED_INVOCATION] = True
 
-            if "TableName" not in model:
+            if not model.get("TableName"):
                 model["TableName"] = util.generate_default_name(
-                    request.stack_id, request.logical_resource_id
+                    request.stack_name, request.logical_resource_id
                 )
 
             if model.get("ProvisionedThroughput"):
@@ -222,10 +212,19 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                 **model.get("StreamSpecification", {}),
             }
 
+            properties = [
+                "TableName",
+                "AttributeDefinitions",
+                "KeySchema",
+                "BillingMode",
+                "ProvisionedThroughput",
+                "LocalSecondaryIndexes",
+                "GlobalSecondaryIndexes",
+                "StreamSpecification",
+                "Tags",
+            ]
             create_params = util.select_attributes(model, properties)
             request.aws_client_factory.dynamodb.create_table(**create_params)
-
-            request.custom_context[REPEATED_INVOCATION] = True
 
             if model.get("KinesisStreamSpecification"):
                 request.aws_client_factory.dynamodb.enable_kinesis_streaming_destination(
