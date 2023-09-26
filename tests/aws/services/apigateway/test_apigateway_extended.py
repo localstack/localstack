@@ -24,12 +24,12 @@ TEST_IMPORT_PETS = os.path.join(THIS_FOLDER, "../../files/pets.json")
         "$..body.host",
     ]
 )
-def test_export_swagger_openapi(aws_client, snapshot, import_file):
+def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file):
     snapshot.add_transformer(
         snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
     )
     spec_file = load_file(import_file)
-    response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
+    response, _ = import_apigw(body=spec_file, failOnWarnings=True)
     snapshot.match("import-api", response)
     api_id = response["id"]
 
@@ -60,13 +60,13 @@ def test_export_swagger_openapi(aws_client, snapshot, import_file):
         "$..body.servers..url",
     ]
 )
-def test_export_oas30_openapi(aws_client, snapshot, import_file):
+def test_export_oas30_openapi(aws_client, snapshot, import_apigw, import_file):
     snapshot.add_transformer(
         snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
     )
 
     spec_file = load_file(import_file)
-    response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
+    response, _ = import_apigw(body=spec_file, failOnWarnings=True)
     snapshot.match("import-api", response)
     api_id = response["id"]
 
