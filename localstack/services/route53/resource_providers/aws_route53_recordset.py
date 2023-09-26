@@ -80,32 +80,48 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
 
         Read-only properties:
           - /properties/Id
-
-
-
         """
         model = request.desired_state
         route53 = request.aws_client_factory.route53
+
         if not model.get("HostedZoneId"):
             # if only name was provided for hosted zone
-            zone = route53.list_hosted_zones_by_name(DNSName=model["HostedZoneName"])[
-                "HostedZones"
-            ][0]
-            model["HostedZoneId"] = zone["Id"]
+            hosted_zone_name = model.get("HostedZoneName")
+            hosted_zone_id = self.get_hosted_zone_id_from_name(hosted_zone_name, route53)
+            model["HostedZoneId"] = hosted_zone_id
 
-        resource_records = [{"Value": record} for record in model["ResourceRecords"]]
+        attr_names = [
+            "Name",
+            "Type",
+            "SetIdentifier",
+            "Weight",
+            "Region",
+            "GeoLocation",
+            "Failover",
+            "MultiValueAnswer",
+            "TTL",
+            "ResourceRecords",
+            "AliasTarget",
+            "HealthCheckId",
+        ]
+        attrs = util.select_attributes(model, attr_names)
+
+        attrs["ResourceRecords"] = [{"Value": record} for record in attrs["ResourceRecords"]]
+
+        if "TTL" in attrs:
+            if isinstance(attrs["TTL"], str):
+                attrs["TTL"] = int(attrs["TTL"])
+
+        if "AliasTarget" in attrs and "EvaluateTargetHealth" not in attrs["AliasTarget"]:
+            attrs["AliasTarget"]["EvaluateTargetHealth"] = False
+
         route53.change_resource_record_sets(
             HostedZoneId=model["HostedZoneId"],
             ChangeBatch={
                 "Changes": [
                     {
                         "Action": "UPSERT",
-                        "ResourceRecordSet": {
-                            "Name": model["Name"],
-                            "Type": model["Type"],
-                            "TTL": int(model["TTL"]),
-                            "ResourceRecords": resource_records,
-                        },
+                        "ResourceRecordSet": attrs,
                     },
                 ]
             },
@@ -114,6 +130,17 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
             status=OperationStatus.SUCCESS,
             resource_model=model,
         )
+
+    def get_hosted_zone_id_from_name(self, hosted_zone_name, route53):
+        if not hosted_zone_name:
+            raise Exception("Either HostedZoneId or HostedZoneName must be present.")
+        zones = route53.list_hosted_zones_by_name(DNSName=hosted_zone_name)[
+            "HostedZones"
+        ]
+        if len(zones) != 1:
+            raise Exception(f"Ambiguous HostedZoneName {hosted_zone_name} provided.")
+        hosted_zone_id = zones[0]["Id"]
+        return hosted_zone_id
 
     def read(
         self,
