@@ -58,6 +58,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Scheduler::Schedule": "ResourceProvider",
     "AWS::Scheduler::ScheduleGroup": "ResourceProvider",
     "AWS::Route53::HealthCheck": "ResourceProvider",
+    "AWS::Route53::RecordSet": "ResourceProvider",
     "AWS::SNS::Topic": "ResourceProvider"
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
