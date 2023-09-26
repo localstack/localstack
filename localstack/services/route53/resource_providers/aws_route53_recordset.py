@@ -134,9 +134,7 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
     def get_hosted_zone_id_from_name(self, hosted_zone_name, route53):
         if not hosted_zone_name:
             raise Exception("Either HostedZoneId or HostedZoneName must be present.")
-        zones = route53.list_hosted_zones_by_name(DNSName=hosted_zone_name)[
-            "HostedZones"
-        ]
+        zones = route53.list_hosted_zones_by_name(DNSName=hosted_zone_name)["HostedZones"]
         if len(zones) != 1:
             raise Exception(f"Ambiguous HostedZoneName {hosted_zone_name} provided.")
         hosted_zone_id = zones[0]["Id"]
