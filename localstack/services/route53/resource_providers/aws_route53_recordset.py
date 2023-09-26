@@ -4,6 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Type, TypedDict
 
+from mypy_boto3_route53 import Route53Client
+
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
     CloudFormationResourceProviderPlugin,
@@ -131,12 +133,14 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
             resource_model=model,
         )
 
-    def get_hosted_zone_id_from_name(self, hosted_zone_name, route53):
+    def get_hosted_zone_id_from_name(self, hosted_zone_name: str, client: Route53Client):
         if not hosted_zone_name:
             raise Exception("Either HostedZoneId or HostedZoneName must be present.")
-        zones = route53.list_hosted_zones_by_name(DNSName=hosted_zone_name)["HostedZones"]
+
+        zones = client.list_hosted_zones_by_name(DNSName=hosted_zone_name)["HostedZones"]
         if len(zones) != 1:
             raise Exception(f"Ambiguous HostedZoneName {hosted_zone_name} provided.")
+
         hosted_zone_id = zones[0]["Id"]
         return hosted_zone_id
 
