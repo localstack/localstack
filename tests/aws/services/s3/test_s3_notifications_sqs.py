@@ -8,6 +8,7 @@ import requests
 from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -145,7 +146,7 @@ def sqs_collect_s3_events(
 
         assert len(events) >= min_events
 
-    retry(collect_events, retries=timeout, sleep=0.01)
+    retry(collect_events, retries=timeout, sleep=1)
 
     return events
 
@@ -423,14 +424,19 @@ class TestS3NotificationsToSQS:
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
     def test_object_created_put_with_presigned_url_upload(
         self,
+        monkeypatch,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
         aws_client,
+        strategy,
     ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -442,7 +448,7 @@ class TestS3NotificationsToSQS:
         url = aws_client.s3.generate_presigned_url(
             "put_object", Params={"Bucket": bucket_name, "Key": key}
         )
-        requests.put(url, data="something", verify=False)
+        assert requests.put(url, data="something", verify=False).ok
 
         events = sqs_collect_s3_events(aws_client.sqs, queue_url, 1)
         snapshot.match("receive_messages", {"messages": events})

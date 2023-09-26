@@ -40,9 +40,11 @@ from localstack.services.s3.utils import (
     capitalize_header_name_from_snake_case,
     extract_bucket_name_and_key_from_headers_and_path,
     forwarded_from_virtual_host_addressed_request,
+    get_bucket_region,
     is_bucket_name_valid,
     is_presigned_url_request,
 )
+from localstack.utils.aws.request_context import MARKER_S3_PRESIGNED_REQUEST_REGION
 from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
@@ -199,9 +201,18 @@ class S3PreSignedURLRequestHandler:
             elif is_valid_sig_v4(query_arg_set):
                 validate_presigned_url_s3v4(context)
 
+            # To ensure integrations work properly when using S3 with presigned URLs, the region needs to be set correctly.
+            # Peek into the Moto S3 backend and find the region for the bucket.
+            # Then inject a marker header that will be picked up by the region injection request handler.
+            bucket_name, _ = extract_bucket_name_and_key_from_headers_and_path(
+                context.request.headers, get_raw_path(context.request)
+            )
+            if bucket_name and (bucket_region := get_bucket_region(bucket_name)):
+                context.request.headers[MARKER_S3_PRESIGNED_REQUEST_REGION] = bucket_region
+
             _validate_headers_for_moto(context.request.headers)
-            LOG.debug("Valid presign url.")
-            # TODO: set the Authorization with the data from the pre-signed query string
+
+            LOG.debug("Pre-signed URL is valid")
 
         except Exception:
             # as we are raising before the ServiceRequestParser, we need to

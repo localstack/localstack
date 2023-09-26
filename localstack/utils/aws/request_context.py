@@ -27,6 +27,7 @@ LOG = logging.getLogger(__name__)
 THREAD_LOCAL = threading.local()
 
 MARKER_APIGW_REQUEST_REGION = "__apigw_request_region__"
+MARKER_S3_PRESIGNED_REQUEST_REGION = "__s3_presigned_request_region__"
 
 AWS_REGION_REGEX = r"(us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d"
 
@@ -67,7 +68,9 @@ def extract_region_from_auth_header(headers):
 
 
 def extract_region_from_headers(headers):
-    region = headers.get(MARKER_APIGW_REQUEST_REGION)
+    region = headers.get(MARKER_APIGW_REQUEST_REGION) or headers.get(
+        MARKER_S3_PRESIGNED_REQUEST_REGION
+    )
     # Fix region lookup for certain requests, e.g., API gateway invocations
     #  that do not contain region details in the Authorization header.
 

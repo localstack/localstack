@@ -1,5 +1,6 @@
 import base64
 import codecs
+import contextlib
 import datetime
 import hashlib
 import logging
@@ -117,6 +118,17 @@ def get_owner_for_account_id(account_id: str):
         DisplayName="webfile",  # only in certain regions, see above
         ID="75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a",
     )
+
+
+def get_bucket_region(bucket_name: str) -> Optional[str]:
+    """
+    Return a bucket's region. Returns a None, if the bucket does not exist.
+    """
+    if account_id := moto_s3_models.s3_backends.bucket_accounts.get(bucket_name):
+        with contextlib.suppress(MissingBucket):
+            return (
+                moto_s3_models.s3_backends[account_id]["global"].get_bucket(bucket_name).region_name
+            )
 
 
 def extract_bucket_key_version_id_from_copy_source(
