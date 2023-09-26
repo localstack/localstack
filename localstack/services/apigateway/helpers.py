@@ -1347,7 +1347,16 @@ def get_target_resource_details(
         if not extracted_path:
             return None, None
         invocation_context.resource = resource
+        invocation_context.resource_path = extracted_path
+        try:
+            invocation_context.path_params = extract_path_params(
+                path=relative_path, extracted_path=extracted_path
+            )
+        except Exception:
+            invocation_context.path_params = {}
+
         return extracted_path, resource
+
     except Exception:
         return None, None
 
