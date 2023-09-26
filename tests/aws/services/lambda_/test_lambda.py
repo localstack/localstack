@@ -108,7 +108,7 @@ TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.
 PYTHON_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["python"]
     if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
-    else [Runtime.python3_10]
+    else [Runtime.python3_11]
 )
 NODE_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["nodejs"]
