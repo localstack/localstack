@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import json
 from unittest import mock
 from urllib.parse import urlencode
@@ -115,6 +117,37 @@ def test_arn_partition_rewriting_urlencoded_body():
     assert result.form.to_dict() == {
         "some-data-with-arn": "arn:aws:iam::000000000000:role/test-role"
     }
+
+
+def test_arn_partition_rewriting_contentmd5():
+    rewrite_handler = ArnPartitionRewriteHandler()
+    data = {"some-data-with-arn": "arn:aws-us-gov:iam::000000000000:role/test-role"}
+    body = urlencode(data)
+    original_md5 = base64.b64encode(hashlib.md5(body.encode("utf-8")).digest()).decode("utf-8")
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+        "Content-MD5": original_md5,
+    }
+
+    request = Request(
+        method="POST",
+        path="/",
+        query_string="",
+        body=body,
+        headers=headers,
+    )
+    result = rewrite_handler.modify_request(request)
+    data = result.get_data()
+    assert result.method == "POST"
+    assert get_full_raw_path(result) == "/"
+    assert result.form.to_dict() == {
+        "some-data-with-arn": "arn:aws:iam::000000000000:role/test-role"
+    }
+    assert "Content-MD5" in result.headers
+    assert result.headers["Content-MD5"] != original_md5
+    assert result.headers["Content-MD5"] == base64.b64encode(hashlib.md5(data).digest()).decode(
+        "utf-8"
+    )
 
 
 def test_arn_partition_rewriting_url_encoding(httpserver, monkeypatch):
