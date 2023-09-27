@@ -23,7 +23,7 @@ jobs:
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Cache LocalStack community dependencies (venv)
         uses: actions/cache@v3

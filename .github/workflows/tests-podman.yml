@@ -2,24 +2,6 @@ name: Podman Docker Client Tests
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - ".github/workflows/tests-podman.yml"
-      - "localstack/utils/container_utils/"
-      - "localstack/utils/docker_utils.py"
-      - "tests/integration/docker_utils/"
-    branches:
-      - master
-      - release/*
-  push:
-    paths:
-      - ".github/workflows/tests-podman.yml"
-      - "localstack/utils/container_utils/"
-      - "localstack/utils/docker_utils.py"
-      - "tests/integration/docker_utils/"
-    branches:
-      - master
-      - release/*
 
 env:
   # Set non-job-specific environment variables for pytest-tinybird
@@ -47,7 +29,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install podman and test dependencies
         run: |

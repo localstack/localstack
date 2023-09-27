@@ -312,13 +312,10 @@ class ShapeNode:
 
 
 def generate_service_types(output, service: ServiceModel, doc=True):
-    output.write("import sys\n")
-    output.write("from typing import Dict, List, Optional, Iterator, Iterable, IO, Union\n")
+    output.write(
+        "from typing import Dict, List, Optional, Iterator, Iterable, IO, Union, TypedDict\n"
+    )
     output.write("from datetime import datetime\n")
-    output.write("if sys.version_info >= (3, 8):\n")
-    output.write("    from typing import TypedDict\n")
-    output.write("else:\n")
-    output.write("    from typing_extensions import TypedDict\n")
     output.write("\n")
     output.write(
         "from localstack.aws.api import handler, RequestContext, ServiceException, ServiceRequest"

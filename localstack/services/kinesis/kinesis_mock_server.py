@@ -150,7 +150,9 @@ class KinesisServerManager:
         # kinesis-mock stores state in json files <account_id>.json, so we can dump everything into `kinesis/`
         persist_path = os.path.join(config.dirs.data, "kinesis")
         mkdir(persist_path)
-        if config.LS_LOG:
+        if config.KINESIS_MOCK_LOG_LEVEL:
+            log_level = config.KINESIS_MOCK_LOG_LEVEL.upper()
+        elif config.LS_LOG:
             if config.LS_LOG == "warning":
                 log_level = "WARN"
             else:

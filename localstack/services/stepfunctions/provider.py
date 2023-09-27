@@ -33,6 +33,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def __init__(self):
         self.forward_request = get_request_forwarder_http(self.get_forward_url)
 
+    def on_after_init(self):
+        LOG.warning(
+            "The 'v1' StepFunctions provider (current default) will be deprecated with the next major release (3.0). "
+            "Set 'PROVIDER_OVERRIDE_STEPFUNCTIONS=v2' to opt-in to the new StepFunctions 'v2' provider."
+        )
+
     def get_forward_url(self) -> str:
         """Return the URL of the backend StepFunctions server to forward requests to"""
         return f"http://{LOCALHOST}:{config.LOCAL_PORT_STEPFUNCTIONS}"

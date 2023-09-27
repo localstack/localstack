@@ -427,11 +427,8 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 # whether legacy s3 is enabled
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
 
-# whether the S3 streaming provider is enabled (beware, it breaks persistence for now)
-STREAM_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "stream"
-
-# whether the S3 native provider is enabled (beware, it breaks persistence for now)
-NATIVE_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "v3"
+# whether the S3 native provider is enabled
+NATIVE_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v3", "stream")
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
@@ -542,8 +539,18 @@ class HostAndPort:
 
         return cls(host=host, port=port)
 
+    def _get_unprivileged_port_range_start(self) -> int:
+        try:
+            with open(
+                "/proc/sys/net/ipv4/ip_unprivileged_port_start", "rt"
+            ) as unprivileged_port_start:
+                port = unprivileged_port_start.read()
+                return int(port.strip())
+        except Exception:
+            return 1024
+
     def is_unprivileged(self) -> bool:
-        return self.port >= 1024
+        return self.port >= self._get_unprivileged_port_range_start()
 
     def __hash__(self) -> int:
         return hash((self.host, self.port))
@@ -773,6 +780,9 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 
 # Delay between data persistence (in seconds)
 KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
+
+# Kinesis mock log level override when inconsistent with LS_LOG (e.g., when LS_LOG=debug)
+KINESIS_MOCK_LOG_LEVEL = os.environ.get("KINESIS_MOCK_LOG_LEVEL", "").strip()
 
 # DEPRECATED: 1 (default) only applies to old lambda provider
 # Whether to handle Kinesis Lambda event sources as synchronous invocations.
@@ -1152,6 +1162,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",
+    "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
     "LAMBDA_CODE_EXTRACT_TIME",
     "LAMBDA_CONTAINER_REGISTRY",
@@ -1270,7 +1281,10 @@ def populate_config_env_var_names():
     CONFIG_ENV_VARS += [
         key
         for key in [key.upper() for key in os.environ]
-        if key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_")
+        if (key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_"))
+        # explicitly exclude LOCALSTACK_CLI (it's prefixed with "LOCALSTACK_",
+        # but is only used in the CLI (should not be forwarded to the container)
+        and key != "LOCALSTACK_CLI"
     ]
 
     # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)

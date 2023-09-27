@@ -1,6 +1,6 @@
 {
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_update_assume_role_policy": {
-    "recorded-date": "04-07-2023, 16:48:15",
+    "recorded-date": "14-09-2023, 17:42:36",
     "recorded-content": {
       "created_role": {
         "Role": {
@@ -40,7 +40,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_create_role_with_malformed_assume_role_policy_document": {
-    "recorded-date": "07-06-2023, 15:25:23",
+    "recorded-date": "14-09-2023, 17:07:51",
     "recorded-content": {
       "invalid-json": {
         "Error": {
@@ -56,7 +56,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_list_roles_with_permission_boundary": {
-    "recorded-date": "04-07-2023, 16:07:42",
+    "recorded-date": "14-09-2023, 17:42:39",
     "recorded-content": {
       "created_role": {
         "Role": {
@@ -115,7 +115,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_create_describe_role": {
-    "recorded-date": "04-07-2023, 16:06:47",
+    "recorded-date": "14-09-2023, 17:42:37",
     "recorded-content": {
       "create_role_result": {
         "Role": {
@@ -201,7 +201,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_role_attach_policy": {
-    "recorded-date": "04-07-2023, 17:04:08",
+    "recorded-date": "14-09-2023, 17:42:42",
     "recorded-content": {
       "create_policy_response": {
         "Policy": {
@@ -263,7 +263,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_user_attach_policy": {
-    "recorded-date": "04-07-2023, 17:16:43",
+    "recorded-date": "14-09-2023, 17:42:45",
     "recorded-content": {
       "create_policy_response": {
         "Policy": {

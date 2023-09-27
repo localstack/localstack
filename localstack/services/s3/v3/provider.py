@@ -582,14 +582,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
-        body = request.get("Body")
-        # check if chunked request
-        headers = context.request.headers
-        is_aws_chunked = headers.get("x-amz-content-sha256", "").startswith("STREAMING-")
-        if is_aws_chunked:
-            decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
-            body = AwsChunkedDecoder(body, decoded_content_length)
-
         version_id = generate_version_id(s3_bucket.versioning_status)
 
         checksum_algorithm = request.get("ChecksumAlgorithm")
@@ -629,6 +621,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             acl=acl,
             owner=s3_bucket.owner,  # TODO: for now we only have one owner, but it can depends on Bucket settings
         )
+
+        body = request.get("Body")
+        # check if chunked request
+        headers = context.request.headers
+        is_aws_chunked = headers.get("x-amz-content-sha256", "").startswith("STREAMING-")
+        if is_aws_chunked:
+            decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
+            body = AwsChunkedDecoder(body, decoded_content_length, s3_object=s3_object)
 
         s3_stored_object = self._storage_backend.open(bucket_name, s3_object)
         s3_stored_object.write(body)
@@ -1817,14 +1817,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_multipart.object.key != request.get("Key"):
             pass
 
-        body = request.get("Body")
-        headers = context.request.headers
-        is_aws_chunked = headers.get("x-amz-content-sha256", "").startswith("STREAMING-")
-        # check if chunked request
-        if is_aws_chunked:
-            decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
-            body = AwsChunkedDecoder(body, decoded_content_length)
-
         checksum_algorithm = request.get("ChecksumAlgorithm")
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
@@ -1835,6 +1827,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             checksum_algorithm=checksum_algorithm,
             checksum_value=checksum_value,
         )
+        body = request.get("Body")
+        headers = context.request.headers
+        is_aws_chunked = headers.get("x-amz-content-sha256", "").startswith("STREAMING-")
+        # check if chunked request
+        if is_aws_chunked:
+            decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
+            body = AwsChunkedDecoder(body, decoded_content_length, s3_part)
 
         stored_multipart = self._storage_backend.get_multipart(bucket_name, s3_multipart)
         stored_s3_part = stored_multipart.open(s3_part)

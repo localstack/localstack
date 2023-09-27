@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import logging
 import re
 from re import Match
@@ -108,6 +110,12 @@ class ArnPartitionRewriteHandler(Handler):
         forward_rewritten_headers = self._adjust_partition(
             dict(request.headers), self.DEFAULT_INBOUND_PARTITION
         )
+
+        # if a Content-MD5 was given, we need to update it after a potential modification
+        if "Content-MD5" in forward_rewritten_headers:
+            md = hashlib.md5(forward_rewritten_body).digest()
+            content_md5 = base64.b64encode(md).decode("utf-8")
+            forward_rewritten_headers["Content-MD5"] = content_md5
 
         # add header to signal request has already been rewritten
         forward_rewritten_headers["LS-INTERNAL-REWRITE-HANDLER"] = "1"

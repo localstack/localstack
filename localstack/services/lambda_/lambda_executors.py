@@ -1434,7 +1434,7 @@ class LambdaExecutorLocal(LambdaExecutor):
                     # need to translate to dict here, as custom errors from handlers cannot be pickled
                     execute_error = {
                         "errorType": e.__class__.__name__,
-                        "errorMessage": e.args[0],
+                        "errorMessage": e.args[0] if e.args else execute_result,
                         "stackTrace": traceback.format_tb(e.__traceback__),
                     }
                     sys.stderr.write("%s %s" % (e, traceback.format_exc()))
