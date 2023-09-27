@@ -461,10 +461,21 @@ class OpensearchCluster(Server):
         return cmd
 
     def _create_env_vars(self, directories: Directories) -> Dict:
-        return {
+        env_vars = {
             "OPENSEARCH_JAVA_OPTS": os.environ.get("OPENSEARCH_JAVA_OPTS", "-Xms200m -Xmx600m"),
             "OPENSEARCH_TMPDIR": directories.tmp,
         }
+
+        # if the "opensearch-knn" plugin exists and has a "lib" directory, add it to the LD_LIBRARY_PATH
+        # see https://forum.opensearch.org/t/issue-with-opensearch-knn/12633
+        knn_lib_dir = os.path.join(directories.install, "plugins", "opensearch-knn", "lib")
+        if os.path.isdir(knn_lib_dir):
+            prefix = (
+                f"{os.environ.get('LD_LIBRARY_PATH')}:" if "LD_LIBRARY_PATH" in os.environ else ""
+            )
+            env_vars["LD_LIBRARY_PATH"] = prefix + f"{knn_lib_dir}"
+
+        return env_vars
 
     def _log_listener(self, line, **_kwargs):
         # logging the port before each line to be able to connect logs to specific instances
