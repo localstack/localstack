@@ -23,6 +23,12 @@ PATCHES_APPLIED = "LAMBDA_PATCHED"
 
 class LambdaLifecycleHook(ServiceLifecycleHook):
     def on_after_init(self):
+        LOG.warning(
+            "The deprecated 'v1'/'legacy' Lambda provider will be removed with the next major release (3.0). "
+            "Remove 'PROVIDER_OVERRIDE_LAMBDA' to use the new Lambda 'v2' provider (current default). "
+            "For more details, refer to our Lambda migration guide "
+            "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2"
+        )
         ROUTER.add(
             "/",
             host=f"<api_id>.lambda-url.<regex('{AWS_REGION_REGEX}'):region>.<regex('.*'):server>",

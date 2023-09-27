@@ -17,17 +17,33 @@ from .console import BANNER, console
 from .plugin import LocalstackCli, load_cli_plugins
 
 
-class ExceptionCmdHandler(click.Group):
+class LocalStackCliGroup(click.Group):
     """
-    A Click group implementation which globally handles exceptions by:
+    A Click group used for the top-level ``localstack`` command group. It implements global exception handling
+    by:
+
     - Ignoring click exceptions (already handled)
     - Handling common exceptions (like DockerNotAvailable)
     - Wrapping all unexpected exceptions in a ClickException (for a unified error message)
+
+    It also implements a custom help formatter to build more fine-grained groups.
     """
+
+    # FIXME: find a way to communicate this from the actual command
+    advanced_commands = [
+        "aws",
+        "dns",
+        "extensions",
+        "license",
+        "login",
+        "logout",
+        "pod",
+        "state",
+    ]
 
     def invoke(self, ctx: click.Context):
         try:
-            return super(ExceptionCmdHandler, self).invoke(ctx)
+            return super(LocalStackCliGroup, self).invoke(ctx)
         except click.exceptions.Exit:
             # raise Exit exceptions unmodified (e.g., raised on --help)
             raise
@@ -54,6 +70,44 @@ class ExceptionCmdHandler(click.Group):
             else:
                 # If we have a generic exception, we wrap it in a ClickException
                 raise CLIError(str(e)) from e
+
+    def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Extra format methods for multi methods that adds all the commands after the options. It also
+        groups commands into command categories."""
+        categories = {"Commands": [], "Advanced": [], "Deprecated": []}
+
+        commands = []
+        for subcommand in self.list_commands(ctx):
+            cmd = self.get_command(ctx, subcommand)
+            # What is this, the tool lied about a command.  Ignore it
+            if cmd is None:
+                continue
+            if cmd.hidden:
+                continue
+
+            commands.append((subcommand, cmd))
+
+        # allow for 3 times the default spacing
+        if len(commands):
+            limit = formatter.width - 6 - max(len(cmd[0]) for cmd in commands)
+
+            for subcommand, cmd in commands:
+                help = cmd.get_short_help_str(limit)
+                categories[self._get_category(cmd)].append((subcommand, help))
+
+        for category, rows in categories.items():
+            if rows:
+                with formatter.section(category):
+                    formatter.write_dl(rows)
+
+    def _get_category(self, cmd) -> str:
+        if cmd.deprecated:
+            return "Deprecated"
+
+        if cmd.name in self.advanced_commands:
+            return "Advanced"
+
+        return "Commands"
 
 
 def create_with_plugins() -> LocalstackCli:
@@ -90,7 +144,7 @@ _click_format_option = click.option(
 @click.group(
     name="localstack",
     help="The LocalStack Command Line Interface (CLI)",
-    cls=ExceptionCmdHandler,
+    cls=LocalStackCliGroup,
     context_settings={
         # add "-h" as a synonym for "--help"
         # https://click.palletsprojects.com/en/8.1.x/documentation/#help-parameter-customization
@@ -617,17 +671,12 @@ def cmd_ssh() -> None:
     `MAIN_CONTAINER_NAME`.
     """
     from localstack.utils.docker_utils import DOCKER_CLIENT
-    from localstack.utils.run import run
 
     if not DOCKER_CLIENT.is_container_running(config.MAIN_CONTAINER_NAME):
         raise CLIError(
             f'Expected a running LocalStack container named "{config.MAIN_CONTAINER_NAME}", but found none'
         )
-    try:
-        process = run("docker exec -it %s bash" % config.MAIN_CONTAINER_NAME, tty=True)
-        process.wait()
-    except KeyboardInterrupt:
-        pass
+    os.execlp("docker", "docker", "exec", "-it", config.MAIN_CONTAINER_NAME, "bash")
 
 
 @localstack.group(name="update", short_help="Update LocalStack")

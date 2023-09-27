@@ -55,6 +55,10 @@ PROVIDER_DEFAULTS = {
     "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
     "AWS::Lambda::Alias": "ResourceProvider",
+    "AWS::Scheduler::Schedule": "ResourceProvider",
+    "AWS::Scheduler::ScheduleGroup": "ResourceProvider",
+    "AWS::Route53::HealthCheck": "ResourceProvider",
+    "AWS::Route53::RecordSet": "ResourceProvider",
     "AWS::SNS::Topic": "ResourceProvider"
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
@@ -240,6 +244,7 @@ def invoke_function(
                 raise
 
             LOG.debug("Converting parameters to allowed types")
+            LOG.debug("Report: %s", report)
             converted_params = fix_boto_parameters_based_on_report(params, report)
             LOG.debug("Original parameters:  %s", params)
             LOG.debug("Converted parameters: %s", converted_params)

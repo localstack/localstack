@@ -694,7 +694,9 @@ def get_rest_api_paths(account_id: str, region_name: str, rest_api_id: str):
 #  https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings
 #  -method-request.html
 #  https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-routes.html
-def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Optional[Tuple[str, dict]]:
+def get_resource_for_path(
+    path: str, method: str, path_map: Dict[str, Dict]
+) -> tuple[Optional[str], Optional[dict]]:
     matches = []
     # creates a regex from the input path if there are parameters, e.g /foo/{bar}/baz -> /foo/[
     # ^\]+/baz, otherwise is a direct match.
@@ -706,25 +708,32 @@ def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Optional[Tupl
 
     # if there are no matches, it's not worth to proceed, bail here!
     if not matches:
-        return None
+        return None, None
 
     # so we have matches and perhaps more than one, e.g
     # /{proxy+} and /api/{proxy+} for inputs like /api/foo/bar
     # /foo/{param1}/baz and /foo/{param1}/{param2} for inputs like /for/bar/baz
     if len(matches) > 1:
-        # check if we have an exact match (exact matches take precedence)
+        filtered_matches = []
         for match in matches:
-            if match[0] == path:
-                return match
+            match_methods = list(match[1].get("resourceMethods", {}).keys())
+            # only look for path matches if the request method is in the resource
+            if method.upper() in match_methods or "ANY" in match_methods:
+                # check if we have an exact match (exact matches take precedence) if the method is the same
+                if match[0] == path or path_matches_pattern(path, match[0]):
+                    # either an exact match or not an exact match but parameters can fit in
+                    return match
 
-        # not an exact match but parameters can fit in
-        for match in matches:
-            if path_matches_pattern(path, match[0]):
-                return match
+                filtered_matches.append(match)
 
-        # at this stage, we have more than one match but we have an eager example like
-        # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length
-        sorted_matches = sorted(matches, key=lambda x: len(x[0]), reverse=True)
+        # if there are no matches with a method that would match, return
+        if not filtered_matches:
+            return None, None
+
+        # at this stage, we have more than one match, but we have an eager example like
+        # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length, only if they have a method that
+        # could match
+        sorted_matches = sorted(filtered_matches, key=lambda x: len(x[0]), reverse=True)
         return sorted_matches[0]
     return matches[0]
 
@@ -1321,7 +1330,9 @@ def import_api_from_openapi_spec(
     return rest_api
 
 
-def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tuple[str, Dict]:
+def get_target_resource_details(
+    invocation_context: ApiInvocationContext,
+) -> Tuple[Optional[str], Optional[dict]]:
     """Look up and return the API GW resource (path pattern + resource dict) for the given invocation context."""
     path_map = get_rest_api_paths(
         account_id=invocation_context.account_id,
@@ -1330,9 +1341,22 @@ def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tup
     )
     relative_path = invocation_context.invocation_path.rstrip("/") or "/"
     try:
-        extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+        extracted_path, resource = get_resource_for_path(
+            path=relative_path, method=invocation_context.method, path_map=path_map
+        )
+        if not extracted_path:
+            return None, None
         invocation_context.resource = resource
+        invocation_context.resource_path = extracted_path
+        try:
+            invocation_context.path_params = extract_path_params(
+                path=relative_path, extracted_path=extracted_path
+            )
+        except Exception:
+            invocation_context.path_params = {}
+
         return extracted_path, resource
+
     except Exception:
         return None, None
 
@@ -1343,12 +1367,7 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
     if not resource:
         return None
     methods = resource.get("resourceMethods") or {}
-    method_name = invocation_context.method.upper()
-    return (
-        methods.get(method_name)
-        or methods.get("ANY")
-        or methods.get("X-AMAZON-APIGATEWAY-ANY-METHOD")
-    )
+    return methods.get(invocation_context.method.upper()) or methods.get("ANY")
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):

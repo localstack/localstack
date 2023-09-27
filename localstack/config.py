@@ -539,8 +539,18 @@ class HostAndPort:
 
         return cls(host=host, port=port)
 
+    def _get_unprivileged_port_range_start(self) -> int:
+        try:
+            with open(
+                "/proc/sys/net/ipv4/ip_unprivileged_port_start", "rt"
+            ) as unprivileged_port_start:
+                port = unprivileged_port_start.read()
+                return int(port.strip())
+        except Exception:
+            return 1024
+
     def is_unprivileged(self) -> bool:
-        return self.port >= 1024
+        return self.port >= self._get_unprivileged_port_range_start()
 
     def __hash__(self) -> int:
         return hash((self.host, self.port))
@@ -1271,7 +1281,10 @@ def populate_config_env_var_names():
     CONFIG_ENV_VARS += [
         key
         for key in [key.upper() for key in os.environ]
-        if key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_")
+        if (key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_"))
+        # explicitly exclude LOCALSTACK_CLI (it's prefixed with "LOCALSTACK_",
+        # but is only used in the CLI (should not be forwarded to the container)
+        and key != "LOCALSTACK_CLI"
     ]
 
     # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
