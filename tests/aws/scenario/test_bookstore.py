@@ -14,6 +14,7 @@ import aws_cdk.aws_lambda as awslambda
 import aws_cdk.aws_opensearchservice as opensearch
 import pytest
 from aws_cdk.aws_lambda_event_sources import DynamoEventSource
+from botocore.exceptions import ClientError
 from constructs import Construct
 
 from localstack.testing.pytest import markers
@@ -84,7 +85,11 @@ def setup_lambda(s3_client: "S3Client", bucket_name: str, key_name: str, code_pa
                     archive_name = os.path.relpath(file_path, temp_dir)
                     temp_zip.write(file_path, archive_name)
 
-        create_s3_bucket(bucket_name=bucket_name, s3_client=s3_client)
+        try:
+            create_s3_bucket(bucket_name=bucket_name, s3_client=s3_client)
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] != "BucketAlreadyOwnedByYou":
+                raise exc
         s3_client.upload_file(Filename=tmp_zip_path, Bucket=bucket_name, Key=key_name)
 
     finally:
@@ -155,7 +160,7 @@ class TestBookstoreApplication:
             yield prov
 
     @markers.aws.validated
-    def test_setup(self, aws_client, infrastructure, snapshot, cleanups, s3_create_bucket):
+    def test_setup(self, aws_client, infrastructure, snapshot, cleanups):
         if infrastructure.skipped_provisioning:
             pytest.skip("setup only running once")
 
@@ -164,7 +169,11 @@ class TestBookstoreApplication:
 
         # pre-fill dynamodb
         # json-data is from https://aws-bookstore-demo.s3.amazonaws.com/data/books.json
-        s3_create_bucket(Bucket=S3_BUCKET_BOOKS_INIT)
+        try:
+            create_s3_bucket(bucket_name=S3_BUCKET_BOOKS_INIT, s3_client=aws_client.s3)
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] != "BucketAlreadyOwnedByYou":
+                raise exc
         cleanups.append(
             lambda: cleanup_s3_bucket(
                 aws_client.s3, bucket_name=S3_BUCKET_BOOKS_INIT, delete_bucket=True
