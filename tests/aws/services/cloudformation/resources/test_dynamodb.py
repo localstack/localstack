@@ -19,7 +19,6 @@ def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client):
         parameters={"tableName": ddb_table_name_prefix, "env": env},
     )
 
-    print(stack.outputs)
     assert stack.outputs["Arn"].startswith("arn:aws:dynamodb")
     assert f"table/{ddb_table_name}" in stack.outputs["Arn"]
     assert stack.outputs["Name"] == ddb_table_name
