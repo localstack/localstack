@@ -470,7 +470,10 @@ class OpensearchCluster(Server):
         # see https://forum.opensearch.org/t/issue-with-opensearch-knn/12633
         knn_lib_dir = os.path.join(directories.install, "plugins", "opensearch-knn", "lib")
         if os.path.isdir(knn_lib_dir):
-            env_vars["LD_LIBRARY_PATH"] = f"{knn_lib_dir}:{os.environ.get('LD_LIBRARY_PATH', '')}"
+            prefix = (
+                f"{os.environ.get('LD_LIBRARY_PATH')}:" if "LD_LIBRARY_PATH" in os.environ else ""
+            )
+            env_vars["LD_LIBRARY_PATH"] = prefix + f"{knn_lib_dir}"
 
         return env_vars
 
