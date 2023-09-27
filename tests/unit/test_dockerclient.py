@@ -293,7 +293,7 @@ class TestPortMappings:
             "7000/tcp": ("0.0.0.0", 5001),
             "8000/tcp": ("0.0.0.0", 5003),
             "9000/tcp": ("0.0.0.0", [5004, 5005, 5006]),
-            "9000/tcp": (),
+            "9229/tcp": (),
         }
         assert result == expected_result
 
