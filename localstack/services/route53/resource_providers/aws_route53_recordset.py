@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, TypedDict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Type, TypedDict
 
 if TYPE_CHECKING:
     from mypy_boto3_route53 import Route53Client
