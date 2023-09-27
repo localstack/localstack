@@ -1209,6 +1209,9 @@ class Util:
                         "Host part of port mappings are ignored currently in additional flags"
                     )
                     _, host_port, container_port = port_split
+                elif len(port_split) == 1:
+                    _, _, container_port = port_split
+                    host_port = ""
                 else:
                     raise ValueError(f"Invalid port string provided: {port_mapping}")
                 host_port_split = host_port.split("-")

@@ -75,6 +75,7 @@ class TestArgumentParsing:
         test_port_string = "-p 80:8080/udp"
         test_port_string_with_host = "-p 127.0.0.1:6000:7000/tcp"
         test_port_string_many_to_one = "-p 9230-9231:9230"
+        test_port_string_one_to_random = "-p 9229"
         test_ulimit_string = "--ulimit nofile=768:1024 --ulimit nproc=3"
         test_user_string = "-u sbx_user1051"
         test_dns_string = "--dns 1.2.3.4 --dns 5.6.7.8"
@@ -86,6 +87,7 @@ class TestArgumentParsing:
                 test_port_string,
                 test_port_string_with_host,
                 test_port_string_many_to_one,
+                test_port_string_one_to_random,
                 test_platform_string,
                 test_privileged_string,
                 test_ulimit_string,
