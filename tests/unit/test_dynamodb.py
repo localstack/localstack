@@ -4,8 +4,14 @@ import pytest
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.dynamodb.provider import DynamoDBProvider, get_store
-from localstack.services.dynamodb.utils import ItemSet, SchemaExtractor, dynamize_value
+from localstack.services.dynamodb.utils import (
+    SCHEMA_CACHE,
+    ItemSet,
+    SchemaExtractor,
+    dynamize_value,
+)
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import dynamodb_table_arn
 
 
 def test_fix_region_in_headers():
@@ -77,6 +83,33 @@ def test_get_key_schema_without_table_definition(mock_get_table_schema):
     assert (
         dynamodb_store.table_definitions[table_name] == mock_get_table_schema.return_value["Table"]
     )
+
+
+def test_invalidate_table_schema():
+    schema_extractor = SchemaExtractor()
+
+    key_schema = [{"AttributeName": "id", "KeyType": "HASH"}]
+    attr_definitions = [
+        {"AttributeName": "Artist", "AttributeType": "S"},
+        {"AttributeName": "SongTitle", "AttributeType": "S"},
+    ]
+    table_name = "nonexistent_table"
+
+    key = dynamodb_table_arn(table_name=table_name, account_id=None, region_name=None)
+
+    table_schema = {"Table": {"KeySchema": key_schema, "AttributeDefinitions": attr_definitions}}
+    # This isn't great but we need to inject into the cache here so that we're not trying to hit dynamodb
+    # to look up the table later on
+    SCHEMA_CACHE[key] = table_schema
+
+    schema = schema_extractor.get_table_schema(table_name)
+
+    # Assert output is expected from the get_table_schema (fallback)
+    assert schema == table_schema
+    # Invalidate the cache now for the table
+    schema_extractor.invalidate_table_schema(table_name)
+    # Assert that the key is now set to None
+    assert SCHEMA_CACHE[key] is None
 
 
 @pytest.mark.parametrize(

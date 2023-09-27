@@ -114,6 +114,22 @@ class SchemaExtractor:
                 raise
         return schema
 
+    @classmethod
+    def invalidate_table_schema(
+        cls, table_name: str, account_id: str = None, region_name: str = None
+    ):
+        """
+        Allow cached table schemas to be invalidated without waiting for the TTL to expire
+        """
+        account_id = account_id or get_aws_account_id()
+        region_name = region_name or aws_stack.get_region()
+        key = dynamodb_table_arn(
+            table_name=table_name, account_id=account_id, region_name=region_name
+        )
+        schema = SCHEMA_CACHE.get(key)
+        if schema:
+            SCHEMA_CACHE[key] = None
+
 
 class ItemFinder:
     @staticmethod
