@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, Type, TypedDict, TYPE_CHECKING
 
-from mypy_boto3_route53 import Route53Client
+if TYPE_CHECKING:
+    from mypy_boto3_route53 import Route53Client
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -133,7 +134,7 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
             resource_model=model,
         )
 
-    def get_hosted_zone_id_from_name(self, hosted_zone_name: str, client: Route53Client):
+    def get_hosted_zone_id_from_name(self, hosted_zone_name: str, client: "Route53Client"):
         if not hosted_zone_name:
             raise Exception("Either HostedZoneId or HostedZoneName must be present.")
 
