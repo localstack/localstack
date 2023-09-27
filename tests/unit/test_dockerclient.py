@@ -286,12 +286,14 @@ class TestPortMappings:
         port_mappings.add(5001, 7000)
         port_mappings.add(5003, 8000)
         port_mappings.add([5004, 5006], 9000)
+        port_mappings.add(9229)
         result = port_mappings.to_dict()
         expected_result = {
             "6000/tcp": ("0.0.0.0", 5000),
             "7000/tcp": ("0.0.0.0", 5001),
             "8000/tcp": ("0.0.0.0", 5003),
             "9000/tcp": ("0.0.0.0", [5004, 5005, 5006]),
+            "9000/tcp": (),
         }
         assert result == expected_result
 

@@ -147,10 +147,13 @@ class PortMappings:
     bind_host: str
     # maps `from` port range to `to` port range for port mappings
     mappings: Dict[Tuple[PortRange, PortProtocol], List]
+    # maps a container port to random host port
+    exposed_to_random: Dict[int, PortProtocol]
 
     def __init__(self, bind_host: str = None):
         self.bind_host = bind_host if bind_host else ""
         self.mappings = {}
+        self.exposed_to_random = {}
 
     def add(
         self,
@@ -207,6 +210,9 @@ class PortMappings:
         protocol = str(protocol or "tcp").lower()
         self.mappings[(HashableList(port_range), protocol)] = [mapped, mapped]
 
+    def add_random(self, container_port: int, protocol: PortProtocol = "tcp"):
+        self.exposed_to_random[container_port] = protocol
+
     def to_str(self) -> str:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
 
@@ -221,7 +227,11 @@ class PortMappings:
                 return f"-p {bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}{protocol_suffix}"
             return f"-p {bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}-{to_range[1]}{protocol_suffix}"
 
-        return " ".join([entry(k, v) for k, v in self.mappings.items()])
+        def entry_random(port, protocol):
+            protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
+            return f"-p {port}{protocol_suffix}"
+
+        return " ".join([entry(k, v) for k, v in self.mappings.items()] + [entry_random(k, v) for k, v in self.exposed_to_random.items()])
 
     def to_list(self) -> List[str]:  # TODO test
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
@@ -237,7 +247,14 @@ class PortMappings:
                 f"{bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}-{to_range[1]}{protocol_suffix}",
             ]
 
-        return [item for k, v in self.mappings.items() for item in entry(k, v)]
+        def entry_random(port, protocol):
+            protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
+            return [
+                "-p",
+                f"-p {port}{protocol_suffix}"
+            ]
+
+        return [item for k, v in self.mappings.items() for item in entry(k, v)] + [item for k, v in self.exposed_to_random.items() for item in entry_random(k, v)]
 
     def to_dict(self) -> Dict[str, Union[Tuple[str, Union[int, List[int]]], int]]:
         bind_address = self.bind_host or ""
@@ -265,7 +282,15 @@ class PortMappings:
                 )
             ]
 
-        items = [item for k, v in self.mappings.items() for item in entry(k, v)]
+        def entry_random(port, protocol):
+            protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
+            return [
+                (
+                    f"{port}{protocol_suffix}", ()
+                )
+            ]
+
+        items = [item for k, v in self.mappings.items() for item in entry(k, v)] + [item for k, v in self.exposed_to_random.items() for item in entry_random(k, v)]
         return dict(items)
 
     def contains(self, port: int, protocol: PortProtocol = "tcp") -> bool:
@@ -1210,13 +1235,15 @@ class Util:
                     )
                     _, host_port, container_port = port_split
                 elif len(port_split) == 1:
-                    _, _, container_port = port_split
+                    container_port = port_split
                     host_port = ""
                 else:
                     raise ValueError(f"Invalid port string provided: {port_mapping}")
                 host_port_split = host_port.split("-")
                 if len(host_port_split) == 2:
                     host_port = [int(host_port_split[0]), int(host_port_split[1])]
+                elif len(host_port_split) == 1 and host_port_split[0] == "":
+                    host_port = None
                 elif len(host_port_split) == 1:
                     host_port = int(host_port)
                 else:
@@ -1224,7 +1251,10 @@ class Util:
                 if "/" in container_port:
                     container_port, protocol = container_port.split("/")
                 ports = ports if ports is not None else PortMappings()
-                ports.add(host_port, int(container_port), protocol)
+                if host_port:
+                    ports.add(host_port, int(container_port), protocol)
+                else:
+                    ports.add_random(int(container_port), protocol)
 
         if args.ulimits:
             ulimits = ulimits if ulimits is not None else []
