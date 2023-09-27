@@ -1,16 +1,12 @@
 import logging
-import os
 import select
 import socket
-from typing import Tuple, Union
+from typing import Union
 
 from localstack.constants import BIND_HOST, LOCALHOST_IP
-from localstack.utils.asyncio import ensure_event_loop
-from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.functions import run_safe
 from localstack.utils.numbers import is_number
-from localstack.utils.ssl import create_ssl_cert
-from localstack.utils.threads import TMP_THREADS, FuncThread, start_worker_thread
+from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
 
@@ -77,94 +73,3 @@ def start_tcp_proxy(src, dst, handler, **kwargs):
             start_worker_thread(lambda *args, _thread: handle_request(src_socket, _thread))
         except socket.timeout:
             pass
-
-
-def start_ssl_proxy(
-    port: int,
-    target: PortOrUrl,
-    target_ssl=False,
-    client_cert_key: Tuple[str, str] = None,
-    asynchronous: bool = False,
-):
-    """Start a proxy server that accepts SSL requests and forwards requests to a backend (either SSL or non-SSL)"""
-
-    def _run(*args):
-        return _do_start_ssl_proxy(
-            port, target, target_ssl=target_ssl, client_cert_key=client_cert_key
-        )
-
-    if not asynchronous:
-        return _run()
-    proxy = FuncThread(_run, name="ssl-proxy")
-    TMP_THREADS.append(proxy)
-    proxy.start()
-    return proxy
-
-
-def _save_cert_keys(client_cert_key: Tuple[str, str]) -> Tuple[str, str]:
-    """
-    Save the given cert / key into files and returns their filename
-
-    :param client_cert_key: tuple with (client_cert, client_key)
-    :return: tuple of paths to files containing (client_cert, client_key)
-    """
-    cert_file = client_cert_key[0]
-    if not os.path.exists(cert_file):
-        cert_file = new_tmp_file()
-        save_file(cert_file, client_cert_key[0])
-    key_file = client_cert_key[1]
-    if not os.path.exists(key_file):
-        key_file = new_tmp_file()
-        save_file(key_file, client_cert_key[1])
-    return cert_file, key_file
-
-
-def _do_start_ssl_proxy(
-    port: int,
-    target: PortOrUrl,
-    target_ssl=False,
-    client_cert_key: Tuple[str, str] = None,
-    bind_address: str = "0.0.0.0",
-):
-    """
-    Starts a tcp proxy (with tls) on the specified port
-
-    :param port: Port the proxy should bind to
-    :param target: Target of the proxy. If a port, it will connect to localhost:
-    :param target_ssl: Specify if the proxy should connect to the target using SSL/TLS
-    :param client_cert_key: Client certificate for the target connection. Only set if target_ssl=True
-    :param bind_address: Bind address of the proxy server
-    """
-    import pproxy
-
-    if ":" not in str(target):
-        target = f"127.0.0.1:{target}"
-    LOG.debug("Starting SSL proxy server %s -> %s", port, target)
-
-    # create server and remote connection
-    server = pproxy.Server(f"secure+tunnel://{bind_address}:{port}")
-    target_proto = "ssl+tunnel" if target_ssl else "tunnel"
-    remote = pproxy.Connection(f"{target_proto}://{target}")
-    if client_cert_key:
-        # TODO verify client certs server side?
-        LOG.debug("Configuring ssl proxy to use client certs")
-        cert_file, key_file = _save_cert_keys(client_cert_key=client_cert_key)
-        remote.sslclient.load_cert_chain(certfile=cert_file, keyfile=key_file)
-    args = dict(rserver=[remote])
-
-    # set SSL contexts
-    _, cert_file_name, key_file_name = create_ssl_cert()
-    for context in pproxy.server.sslcontexts:
-        context.load_cert_chain(cert_file_name, key_file_name)
-
-    loop = ensure_event_loop()
-    handler = loop.run_until_complete(server.start_server(args))
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        print("exit!")
-
-    handler.close()
-    loop.run_until_complete(handler.wait_closed())
-    loop.run_until_complete(loop.shutdown_asyncgens())
-    loop.close()

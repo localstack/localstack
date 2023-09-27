@@ -35,73 +35,83 @@ from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
 
 
-class ApiGatewayPathsTest(unittest.TestCase):
+class TestApiGatewayPaths:
     def test_extract_query_params(self):
         path, query_params = extract_query_string_params("/foo/bar?foo=foo&bar=bar&bar=baz")
-        self.assertEqual("/foo/bar", path)
-        self.assertEqual({"foo": "foo", "bar": ["bar", "baz"]}, query_params)
+        assert path == "/foo/bar"
+        assert query_params == {"foo": "foo", "bar": ["bar", "baz"]}
 
-    def test_extract_path_params(self):
-        params = extract_path_params("/foo/bar", "/foo/{param1}")
-        self.assertEqual({"param1": "bar"}, params)
+    @pytest.mark.parametrize(
+        "path,path_part,expected",
+        [
+            ("/foo/bar", "/foo/{param1}", {"param1": "bar"}),
+            ("/foo/bar1/bar2", "/foo/{param1}/{param2}", {"param1": "bar1", "param2": "bar2"}),
+            ("/foo/bar", "/foo/bar", {}),
+            ("/foo/bar/baz", "/foo/{proxy+}", {"proxy": "bar/baz"}),
+        ],
+    )
+    def test_extract_path_params(self, path, path_part, expected):
+        assert extract_path_params(path, path_part) == expected
 
-        params = extract_path_params("/foo/bar1/bar2", "/foo/{param1}/{param2}")
-        self.assertEqual({"param1": "bar1", "param2": "bar2"}, params)
+    @pytest.mark.parametrize(
+        "path,path_parts,expected",
+        [
+            ("/foo/bar", ["/foo/{param1}"], "/foo/{param1}"),
+            ("/foo/bar", ["/foo/bar", "/foo/{param1}"], "/foo/bar"),
+            ("/foo/bar/baz", ["/foo/bar", "/foo/{proxy+}"], "/foo/{proxy+}"),
+            ("/foo/bar/baz", ["/{proxy+}", "/foo/{proxy+}"], "/foo/{proxy+}"),
+            ("/foo/bar", ["/foo/bar1", "/foo/bar2"], None),
+            ("/foo/bar", ["/{param1}/bar1", "/foo/bar2"], None),
+            ("/foo/bar", ["/{param1}/{param2}/foo/{param3}", "/{param}/bar"], "/{param}/bar"),
+            ("/foo/bar", ["/{param1}/{param2}", "/{param}/bar"], "/{param}/bar"),
+            (
+                "/foo/bar/baz",
+                ["/{param1}/{param2}/baz", "/{param1}/bar/{param2}"],
+                "/{param1}/{param2}/baz",
+            ),
+            ("/foo/bar/baz", ["/foo123/{param1}/baz"], None),
+            ("/foo/bar/baz", ["/foo/{param1}/baz", "/foo/{param1}/{param2}"], "/foo/{param1}/baz"),
+        ],
+    )
+    def test_path_matches(self, path, path_parts, expected):
+        default_resource = {"resourceMethods": {"GET": {}}}
 
-        params = extract_path_params("/foo/bar", "/foo/bar")
-        self.assertEqual({}, params)
+        path_map = {path_part: default_resource for path_part in path_parts}
+        matched_path, _ = get_resource_for_path(path, "GET", path_map)
+        assert matched_path == expected
 
-        params = extract_path_params("/foo/bar/baz", "/foo/{proxy+}")
-        self.assertEqual({"proxy": "bar/baz"}, params)
+    def test_path_routing_with_method(self):
+        """Not using parametrization as testing a simple scenario, AWS validated"""
+        paths_map = {
+            "/{proxy+}": {"resourceMethods": {"OPTIONS": {}}},
+            "/foo": {"resourceMethods": {"POST": {}}},
+            "/foo/bar": {"resourceMethods": {"ANY": {}}},
+        }
+        # If there is an exact match on the path but the resource on that path does not match on the method, try
+        # greedy path then
 
-    def test_path_matches(self):
-        path, details = get_resource_for_path("/foo/bar", {"/foo/{param1}": {}})
-        self.assertEqual("/foo/{param1}", path)
+        path, _ = get_resource_for_path("/foo", "GET", paths_map)
+        # we can see that /foo would match 1:1, but it does not have a "GET" method, so it will try to match {proxy+},
+        # but proxy does not have a GET either, so it will not match anything
+        assert path is None
 
-        path, details = get_resource_for_path("/foo/bar", {"/foo/bar": {}, "/foo/{param1}": {}})
-        self.assertEqual("/foo/bar", path)
+        path, _ = get_resource_for_path("/foo", "OPTIONS", paths_map)
+        # now OPTIONS matches proxy
+        assert path == "/{proxy+}"
 
-        path, details = get_resource_for_path("/foo/bar/baz", {"/foo/bar": {}, "/foo/{proxy+}": {}})
-        self.assertEqual("/foo/{proxy+}", path)
+        path, _ = get_resource_for_path("/foo", "POST", paths_map)
+        # now POST directly matches /foo
+        assert path == "/foo"
 
-        path, details = get_resource_for_path(
-            "/foo/bar/baz", {"/{proxy+}": {}, "/foo/{proxy+}": {}}
-        )
-        self.assertEqual("/foo/{proxy+}", path)
+        path, _ = get_resource_for_path("/foo/bar", "GET", paths_map)
+        # with this nested path, it will try to match the exact 1:1, and this one contains ANY, which will properly
+        # match before trying {proxy+}
+        assert path == "/foo/bar"
 
-        result = get_resource_for_path("/foo/bar", {"/foo/bar1": {}, "/foo/bar2": {}})
-        self.assertEqual(None, result)
-
-        result = get_resource_for_path("/foo/bar", {"/{param1}/bar1": {}, "/foo/bar2": {}})
-        self.assertEqual(None, result)
-
-        path_args = {"/{param1}/{param2}/foo/{param3}": {}, "/{param}/bar": {}}
-        path, details = get_resource_for_path("/foo/bar", path_args)
-        self.assertEqual("/{param}/bar", path)
-
-        path_args = {"/{param1}/{param2}": {}, "/{param}/bar": {}}
-        path, details = get_resource_for_path("/foo/bar", path_args)
-        self.assertEqual("/{param}/bar", path)
-
-        path_args = {"/{param1}/{param2}": {}, "/{param1}/bar": {}}
-        path, details = get_resource_for_path("/foo/baz", path_args)
-        self.assertEqual("/{param1}/{param2}", path)
-
-        path_args = {"/{param1}/{param2}/baz": {}, "/{param1}/bar/{param2}": {}}
-        path, details = get_resource_for_path("/foo/bar/baz", path_args)
-        self.assertEqual("/{param1}/{param2}/baz", path)
-
-        path_args = {"/{param1}/{param2}/baz": {}, "/{param1}/{param2}/{param2}": {}}
-        path, details = get_resource_for_path("/foo/bar/baz", path_args)
-        self.assertEqual("/{param1}/{param2}/baz", path)
-
-        path_args = {"/foo123/{param1}/baz": {}}
-        result = get_resource_for_path("/foo/bar/baz", path_args)
-        self.assertEqual(None, result)
-
-        path_args = {"/foo/{param1}/baz": {}, "/foo/{param1}/{param2}": {}}
-        path, result = get_resource_for_path("/foo/bar/baz", path_args)
-        self.assertEqual("/foo/{param1}/baz", path)
+        path, _ = get_resource_for_path("/foo/bar", "OPTIONS", paths_map)
+        # with this nested path, it will try to match the exact 1:1, and this one contains ANY, which will properly
+        # match before trying {proxy+} even if it has the right OPTIONS method
+        assert path == "/foo/bar"
 
     def test_apply_request_parameters(self):
         integration = {
@@ -121,8 +131,10 @@ class ApiGatewayPathsTest(unittest.TestCase):
             path_params={"proxy": "foo/bar/baz"},
             query_params={"param": "foobar"},
         )
-        self.assertEqual("https://httpbin.org/anything/foo/bar/baz?param=foobar", uri)
+        assert uri == "https://httpbin.org/anything/foo/bar/baz?param=foobar"
 
+
+class TestApiGatewayRequestValidator(unittest.TestCase):
     def test_if_request_is_valid_with_no_resource_methods(self):
         ctx = ApiInvocationContext(
             method="POST",
