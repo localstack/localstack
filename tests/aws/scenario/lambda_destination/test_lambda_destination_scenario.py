@@ -74,7 +74,7 @@ class TestLambdaDestinationScenario:
         # provisioning
         provisioner = InfraProvisioner(aws_client)
         provisioner.add_cdk_stack(stack)
-        with provisioner.provisioner(skip_teardown=True) as prov:
+        with provisioner.provisioner(skip_teardown=False) as prov:
             yield prov
 
     @markers.aws.validated
