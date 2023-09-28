@@ -115,7 +115,6 @@ class KinesisStreamProvider(ResourceProvider[KinesisStreamProperties]):
             custom_context=request.custom_context,
         )
 
-
     def read(
         self,
         request: ResourceRequest[KinesisStreamProperties],
