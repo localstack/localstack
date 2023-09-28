@@ -119,7 +119,7 @@ class TestArgumentParsing:
         assert flags.network == "bridge"
         assert flags.platform == "linux/arm64"
         assert flags.privileged
-        assert ports.to_str() == "-p 80:8080/udp -p 6000:7000 -p 9230-9231:9230"
+        assert ports.to_str() == "-p 80:8080/udp -p 6000:7000 -p 9230-9231:9230 -p 9229"
         assert flags.ulimits == [
             Ulimit(name="nproc", soft_limit=3, hard_limit=3),
             Ulimit(name="nofile", soft_limit=768, hard_limit=1024),
