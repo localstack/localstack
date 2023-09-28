@@ -800,7 +800,9 @@ class TestDynamoDB:
         dynamodb.delete_table(TableName=table_name)
 
     @markers.aws.only_localstack
-    def test_dynamodb_with_kinesis_stream(self, aws_client, secondary_aws_client):
+    def test_dynamodb_with_kinesis_stream(
+        self, aws_client, secondary_aws_client, wait_for_stream_ready
+    ):
         dynamodb = aws_client.dynamodb
         # Create Kinesis stream in another account to test that integration works cross-account
         kinesis = secondary_aws_client.kinesis

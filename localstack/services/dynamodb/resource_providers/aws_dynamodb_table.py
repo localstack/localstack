@@ -208,7 +208,7 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                 model["GlobalSecondaryIndexes"] = self.get_ddb_global_sec_indexes(model)
 
             model["StreamSpecification"] = {
-                **{"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+                **{"StreamEnabled": True},
                 **model.get("StreamSpecification", {}),
             }
 
