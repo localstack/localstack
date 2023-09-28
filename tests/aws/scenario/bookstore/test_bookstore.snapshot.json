@@ -1,5 +1,5 @@
 {
-  "tests/aws/scenario/test_bookstore.py::TestBookstoreApplication::test_setup": {
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_setup": {
     "recorded-date": "29-08-2023, 17:20:44",
     "recorded-content": {
       "get-item": {
@@ -41,7 +41,7 @@
       }
     }
   },
-  "tests/aws/scenario/test_bookstore.py::TestBookstoreApplication::test_lambda_dynamodb": {
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_lambda_dynamodb": {
     "recorded-date": "30-08-2023, 13:23:16",
     "recorded-content": {
       "get_books_fn": {
@@ -160,7 +160,7 @@
       }
     }
   },
-  "tests/aws/scenario/test_bookstore.py::TestBookstoreApplication::test_search_books": {
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_search_books": {
     "recorded-date": "31-08-2023, 13:39:41",
     "recorded-content": {
       "search_name_spaghetti": {
@@ -548,7 +548,7 @@
       }
     }
   },
-  "tests/aws/scenario/test_bookstore.py::TestBookstoreApplication::test_opensearch_crud": {
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_opensearch_crud": {
     "recorded-date": "07-09-2023, 12:02:59",
     "recorded-content": {
       "describe_domains": {

@@ -28,8 +28,8 @@ OUTPUT_LOAN_BROKER_LOG_GROUP_NAME = "LogGroupName"
 OUTPUT_LOAN_BROKER_TABLE = "TableName"
 LOAN_BROKER_TABLE = "LoanBrokerBanksTable"
 
-CREDIT_BUREAU_JS = "./resources_loan_broker/bank_app_credit_bureau.js"
-BANK_APP_JS = "./resources_loan_broker/bank_app.js"
+CREDIT_BUREAU_JS = "./functions/bank_app_credit_bureau.js"
+BANK_APP_JS = "./functions/bank_app.js"
 
 
 def _read_file_as_string(filename: str) -> str:
