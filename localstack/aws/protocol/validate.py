@@ -15,7 +15,7 @@ class Error(NamedTuple):
 
     Attributes:
         reason      The error type
-        name        The name of the parameter the error occured at
+        name        The name of the parameter the error occurred at
         attributes  Error type-specific attributes
     """
 
