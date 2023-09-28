@@ -231,7 +231,10 @@ class PortMappings:
             protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
             return f"-p {port}{protocol_suffix}"
 
-        return " ".join([entry(k, v) for k, v in self.mappings.items()] + [entry_random(k, v) for k, v in self.exposed_to_random.items()])
+        return " ".join(
+            [entry(k, v) for k, v in self.mappings.items()]
+            + [entry_random(k, v) for k, v in self.exposed_to_random.items()]
+        )
 
     def to_list(self) -> List[str]:  # TODO test
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
@@ -249,12 +252,11 @@ class PortMappings:
 
         def entry_random(port, protocol):
             protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
-            return [
-                "-p",
-                f"-p {port}{protocol_suffix}"
-            ]
+            return ["-p", f"{port}{protocol_suffix}"]
 
-        return [item for k, v in self.mappings.items() for item in entry(k, v)] + [item for k, v in self.exposed_to_random.items() for item in entry_random(k, v)]
+        return [item for k, v in self.mappings.items() for item in entry(k, v)] + [
+            item for k, v in self.exposed_to_random.items() for item in entry_random(k, v)
+        ]
 
     def to_dict(self) -> Dict[str, Union[Tuple[str, Union[int, List[int]]], int]]:
         bind_address = self.bind_host or ""
@@ -284,13 +286,11 @@ class PortMappings:
 
         def entry_random(port, protocol):
             protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
-            return [
-                (
-                    f"{port}{protocol_suffix}", ()
-                )
-            ]
+            return [(f"{port}{protocol_suffix}", ())]
 
-        items = [item for k, v in self.mappings.items() for item in entry(k, v)] + [item for k, v in self.exposed_to_random.items() for item in entry_random(k, v)]
+        items = [item for k, v in self.mappings.items() for item in entry(k, v)] + [
+            item for k, v in self.exposed_to_random.items() for item in entry_random(k, v)
+        ]
         return dict(items)
 
     def contains(self, port: int, protocol: PortProtocol = "tcp") -> bool:
