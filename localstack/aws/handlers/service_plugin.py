@@ -58,7 +58,7 @@ class ServiceLoader(Handler):
             if service_operation in request_router.handlers:
                 return
             if isinstance(service_plugin, Service):
-                if type(service_plugin.listener) == AwsApiListener:
+                if type(service_plugin.listener) is AwsApiListener:
                     request_router.add_skeleton(service_plugin.listener.skeleton)
                 else:
                     request_router.add_handler(service_operation, LegacyPluginHandler())

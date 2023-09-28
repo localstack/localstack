@@ -324,7 +324,7 @@ class TestServiceRequestDispatcher:
             ArgTwo: int
 
         def fn(context, arg_one, arg_two):
-            assert type(context) == RequestContext
+            assert type(context) is RequestContext
             assert arg_one == "foo"
             assert arg_two == 69
 
@@ -334,7 +334,7 @@ class TestServiceRequestDispatcher:
     def test_without_context_without_expand(self):
         def fn(*args):
             assert len(args) == 1
-            assert type(args[0]) == dict
+            assert type(args[0]) is dict
 
         dispatcher = ServiceRequestDispatcher(
             fn, "SomeAction", pass_context=False, expand_parameters=False
@@ -344,8 +344,8 @@ class TestServiceRequestDispatcher:
     def test_without_expand(self):
         def fn(*args):
             assert len(args) == 2
-            assert type(args[0]) == RequestContext
-            assert type(args[1]) == dict
+            assert type(args[0]) is RequestContext
+            assert type(args[1]) is dict
 
         dispatcher = ServiceRequestDispatcher(
             fn, "SomeAction", pass_context=True, expand_parameters=False

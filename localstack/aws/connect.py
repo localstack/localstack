@@ -78,7 +78,7 @@ def make_hash(o):
 
 
 def config_equality_patch(self, other: object):
-    return type(self) == type(other) and self._user_provided_options == other._user_provided_options
+    return type(self) is type(other) and self._user_provided_options == other._user_provided_options
 
 
 def config_hash_patch(self):
