@@ -520,11 +520,7 @@ class LegacyResourceProvider(ResourceProvider):
             elif not executed:
                 service = get_service_name(resource)
                 try:
-                    client = connect_to.get_client(
-                        aws_access_key_id=request.account_id,
-                        region_name=request.region_name,
-                        service_name=service,
-                    )
+                    client = request.aws_client_factory.get_client(service=service)
                     if client:
                         # get the method on that function
                         function = getattr(client, func["function"])

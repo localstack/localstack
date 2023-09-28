@@ -1,7 +1,6 @@
 import base64
 import hashlib
 import json
-from unittest import mock
 from urllib.parse import urlencode
 
 import pytest
@@ -236,7 +235,7 @@ def test_arn_partition_rewriting_in_response(encoding):
         },
     )
 
-    rewrite_handler.modify_response(response, request_region="us-gov-west-1")
+    rewrite_handler.modify_response_revert(response, request_region="us-gov-west-1")
 
     assert response.status_code == response.status_code
     assert (
@@ -252,34 +251,6 @@ def test_arn_partition_rewriting_in_response(encoding):
     )
 
 
-def test_no_arn_partition_rewriting_in_internal_request():
-    """Partitions should not be rewritten for _internal_ requests."""
-    rewrite_handler = ArnPartitionRewriteHandler()
-    request = Request(
-        method="POST",
-        path="/",
-        body=b"",
-        headers={},
-    )
-    handler2 = mock.MagicMock()
-    # mimic an internal request
-    request.headers.update(
-        mock_aws_request_headers(
-            region_name="us-gov-west-1",
-            access_key=INTERNAL_AWS_ACCESS_KEY_ID,
-            internal=True,
-        )
-    )
-    chain = HandlerChain()
-    chain.request_handlers.append(rewrite_handler)
-    chain.request_handlers.append(handler2)
-    context = RequestContext()
-    context.request = request
-    chain.handle(context, Response())
-    assert not chain.terminated
-    handler2.assert_called_once()
-
-
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 def test_arn_partition_rewriting_in_response_with_request_region(encoding):
     rewrite_handler = ArnPartitionRewriteHandler()
@@ -290,7 +261,7 @@ def test_arn_partition_rewriting_in_response_with_request_region(encoding):
         status=200,
         headers={"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"},
     )
-    rewrite_handler.modify_response(response=response, request_region="us-gov-west-1")
+    rewrite_handler.modify_response_revert(response=response, request_region="us-gov-west-1")
 
     assert response.status_code == 200
     assert (
@@ -314,7 +285,7 @@ def test_arn_partition_rewriting_in_response_without_region_and_without_default_
             status=200,
             headers={"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"},
         )
-        rewrite_handler.modify_response(response=response, request_region=None)
+        rewrite_handler.modify_response_revert(response=response, request_region=None)
 
         assert response.status_code == 200
         assert response.headers["some-header-with-arn"] == "arn:aws:iam::123456789012:ArnInHeader"
@@ -336,7 +307,7 @@ def test_arn_partition_rewriting_in_response_without_region_and_with_default_reg
             status=200,
             headers={"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"},
         )
-        rewrite_handler.modify_response(response, request_region=None)
+        rewrite_handler.modify_response_revert(response, request_region=None)
 
         assert response.status_code == response.status_code
         assert (
