@@ -256,6 +256,15 @@ class TestPortMappings:
         assert "-p 1234:1234" in mapping_str
         assert "-p 80-90:81-91" in mapping_str
 
+        port_mappings = PortMappings()
+        flags = extract_port_flags(
+            "foo -p 1234 bar -p 80-90:81-91 baz", port_mappings=port_mappings
+        )
+        assert flags == "foo  bar  baz"
+        mapping_str = port_mappings.to_str()
+        assert "-p 1234" in mapping_str
+        assert "-p 80-90:81-91" in mapping_str
+
     def test_overlapping_port_ranges(self):
         port_mappings = PortMappings()
         port_mappings.add(4590)
@@ -286,14 +295,14 @@ class TestPortMappings:
         port_mappings.add(5001, 7000)
         port_mappings.add(5003, 8000)
         port_mappings.add([5004, 5006], 9000)
-        port_mappings.add(9229)
+        port_mappings.add_random(9229)
         result = port_mappings.to_dict()
         expected_result = {
             "6000/tcp": ("0.0.0.0", 5000),
             "7000/tcp": ("0.0.0.0", 5001),
             "8000/tcp": ("0.0.0.0", 5003),
             "9000/tcp": ("0.0.0.0", [5004, 5005, 5006]),
-            "9229/tcp": (),
+            "9229": (),
         }
         assert result == expected_result
 

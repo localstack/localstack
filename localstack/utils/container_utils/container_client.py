@@ -1222,7 +1222,6 @@ class Util:
                 args.privileged,
             )
             privileged = args.privileged
-
         if args.publish_ports:
             for port_mapping in args.publish_ports:
                 port_split = port_mapping.split(":")
@@ -1235,7 +1234,7 @@ class Util:
                     )
                     _, host_port, container_port = port_split
                 elif len(port_split) == 1:
-                    container_port = port_split
+                    container_port = port_split[0]
                     host_port = ""
                 else:
                     raise ValueError(f"Invalid port string provided: {port_mapping}")

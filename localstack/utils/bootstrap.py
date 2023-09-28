@@ -365,7 +365,7 @@ def get_docker_image_to_start():
 
 
 def extract_port_flags(user_flags, port_mappings: PortMappings):
-    regex = r"-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-([0-9]+))?"
+    regex = r"-p\s+([0-9]+)(\-([0-9]+))?:?([0-9]+)?(\-([0-9]+))?"
     matches = re.match(".*%s" % regex, user_flags)
     if matches:
         for match in re.findall(regex, user_flags):
