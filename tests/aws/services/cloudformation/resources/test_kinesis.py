@@ -164,16 +164,16 @@ Resources:
 """
 
 
-# @markers.aws.unknown
-# def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client):
-#     template = TEST_TEMPLATE_28 % "EventTable"
-#     deploy_cfn_template(template=template)
-#
-#     response = aws_client.dynamodb.describe_kinesis_streaming_destination(TableName="EventTable")
-#
-#     assert response.get("TableName") == "EventTable"
-#     assert len(response.get("KinesisDataStreamDestinations")) == 1
-#     assert "StreamArn" in response.get("KinesisDataStreamDestinations")[0]
+@markers.aws.unknown
+def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client):
+    template = TEST_TEMPLATE_28 % "EventTable"
+    deploy_cfn_template(template=template)
+
+    response = aws_client.dynamodb.describe_kinesis_streaming_destination(TableName="EventTable")
+
+    assert response.get("TableName") == "EventTable"
+    assert len(response.get("KinesisDataStreamDestinations")) == 1
+    assert "StreamArn" in response.get("KinesisDataStreamDestinations")[0]
 
 
 @markers.aws.unknown
