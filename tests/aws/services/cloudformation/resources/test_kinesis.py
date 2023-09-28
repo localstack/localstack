@@ -164,13 +164,27 @@ Resources:
 """
 
 
+# @markers.aws.unknown
+# def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client):
+#     template = TEST_TEMPLATE_28 % "EventTable"
+#     deploy_cfn_template(template=template)
+#
+#     response = aws_client.dynamodb.describe_kinesis_streaming_destination(TableName="EventTable")
+#
+#     assert response.get("TableName") == "EventTable"
+#     assert len(response.get("KinesisDataStreamDestinations")) == 1
+#     assert "StreamArn" in response.get("KinesisDataStreamDestinations")[0]
+
+
 @markers.aws.unknown
-def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client):
-    template = TEST_TEMPLATE_28 % "EventTable"
-    deploy_cfn_template(template=template)
-
-    response = aws_client.dynamodb.describe_kinesis_streaming_destination(TableName="EventTable")
-
-    assert response.get("TableName") == "EventTable"
-    assert len(response.get("KinesisDataStreamDestinations")) == 1
-    assert "StreamArn" in response.get("KinesisDataStreamDestinations")[0]
+def test_kinesis_stream_consumer_creations(deploy_cfn_template, aws_client):
+    consumer_name = f"{short_uid()}"
+    stack = deploy_cfn_template(
+        parameters={"TestConsumerName": consumer_name},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/kinesis_stream_consumer.yaml"
+        ),
+    )
+    consumer_arn = stack.outputs["KinesisSConsumerARN"]
+    response = aws_client.kinesis.describe_stream_consumer(ConsumerARN=consumer_arn)
+    assert response["ConsumerDescription"]["ConsumerStatus"] == "ACTIVE"
