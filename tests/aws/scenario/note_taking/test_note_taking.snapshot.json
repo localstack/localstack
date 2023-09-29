@@ -520,7 +520,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "iDToTXMX3kCdSi5EVkHgD+izjEtXmACZt2NKDoJMIH8=",
+          "CodeSha256": "code-sha-256",
           "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
@@ -574,7 +574,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "c0pglaqpD7Fn6KVUNgY0BtxYQFlbxA3vsyChCGG9IKs=",
+          "CodeSha256": "code-sha-256",
           "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
@@ -628,7 +628,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "RGH+03fVItBk+TY0IwnSCuJnURb4LaTtix31BK5QPRE=",
+          "CodeSha256": "code-sha-256",
           "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
@@ -682,7 +682,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "k3Qlw8BlsuJ1VAqiLIdHNbE9t0k7sUUchjK1E3hfZdo=",
+          "CodeSha256": "code-sha-256",
           "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
@@ -736,7 +736,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "eOaNi6hfZYOe6otxjv94RMLdktnSDUooXBa0MzY54g4=",
+          "CodeSha256": "code-sha-256",
           "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {

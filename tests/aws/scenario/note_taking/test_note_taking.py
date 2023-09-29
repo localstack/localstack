@@ -250,6 +250,11 @@ class TestNoteTakingScenario:
         snapshot.add_transformer(snapshot.transform.cfn_stack_resource())
         snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformer(snapshot.transform.key_value("TableName"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "CodeSha256", value_replacement="code-sha-256", reference_replacement=False
+            )
+        )
         snapshot.add_transformer(snapshot.transform.key_value("FunctionName"), priority=-1)
         snapshot.add_transformer(
             snapshot.transform.key_value(
