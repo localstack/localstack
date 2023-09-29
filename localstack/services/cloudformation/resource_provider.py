@@ -61,7 +61,8 @@ PROVIDER_DEFAULTS = {
     "AWS::Route53::RecordSet": "ResourceProvider",
     "AWS::SNS::Topic": "ResourceProvider",
     "AWS::Kinesis::Stream": "ResourceProvider",
-    "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider"
+    "AWS::Kinesis::StreamConsumer": "ResourceProvider",
+    "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }
