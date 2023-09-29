@@ -251,7 +251,7 @@ table_name = os.environ["mysfitsTable"]
 
 
 # source adapted from https://github.com/aws-samples/aws-modern-application-workshop/blob/python-cdk/module-3/data/populate-dynamodb.json
-def insertMysfits():
+def insertMysfits(event, context):
     response = client.batch_write_item(
         RequestItems={
             table_name: init_data,

@@ -8,7 +8,7 @@ from tests.aws.scenario.mythical_mysfits.constructs.user_clicks_service import U
 
 
 class MythicalMysfitsCoreStack(cdk.Stack):
-    def __init__(self, scope: constructs.Construct, id: str, **kwargs):
+    def __init__(self, scope: constructs.Construct, id: str, *, bucket_name: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
         # TODO: full Mysfits microservice with Fargate + NLB
@@ -19,7 +19,6 @@ class MythicalMysfitsCoreStack(cdk.Stack):
             partition_key=cdk.aws_dynamodb.Attribute(
                 name="MysfitId", type=cdk.aws_dynamodb.AttributeType.STRING
             ),
-            billing_mode=cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=cdk.RemovalPolicy.DESTROY,
         )
         mysfits_table.add_global_secondary_index(
@@ -52,6 +51,7 @@ class MythicalMysfitsCoreStack(cdk.Stack):
             "UserClicksService",
             account_id=self.account,
             mysfits_table=mysfits_table,
+            bucket_name=bucket_name,
         )
 
         # ================================================================================================
@@ -59,13 +59,13 @@ class MythicalMysfitsCoreStack(cdk.Stack):
         # ================================================================================================
 
         populate_db_fn_handler = load_file(
-            os.path.join(os.path.dirname(__file__), "../artifacts/functions/populateDb.js")
+            os.path.join(os.path.dirname(__file__), "../artefacts/functions/populate_db.py")
         )
         populate_db_fn = cdk.aws_lambda.Function(
             self,
             "PopulateDbFn",
             runtime=cdk.aws_lambda.Runtime.PYTHON_3_10,
-            handler="populateDb.insertMysfits",
+            handler="index.insertMysfits",
             code=cdk.aws_lambda.Code.from_inline(code=populate_db_fn_handler),
             environment={
                 "mysfitsTable": mysfits_table.table_name,
@@ -99,3 +99,5 @@ class MythicalMysfitsCoreStack(cdk.Stack):
         )
         cdk.CfnOutput(self, "PopulateDbFunctionName", value=populate_db_fn.function_name)
         cdk.CfnOutput(self, "MysfitsTableName", value=mysfits_table.table_name)
+        cdk.CfnOutput(self, "UserClicksServiceAPIEndpoint", value=user_clicks_service.api.url)
+        cdk.CfnOutput(self, "UserClicksServiceAPIId", value=user_clicks_service.api.rest_api_id)

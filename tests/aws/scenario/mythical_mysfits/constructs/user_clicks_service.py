@@ -18,6 +18,7 @@ class UserClicksService(constructs.Construct):
         scope: constructs.Construct,
         id: str,
         *,
+        bucket_name: str,
         account_id: str,
         mysfits_table: dynamodb.Table
     ):
@@ -26,8 +27,10 @@ class UserClicksService(constructs.Construct):
         self.clicks_destination_bucket = s3.Bucket(
             self,
             "ClicksBucketDestination",
-            versioned=True,
-            auto_delete_objects=True,
+            bucket_name=bucket_name,
+            # versioned=True,  # in the sample the bucket is versioned but it seems just trickier to clean up for no real gain? TODO: adapt cleanup for versioned
+            # auto_delete_objects=True,  # FIXME: this created a custom resource, so it fails
+            removal_policy=cdk.RemovalPolicy.DESTROY,
         )
 
         # We could use the table to .grant_read_data instead but that's what the sample does
@@ -36,12 +39,12 @@ class UserClicksService(constructs.Construct):
         lambda_function_policy.add_resources(mysfits_table.table_arn)
 
         mysfits_clicks_processor_fn_handler = load_file(
-            os.path.join(os.path.dirname(__file__), "../artefacts/functions/streamProcessor.py")
+            os.path.join(os.path.dirname(__file__), "../artefacts/functions/stream_processor.py")
         )
         self.mysfits_clicks_processor_fn = lambda_.Function(
             self,
             "StreamProcessorFunction",
-            handler="streamProcessor.processRecord",
+            handler="index.processRecord",
             runtime=lambda_.Runtime.PYTHON_3_10,
             description="An Amazon Kinesis Firehose stream processor that enriches click records to not just include a mysfitId, but also other attributes that can be analyzed later.",
             memory_size=128,
@@ -91,22 +94,22 @@ class UserClicksService(constructs.Construct):
             self,
             "DeliveryStream",
             extended_s3_destination_configuration={
-                "bucket_arn": self.clicks_destination_bucket.bucket_arn,
-                "buffering_hints": {
-                    "interval_in_seconds": 60,
-                    "size_in_m_bs": 50,
+                "bucketArn": self.clicks_destination_bucket.bucket_arn,
+                "bufferingHints": {
+                    "intervalInSeconds": 60,
+                    "sizeInMBs": 50,
                 },
-                "compression_format": "UNCOMPRESSED",
+                "compressionFormat": "UNCOMPRESSED",
                 "prefix": "firehose/",
-                "role_arn": firehose_delivery_role.role_arn,
-                "processing_configuration": {
+                "roleArn": firehose_delivery_role.role_arn,
+                "processingConfiguration": {
                     "enabled": True,
                     "processors": [
                         {
                             "parameters": [
                                 {
-                                    "parameter_name": "LambdaArn",
-                                    "parameter_value": self.mysfits_clicks_processor_fn.function_arn,
+                                    "parameterName": "LambdaArn",
+                                    "parameterValue": self.mysfits_clicks_processor_fn.function_arn,
                                 }
                             ],
                             "type": "Lambda",
@@ -115,15 +118,12 @@ class UserClicksService(constructs.Construct):
                 },
             },
         )
-
-        lambda_.Permission(
-            self,
+        self.mysfits_clicks_processor_fn.add_permission(
             "LambdaPermission",
             action="lambda:InvokeFunction",
-            functionName=self.mysfits_clicks_processor_fn.function_arn,
-            principal="firehose.amazonaws.com",
-            sourceAccount=account_id,
-            sourceArn=self.mysfits_firehose_to_s3.attr_arn,
+            principal=iam.ServicePrincipal("firehose.amazonaws.com"),
+            source_account=account_id,
+            source_arn=self.mysfits_firehose_to_s3.attr_arn,
         )
 
         click_processing_api_role = iam.Role(
