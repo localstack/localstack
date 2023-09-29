@@ -171,6 +171,18 @@ class TestEvents:
         # clean up
         clean_up(rule_name=rule_name)
 
+    @markers.aws.validated
+    def test_put_rule_invalid_schedule_expression(self, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_rule(
+                Name=f"rule-{short_uid()}", ScheduleExpression="rate(10 seconds)"
+            )
+        snapshot.match("error-response-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_rule(Name=f"rule-{short_uid()}", ScheduleExpression="rate()")
+        snapshot.match("error-response-2", e.value.response)
+
     @markers.aws.unknown
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
         self, aws_client

@@ -208,5 +208,30 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_rule_invalid_schedule_expression": {
+    "recorded-date": "29-09-2023, 19:18:52",
+    "recorded-content": {
+      "error-response-1": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Parameter ScheduleExpression is not valid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-response-2": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Parameter ScheduleExpression is not valid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
