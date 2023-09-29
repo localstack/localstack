@@ -1,7 +1,8 @@
 """
-This scenario setup is based on the official AWS serverlesspresso sample available at https://workshop.serverlesscoffee.com/
-Source: https://github.com/aws-samples/serverless-coffee-workshop
-It's originally written via SAM but has been adapted here into a Python-based CDK application.
+This scenario setup is based on the official AWS Modern Application Workshop sample available at
+https://github.com/aws-samples/aws-modern-application-workshop/tree/python-cdk
+
+It's originally written via TypeScript CDK but has been adapted here into a Python-based CDK application.
 """
 
 import base64
@@ -75,6 +76,14 @@ class TestMythicalMisfitsScenario:
                 snapshot.transform.key_value("PhysicalResourceId"),
                 snapshot.transform.key_value("RuntimeVersionArn"),
                 snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value(
+                    "CodeSize", value_replacement="<code-size>", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    jsonpath="$..Code.Location",
+                    value_replacement="<location>",
+                    reference_replacement=False,
+                ),
             ]
         )
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)

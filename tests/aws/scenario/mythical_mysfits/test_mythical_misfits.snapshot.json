@@ -1,6 +1,6 @@
 {
   "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_deployed_infra_state": {
-    "recorded-date": "29-09-2023, 23:31:15",
+    "recorded-date": "29-09-2023, 23:33:28",
     "recorded-content": {
       "outputs": {
         "ClicksBucketDestinationName": "<clicks-bucket-destination-name:1>",
@@ -531,7 +531,7 @@
         },
         "AWS::Lambda::Function-1": {
           "Code": {
-            "Location": "https://<physical-resource-id:7>-04-2014-tasks.s3.<region>.amazonaws.com/snapshots/111111111111/<populate-db-function-name:1>-0a033f14-a8d7-4c62-be15-4cd6395b5860?versionId=UcvjxqVGu3Wq9tYlsky46_Gi5nTGT7xf&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJIMEYCIQCcKYzxmPIPdmfSObQPC3PqdHnXwDuikCr7j3XDp8%2BwYwIhAK88P0gkf8Q%2FNhEKwaVcOnnnr74WUrY9V3eSLsOCwVL4KroFCMb%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMNzQ5Njc4OTAyODM5IgyNwGflLHU38KiSFbgqjgWq2%2FY3cHaPKvzcEbvTPzGBtX9ZOQquLxkpNG%2Ft3LIYyiae5gOfchEH5UlXGOPCEzSqlXloKYZIh0yTi5lSGoP%2B8zdaQHpLh1U0XfLY4EDGs1Q37BwZW7P3TL9V8YL3LGfxwhY%2FZZXw5zv5hct7noT49IeGmmJPW1zmPu088F4lWfLDwSyP89%2B5t%2FoOBYE8J3P2t5m7xvmX8kIrM1f4ON3lR2gLuNmPXAUwfnzdajGj0HXPtqFRWWnTV9nO7IrxJ5fzMpEUnV2z1oCrFCo2kMapxJFBEI4y3Q%2FIvbKJBN%2FykidnJ0godljAUJJOCfzBRDLE0he8EinQxdkowKAaaR%2BuG%2FKPKBthjAXf%2FuKJG93zEPXIQ8Wh30WdtQVAHqC%2Fvdx%2BagYEe1Kg9XGrEMweNRLoY2DOKNclRE0qcwmMEzeOGzeA2LuaaLO%2F%2FfNM0%2FDOnYOljpt9VyUowHD8kqVudbhT60Vy2ywIVFdbwFGm%2BVAveSRPuACAgm7fNrR%2F6jDQRvcMAEA%2BT2LXqL6Z3v4f7nym0Hc93x6gdT3cQT7cB95YYDjSdx3dvlNYKJGjd1v3SSEVSik8t6xjvG8I%2BVgVBRSDS2Rd0R47%2FFPD%2F1dq3g7YfaIDS0j2bNIR37I6Ff%2FOKft7WhqQqUc%2BXouMK8dVm2sgYSUvN2Uy7k8xJ97zidVCeeqYgmYuJGerQ8SjXXDyVYG6aKjaDl%2FVlTr8nBaaC8kIhxmZcM%2Bm4KwUozC7x%2BfXMKV2nNEcLI9Jj%2Br00mF04KE5UMvSAnZeqJPLZTqqQNt9wkHWEhNmWxMjkLAAUBaybJVJny7WmoXZBl6R0U0KkgI0NvwRaDmumYuwukAR4qCF8OPIJBm8SX75%2BYgEqlcwt%2BjcqAY6sAEkNRHHQx6tfQJahOtKukPMu8N02FXXRARPfYA0T%2BYpCoKPLM9nHq3LFn1GHRXWwiSo0U39ZT65WRPHa3UTaHMEGi%2BOM15qZOVjMnZdAoEPfedidba%2F5EKSnzbNtrl4n1S3oQiHWmX6TqexpaRSpxlqKWKy01Pk3ZLa6rt5HdT4ee%2FsRVAME2Ixtez%2Fdr9P2LE64aufYBocavXRURX0esg0Q%2Fy9SbG%2F6qbC5cHjQQSLOQ%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20230929T213114Z&X-Amz-SignedHeaders=host&X-Amz-Expires=600&X-Amz-Credential=ASIA25DCYHY35GZW5GH2%2F20230929%2F<region>%2Fs3%2Faws4_request&X-Amz-Signature=914b93ce88ba7e69e2b5c203da155d3a9bb0dfac2defb5b1e6448372c4d9d1c8",
+            "Location": "<location>",
             "RepositoryType": "S3"
           },
           "Configuration": {
@@ -539,7 +539,7 @@
               "x86_64"
             ],
             "CodeSha256": "JdLiunxfB54RngQRCOoPE51Clg1ssKAzABNMTAyF4ig=",
-            "CodeSize": 4482,
+            "CodeSize": "<code-size>",
             "Description": "",
             "Environment": {
               "Variables": {
@@ -585,7 +585,7 @@
         },
         "AWS::Lambda::Function-2": {
           "Code": {
-            "Location": "https://<physical-resource-id:7>-04-2014-tasks.s3.<region>.amazonaws.com/snapshots/111111111111/<stream-processor-function-name:1>-a80c3400-4e0e-4fe4-bb5d-8d1a6353f303?versionId=jfhKrZr0AWvDWL1s7VnCTAA37K_8rr_H&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIF6dj%2F4%2FRFHm%2FFLlVH6AL1%2BOZqnXPfW8gDDgjfJPuMy0AiEAxCc8jVwoD90N%2F4sBMCqfTf9IJhPocq7gJHhtjdZSfEAqugUIxv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw3NDk2Nzg5MDI4MzkiDNmUYPrHEvtWEIPi%2FyqOBaOGxHo5t%2BxffP2qwB9zmv7RemBbMEInuFTPnBgmycfsNU%2BH6%2FMYQJzqKCOIZRIGyVq6JkdXRDtGR6N2HXU4vQvWFHIeBxCTRDqaA9%2FnXXNKePgx6kEOap%2BKdRf51azGaQRR4j21sSk82RPhlWed%2B8bmHRZfs5YZ6I1wccI4YciasajlBgRrIL%2FwyrVWReiUMbFpyLNJvTLGV8wnMqbn9OyyqcCPJ8DHq6u%2FUPZ%2F7r4%2B4wpEPs1joQzl10zoxP7%2FTwVrcKrL6qmB8DGm1hQVHcdXD0MBeMEfXxZ2Jgqaaxto2MAslGUhsFveGOkojCxBkvErhsPby5tTTDgrrmZZyYOHlOSx6et1B6JpdumjXkmQ37NErdRuc5pHtZNCd6WPh4SlSyfmKVhbmL%2Fej1NGwnhC2uc65BjS1iD0If8DzzbJ5MlRXpvqIACP69QGYEC013Fn8z3kDtAcfnpj7TZxIGz%2FlinPNWuaaAZrnGMsUx3ARV%2FHWlYbbp3kzTtZo44JH20AvqTH%2FPEVrylqAZMfQe%2Bvjz8Sq15IuCcC3ETVDmy6d4n8krtqb%2B4CAEQjxtfwtOpQvrqYHwsm8HAViMMt8TaI2lHns1U6h6KSSjdt1EVTja%2Bov0bmFtrMQIEs9k7uFUGsiq9Ne%2BOuYfJ685CSXjUPEXjQB61683R3JPvAZ4OZ%2BliyQPhDsx8CkFsRAdghwaxl5N2KK8q6bs7yVMYws%2BIIF%2FVjN85WzZYwKXL6sJVfJTFaXBXjll%2BuX1bhgk800feR%2BD9i5we2udt9CORVWxfQwIhexhP4cpQB0at9XKVIZLF5oGMLPACgamk5AuZ9TeYN7dZdSTNeUUZLCR3Ke4HYGncjrHZUSVt3Hg6hPDDp7tyoBjqxAdgz2JqBH5dYJnBSlhu0A3vMqtsGLuQWQa58rp1ax33TwIGHnSWnFhkFsJAY4zwt1o7R08%2Frdpau8pYN%2BssA0uX6%2FGNdLHdG1ia5KEfrwfdLzjmTi%2BSKPzOKO3wcnzkIEk%2BZf1bEgl067GdfBohZbDC3aip4PouAo%2FiQffQeAQzFxPU4VClqHVBQPQuzTZ2SJTmylzL7JpVpiF42bD7MIpmpL0LOFVCKzWPHAMM%2B%2BqOGCg%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20230929T213115Z&X-Amz-SignedHeaders=host&X-Amz-Expires=600&X-Amz-Credential=ASIA25DCYHY3YIH5RODW%2F20230929%2F<region>%2Fs3%2Faws4_request&X-Amz-Signature=5726ba32655738fe72a84bb8ee1c6b9a44c1d63e34b2229dfc13595a7d0ab123",
+            "Location": "<location>",
             "RepositoryType": "S3"
           },
           "Configuration": {
@@ -593,7 +593,7 @@
               "x86_64"
             ],
             "CodeSha256": "mSdZ92KHZDdK+2yvPDVkzvZoRpv6zJQMrDvhTgipg5o=",
-            "CodeSize": 1723,
+            "CodeSize": "<code-size>",
             "Description": "An Amazon Kinesis Firehose stream processor that enriches click records to not just include a mysfitId, but also other attributes that can be analyzed later.",
             "Environment": {
               "Variables": {
@@ -641,7 +641,7 @@
     }
   },
   "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_user_clicks_are_stored": {
-    "recorded-date": "29-09-2023, 23:31:18",
+    "recorded-date": "29-09-2023, 23:33:31",
     "recorded-content": {
       "cors-req-headers": {
         "Access-Control-Allow-Credentials": "false",
