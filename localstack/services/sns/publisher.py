@@ -1019,7 +1019,7 @@ class SubscriptionFilter:
 
     def _evaluate_condition(self, value, condition, field_exists: bool):
         if not isinstance(condition, dict):
-            return value == condition
+            return field_exists and value == condition
         elif (must_exist := condition.get("exists")) is not None:
             # if must_exists is True then field_exists must be True
             # if must_exists is False then fields_exists must be False
