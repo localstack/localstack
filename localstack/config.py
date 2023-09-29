@@ -571,7 +571,7 @@ class HostAndPort:
         return f"HostAndPort(host={self.host}, port={self.port})"
 
 
-class UniqueHostAndPortList(list[HostAndPort]):
+class UniqueHostAndPortList(List[HostAndPort]):
     """
     Container type that ensures that ports added to the list are unique based
     on these rules:
