@@ -151,7 +151,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if re.match(rate_regex, schedule):
             rate = re.sub(rate_regex, r"\1", schedule)
             value, unit = re.split(r"\s+", rate.strip())
-            # TODO: when 1 is given as value, unit has to be singular, e.g., 1 minute/hour/day - aws throws 'Parameter ScheduleExpression is not valid' otherwise
+
+            value = int(value)
+            if value < 1:
+                raise ValueError("Rate value must be larger than 0")
+            # see https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rate-expressions.html
+            if value == 1 and unit.endswith("s"):
+                raise ValueError("If the value is equal to 1, then the unit must be singular")
+            if value > 1 and not unit.endswith("s"):
+                raise ValueError("If the value is greater than 1, the unit must be plural")
+
             if "minute" in unit:
                 return "*/%s * * * *" % value
             if "hour" in unit:

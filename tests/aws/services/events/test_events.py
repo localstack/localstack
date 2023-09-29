@@ -178,16 +178,36 @@ class TestEvents:
         clean_up(rule_name=rule_name)
 
     @markers.aws.validated
-    def test_put_rule_invalid_schedule_expression(self, aws_client, snapshot):
+    @pytest.mark.parametrize(
+        "expression",
+        [
+            "rate(10 seconds)",
+            "rate(10 years)",
+            "rate(1 minutes)",
+            "rate(1 hours)",
+            "rate(1 days)",
+            "rate(10 minute)",
+            "rate(10 hour)",
+            "rate(10 day)",
+            "rate()",
+            "rate(10)",
+            "rate(10 minutess)",
+            "rate(foo minutes)",
+            "rate(0 minutes)",
+            "rate(-10 minutes)",
+            "rate(10 MINUTES)",
+            "rate( 10 minutes )",
+            " rate(10 minutes)",
+        ],
+    )
+    def test_put_rule_invalid_rate_schedule_expression(self, expression, aws_client):
         with pytest.raises(ClientError) as e:
-            aws_client.events.put_rule(
-                Name=f"rule-{short_uid()}", ScheduleExpression="rate(10 seconds)"
-            )
-        snapshot.match("error-response-1", e.value.response)
+            aws_client.events.put_rule(Name=f"rule-{short_uid()}", ScheduleExpression=expression)
 
-        with pytest.raises(ClientError) as e:
-            aws_client.events.put_rule(Name=f"rule-{short_uid()}", ScheduleExpression="rate()")
-        snapshot.match("error-response-2", e.value.response)
+        assert e.value.response["Error"] == {
+            "Code": "ValidationException",
+            "Message": "Parameter ScheduleExpression is not valid.",
+        }
 
     @markers.aws.unknown
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
