@@ -571,7 +571,7 @@ class HostAndPort:
         return f"HostAndPort(host={self.host}, port={self.port})"
 
 
-class UniquePortList(list[HostAndPort]):
+class UniqueHostAndPortList(list[HostAndPort]):
     """
     Container type that ensures that ports added to the list are unique based
     on these rules:
@@ -613,7 +613,7 @@ class UniquePortList(list[HostAndPort]):
 
 def populate_legacy_edge_configuration(
     environment: Mapping[str, str]
-) -> Tuple[HostAndPort, UniquePortList, str, int, int]:
+) -> Tuple[HostAndPort, UniqueHostAndPortList, str, int, int]:
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
@@ -670,7 +670,7 @@ def populate_legacy_edge_configuration(
 
     return (
         localstack_host,
-        UniquePortList(gateway_listen),
+        UniqueHostAndPortList(gateway_listen),
         edge_bind_host,
         edge_port,
         edge_port_http,

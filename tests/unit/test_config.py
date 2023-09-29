@@ -221,7 +221,7 @@ class TestEdgeVariablesDerivedCorrectly:
 
 class TestUniquePortList:
     def test_construction(self):
-        ports = config.UniquePortList(
+        ports = config.UniqueHostAndPortList(
             [
                 HostAndPort("127.0.0.1", 53),
                 HostAndPort("127.0.0.1", 53),
@@ -232,14 +232,14 @@ class TestUniquePortList:
         ]
 
     def test_add_separate_values(self):
-        ports = config.UniquePortList()
+        ports = config.UniqueHostAndPortList()
         ports.append(HostAndPort("127.0.0.1", 42))
         ports.append(HostAndPort("127.0.0.1", 43))
 
         assert ports == [HostAndPort("127.0.0.1", 42), HostAndPort("127.0.0.1", 43)]
 
     def test_add_same_value(self):
-        ports = config.UniquePortList()
+        ports = config.UniqueHostAndPortList()
         ports.append(HostAndPort("127.0.0.1", 42))
         ports.append(HostAndPort("127.0.0.1", 42))
 
@@ -248,7 +248,7 @@ class TestUniquePortList:
         ]
 
     def test_add_all_interfaces_value(self):
-        ports = config.UniquePortList()
+        ports = config.UniqueHostAndPortList()
         ports.append(HostAndPort("0.0.0.0", 42))
         ports.append(HostAndPort("127.0.0.1", 42))
 
@@ -257,7 +257,7 @@ class TestUniquePortList:
         ]
 
     def test_add_all_interfaces_value_after(self):
-        ports = config.UniquePortList()
+        ports = config.UniqueHostAndPortList()
         ports.append(HostAndPort("127.0.0.1", 42))
         ports.append(HostAndPort("0.0.0.0", 42))
 
@@ -266,7 +266,7 @@ class TestUniquePortList:
         ]
 
     def test_index_access(self):
-        ports = config.UniquePortList(
+        ports = config.UniqueHostAndPortList(
             [
                 HostAndPort("0.0.0.0", 42),
             ]
@@ -277,7 +277,7 @@ class TestUniquePortList:
             _ = ports[10]
 
     def test_iteration(self):
-        ports = config.UniquePortList(
+        ports = config.UniqueHostAndPortList(
             [
                 HostAndPort("127.0.0.1", 42),
                 HostAndPort("127.0.0.1", 43),
