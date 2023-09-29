@@ -1657,16 +1657,16 @@ def add_permission_policy_statement(
     new_statement = new_policy["Statement"][0]
     result = {"Statement": json.dumps(new_statement)}
     if previous_policy:
-        statment_with_sid = next(
+        statement_with_sid = next(
             (statement for statement in previous_policy["Statement"] if statement["Sid"] == sid),
             None,
         )
-        if statment_with_sid and statment_with_sid == new_statement:
+        if statement_with_sid and statement_with_sid == new_statement:
             LOG.debug(
                 f"Policy Statement SID '{sid}' for Lambda '{resource_arn_qualified}' already exists"
             )
             return result
-        if statment_with_sid:
+        if statement_with_sid:
             msg = (
                 f"The statement id {sid} provided already exists. Please provide a new "
                 "statement id, or remove the existing statement."
