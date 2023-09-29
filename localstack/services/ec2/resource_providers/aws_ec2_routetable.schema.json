@@ -1,0 +1,94 @@
+{
+  "typeName": "AWS::EC2::RouteTable",
+  "description": "Resource Type definition for AWS::EC2::RouteTable",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-ec2",
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string"
+        },
+        "Value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "properties": {
+    "RouteTableId": {
+      "description": "The route table ID.",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Any tags assigned to the route table.",
+      "type": "array",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "VpcId": {
+      "description": "The ID of the VPC.",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "VpcId"
+  ],
+  "createOnlyProperties": [
+    "/properties/VpcId"
+  ],
+  "readOnlyProperties": [
+    "/properties/RouteTableId"
+  ],
+  "primaryIdentifier": [
+    "/properties/RouteTableId"
+  ],
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": true,
+    "tagProperty": "/properties/Tags"
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:CreateRouteTable",
+        "ec2:CreateTags",
+        "ec2:DescribeRouteTables"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeRouteTables"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ec2:CreateTags",
+        "ec2:DeleteTags",
+        "ec2:DescribeRouteTables"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DescribeRouteTables",
+        "ec2:DeleteRouteTable"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeRouteTables"
+      ]
+    }
+  }
+}
