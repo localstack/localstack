@@ -573,17 +573,28 @@ class HostAndPort:
 
 class UniquePortList(list[HostAndPort]):
     """
-    Container that ensures that ports bound
+    Container type that ensures that ports added to the list are unique based
+    on these rules:
+        - 0.0.0.0 "trumps" any other binding, i.e. adding 127.0.0.1:4566 to
+          [0.0.0.0:4566] is a no-op
+        - adding identical hosts and ports is a no-op
+        - adding `0.0.0.0:4566` to [`127.0.0.1:4566`] "upgrades" the binding to
+          create [`0.0.0.0:4566`]
     """
 
     def append(self, value: HostAndPort):
+        # no exact duplicates
         if value in self:
             return
 
+        # if 0.0.0.0:<port> already exists in the list, then do not add the new
+        # item
         for item in self:
             if item.host == "0.0.0.0" and item.port == value.port:
                 return
 
+        # if we add 0.0.0.0:<port> and already contain *:<port> then bind on
+        # 0.0.0.0
         contained_ports = set(every.port for every in self)
         if value.host == "0.0.0.0" and value.port in contained_ports:
             for item in self:
@@ -591,6 +602,7 @@ class UniquePortList(list[HostAndPort]):
                     item.host = value.host
             return
 
+        # append the item
         super().append(value)
 
 
