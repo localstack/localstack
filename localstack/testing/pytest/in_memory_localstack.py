@@ -25,6 +25,7 @@ from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 
 LOG = logging.getLogger(__name__)
+LOG.info("Pytest plugin for in-memory-localstack session loaded.")
 
 if localstack_config.is_collect_metrics_mode():
     pytest_plugins = "localstack.testing.pytest.metric_collection"
@@ -42,7 +43,7 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_sessionstart(session: Session):
+def pytest_runtestloop(session: Session):
     if not session.config.option.start_localstack:
         return
 

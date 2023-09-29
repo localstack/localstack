@@ -1,10 +1,4 @@
-import sys
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -13,6 +7,7 @@ AccountId = str
 AccountPolicyDocument = str
 AmazonResourceName = str
 Arn = str
+ClientToken = str
 DataProtectionPolicyDocument = str
 Days = int
 DefaultValue = float
@@ -860,6 +855,7 @@ class PutQueryDefinitionRequest(ServiceRequest):
     queryDefinitionId: Optional[QueryId]
     logGroupNames: Optional[LogGroupNames]
     queryString: QueryDefinitionString
+    clientToken: Optional[ClientToken]
 
 
 class PutQueryDefinitionResponse(TypedDict, total=False):
@@ -1309,6 +1305,7 @@ class LogsApi:
         query_string: QueryDefinitionString,
         query_definition_id: QueryId = None,
         log_group_names: LogGroupNames = None,
+        client_token: ClientToken = None,
     ) -> PutQueryDefinitionResponse:
         raise NotImplementedError
 

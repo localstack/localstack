@@ -2088,10 +2088,12 @@ class TestSqsProvider:
 
     @pytest.mark.xfail
     @markers.aws.validated
-    def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_queue_arn, aws_client):
+    def test_redrive_policy_attribute_validity(
+        self, sqs_create_queue, sqs_get_queue_arn, aws_client
+    ):
         dl_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dl_queue_name)
-        dl_target_arn = sqs_queue_arn(dl_queue_url)
+        dl_target_arn = sqs_get_queue_arn(dl_queue_url)
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         valid_max_receive_count = "42"
@@ -2428,7 +2430,7 @@ class TestSqsProvider:
 
     @markers.aws.validated
     def test_dead_letter_queue_with_fifo_and_content_based_deduplication(
-        self, sqs_create_queue, sqs_queue_arn, aws_client
+        self, sqs_create_queue, sqs_get_queue_arn, aws_client
     ):
         dlq_url = sqs_create_queue(
             QueueName=f"test-dlq-{short_uid()}.fifo",
@@ -2438,7 +2440,7 @@ class TestSqsProvider:
                 "MessageRetentionPeriod": "1209600",
             },
         )
-        dlq_arn = sqs_queue_arn(dlq_url)
+        dlq_arn = sqs_get_queue_arn(dlq_url)
 
         queue_url = sqs_create_queue(
             QueueName=f"test-queue-{short_uid()}.fifo",
@@ -3028,10 +3030,7 @@ class TestSqsProvider:
         result_recv = aws_client.sqs.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0)
         assert result_recv["Messages"][0]["MessageId"] == result_send["MessageId"]
 
-    # verification of community posted issue
-    # FIXME: \r gets lost
-    @pytest.mark.skip
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_message_with_carriage_return(self, sqs_create_queue, aws_client):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -4069,7 +4068,7 @@ class TestSqsQueryApi:
 
 class TestSQSMultiAccounts:
     @pytest.mark.parametrize("strategy", ["domain", "path"])
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_cross_account_access(
         self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
     ):
@@ -4103,7 +4102,7 @@ class TestSQSMultiAccounts:
         # - UntagQueue
 
     @pytest.mark.parametrize("strategy", ["domain", "path"])
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_cross_account_get_queue_url(
         self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
     ):

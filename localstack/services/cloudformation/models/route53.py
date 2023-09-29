@@ -91,6 +91,10 @@ class Route53RecordSet(GenericBaseModel):
             resource: dict,
         ):
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+            if resource["Properties"].get("AliasTarget"):
+                resource["Properties"]["HostedZoneId"] = resource["Properties"]["AliasTarget"][
+                    "HostedZoneId"
+                ]
 
         return {
             "create": {

@@ -135,9 +135,7 @@ class ExtAssignment(airspeed.operators.Assignment):
     Extends the airspeed Assignment class to support names with dashes, e.g., "X-Amz-Target"
     """
 
-    START = re.compile(
-        r"\s*\(\s*\$([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_-]*)*)\s*=\s*(.*)$", re.S + re.I
-    )
+    START = re.compile(r"\s*\(\s*\$(\w*(?:\.[\w-]+|\[\"\$\w+\"\]*)*)\s*=\s*(.*)$", re.S + re.I)
 
 
 class ExtNameOrCall(airspeed.operators.NameOrCall):
@@ -212,18 +210,15 @@ def parse(self):
             break
 
 
-def dict_put(self, key, value):
-    existing = self.get(key)
-    self.update({key: value})
-    return existing
+def dict_to_string(self) -> str:
+    return str(self)
 
 
-def dict_put_all(self, values):
-    self.update(values)
+def str_contains(self, other: str) -> bool:
+    return other in self
 
 
-airspeed.operators.__additional_methods__[dict]["put"] = dict_put
-airspeed.operators.__additional_methods__[dict]["putAll"] = dict_put_all
-
+airspeed.operators.__additional_methods__[dict]["toString"] = dict_to_string
+airspeed.operators.__additional_methods__[str]["contains"] = str_contains
 
 # END of patches for airspeed

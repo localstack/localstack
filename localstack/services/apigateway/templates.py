@@ -59,6 +59,33 @@ class MappingTemplates:
         return getattr(PassthroughBehavior, passthrough_behaviour, None)
 
 
+class AttributeDict(dict):
+    """
+    Wrapper returned by VelocityUtilApiGateway.parseJson to allow access to dict values as attributes (dot notation),
+    e.g.: $util.parseJson('$.foo').bar
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(AttributeDict, self).__init__(*args, **kwargs)
+        for key, value in self.items():
+            if isinstance(value, dict):
+                self[key] = AttributeDict(value)
+
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        raise AttributeError(f"'AttributeDict' object has no attribute '{name}'")
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    def __delattr__(self, name):
+        if name in self:
+            del self[name]
+        else:
+            raise AttributeError(f"'AttributeDict' object has no attribute '{name}'")
+
+
 class VelocityUtilApiGateway(VelocityUtil):
     """
     Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
@@ -103,6 +130,10 @@ class VelocityUtilApiGateway(VelocityUtil):
         if obj in (True, False):
             return str(obj).lower()
         return str(obj)
+
+    def parseJson(self, s: str):
+        obj = json.loads(s)
+        return AttributeDict(obj) if isinstance(obj, dict) else obj
 
 
 class VelocityInput:
@@ -186,6 +217,11 @@ class Templates:
             "header": {},
             "path": {},
             "querystring": {},
+        }
+
+        ctx["responseOverride"] = {
+            "header": {},
+            "status": 200,
         }
 
         return {
@@ -294,7 +330,11 @@ class ResponseTemplates(Templates):
 
         # we render the template with the context data and the response content
         variables = self.build_variables_mapping(api_context)
+        # update the response body
         response._content = self._render_as_json(template, variables)
+        if response_overrides := variables.get("context", {}).get("responseOverride", {}):
+            response.headers.update(response_overrides.get("header", {}).items())
+            response.status_code = response_overrides.get("status", 200)
 
         LOG.debug("Endpoint response body after transformations:\n%s", response._content)
         return response._content

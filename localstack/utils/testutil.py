@@ -520,6 +520,7 @@ def get_lambda_log_group_name(function_name):
     return "/aws/lambda/{}".format(function_name)
 
 
+# TODO: make logs_client mandatory
 def check_expected_lambda_log_events_length(
     expected_length, function_name, regex_filter=None, logs_client=None
 ):

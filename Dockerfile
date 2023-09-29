@@ -1,5 +1,5 @@
 # builder: Stage to build a custom JRE (with jlink)
-FROM python:3.10.13-slim-bullseye@sha256:9d1db839c73288a0c3a44000deffaaead48695cb5144daf9ae9f836235291398 as java-builder
+FROM python:3.11.5-slim-buster@sha256:9f35f3a6420693c209c11bba63dcf103d88e47ebe0b205336b5168c122967edf as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -37,7 +37,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.10.13-slim-bullseye@sha256:9d1db839c73288a0c3a44000deffaaead48695cb5144daf9ae9f836235291398 as base
+FROM python:3.11.5-slim-buster@sha256:9f35f3a6420693c209c11bba63dcf103d88e47ebe0b205336b5168c122967edf as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -167,9 +167,9 @@ RUN --mount=type=cache,target=/root/.cache \
     chmod -R 777 /usr/lib/localstack
 
 # link the python package installer virtual environments into the localstack venv
-RUN echo /var/lib/localstack/lib/python-packages/lib/python3.10/site-packages > localstack-var-python-packages-venv.pth && \
+RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \
     mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
-RUN echo /usr/lib/localstack/python-packages/lib/python3.10/site-packages > localstack-static-python-packages-venv.pth && \
+RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
 
 # Install the latest version of the LocalStack Persistence Plugin

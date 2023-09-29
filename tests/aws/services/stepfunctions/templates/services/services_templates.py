@@ -50,6 +50,9 @@ class ServicesTemplates(TemplateLoader):
     LAMBDA_LIST_FUNCTIONS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_list_functions.json5"
     )
+    LAMBDA_INPUT_PARAMETERS_FILTER: Final[str] = os.path.join(
+        _THIS_FOLDER, "../services/statemachines/lambda_input_parameters_filter.json5"
+    )
     SFN_START_EXECUTION: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sfn_start_execution.json5"
     )

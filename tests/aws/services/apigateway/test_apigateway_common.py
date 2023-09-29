@@ -664,3 +664,123 @@ class TestDeployments:
         with pytest.raises(ClientError) as ctx:
             client.delete_deployment(restApiId=api_id, deploymentId=deployment_id_2)
         snapshot.match("delete-deployment-2-error", ctx.value.response)
+
+
+class TestProxyRouting:
+    @markers.aws.validated
+    def test_proxy_routing_with_hardcoded_resource_sibling(
+        self,
+        aws_client,
+        create_rest_apigw,
+        apigw_redeploy_api,
+    ):
+        api_id, _, root_id = create_rest_apigw(name="test proxy routing")
+
+        def _create_mock_integration_with_200_response_template(
+            resource_id: str, http_method: str, response_template: dict
+        ):
+            aws_client.apigateway.put_method(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                authorizationType="NONE",
+            )
+
+            aws_client.apigateway.put_method_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                statusCode="200",
+            )
+
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                type="MOCK",
+                requestTemplates={"application/json": '{"statusCode": 200}'},
+            )
+
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={"application/json": json.dumps(response_template)},
+            )
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="test"
+        )
+        hardcoded_resource_id = resource["id"]
+
+        response_template_post = {"statusCode": 200, "message": "POST request"}
+        _create_mock_integration_with_200_response_template(
+            hardcoded_resource_id, "POST", response_template_post
+        )
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=hardcoded_resource_id, pathPart="any"
+        )
+        any_resource_id = resource["id"]
+
+        response_template_any = {"statusCode": 200, "message": "ANY request"}
+        _create_mock_integration_with_200_response_template(
+            any_resource_id, "ANY", response_template_any
+        )
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="{proxy+}"
+        )
+        proxy_resource_id = resource["id"]
+        response_template_options = {"statusCode": 200, "message": "OPTIONS request"}
+        _create_mock_integration_with_200_response_template(
+            proxy_resource_id, "OPTIONS", response_template_options
+        )
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        url = api_invoke_url(api_id=api_id, stage=stage_name, path="/test")
+
+        def _invoke_api(req_url: str, http_method: str, expected_type: str):
+            _response = requests.request(http_method.upper(), req_url)
+            assert _response.ok
+            assert _response.json()["message"] == f"{expected_type} request"
+
+        retries = 10 if is_aws_cloud() else 3
+        sleep = 3 if is_aws_cloud() else 1
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            req_url=url,
+            http_method="OPTIONS",
+            expected_type="OPTIONS",
+        )
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            req_url=url,
+            http_method="POST",
+            expected_type="POST",
+        )
+        any_url = api_invoke_url(api_id=api_id, stage=stage_name, path="/test/any")
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            req_url=any_url,
+            http_method="OPTIONS",
+            expected_type="ANY",
+        )
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            req_url=any_url,
+            http_method="GET",
+            expected_type="ANY",
+        )

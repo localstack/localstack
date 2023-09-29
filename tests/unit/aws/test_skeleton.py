@@ -1,15 +1,6 @@
-import sys
-from typing import Dict, List
+from typing import Dict, List, TypedDict
 
 import pytest
-
-from localstack.aws.api.sqs import SendMessageRequest
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
-
 from botocore.parsers import create_parser
 
 from localstack.aws.api import (
@@ -20,6 +11,7 @@ from localstack.aws.api import (
     ServiceRequest,
     handler,
 )
+from localstack.aws.api.sqs import SendMessageRequest
 from localstack.aws.skeleton import DispatchTable, ServiceRequestDispatcher, Skeleton
 from localstack.aws.spec import load_service
 

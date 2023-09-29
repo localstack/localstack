@@ -206,6 +206,14 @@ def opensearch():
 
 
 @aws_provider()
+def ram():
+    from localstack.services.ram.provider import RamProvider
+
+    provider = RamProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider()
 def redshift():
     from localstack.services.redshift.provider import RedshiftProvider
 
@@ -234,7 +242,11 @@ def s3_legacy():
     from localstack.services.s3.legacy import s3_listener, s3_starter
 
     return Service(
-        "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
+        "s3",
+        listener=s3_listener.UPDATE_S3,
+        start=s3_starter.start_s3,
+        check=s3_starter.check_s3,
+        lifecycle_hook=s3_starter.S3LifecycleHook(),
     )
 
 
@@ -243,7 +255,11 @@ def s3_v1():
     from localstack.services.s3.legacy import s3_listener, s3_starter
 
     return Service(
-        "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
+        "s3",
+        listener=s3_listener.UPDATE_S3,
+        start=s3_starter.start_s3,
+        check=s3_starter.check_s3,
+        lifecycle_hook=s3_starter.S3LifecycleHook(),
     )
 
 
@@ -273,10 +289,10 @@ def s3_v2():
 
 @aws_provider(api="s3", name="stream")
 def s3_stream():
-    from localstack.services.s3.provider_stream import S3ProviderStream
+    from localstack.services.s3.v3.provider import S3Provider
 
-    provider = S3ProviderStream()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+    provider = S3Provider()
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="s3", name="v3")

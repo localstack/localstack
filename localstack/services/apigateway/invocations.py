@@ -12,8 +12,6 @@ from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ModelResolver,
-    extract_path_params,
-    extract_query_string_params,
     get_apigateway_store_for_invocation,
     get_cors_response,
     make_error_response,
@@ -286,24 +284,13 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
 # in Pro (potentially to be replaced with a runtime hook in the future).
 def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
     # define local aliases from invocation context
-    invocation_path = invocation_context.path_with_query_string
     method = invocation_context.method
     headers = invocation_context.headers
-    resource_path = invocation_context.resource_path
     integration = invocation_context.integration
-    # extract integration type and path parameters
-    relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
     integration_type = integration_type_orig.upper()
     integration_method = integration.get("httpMethod")
     uri = integration.get("uri") or integration.get("integrationUri") or ""
-
-    try:
-        invocation_context.path_params = extract_path_params(
-            path=relative_path, extracted_path=resource_path
-        )
-    except Exception:
-        invocation_context.path_params = {}
 
     if (uri.startswith("arn:aws:apigateway:") and ":lambda:path" in uri) or uri.startswith(
         "arn:aws:lambda"

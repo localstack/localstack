@@ -489,6 +489,11 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
     # separate privileged and unprivileged addresses
     unprivileged, privileged = split_list_by(listen, lambda addr: addr.is_unprivileged() or False)
 
+    # if we are root, we can directly bind to privileged ports as well
+    if is_root():
+        unprivileged = unprivileged + privileged
+        privileged = []
+
     # check that we are actually started the gateway server
     if not unprivileged:
         unprivileged = parse_gateway_listen(
@@ -503,23 +508,19 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
     # start TCP proxies for the remaining addresses
     proxy_destination = unprivileged[0]
     for address in privileged:
-        if is_root():
-            # just start the proxy
-            do_start_tcp_proxy(address, target_address=proxy_destination, asynchronous=asynchronous)
-        else:
-            # escalate to root
-            args = [
-                "proxy",
-                "--gateway-listen",
-                str(address),
-                "--target-address",
-                str(proxy_destination),
-            ]
-            run_module_as_sudo(
-                module="localstack.services.edge",
-                arguments=args,
-                asynchronous=True,
-            )
+        # escalate to root
+        args = [
+            "proxy",
+            "--gateway-listen",
+            str(address),
+            "--target-address",
+            str(proxy_destination),
+        ]
+        run_module_as_sudo(
+            module="localstack.services.edge",
+            arguments=args,
+            asynchronous=True,
+        )
 
     if edge_thread is not None:
         edge_thread.join()

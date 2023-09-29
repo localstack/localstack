@@ -128,10 +128,10 @@ function explain_release_steps() {
 }
 
 function print_github_outputs() {
-    echo "::set-output name=current::${CURRENT_VER}"
-    echo "::set-output name=release::${RELEASE_VER}"
-    echo "::set-output name=develop::${DEVELOP_VER}"
-    echo "::set-output name=boundary::${BOUNDARY_VER}"
+    echo "current=${CURRENT_VER}" >> $GITHUB_OUTPUT
+    echo "release=${RELEASE_VER}" >> $GITHUB_OUTPUT
+    echo "develop=${DEVELOP_VER}" >> $GITHUB_OUTPUT
+    echo "boundary=${BOUNDARY_VER}" >> $GITHUB_OUTPUT
 }
 
 # commands

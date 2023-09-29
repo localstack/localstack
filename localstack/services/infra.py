@@ -17,7 +17,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
 from localstack.runtime import events, hooks
 from localstack.runtime.exceptions import LocalstackExit
-from localstack.services import generic_proxy, motoserver
+from localstack.services import motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import config_listener, files, objects
@@ -278,13 +278,11 @@ def stop_infra():
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
     events.infra_stopping.set()
 
-    # run plugin hooks for infra shutdown
-    hooks.on_infra_shutdown.run()
-
     try:
-        generic_proxy.QUIET = True  # TODO: this doesn't seem to be doing anything
-        LOG.debug("[shutdown] Cleaning up services ...")
-        SERVICE_PLUGINS.stop_all_services()
+        LOG.debug("[shutdown] Running shutdown hooks ...")
+        # run plugin hooks for infra shutdown
+        hooks.on_infra_shutdown.run()
+
         LOG.debug("[shutdown] Cleaning up resources ...")
         cleanup_resources()
 

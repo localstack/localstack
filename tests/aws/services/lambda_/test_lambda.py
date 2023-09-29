@@ -47,6 +47,7 @@ FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
+TEST_LAMBDA_MAPPING_RESPONSES = os.path.join(THIS_FOLDER, "functions/lambda_mapping_responses.py")
 TEST_LAMBDA_PYTHON_SELECT_PATTERN = os.path.join(THIS_FOLDER, "functions/lambda_select_pattern.py")
 TEST_LAMBDA_PYTHON_ECHO_ZIP = os.path.join(THIS_FOLDER, "functions/echo.zip")
 TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_python_version.py")
@@ -107,7 +108,7 @@ TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.
 PYTHON_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["python"]
     if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
-    else [Runtime.python3_10]
+    else [Runtime.python3_11]
 )
 NODE_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["nodejs"]
@@ -1419,6 +1420,45 @@ class TestLambdaErrors:
             r"retries: \d\): Internal error while executing lambda"
         )
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    @pytest.mark.parametrize(
+        ["label", "payload"],
+        [
+            # Body taken from AWS CLI v2 call:
+            # aws lambda invoke --debug --function-name localstack-lambda-url-example \
+            #   --payload '{"body": "{\"num1\": \"10\", \"num2\": \"10\"}" }' output.txt
+            ("body", b"n\x87r\x9e\xe9\xb5\xd7I\xee\x9bmt"),
+            # Body taken from AWS CLI v2 call:
+            # aws lambda invoke --debug --function-name localstack-lambda-url-example \
+            #   --payload '{"message": "hello" }' output.txt
+            ("message", b"\x99\xeb,j\x07\xa1zYh"),
+        ],
+    )
+    def test_lambda_invoke_payload_encoding_error(
+        self, aws_client_factory, create_lambda_function, snapshot, label, payload
+    ):
+        """Test Lambda invoke with invalid encoding error.
+        This happens when using the AWS CLI v2 with an inline --payload '{"input": "my-input"}' without specifying
+        the flag --cli-binary-format raw-in-base64-out because base64 is the new default in v2. See AWS docs:
+        https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-options.html
+        """
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_10,
+        )
+
+        client_config = Config(
+            retries={"max_attempts": 0},
+        )
+        no_retry_lambda_client = aws_client_factory.get_client("lambda", config=client_config)
+        with pytest.raises(no_retry_lambda_client.exceptions.InvalidRequestContentException) as e:
+            no_retry_lambda_client.invoke(FunctionName=function_name, Payload=payload)
+        snapshot.match(f"invoke_function_invalid_payload_{label}", e.value.response)
+
 
 class TestLambdaCleanup:
     @pytest.mark.skip(
@@ -1918,9 +1958,11 @@ class TestLambdaConcurrency:
         aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
 
         # simultaneously queue two event invocations
+        # The first event invoke gets executed immediately
         aws_client.lambda_.invoke(
             FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 15})
         )
+        # The second event invoke gets throttled and re-scheduled with an internal retry
         aws_client.lambda_.invoke(
             FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
         )
@@ -1928,12 +1970,15 @@ class TestLambdaConcurrency:
         # Ensure one event invocation is being executed and the other one is in the queue.
         time.sleep(5)
 
+        # Synchronous invocations raise an exception because insufficient reserved concurrency is available
         with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
             aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
         snapshot.match("too_many_requests_exc", e.value.response)
 
+        # ReservedConcurrentExecutions=2 is insufficient because the throttled async event invoke might be
+        # re-scheduled before the synchronous invoke while the first async invoke is still running.
         aws_client.lambda_.put_function_concurrency(
-            FunctionName=func_name, ReservedConcurrentExecutions=2
+            FunctionName=func_name, ReservedConcurrentExecutions=3
         )
         aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
 

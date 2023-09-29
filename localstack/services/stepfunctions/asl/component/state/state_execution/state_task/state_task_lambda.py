@@ -1,3 +1,5 @@
+from typing import Optional
+
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import InvocationRequest, InvocationType
@@ -72,6 +74,17 @@ class StateTaskLambda(StateTask):
             ),
         )
 
+    def _get_supported_parameters(self) -> Optional[set[str]]:
+        # Filter parameters to set of lambda invoke api action.
+        return {
+            "FunctionName",
+            "InvocationType",
+            "LogType",
+            "ClientContext",
+            "Payload",
+            "Qualifier",
+        }
+
     def _eval_parameters(self, env: Environment) -> dict:
         env_state_input = env.stack.pop()
         parameters = InvocationRequest(
@@ -86,7 +99,6 @@ class StateTaskLambda(StateTask):
         return parameters
 
     def _eval_execution(self, env: Environment) -> None:
-
         scheduled_event_details = LambdaFunctionScheduledEventDetails(
             resource=self.resource.resource_arn,
             input=to_json_str(env.inp),

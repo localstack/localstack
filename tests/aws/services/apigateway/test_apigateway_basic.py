@@ -461,7 +461,7 @@ class TestAPIGateway:
         path_map = get_rest_api_paths(
             account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME, rest_api_id=api_id
         )
-        _, resource = get_resource_for_path(path, path_map)
+        _, resource = get_resource_for_path(path, method="POST", path_map=path_map)
 
         # make test request to gateway and check response
         path_with_replace = path.replace("{test_param1}", "foo1")
@@ -1983,6 +1983,8 @@ class TestIntegrations:
             stage_name=TEST_STAGE_NAME,
             queue_arn=sqs_queue,
             path="/data",
+            account_id=TEST_AWS_ACCOUNT_ID,
+            region_name=TEST_AWS_REGION_NAME,
         )
 
         # create event source for sqs lambda processor

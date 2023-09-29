@@ -53,7 +53,7 @@ def remove_none_values(obj):
 
 # FIXME: this shouldn't be necessary in the future
 param_validation = re.compile(
-    r"Invalid type for parameter (?P<param>\w+), value: (?P<value>\w+), type: <class '(?P<wrong_class>\w+)'>, valid types: <class '(?P<valid_class>\w+)'>"
+    r"Invalid type for parameter (?P<param>[\w.]+), value: (?P<value>\w+), type: <class '(?P<wrong_class>\w+)'>, valid types: <class '(?P<valid_class>\w+)'>"
 )
 
 

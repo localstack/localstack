@@ -3,7 +3,6 @@ import json
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
@@ -25,7 +24,7 @@ GET_USER_POLICY_DOC = """{
 
 
 class TestIAMExtensions:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_get_user_without_username_as_user(self, create_user, aws_client):
         user_name = f"user-{short_uid()}"
         policy_name = f"policy={short_uid()}"
@@ -51,7 +50,7 @@ class TestIAMExtensions:
         assert user["UserId"] == account_id
         assert user["Arn"] == f"arn:aws:iam::{account_id}:root"
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_get_user_without_username_as_role(self, create_role, wait_and_assume_role, aws_client):
         role_name = f"role-{short_uid()}"
         policy_name = f"policy={short_uid()}"
@@ -79,7 +78,7 @@ class TestIAMExtensions:
             iam_client_as_role.get_user()
         e.match("Must specify userName when calling with non-User credentials")
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_user_with_permission_boundary(self, create_user, create_policy, aws_client):
         user_name = f"user-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
@@ -102,7 +101,7 @@ class TestIAMExtensions:
         get_user_reply = aws_client.iam.get_user(UserName=user_name)
         assert "PermissionsBoundary" not in get_user_reply["User"]
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_user_add_permission_boundary_afterwards(
         self, create_user, create_policy, aws_client
     ):
@@ -152,8 +151,10 @@ class TestIAMExtensions:
 
 
 class TestIAMIntegrations:
-    @markers.aws.unknown
-    def test_attach_iam_role_to_new_iam_user(self, aws_client):
+    @markers.aws.validated
+    def test_attach_iam_role_to_new_iam_user(
+        self, aws_client, account_id, create_user, create_policy
+    ):
         test_policy_document = {
             "Version": "2012-10-17",
             "Statement": {
@@ -162,14 +163,14 @@ class TestIAMIntegrations:
                 "Resource": "arn:aws:s3:::example_bucket",
             },
         }
-        test_user_name = "test-user"
+        test_user_name = f"test-user-{short_uid()}"
 
-        aws_client.iam.create_user(UserName=test_user_name)
-        response = aws_client.iam.create_policy(
-            PolicyName="test-policy", PolicyDocument=json.dumps(test_policy_document)
+        create_user(UserName=test_user_name)
+        response = create_policy(
+            PolicyName=f"test-policy-{short_uid()}", PolicyDocument=json.dumps(test_policy_document)
         )
         test_policy_arn = response["Policy"]["Arn"]
-        assert get_aws_account_id() in test_policy_arn
+        assert account_id in test_policy_arn
 
         aws_client.iam.attach_user_policy(UserName=test_user_name, PolicyArn=test_policy_arn)
         attached_user_policies = aws_client.iam.list_attached_user_policies(UserName=test_user_name)
@@ -187,7 +188,7 @@ class TestIAMIntegrations:
         assert ctx.typename == "NoSuchEntityException"
         assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_delete_non_existent_policy_returns_no_such_entity(self, aws_client):
         non_existent_policy_arn = "arn:aws:iam::000000000000:policy/non-existent-policy"
 
@@ -196,9 +197,9 @@ class TestIAMIntegrations:
         assert ctx.typename == "NoSuchEntityException"
         assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
 
-    @markers.aws.unknown
-    def test_recreate_iam_role(self, aws_client):
-        role_name = "role-{}".format(short_uid())
+    @markers.aws.validated
+    def test_recreate_iam_role(self, aws_client, create_role):
+        role_name = f"role-{short_uid()}"
 
         assume_policy_document = {
             "Version": "2012-10-17",
@@ -206,11 +207,12 @@ class TestIAMIntegrations:
                 {
                     "Action": "sts:AssumeRole",
                     "Principal": {"Service": "lambda.amazonaws.com"},
+                    "Effect": "Allow",
                 }
             ],
         }
 
-        rs = aws_client.iam.create_role(
+        rs = create_role(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(assume_policy_document),
         )
@@ -227,21 +229,24 @@ class TestIAMIntegrations:
         except ClientError as e:
             assert e.response["Error"]["Code"] == "EntityAlreadyExists"
 
-        # clean up
-        aws_client.iam.delete_role(RoleName=role_name)
-
-    @markers.aws.unknown
-    def test_instance_profile_tags(self, aws_client):
+    @markers.aws.validated
+    def test_instance_profile_tags(self, aws_client, cleanups):
         def gen_tag():
             return Tag(Key=f"key-{long_uid()}", Value=f"value-{short_uid()}")
 
-        user_name = "user-role-{}".format(short_uid())
+        def _sort_key(entry):
+            return entry["Key"]
+
+        user_name = f"user-role-{short_uid()}"
         aws_client.iam.create_instance_profile(InstanceProfileName=user_name)
+        cleanups.append(
+            lambda: aws_client.iam.delete_instance_profile(InstanceProfileName=user_name)
+        )
 
         tags_v0 = []
         #
         rs = aws_client.iam.list_instance_profile_tags(InstanceProfileName=user_name)
-        assert rs["Tags"] == tags_v0
+        assert rs["Tags"].sort(key=_sort_key) == tags_v0.sort(key=_sort_key)
 
         tags_v1 = [gen_tag()]
         #
@@ -249,7 +254,7 @@ class TestIAMIntegrations:
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
         #
         rs = aws_client.iam.list_instance_profile_tags(InstanceProfileName=user_name)
-        assert rs["Tags"] == tags_v1
+        assert rs["Tags"].sort(key=_sort_key) == tags_v1.sort(key=_sort_key)
 
         tags_v2_new = [gen_tag() for _ in range(5)]
         tags_v2 = tags_v1 + tags_v2_new
@@ -257,13 +262,13 @@ class TestIAMIntegrations:
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
         #
         rs = aws_client.iam.list_instance_profile_tags(InstanceProfileName=user_name)
-        assert rs["Tags"] == tags_v2
+        assert rs["Tags"].sort(key=_sort_key) == tags_v2.sort(key=_sort_key)
 
         rs = aws_client.iam.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v2)
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
         #
         rs = aws_client.iam.list_instance_profile_tags(InstanceProfileName=user_name)
-        assert rs["Tags"] == tags_v2
+        assert rs["Tags"].sort(key=_sort_key) == tags_v2.sort(key=_sort_key)
 
         tags_v3_new = [gen_tag()]
         tags_v3 = tags_v1 + tags_v3_new
@@ -272,7 +277,7 @@ class TestIAMIntegrations:
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
         #
         rs = aws_client.iam.list_instance_profile_tags(InstanceProfileName=user_name)
-        assert rs["Tags"] == target_tags_v3
+        assert rs["Tags"].sort(key=_sort_key) == target_tags_v3.sort(key=_sort_key)
 
         tags_v4 = tags_v1
         target_tags_v4 = target_tags_v3
@@ -280,34 +285,32 @@ class TestIAMIntegrations:
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
         #
         rs = aws_client.iam.list_instance_profile_tags(InstanceProfileName=user_name)
-        assert rs["Tags"] == target_tags_v4
+        assert rs["Tags"].sort(key=_sort_key) == target_tags_v4.sort(key=_sort_key)
 
         tags_u_v1 = [tag["Key"] for tag in tags_v1]
         target_tags_u_v1 = tags_v2_new + tags_v3_new
         aws_client.iam.untag_instance_profile(InstanceProfileName=user_name, TagKeys=tags_u_v1)
         #
         rs = aws_client.iam.list_instance_profile_tags(InstanceProfileName=user_name)
-        assert rs["Tags"] == target_tags_u_v1
+        assert rs["Tags"].sort(key=_sort_key) == target_tags_u_v1.sort(key=_sort_key)
 
         tags_u_v2 = [f"key-{long_uid()}"]
         target_tags_u_v2 = target_tags_u_v1
         aws_client.iam.untag_instance_profile(InstanceProfileName=user_name, TagKeys=tags_u_v2)
         #
         rs = aws_client.iam.list_instance_profile_tags(InstanceProfileName=user_name)
-        assert rs["Tags"] == target_tags_u_v2
+        assert rs["Tags"].sort(key=_sort_key) == target_tags_u_v2.sort(key=_sort_key)
 
         tags_u_v3 = [tag["Key"] for tag in target_tags_u_v1]
         target_tags_u_v3 = []
         aws_client.iam.untag_instance_profile(InstanceProfileName=user_name, TagKeys=tags_u_v3)
         #
         rs = aws_client.iam.list_instance_profile_tags(InstanceProfileName=user_name)
-        assert rs["Tags"] == target_tags_u_v3
+        assert rs["Tags"].sort(key=_sort_key) == target_tags_u_v3.sort(key=_sort_key)
 
-        aws_client.iam.delete_instance_profile(InstanceProfileName=user_name)
-
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_user_with_tags(self, aws_client):
-        user_name = "user-role-{}".format(short_uid())
+        user_name = f"user-role-{short_uid()}"
 
         rs = aws_client.iam.create_user(
             UserName=user_name, Tags=[{"Key": "env", "Value": "production"}]
@@ -324,10 +327,10 @@ class TestIAMIntegrations:
         # clean up
         aws_client.iam.delete_user(UserName=user_name)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_attach_detach_role_policy(self, aws_client):
-        role_name = "s3-role-{}".format(short_uid())
-        policy_name = "s3-role-policy-{}".format(short_uid())
+        role_name = f"s3-role-{short_uid()}"
+        policy_name = f"s3-role-policy-{short_uid()}"
 
         policy_arns = [p["Arn"] for p in ADDITIONAL_MANAGED_POLICIES.values()]
 
@@ -337,6 +340,7 @@ class TestIAMIntegrations:
                 {
                     "Action": "sts:AssumeRole",
                     "Principal": {"Service": "s3.amazonaws.com"},
+                    "Effect": "Allow",
                 }
             ],
         }
@@ -389,8 +393,10 @@ class TestIAMIntegrations:
 
         aws_client.iam.delete_policy(PolicyArn=policy_arn)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_simulate_principle_policy(self, aws_client):
+        # FIXME this test should test whether a principal (like user, role) has some permissions, it cannot test
+        # the policy itself
         policy_name = "policy-{}".format(short_uid())
         policy_document = {
             "Version": "2012-10-17",
@@ -422,8 +428,8 @@ class TestIAMIntegrations:
         assert "s3:GetObjectVersion" in actions
         assert actions["s3:GetObjectVersion"]["EvalDecision"] == "allowed"
 
-    @markers.aws.unknown
-    def test_create_role_with_assume_role_policy(self, aws_client):
+    @markers.aws.validated
+    def test_create_role_with_assume_role_policy(self, aws_client, account_id, create_role):
         role_name_1 = f"role-{short_uid()}"
         role_name_2 = f"role-{short_uid()}"
 
@@ -433,13 +439,13 @@ class TestIAMIntegrations:
                 {
                     "Action": "sts:AssumeRole",
                     "Effect": "Allow",
-                    "Principal": {"AWS": ["arn:aws:iam::123412341234:root"]},
+                    "Principal": {"AWS": f"arn:aws:iam::{account_id}:root"},
                 }
             ],
         }
         str_assume_role_policy_doc = json.dumps(assume_role_policy_doc)
 
-        aws_client.iam.create_role(
+        create_role(
             Path="/",
             RoleName=role_name_1,
             AssumeRolePolicyDocument=str_assume_role_policy_doc,
@@ -450,7 +456,7 @@ class TestIAMIntegrations:
             if role["RoleName"] == role_name_1:
                 assert role["AssumeRolePolicyDocument"] == assume_role_policy_doc
 
-        aws_client.iam.create_role(
+        create_role(
             Path="/",
             RoleName=role_name_2,
             AssumeRolePolicyDocument=str_assume_role_policy_doc,
@@ -463,17 +469,17 @@ class TestIAMIntegrations:
                 assert role["AssumeRolePolicyDocument"] == assume_role_policy_doc
                 aws_client.iam.delete_role(RoleName=role["RoleName"])
 
-        aws_client.iam.create_role(
-            Path="myPath",
+        create_role(
+            Path="/myPath/",
             RoleName=role_name_2,
             AssumeRolePolicyDocument=str_assume_role_policy_doc,
             Description="string",
         )
 
-        roles = aws_client.iam.list_roles(PathPrefix="my")
-        assert roles["Roles"][0]["Path"] == "myPath"
-        assert roles["Roles"][0]["RoleName"] == role_name_2
+        roles = aws_client.iam.list_roles(PathPrefix="/my")
         assert len(roles["Roles"]) == 1
+        assert roles["Roles"][0]["Path"] == "/myPath/"
+        assert roles["Roles"][0]["RoleName"] == role_name_2
 
     @markers.aws.validated
     @pytest.mark.xfail

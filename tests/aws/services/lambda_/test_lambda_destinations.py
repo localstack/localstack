@@ -39,7 +39,7 @@ class TestLambdaDLQ:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         snapshot,
         aws_client,
@@ -61,7 +61,7 @@ class TestLambdaDLQ:
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
         create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=lambda_name,
@@ -152,7 +152,7 @@ class TestLambdaDestinationSqs:
         payload,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         snapshot,
         aws_client,
@@ -166,7 +166,7 @@ class TestLambdaDestinationSqs:
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=Runtime.python3_9,
@@ -208,7 +208,7 @@ class TestLambdaDestinationSqs:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         snapshot,
         monkeypatch,
@@ -225,7 +225,7 @@ class TestLambdaDestinationSqs:
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=Runtime.python3_9,
@@ -267,7 +267,7 @@ class TestLambdaDestinationSqs:
         snapshot,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         monkeypatch,
         aws_client,
@@ -298,7 +298,7 @@ class TestLambdaDestinationSqs:
         snapshot.add_transformer(snapshot.transform.regex(message_id, "<test-msg-id>"))
 
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         create_lambda_function(
             handler_file=os.path.join(os.path.dirname(__file__), "functions/lambda_echofail.py"),
@@ -387,7 +387,7 @@ class TestLambdaDestinationSqs:
         snapshot,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         monkeypatch,
         aws_client,
@@ -412,7 +412,7 @@ class TestLambdaDestinationSqs:
         message_id = f"retry-msg-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(message_id, "<test-msg-id>"))
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         create_lambda_function(
             handler_file=os.path.join(os.path.dirname(__file__), "functions/lambda_echofail.py"),
