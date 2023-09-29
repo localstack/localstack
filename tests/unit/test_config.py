@@ -220,6 +220,17 @@ class TestEdgeVariablesDerivedCorrectly:
 
 
 class TestUniquePortList:
+    def test_construction(self):
+        ports = config.UniquePortList(
+            [
+                HostAndPort("127.0.0.1", 53),
+                HostAndPort("127.0.0.1", 53),
+            ]
+        )
+        assert ports == [
+            HostAndPort("127.0.0.1", 53),
+        ]
+
     def test_add_separate_values(self):
         ports = config.UniquePortList()
         ports.append(HostAndPort("127.0.0.1", 42))
@@ -253,6 +264,30 @@ class TestUniquePortList:
         assert ports == [
             HostAndPort("0.0.0.0", 42),
         ]
+
+    def test_index_access(self):
+        ports = config.UniquePortList(
+            [
+                HostAndPort("0.0.0.0", 42),
+            ]
+        )
+
+        assert ports[0] == HostAndPort("0.0.0.0", 42)
+        with pytest.raises(IndexError):
+            _ = ports[10]
+
+    def test_iteration(self):
+        ports = config.UniquePortList(
+            [
+                HostAndPort("127.0.0.1", 42),
+                HostAndPort("127.0.0.1", 43),
+            ]
+        )
+        n = 0
+        for _ in ports:
+            n += 1
+
+        assert n == len(ports) == 2
 
 
 class TestHostAndPort:

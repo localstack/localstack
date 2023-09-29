@@ -582,6 +582,11 @@ class UniquePortList(list[HostAndPort]):
           create [`0.0.0.0:4566`]
     """
 
+    def __init__(self, iterable=None):
+        super().__init__()
+        for item in iterable or []:
+            self.append(item)
+
     def append(self, value: HostAndPort):
         # no exact duplicates
         if value in self:
