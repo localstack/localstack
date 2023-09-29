@@ -104,7 +104,6 @@ class KinesisStreamConsumerProvider(ResourceProvider[KinesisStreamConsumerProper
         kinesis = request.aws_client_factory.kinesis
         kinesis.deregister_stream_consumer(ConsumerARN=model["ConsumerARN"])
 
-        model["ConsumerStatus"] = "DELETING"
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
