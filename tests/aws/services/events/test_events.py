@@ -158,13 +158,19 @@ class TestEvents:
         for field in expected_fields:
             assert field in event
 
-    @markers.aws.unknown
-    def test_put_rule(self, aws_client, clean_up):
+    @markers.aws.validated
+    def test_put_rule(self, aws_client, snapshot, clean_up):
         rule_name = f"rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
 
-        aws_client.events.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
+        response = aws_client.events.put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN)
+        )
+        snapshot.match("put-rule", response)
 
-        rules = aws_client.events.list_rules(NamePrefix=rule_name)["Rules"]
+        response = aws_client.events.list_rules(NamePrefix=rule_name)
+        snapshot.match("list-rules", response)
+        rules = response["Rules"]
         assert len(rules) == 1
         assert json.loads(rules[0]["EventPattern"]) == TEST_EVENT_PATTERN
 
@@ -219,7 +225,7 @@ class TestEvents:
             == event_details_to_publish
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_list_tags_for_resource(self, aws_client, clean_up):
         rule_name = "rule-{}".format(short_uid())
 
