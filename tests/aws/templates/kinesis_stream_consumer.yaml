@@ -5,6 +5,8 @@ Parameters:
 Resources:
     KinesisStream:
         Type: AWS::Kinesis::Stream
+        Properties:
+            ShardCount: 1
     StreamConsumer:
         Type: AWS::Kinesis::StreamConsumer
         Properties:

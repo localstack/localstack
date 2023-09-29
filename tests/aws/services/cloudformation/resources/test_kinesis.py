@@ -176,7 +176,7 @@ def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client):
     assert "StreamArn" in response.get("KinesisDataStreamDestinations")[0]
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_kinesis_stream_consumer_creations(deploy_cfn_template, aws_client):
     consumer_name = f"{short_uid()}"
     stack = deploy_cfn_template(
