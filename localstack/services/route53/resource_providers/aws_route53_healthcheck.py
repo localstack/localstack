@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -118,13 +117,3 @@ class Route53HealthCheckProvider(ResourceProvider[Route53HealthCheckProperties])
           - cloudwatch:DescribeAlarms
         """
         raise NotImplementedError
-
-
-class Route53HealthCheckProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::Route53::HealthCheck"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = Route53HealthCheckProvider
