@@ -571,9 +571,32 @@ class HostAndPort:
         return f"HostAndPort(host={self.host}, port={self.port})"
 
 
+class UniquePortList(list[HostAndPort]):
+    """
+    Container that ensures that ports bound
+    """
+
+    def append(self, value: HostAndPort):
+        if value in self:
+            return
+
+        for item in self:
+            if item.host == "0.0.0.0" and item.port == value.port:
+                return
+
+        contained_ports = set(every.port for every in self)
+        if value.host == "0.0.0.0" and value.port in contained_ports:
+            for item in self:
+                if item.port == value.port:
+                    item.host = value.host
+            return
+
+        super().append(value)
+
+
 def populate_legacy_edge_configuration(
     environment: Mapping[str, str]
-) -> Tuple[HostAndPort, List[HostAndPort], str, int, int]:
+) -> Tuple[HostAndPort, UniquePortList, str, int, int]:
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
@@ -628,7 +651,13 @@ def populate_legacy_edge_configuration(
         legacy_fallback("EDGE_PORT_HTTP", 0),
     )
 
-    return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
+    return (
+        localstack_host,
+        UniquePortList(gateway_listen),
+        edge_bind_host,
+        edge_port,
+        edge_port_http,
+    )
 
 
 # How to access LocalStack
