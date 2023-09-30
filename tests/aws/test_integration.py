@@ -68,7 +68,7 @@ def scheduled_test_lambda(aws_client):
     # create scheduled Lambda function
     rule_name = f"rule-{short_uid()}"
     target_id = f"target-{short_uid()}"
-    aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+    aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
     aws_client.events.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": func_arn}])
 
     yield scheduled_lambda_name

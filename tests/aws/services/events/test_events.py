@@ -667,10 +667,10 @@ class TestEvents:
         self.assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_rule_disable(self, aws_client, clean_up):
-        rule_name = "rule-{}".format(short_uid())
-        aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+        rule_name = f"rule-{short_uid()}"
+        aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
 
         response = aws_client.events.list_rules()
         assert response["Rules"][0]["State"] == "ENABLED"
@@ -750,7 +750,7 @@ class TestEvents:
         event = {"env": "testing"}
         event_json = json.dumps(event)
 
-        aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+        aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
 
         aws_client.events.put_targets(
             Rule=rule_name,
@@ -1503,18 +1503,6 @@ class TestEvents:
             aws_client.events.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
         finally:
             clean_up(rule_name=rule_name)
-
-    @pytest.mark.parametrize(
-        "schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"]
-    )
-    @markers.aws.validated
-    @pytest.mark.xfail
-    def test_create_rule_with_one_unit_in_plural_should_fail(self, schedule_expression, aws_client):
-        rule_name = f"rule-{short_uid()}"
-
-        # rule should not be creatable with given expression
-        with pytest.raises(ClientError):
-            aws_client.events.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
 
     @markers.aws.validated
     @pytest.mark.xfail
