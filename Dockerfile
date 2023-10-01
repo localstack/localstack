@@ -3,9 +3,9 @@ FROM python:3.11.5-slim-buster@sha256:9f35f3a6420693c209c11bba63dcf103d88e47ebe0
 ARG TARGETARCH
 
 # install OpenJDK 11
-RUN apt-get update && \
-        apt-get install -y openjdk-11-jdk-headless && \
-        apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt update && \
+        apt install -y openjdk-11-jdk-headless && \
+        apt clean && rm -rf /var/lib/apt/lists/*
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${TARGETARCH}
 
@@ -42,9 +42,9 @@ ARG TARGETARCH
 
 # Install runtime OS package dependencies
 RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && \
+    apt update && \
         # Install dependencies to add additional repos
-        apt-get install -y --no-install-recommends \
+        apt install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
             ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2
 
@@ -53,9 +53,15 @@ RUN --mount=type=cache,target=/var/cache/apt \
     mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        nodejs
+    apt update && \
+    cd /tmp && \
+    apt download nodejs && \
+    dpkg -i --ignore-depends=python3.9 --ignore-depends=python3 nodejs*.deb && \
+    rm -rf /tmp/*.deb
+
+# assert that `node` is installed, but not `python3.9` (which is a default dependency for the nodejs package)
+RUN which node
+RUN test ! $(which python3.9)
 
 SHELL [ "/bin/bash", "-c" ]
 
@@ -119,9 +125,9 @@ ARG TARGETARCH
 
 # Install build dependencies to base
 RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && \
+    apt update && \
         # Install dependencies to add additional repos
-        apt-get install -y gcc python-dev
+        apt install -y gcc python-dev
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
