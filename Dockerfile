@@ -49,15 +49,20 @@ RUN --mount=type=cache,target=/var/cache/apt \
             ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2
 
 # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
+# Note: We're extracting and modifying the `control.tar.xz` metadata of the `nodejs` package below,
+#       to remove the dependency to `python3` (to avoid installing python3.9 into the image)
 RUN --mount=type=cache,target=/var/cache/apt \
     mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
-    apt update && \
-    cd /tmp && \
+    apt update && apt install -y binutils xz-utils && \
+    mkdir -p /tmp/nodejs.deb && cd /tmp/nodejs.deb && \
     apt download nodejs && \
-    dpkg -i --ignore-depends=python3.9 --ignore-depends=python3 nodejs*.deb && \
-    rm -rf /tmp/*.deb
+    ar -xf nodejs*.deb && tar -xf control.tar.xz && \
+    sed -i 's/python3,//g' control && \
+    tar cfJ control.tar.xz control && ar r nodejs*.deb control.tar.xz && \
+    dpkg -i nodejs*.deb && \
+    rm -rf /tmp/*.deb && apt remove --purge -y binutils xz-utils
 
 # assert that `node` is installed, but not `python3.9` (which is a default dependency for the nodejs package)
 RUN which node
@@ -127,7 +132,7 @@ ARG TARGETARCH
 RUN --mount=type=cache,target=/var/cache/apt \
     apt update && \
         # Install dependencies to add additional repos
-        apt install -y gcc python-dev
+        apt install -y gcc
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
