@@ -1,0 +1,26 @@
+{
+  "tests/aws/services/events/scheduled_rules/test_events_scheduled_rules_logs.py::test_scheduled_rule_logs": {
+    "recorded-date": "01-10-2023, 21:07:16",
+    "recorded-content": {
+      "log-evens": [
+        {
+          "timestamp": "timestamp",
+          "message": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "Scheduled Event",
+            "source": "aws.events",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [
+              "arn:aws:events:<region>:111111111111:rule/<rule-name>"
+            ],
+            "detail": {}
+          },
+          "ingestionTime": "timestamp"
+        }
+      ]
+    }
+  }
+}
