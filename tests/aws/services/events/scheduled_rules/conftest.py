@@ -21,7 +21,7 @@ def trigger_scheduled_rule():
         if is_aws_cloud():
             return
 
-        url = get_edge_url() + f"/_aws/events/{rule_arn}/trigger"
+        url = get_edge_url() + f"/_aws/events/rules/{rule_arn}/trigger"
         response = requests.get(url)
         if not response.ok:
             raise ValueError(
