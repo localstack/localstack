@@ -51,6 +51,7 @@ from localstack.utils.collections import pick_attributes
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import long_uid, short_uid
+from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
 
@@ -126,7 +127,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
     ):
         def func(*args, **kwargs):
-            moto_backend = events_backends[store._account_id][store._region_name]
+            account_id = store._account_id
+            region = store._region_name
+            moto_backend = events_backends[account_id][region]
             event_bus_name = get_event_bus_name(event_bus_name_or_arn)
             event_bus = moto_backend.event_buses[event_bus_name]
             rule = event_bus.rules.get(rule_name)
@@ -141,9 +144,28 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 )
             for target in rule.targets:
                 arn = target.get("Arn")
-                # TODO generate event matching aws in case no Input has been specified
-                event_str = target.get("Input") or "{}"
-                event = json.loads(event_str)
+
+                if input_ := target.get("Input"):
+                    event = json.loads(input_)
+                else:
+                    event = {
+                        "version": "0",
+                        "id": long_uid(),
+                        "detail-type": "Scheduled Event",
+                        "source": "aws.events",
+                        "account": account_id,
+                        "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
+                        "region": region,
+                        "resources": [rule.arn],
+                        "detail": {},
+                    }
+                    if target.get("InputPath"):
+                        event = filter_event_with_target_input_path(target, event)
+                    if target.get("InputTransformer"):
+                        LOG.warning(
+                            "InputTransformer is currently not supported for scheduled rules"
+                        )
+
                 attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
 
                 try:
