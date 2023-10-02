@@ -48,6 +48,7 @@ from localstack.aws.api.firehose import (
     ListTagsForDeliveryStreamInputLimit,
     ListTagsForDeliveryStreamOutput,
     ListTagsForDeliveryStreamOutputTagList,
+    MSKSourceConfiguration,
     PutRecordBatchOutput,
     PutRecordBatchRequestEntryList,
     PutRecordBatchResponseEntry,
@@ -219,6 +220,7 @@ class FirehoseProvider(FirehoseApi):
         http_endpoint_destination_configuration: HttpEndpointDestinationConfiguration = None,
         tags: TagDeliveryStreamInputTagList = None,
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
+        msk_source_configuration: MSKSourceConfiguration = None,
     ) -> CreateDeliveryStreamOutput:
         store = self.get_store()
 
