@@ -238,7 +238,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service = LambdaService()
         self.router.lambda_service = self.lambda_service
 
-        # TODO: provisioned concurrency
         for account_id, account_bundle in lambda_stores.items():
             for region_name, state in account_bundle.items():
                 for fn in state.functions.values():
@@ -260,6 +259,37 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                             LOG.warning(
                                 "Failed to restore function version %s",
                                 fn_version.id.qualified_arn(),
+                                exc_info=True,
+                            )
+                    # restore provisioned concurrency per function considering both versions and aliases
+                    for (
+                        provisioned_qualifier,
+                        provisioned_config,
+                    ) in fn.provisioned_concurrency_configs.items():
+                        fn_arn = None
+                        try:
+                            if api_utils.qualifier_is_alias(provisioned_qualifier):
+                                alias = fn.aliases.get(provisioned_qualifier)
+                                resolved_version = fn.versions.get(alias.function_version)
+                                fn_arn = resolved_version.id.qualified_arn()
+                            elif api_utils.qualifier_is_version(provisioned_qualifier):
+                                fn_version = fn.versions.get(provisioned_qualifier)
+                                fn_arn = fn_version.id.qualified_arn()
+                            else:
+                                raise InvalidParameterValueException(
+                                    "Invalid qualifier type:"
+                                    " Qualifier can only be an alias or a version for provisioned concurrency."
+                                )
+
+                            manager = self.lambda_service.get_lambda_version_manager(fn_arn)
+                            manager.update_provisioned_concurrency_config(
+                                provisioned_config.provisioned_concurrent_executions
+                            )
+                        except Exception:
+                            LOG.warning(
+                                "Failed to restore provisioned concurrency %s for function %s",
+                                provisioned_config,
+                                fn_arn,
                                 exc_info=True,
                             )
 
