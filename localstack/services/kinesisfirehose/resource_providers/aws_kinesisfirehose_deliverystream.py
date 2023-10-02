@@ -414,7 +414,7 @@ class KinesisFirehoseDeliveryStreamProvider(
                 resource_model=model,
                 custom_context=request.custom_context,
             )
-
+        # TODO add handler for CREATE FAILED state
         stream = firehose.describe_delivery_stream(DeliveryStreamName=model["DeliveryStreamName"])
         if stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] != "ACTIVE":
             return ProgressEvent(
@@ -461,8 +461,7 @@ class KinesisFirehoseDeliveryStreamProvider(
             stream = firehose.describe_delivery_stream(
                 DeliveryStreamName=model["DeliveryStreamName"]
             )
-        # except ResourceNotFound:
-        except Exception:
+        except request.aws_client_factory.firehose.exceptions.ResourceNotFoundException:
             return ProgressEvent(
                 status=OperationStatus.SUCCESS,
                 resource_model=model,
