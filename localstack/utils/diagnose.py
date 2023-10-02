@@ -64,6 +64,9 @@ def get_localstack_config() -> Dict:
             continue
         if "typing." in str(type(v)):
             continue
+        if k == "GATEWAY_LISTEN":
+            result[k] = config.GATEWAY_LISTEN
+            continue
 
         if hasattr(v, "__dict__"):
             result[k] = v.__dict__
