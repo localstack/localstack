@@ -4,9 +4,11 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Callable, Optional
 
 import aws_cdk as cdk
+from botocore.exceptions import WaiterError
 from typing_extensions import Self
 
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.utils.strings import short_uid
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -16,7 +18,7 @@ from localstack.aws.connect import ServiceLevelClientFactory
 
 LOG = logging.getLogger(__name__)
 CDK_BOOTSTRAP_PARAM = "/cdk-bootstrap/hnb659fds/version"
-WAITER_CONFIG_AWS = {"Delay": 10, "MaxAttempts": 1000}
+WAITER_CONFIG_AWS = {"Delay": 5, "MaxAttempts": 1000}
 WAITER_CONFIG_LS = {"Delay": 1, "MaxAttempts": 500}
 
 
@@ -56,7 +58,7 @@ class InfraProvisioner:
         self.aws_client = aws_client
 
     @contextmanager
-    def provisioner(self, skip_teardown: bool = False) -> Self:
+    def provisioner(self, skip_teardown: bool = False) -> "InfraProvisioner":
         try:
             self.provision()
             yield self
@@ -67,31 +69,79 @@ class InfraProvisioner:
                 LOG.info("Skipping teardown. Resources and stacks are not deleted.")
 
     def provision(self):
+        is_update = False
         if all(
             self._is_stack_deployed(stack_name, stack)
             for stack_name, stack in self.cloudformation_stacks.items()
         ):
             # TODO it's currently all or nothing -> deploying one new stack will most likely fail
             LOG.info("All stacks are already deployed. Skipping the provisioning.")
+            is_update = True
             self.skipped_provisioning = True
-            return
+            # return
 
         self.run_manual_setup_tasks()
         self.bootstrap_cdk()
         for stack_name, stack in self.cloudformation_stacks.items():
-            self.aws_client.cloudformation.create_stack(
-                StackName=stack_name,
-                TemplateBody=stack["Template"],
-                Capabilities=[
-                    Capability.CAPABILITY_AUTO_EXPAND,
-                    Capability.CAPABILITY_IAM,
-                    Capability.CAPABILITY_NAMED_IAM,
-                ],
-            )
-            self.aws_client.cloudformation.get_waiter("stack_create_complete").wait(
-                StackName=stack_name,
-                WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
-            )
+            change_set_name = f"test-cs-{short_uid()}"
+            if len(stack["Template"]) > 51_200:
+                # upload to s3 instead
+                template_bucket_name = "tmp-localstack-001"
+                self.aws_client.s3.put_object(
+                    Bucket=template_bucket_name, Key=f"{stack_name}.yaml", Body=stack["Template"]
+                )
+                change_set = self.aws_client.cloudformation.create_change_set(
+                    StackName=stack_name,
+                    ChangeSetName=change_set_name,
+                    TemplateURL=f"https://s3.us-east-1.amazonaws.com/{template_bucket_name}/{stack_name}.yaml",
+                    ChangeSetType="UPDATE" if is_update else "CREATE",
+                    Capabilities=[
+                        Capability.CAPABILITY_AUTO_EXPAND,
+                        Capability.CAPABILITY_IAM,
+                        Capability.CAPABILITY_NAMED_IAM,
+                    ],
+                )
+            else:
+                change_set = self.aws_client.cloudformation.create_change_set(
+                    StackName=stack_name,
+                    ChangeSetName=change_set_name,
+                    TemplateBody=stack["Template"],
+                    ChangeSetType="UPDATE" if is_update else "CREATE",
+                    Capabilities=[
+                        Capability.CAPABILITY_AUTO_EXPAND,
+                        Capability.CAPABILITY_IAM,
+                        Capability.CAPABILITY_NAMED_IAM,
+                    ],
+                )
+            try:
+                self.aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                    ChangeSetName=change_set["Id"],
+                    WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
+                )
+            except WaiterError:
+                change_set_status = self.aws_client.cloudformation.describe_change_set(
+                    ChangeSetName=change_set["Id"]
+                )
+                # it's OK if we don't have any updates to perform here (!)
+                # there is no specific error code unfortunately
+                if not (
+                    is_update
+                    and change_set_status["StatusReason"] == "No updates are to be performed."
+                ):
+                    raise
+            else:
+                self.aws_client.cloudformation.execute_change_set(ChangeSetName=change_set["Id"])
+                if is_update:
+                    self.aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+                        StackName=stack_name,
+                        WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
+                    )
+                else:
+                    self.aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+                        StackName=stack_name,
+                        WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
+                    )
+
             describe_stack = self.aws_client.cloudformation.describe_stacks(StackName=stack_name)
             outputs = describe_stack["Stacks"][0].get("Outputs", {})
             stack["Outputs"] = {o["OutputKey"]: o["OutputValue"] for o in outputs}
@@ -184,4 +234,8 @@ class InfraProvisioner:
         except Exception:
             return False
         # TODO should we try to run teardown first, if the status is not "CREATE_COMPLETE"?
-        return describe_stack["Stacks"][0]["StackStatus"] == "CREATE_COMPLETE"
+        return describe_stack["Stacks"][0]["StackStatus"] in [
+            "CREATE_COMPLETE",
+            "UPDATE_COMPLETE",
+            "UPDATE_ROLLBACK_COMPLETE",
+        ]

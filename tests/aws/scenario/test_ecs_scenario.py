@@ -1,3 +1,5 @@
+import time
+
 import aws_cdk as cdk
 import aws_cdk.aws_ecs as ecs
 import pytest
@@ -50,3 +52,56 @@ class TestEcsScenario:
         # TODO: add a test here to call the deployed NGINX service
         # outputs = infrastructure.get_stack_outputs(stack_name="ClusterStack")
         requests.get("...")  # not working yet
+
+
+
+class TestEcsScenario2:
+    @markers.aws.unknown
+    def test_scenario_ecs(self, aws_client):
+        vpc = aws_client.ec2.create_vpc(CidrBlock="0.0.0.0/16")
+        vpc_id = vpc['Vpc']['VpcId']
+        subnet = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="0.0.0.0/24")
+        cluster = aws_client.ecs.create_cluster(clusterName="dev-cluster")
+        task_def = aws_client.ecs.register_task_definition(
+            family="sample-fargate",
+            taskRoleArn="arn:aws:iam::000000000000:role/execCommandRole",
+            networkMode="awsvpc",
+            containerDefinitions=[
+                {
+                    "name": "fargate-app",
+                    "image": "public.ecr.aws/docker/library/httpd:latest",
+                    "command": [
+                        "/bin/sh",
+                        "-c",
+                        "echo '<html> <head> <title>Amazon ECS Sample App</title> <style>body {margin-top: 40px; background-color: #333;} </style> </head><body> <div style=color:white;text-align:center> <h1>Amazon ECS Sample App</h1> <h2>Congratulations!</h2> <p>Your application is now running on a container in Amazon ECS.</p> </div></body></html>' >  /usr/local/apache2/htdocs/index.html && httpd-foreground"
+                    ],
+                    "portMappings": [
+                        {
+                            "containerPort": 80,
+                            "hostPort": 45139,
+                            "protocol": "tcp"
+                        }
+                    ],
+                    "essential": True,
+                }
+            ],
+            requiresCompatibilities=["FARGATE"],
+            cpu="256",
+            memory="512",
+
+        )
+
+        service = aws_client.ecs.create_service(
+            cluster="dev-cluster",
+            serviceName="fargate-service",
+            desiredCount=1,
+            taskDefinition="sample-fargate",
+            launchType="FARGATE",
+            networkConfiguration={
+                "awsvpcConfiguration": {
+                    "subnets": [
+                        subnet['Subnet']['SubnetId']
+                    ]
+                }
+            },
+        )
