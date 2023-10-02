@@ -2570,6 +2570,44 @@ class TestSNSFilter:
         num_msgs_2 = len(response_2["Messages"])
         assert num_msgs_2 == num_msgs_1
 
+        # remove all messages from the queue
+        receipt_handle = response_1["Messages"][0]["ReceiptHandle"]
+        aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        # test with a property value set to null with an OR operator with anything-but
+        filter_policy = json.dumps({"attr1": [None, {"anything-but": "whatever"}]})
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=filter_policy,
+        )
+
+        def get_filter_policy():
+            subscription_attrs = aws_client.sns.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            return subscription_attrs["Attributes"]["FilterPolicy"]
+
+        # wait for the new filter policy to be in effect
+        poll_condition(lambda: get_filter_policy() == filter_policy, timeout=4)
+        response_attributes_2 = aws_client.sns.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        snapshot.match("subscription-attributes-2", response_attributes_2)
+
+        # publish message that does not satisfy the filter policy, assert that message is not received
+        message = "This the test message for null"
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=message,
+        )
+
+        response_3 = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        snapshot.match("messages-3", response_3)
+        assert "Messages" not in response_3
+
     @markers.aws.validated
     def test_exists_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client

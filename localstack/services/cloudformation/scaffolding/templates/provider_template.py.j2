@@ -137,13 +137,3 @@ class {{ resource }}Provider(ResourceProvider[{{ resource }}Properties]):
         {%- endif %}
         """
         raise NotImplementedError
-
-
-class {{ resource }}ProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "{{ name }}"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = {{ resource }}Provider
