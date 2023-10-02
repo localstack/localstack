@@ -59,7 +59,7 @@ class EC2RouteTableProvider(ResourceProvider[EC2RouteTableProperties]):
 
         """
         model = request.desired_state
-
+        ec2 = request.aws_client_factory.ec2
         # TODO: validations
 
         if not request.custom_context.get(REPEATED_INVOCATION):

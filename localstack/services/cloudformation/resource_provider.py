@@ -60,7 +60,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Route53::HealthCheck": "ResourceProvider",
     "AWS::Route53::RecordSet": "ResourceProvider",
     "AWS::SNS::Topic": "ResourceProvider",
-    "AWS::EC2::RouteTable": "ResourceProvider"
+    "AWS::EC2::RouteTable": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }
