@@ -571,9 +571,49 @@ class HostAndPort:
         return f"HostAndPort(host={self.host}, port={self.port})"
 
 
+class UniqueHostAndPortList(List[HostAndPort]):
+    """
+    Container type that ensures that ports added to the list are unique based
+    on these rules:
+        - 0.0.0.0 "trumps" any other binding, i.e. adding 127.0.0.1:4566 to
+          [0.0.0.0:4566] is a no-op
+        - adding identical hosts and ports is a no-op
+        - adding `0.0.0.0:4566` to [`127.0.0.1:4566`] "upgrades" the binding to
+          create [`0.0.0.0:4566`]
+    """
+
+    def __init__(self, iterable=None):
+        super().__init__()
+        for item in iterable or []:
+            self.append(item)
+
+    def append(self, value: HostAndPort):
+        # no exact duplicates
+        if value in self:
+            return
+
+        # if 0.0.0.0:<port> already exists in the list, then do not add the new
+        # item
+        for item in self:
+            if item.host == "0.0.0.0" and item.port == value.port:
+                return
+
+        # if we add 0.0.0.0:<port> and already contain *:<port> then bind on
+        # 0.0.0.0
+        contained_ports = set(every.port for every in self)
+        if value.host == "0.0.0.0" and value.port in contained_ports:
+            for item in self:
+                if item.port == value.port:
+                    item.host = value.host
+            return
+
+        # append the item
+        super().append(value)
+
+
 def populate_legacy_edge_configuration(
     environment: Mapping[str, str]
-) -> Tuple[HostAndPort, List[HostAndPort], str, int, int]:
+) -> Tuple[HostAndPort, UniqueHostAndPortList, str, int, int]:
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
@@ -628,7 +668,13 @@ def populate_legacy_edge_configuration(
         legacy_fallback("EDGE_PORT_HTTP", 0),
     )
 
-    return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
+    return (
+        localstack_host,
+        UniqueHostAndPortList(gateway_listen),
+        edge_bind_host,
+        edge_port,
+        edge_port_http,
+    )
 
 
 # How to access LocalStack

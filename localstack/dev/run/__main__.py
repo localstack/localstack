@@ -234,6 +234,15 @@ def run(
         network=network,
     )
 
+    # replicate pro startup
+    if pro:
+        try:
+            from localstack_ext.plugins import modify_edge_port_config
+
+            modify_edge_port_config(config)
+        except ImportError:
+            pass
+
     # setup configurators
     configurators = [
         ImageConfigurator(pro, image),
