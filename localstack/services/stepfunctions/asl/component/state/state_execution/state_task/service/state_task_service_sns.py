@@ -9,12 +9,15 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ServiceResource,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.backend.utils import get_boto_client
+from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.utils.strings import camel_to_snake_case
 
 
@@ -69,9 +72,15 @@ class StateTaskServiceSns(StateTaskServiceCallback):
             )
         return super()._from_error(env=env, ex=ex)
 
-    def _eval_service_task(self, env: Environment, parameters: dict) -> None:
+    def _eval_service_task(
+        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+    ):
         api_action = camel_to_snake_case(self.resource.api_action)
-        sns_client = get_boto_client(env, "sns")
+        sns_client = boto_client_for(
+            region=resource.region,
+            account=resource.account,
+            service="sns",
+        )
         response = getattr(sns_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)

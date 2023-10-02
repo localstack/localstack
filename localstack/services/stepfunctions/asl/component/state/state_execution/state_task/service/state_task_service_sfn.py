@@ -22,13 +22,16 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ServiceResource,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.services.stepfunctions.backend.utils import get_boto_client
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import camel_to_snake_case
 
@@ -159,16 +162,31 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                 _replace_with_json_if_str("input")
                 _replace_with_json_if_str("output")
 
-    def _eval_service_task(self, env: Environment, parameters: dict) -> None:
-        api_action = camel_to_snake_case(self.resource.api_action)
-        sfn_client = get_boto_client(env, "stepfunctions")
+    def _eval_service_task(
+        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+    ):
+        api_action = camel_to_snake_case(resource.api_action)
+        sfn_client = boto_client_for(
+            region=resource.region,
+            account=resource.account,
+            service="stepfunctions",
+        )
         response = getattr(sfn_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
-        self._normalise_botocore_response(self.resource.api_action, response)
+        self._normalise_botocore_response(response.api_action, response)
         env.stack.append(response)
 
-    def _sync_to_start_machine(self, env: Environment, sync2_response: bool) -> None:
-        sfn_client = get_boto_client(env, "stepfunctions")
+    def _sync_to_start_machine(
+        self,
+        env: Environment,
+        resource: ServiceResource.ServiceResourceOutput,
+        sync2_response: bool,
+    ) -> None:
+        sfn_client = boto_client_for(
+            region=resource.region,
+            account=resource.account,
+            service="stepfunctions",
+        )
         submission_output: dict = env.stack.pop()
         execution_arn: str = submission_output["ExecutionArn"]
 

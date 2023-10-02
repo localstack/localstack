@@ -54,16 +54,20 @@ class StateTaskService(StateTask, abc.ABC):
         )
 
     @abc.abstractmethod
-    def _eval_service_task(self, env: Environment, parameters: dict):
+    def _eval_service_task(
+        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+    ):
         ...
 
-    def _before_eval_execution(self, env: Environment, parameters: dict) -> None:
+    def _before_eval_execution(
+        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+    ) -> None:
         parameters_str = to_json_str(parameters)
 
         scheduled_event_details = TaskScheduledEventDetails(
             resource=self._get_sfn_resource(),
             resourceType=self._get_sfn_resource_type(),
-            region=self.resource.region,
+            region=resource.region,
             parameters=parameters_str,
         )
         if not self.timeout.is_default_value():
@@ -104,10 +108,14 @@ class StateTaskService(StateTask, abc.ABC):
 
     def _eval_execution(self, env: Environment) -> None:
         parameters = self._eval_parameters(env=env)
-        self._before_eval_execution(env=env, parameters=parameters)
+
+        self.resource.eval(env=env)
+        resource_output: ServiceResource.ServiceResourceOutput = env.stack.pop()
+
+        self._before_eval_execution(env=env, resource=resource_output, parameters=parameters)
 
         normalised_parameters = self._normalised_parameters_bindings(parameters)
-        self._eval_service_task(env=env, parameters=normalised_parameters)
+        self._eval_service_task(env=env, resource=resource_output, parameters=normalised_parameters)
 
         self._after_eval_execution(env=env)
 

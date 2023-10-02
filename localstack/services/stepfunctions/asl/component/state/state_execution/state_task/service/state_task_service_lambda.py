@@ -12,6 +12,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task import (
     lambda_eval_utils,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ServiceResource,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
@@ -75,7 +78,11 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
             ),
         )
 
-    def _eval_service_task(self, env: Environment, parameters: dict) -> None:
+    def _eval_service_task(
+        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+    ):
         if "Payload" in parameters:
             parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
-        lambda_eval_utils.exec_lambda_function(env=env, parameters=parameters)
+        lambda_eval_utils.exec_lambda_function(
+            env=env, parameters=parameters, region=resource.region, account=resource.account
+        )

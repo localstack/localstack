@@ -3,9 +3,10 @@ from __future__ import annotations
 import copy
 import logging
 import threading
-from typing import Any, Optional
+from typing import Any, Final, Optional
 
 from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, Timestamp
+from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
 from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackPoolManager
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObject,
@@ -27,13 +28,9 @@ LOG = logging.getLogger(__name__)
 
 class Environment:
     def __init__(
-        self, account_id: str, region_name: str, context_object_init: ContextObjectInitData
+        self, aws_execution_details: AWSExecutionDetails, context_object_init: ContextObjectInitData
     ):
         super(Environment, self).__init__()
-
-        self.account_id = account_id
-        self.region_name = region_name
-
         self._state_mutex = threading.RLock()
         self._program_state: Optional[ProgramState] = None
         self.program_state_event = threading.Event()
@@ -41,6 +38,7 @@ class Environment:
 
         self.event_history: EventHistory = EventHistory()
         self.callback_pool_manager: CallbackPoolManager = CallbackPoolManager()
+        self.aws_execution_details: Final[AWSExecutionDetails] = aws_execution_details
 
         self._is_frame: bool = False
         self.heap: dict[str, Any] = dict()
@@ -61,8 +59,7 @@ class Environment:
             StateMachine=env.context_object_manager.context_object["StateMachine"],
         )
         frame = cls(
-            account_id=env.account_id,
-            region_name=env.region_name,
+            aws_execution_details=env.aws_execution_details,
             context_object_init=context_object_init,
         )
         frame._is_frame = True

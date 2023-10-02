@@ -121,7 +121,12 @@ class StateTaskLambda(StateTask):
         if "Payload" in parameters:
             parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
 
-        lambda_eval_utils.exec_lambda_function(env=env, parameters=parameters)
+        self.resource.eval(env=env)
+        resource = env.stack.pop()
+
+        lambda_eval_utils.exec_lambda_function(
+            env=env, parameters=parameters, region=resource.region, account=resource.account
+        )
 
         # In lambda invocations, only payload is passed on as output.
         output = env.stack.pop()

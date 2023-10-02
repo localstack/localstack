@@ -23,6 +23,7 @@ from localstack.aws.api.stepfunctions import (
     TraceHeader,
 )
 from localstack.aws.connect import connect_to
+from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObjectInitData,
 )
@@ -210,9 +211,6 @@ class Execution:
             raise InvalidName()  # TODO.
 
         self.exec_worker = ExecutionWorker(
-            account_id=self.account_id,
-            region_name=self.region_name,
-            role_arn=self.role_arn,
             definition=self.state_machine.definition,
             input_data=self.input_data,
             exec_comm=Execution.BaseExecutionWorkerComm(self),
@@ -228,6 +226,9 @@ class Execution:
                     Id=self.state_machine.arn,
                     Name=self.state_machine.name,
                 ),
+            ),
+            aws_execution_details=AWSExecutionDetails(
+                account=self.account_id, region=self.region_name, role_arn=self.role_arn
             ),
         )
         self.exec_status = ExecutionStatus.RUNNING

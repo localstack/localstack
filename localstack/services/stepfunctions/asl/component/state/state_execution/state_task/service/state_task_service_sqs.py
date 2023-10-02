@@ -9,13 +9,16 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ServiceResource,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.services.stepfunctions.backend.utils import get_boto_client
 from localstack.utils.strings import camel_to_snake_case
 
 
@@ -55,7 +58,9 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
             )
         return super()._from_error(env=env, ex=ex)
 
-    def _eval_service_task(self, env: Environment, parameters: dict) -> None:
+    def _eval_service_task(
+        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+    ):
         # TODO: Stepfunctions automatically dumps to json MessageBody's definitions.
         #  Are these other similar scenarios?
         if "MessageBody" in parameters:
@@ -64,7 +69,11 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
                 parameters["MessageBody"] = to_json_str(message_body)
 
         api_action = camel_to_snake_case(self.resource.api_action)
-        sqs_client = get_boto_client(env, "sqs")
+        sqs_client = boto_client_for(
+            region=resource.region,
+            account=resource.account,
+            service="sqs",
+        )
         response = getattr(sqs_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)

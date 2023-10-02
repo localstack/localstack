@@ -4,7 +4,8 @@ import abc
 from itertools import takewhile
 from typing import Final, Optional
 
-from localstack.services.stepfunctions.asl.component.component import Component
+from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
+from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ResourceCondition(str):
@@ -71,25 +72,33 @@ class ResourceARN:
         )
 
 
-class Resource(Component, abc.ABC):
+class Resource(EvalComponent, abc.ABC):
+    class ResourceOutput:
+        resource_arn: Final[str]
+        partition: Final[str]
+        region: Final[str]
+        account: Final[str]
+
+        def __init__(self, resource_arn: str, partition: str, region: str, account: str):
+            self.resource_arn = resource_arn
+            self.partition = partition
+            self.region = region
+            self.account = account
+
+    _region: Final[str]
+    _account: Final[str]
     resource_arn: Final[str]
     partition: Final[str]
-    region: Final[str]
-    account: Final[str]
 
     def __init__(self, resource_arn: ResourceARN):
+        self._region = resource_arn.region
+        self._account = resource_arn.account
         self.resource_arn = resource_arn.arn
         self.partition = resource_arn.partition
-        self.region = resource_arn.region
-        self.account = resource_arn.account
 
     @staticmethod
-    def from_resource_arn(account_id: str, region_name: str, arn: str) -> Resource:
+    def from_resource_arn(arn: str) -> Resource:
         resource_arn = ResourceARN.from_arn(arn)
-        if not resource_arn.account:
-            resource_arn.account = account_id
-        if not resource_arn.region:
-            resource_arn.region = region_name
         match resource_arn.service, resource_arn.task_type:
             case "lambda", "function":
                 return LambdaResource(resource_arn=resource_arn)
@@ -98,24 +107,97 @@ class Resource(Component, abc.ABC):
             case "states", _:
                 return ServiceResource(resource_arn=resource_arn)
 
+    def _build_resource(self, env: Environment) -> Resource.ResourceOutput:
+        region = self._region if self._region else env.aws_execution_details.region
+        account = self._account if self._account else env.aws_execution_details.account
+        return Resource.ResourceOutput(
+            resource_arn=self.resource_arn,
+            partition=self.partition,
+            region=region,
+            account=account,
+        )
+
+    def _eval_body(self, env: Environment) -> None:
+        resource_output = self._build_resource(env=env)
+        env.stack.append(resource_output)
+
 
 class ActivityResource(Resource):
+    class ActivityResourceOutput(Resource.ResourceOutput):
+        name: Final[str]
+
+        def __init__(self, resource_arn: str, partition: str, region: str, account: str, name: str):
+            super().__init__(
+                resource_arn=resource_arn, partition=partition, region=region, account=account
+            )
+            self.name = name
+
     name: Final[str]
 
     def __init__(self, resource_arn: ResourceARN):
         super().__init__(resource_arn=resource_arn)
         self.name = resource_arn.name
 
+    def _build_resource(self, env: Environment) -> Resource.ResourceOutput:
+        resource_output: Resource.ResourceOutput = super()._build_resource(env=env)
+        activity_resource_output = ActivityResource.ActivityResourceOutput(
+            **vars(resource_output), name=self.name
+        )
+        return activity_resource_output
+
 
 class LambdaResource(Resource):
+    class LambdaResourceOutput(Resource.ResourceOutput):
+        function_name: Final[str]
+
+        def __init__(
+            self, resource_arn: str, partition: str, region: str, account: str, function_name: str
+        ):
+            super().__init__(
+                resource_arn=resource_arn, partition=partition, region=region, account=account
+            )
+            self.function_name = function_name
+
     function_name: Final[str]
 
     def __init__(self, resource_arn: ResourceARN):
         super().__init__(resource_arn=resource_arn)
-        self.function_name: str = resource_arn.name
+        self.function_name = resource_arn.name
+
+    def _build_resource(self, env: Environment) -> Resource.ResourceOutput:
+        resource_output: Resource.ResourceOutput = super()._build_resource(env=env)
+        lambda_resource_output = LambdaResource.LambdaResourceOutput(
+            **vars(resource_output), function_name=self.function_name
+        )
+        return lambda_resource_output
 
 
 class ServiceResource(Resource):
+    class ServiceResourceOutput(Resource.ResourceOutput):
+        service_name: Final[str]
+        api_name: Final[str]
+        api_action: Final[str]
+        condition: Final[Optional[str]]
+
+        def __init__(
+            self,
+            resource_arn: str,
+            partition: str,
+            region: str,
+            account: str,
+            service_name: str,
+            api_name: str,
+            api_action: str,
+            condition: Optional[str],
+        ):
+            super().__init__(
+                resource_arn=resource_arn, partition=partition, region=region, account=account
+            )
+            self.service_name = service_name
+            self.api_name = api_name
+            self.api_action = api_action
+            self.condition = condition
+
     service_name: Final[str]
     api_name: Final[str]
     api_action: Final[str]
@@ -147,3 +229,14 @@ class ServiceResource(Resource):
                     self.condition = ResourceCondition.Sync2
                 case unsupported:
                     raise RuntimeError(f"Unsupported condition '{unsupported}'.")
+
+    def _build_resource(self, env: Environment) -> Resource.ResourceOutput:
+        resource_output: Resource.ResourceOutput = super()._build_resource(env=env)
+        lambda_resource_output = ServiceResource.ServiceResourceOutput(
+            **vars(resource_output),
+            service_name=self.service_name,
+            api_name=self.api_name,
+            api_action=self.api_action,
+            condition=self.condition,
+        )
+        return lambda_resource_output
