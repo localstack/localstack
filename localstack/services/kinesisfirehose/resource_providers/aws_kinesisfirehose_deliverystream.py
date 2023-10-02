@@ -458,7 +458,9 @@ class KinesisFirehoseDeliveryStreamProvider(
         model = request.desired_state
         firehose = request.aws_client_factory.firehose
         try:
-            stream = firehose.describe_delivery_stream(DeliveryStreamName=model["DeliveryStreamName"])
+            stream = firehose.describe_delivery_stream(
+                DeliveryStreamName=model["DeliveryStreamName"]
+            )
         # except ResourceNotFound:
         except Exception:
             return ProgressEvent(
@@ -474,8 +476,6 @@ class KinesisFirehoseDeliveryStreamProvider(
             resource_model=model,
             custom_context=request.custom_context,
         )
-
-
 
     def update(
         self,
