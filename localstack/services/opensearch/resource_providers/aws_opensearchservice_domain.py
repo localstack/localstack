@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional, Type, TypedDict
 
@@ -222,6 +223,19 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
                 # set defaults required for boto3 calls
                 cluster_config.setdefault("DedicatedMasterType", "m3.medium.search")
                 cluster_config.setdefault("WarmType", "ultrawarm1.medium.search")
+
+                for key in ["DedicatedMasterCount", "InstanceCount", "WarmCount"]:
+                    if key in cluster_config and isinstance(cluster_config[key], str):
+                        cluster_config[key] = int(cluster_config[key])
+
+            if properties.get("AccessPolicies") and isinstance(properties["AccessPolicies"], dict):
+                properties["AccessPolicies"] = json.dumps(properties["AccessPolicies"])
+
+            ebs_options = properties.get("EBSOptions")
+            if isinstance(ebs_options, dict):
+                for key in ["Iops", "Throughput", "VolumeSize"]:
+                    if key in ebs_options and isinstance(ebs_options[key], str):
+                        ebs_options[key] = int(ebs_options[key])
 
             create_kwargs = {**util.deselect_attributes(properties, ["Tags"])}
             if tags := properties.get("Tags"):
