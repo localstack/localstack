@@ -72,19 +72,16 @@ class ResourceARN:
         )
 
 
+class ResourceRuntimePart:
+    account: Final[str]
+    region: Final[str]
+
+    def __init__(self, account: str, region: str):
+        self.region = region
+        self.account = account
+
+
 class Resource(EvalComponent, abc.ABC):
-    class ResourceOutput:
-        resource_arn: Final[str]
-        partition: Final[str]
-        region: Final[str]
-        account: Final[str]
-
-        def __init__(self, resource_arn: str, partition: str, region: str, account: str):
-            self.resource_arn = resource_arn
-            self.partition = partition
-            self.region = region
-            self.account = account
-
     _region: Final[str]
     _account: Final[str]
     resource_arn: Final[str]
@@ -107,56 +104,28 @@ class Resource(EvalComponent, abc.ABC):
             case "states", _:
                 return ServiceResource(resource_arn=resource_arn)
 
-    def _build_resource(self, env: Environment) -> Resource.ResourceOutput:
+    def _eval_runtime_part(self, env: Environment) -> ResourceRuntimePart:
         region = self._region if self._region else env.aws_execution_details.region
         account = self._account if self._account else env.aws_execution_details.account
-        return Resource.ResourceOutput(
-            resource_arn=self.resource_arn,
-            partition=self.partition,
-            region=region,
+        return ResourceRuntimePart(
             account=account,
+            region=region,
         )
 
     def _eval_body(self, env: Environment) -> None:
-        resource_output = self._build_resource(env=env)
-        env.stack.append(resource_output)
+        runtime_part = self._eval_runtime_part(env=env)
+        env.stack.append(runtime_part)
 
 
 class ActivityResource(Resource):
-    class ActivityResourceOutput(Resource.ResourceOutput):
-        name: Final[str]
-
-        def __init__(self, resource_arn: str, partition: str, region: str, account: str, name: str):
-            super().__init__(
-                resource_arn=resource_arn, partition=partition, region=region, account=account
-            )
-            self.name = name
-
     name: Final[str]
 
     def __init__(self, resource_arn: ResourceARN):
         super().__init__(resource_arn=resource_arn)
         self.name = resource_arn.name
 
-    def _build_resource(self, env: Environment) -> Resource.ResourceOutput:
-        resource_output: Resource.ResourceOutput = super()._build_resource(env=env)
-        activity_resource_output = ActivityResource.ActivityResourceOutput(
-            **vars(resource_output), name=self.name
-        )
-        return activity_resource_output
-
 
 class LambdaResource(Resource):
-    class LambdaResourceOutput(Resource.ResourceOutput):
-        function_name: Final[str]
-
-        def __init__(
-            self, resource_arn: str, partition: str, region: str, account: str, function_name: str
-        ):
-            super().__init__(
-                resource_arn=resource_arn, partition=partition, region=region, account=account
-            )
-            self.function_name = function_name
 
     function_name: Final[str]
 
@@ -164,40 +133,8 @@ class LambdaResource(Resource):
         super().__init__(resource_arn=resource_arn)
         self.function_name = resource_arn.name
 
-    def _build_resource(self, env: Environment) -> Resource.ResourceOutput:
-        resource_output: Resource.ResourceOutput = super()._build_resource(env=env)
-        lambda_resource_output = LambdaResource.LambdaResourceOutput(
-            **vars(resource_output), function_name=self.function_name
-        )
-        return lambda_resource_output
-
 
 class ServiceResource(Resource):
-    class ServiceResourceOutput(Resource.ResourceOutput):
-        service_name: Final[str]
-        api_name: Final[str]
-        api_action: Final[str]
-        condition: Final[Optional[str]]
-
-        def __init__(
-            self,
-            resource_arn: str,
-            partition: str,
-            region: str,
-            account: str,
-            service_name: str,
-            api_name: str,
-            api_action: str,
-            condition: Optional[str],
-        ):
-            super().__init__(
-                resource_arn=resource_arn, partition=partition, region=region, account=account
-            )
-            self.service_name = service_name
-            self.api_name = api_name
-            self.api_action = api_action
-            self.condition = condition
-
     service_name: Final[str]
     api_name: Final[str]
     api_action: Final[str]
@@ -229,14 +166,3 @@ class ServiceResource(Resource):
                     self.condition = ResourceCondition.Sync2
                 case unsupported:
                     raise RuntimeError(f"Unsupported condition '{unsupported}'.")
-
-    def _build_resource(self, env: Environment) -> Resource.ResourceOutput:
-        resource_output: Resource.ResourceOutput = super()._build_resource(env=env)
-        lambda_resource_output = ServiceResource.ServiceResourceOutput(
-            **vars(resource_output),
-            service_name=self.service_name,
-            api_name=self.api_name,
-            api_action=self.api_action,
-            condition=self.condition,
-        )
-        return lambda_resource_output

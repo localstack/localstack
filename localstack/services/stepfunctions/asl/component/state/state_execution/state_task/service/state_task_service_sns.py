@@ -10,7 +10,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
-    ServiceResource,
+    ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
@@ -73,14 +73,17 @@ class StateTaskServiceSns(StateTaskServiceCallback):
         return super()._from_error(env=env, ex=ex)
 
     def _eval_service_task(
-        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
     ):
         api_action = camel_to_snake_case(self.resource.api_action)
         sns_client = boto_client_for(
-            region=resource.region,
-            account=resource.account,
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
             service="sns",
         )
-        response = getattr(sns_client, api_action)(**parameters)
+        response = getattr(sns_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)

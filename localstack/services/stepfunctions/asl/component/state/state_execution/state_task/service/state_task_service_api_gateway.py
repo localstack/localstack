@@ -25,7 +25,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
-    ServiceResource,
+    ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
@@ -250,10 +250,13 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
         )
 
     def _eval_service_task(
-        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
     ):
         task_parameters: TaskParameters = select_from_typed_dict(
-            typed_dict=TaskParameters, obj=parameters
+            typed_dict=TaskParameters, obj=normalised_parameters
         )
 
         method = task_parameters["Method"]

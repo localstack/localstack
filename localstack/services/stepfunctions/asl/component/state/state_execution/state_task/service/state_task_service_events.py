@@ -10,7 +10,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
-    ServiceResource,
+    ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
@@ -75,21 +75,24 @@ class StateTaskServiceEvents(StateTaskServiceCallback):
             entry["Resources"] = resources
 
     def _eval_service_task(
-        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
     ):
-        self._normalised_request_parameters(env=env, parameters=parameters)
-        api_action = camel_to_snake_case(resource.api_action)
+        self._normalised_request_parameters(env=env, parameters=normalised_parameters)
+        api_action = camel_to_snake_case(self.resource.api_action)
         events_client = boto_client_for(
-            region=resource.region,
-            account=resource.account,
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
             service="events",
         )
-        response = getattr(events_client, api_action)(**parameters)
+        response = getattr(events_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
 
         # If the response from PutEvents contains a non-zero FailedEntryCount then the
         #  Task state fails with the error EventBridge.FailedEntry.
-        if resource.api_action == "putevents":
+        if self.resource.api_action == "putevents":
             failed_entry_count = response.get("FailedEntryCount", 0)
             if failed_entry_count > 0:
                 # TODO: pipe events' cause in the exception object. At them moment

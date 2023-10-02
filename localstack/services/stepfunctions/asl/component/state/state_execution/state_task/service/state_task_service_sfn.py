@@ -23,7 +23,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
     StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
-    ServiceResource,
+    ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
@@ -134,8 +134,10 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
             )
         return super()._from_error(env=env, ex=ex)
 
-    def _normalised_parameters_bindings(self, parameters: dict[str, str]) -> dict[str, str]:
-        normalised_parameters = super()._normalised_parameters_bindings(parameters=parameters)
+    def _normalised_parameters_bindings(self, raw_parameters: dict[str, str]) -> dict[str, str]:
+        normalised_parameters = super()._normalised_parameters_bindings(
+            raw_parameters=raw_parameters
+        )
 
         if self.resource.api_action.lower() == "startexecution":
             optional_input = normalised_parameters.get("input")
@@ -163,28 +165,31 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                 _replace_with_json_if_str("output")
 
     def _eval_service_task(
-        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
     ):
-        api_action = camel_to_snake_case(resource.api_action)
+        api_action = camel_to_snake_case(self.resource.api_action)
         sfn_client = boto_client_for(
-            region=resource.region,
-            account=resource.account,
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
             service="stepfunctions",
         )
-        response = getattr(sfn_client, api_action)(**parameters)
+        response = getattr(sfn_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
-        self._normalise_botocore_response(response.api_action, response)
+        self._normalise_botocore_response(self.resource.api_action, response)
         env.stack.append(response)
 
     def _sync_to_start_machine(
         self,
         env: Environment,
-        resource: ServiceResource.ServiceResourceOutput,
+        resource_runtime_part: ResourceRuntimePart,
         sync2_response: bool,
     ) -> None:
         sfn_client = boto_client_for(
-            region=resource.region,
-            account=resource.account,
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
             service="stepfunctions",
         )
         submission_output: dict = env.stack.pop()
@@ -228,16 +233,30 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
 
         env.stack.append(termination_output)
 
-    def _sync(self, env: Environment) -> None:
+    def _sync(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         match self.resource.api_action.lower():
             case "startexecution":
-                self._sync_to_start_machine(env=env, sync2_response=False)
+                self._sync_to_start_machine(
+                    env=env, resource_runtime_part=resource_runtime_part, sync2_response=False
+                )
             case _:
                 super()._sync(env=env)
 
-    def _sync2(self, env: Environment) -> None:
+    def _sync2(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         match self.resource.api_action.lower():
             case "startexecution":
-                self._sync_to_start_machine(env=env, sync2_response=True)
+                self._sync_to_start_machine(
+                    env=env, resource_runtime_part=resource_runtime_part, sync2_response=True
+                )
             case _:
                 super()._sync2(env=env)

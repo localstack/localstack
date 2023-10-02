@@ -20,6 +20,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
     StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceRuntimePart,
     ServiceResource,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
@@ -55,19 +56,22 @@ class StateTaskService(StateTask, abc.ABC):
 
     @abc.abstractmethod
     def _eval_service_task(
-        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
     ):
         ...
 
     def _before_eval_execution(
-        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+        self, env: Environment, resource_runtime_part: ResourceRuntimePart, raw_parameters: dict
     ) -> None:
-        parameters_str = to_json_str(parameters)
+        parameters_str = to_json_str(raw_parameters)
 
         scheduled_event_details = TaskScheduledEventDetails(
             resource=self._get_sfn_resource(),
             resourceType=self._get_sfn_resource_type(),
-            region=resource.region,
+            region=resource_runtime_part.region,
             parameters=parameters_str,
         )
         if not self.timeout.is_default_value():
@@ -92,7 +96,12 @@ class StateTaskService(StateTask, abc.ABC):
             ),
         )
 
-    def _after_eval_execution(self, env: Environment) -> None:
+    def _after_eval_execution(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         output = env.stack[-1]
         env.event_history.add_event(
             hist_type_event=HistoryEventType.TaskSucceeded,
@@ -107,17 +116,27 @@ class StateTaskService(StateTask, abc.ABC):
         )
 
     def _eval_execution(self, env: Environment) -> None:
-        parameters = self._eval_parameters(env=env)
-
         self.resource.eval(env=env)
-        resource_output: ServiceResource.ServiceResourceOutput = env.stack.pop()
+        resource_runtime_part: ResourceRuntimePart = env.stack.pop()
 
-        self._before_eval_execution(env=env, resource=resource_output, parameters=parameters)
+        raw_parameters = self._eval_parameters(env=env)
 
-        normalised_parameters = self._normalised_parameters_bindings(parameters)
-        self._eval_service_task(env=env, resource=resource_output, parameters=normalised_parameters)
+        self._before_eval_execution(
+            env=env, resource_runtime_part=resource_runtime_part, raw_parameters=raw_parameters
+        )
 
-        self._after_eval_execution(env=env)
+        normalised_parameters = self._normalised_parameters_bindings(raw_parameters)
+        self._eval_service_task(
+            env=env,
+            resource_runtime_part=resource_runtime_part,
+            normalised_parameters=normalised_parameters,
+        )
+
+        self._after_eval_execution(
+            env=env,
+            resource_runtime_part=resource_runtime_part,
+            normalised_parameters=normalised_parameters,
+        )
 
     @classmethod
     def for_service(cls, service_name: str) -> StateTaskService:

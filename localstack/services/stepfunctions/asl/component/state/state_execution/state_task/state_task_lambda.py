@@ -28,6 +28,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     LambdaResource,
+    ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
     StateTask,
@@ -122,10 +123,13 @@ class StateTaskLambda(StateTask):
             parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
 
         self.resource.eval(env=env)
-        resource = env.stack.pop()
+        resource_runtime_part: ResourceRuntimePart = env.stack.pop()
 
         lambda_eval_utils.exec_lambda_function(
-            env=env, parameters=parameters, region=resource.region, account=resource.account
+            env=env,
+            parameters=parameters,
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
         )
 
         # In lambda invocations, only payload is passed on as output.

@@ -3,7 +3,6 @@ from typing import Final, Optional
 from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
 class FailureEvent:
@@ -27,9 +26,6 @@ class FailureEventException(Exception):
 
     def __init__(self, failure_event: FailureEvent):
         self.failure_event = failure_event
-
-    def __str__(self) -> str:
-        return to_json_str(self.failure_event.event_details)
 
     def get_execution_failed_event_details(self) -> Optional[ExecutionFailedEventDetails]:
         if self.failure_event.event_details is None:

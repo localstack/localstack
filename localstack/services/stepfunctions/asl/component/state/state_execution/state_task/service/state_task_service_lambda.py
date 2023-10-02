@@ -13,7 +13,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     lambda_eval_utils,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
-    ServiceResource,
+    ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
@@ -79,10 +79,18 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
         )
 
     def _eval_service_task(
-        self, env: Environment, resource: ServiceResource.ServiceResourceOutput, parameters: dict
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
     ):
-        if "Payload" in parameters:
-            parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
+        if "Payload" in normalised_parameters:
+            normalised_parameters["Payload"] = lambda_eval_utils.to_payload_type(
+                normalised_parameters["Payload"]
+            )
         lambda_eval_utils.exec_lambda_function(
-            env=env, parameters=parameters, region=resource.region, account=resource.account
+            env=env,
+            parameters=normalised_parameters,
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
         )
