@@ -124,13 +124,3 @@ class EC2RouteTableProvider(ResourceProvider[EC2RouteTableProperties]):
           - ec2:DescribeRouteTables
         """
         raise NotImplementedError
-
-
-class EC2RouteTableProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::EC2::RouteTable"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = EC2RouteTableProvider
