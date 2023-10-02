@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional, Type, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
+from localstack.services.cloudformation.cfn_utils import get_tags_param
 from localstack.services.cloudformation.resource_provider import (
     CloudFormationResourceProviderPlugin,
     OperationStatus,
@@ -60,27 +61,23 @@ class EC2RouteTableProvider(ResourceProvider[EC2RouteTableProperties]):
         """
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
-        # TODO: validations
+        params = util.select_attributes(model, ["VpcId", "Tags"])
 
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
+        # TODO simplify this function
+        tags = get_tags_param("route-table")(
+            account_id=request.account_id,
+            region_name=request.region_name,
+            params=params,
+            logical_resource_id=request.logical_resource_id,
+        )
+        response = ec2.create_route_table(VpcId=params["VpcId"], TagSpecifications=tags)
+        model["RouteTableId"] = response["RouteTable"]["RouteTableId"]
 
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def read(
         self,
@@ -105,7 +102,14 @@ class EC2RouteTableProvider(ResourceProvider[EC2RouteTableProperties]):
           - ec2:DescribeRouteTables
           - ec2:DeleteRouteTable
         """
-        raise NotImplementedError
+        model = request.desired_state
+        ec2 = request.aws_client_factory.ec2
+        ec2.delete_route_table(RouteTableId=model["RouteTableId"])
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def update(
         self,
@@ -130,4 +134,3 @@ class EC2RouteTableProviderPlugin(CloudFormationResourceProviderPlugin):
 
     def load(self):
         self.factory = EC2RouteTableProvider
-
