@@ -398,6 +398,10 @@ class KinesisFirehoseDeliveryStreamProvider(
             "Tags",
         ]
         attrs = util.select_attributes(model, params=parameters)
+        if not attrs.get("DeliveryStreamName"):
+            attrs["DeliveryStreamName"] = util.generate_default_name(
+                request.stack_name, request.logical_resource_id
+            )
 
         if not request.custom_context.get(REPEATED_INVOCATION):
             response = firehose.create_delivery_stream(**attrs)
@@ -453,12 +457,25 @@ class KinesisFirehoseDeliveryStreamProvider(
         """
         model = request.desired_state
         firehose = request.aws_client_factory.firehose
-        firehose.delete_delivery_stream(DeliveryStreamName=model["DeliveryStreamName"])
+        try:
+            stream = firehose.describe_delivery_stream(DeliveryStreamName=model["DeliveryStreamName"])
+        # except ResourceNotFound:
+        except Exception:
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
+
+        if stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] != "DELETING":
+            firehose.delete_delivery_stream(DeliveryStreamName=model["DeliveryStreamName"])
         return ProgressEvent(
-            status=OperationStatus.SUCCESS,
+            status=OperationStatus.IN_PROGRESS,
             resource_model=model,
             custom_context=request.custom_context,
         )
+
+
 
     def update(
         self,
