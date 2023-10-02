@@ -3,11 +3,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -233,13 +232,3 @@ class IAMRoleProvider(ResourceProvider[IAMRoleProperties]):
             return self.create(request)
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.previous_state)
         # raise Exception("why was a change even detected?")
-
-
-class IAMRoleProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::IAM::Role"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = IAMRoleProvider
