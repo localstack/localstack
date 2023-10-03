@@ -63,8 +63,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Kinesis::Stream": "ResourceProvider",
     "AWS::Kinesis::StreamConsumer": "ResourceProvider",
     "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
-    # "AWS::SSM::Parameter": "GenericBaseModel",
-    # "AWS::OpenSearchService::Domain": "GenericBaseModel",
+    "AWS::DynamoDB::Table": "ResourceProvider",
 }
 
 
