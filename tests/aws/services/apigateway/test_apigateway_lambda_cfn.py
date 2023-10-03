@@ -19,7 +19,7 @@ def handler(event, context):
 
 
 @markers.acceptance_test_beta
-class TestApigatewayLambdaIntegrationScenario:
+class TestApigatewayLambdaIntegration:
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client):
         app = cdk.App()

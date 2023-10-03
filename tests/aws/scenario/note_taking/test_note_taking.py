@@ -10,6 +10,7 @@ import shutil
 import tempfile
 import zipfile
 from dataclasses import dataclass
+from operator import itemgetter
 from typing import TYPE_CHECKING, Callable
 
 import aws_cdk as cdk
@@ -107,11 +108,11 @@ def setup_lambdas(
 
 
 class TestNoteTakingScenario:
+    STACK_NAME = "NoteTakingStack"
+
     @pytest.fixture(scope="class")
     def create_archive_for_lambda_resource(self):
-        libs_file = os.path.join(
-            os.path.dirname(__file__), "./resources_note_taking/lambda_sources/libs/response.js"
-        )
+        libs_file = os.path.join(os.path.dirname(__file__), "./functions/libs/response.js")
         tmp_dir_list = []
         tmp_zip_path_list = []
 
@@ -131,9 +132,7 @@ class TestNoteTakingScenario:
 
             # Add the lambda to the temporary directory
             lambda_file = f"{lambda_file_base_name}.js"
-            lambda_file_path = os.path.join(
-                os.path.dirname(__file__), f"./resources_note_taking/lambda_sources/{lambda_file}"
-            )
+            lambda_file_path = os.path.join(os.path.dirname(__file__), f"./functions/{lambda_file}")
             new_resource_temp_path = os.path.join(temp_dir, "index.js")
             shutil.copy2(lambda_file_path, new_resource_temp_path)
 
@@ -164,7 +163,7 @@ class TestNoteTakingScenario:
     def infrastructure(self, aws_client, create_archive_for_lambda_resource):
         infra = InfraProvisioner(aws_client)
         app = cdk.App()
-        stack = cdk.Stack(app, "NoteTakingStack")
+        stack = cdk.Stack(app, self.STACK_NAME)
 
         bucket_name = "notes-sample-scenario-test"
 
@@ -222,83 +221,95 @@ class TestNoteTakingScenario:
             ],
         )
 
-        # TODO enhance app by using audio upload and transcribe feature, sign-up, etc
-
-        """
-        files_bucket = s3.Bucket(
-            stack,
-            "files_bucket",
-            removal_policy=cdk.RemovalPolicy.DESTROY,
-        )
-        files_bucket.add_cors_rule(
-            allowed_origins=apigw.Cors.ALL_ORIGINS,
-            allowed_methods=[
-                s3.HttpMethods.PUT,
-                s3.HttpMethods.GET,
-                s3.HttpMethods.DELETE,
-            ],
-            allowed_headers=["*"],
-        )
-        # TODO requires pro
-        identity_pool = cognito.CfnIdentityPool(
-            stack, "identity-pool", allow_unauthenticated_identities=True
-        )
-        unauthenticated_role = iam.Role(
-            stack,
-            "unauthenticated-role",
-            assumed_by=iam.FederatedPrincipal(
-                "cognito-identity.amazonaws.com",
-                conditions={
-                    "StringEquals": {
-                        "cognito-identity.amazonaws.com:aud": identity_pool.ref,
-                    },
-                    "ForAnyValue:StringLike": {
-                        "cognito-identity.amazonaws.com:amr": "unauthenticated",
-                    },
-                },
-                assume_role_action="sts:AssumeRoleWithWebIdentity",
-            ),
-        )
-        # NOT recommended for production code - only give read permissions for unauthenticated resources
-        files_bucket.grant_read(unauthenticated_role)
-        files_bucket.grant_put(unauthenticated_role)
-        files_bucket.grant_delete(unauthenticated_role)
-
-        unauthenticated_role.add_to_policy(
-            iam.PolicyStatement(
-                resources=["*"], actions=["transcribe:StartStreamTranscriptionWebSocket"]
-            )
-        )
-
-        # Add policy to enable Amazon Polly text-to-speech
-        # TODO the transcribe/audio notes taking was actually from dev hub. transcribe might work with LS
-        unauthenticated_role.add_managed_policy(
-            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonPollyFullAccess")
-        )
-
-        cognito.CfnIdentityPoolRoleAttachment(
-            stack,
-            "role-attachment",
-            identity_pool_id=identity_pool.ref,
-            roles={"unauthenticated": unauthenticated_role.role_arn},
-        )
-        cdk.CfnOutput(stack, "FilesBucket", value=files_bucket.bucket_name)
-        cdk.CfnOutput(stack, "IdentityPoolId", value=identity_pool.ref)
-        """
+        # TODO could enhance app by using audio upload and transcribe feature, sign-up, etc
 
         cdk.CfnOutput(stack, "GatewayUrl", value=api.url)
         cdk.CfnOutput(stack, "Region", value=stack.region)
 
         infra.add_cdk_stack(stack)
 
-        # set skip_teardown=True to prevent the stack to be deleted
-        with infra.provisioner(skip_teardown=False) as prov:
-            # here we could add some initial setup, e.g. pre-filling the app with data
+        with infra.provisioner() as prov:
             yield prov
 
-    @markers.aws.unknown
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Tags",
+            "$..get_resources.items",  # TODO apigateway.get-resources
+            "$..rootResourceId",
+            "$..Table.DeletionProtectionEnabled",
+            "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+            "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+            "$..Table.Replicas",
+        ]
+    )
+    def test_validate_infra_setup(self, aws_client, infrastructure, snapshot):
+        describe_stack_resources = aws_client.cloudformation.describe_stack_resources(
+            StackName=self.STACK_NAME
+        )
+        snapshot.add_transformer(snapshot.transform.cfn_stack_resource())
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(snapshot.transform.key_value("TableName"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "CodeSha256", value_replacement="code-sha-256", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("FunctionName"), priority=-1)
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "Location", value_replacement="location", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("parentId", reference_replacement=False)
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("id", reference_replacement=False))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("rootResourceId", reference_replacement=False)
+        )
+
+        describe_stack_resources["StackResources"].sort(key=itemgetter("ResourceType"))
+        snapshot.match("describe_stack_resources", describe_stack_resources)
+
+        service_resources_fn = {}
+        rest_api_id = None
+        for stack_resource in describe_stack_resources["StackResources"]:
+            match stack_resource["ResourceType"]:
+                case "AWS::Lambda::Function":
+                    service_resources_fn[
+                        stack_resource["LogicalResourceId"]
+                    ] = aws_client.lambda_.get_function(
+                        FunctionName=stack_resource["PhysicalResourceId"]
+                    )
+                case "AWS::DynamoDB::Table":
+                    # we only have one table
+                    snapshot.match(
+                        "resource_table",
+                        aws_client.dynamodb.describe_table(
+                            TableName=stack_resource["PhysicalResourceId"]
+                        ),
+                    )
+
+                case "AWS::ApiGateway::RestApi":
+                    rest_api_id = stack_resource["PhysicalResourceId"]
+
+        ctn = 0
+        for k in sorted(service_resources_fn.keys()):
+            v = service_resources_fn.get(k)
+            # introduce a new label, as the resource-id would be replaced as key-identifier,
+            # messing up the transformers
+            snapshot.match(f"fn_{ctn}", v)
+            ctn += 1
+
+        snapshot.match("get_rest_api", aws_client.apigateway.get_rest_api(restApiId=rest_api_id))
+        resources = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+        resources["items"].sort(key=itemgetter("path"))
+        snapshot.match("get_resources", resources)
+
+    @markers.aws.validated
     def test_notes_rest_api(self, infrastructure):
-        outputs = infrastructure.get_stack_outputs("NoteTakingStack")
+        outputs = infrastructure.get_stack_outputs(self.STACK_NAME)
         gateway_url = outputs["GatewayUrl"]
         base_url = f"{gateway_url}notes"
 
@@ -360,14 +371,3 @@ class TestNoteTakingScenario:
         response = requests.get(f"{base_url}/{note_2['noteId']}")
         assert response.status_code == 404
         assert json.loads(response.text) == {"status": False, "error": "Item not found."}
-
-    @markers.aws.unknown
-    def test_another_scenario(self, aws_client, infrastructure):
-        # TODO test something different
-        #   added to test the skipping of infra-teardown
-        outputs = infrastructure.get_stack_outputs("NoteTakingStack")
-        gateway_url = outputs["GatewayUrl"]
-        base_url = f"{gateway_url}notes"
-
-        response = requests.get(base_url)
-        assert response.status_code == 200

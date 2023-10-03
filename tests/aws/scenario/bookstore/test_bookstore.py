@@ -110,11 +110,9 @@ class TestBookstoreApplication:
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client, patch_opensearch_strategy):
         infra = InfraProvisioner(aws_client)
-        search_book_fn_path = os.path.join(
-            os.path.dirname(__file__), "resources_bookstore/books/search.py"
-        )
+        search_book_fn_path = os.path.join(os.path.dirname(__file__), "functions/search.py")
         search_update_fn_path = os.path.join(
-            os.path.dirname(__file__), "resources_bookstore/books/update_search_cluster.py"
+            os.path.dirname(__file__), "functions/update_search_cluster.py"
         )
         infra.add_custom_setup_provisioning_step(
             lambda: setup_lambda(aws_client.s3, SEARCH_BUCKET, SEARCH_KEY, search_book_fn_path)
@@ -170,9 +168,7 @@ class TestBookstoreApplication:
             )
         )
 
-        file_name = os.path.join(
-            os.path.dirname(__file__), "./resources_bookstore/books/initial_books.json"
-        )
+        file_name = os.path.join(os.path.dirname(__file__), "./resources/initial_books.json")
         aws_client.s3.upload_file(
             Filename=file_name,
             Bucket=S3_BUCKET_BOOKS_INIT,
@@ -420,13 +416,9 @@ class BooksApi(Construct):
     books_table: dynamodb.Table
     opensearch_domain: opensearch.Domain
 
-    LOAD_BOOKS_HELPER_PATH = os.path.join(
-        os.path.dirname(__file__), "resources_bookstore/books/loadBooksHelper.js"
-    )
-    GET_BOOK_PATH = os.path.join(os.path.dirname(__file__), "resources_bookstore/books/getBook.js")
-    LIST_BOOKS_PATH = os.path.join(
-        os.path.dirname(__file__), "resources_bookstore/books/listBooks.js"
-    )
+    LOAD_BOOKS_HELPER_PATH = os.path.join(os.path.dirname(__file__), "functions/loadBooksHelper.js")
+    GET_BOOK_PATH = os.path.join(os.path.dirname(__file__), "functions/getBook.js")
+    LIST_BOOKS_PATH = os.path.join(os.path.dirname(__file__), "functions/listBooks.js")
 
     def __init__(
         self,

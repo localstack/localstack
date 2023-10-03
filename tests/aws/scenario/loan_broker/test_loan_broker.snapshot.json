@@ -1,5 +1,5 @@
 {
-  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input0-SUCCEEDED]": {
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input0-SUCCEEDED]": {
     "recorded-date": "02-08-2023, 11:58:05",
     "recorded-content": {
       "describe-execution-finished": {
@@ -64,7 +64,7 @@
       }
     }
   },
-  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input1-SUCCEEDED]": {
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input1-SUCCEEDED]": {
     "recorded-date": "02-08-2023, 11:58:07",
     "recorded-content": {
       "describe-execution-finished": {
@@ -120,7 +120,7 @@
       }
     }
   },
-  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input2-FAILED]": {
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input2-FAILED]": {
     "recorded-date": "02-08-2023, 11:58:10",
     "recorded-content": {
       "describe-execution-finished": {
@@ -148,7 +148,7 @@
       }
     }
   },
-  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input3-FAILED]": {
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input3-FAILED]": {
     "recorded-date": "02-08-2023, 11:58:10",
     "recorded-content": {
       "describe-execution-finished": {
@@ -174,7 +174,7 @@
       }
     }
   },
-  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input4-FAILED]": {
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input4-FAILED]": {
     "recorded-date": "02-08-2023, 11:58:13",
     "recorded-content": {
       "describe-execution-finished": {
@@ -200,7 +200,7 @@
       }
     }
   },
-  "tests/aws/scenario/test_loan_broker.py::TestLoanBrokerScenario::test_prefill_dynamodb_table": {
+  "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_prefill_dynamodb_table": {
     "recorded-date": "24-08-2023, 16:33:21",
     "recorded-content": {
       "describe_table": {

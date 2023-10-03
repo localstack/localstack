@@ -74,28 +74,62 @@ class TestLambdaDestinationScenario:
         # provisioning
         provisioner = InfraProvisioner(aws_client)
         provisioner.add_cdk_stack(stack)
-        with provisioner.provisioner() as prov:
+        with provisioner.provisioner(skip_teardown=False) as prov:
             yield prov
 
-    @markers.aws.unknown
-    def test_infra(self, infrastructure, aws_client):
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Configuration.CodeSha256",
+            "$..Tags",
+            "$..Attributes.DeliveryPolicy",
+            "$..Attributes.EffectiveDeliveryPolicy.defaultHealthyRetryPolicy",
+            "$..Attributes.EffectiveDeliveryPolicy.guaranteed",
+            "$..Attributes.EffectiveDeliveryPolicy.http",
+            "$..Attributes.EffectiveDeliveryPolicy.sicklyRetryPolicy",
+            "$..Attributes.EffectiveDeliveryPolicy.throttlePolicy",
+            "$..Attributes.Policy.Statement..Action",
+            "$..Attributes.SubscriptionsConfirmed",
+        ]
+    )
+    def test_infra(self, infrastructure, aws_client, snapshot):
         outputs = infrastructure.get_stack_outputs("LambdaTestStack")
         collect_fn_name = outputs["CollectFunctionName"]
         main_fn_name = outputs["DestinationFunctionName"]
         topic_arn = outputs["DestinationTopicArn"]
 
-        aws_client.lambda_.get_function(FunctionName=main_fn_name)
-        aws_client.lambda_.get_function(FunctionName=collect_fn_name)
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "aws:cloudformation:logical-id", "replaced-value", reference_replacement=False
+            ),
+            priority=-1,
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "aws:cloudformation:stack-id", "replaced-value", reference_replacement=False
+            ),
+            priority=-1,
+        )
+
+        fn_1 = aws_client.lambda_.get_function(FunctionName=main_fn_name)
+        fn_2 = aws_client.lambda_.get_function(FunctionName=collect_fn_name)
+
+        snapshot.match("get_fn_1", fn_1)
+        snapshot.match("get_fn_2", fn_2)
 
         eic = aws_client.lambda_.get_function_event_invoke_config(FunctionName=main_fn_name)
         assert eic["MaximumRetryAttempts"] == 0
         assert eic["DestinationConfig"]["OnSuccess"]["Destination"] == topic_arn
         assert eic["DestinationConfig"]["OnFailure"]["Destination"] == topic_arn
 
-        aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("event_invoke_config", eic)
 
-    @markers.aws.unknown
-    def test_destination_sns(self, infrastructure, aws_client):
+        topic_attr = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("topic_attributes", topic_attr)
+
+    @markers.aws.validated
+    def test_destination_sns(self, infrastructure, aws_client, snapshot):
         outputs = infrastructure.get_stack_outputs("LambdaTestStack")
         invoke_fn_name = outputs["DestinationFunctionName"]
         collect_fn_name = outputs["CollectFunctionName"]
@@ -103,18 +137,20 @@ class TestLambdaDestinationScenario:
         msg = f"message-{short_uid()}"
 
         # Success case
-        aws_client.lambda_.invoke(
+        response = aws_client.lambda_.invoke(
             FunctionName=invoke_fn_name,
             Payload=to_bytes(json.dumps({"message": msg, "should_fail": "0"})),
             InvocationType=InvocationType.Event,
         )
+        snapshot.match("successfull_invoke", response)
 
         # Failure case
-        aws_client.lambda_.invoke(
+        response = aws_client.lambda_.invoke(
             FunctionName=invoke_fn_name,
             Payload=to_bytes(json.dumps({"message": msg, "should_fail": "1"})),
             InvocationType=InvocationType.Event,
         )
+        snapshot.match("unsuccessful_invoke", response)
 
         def wait_for_logs():
             events = connect_to().logs.filter_log_events(
