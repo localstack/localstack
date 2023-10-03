@@ -207,11 +207,6 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
             if model.get("GlobalSecondaryIndexes"):
                 model["GlobalSecondaryIndexes"] = self.get_ddb_global_sec_indexes(model)
 
-            model["StreamSpecification"] = {
-                **{"StreamEnabled": True},
-                **model.get("StreamSpecification", {}),
-            }
-
             properties = [
                 "TableName",
                 "AttributeDefinitions",
@@ -220,11 +215,18 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                 "ProvisionedThroughput",
                 "LocalSecondaryIndexes",
                 "GlobalSecondaryIndexes",
-                "StreamSpecification",
                 "Tags",
             ]
             create_params = util.select_attributes(model, properties)
-            request.aws_client_factory.dynamodb.create_table(**create_params)
+
+            if stream_spec := model.get("StreamSpecification"):
+                create_params["StreamSpecification"] = {
+                    "StreamEnabled": True,
+                    **(stream_spec or {}),
+                }
+
+            response = request.aws_client_factory.dynamodb.create_table(**create_params)
+            model["Arn"] = response["TableDescription"]["TableArn"]
 
             if model.get("KinesisStreamSpecification"):
                 request.aws_client_factory.dynamodb.enable_kinesis_streaming_destination(
@@ -248,7 +250,6 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                 custom_context=request.custom_context,
             )
 
-        model["Arn"] = description["Table"]["TableArn"]
         if description["Table"].get("LatestStreamArn"):
             model["StreamArn"] = description["Table"]["LatestStreamArn"]
 
@@ -283,11 +284,38 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
           - dynamodb:DescribeTable
         """
         model = request.desired_state
-        request.aws_client_factory.dynamodb.delete_table(TableName=model["TableName"])
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model={},
-        )
+        if not request.custom_context.get(REPEATED_INVOCATION):
+            request.custom_context[REPEATED_INVOCATION] = True
+            request.aws_client_factory.dynamodb.delete_table(TableName=model["TableName"])
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
+
+        try:
+            table_state = request.aws_client_factory.dynamodb.describe_table(
+                TableName=model["TableName"]
+            )
+
+            match table_state["Table"]["TableStatus"]:
+                case "DELETING":
+                    return ProgressEvent(
+                        status=OperationStatus.IN_PROGRESS,
+                        resource_model=model,
+                        custom_context=request.custom_context,
+                    )
+                case invalid_state:
+                    return ProgressEvent(
+                        status=OperationStatus.FAILED,
+                        message=f"Table deletion failed. Table {model['TableName']} found in state {invalid_state}",  # TODO: not validated yet
+                        resource_model={},
+                    )
+        except request.aws_client_factory.dynamodb.exceptions.TableNotFoundException:
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS,
+                resource_model={},
+            )
 
     def update(
         self,
