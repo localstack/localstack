@@ -51,10 +51,14 @@ RUN --mount=type=cache,target=/var/cache/apt \
 # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
 # Install nodejs package from the dist release server. Note: we're installing from dist binaries, and not via
 #  `apt-get`, to avoid installing `python3.9` into the image (which otherwise comes as a dependency of nodejs).
-RUN NODE_ARCH=$(test "${TARGETARCH}" = "amd64" && echo "x64" || echo "${TARGETARCH}") && \
-    LATEST_VERSION_FILENAME=$(curl -s https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt | grep -o "node-v.*-linux-${NODE_ARCH}" | sort | uniq) && \
-    mkdir -p /tmp/nodejs && \
-    curl -s -L https://nodejs.org/dist/latest-v18.x/${LATEST_VERSION_FILENAME}.tar.gz | tar -xz -C /tmp/nodejs && \
+RUN mkdir -p /tmp/nodejs && cd /tmp/nodejs && \
+    curl -O https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt && \
+    NODE_ARCH=$(test "${TARGETARCH}" = "amd64" && echo "x64" || echo "${TARGETARCH}") && \
+    LATEST_VERSION_FILENAME=$(cat SHASUMS256.txt | grep -o "node-v.*-linux-${NODE_ARCH}" | sort | uniq) && \
+    curl -O https://nodejs.org/dist/latest-v18.x/${LATEST_VERSION_FILENAME}.tar.gz && \
+    grep ${LATEST_VERSION_FILENAME}.tar.gz SHASUMS256.txt | sha256sum -c - && \
+    tar -xzf ${LATEST_VERSION_FILENAME}.tar.gz -C /tmp/nodejs && \
+    rm -rf ${LATEST_VERSION_FILENAME}.tar.gz && \
     mv /tmp/nodejs/node-* /usr/local/lib/nodejs && \
     ln -s /usr/local/lib/nodejs/bin/node /usr/local/bin/node && \
     ln -s /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm && \
