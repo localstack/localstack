@@ -3,9 +3,9 @@ FROM python:3.11.5-slim-buster@sha256:9f35f3a6420693c209c11bba63dcf103d88e47ebe0
 ARG TARGETARCH
 
 # install OpenJDK 11
-RUN apt update && \
-        apt install -y openjdk-11-jdk-headless && \
-        apt clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+        apt-get install -y openjdk-11-jdk-headless && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${TARGETARCH}
 
@@ -42,31 +42,25 @@ ARG TARGETARCH
 
 # Install runtime OS package dependencies
 RUN --mount=type=cache,target=/var/cache/apt \
-    apt update && \
+    apt-get update && \
         # Install dependencies to add additional repos
-        apt install -y --no-install-recommends \
+        apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
             ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2
 
 # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
-# Note: We're extracting and modifying the `control.tar.xz` metadata of the `nodejs` package below,
-#       to remove the dependency to `python3` (to avoid installing python3.9 into the image)
-RUN --mount=type=cache,target=/var/cache/apt \
-    mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
-    apt update && apt install -y binutils xz-utils && \
-    mkdir -p /tmp/nodejs.deb && cd /tmp/nodejs.deb && \
-    apt download nodejs && \
-    ar -xf nodejs*.deb && tar -xf control.tar.xz && \
-    sed -i 's/python3,//g' control && \
-    tar cfJ control.tar.xz control && ar r nodejs*.deb control.tar.xz && \
-    dpkg -i nodejs*.deb && \
-    rm -rf /tmp/*.deb && apt remove --purge -y binutils xz-utils
-
-# assert that `node` is installed, but not `python3.9` (which is a default dependency for the nodejs package)
-RUN which node
-RUN test ! $(which python3.9)
+# Install nodejs package from the dist release server. Note: we're installing from dist binaries, and not via
+#  `apt-get`, to avoid installing `python3.9` into the image (which otherwise comes as a dependency of nodejs).
+RUN NODE_ARCH=$(test "${TARGETARCH}" = "amd64" && echo "x64" || echo "${TARGETARCH}") && \
+    LATEST_VERSION_FILENAME=$(curl -s https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt | grep -o "node-v.*-linux-${NODE_ARCH}" | sort | uniq) && \
+    mkdir -p /tmp/nodejs && \
+    curl -s -L https://nodejs.org/dist/latest-v18.x/${LATEST_VERSION_FILENAME}.tar.gz | tar -xz -C /tmp/nodejs && \
+    mv /tmp/nodejs/node-* /usr/local/lib/nodejs && \
+    ln -s /usr/local/lib/nodejs/bin/node /usr/local/bin/node && \
+    ln -s /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm && \
+    ln -s /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx && \
+    which node && test ! $(which python3.9) && \
+    rm -rf /tmp/nodejs
 
 SHELL [ "/bin/bash", "-c" ]
 
@@ -130,9 +124,9 @@ ARG TARGETARCH
 
 # Install build dependencies to base
 RUN --mount=type=cache,target=/var/cache/apt \
-    apt update && \
+    apt-get update && \
         # Install dependencies to add additional repos
-        apt install -y gcc
+        apt-get install -y gcc
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
