@@ -2364,6 +2364,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
 
     # CAVE: these settings & usages are *per* region!
+    # Lambda quotas: https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html
     def get_account_settings(
         self,
         context: RequestContext,
@@ -2376,7 +2377,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         for fn in state.functions.values():
             fn_count += 1
             for fn_version in fn.versions.values():
-                code_size_sum += fn_version.config.code.code_size
+                # Image-based Lambdas do not have a code attribute and count against the ECR quotas instead
+                if fn_version.config.package_type == PackageType.Zip:
+                    code_size_sum += fn_version.config.code.code_size
             if fn.reserved_concurrent_executions is not None:
                 reserved_concurrency_sum += fn.reserved_concurrent_executions
             for c in fn.provisioned_concurrency_configs.values():
