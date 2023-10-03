@@ -64,6 +64,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Kinesis::StreamConsumer": "ResourceProvider",
     "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
     "AWS::EC2::RouteTable": "ResourceProvider",
+    "AWS::EC2::Route": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }

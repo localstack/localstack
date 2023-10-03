@@ -1,0 +1,62 @@
+{
+  "typeName": "AWS::EC2::Route",
+  "description": "Resource Type definition for AWS::EC2::Route",
+  "additionalProperties": false,
+  "properties": {
+    "DestinationIpv6CidrBlock": {
+      "type": "string"
+    },
+    "RouteTableId": {
+      "type": "string"
+    },
+    "InstanceId": {
+      "type": "string"
+    },
+    "LocalGatewayId": {
+      "type": "string"
+    },
+    "CarrierGatewayId": {
+      "type": "string"
+    },
+    "DestinationCidrBlock": {
+      "type": "string"
+    },
+    "GatewayId": {
+      "type": "string"
+    },
+    "NetworkInterfaceId": {
+      "type": "string"
+    },
+    "VpcEndpointId": {
+      "type": "string"
+    },
+    "TransitGatewayId": {
+      "type": "string"
+    },
+    "VpcPeeringConnectionId": {
+      "type": "string"
+    },
+    "EgressOnlyInternetGatewayId": {
+      "type": "string"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "NatGatewayId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "RouteTableId"
+  ],
+  "createOnlyProperties": [
+    "/properties/RouteTableId",
+    "/properties/DestinationCidrBlock"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}
