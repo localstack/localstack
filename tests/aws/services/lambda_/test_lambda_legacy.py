@@ -29,6 +29,8 @@ from tests.aws.services.lambda_.test_lambda import (
     read_streams,
 )
 
+# TODO: remove these tests with 3.0 because they are only for the legacy provider and not aws-validated.
+#   not worth fixing the unknown markers.
 pytestmark = pytest.mark.skipif(
     condition=is_new_provider(), reason="only relevant for old provider"
 )
@@ -87,8 +89,8 @@ def test_logging_in_local_executor(create_lambda_function, handler_path, aws_cli
 
 
 @pytest.mark.skipif(not is_old_provider(), reason="test does not make valid assertions against AWS")
+@markers.aws.unknown
 class TestLambdaLegacyProvider:
-    @markers.aws.unknown
     def test_add_lambda_multiple_permission(self, create_lambda_function, aws_client):
         """Test adding multiple permissions"""
         function_name = f"lambda_func-{short_uid()}"
@@ -145,7 +147,6 @@ class TestLambdaLegacyProvider:
         )
         assert 200 == resp["ResponseMetadata"]["HTTPStatusCode"]
 
-    @markers.aws.unknown
     def test_add_lambda_permission(self, create_lambda_function, aws_client):
         function_name = f"lambda_func-{short_uid()}"
         lambda_create_response = create_lambda_function(
@@ -197,7 +198,6 @@ class TestLambdaLegacyProvider:
         assert 200 == resp["ResponseMetadata"]["HTTPStatusCode"]
 
     # remove? be aware of partition check
-    @markers.aws.unknown
     def test_create_lambda_function(self, aws_client):
         """Basic test that creates and deletes a Lambda function"""
         func_name = f"lambda_func-{short_uid()}"
@@ -245,7 +245,6 @@ class TestLambdaLegacyProvider:
         assert "ResourceNotFoundException" in str(exc)
 
     @skip_if_pro_enabled
-    @markers.aws.unknown
     def test_update_lambda_with_layers(self, create_lambda_function, aws_client):
         func_name = f"lambda-{short_uid()}"
         create_lambda_function(
