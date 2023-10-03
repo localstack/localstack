@@ -46,25 +46,50 @@ RUN --mount=type=cache,target=/var/cache/apt \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2
+            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2 xz-utils
 
 # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
 # Install nodejs package from the dist release server. Note: we're installing from dist binaries, and not via
 #  `apt-get`, to avoid installing `python3.9` into the image (which otherwise comes as a dependency of nodejs).
-RUN mkdir -p /tmp/nodejs && cd /tmp/nodejs && \
-    curl -O https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt && \
-    NODE_ARCH=$(test "${TARGETARCH}" = "amd64" && echo "x64" || echo "${TARGETARCH}") && \
-    LATEST_VERSION_FILENAME=$(cat SHASUMS256.txt | grep -o "node-v.*-linux-${NODE_ARCH}" | sort | uniq) && \
-    curl -O https://nodejs.org/dist/latest-v18.x/${LATEST_VERSION_FILENAME}.tar.gz && \
-    grep ${LATEST_VERSION_FILENAME}.tar.gz SHASUMS256.txt | sha256sum -c - && \
-    tar -xzf ${LATEST_VERSION_FILENAME}.tar.gz -C /tmp/nodejs && \
-    rm -rf ${LATEST_VERSION_FILENAME}.tar.gz && \
-    mv /tmp/nodejs/node-* /usr/local/lib/nodejs && \
-    ln -s /usr/local/lib/nodejs/bin/node /usr/local/bin/node && \
-    ln -s /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm && \
-    ln -s /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx && \
-    which node && test ! $(which python3.9) && \
-    rm -rf /tmp/nodejs
+# See https://github.com/nodejs/docker-node/blob/main/18/bullseye/Dockerfile
+RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
+  && case "${dpkgArch##*-}" in \
+    amd64) ARCH='x64';; \
+    arm64) ARCH='arm64';; \
+    *) echo "unsupported architecture"; exit 1 ;; \
+  esac \
+  # gpg keys listed at https://github.com/nodejs/node#release-keys
+  && set -ex \
+  && for key in \
+    4ED778F539E3634C779C87C6D7062848A1AB005C \
+    141F07595B7B3FFE74309A937405533BE57C7D57 \
+    74F12602B6F1C4E913FAA37AD3A89613643B6201 \
+    DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7 \
+    61FC681DFB92A079F1685E77973F295594EC4689 \
+    8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600 \
+    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
+    890C08DB8579162FEE0DF9DB8BEAB4DFCF555EF4 \
+    C82FA3AE1CBEDC6BE46B9360C43CEC45C17AB93C \
+    108F52B48DB57BB0CC439B2997B01419BD92F80A \
+    A363A499291CBBC940DD62E41F10027AF002F8B0 \
+  ; do \
+      gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$key" || \
+      gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key" ; \
+  done \
+  && curl -O https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt \
+  && LATEST_VERSION_FILENAME=$(cat SHASUMS256.txt | grep -o "node-v.*-linux-$ARCH" | sort | uniq) \
+  && rm SHASUMS256.txt \
+  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/$LATEST_VERSION_FILENAME.tar.xz" \
+  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt.asc" \
+  && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
+  && grep " $LATEST_VERSION_FILENAME.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
+  && tar -xJf "$LATEST_VERSION_FILENAME.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
+  && rm "$LATEST_VERSION_FILENAME.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
+  && ln -s /usr/local/bin/node /usr/local/bin/nodejs \
+  # smoke tests
+  && node --version \
+  && npm --version \
+  && test ! $(which python3.9)
 
 SHELL [ "/bin/bash", "-c" ]
 
