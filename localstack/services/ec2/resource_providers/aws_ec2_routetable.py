@@ -104,7 +104,11 @@ class EC2RouteTableProvider(ResourceProvider[EC2RouteTableProperties]):
         """
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
-        ec2.delete_route_table(RouteTableId=model["RouteTableId"])
+        try:
+            ec2.delete_route_table(RouteTableId=model["RouteTableId"])
+        except ec2.exceptions.ClientError:
+            pass
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,

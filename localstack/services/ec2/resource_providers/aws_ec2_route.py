@@ -66,8 +66,7 @@ class EC2RouteProvider(ResourceProvider[EC2RouteProperties]):
         ec2 = request.aws_client_factory.ec2
 
         cidr_block = model.get("DestinationCidrBlock")
-        ipv6_cidr_block = model.get("DestinationIpv6CidrBlock")
-        # from moto.ec2.utils.generate_route_id:generate_route_id
+        ipv6_cidr_block = model.get("DestinationIpv6CidrBlock", "")
 
         ec2.create_route(
             DestinationCidrBlock=cidr_block,
