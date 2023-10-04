@@ -18,4 +18,3 @@ class EC2SecurityGroupProviderPlugin(CloudFormationResourceProviderPlugin):
         )
 
         self.factory = EC2SecurityGroupProvider
-

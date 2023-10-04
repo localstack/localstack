@@ -93,11 +93,14 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
         params = util.select_attributes(model, ["GroupName", "VpcId", "GroupDescription"])
 
         if not params.get("GroupName"):
-            params["GroupName"] = util.generate_default_name(request.stack_name,
-                                                             request.logical_resource_id)
-        response = ec2.create_security_group(VpcId=params["VpcID"],
-                                             GroupName=params["GroupName"],
-                                             Description=params.get("GroupDescription", ""))
+            params["GroupName"] = util.generate_default_name(
+                request.stack_name, request.logical_resource_id
+            )
+        response = ec2.create_security_group(
+            VpcId=params["VpcID"],
+            GroupName=params["GroupName"],
+            Description=params.get("GroupDescription", ""),
+        )
         model["GroupId"] = response["GroupId"]
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
@@ -145,4 +148,3 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
 
         """
         raise NotImplementedError
-
