@@ -1,0 +1,148 @@
+{
+  "typeName": "AWS::EC2::SecurityGroup",
+  "description": "Resource Type definition for AWS::EC2::SecurityGroup",
+  "additionalProperties": false,
+  "properties": {
+    "GroupDescription": {
+      "type": "string"
+    },
+    "GroupName": {
+      "type": "string"
+    },
+    "VpcId": {
+      "type": "string"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "SecurityGroupIngress": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Ingress"
+      }
+    },
+    "SecurityGroupEgress": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Egress"
+      }
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "GroupId": {
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "Ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "CidrIp": {
+          "type": "string"
+        },
+        "CidrIpv6": {
+          "type": "string"
+        },
+        "Description": {
+          "type": "string"
+        },
+        "FromPort": {
+          "type": "integer"
+        },
+        "SourceSecurityGroupName": {
+          "type": "string"
+        },
+        "ToPort": {
+          "type": "integer"
+        },
+        "SourceSecurityGroupOwnerId": {
+          "type": "string"
+        },
+        "IpProtocol": {
+          "type": "string"
+        },
+        "SourceSecurityGroupId": {
+          "type": "string"
+        },
+        "SourcePrefixListId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "IpProtocol"
+      ]
+    },
+    "Egress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "CidrIp": {
+          "type": "string"
+        },
+        "CidrIpv6": {
+          "type": "string"
+        },
+        "Description": {
+          "type": "string"
+        },
+        "FromPort": {
+          "type": "integer"
+        },
+        "ToPort": {
+          "type": "integer"
+        },
+        "IpProtocol": {
+          "type": "string"
+        },
+        "DestinationSecurityGroupId": {
+          "type": "string"
+        },
+        "DestinationPrefixListId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "IpProtocol"
+      ]
+    },
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Value": {
+          "type": "string"
+        },
+        "Key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "required": [
+    "GroupDescription"
+  ],
+  "createOnlyProperties": [
+    "/properties/GroupDescription",
+    "/properties/GroupName",
+    "/properties/VpcId"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id",
+    "/properties/GroupId"
+  ]
+}

@@ -23,6 +23,7 @@ def test_simple_route_table_creation_without_vpc(deploy_cfn_template, aws_client
     stack.destroy()
     with pytest.raises(ec2.exceptions.ClientError):
         ec2.describe_route_tables(RouteTableIds=[route_table_id])
+    # TODO move vpc to fixture, so we are sure it is deleted after tests
     ec2.delete_vpc(VpcId=vpc_id)
 
 
