@@ -14,6 +14,8 @@ from typing import Optional, Tuple
 
 import psutil
 import pytest
+from _pytest.config import Config
+from _pytest.terminal import TerminalReporter
 
 
 @dataclass
@@ -111,7 +113,7 @@ class ResourceMonitorPlugin:
 
     @pytest.hookimpl()
     def pytest_terminal_summary(
-        self, terminalreporter: "TerminalReporter", exitstatus: int, config: "Config"
+        self, terminalreporter: TerminalReporter, exitstatus: int, config: Config
     ):
         memory_usage_per_test = self._compute_memory_usage_per_test()
         memory_usage_per_test.sort(reverse=True)
