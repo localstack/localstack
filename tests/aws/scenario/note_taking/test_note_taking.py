@@ -18,8 +18,8 @@ import requests
 from constructs import Construct
 
 from localstack.testing.pytest import markers
+from localstack.testing.scenario.cdk_lambda_helper import load_nodejs_lambda_to_s3
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
-from tests.aws.cdk_lambda_helper import load_nodejs_lambda_to_s3
 
 LOG = logging.getLogger(__name__)
 
