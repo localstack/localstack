@@ -1,0 +1,157 @@
+{
+  "typeName": "AWS::EC2::Subnet",
+  "description": "Resource Type definition for AWS::EC2::Subnet",
+  "additionalProperties": false,
+  "properties": {
+    "AssignIpv6AddressOnCreation": {
+      "type": "boolean"
+    },
+    "VpcId": {
+      "type": "string"
+    },
+    "MapPublicIpOnLaunch": {
+      "type": "boolean"
+    },
+    "NetworkAclAssociationId": {
+      "type": "string"
+    },
+    "AvailabilityZone": {
+      "type": "string"
+    },
+    "AvailabilityZoneId": {
+      "type": "string"
+    },
+    "CidrBlock": {
+      "type": "string"
+    },
+    "SubnetId": {
+      "type": "string"
+    },
+    "Ipv6CidrBlocks": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Ipv6CidrBlock": {
+      "type": "string"
+    },
+    "OutpostArn": {
+      "type": "string"
+    },
+    "Ipv6Native": {
+      "type": "boolean"
+    },
+    "EnableDns64": {
+      "type": "boolean"
+    },
+    "PrivateDnsNameOptionsOnLaunch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "HostnameType": {
+          "type": "string"
+        },
+        "EnableResourceNameDnsARecord": {
+          "type": "boolean"
+        },
+        "EnableResourceNameDnsAAAARecord": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    }
+  },
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": true,
+    "tagProperty": "/properties/Tags"
+  },
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Value": {
+          "type": "string"
+        },
+        "Key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "required": [
+    "VpcId"
+  ],
+  "createOnlyProperties": [
+    "/properties/VpcId",
+    "/properties/AvailabilityZone",
+    "/properties/AvailabilityZoneId",
+    "/properties/CidrBlock",
+    "/properties/OutpostArn",
+    "/properties/Ipv6Native"
+  ],
+  "conditionalCreateOnlyProperties": [
+    "/properties/Ipv6CidrBlock"
+  ],
+  "primaryIdentifier": [
+    "/properties/SubnetId"
+  ],
+  "readOnlyProperties": [
+    "/properties/NetworkAclAssociationId",
+    "/properties/SubnetId",
+    "/properties/Ipv6CidrBlocks"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:DescribeSubnets",
+        "ec2:CreateSubnet",
+        "ec2:CreateTags",
+        "ec2:ModifySubnetAttribute"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeSubnets",
+        "ec2:DescribeNetworkAcls"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ec2:DescribeSubnets",
+        "ec2:ModifySubnetAttribute",
+        "ec2:CreateTags",
+        "ec2:DeleteTags",
+        "ec2:AssociateSubnetCidrBlock",
+        "ec2:DisassociateSubnetCidrBlock"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DescribeSubnets",
+        "ec2:DeleteSubnet"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeSubnets",
+        "ec2:DescribeNetworkAcls"
+      ]
+    }
+  }
+}
