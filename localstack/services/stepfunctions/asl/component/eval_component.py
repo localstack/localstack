@@ -18,14 +18,13 @@ class EvalComponent(Component, abc.ABC):
     def _log_failure_event_exception(self, failure_event_exception: FailureEventException) -> None:
         error_log_parts = ["Exception=FailureEventException"]
 
-        error_name = failure_event_exception.failure_event.error_name.error_name
-        error_log_parts.append(f"Error={error_name}")
+        error_name = failure_event_exception.failure_event.error_name
+        if error_name:
+            error_log_parts.append(f"Error={error_name.error_name}")
 
         event_details = failure_event_exception.failure_event.event_details
         if event_details:
             error_log_parts.append(f"Details={to_json_str(event_details)}")
-        else:
-            error_log_parts.append("Details=None-Available")
 
         error_log = ", ".join(error_log_parts)
         component_repr = repr(self)
