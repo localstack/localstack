@@ -313,8 +313,8 @@ class IamProvider(IamApi):
                 ],
             }
         )
-        path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{aws_service_name}"
-        role_name = f"r-{short_uid()}"
+        path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{aws_service_name}/"
+        role_name = f"AWSServiceRoleFor%s" % aws_service_name.split(".")[0].upper()
         backend = get_iam_backend(context)
         role = backend.create_role(
             role_name=role_name,
