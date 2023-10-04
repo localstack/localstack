@@ -31,7 +31,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceSfn:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_start_execution_no_such_arn(
         self,
         aws_client,

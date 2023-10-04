@@ -29,6 +29,9 @@ class ServicesTemplates(TemplateLoader):
     API_GATEWAY_INVOKE_WITH_QUERY_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/api_gateway_invoke_with_query_parameters.json5"
     )
+    EVENTS_PUT_EVENTS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/events_put_events.json5"
+    )
     SQS_SEND_MESSAGE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/sqs_send_msg.json5")
     SNS_PUBLISH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/sns_publish.json5")
     SNS_PUBLISH_MESSAGE_ATTRIBUTES: Final[str] = os.path.join(
@@ -46,6 +49,9 @@ class ServicesTemplates(TemplateLoader):
     )
     LAMBDA_LIST_FUNCTIONS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_list_functions.json5"
+    )
+    LAMBDA_INPUT_PARAMETERS_FILTER: Final[str] = os.path.join(
+        _THIS_FOLDER, "../services/statemachines/lambda_input_parameters_filter.json5"
     )
     SFN_START_EXECUTION: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sfn_start_execution.json5"

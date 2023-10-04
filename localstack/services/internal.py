@@ -194,6 +194,7 @@ class PluginsResource:
             hooks.prepare_host.manager,
             hooks.on_infra_ready.manager,
             hooks.on_infra_start.manager,
+            hooks.on_infra_shutdown.manager,
         ]
 
         def get_plugin_details(_manager: PluginManager, _name: str):

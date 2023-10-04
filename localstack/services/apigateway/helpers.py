@@ -7,10 +7,9 @@ import re
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 from urllib import parse as urlparse
 
-from apispec import APISpec
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
@@ -49,8 +48,8 @@ from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
+from localstack.utils.json import try_json
 from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
-from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -461,6 +460,58 @@ class RequestParametersResolver:
         return {key.lower(): val for key, val in params.items()}
 
 
+class ResponseParametersResolver:
+    def resolve(self, context: ApiInvocationContext) -> Dict[str, str]:
+        """
+        Resolve integration response parameters into method response parameters.
+        Integration response parameters can map header, body,
+        or static values to the header type of the method response.
+
+        :return: dict with all method response parameters and their values
+        """
+        integration_request_params: Dict[str, Any] = self.integration_request_dict(context)
+
+        # "responseParameters" : {
+        #     "method.response.header.Location" : "integration.response.body.redirect.url",
+        #     "method.response.header.x-user-id" : "integration.response.header.x-userid"
+        # }
+        integration_responses = context.integration.get("integrationResponses", {})
+        # XXX Fix for other status codes context.response contains a response status code, but response
+        # can be a LambdaResponse or Response object and the field is not the same, normalize it or use introspection
+        response_params = integration_responses.get("200", {}).get("responseParameters", {})
+
+        # resolve all integration request parameters with the already resolved method
+        # request parameters
+        method_parameters = {}
+        for k, v in response_params.items():
+            if v.lower() in integration_request_params:
+                method_parameters[k] = integration_request_params[v.lower()]
+            else:
+                # static values
+                method_parameters[k] = v.replace("'", "")
+
+        # build the integration parameters
+        result: Dict[str, str] = {}
+        for k, v in method_parameters.items():
+            # headers
+            if k.startswith("method.response.header."):
+                header_name = k.split(".")[-1]
+                result[header_name] = v
+
+        return result
+
+    def integration_request_dict(self, context: ApiInvocationContext) -> Dict[str, Any]:
+        params: Dict[str, str] = {}
+
+        for k, v in context.headers.items():
+            params[f"integration.request.header.{k}"] = v
+
+        if context.data:
+            params["integration.request.body"] = try_json(context.data)
+
+        return {key.lower(): val for key, val in params.items()}
+
+
 def resolve_references(data: dict, rest_api_id, allow_recursive=True) -> dict:
     resolver = OpenAPISpecificationResolver(
         data, allow_recursive=allow_recursive, rest_api_id=rest_api_id
@@ -481,13 +532,12 @@ def make_error_response(message, code=400, error_type=None):
 
 def select_integration_response(matched_part: str, invocation_context: ApiInvocationContext):
     int_responses = invocation_context.integration.get("integrationResponses") or {}
-    select_by_pattern = [
+    if select_by_pattern := [
         response
         for response in int_responses.values()
         if response.get("selectionPattern")
         and re.match(response.get("selectionPattern"), matched_part)
-    ]
-    if select_by_pattern:
+    ]:
         selected_response = select_by_pattern[0]
         if len(select_by_pattern) > 1:
             LOG.warning(
@@ -495,7 +545,6 @@ def select_integration_response(matched_part: str, invocation_context: ApiInvoca
                 matched_part,
                 selected_response["statusCode"],
             )
-        return selected_response
     else:
         # choose default return code
         default_responses = [
@@ -510,7 +559,7 @@ def select_integration_response(matched_part: str, invocation_context: ApiInvoca
                 "Multiple default integration responses. Choosing %s (first).",
                 selected_response["statusCode"],
             )
-        return selected_response
+    return selected_response
 
 
 def make_accepted_response():
@@ -645,7 +694,9 @@ def get_rest_api_paths(account_id: str, region_name: str, rest_api_id: str):
 #  https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings
 #  -method-request.html
 #  https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-routes.html
-def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Optional[Tuple[str, dict]]:
+def get_resource_for_path(
+    path: str, method: str, path_map: Dict[str, Dict]
+) -> tuple[Optional[str], Optional[dict]]:
     matches = []
     # creates a regex from the input path if there are parameters, e.g /foo/{bar}/baz -> /foo/[
     # ^\]+/baz, otherwise is a direct match.
@@ -657,25 +708,32 @@ def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Optional[Tupl
 
     # if there are no matches, it's not worth to proceed, bail here!
     if not matches:
-        return None
+        return None, None
 
     # so we have matches and perhaps more than one, e.g
     # /{proxy+} and /api/{proxy+} for inputs like /api/foo/bar
     # /foo/{param1}/baz and /foo/{param1}/{param2} for inputs like /for/bar/baz
     if len(matches) > 1:
-        # check if we have an exact match (exact matches take precedence)
+        filtered_matches = []
         for match in matches:
-            if match[0] == path:
-                return match
+            match_methods = list(match[1].get("resourceMethods", {}).keys())
+            # only look for path matches if the request method is in the resource
+            if method.upper() in match_methods or "ANY" in match_methods:
+                # check if we have an exact match (exact matches take precedence) if the method is the same
+                if match[0] == path or path_matches_pattern(path, match[0]):
+                    # either an exact match or not an exact match but parameters can fit in
+                    return match
 
-        # not an exact match but parameters can fit in
-        for match in matches:
-            if path_matches_pattern(path, match[0]):
-                return match
+                filtered_matches.append(match)
 
-        # at this stage, we have more than one match but we have an eager example like
-        # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length
-        sorted_matches = sorted(matches, key=lambda x: len(x[0]), reverse=True)
+        # if there are no matches with a method that would match, return
+        if not filtered_matches:
+            return None, None
+
+        # at this stage, we have more than one match, but we have an eager example like
+        # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length, only if they have a method that
+        # could match
+        sorted_matches = sorted(filtered_matches, key=lambda x: len(x[0]), reverse=True)
         return sorted_matches[0]
     return matches[0]
 
@@ -695,18 +753,19 @@ def path_matches_pattern(path, api_path):
     return len(results) > 0 and all(results)
 
 
-def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region_name=None):
+def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, account_id, region_name):
     resources = {}
     template = APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE
     resource_path = path.replace("/", "")
-    region_name = region_name or aws_stack.get_region()
 
     try:
         arn = parse_arn(queue_arn)
         queue_name = arn["resource"]
+        sqs_account = arn["account"]
         sqs_region = arn["region"]
     except InvalidArnException:
         queue_name = queue_arn
+        sqs_account = account_id
         sqs_region = region_name
 
     resources[resource_path] = [
@@ -717,7 +776,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
                 {
                     "type": "AWS",
                     "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
-                    % (sqs_region, get_aws_account_id(), queue_name),
+                    % (sqs_region, sqs_account, queue_name),
                     "requestTemplates": {"application/json": template},
                 }
             ],
@@ -727,7 +786,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
         name=gateway_name,
         resources=resources,
         stage_name=stage_name,
-        region_name=region_name,
+        client=connect_to(aws_access_key_id=sqs_account, region_name=sqs_region).apigateway,
     )
 
 
@@ -764,6 +823,10 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                     # if "path" is an attribute name pointing to an array in "subject", and we're running
                     # an "add" operation, then we should use the standard-compliant notation "/path/-"
                     operation["path"] = f"{path}/-"
+
+            if operation["op"] == "remove":
+                path = operation["path"]
+                common.assign_to_path(subject, path, value={}, delimiter="/")
 
             result = apply_patch(subject, [operation], in_place=in_place)
             if not in_place:
@@ -820,7 +883,9 @@ def import_api_from_openapi_spec(
     # 1. validate the "mode" property of the spec document, "merge" or "overwrite"
     # 2. validate the document type, "swagger" or "openapi"
 
-    rest_api.version = str(resolved_schema.get("info", {}).get("version")) or None
+    rest_api.version = (
+        str(version) if (version := resolved_schema.get("info", {}).get("version")) else None
+    )
     # XXX for some reason this makes cf tests fail that's why is commented.
     # test_cfn_handle_serverless_api_resource
     # rest_api.name = resolved_schema.get("info", {}).get("title")
@@ -1116,26 +1181,22 @@ def import_api_from_openapi_spec(
 
             # Create the `IntegrationResponse` for the previously created `Integration`
             if method_integration_responses := method_integration.get("responses"):
-                default_method_integration_response = method_integration_responses.get(
-                    "default", {}
-                )
-                integration_response_templates = default_method_integration_response.get(
-                    "responseTemplates"
-                )
-                integration_response_parameters = default_method_integration_response.get(
-                    "responseParameters"
-                )
+                for pattern, integration_responses in method_integration_responses.items():
+                    integration_response_templates = integration_responses.get("responseTemplates")
+                    integration_response_parameters = integration_responses.get(
+                        "responseParameters"
+                    )
 
-                integration_response = integration.create_integration_response(
-                    status_code=default_method_integration_response.get("statusCode", 200),
-                    selection_pattern=None,
-                    response_templates=integration_response_templates,
-                    response_parameters=integration_response_parameters,
-                    content_handling=None,
-                )
-                # moto set the responseTemplates to an empty dict when it should be None if not defined
-                if integration_response_templates is None:
-                    integration_response.response_templates = None
+                    integration_response = integration.create_integration_response(
+                        status_code=integration_responses.get("statusCode", 200),
+                        selection_pattern=pattern if pattern != "default" else None,
+                        response_templates=integration_response_templates,
+                        response_parameters=integration_response_parameters,
+                        content_handling=None,
+                    )
+                    # moto set the responseTemplates to an empty dict when it should be None if not defined
+                    if integration_response_templates is None:
+                        integration_response.response_templates = None
 
             resource.resource_methods[method_name].method_integration = integration
 
@@ -1269,7 +1330,9 @@ def import_api_from_openapi_spec(
     return rest_api
 
 
-def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tuple[str, Dict]:
+def get_target_resource_details(
+    invocation_context: ApiInvocationContext,
+) -> Tuple[Optional[str], Optional[dict]]:
     """Look up and return the API GW resource (path pattern + resource dict) for the given invocation context."""
     path_map = get_rest_api_paths(
         account_id=invocation_context.account_id,
@@ -1278,9 +1341,22 @@ def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tup
     )
     relative_path = invocation_context.invocation_path.rstrip("/") or "/"
     try:
-        extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+        extracted_path, resource = get_resource_for_path(
+            path=relative_path, method=invocation_context.method, path_map=path_map
+        )
+        if not extracted_path:
+            return None, None
         invocation_context.resource = resource
+        invocation_context.resource_path = extracted_path
+        try:
+            invocation_context.path_params = extract_path_params(
+                path=relative_path, extracted_path=extracted_path
+            )
+        except Exception:
+            invocation_context.path_params = {}
+
         return extracted_path, resource
+
     except Exception:
         return None, None
 
@@ -1291,12 +1367,7 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
     if not resource:
         return None
     methods = resource.get("resourceMethods") or {}
-    method_name = invocation_context.method.upper()
-    return (
-        methods.get(method_name)
-        or methods.get("ANY")
-        or methods.get("X-AMAZON-APIGATEWAY-ANY-METHOD")
-    )
+    return methods.get(invocation_context.method.upper()) or methods.get("ANY")
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):
@@ -1437,84 +1508,6 @@ def create_invocation_headers(invocation_context: ApiInvocationContext) -> Dict[
             ):
                 headers.update({header_name: req_parameter_value})
     return headers
-
-
-# TODO:
-# - handle extensions
-#
-
-TypeExporter = Callable[[str, str, str], str]
-
-
-class OpenApiExporter:
-    SWAGGER_VERSION = "2.0"
-    OPENAPI_VERSION = "3.0.1"
-
-    exporters: Dict[str, TypeExporter]
-
-    def __init__(self):
-        self.exporters = {"swagger": self._swagger_export, "oas30": self._oas30_export}
-        self.export_formats = {"application/json": "to_dict", "application/yaml": "to_yaml"}
-
-    def export_api(
-        self, api_id: str, stage: str, export_type: str, export_format: str = "application/json"
-    ) -> str:
-        return self.exporters.get(export_type)(api_id, stage, export_format)
-
-    @classmethod
-    def _add_paths(cls, spec, resources):
-        for item in resources.get("items"):
-            path = item.get("path")
-            for method, method_config in item.get("resourceMethods").items():
-                method = method.lower()
-                integration_responses = (
-                    method_config.get("methodIntegration", {})
-                    .get("integrationResponses", {})
-                    .keys()
-                )
-                responses = dict.fromkeys(integration_responses, {})
-                spec.path(path=path, operations={method: {"responses": responses}})
-
-    def _swagger_export(self, api_id: str, stage: str, export_format: str) -> str:
-        """
-        https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md
-        """
-        apigateway_client = connect_to().apigateway
-
-        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
-        resources = apigateway_client.get_resources(restApiId=api_id)
-
-        spec = APISpec(
-            title=rest_api.get("name"),
-            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
-            info=dict(description=rest_api.get("description")),
-            openapi_version=self.SWAGGER_VERSION,
-            basePath=f"/{stage}",
-        )
-
-        self._add_paths(spec, resources)
-
-        return getattr(spec, self.export_formats.get(export_format))()
-
-    def _oas30_export(self, api_id: str, stage: str, export_format: str) -> str:
-        """
-        https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
-        """
-        apigateway_client = connect_to().apigateway
-
-        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
-        resources = apigateway_client.get_resources(restApiId=api_id)
-
-        spec = APISpec(
-            title=rest_api.get("name"),
-            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
-            info=dict(description=rest_api.get("description")),
-            openapi_version=self.OPENAPI_VERSION,
-        )
-
-        self._add_paths(spec, resources)
-
-        return getattr(spec, self.export_formats.get(export_format))()
 
 
 def is_greedy_path(path_part: str) -> bool:

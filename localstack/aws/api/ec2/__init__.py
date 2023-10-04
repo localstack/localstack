@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceRequest, handler
 
@@ -185,6 +179,7 @@ Ipv6PoolMaxResults = int
 KernelId = str
 KeyPairId = str
 KeyPairName = str
+KmsKeyArn = str
 KmsKeyId = str
 LaunchTemplateElasticInferenceAcceleratorCount = int
 LaunchTemplateId = str
@@ -1040,6 +1035,14 @@ class ImageAttributeName(str):
     imdsSupport = "imdsSupport"
 
 
+class ImageBlockPublicAccessDisabledState(str):
+    unblocked = "unblocked"
+
+
+class ImageBlockPublicAccessEnabledState(str):
+    block_new_sharing = "block-new-sharing"
+
+
 class ImageState(str):
     pending = "pending"
     available = "available"
@@ -1882,6 +1885,27 @@ class InstanceType(str):
     r7gd_8xlarge = "r7gd.8xlarge"
     r7gd_12xlarge = "r7gd.12xlarge"
     r7gd_16xlarge = "r7gd.16xlarge"
+    r7a_medium = "r7a.medium"
+    r7a_large = "r7a.large"
+    r7a_xlarge = "r7a.xlarge"
+    r7a_2xlarge = "r7a.2xlarge"
+    r7a_4xlarge = "r7a.4xlarge"
+    r7a_8xlarge = "r7a.8xlarge"
+    r7a_12xlarge = "r7a.12xlarge"
+    r7a_16xlarge = "r7a.16xlarge"
+    r7a_24xlarge = "r7a.24xlarge"
+    r7a_32xlarge = "r7a.32xlarge"
+    r7a_48xlarge = "r7a.48xlarge"
+    c7i_large = "c7i.large"
+    c7i_xlarge = "c7i.xlarge"
+    c7i_2xlarge = "c7i.2xlarge"
+    c7i_4xlarge = "c7i.4xlarge"
+    c7i_8xlarge = "c7i.8xlarge"
+    c7i_12xlarge = "c7i.12xlarge"
+    c7i_16xlarge = "c7i.16xlarge"
+    c7i_24xlarge = "c7i.24xlarge"
+    c7i_48xlarge = "c7i.48xlarge"
+    mac2_m2pro_metal = "mac2-m2pro.metal"
 
 
 class InstanceTypeHypervisor(str):
@@ -4406,6 +4430,12 @@ class VerifiedAccessInstance(TypedDict, total=False):
     CreationTime: Optional[String]
     LastUpdatedTime: Optional[String]
     Tags: Optional[TagList]
+    FipsEnabled: Optional[Boolean]
+
+
+class VerifiedAccessSseSpecificationResponse(TypedDict, total=False):
+    CustomerManagedKeyEnabled: Optional[Boolean]
+    KmsKeyArn: Optional[KmsKeyArn]
 
 
 class DeviceOptions(TypedDict, total=False):
@@ -4434,6 +4464,7 @@ class VerifiedAccessTrustProvider(TypedDict, total=False):
     CreationTime: Optional[String]
     LastUpdatedTime: Optional[String]
     Tags: Optional[TagList]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class AttachVerifiedAccessTrustProviderResult(TypedDict, total=False):
@@ -5610,7 +5641,7 @@ class CreateCustomerGatewayResult(TypedDict, total=False):
 
 
 class CreateDefaultSubnetRequest(ServiceRequest):
-    AvailabilityZone: String
+    AvailabilityZone: AvailabilityZoneName
     DryRun: Optional[Boolean]
     Ipv6Native: Optional[Boolean]
 
@@ -8085,6 +8116,11 @@ class CreateVerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
     SubnetIds: Optional[CreateVerifiedAccessEndpointSubnetIdList]
 
 
+class VerifiedAccessSseSpecificationRequest(TypedDict, total=False):
+    CustomerManagedKeyEnabled: Optional[Boolean]
+    KmsKeyArn: Optional[KmsKeyArn]
+
+
 SecurityGroupIdList = List[SecurityGroupId]
 
 
@@ -8103,6 +8139,7 @@ class CreateVerifiedAccessEndpointRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class VerifiedAccessEndpointStatus(TypedDict, total=False):
@@ -8145,6 +8182,7 @@ class VerifiedAccessEndpoint(TypedDict, total=False):
     LastUpdatedTime: Optional[String]
     DeletionTime: Optional[String]
     Tags: Optional[TagList]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class CreateVerifiedAccessEndpointResult(TypedDict, total=False):
@@ -8158,6 +8196,7 @@ class CreateVerifiedAccessGroupRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class VerifiedAccessGroup(TypedDict, total=False):
@@ -8170,6 +8209,7 @@ class VerifiedAccessGroup(TypedDict, total=False):
     LastUpdatedTime: Optional[String]
     DeletionTime: Optional[String]
     Tags: Optional[TagList]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class CreateVerifiedAccessGroupResult(TypedDict, total=False):
@@ -8181,6 +8221,7 @@ class CreateVerifiedAccessInstanceRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    FIPSEnabled: Optional[Boolean]
 
 
 class CreateVerifiedAccessInstanceResult(TypedDict, total=False):
@@ -8212,6 +8253,7 @@ class CreateVerifiedAccessTrustProviderRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class CreateVerifiedAccessTrustProviderResult(TypedDict, total=False):
@@ -13828,6 +13870,14 @@ class DisableFastSnapshotRestoresResult(TypedDict, total=False):
     Unsuccessful: Optional[DisableFastSnapshotRestoreErrorSet]
 
 
+class DisableImageBlockPublicAccessRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class DisableImageBlockPublicAccessResult(TypedDict, total=False):
+    ImageBlockPublicAccessState: Optional[ImageBlockPublicAccessDisabledState]
+
+
 class DisableImageDeprecationRequest(ServiceRequest):
     ImageId: ImageId
     DryRun: Optional[Boolean]
@@ -14188,6 +14238,15 @@ class EnableFastSnapshotRestoresResult(TypedDict, total=False):
     Unsuccessful: Optional[EnableFastSnapshotRestoreErrorSet]
 
 
+class EnableImageBlockPublicAccessRequest(ServiceRequest):
+    ImageBlockPublicAccessState: ImageBlockPublicAccessEnabledState
+    DryRun: Optional[Boolean]
+
+
+class EnableImageBlockPublicAccessResult(TypedDict, total=False):
+    ImageBlockPublicAccessState: Optional[ImageBlockPublicAccessEnabledState]
+
+
 class EnableImageDeprecationRequest(ServiceRequest):
     ImageId: ImageId
     DeprecateAt: MillisecondDateTime
@@ -14515,6 +14574,14 @@ class GetHostReservationPurchasePreviewResult(TypedDict, total=False):
     Purchase: Optional[PurchaseSet]
     TotalHourlyPrice: Optional[String]
     TotalUpfrontPrice: Optional[String]
+
+
+class GetImageBlockPublicAccessStateRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class GetImageBlockPublicAccessStateResult(TypedDict, total=False):
+    ImageBlockPublicAccessState: Optional[String]
 
 
 VirtualizationTypeSet = List[VirtualizationType]
@@ -16148,15 +16215,17 @@ class ModifyVerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
 
 class ModifyVerifiedAccessEndpointPolicyRequest(ServiceRequest):
     VerifiedAccessEndpointId: VerifiedAccessEndpointId
-    PolicyEnabled: Boolean
+    PolicyEnabled: Optional[Boolean]
     PolicyDocument: Optional[String]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class ModifyVerifiedAccessEndpointPolicyResult(TypedDict, total=False):
     PolicyEnabled: Optional[Boolean]
     PolicyDocument: Optional[String]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class ModifyVerifiedAccessEndpointRequest(ServiceRequest):
@@ -16175,15 +16244,17 @@ class ModifyVerifiedAccessEndpointResult(TypedDict, total=False):
 
 class ModifyVerifiedAccessGroupPolicyRequest(ServiceRequest):
     VerifiedAccessGroupId: VerifiedAccessGroupId
-    PolicyEnabled: Boolean
+    PolicyEnabled: Optional[Boolean]
     PolicyDocument: Optional[String]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class ModifyVerifiedAccessGroupPolicyResult(TypedDict, total=False):
     PolicyEnabled: Optional[Boolean]
     PolicyDocument: Optional[String]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class ModifyVerifiedAccessGroupRequest(ServiceRequest):
@@ -16261,6 +16332,7 @@ class ModifyVerifiedAccessTrustProviderRequest(ServiceRequest):
     Description: Optional[String]
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class ModifyVerifiedAccessTrustProviderResult(TypedDict, total=False):
@@ -18154,7 +18226,7 @@ class Ec2Api:
     def create_default_subnet(
         self,
         context: RequestContext,
-        availability_zone: String,
+        availability_zone: AvailabilityZoneName,
         dry_run: Boolean = None,
         ipv6_native: Boolean = None,
     ) -> CreateDefaultSubnetResult:
@@ -18954,6 +19026,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> CreateVerifiedAccessEndpointResult:
         raise NotImplementedError
 
@@ -18967,6 +19040,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> CreateVerifiedAccessGroupResult:
         raise NotImplementedError
 
@@ -18978,6 +19052,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        fips_enabled: Boolean = None,
     ) -> CreateVerifiedAccessInstanceResult:
         raise NotImplementedError
 
@@ -18995,6 +19070,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> CreateVerifiedAccessTrustProviderResult:
         raise NotImplementedError
 
@@ -21600,6 +21676,12 @@ class Ec2Api:
     ) -> DisableFastSnapshotRestoresResult:
         raise NotImplementedError
 
+    @handler("DisableImageBlockPublicAccess")
+    def disable_image_block_public_access(
+        self, context: RequestContext, dry_run: Boolean = None
+    ) -> DisableImageBlockPublicAccessResult:
+        raise NotImplementedError
+
     @handler("DisableImageDeprecation")
     def disable_image_deprecation(
         self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
@@ -21828,6 +21910,15 @@ class Ec2Api:
         source_snapshot_ids: SnapshotIdStringList,
         dry_run: Boolean = None,
     ) -> EnableFastSnapshotRestoresResult:
+        raise NotImplementedError
+
+    @handler("EnableImageBlockPublicAccess")
+    def enable_image_block_public_access(
+        self,
+        context: RequestContext,
+        image_block_public_access_state: ImageBlockPublicAccessEnabledState,
+        dry_run: Boolean = None,
+    ) -> EnableImageBlockPublicAccessResult:
         raise NotImplementedError
 
     @handler("EnableImageDeprecation")
@@ -22061,6 +22152,12 @@ class Ec2Api:
     def get_host_reservation_purchase_preview(
         self, context: RequestContext, host_id_set: RequestHostIdSet, offering_id: OfferingId
     ) -> GetHostReservationPurchasePreviewResult:
+        raise NotImplementedError
+
+    @handler("GetImageBlockPublicAccessState")
+    def get_image_block_public_access_state(
+        self, context: RequestContext, dry_run: Boolean = None
+    ) -> GetImageBlockPublicAccessStateResult:
         raise NotImplementedError
 
     @handler("GetInstanceTypesFromInstanceRequirements")
@@ -23063,10 +23160,11 @@ class Ec2Api:
         self,
         context: RequestContext,
         verified_access_endpoint_id: VerifiedAccessEndpointId,
-        policy_enabled: Boolean,
+        policy_enabled: Boolean = None,
         policy_document: String = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> ModifyVerifiedAccessEndpointPolicyResult:
         raise NotImplementedError
 
@@ -23087,10 +23185,11 @@ class Ec2Api:
         self,
         context: RequestContext,
         verified_access_group_id: VerifiedAccessGroupId,
-        policy_enabled: Boolean,
+        policy_enabled: Boolean = None,
         policy_document: String = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> ModifyVerifiedAccessGroupPolicyResult:
         raise NotImplementedError
 
@@ -23125,6 +23224,7 @@ class Ec2Api:
         description: String = None,
         dry_run: Boolean = None,
         client_token: String = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> ModifyVerifiedAccessTrustProviderResult:
         raise NotImplementedError
 

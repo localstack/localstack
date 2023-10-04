@@ -78,11 +78,11 @@
 /tests/aws/services/acm/ @alexrashed
 
 # apigateway
-/localstack/aws/api/apigateway/ @calvernaz
-/localstack/services/apigateway/ @calvernaz
-/localstack/services/cloudformation/models/apigateway.py @calvernaz
-/tests/aws/services/apigateway/ @calvernaz
-/tests/unit/test_apigateway.py @calvernaz
+/localstack/aws/api/apigateway/ @calvernaz @bentsku
+/localstack/services/apigateway/ @calvernaz @bentsku
+/localstack/services/cloudformation/models/apigateway.py @calvernaz @bentsku
+/tests/aws/services/apigateway/ @calvernaz @bentsku
+/tests/unit/test_apigateway.py @calvernaz @bentsku
 
 # cloudformation
 /localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw
@@ -93,6 +93,7 @@
 /localstack/services/cloudformation/models/cloudformation.py @dominikschubert @pinzon @simonrw
 /tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw
 /tests/unit/test_cloudformation.py @dominikschubert @pinzon @simonrw
+/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw
 
 # cloudwatch
 /localstack/aws/api/cloudwatch/ @steffyP @silv-io
@@ -176,12 +177,12 @@
 /tests/aws/services/route53resolver/ @macnev2013 @sannya-singal
 
 # s3
-/localstack/aws/api/s3/ @bentsku @calvernaz @macnev2013
-/localstack/services/s3/ @bentsku @calvernaz @macnev2013
-/localstack/services/cloudformation/models/s3.py @bentsku @calvernaz @macnev2013
-/tests/aws/services/s3/ @bentsku @calvernaz @macnev2013
-/tests/unit/test_s3.py @bentsku @calvernaz @macnev2013
-/tests/unit/services/s3/ @bentsku @calvernaz @macnev2013
+/localstack/aws/api/s3/ @bentsku @macnev2013
+/localstack/services/s3/ @bentsku @macnev2013
+/localstack/services/cloudformation/models/s3.py @bentsku @macnev2013
+/tests/aws/services/s3/ @bentsku @macnev2013
+/tests/unit/test_s3.py @bentsku @macnev2013
+/tests/unit/services/s3/ @bentsku @macnev2013
 
 # secretsmanager
 /localstack/aws/api/secretsmanager/ @dominikschubert @MEPalma

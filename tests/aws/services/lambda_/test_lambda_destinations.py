@@ -39,11 +39,15 @@ class TestLambdaDLQ:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         snapshot,
         aws_client,
+        monkeypatch,
     ):
+        if not is_aws_cloud():
+            monkeypatch.setattr(config, "LAMBDA_RETRY_BASE_DELAY_SECONDS", 5)
+
         """Creates a lambda with a defined dead letter queue, and check failed lambda invocation leads to a message"""
         # create DLQ and Lambda function
         snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -57,7 +61,7 @@ class TestLambdaDLQ:
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
         create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=lambda_name,
@@ -92,6 +96,8 @@ class TestLambdaDLQ:
             FunctionName=lambda_name, DeadLetterConfig={}
         )
         snapshot.match("delete_dlq", update_function_config_response)
+        # TODO: test function update with running invocation => don't kill them all in that case
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=lambda_name)
         invoke_result = aws_client.lambda_.invoke(
             FunctionName=lambda_name, Payload=json.dumps(payload), LogType="Tail"
         )
@@ -146,7 +152,7 @@ class TestLambdaDestinationSqs:
         payload,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         snapshot,
         aws_client,
@@ -160,7 +166,7 @@ class TestLambdaDestinationSqs:
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=Runtime.python3_9,
@@ -202,7 +208,7 @@ class TestLambdaDestinationSqs:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         snapshot,
         monkeypatch,
@@ -219,7 +225,7 @@ class TestLambdaDestinationSqs:
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=Runtime.python3_9,
@@ -261,7 +267,7 @@ class TestLambdaDestinationSqs:
         snapshot,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         monkeypatch,
         aws_client,
@@ -292,7 +298,7 @@ class TestLambdaDestinationSqs:
         snapshot.add_transformer(snapshot.transform.regex(message_id, "<test-msg-id>"))
 
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         create_lambda_function(
             handler_file=os.path.join(os.path.dirname(__file__), "functions/lambda_echofail.py"),
@@ -323,11 +329,14 @@ class TestLambdaDestinationSqs:
 
         # between 0 and 1 min the lambda should NOT have been retried yet
         # between 1 min and 3 min the lambda should have been retried once
-        time.sleep(test_delay_base / 2)
+        # TODO: parse log and calculate time diffs for better/more reliable matching
+        # SQS queue has a thread checking every second, hence we need a 1 second offset
+        test_delay_base_with_offset = test_delay_base + 1
+        time.sleep(test_delay_base_with_offset / 2)
         assert get_filtered_event_count() == 1
-        time.sleep(test_delay_base)
+        time.sleep(test_delay_base_with_offset)
         assert get_filtered_event_count() == 2
-        time.sleep(test_delay_base * 2)
+        time.sleep(test_delay_base_with_offset * 2)
         assert get_filtered_event_count() == 3
 
         # 1. event should be in queue
@@ -378,7 +387,7 @@ class TestLambdaDestinationSqs:
         snapshot,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         monkeypatch,
         aws_client,
@@ -403,7 +412,7 @@ class TestLambdaDestinationSqs:
         message_id = f"retry-msg-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(message_id, "<test-msg-id>"))
         queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         create_lambda_function(
             handler_file=os.path.join(os.path.dirname(__file__), "functions/lambda_echofail.py"),

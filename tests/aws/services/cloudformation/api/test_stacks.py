@@ -4,8 +4,11 @@ import os
 import botocore.exceptions
 import pytest
 import yaml
+from botocore.exceptions import WaiterError
 
+from localstack.aws.api.cloudformation import Capability
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
@@ -170,7 +173,7 @@ class TestStacksApi:
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
         snapshot.match("stack_resources", resources)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_list_stack_resources_for_removed_resource(self, deploy_cfn_template, aws_client):
         template_path = os.path.join(
             os.path.dirname(__file__), "../../../templates/eventbridge_policy.yaml"
@@ -209,7 +212,7 @@ class TestStacksApi:
         statuses = set([res["ResourceStatus"] for res in resources])
         assert statuses == {"UPDATE_COMPLETE"}
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_update_stack_with_same_template_withoutchange(self, deploy_cfn_template, aws_client):
         template = load_file(
             os.path.join(os.path.dirname(__file__), "../../../templates/fifo_queue.json")
@@ -633,7 +636,7 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
 
 
 @markers.aws.validated
-def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups, lambda_su_role):
+def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups):
     stack_name = f"test-stack-{short_uid()}"
     cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
     stack = deploy_cfn_template(
@@ -646,3 +649,56 @@ def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups, lambda_s
     )
 
     assert stack.outputs["ParamValue"] == "foo|bar"
+
+
+@markers.aws.validated
+@pytest.mark.skipif(condition=not is_aws_cloud(), reason="rollback not implemented")
+def test_blocked_stack_deletion(aws_client, cleanups, snapshot):
+    """
+    uses AWS::IAM::Policy for demonstrating this behavior
+
+    1. create fails
+    2. rollback fails even though create didn't even provision anything
+    3. trying to delete the stack afterwards also doesn't work
+    4. deleting the stack with retain resources works
+    """
+    cfn = aws_client.cloudformation
+    stack_name = f"test-stacks-blocked-{short_uid()}"
+    policy_name = f"test-broken-policy-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.regex(policy_name, "<policy-name>"))
+    template_body = load_file(
+        os.path.join(os.path.dirname(__file__), "../../../templates/iam_policy_invalid.yaml")
+    )
+    waiter_config = {"Delay": 1, "MaxAttempts": 20}
+
+    snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
+    snapshot.add_transformer(
+        snapshot.transform.key_value("ResourceStatusReason", reference_replacement=False)
+    )
+
+    stack = cfn.create_stack(
+        StackName=stack_name,
+        TemplateBody=template_body,
+        Parameters=[{"ParameterKey": "Name", "ParameterValue": policy_name}],
+        Capabilities=[Capability.CAPABILITY_NAMED_IAM],
+    )
+    stack_id = stack["StackId"]
+    cleanups.append(lambda: cfn.delete_stack(StackName=stack_id, RetainResources=["BrokenPolicy"]))
+    with pytest.raises(WaiterError):
+        cfn.get_waiter("stack_create_complete").wait(StackName=stack_id, WaiterConfig=waiter_config)
+    stack_post_create = cfn.describe_stacks(StackName=stack_id)
+    snapshot.match("stack_post_create", stack_post_create)
+
+    cfn.delete_stack(StackName=stack_id)
+    with pytest.raises(WaiterError):
+        cfn.get_waiter("stack_delete_complete").wait(StackName=stack_id, WaiterConfig=waiter_config)
+    stack_post_fail_delete = cfn.describe_stacks(StackName=stack_id)
+    snapshot.match("stack_post_fail_delete", stack_post_fail_delete)
+
+    cfn.delete_stack(StackName=stack_id, RetainResources=["BrokenPolicy"])
+    cfn.get_waiter("stack_delete_complete").wait(StackName=stack_id, WaiterConfig=waiter_config)
+    stack_post_success_delete = cfn.describe_stacks(StackName=stack_id)
+    snapshot.match("stack_post_success_delete", stack_post_success_delete)
+    stack_events = cfn.describe_stack_events(StackName=stack_id)
+    snapshot.match("stack_events", stack_events)

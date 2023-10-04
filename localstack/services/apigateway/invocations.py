@@ -12,12 +12,9 @@ from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ModelResolver,
-    extract_path_params,
-    extract_query_string_params,
     get_apigateway_store_for_invocation,
     get_cors_response,
     make_error_response,
-    select_integration_response,
 )
 from localstack.services.apigateway.integration import (
     ApiGatewayIntegrationError,
@@ -204,34 +201,6 @@ def update_content_length(response: Response):
         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_response_parameters(invocation_context: ApiInvocationContext):
-    response = invocation_context.response
-    integration = invocation_context.integration
-
-    int_responses = integration.get("integrationResponses") or {}
-    if not int_responses:
-        return response
-
-    integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
-    integration_type = integration_type_orig.upper()
-    if integration_type == "AWS_PROXY":
-        LOG.warning("AWS_PROXY integration type should not apply response parameters")
-        return response
-
-    return_code = str(response.status_code)
-    # Selecting the right integration response
-    selected_integration_response = select_integration_response(return_code, invocation_context)
-    # set status code of integration response
-    response.status_code = selected_integration_response["statusCode"]
-    response_params = selected_integration_response.get("responseParameters") or {}
-    for key, value in response_params.items():
-        # TODO: add support for method.response.body, etc ...
-        if str(key).lower().startswith("method.response.header."):
-            header_name = key[len("method.response.header.") :]
-            response.headers[header_name] = value.strip("'")
-    return response
-
-
 def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
     helpers.set_api_id_stage_invocation_path(invocation_context)
     try:
@@ -296,7 +265,6 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
         # TODO remove this setter once all the integrations are migrated to the new response
         #  handling
         invocation_context.response = response
-        response = apply_response_parameters(invocation_context)
         return response
     except ApiGatewayIntegrationError as e:
         LOG.warning(
@@ -316,24 +284,13 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
 # in Pro (potentially to be replaced with a runtime hook in the future).
 def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
     # define local aliases from invocation context
-    invocation_path = invocation_context.path_with_query_string
     method = invocation_context.method
     headers = invocation_context.headers
-    resource_path = invocation_context.resource_path
     integration = invocation_context.integration
-    # extract integration type and path parameters
-    relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
     integration_type = integration_type_orig.upper()
     integration_method = integration.get("httpMethod")
     uri = integration.get("uri") or integration.get("integrationUri") or ""
-
-    try:
-        invocation_context.path_params = extract_path_params(
-            path=relative_path, extracted_path=resource_path
-        )
-    except Exception:
-        invocation_context.path_params = {}
 
     if (uri.startswith("arn:aws:apigateway:") and ":lambda:path" in uri) or uri.startswith(
         "arn:aws:lambda"

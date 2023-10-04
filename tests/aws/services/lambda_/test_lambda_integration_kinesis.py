@@ -354,7 +354,7 @@ class TestKinesisSource:
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
         create_lambda_function,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         sqs_create_queue,
         create_iam_role_with_policy,
         wait_for_stream_ready,
@@ -393,7 +393,7 @@ class TestKinesisSource:
         kinesis_arn = result["StreamARN"]
         wait_for_stream_ready(stream_name=kinesis_name)
         queue_event_source_mapping = sqs_create_queue()
-        destination_queue = sqs_queue_arn(queue_event_source_mapping)
+        destination_queue = sqs_get_queue_arn(queue_event_source_mapping)
         destination_config = {"OnFailure": {"Destination": destination_queue}}
         message = {
             "input": "hello",

@@ -286,7 +286,7 @@ class TestDynamoDBEventSourceMapping:
     def test_dynamodb_event_source_mapping_with_on_failure_destination_config(
         self,
         create_lambda_function,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         sqs_create_queue,
         create_iam_role_with_policy,
         dynamodb_create_table,
@@ -326,7 +326,7 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("update_table_response", update_table_response)
         stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
         destination_queue = sqs_create_queue()
-        queue_failure_event_source_mapping_arn = sqs_queue_arn(destination_queue)
+        queue_failure_event_source_mapping_arn = sqs_get_queue_arn(destination_queue)
         destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
         create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             FunctionName=function_name,

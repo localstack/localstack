@@ -1134,6 +1134,21 @@
       "value": {
         "httpStatusCode": 403
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidDigest",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Content_MD5": {
+            "shape": "ContentMD5",
+            "locationName":"Content-MD5"
+          }
+        },
+        "documentation": "<p>The Content-MD5 you specified was invalid.</p>",
+        "exception": true
+      }
     }
   ]
 }

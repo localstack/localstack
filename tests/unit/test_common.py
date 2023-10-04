@@ -430,8 +430,6 @@ class TestCommonFileOperations:
         assert not fp.exists()
 
     def test_cp_r(self, tmp_path):
-        pytest.skip("this test does not work on python3.7 due to an issue shutil used by cp_r")
-
         source = tmp_path / "source"
         target = tmp_path / "target"
 

@@ -1012,5 +1012,46 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_selection_patterns": {
+    "recorded-date": "05-09-2023, 21:54:21",
+    "recorded-content": {
+      "lambda-selection-pattern-200": "Pass",
+      "lambda-selection-pattern-400": {
+        "errorMessage": "Error: Raising 400 from within the Lambda function",
+        "errorType": "Exception",
+        "requestId": "<uuid:1>",
+        "stackTrace": [
+          "  File \"/var/task/lambda_select_pattern.py\", line 7, in handler\n    raise Exception(\"Error: Raising 400 from within the Lambda function\")\n"
+        ]
+      },
+      "lambda-selection-pattern-500": {
+        "errorMessage": "Error: Raising 500 from within the Lambda function",
+        "errorType": "Exception",
+        "requestId": "<uuid:2>",
+        "stackTrace": [
+          "  File \"/var/task/lambda_select_pattern.py\", line 9, in handler\n    raise Exception(\"Error: Raising 500 from within the Lambda function\")\n"
+        ]
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration_response_with_mapping_templates": {
+    "recorded-date": "17-09-2023, 09:11:22",
+    "recorded-content": {
+      "response-template-202": {
+        "body": {
+          "body": "noerror",
+          "statusCode": 200
+        },
+        "statusCode": 202
+      },
+      "response-template-400": {
+        "body": {
+          "body": "customerror",
+          "statusCode": 200
+        },
+        "statusCode": 400
+      }
+    }
   }
 }

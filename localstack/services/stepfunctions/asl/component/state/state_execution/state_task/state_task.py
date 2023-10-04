@@ -39,22 +39,6 @@ class StateTask(ExecutionState, abc.ABC):
         # JSON and JsonPath.
         self.parameters: Optional[Parameters] = None
 
-        # Credentials (Optional)
-        # Specifies a target role the state machine's execution role must assume before invoking the specified Resource.
-        # Alternatively, you can also specify a JSONPath value that resolves to an IAM role ARN at runtime based on the
-        # execution input. If you specify a JSONPath value, you must prefix it with the $. notation.
-
-        # A Task state cannot include both TimeoutSeconds and TimeoutSecondsPath
-        # HeartbeatSeconds (Optional)
-        # If more time than the specified seconds elapses between heartbeats from the state_task, this state fails with a
-        # States.Timeout error name. Must be a positive, non-zero integer less than the number of seconds specified in
-        # the TimeoutSeconds field. If not provided, the default value is 99999999. For Activities, the count begins
-        # when GetActivityTask receives a token and ActivityStarted is logged in the Execution event history.
-
-        # HeartbeatSecondsPath (Optional)
-        # If you want to provide a heartbeat value dynamically from the state input using a reference path, use
-        # HeartbeatSecondsPath. When resolved, the reference path must select fields whose values are positive integers.
-
     def from_state_props(self, state_props: StateProps) -> None:
         super(StateTask, self).from_state_props(state_props)
         self.parameters = state_props.get(Parameters)

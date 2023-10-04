@@ -20,7 +20,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestTaskLambda:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invoke_bytes_payload(
         self,
         aws_client,
@@ -65,7 +65,7 @@ class TestTaskLambda:
             [],
         ],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invoke_json_values(
         self,
         aws_client,
@@ -99,7 +99,7 @@ class TestTaskLambda:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invoke_pipe(
         self,
         aws_client,
@@ -131,6 +131,38 @@ class TestTaskLambda:
         template["States"]["step2"]["Resource"] = create_2_res["CreateFunctionResponse"][
             "FunctionArn"
         ]
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_lambda_task_filter_parameters_input(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        create_res = create_lambda_function(
+            func_name=function_name,
+            handler_file=ST.LAMBDA_ID_FUNCTION,
+            runtime="python3.9",
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+        function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
+
+        template = ST.load_sfn_template(ST.LAMBDA_INPUT_PARAMETERS_FILTER)
+        template["States"]["CheckComplete"]["Resource"] = function_arn
         definition = json.dumps(template)
 
         exec_input = json.dumps({})

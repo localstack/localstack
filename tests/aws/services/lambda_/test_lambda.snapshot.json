@@ -414,22 +414,6 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_large_payloads": {
-    "recorded-date": "02-05-2023, 16:51:29",
-    "recorded-content": {
-      "invocation_response": {
-        "ExecutedVersion": "$LATEST",
-        "Payload": {
-          "test": "<large-value>"
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[python3.9]": {
     "recorded-date": "17-02-2023, 14:01:27",
     "recorded-content": {
@@ -917,9 +901,12 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_block": {
-    "recorded-date": "26-09-2022, 11:33:01",
+    "recorded-date": "29-08-2023, 15:26:41",
     "recorded-content": {
       "v1_result": {
+        "Architectures": [
+          "x86_64"
+        ],
         "CodeSha256": "code-sha256",
         "CodeSize": "<code-size>",
         "Description": "",
@@ -938,7 +925,14 @@
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.10",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Active",
         "Timeout": 30,
         "TracingConfig": {
@@ -1995,7 +1989,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_type_event_error": {
-    "recorded-date": "04-10-2022, 19:28:11",
+    "recorded-date": "04-09-2023, 22:49:02",
     "recorded-content": {
       "creation_response": {
         "CreateEventSourceMappingResponse": null,
@@ -2020,7 +2014,14 @@
           "PackageType": "Zip",
           "RevisionId": "<request-id>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.10",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Pending",
           "StateReason": "The function is being created.",
           "StateReasonCode": "Creating",
@@ -2046,22 +2047,7 @@
       "log_events": [
         {
           "timestamp": "timestamp",
-          "message": "START RequestId: <request-id> Version: $LATEST\n",
-          "ingestionTime": "timestamp"
-        },
-        {
-          "timestamp": "timestamp",
-          "message": "[ERROR] CustomException: some error occurred\nTraceback (most recent call last):\n\u00a0\u00a0File \"/var/task/handler.py\", line 6, in handler\n\u00a0\u00a0\u00a0\u00a0raise CustomException(\"some error occurred\")",
-          "ingestionTime": "timestamp"
-        },
-        {
-          "timestamp": "timestamp",
-          "message": "END RequestId: <request-id>\n",
-          "ingestionTime": "timestamp"
-        },
-        {
-          "timestamp": "timestamp",
-          "message": "REPORT RequestId: <request-id>\tDuration: 3.11 ms\tBilled Duration: 4 ms\tMemory Size: 128 MB\tMax Memory Used: 37 MB\tInit Duration: 124.70 ms\t\n",
+          "message": "INIT_START Runtime Version: python:3.10.v11\tRuntime Version ARN: arn:aws:lambda:<region>::runtime:<resource:2>\n",
           "ingestionTime": "timestamp"
         },
         {
@@ -2081,7 +2067,27 @@
         },
         {
           "timestamp": "timestamp",
-          "message": "REPORT RequestId: <request-id>\tDuration: 10.92 ms\tBilled Duration: 11 ms\tMemory Size: 128 MB\tMax Memory Used: 37 MB\t\n",
+          "message": "REPORT RequestId: <request-id>\tDuration: 3.01 ms\tBilled Duration: 4 ms\tMemory Size: 128 MB\tMax Memory Used: 36 MB\tInit Duration: 110.10 ms\t\n",
+          "ingestionTime": "timestamp"
+        },
+        {
+          "timestamp": "timestamp",
+          "message": "START RequestId: <request-id> Version: $LATEST\n",
+          "ingestionTime": "timestamp"
+        },
+        {
+          "timestamp": "timestamp",
+          "message": "[ERROR] CustomException: some error occurred\nTraceback (most recent call last):\n\u00a0\u00a0File \"/var/task/handler.py\", line 6, in handler\n\u00a0\u00a0\u00a0\u00a0raise CustomException(\"some error occurred\")",
+          "ingestionTime": "timestamp"
+        },
+        {
+          "timestamp": "timestamp",
+          "message": "END RequestId: <request-id>\n",
+          "ingestionTime": "timestamp"
+        },
+        {
+          "timestamp": "timestamp",
+          "message": "REPORT RequestId: <request-id>\tDuration: 2.90 ms\tBilled Duration: 3 ms\tMemory Size: 128 MB\tMax Memory Used: 36 MB\t\n",
           "ingestionTime": "timestamp"
         }
       ]
@@ -2829,7 +2835,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency": {
-    "recorded-date": "02-05-2023, 16:56:17",
+    "recorded-date": "11-08-2023, 12:01:28",
     "recorded-content": {
       "fn": {
         "Architectures": [
@@ -2917,6 +2923,7 @@
       },
       "msg": {
         "Attributes": {
+          "AWSTraceHeader": "Root=1-64d606f7-07ba3df604ddb3c84216649d;Sampled=0",
           "ApproximateFirstReceiveTimestamp": "timestamp",
           "ApproximateReceiveCount": "1",
           "SenderId": "<sender-id>",
@@ -2940,7 +2947,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency_async_queue": {
-    "recorded-date": "02-05-2023, 16:55:59",
+    "recorded-date": "10-08-2023, 23:24:24",
     "recorded-content": {
       "fn": {
         "Architectures": [
@@ -3001,18 +3008,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 429
-        }
-      },
-      "put_function_concurrency_qualified_arn_exc": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "This operation is permitted on Lambda functions only. Aliases and versions do not support this operation. Please specify either a function name or an unqualified function ARN."
-        },
-        "Type": "User",
-        "message": "This operation is permitted on Lambda functions only. Aliases and versions do not support this operation. Please specify either a function name or an unqualified function ARN.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
         }
       }
     }
@@ -3272,6 +3267,197 @@
       "end_log_entries": [
         "END RequestId: <uuid:1>"
       ]
+    }
+  },
+  "tests/aws/lambda_/test_lambda.py::TestLambdaFeatures::test_invoke_exceptions": {
+    "recorded-date": "11-08-2023, 15:57:21",
+    "recorded-content": {
+      "invoke_function_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_error": {
+    "recorded-date": "30-08-2023, 16:48:55",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Runtime startup fails",
+          "errorType": "Exception",
+          "requestId": "",
+          "stackTrace": [
+            "  File \"/var/lang/lib/python3.10/importlib/__init__.py\", line 126, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n",
+            "  File \"<frozen importlib._bootstrap>\", line 1050, in _gcd_import\n",
+            "  File \"<frozen importlib._bootstrap>\", line 1027, in _find_and_load\n",
+            "  File \"<frozen importlib._bootstrap>\", line 1006, in _find_and_load_unlocked\n",
+            "  File \"<frozen importlib._bootstrap>\", line 688, in _load_unlocked\n",
+            "  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n",
+            "  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n",
+            "  File \"/var/task/lambda_runtime_error.py\", line 1, in <module>\n    raise Exception(\"Runtime startup fails\")\n"
+          ]
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invoke_exceptions": {
+    "recorded-date": "23-08-2023, 17:42:25",
+    "recorded-content": {
+      "invoke_function_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_wrapper_not_found": {
+    "recorded-date": "30-08-2023, 16:52:21",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorType": "Runtime.ExitError",
+          "errorMessage": "RequestId: <uuid> Error: Runtime exited with error: exit status 127"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_exit": {
+    "recorded-date": "30-08-2023, 16:48:13",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorType": "Runtime.ExitError",
+          "errorMessage": "RequestId: <uuid> Error: Runtime exited without providing a reason"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_handler_exit": {
+    "recorded-date": "30-08-2023, 16:51:03",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorType": "Runtime.ExitError",
+          "errorMessage": "RequestId: <uuid> Error: Runtime exited without providing a reason"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_handler_error": {
+    "recorded-date": "04-09-2023, 23:08:48",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Handler fails",
+          "errorType": "Exception",
+          "requestId": "<uuid>",
+          "stackTrace": [
+            "  File \"/var/task/lambda_handler_error.py\", line 2, in handler\n    raise Exception(\"Handler fails\")\n"
+          ]
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_exit_segfault": {
+    "recorded-date": "06-09-2023, 12:13:47",
+    "recorded-content": {
+      "invocation_error": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorType": "Runtime.ExitError",
+          "errorMessage": "RequestId: <uuid> Error: Runtime exited with error: signal: segmentation fault"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_invoke_payload_encoding_error[body-n\\x87r\\x9e\\xe9\\xb5\\xd7I\\xee\\x9bmt]": {
+    "recorded-date": "15-09-2023, 22:16:36",
+    "recorded-content": {
+      "invoke_function_invalid_payload_body": {
+        "Error": {
+          "Code": "InvalidRequestContentException",
+          "Message": "Could not parse request body into json: Could not parse payload into json: Invalid UTF-8 start byte 0x87\n at [Source: (byte[])\"n\ufffdr\ufffd\ufffd\ufffdI\ufffdmt\"; line: 1, column: 3]"
+        },
+        "Type": "User",
+        "message": "Could not parse request body into json: Could not parse payload into json: Invalid UTF-8 start byte 0x87\n at [Source: (byte[])\"n\ufffdr\ufffd\ufffd\ufffdI\ufffdmt\"; line: 1, column: 3]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_invoke_payload_encoding_error[message-\\x99\\xeb,j\\x07\\xa1zYh]": {
+    "recorded-date": "15-09-2023, 22:16:40",
+    "recorded-content": {
+      "invoke_function_invalid_payload_message": {
+        "Error": {
+          "Code": "InvalidRequestContentException",
+          "Message": "Could not parse request body into json: Could not parse payload into json: Unexpected character ((CTRL-CHAR, code 153)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (byte[])\"\ufffd\ufffd,j\u0007\ufffdzYh\"; line: 1, column: 2]"
+        },
+        "Type": "User",
+        "message": "Could not parse request body into json: Could not parse payload into json: Unexpected character ((CTRL-CHAR, code 153)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: (byte[])\"\ufffd\ufffd,j\u0007\ufffdzYh\"; line: 1, column: 2]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   }
 }

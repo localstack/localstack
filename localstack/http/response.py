@@ -14,13 +14,14 @@ class Response(WerkzeugResponse):
     def update_from(self, other: WerkzeugResponse):
         """
         Updates this response object with the data from the given response object. It reads the status code,
-        the response data, and updates its own headers (overwrites existing headers, but does not remove ones not
-        present in the given object).
+        the response data, and updates its own headers (overwrites existing headers, but does not remove ones
+        not present in the given object). Also updates ``call_on_close`` callbacks in the same way.
 
         :param other: the response object to read from
         """
         self.status_code = other.status_code
         self.response = other.response
+        self._on_close.extend(other._on_close)
         self.headers.update(other.headers)
 
     def set_json(self, doc: Any):

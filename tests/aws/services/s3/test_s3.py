@@ -28,7 +28,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.aws.api.s3 import StorageClass
-from localstack.config import LEGACY_S3_PROVIDER, NATIVE_S3_PROVIDER, STREAM_S3_PROVIDER
+from localstack.config import LEGACY_S3_PROVIDER, NATIVE_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
@@ -44,7 +44,11 @@ from localstack.services.lambda_.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON39,
 )
 from localstack.services.s3 import constants as s3_constants
-from localstack.services.s3.utils import parse_expiration_header, rfc_1123_datetime
+from localstack.services.s3.utils import (
+    etag_to_base_64_content_md5,
+    parse_expiration_header,
+    rfc_1123_datetime,
+)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
@@ -527,19 +531,46 @@ class TestS3:
         condition=lambda: not is_native_provider(),
         paths=["$..ServerSideEncryption"],
     )
-    @pytest.mark.parametrize("key", ["file%2Fname", "test@key/"])
+    @pytest.mark.parametrize("key", ["file%2Fname", "test@key/", "test%123", "test%percent"])
     def test_put_get_object_special_character(self, s3_bucket, aws_client, snapshot, key):
         snapshot.add_transformer(snapshot.transform.s3_api())
         resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
         snapshot.match("put-object-special-char", resp)
         resp = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
-        # FIXME: Moto will by default clean up key name, but they will return the cleaned up key name in ListObject...
-        if "%" not in key or is_aws_cloud():
-            snapshot.match("list-object-special-char", resp)
+        snapshot.match("list-object-special-char", resp)
         resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
         snapshot.match("get-object-special-char", resp)
         resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
         snapshot.match("del-object-special-char", resp)
+
+    @markers.aws.validated
+    def test_url_encoded_key(self, s3_bucket, aws_client, snapshot):
+        """Boto adds a trailing slash always?"""
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        key = "test@key/"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test-non-encoded")
+        encoded_key = "test%40key/"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=encoded_key, Body=b"test-encoded")
+        encoded_key_no_trailing = "test%40key"
+        aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=encoded_key_no_trailing, Body=b"test-encoded-no-trailing"
+        )
+        # assert that one did not override the over, and that both key are different
+        assert (
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key)["Body"].read()
+            == b"test-non-encoded"
+        )
+        assert (
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=encoded_key)["Body"].read()
+            == b"test-encoded"
+        )
+        assert (
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=encoded_key_no_trailing)["Body"].read()
+            == b"test-encoded-no-trailing"
+        )
+
+        resp = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-object-encoded-char", resp)
 
     @markers.aws.validated
     @pytest.mark.parametrize("delimiter", ["/", "%2F"])
@@ -2570,6 +2601,56 @@ class TestS3:
         snapshot.match("get_bucket_location_non_existent_bucket", exc.value.response)
 
     @markers.aws.validated
+    def test_bucket_operation_between_regions(
+        self,
+        s3_create_bucket,
+        aws_client_factory,
+        s3_create_bucket_with_client,
+        snapshot,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        region_1 = "us-west-2"
+        client_1 = aws_client_factory(region_name=region_1).s3
+        bucket_name = f"bucket-{short_uid()}"
+        s3_create_bucket_with_client(
+            client_1,
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": region_1},
+        )
+
+        put_website_config = client_1.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+        snapshot.match("put-website-config-region-1", put_website_config)
+
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["*"],
+                    "AllowedMethods": ["GET"],
+                }
+            ]
+        }
+        put_cors_config = client_1.put_bucket_cors(
+            Bucket=bucket_name, CORSConfiguration=bucket_cors_config
+        )
+        snapshot.match("put-cors-config-region-1", put_cors_config)
+
+        region_2 = "us-east-1"
+        client_2 = aws_client_factory(region_name=region_2).s3
+
+        get_website_config = client_2.get_bucket_website(Bucket=bucket_name)
+        snapshot.match("get-website-config-region-2", get_website_config)
+
+        get_cors_config = client_2.get_bucket_cors(Bucket=bucket_name)
+        snapshot.match("get-cors-config-region-2", get_cors_config)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
@@ -2729,7 +2810,7 @@ class TestS3:
     @markers.aws.only_localstack
     @pytest.mark.xfail(
         reason="Not implemented in other providers than stream",
-        condition=not STREAM_S3_PROVIDER or not NATIVE_S3_PROVIDER,
+        condition=not NATIVE_S3_PROVIDER,
     )
     def test_put_object_chunked_newlines_with_checksum(self, s3_bucket, aws_client):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
@@ -3225,20 +3306,45 @@ class TestS3:
         snapshot.match("get-object-if-match", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Error format is wrong and missing keys")
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Error format is wrong and missing keys"
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
     def test_s3_invalid_content_md5(self, s3_bucket, snapshot, aws_client):
         # put object with invalid content MD5
         # TODO: implement ContentMD5 in ASF
+        content = "something"
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test-key",
+            Body=content,
+        )
+        md = hashlib.md5(content.encode("utf-8")).digest()
+        content_md5 = base64.b64encode(md).decode("utf-8")
+        base_64_content_md5 = etag_to_base_64_content_md5(response["ETag"])
+        assert content_md5 == base_64_content_md5
+
         hashes = ["__invalid__", "000", "not base64 encoded checksum", "MTIz"]
         for index, md5hash in enumerate(hashes):
             with pytest.raises(ClientError) as e:
                 aws_client.s3.put_object(
                     Bucket=s3_bucket,
                     Key="test-key",
-                    Body="something",
+                    Body=content,
                     ContentMD5=md5hash,
                 )
             snapshot.match(f"md5-error-{index}", e.value.response)
+
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test-key",
+            Body=content,
+            ContentMD5=base_64_content_md5,
+        )
+        snapshot.match("success-put-object-md5", response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -5497,6 +5603,20 @@ class TestS3:
         assert response.ok
         lowercase_headers = {k.lower(): v for k, v in response.headers.items()}
         snapshot.match("get-obj-content-len-headers", lowercase_headers)
+
+    @markers.aws.validated
+    def test_empty_bucket_fixture(self, s3_bucket, s3_empty_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        for i in range(3):
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=f"key{i}", Body="123")
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-obj", response)
+
+        s3_empty_bucket(s3_bucket)
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-obj-after-empty", response)
 
 
 class TestS3MultiAccounts:

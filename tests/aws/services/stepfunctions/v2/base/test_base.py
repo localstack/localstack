@@ -64,6 +64,52 @@ class TestSnfBase:
         )
 
     @markers.aws.validated
+    def test_state_pass_result(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_state_pass_result_jsonpaths(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        template["States"]["State_1"]["Result"] = {
+            "unsupported1.$": "$.jsonpath",
+            "unsupported2.$": "$$",
+        }
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_event_bridge_events_base(
         self,
         create_iam_role_for_sfn,
@@ -87,7 +133,7 @@ class TestSnfBase:
         )
 
     @pytest.mark.skip(reason="flaky")  # FIXME
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_event_bridge_events_failure(
         self,
         create_iam_role_for_sfn,

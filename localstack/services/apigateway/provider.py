@@ -91,10 +91,10 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.connect import connect_to
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
+from localstack.services.apigateway.exporter import OpenApiExporter
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ERROR_MODEL,
-    OpenApiExporter,
     OpenAPIExt,
     apply_json_patch_safe,
     get_apigateway_store,
@@ -120,8 +120,8 @@ from localstack.utils.collections import (
     select_from_typed_dict,
 )
 from localstack.utils.json import parse_json_or_yaml
-from localstack.utils.strings import short_uid, str_to_bool, to_str
-from localstack.utils.time import now_utc
+from localstack.utils.strings import short_uid, str_to_bool, to_bytes, to_str
+from localstack.utils.time import TIMESTAMP_FORMAT_TZ, now_utc, timestamp
 
 LOG = logging.getLogger(__name__)
 
@@ -353,7 +353,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))
         rest_api = import_api_from_openapi_spec(rest_api, openapi_spec, context=context)
-
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(context=context)
@@ -514,6 +513,46 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # remove the resource as a child from its parent
         parent_id = moto_resource.parent_id
         api_resources[parent_id].remove(resource_id)
+
+    def update_integration_response(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        status_code: StatusCode,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> IntegrationResponse:
+        # XXX: THIS IS NOT A COMPLETE IMPLEMENTATION, just the minimum required to get tests going
+        # TODO: validate patch operations
+
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        moto_resource = moto_rest_api.resources.get(resource_id)
+        if not moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        moto_method = moto_resource.resource_methods.get(http_method)
+        if not moto_method:
+            raise NotFoundException("Invalid Method identifier specified")
+
+        integration_response = moto_method.method_integration.integration_responses.get(status_code)
+        if not integration_response:
+            raise NotFoundException("Invalid Integration Response identifier specified")
+
+        for patch_operation in patch_operations:
+            op = patch_operation.get("op")
+            path = patch_operation.get("path")
+
+            # for path "/responseTemplates/application~1json"
+            if "/responseTemplates" in path:
+                value = patch_operation.get("value")
+                if not isinstance(value, str):
+                    raise BadRequestException(
+                        f"Invalid patch value  '{value}' specified for op '{op}'. Must be a string"
+                    )
+                param = path.removeprefix("/responseTemplates/")
+                param = param.replace("~1", "/")
+                integration_response.response_templates.pop(param)
 
     def update_resource(
         self,
@@ -1783,16 +1822,32 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         parameters: MapOfStringToString = None,
         accepts: String = None,
     ) -> ExportResponse:
-
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
         openapi_exporter = OpenApiExporter()
+        # FIXME: look into parser why `parameters` is always None
+        has_extension = context.request.values.get("extensions") == "apigateway"
         result = openapi_exporter.export_api(
-            api_id=rest_api_id, stage=stage_name, export_type=export_type, export_format=accepts
+            api_id=rest_api_id,
+            stage=stage_name,
+            export_type=export_type,
+            export_format=accepts,
+            with_extension=has_extension,
         )
+
+        accepts = accepts or APPLICATION_JSON
 
         if accepts == APPLICATION_JSON:
             result = json.dumps(result, indent=2)
 
-        return ExportResponse(contentType=accepts, body=result)
+        file_ext = accepts.split("/")[-1]
+        version = moto_rest_api.version or timestamp(
+            moto_rest_api.create_date, format=TIMESTAMP_FORMAT_TZ
+        )
+        return ExportResponse(
+            body=to_bytes(result),
+            contentType="application/octet-stream",
+            contentDisposition=f'attachment; filename="{export_type}_{version}.{file_ext}"',
+        )
 
     def get_api_keys(
         self,

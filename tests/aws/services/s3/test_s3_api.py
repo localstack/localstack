@@ -475,10 +475,6 @@ class TestS3ObjectCRUD:
         snapshot.match("list-object-versions", list_object_versions)
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=config.STREAM_S3_PROVIDER,
-        reason="Range fix not applied in S3 Stream provider due to removal in the near future",
-    )
     def test_get_object_range(self, aws_client, s3_bucket, snapshot):
         content = "0123456789"
         key = "test-key-range"
@@ -1451,6 +1447,25 @@ class TestS3ObjectLock:
                 },
             )
         snapshot.match("disable-versioning-on-locked-bucket", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_object_with_no_locking(self, s3_bucket, aws_client, snapshot):
+        key = "test-delete-no-lock"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, BypassGovernanceRetention=True)
+        snapshot.match("delete-object-bypass-no-lock", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, BypassGovernanceRetention=False)
+        snapshot.match("delete-object-bypass-no-lock-false", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_objects(
+                Bucket=s3_bucket, Delete={"Objects": [{"Key": key}]}, BypassGovernanceRetention=True
+            )
+        snapshot.match("delete-objects-bypass-no-lock", e.value.response)
 
 
 class TestS3BucketOwnershipControls:

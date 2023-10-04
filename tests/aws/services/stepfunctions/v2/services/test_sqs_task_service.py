@@ -30,7 +30,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceSqs:
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_send_message(
         self,
         aws_client,
@@ -64,7 +64,7 @@ class TestTaskServiceSqs:
         assert len(receive_message_res["Messages"]) == 1
         assert receive_message_res["Messages"][0]["Body"] == message_body
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_send_message_unsupported_parameters(
         self,
         aws_client,

@@ -3150,5 +3150,43 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_delete_object_with_no_locking": {
+    "recorded-date": "08-09-2023, 18:29:03",
+    "recorded-content": {
+      "delete-object-bypass-no-lock": {
+        "Error": {
+          "ArgumentName": "x-amz-bypass-governance-retention",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-object-bypass-no-lock-false": {
+        "Error": {
+          "ArgumentName": "x-amz-bypass-governance-retention",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-objects-bypass-no-lock": {
+        "Error": {
+          "ArgumentName": "x-amz-bypass-governance-retention",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

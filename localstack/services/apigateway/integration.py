@@ -28,6 +28,7 @@ from localstack.services.apigateway.helpers import (
     ApiGatewayIntegrationError,
     IntegrationParameters,
     RequestParametersResolver,
+    ResponseParametersResolver,
     extract_path_params,
     extract_query_string_params,
     get_event_request_context,
@@ -75,6 +76,7 @@ class BackendIntegration(ABC):
         self.request_templates = RequestTemplates()
         self.response_templates = ResponseTemplates()
         self.request_params_resolver = RequestParametersResolver()
+        self.response_params_resolver = ResponseParametersResolver()
 
     @abstractmethod
     def invoke(self, invocation_context: ApiInvocationContext):
@@ -376,26 +378,10 @@ class LambdaProxyIntegration(BackendIntegration):
         self.update_content_length(response)
         invocation_context.response = response
 
-        self.response_templates.render(invocation_context)
         return invocation_context.response
 
 
 class LambdaIntegration(BackendIntegration):
-    def _lambda_integration_uri(self, invocation_context: ApiInvocationContext):
-        """
-        https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html
-        """
-        uri = (
-            invocation_context.integration.get("uri")
-            or invocation_context.integration.get("integrationUri")
-            or ""
-        )
-        variables = {"stageVariables": invocation_context.stage_variables}
-        uri = VtlTemplate().render_vtl(uri, variables)
-        if ":lambda:path" in uri:
-            uri = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
-        return uri
-
     def invoke(self, invocation_context: ApiInvocationContext):
         headers = helpers.create_invocation_headers(invocation_context)
         invocation_context.context = helpers.get_event_request_context(invocation_context)
@@ -416,35 +402,38 @@ class LambdaIntegration(BackendIntegration):
         except ClientError as e:
             raise IntegrationAccessError() from e
 
+        # default lambda status code is 200
         response = LambdaResponse()
+        response.status_code = 200
+        response._content = result
 
         if asynchronous:
             response._content = ""
-        else:
-            # depending on the lambda executor sometimes it returns a string and sometimes a dict
-            match result:
-                case str():
-                    # try to parse the result as json, if it succeeds we assume it's a valid
-                    # json string, and we don't do anything.
-                    if isinstance(json.loads(result or "{}"), dict):
-                        parsed_result = result
-                    else:
-                        # the docker executor returns a string wrapping a json string,
-                        # so we need to remove the outer string
-                        parsed_result = json.loads(result or "{}")
-                case _:
-                    parsed_result = json.loads(str(result or "{}"))
-            parsed_result = common.json_safe(parsed_result)
-            parsed_result = {} if parsed_result is None else parsed_result
-            response._content = parsed_result
 
-        response.status_code = 200
-        # apply custom response template
+        # response template
         invocation_context.response = response
-
         self.response_templates.render(invocation_context)
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
+
+        headers = self.response_params_resolver.resolve(invocation_context)
+        invocation_context.response.headers.update(headers)
+
         return invocation_context.response
+
+    def _lambda_integration_uri(self, invocation_context: ApiInvocationContext):
+        """
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html
+        """
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
+        variables = {"stageVariables": invocation_context.stage_variables}
+        uri = VtlTemplate().render_vtl(uri, variables)
+        if ":lambda:path" in uri:
+            uri = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
+        return uri
 
 
 class KinesisIntegration(BackendIntegration):
@@ -629,8 +618,7 @@ class HTTPIntegration(BackendIntegration):
         # apply custom request template
         invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-        request_templates = RequestTemplates()
-        payload = request_templates.render(invocation_context)
+        payload = self.request_templates.render(invocation_context)
 
         if isinstance(payload, dict):
             payload = json.dumps(payload)
@@ -664,8 +652,7 @@ class HTTPIntegration(BackendIntegration):
             )
         # apply custom response template
         invocation_context.response = result
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
+        self.response_templates.render(invocation_context)
         return invocation_context.response
 
 
@@ -673,27 +660,30 @@ class SQSIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
         integration = invocation_context.integration
         uri = integration.get("uri") or integration.get("integrationUri") or ""
-
-        template = integration["requestTemplates"].get(APPLICATION_JSON)
         account_id, queue = uri.split("/")[-2:]
         region_name = uri.split(":")[3]
-        if "GetQueueUrl" in template or "CreateQueue" in template:
-            request_templates = RequestTemplates()
-            payload = request_templates.render(invocation_context)
-            new_request = f"{payload}&QueueName={queue}"
-        else:
-            request_templates = RequestTemplates()
-            payload = request_templates.render(invocation_context)
-            queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
-            new_request = f"{payload}&QueueUrl={queue_url}"
 
-        # forward records to target kinesis stream
         headers = get_internal_mocked_headers(
             service_name="sqs",
             region_name=region_name,
             role_arn=invocation_context.integration.get("credentials"),
             source_arn=get_source_arn(invocation_context),
         )
+
+        # integration parameters can override headers
+        integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
+        headers.update(integration_parameters.get("headers", {}))
+        if "Accept" not in headers:
+            headers["Accept"] = "application/json"
+
+        template = integration.get("requestTemplates").get(APPLICATION_JSON)
+        if "GetQueueUrl" in template or "CreateQueue" in template:
+            payload = self.request_templates.render(invocation_context)
+            new_request = f"{payload}&QueueName={queue}"
+        else:
+            payload = self.request_templates.render(invocation_context)
+            queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
+            new_request = f"{payload}&QueueUrl={queue_url}"
 
         url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
         response = common.make_http_request(url, method="POST", headers=headers, data=new_request)
@@ -780,7 +770,7 @@ class StepFunctionIntegration(BackendIntegration):
         result = method(**payload)
         result = json_safe(remove_attributes(result, ["ResponseMetadata"]))
         response = StepFunctionIntegration._create_response(
-            HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=result
+            HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=json.dumps(result)
         )
         if action == "StartSyncExecution":
             # poll for the execution result and return it
@@ -929,7 +919,6 @@ class EventBridgeIntegration(BackendIntegration):
 
         invocation_context.response = response
 
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
+        self.response_templates.render(invocation_context)
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response

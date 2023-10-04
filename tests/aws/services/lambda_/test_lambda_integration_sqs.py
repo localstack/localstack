@@ -26,7 +26,7 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMB
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 LAMBDA_SQS_INTEGRATION_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_sqs_integration.py")
 LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE = os.path.join(
-    THIS_FOLDER, "functions", "lambda_sqs_batch_item_failure.py"
+    THIS_FOLDER, "functions/lambda_sqs_batch_item_failure.py"
 )
 
 
@@ -76,7 +76,7 @@ def _snapshot_transformers(snapshot):
 def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function,
     sqs_create_queue,
-    sqs_queue_arn,
+    sqs_get_queue_arn,
     lambda_su_role,
     snapshot,
     cleanups,
@@ -114,7 +114,7 @@ def test_failing_lambda_retries_after_visibility_timeout(
             "VisibilityTimeout": str(retry_timeout),
         },
     )
-    event_source_arn = sqs_queue_arn(event_source_url)
+    event_source_arn = sqs_get_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
     response = aws_client.lambda_.create_event_source_mapping(
@@ -172,7 +172,7 @@ def test_failing_lambda_retries_after_visibility_timeout(
 def test_message_body_and_attributes_passed_correctly(
     create_lambda_function,
     sqs_create_queue,
-    sqs_queue_arn,
+    sqs_get_queue_arn,
     lambda_su_role,
     snapshot,
     cleanups,
@@ -201,7 +201,7 @@ def test_message_body_and_attributes_passed_correctly(
 
     # create dlq for event source queue
     event_dlq_url = sqs_create_queue(QueueName=f"event-dlq-{short_uid()}")
-    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+    event_dlq_arn = sqs_get_queue_arn(event_dlq_url)
 
     # create event source queue
     event_source_url = sqs_create_queue(
@@ -214,7 +214,7 @@ def test_message_body_and_attributes_passed_correctly(
             ),
         },
     )
-    event_source_arn = sqs_queue_arn(event_source_url)
+    event_source_arn = sqs_get_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
     mapping_uuid = aws_client.lambda_.create_event_source_mapping(
@@ -264,7 +264,7 @@ def test_message_body_and_attributes_passed_correctly(
 def test_redrive_policy_with_failing_lambda(
     create_lambda_function,
     sqs_create_queue,
-    sqs_queue_arn,
+    sqs_get_queue_arn,
     lambda_su_role,
     snapshot,
     cleanups,
@@ -298,7 +298,7 @@ def test_redrive_policy_with_failing_lambda(
 
     # create dlq for event source queue
     event_dlq_url = sqs_create_queue(QueueName=f"event-dlq-{short_uid()}")
-    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+    event_dlq_arn = sqs_get_queue_arn(event_dlq_url)
 
     # create event source queue
     event_source_url = sqs_create_queue(
@@ -311,7 +311,7 @@ def test_redrive_policy_with_failing_lambda(
             ),
         },
     )
-    event_source_arn = sqs_queue_arn(event_source_url)
+    event_source_arn = sqs_get_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
     mapping_uuid = aws_client.lambda_.create_event_source_mapping(
@@ -356,8 +356,14 @@ def test_redrive_policy_with_failing_lambda(
 
 
 @markers.aws.validated
+@pytest.mark.skipif(is_old_provider(), reason="not supported anymore")
 def test_sqs_queue_as_lambda_dead_letter_queue(
-    lambda_su_role, create_lambda_function, sqs_create_queue, sqs_queue_arn, snapshot, aws_client
+    lambda_su_role,
+    create_lambda_function,
+    sqs_create_queue,
+    sqs_get_queue_arn,
+    snapshot,
+    aws_client,
 ):
     snapshot.add_transformer(
         [
@@ -374,7 +380,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
     )
 
     dlq_queue_url = sqs_create_queue()
-    dlq_queue_arn = sqs_queue_arn(dlq_queue_url)
+    dlq_queue_arn = sqs_get_queue_arn(dlq_queue_url)
 
     function_name = f"lambda-fn-{short_uid()}"
     lambda_creation_response = create_lambda_function(
@@ -387,6 +393,12 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
     snapshot.match(
         "lambda-response-dlq-config",
         lambda_creation_response["CreateFunctionResponse"]["DeadLetterConfig"],
+    )
+
+    # Set retries to zero to speed up the test
+    aws_client.lambda_.put_function_event_invoke_config(
+        FunctionName=function_name,
+        MaximumRetryAttempts=0,
     )
 
     # invoke Lambda, triggering an error
@@ -404,11 +416,8 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
         assert len(result["Messages"]) > 0
         return result
 
-    # check that the SQS queue used as DLQ received the error from the lambda
-    # on AWS, event retries can be quite delayed, so we have to wait up to 6 minutes here
-    # reduced retries when using localstack to avoid tests flaking
-    retries = 120 if is_aws_cloud() else 3
-    messages = retry(receive_dlq, retries=retries, sleep=3)
+    sleep = 3 if is_aws_cloud() else 1
+    messages = retry(receive_dlq, retries=30, sleep=sleep)
 
     snapshot.match("messages", messages)
 
@@ -440,7 +449,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
 def test_report_batch_item_failures(
     create_lambda_function,
     sqs_create_queue,
-    sqs_queue_arn,
+    sqs_get_queue_arn,
     lambda_su_role,
     snapshot,
     cleanups,
@@ -448,7 +457,7 @@ def test_report_batch_item_failures(
 ):
     """This test verifies the SQS Lambda integration feature Reporting batch item failures
     redrive policy, and the lambda is invoked the correct number of times. The test retries twice and the event
-    source mapping should then automatically move the message to the DQL, but not earlier (see
+    source mapping should then automatically move the message to the DLQ, but not earlier (see
     https://github.com/localstack/localstack/issues/5283)"""
 
     # create queue used in the lambda to send invocation results to (to verify lambda was invoked)
@@ -478,7 +487,7 @@ def test_report_batch_item_failures(
     event_dlq_url = sqs_create_queue(
         QueueName=f"event-dlq-{short_uid()}.fifo", Attributes={"FifoQueue": "true"}
     )
-    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+    event_dlq_arn = sqs_get_queue_arn(event_dlq_url)
 
     # create event source queue
     # we use a FIFO queue to be sure the lambda is invoked in a deterministic way
@@ -493,7 +502,7 @@ def test_report_batch_item_failures(
             ),
         },
     )
-    event_source_arn = sqs_queue_arn(event_source_url)
+    event_source_arn = sqs_get_queue_arn(event_source_url)
 
     # put a batch in the queue. the event format is expected by the lambda_sqs_batch_item_failure.py lambda.
     # we add the batch before the event_source_mapping to be sure that the entire batch is sent to the first invocation.
@@ -594,7 +603,7 @@ def test_report_batch_item_failures(
 def test_report_batch_item_failures_on_lambda_error(
     create_lambda_function,
     sqs_create_queue,
-    sqs_queue_arn,
+    sqs_get_queue_arn,
     lambda_su_role,
     snapshot,
     cleanups,
@@ -616,7 +625,7 @@ def test_report_batch_item_failures_on_lambda_error(
 
     # create dlq for event source queue
     event_dlq_url = sqs_create_queue(QueueName=f"event-dlq-{short_uid()}")
-    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+    event_dlq_arn = sqs_get_queue_arn(event_dlq_url)
 
     # create event source queue
     event_source_url = sqs_create_queue(
@@ -629,7 +638,7 @@ def test_report_batch_item_failures_on_lambda_error(
             ),
         },
     )
-    event_source_arn = sqs_queue_arn(event_source_url)
+    event_source_arn = sqs_get_queue_arn(event_source_url)
 
     # send a batch with a message to the queue that provokes a lambda failure (the lambda tries to parse the body as
     # JSON, but if it's not a json document, it fails). consequently, the entire batch should be discarded
@@ -682,7 +691,7 @@ def test_report_batch_item_failures_on_lambda_error(
 def test_report_batch_item_failures_invalid_result_json_batch_fails(
     create_lambda_function,
     sqs_create_queue,
-    sqs_queue_arn,
+    sqs_get_queue_arn,
     lambda_su_role,
     snapshot,
     cleanups,
@@ -716,7 +725,7 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
 
     # create dlq for event source queue
     event_dlq_url = sqs_create_queue(QueueName=f"event-dlq-{short_uid()}")
-    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+    event_dlq_arn = sqs_get_queue_arn(event_dlq_url)
 
     # create event source queue
     event_source_url = sqs_create_queue(
@@ -729,7 +738,7 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
             ),
         },
     )
-    event_source_arn = sqs_queue_arn(event_source_url)
+    event_source_arn = sqs_get_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
     mapping_uuid = aws_client.lambda_.create_event_source_mapping(
@@ -775,7 +784,7 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
 def test_report_batch_item_failures_empty_json_batch_succeeds(
     create_lambda_function,
     sqs_create_queue,
-    sqs_queue_arn,
+    sqs_get_queue_arn,
     lambda_su_role,
     snapshot,
     cleanups,
@@ -806,7 +815,7 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
 
     # create dlq for event source queue
     event_dlq_url = sqs_create_queue(QueueName=f"event-dlq-{short_uid()}")
-    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+    event_dlq_arn = sqs_get_queue_arn(event_dlq_url)
 
     # create event source queue
     # we use a FIFO queue to be sure the lambda is invoked in a deterministic way
@@ -820,7 +829,7 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
             ),
         },
     )
-    event_source_arn = sqs_queue_arn(event_source_url)
+    event_source_arn = sqs_get_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
     mapping_uuid = aws_client.lambda_.create_event_source_mapping(
@@ -883,7 +892,7 @@ class TestSQSEventSourceMapping:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         snapshot,
         aws_client,
@@ -893,7 +902,7 @@ class TestSQSEventSourceMapping:
         queue_name_1 = f"queue-{short_uid()}-1"
         queue_name_2 = f"queue-{short_uid()}-2"
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
-        queue_arn_1 = sqs_queue_arn(queue_url_1)
+        queue_arn_1 = sqs_get_queue_arn(queue_url_1)
 
         try:
             create_lambda_function(
@@ -923,7 +932,7 @@ class TestSQSEventSourceMapping:
             e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
             queue_url_2 = sqs_create_queue(QueueName=queue_name_2)
-            queue_arn_2 = sqs_queue_arn(queue_url_2)
+            queue_arn_2 = sqs_get_queue_arn(queue_url_2)
 
             with pytest.raises(ClientError) as e:
                 # Create event source mapping with invalid batch size value
@@ -942,7 +951,7 @@ class TestSQSEventSourceMapping:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         snapshot,
         cleanups,
@@ -959,7 +968,7 @@ class TestSQSEventSourceMapping:
             role=lambda_su_role,
         )
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
-        queue_arn_1 = sqs_queue_arn(queue_url_1)
+        queue_arn_1 = sqs_get_queue_arn(queue_url_1)
         create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn_1,
             FunctionName=function_name,
@@ -1043,7 +1052,7 @@ class TestSQSEventSourceMapping:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         filter,
         item_matching,
@@ -1063,7 +1072,7 @@ class TestSQSEventSourceMapping:
             role=lambda_su_role,
         )
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
-        queue_arn_1 = sqs_queue_arn(queue_url_1)
+        queue_arn_1 = sqs_get_queue_arn(queue_url_1)
 
         aws_client.sqs.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps(item_matching))
         aws_client.sqs.send_message(
@@ -1123,7 +1132,7 @@ class TestSQSEventSourceMapping:
         self,
         create_lambda_function,
         sqs_create_queue,
-        sqs_queue_arn,
+        sqs_get_queue_arn,
         lambda_su_role,
         invalid_filter,
         snapshot,
@@ -1139,7 +1148,7 @@ class TestSQSEventSourceMapping:
             role=lambda_su_role,
         )
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
-        queue_arn_1 = sqs_queue_arn(queue_url_1)
+        queue_arn_1 = sqs_get_queue_arn(queue_url_1)
 
         with pytest.raises(ClientError) as expected:
             aws_client.lambda_.create_event_source_mapping(

@@ -66,7 +66,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_alias": {
-    "recorded-date": "27-02-2023, 17:28:29",
+    "recorded-date": "08-09-2023, 11:43:01",
     "recorded-content": {
       "stack_resource_descriptions": {
         "StackResources": [

@@ -36,7 +36,7 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestNumerics:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_equals(
         self,
         aws_client,
@@ -60,7 +60,7 @@ class TestNumerics:
             comparisons=[*type_equals, (-0, 0), (0.0, 0), (2.22, 2.22)],
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_equals_path(
         self,
         aws_client,
@@ -85,7 +85,7 @@ class TestNumerics:
             add_literal_value=False,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_greater_than(
         self,
         aws_client,
@@ -102,7 +102,7 @@ class TestNumerics:
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_greater_than_path(
         self,
         aws_client,
@@ -120,7 +120,7 @@ class TestNumerics:
             add_literal_value=False,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_greater_than_equals(
         self,
         aws_client,
@@ -137,7 +137,7 @@ class TestNumerics:
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_greater_than_equals_path(
         self,
         aws_client,
@@ -155,7 +155,7 @@ class TestNumerics:
             add_literal_value=False,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_less_than(
         self,
         aws_client,
@@ -172,7 +172,7 @@ class TestNumerics:
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_less_than_path(
         self,
         aws_client,
@@ -190,7 +190,7 @@ class TestNumerics:
             add_literal_value=False,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_less_than_equals(
         self,
         aws_client,
@@ -207,7 +207,7 @@ class TestNumerics:
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_numeric_less_than_equals_path(
         self,
         aws_client,

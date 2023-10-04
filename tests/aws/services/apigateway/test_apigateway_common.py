@@ -611,3 +611,176 @@ class TestDeployments:
             snapshot.match(f"get-deployments-{i}", response)
             response = client.get_stages(restApiId=api_id)
             snapshot.match(f"get-stages-{i}", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
+    def test_create_update_deployments(
+        self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.apigateway_api())
+        client = aws_client.apigateway
+
+        # create API, method, integration, deployment
+        api_id, _, root_id = create_rest_apigw()
+        client.put_method(
+            restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
+        )
+        client.put_integration(restApiId=api_id, resourceId=root_id, httpMethod="GET", type="MOCK")
+
+        # create deployment - stage can be passed as parameter, or created separately below
+        response = client.create_deployment(restApiId=api_id)
+        deployment_id_1 = response["id"]
+
+        # create stage
+        client.create_stage(restApiId=api_id, stageName="s1", deploymentId=deployment_id_1)
+
+        # get deployment and stages
+        response = client.get_deployment(restApiId=api_id, deploymentId=deployment_id_1)
+        snapshot.match("get-deployment-1", response)
+        response = client.get_stages(restApiId=api_id)
+        snapshot.match("get-stages", response)
+
+        # asset that deleting the deployment fails if stage exists
+        with pytest.raises(ClientError) as ctx:
+            client.delete_deployment(restApiId=api_id, deploymentId=deployment_id_1)
+        snapshot.match("delete-deployment-error", ctx.value.response)
+
+        # create another deployment with the previous stage, which should update the stage
+        response = client.create_deployment(restApiId=api_id, stageName="s1")
+        deployment_id_2 = response["id"]
+
+        # get deployments and stages
+        response = client.get_deployment(restApiId=api_id, deploymentId=deployment_id_1)
+        snapshot.match("get-deployment-1-after-update", response)
+        response = client.get_deployment(restApiId=api_id, deploymentId=deployment_id_2)
+        snapshot.match("get-deployment-2", response)
+        response = client.get_stages(restApiId=api_id)
+        snapshot.match("get-stages-after-update", response)
+
+        response = client.delete_deployment(restApiId=api_id, deploymentId=deployment_id_1)
+        snapshot.match("delete-deployment-1", response)
+
+        # asset that deleting the deployment fails if stage exists
+        with pytest.raises(ClientError) as ctx:
+            client.delete_deployment(restApiId=api_id, deploymentId=deployment_id_2)
+        snapshot.match("delete-deployment-2-error", ctx.value.response)
+
+
+class TestProxyRouting:
+    @markers.aws.validated
+    def test_proxy_routing_with_hardcoded_resource_sibling(
+        self,
+        aws_client,
+        create_rest_apigw,
+        apigw_redeploy_api,
+    ):
+        api_id, _, root_id = create_rest_apigw(name="test proxy routing")
+
+        def _create_mock_integration_with_200_response_template(
+            resource_id: str, http_method: str, response_template: dict
+        ):
+            aws_client.apigateway.put_method(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                authorizationType="NONE",
+            )
+
+            aws_client.apigateway.put_method_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                statusCode="200",
+            )
+
+            aws_client.apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                type="MOCK",
+                requestTemplates={"application/json": '{"statusCode": 200}'},
+            )
+
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={"application/json": json.dumps(response_template)},
+            )
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="test"
+        )
+        hardcoded_resource_id = resource["id"]
+
+        response_template_post = {"statusCode": 200, "message": "POST request"}
+        _create_mock_integration_with_200_response_template(
+            hardcoded_resource_id, "POST", response_template_post
+        )
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=hardcoded_resource_id, pathPart="any"
+        )
+        any_resource_id = resource["id"]
+
+        response_template_any = {"statusCode": 200, "message": "ANY request"}
+        _create_mock_integration_with_200_response_template(
+            any_resource_id, "ANY", response_template_any
+        )
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="{proxy+}"
+        )
+        proxy_resource_id = resource["id"]
+        response_template_options = {"statusCode": 200, "message": "OPTIONS request"}
+        _create_mock_integration_with_200_response_template(
+            proxy_resource_id, "OPTIONS", response_template_options
+        )
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        url = api_invoke_url(api_id=api_id, stage=stage_name, path="/test")
+
+        def _invoke_api(req_url: str, http_method: str, expected_type: str):
+            _response = requests.request(http_method.upper(), req_url)
+            assert _response.ok
+            assert _response.json()["message"] == f"{expected_type} request"
+
+        retries = 10 if is_aws_cloud() else 3
+        sleep = 3 if is_aws_cloud() else 1
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            req_url=url,
+            http_method="OPTIONS",
+            expected_type="OPTIONS",
+        )
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            req_url=url,
+            http_method="POST",
+            expected_type="POST",
+        )
+        any_url = api_invoke_url(api_id=api_id, stage=stage_name, path="/test/any")
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            req_url=any_url,
+            http_method="OPTIONS",
+            expected_type="ANY",
+        )
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            req_url=any_url,
+            http_method="GET",
+            expected_type="ANY",
+        )

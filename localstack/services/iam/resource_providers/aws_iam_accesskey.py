@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -116,13 +115,3 @@ class IAMAccessKeyProvider(ResourceProvider[IAMAccessKeyProperties]):
         old_model = request.previous_state
         old_model["Status"] = request.desired_state["Status"]
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=old_model)
-
-
-class IAMAccessKeyProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::IAM::AccessKey"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = IAMAccessKeyProvider

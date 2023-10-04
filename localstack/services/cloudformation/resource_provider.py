@@ -54,8 +54,16 @@ PROVIDER_DEFAULTS = {
     "AWS::IAM::InstanceProfile": "ResourceProvider",
     "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
-    # "AWS::SSM::Parameter": "GenericBaseModel",
-    # "AWS::OpenSearchService::Domain": "GenericBaseModel",
+    "AWS::Lambda::Alias": "ResourceProvider",
+    "AWS::Scheduler::Schedule": "ResourceProvider",
+    "AWS::Scheduler::ScheduleGroup": "ResourceProvider",
+    "AWS::Route53::HealthCheck": "ResourceProvider",
+    "AWS::Route53::RecordSet": "ResourceProvider",
+    "AWS::SNS::Topic": "ResourceProvider",
+    "AWS::Kinesis::Stream": "ResourceProvider",
+    "AWS::Kinesis::StreamConsumer": "ResourceProvider",
+    "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
+    "AWS::DynamoDB::Table": "ResourceProvider",
 }
 
 
@@ -238,6 +246,7 @@ def invoke_function(
                 raise
 
             LOG.debug("Converting parameters to allowed types")
+            LOG.debug("Report: %s", report)
             converted_params = fix_boto_parameters_based_on_report(params, report)
             LOG.debug("Original parameters:  %s", params)
             LOG.debug("Converted parameters: %s", converted_params)
@@ -513,11 +522,7 @@ class LegacyResourceProvider(ResourceProvider):
             elif not executed:
                 service = get_service_name(resource)
                 try:
-                    client = connect_to.get_client(
-                        aws_access_key_id=request.account_id,
-                        region_name=request.region_name,
-                        service_name=service,
-                    )
+                    client = request.aws_client_factory.get_client(service=service)
                     if client:
                         # get the method on that function
                         function = getattr(client, func["function"])
@@ -639,6 +644,9 @@ class ResourceProviderExecutor:
                 resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
 
                 event = self.execute_action(resource_provider, payload)
+
+                if event.status == OperationStatus.FAILED:
+                    return event
 
                 if event.status == OperationStatus.SUCCESS:
 

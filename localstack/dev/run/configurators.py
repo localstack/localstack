@@ -5,7 +5,6 @@ import gzip
 import os
 from pathlib import Path, PurePosixPath
 from tempfile import gettempdir
-from typing import Iterable, List
 
 from localstack import config, constants
 from localstack.utils.bootstrap import ContainerConfigurators
@@ -21,68 +20,6 @@ from localstack.utils.run import run
 from localstack.utils.strings import md5
 
 from .paths import CommunityContainerPaths, ContainerPaths, HostPaths, ProContainerPaths
-
-
-class VolumeFromParameters:
-    """
-    Configures volumes from additional CLI input through the ``-v`` options.
-    """
-
-    def __init__(self, params: List[str]):
-        self.params = params
-
-    def __call__(self, cfg: ContainerConfiguration):
-        for param in self.params:
-            cfg.volumes.append(VolumeBind.parse(param))
-
-
-class PortsFromParameters:
-    """
-    Configures ports from additional CLI input through the ``-p`` options.
-
-    TODO: reconcile with Utils.parse_additional_flags.
-    """
-
-    def __init__(self, ports: Iterable[str]):
-        self.ports = ports or ()
-
-    def __call__(self, cfg: ContainerConfiguration):
-        for port_mapping in self.ports:
-            port_split = port_mapping.split(":")
-            protocol = "tcp"
-            if len(port_split) == 1:
-                host_port = container_port = port_split[0]
-            elif len(port_split) == 2:
-                host_port, container_port = port_split
-            elif len(port_split) == 3:
-                _, host_port, container_port = port_split
-            else:
-                raise ValueError(f"Invalid port string provided: {port_mapping}")
-            host_port_split = host_port.split("-")
-            if len(host_port_split) == 2:
-                host_port = [int(host_port_split[0]), int(host_port_split[1])]
-            elif len(host_port_split) == 1:
-                host_port = int(host_port)
-            else:
-                raise ValueError(f"Invalid port string provided: {port_mapping}")
-            if "/" in container_port:
-                container_port, protocol = container_port.split("/")
-            cfg.ports.add(host_port, int(container_port), protocol)
-
-
-class EnvironmentVariablesFromParameters:
-    """Configures the environment variables from additional CLI input through the ``-e`` options."""
-
-    def __init__(self, env_args: Iterable[str]):
-        self.env_args = env_args or ()
-
-    def __call__(self, cfg: ContainerConfiguration):
-        for kv in self.env_args:
-            kv = kv.split("=", maxsplit=1)
-            k = kv[0]
-            v = kv[1] if len(kv) == 2 else os.environ.get(k)
-            if v is not None:
-                cfg.env_vars[k] = v
 
 
 class ConfigEnvironmentConfigurator:
@@ -201,13 +138,18 @@ class SourceVolumeMountConfigurator:
                 )
 
         # moto code if available
-        source = self.host_paths.moto_project_dir / "moto"
-        if source.exists():
-            cfg.volumes.add(
-                VolumeBind(
-                    str(source), self.container_paths.dependency_source("moto"), read_only=True
-                )
-            )
+        self.try_mount_to_site_packages(cfg, self.host_paths.moto_project_dir / "moto")
+
+        # persistence plugin
+        self.try_mount_to_site_packages(
+            cfg,
+            self.host_paths.workspace_dir
+            / "localstack-plugin-persistence"
+            / "localstack_persistence",
+        )
+
+        # plux
+        self.try_mount_to_site_packages(cfg, self.host_paths.workspace_dir / "plux" / "plugin")
 
         # docker entrypoint
         if self.pro:
@@ -217,6 +159,24 @@ class SourceVolumeMountConfigurator:
         if source.exists():
             cfg.volumes.add(
                 VolumeBind(str(source), self.container_paths.docker_entrypoint, read_only=True)
+            )
+
+    def try_mount_to_site_packages(self, cfg: ContainerConfiguration, sources_path: Path):
+        """
+        Attempts to mount something like `~/workspace/plux/plugin` on the host into
+        ``.venv/.../site-packages/plugin``.
+
+        :param cfg:
+        :param sources_path:
+        :return:
+        """
+        if sources_path.exists():
+            cfg.volumes.add(
+                VolumeBind(
+                    str(sources_path),
+                    self.container_paths.dependency_source(sources_path.name),
+                    read_only=True,
+                )
             )
 
 

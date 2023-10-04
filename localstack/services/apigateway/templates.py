@@ -11,7 +11,7 @@ from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import select_integration_response
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
-from localstack.utils.json import extract_jsonpath, json_safe
+from localstack.utils.json import extract_jsonpath, json_safe, try_json
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -59,6 +59,33 @@ class MappingTemplates:
         return getattr(PassthroughBehavior, passthrough_behaviour, None)
 
 
+class AttributeDict(dict):
+    """
+    Wrapper returned by VelocityUtilApiGateway.parseJson to allow access to dict values as attributes (dot notation),
+    e.g.: $util.parseJson('$.foo').bar
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(AttributeDict, self).__init__(*args, **kwargs)
+        for key, value in self.items():
+            if isinstance(value, dict):
+                self[key] = AttributeDict(value)
+
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        raise AttributeError(f"'AttributeDict' object has no attribute '{name}'")
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    def __delattr__(self, name):
+        if name in self:
+            del self[name]
+        else:
+            raise AttributeError(f"'AttributeDict' object has no attribute '{name}'")
+
+
 class VelocityUtilApiGateway(VelocityUtil):
     """
     Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
@@ -103,6 +130,10 @@ class VelocityUtilApiGateway(VelocityUtil):
         if obj in (True, False):
             return str(obj).lower()
         return str(obj)
+
+    def parseJson(self, s: str):
+        obj = json.loads(s)
+        return AttributeDict(obj) if isinstance(obj, dict) else obj
 
 
 class VelocityInput:
@@ -187,6 +218,12 @@ class Templates:
             "path": {},
             "querystring": {},
         }
+
+        ctx["responseOverride"] = {
+            "header": {},
+            "status": 200,
+        }
+
         return {
             "context": ctx,
             "stage_variables": api_context.stage_variables or {},
@@ -261,15 +298,26 @@ class ResponseTemplates(Templates):
         # get the configured integration response status codes,
         # e.g. ["200", "400", "500"]
         integration_status_codes = [str(code) for code in list(integration_responses.keys())]
+        # if there are no integration responses, we return the response as is
+        if not integration_status_codes:
+            return response.content
 
-        # we return the response as is if the integration response status code is not on
-        # the list of configured integration response status codes
-        if status_code not in integration_status_codes or not integration_status_codes:
-            return response._content
+        # The following code handles two use cases.If there is an integration response for the status code returned
+        # by the integration, we use the template configured for that status code (1) or the errorMessage (2) for
+        # lambda integrations.
+        # For an HTTP integration, API Gateway matches the regex to the HTTP status code to return
+        # For a Lambda function, API Gateway matches the regex to the errorMessage header to
+        # return a status code.
+        # For example, to set a 400 response for any error that starts with Malformed,
+        # set the method response status code to 400 and the Lambda error regex to Malformed.*.
+        match_resp = status_code
+        if isinstance(try_json(response._content), dict):
+            resp_dict = try_json(response._content)
+            if "errorMessage" in resp_dict:
+                match_resp = resp_dict.get("errorMessage")
 
-        # if there is integration response for the status code returned
-        # by the integration we use the template configured for that status code
-        selected_integration_response = select_integration_response(status_code, api_context)
+        selected_integration_response = select_integration_response(match_resp, api_context)
+        response.status_code = int(selected_integration_response.get("statusCode", 200))
         response_templates = selected_integration_response.get("responseTemplates", {})
 
         # we only support JSON templates for now - if there is no template we return
@@ -282,7 +330,11 @@ class ResponseTemplates(Templates):
 
         # we render the template with the context data and the response content
         variables = self.build_variables_mapping(api_context)
+        # update the response body
         response._content = self._render_as_json(template, variables)
+        if response_overrides := variables.get("context", {}).get("responseOverride", {}):
+            response.headers.update(response_overrides.get("header", {}).items())
+            response.status_code = response_overrides.get("status", 200)
 
         LOG.debug("Endpoint response body after transformations:\n%s", response._content)
         return response._content

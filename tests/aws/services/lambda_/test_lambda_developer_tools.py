@@ -203,3 +203,33 @@ class TestDockerFlags:
         result_data = json.loads(to_str(result_data))
         assert result_data["status"] == 200
         assert "nginx" in result_data["response"]
+
+
+class TestLambdaDNS:
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(
+        not config.use_custom_dns(), reason="Test invalid if DNS server is disabled"
+    )
+    def test_lambda_localhost_localstack_cloud_connectivity(
+        self, create_lambda_function, aws_client
+    ):
+        function_name = f"test-network-{short_uid()}"
+        create_lambda_function(
+            handler_file=LAMBDA_NETWORKS_PYTHON_HANDLER,
+            func_name=function_name,
+            runtime=Runtime.python3_11,
+        )
+
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps(
+                {
+                    "url": f"http://localhost.localstack.cloud:{config.GATEWAY_LISTEN[0].port}/_localstack/health"
+                }
+            ),
+        )
+        assert "FunctionError" not in result
+        result_data = result["Payload"].read()
+        result_data = json.loads(to_str(result_data))
+        assert result_data["status"] == 200
+        assert "services" in result_data["response"]

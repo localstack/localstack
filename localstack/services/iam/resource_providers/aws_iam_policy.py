@@ -5,11 +5,10 @@ import json
 import random
 import string
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -58,6 +57,14 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
         policy_doc = json.dumps(util.remove_none_values(model["PolicyDocument"]))
         policy_name = model["PolicyName"]
 
+        if not any([model.get("Roles"), model.get("Users"), model.get("Groups")]):
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                resource_model={},
+                error_code="InvalidRequest",
+                message="At least one of [Groups,Roles,Users] must be non-empty.",
+            )
+
         for role in model.get("Roles", []):
             iam_client.put_role_policy(
                 RoleName=role, PolicyName=policy_name, PolicyDocument=policy_doc
@@ -83,8 +90,6 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
     ) -> ProgressEvent[IAMPolicyProperties]:
         """
         Fetch resource information
-
-
         """
         raise NotImplementedError
 
@@ -96,7 +101,16 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
         Delete a resource
         """
         iam = request.aws_client_factory.iam
-        iam.delete_policy(PolicyArn=request.desired_state["Id"])
+
+        model = request.previous_state
+        policy_name = request.previous_state["PolicyName"]
+        for role in model.get("Roles", []):
+            iam.delete_role_policy(RoleName=role, PolicyName=policy_name)
+        for user in model.get("Users", []):
+            iam.delete_user_policy(UserName=user, PolicyName=policy_name)
+        for group in model.get("Groups", []):
+            iam.delete_group_policy(GroupName=group, PolicyName=policy_name)
+
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
@@ -128,13 +142,3 @@ class IAMPolicyProvider(ResourceProvider[IAMPolicyProperties]):
             status=OperationStatus.SUCCESS,
             resource_model={**request.previous_state, **request.desired_state},
         )
-
-
-class IAMPolicyProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::IAM::Policy"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = IAMPolicyProvider

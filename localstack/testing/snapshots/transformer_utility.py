@@ -57,7 +57,7 @@ class TransformerUtility:
         :return: KeyValueBasedTransformer
         """
         return KeyValueBasedTransformer(
-            lambda k, v: v if k == key else None,
+            lambda k, v: v if k == key and (v is not None and v != "") else None,
             replacement=value_replacement or _replace_camel_string_with_hyphen(key),
             replace_reference=reference_replacement,
         )
@@ -235,6 +235,19 @@ class TransformerUtility:
             TransformerUtility.key_value("ChangeSetName"),
             TransformerUtility.key_value("ChangeSetId"),
             TransformerUtility.key_value("StackName"),
+        ]
+
+    @staticmethod
+    def cfn_stack_resource():
+        """
+        :return: array with Transformers, for cloudformation stack resource description;
+                recommended for verifying the stack resources deployed for scenario tests
+        """
+        return [
+            KeyValueBasedTransformer(_resource_name_transformer, "resource"),
+            KeyValueBasedTransformer(_change_set_id_transformer, "change-set-id"),
+            TransformerUtility.key_value("LogicalResourceId"),
+            TransformerUtility.key_value("PhysicalResourceId", reference_replacement=False),
         ]
 
     @staticmethod
@@ -483,6 +496,7 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("AlarmName"),
+            TransformerUtility.key_value("Namespace"),
             KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
             TransformerUtility.key_value("Region", "region-name-full"),
         ]

@@ -23,12 +23,9 @@ from .configurators import (
     CoverageRunScriptConfigurator,
     DependencyMountConfigurator,
     EntryPointMountConfigurator,
-    EnvironmentVariablesFromParameters,
     ImageConfigurator,
     PortConfigurator,
-    PortsFromParameters,
     SourceVolumeMountConfigurator,
-    VolumeFromParameters,
 )
 from .paths import HostPaths
 
@@ -52,6 +49,12 @@ from .paths import HostPaths
     is_flag=True,
     default=None,
     help="Whether to start localstack pro or community. If not set, it will guess from the current directory",
+)
+@click.option(
+    "--develop/--no-develop",
+    is_flag=True,
+    default=False,
+    help="Install debugpy and expose port 5678",
 )
 @click.option(
     "--randomize",
@@ -116,6 +119,7 @@ def run(
     image: str = None,
     volume_dir: str = None,
     pro: bool = None,
+    develop: bool = False,
     randomize: bool = False,
     mount_source: bool = True,
     mount_dependencies: bool = False,
@@ -165,6 +169,10 @@ def run(
     Or use custom entrypoints:
 
         python -m localstack.dev.run --entrypoint /bin/bash -- echo "hello"
+
+    You can import and expose debugpy:
+
+        python -m localstack.dev.run --develop
 
     You can also mount local dependencies (e.g., pytest and other test dependencies, and then use that
     in the container)::
@@ -237,6 +245,15 @@ def run(
         network=network,
     )
 
+    # replicate pro startup
+    if pro:
+        try:
+            from localstack_ext.plugins import modify_edge_port_config
+
+            modify_edge_port_config(config)
+        except ImportError:
+            pass
+
     # setup configurators
     configurators = [
         ImageConfigurator(pro, image),
@@ -262,13 +279,15 @@ def run(
         configurators.append(EntryPointMountConfigurator(host_paths=host_paths, pro=pro))
     if mount_dependencies:
         configurators.append(DependencyMountConfigurator(host_paths=host_paths))
+    if develop:
+        configurators.append(ContainerConfigurators.develop)
 
     # make sure anything coming from CLI arguments has priority
     configurators.extend(
         [
-            VolumeFromParameters(list(volume)),
-            PortsFromParameters(publish),
-            EnvironmentVariablesFromParameters(env),
+            ContainerConfigurators.volume_cli_params(volume),
+            ContainerConfigurators.port_cli_params(publish),
+            ContainerConfigurators.env_cli_params(env),
         ]
     )
 

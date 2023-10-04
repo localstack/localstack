@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import hashlib
 import os
 import threading
@@ -108,11 +109,12 @@ class EphemeralS3StoredObject(S3StoredObject):
             self.checksum_hash = get_s3_checksum(self.s3_object.checksum_algorithm)
 
         file = self.file
-        lock = None
         # if the incoming stream has a file containing a readwrite_lock, from a `copy` call, then we need to lock
         # around the iteration to block any concurrent write of the underlying object
         if hasattr(stream, "file") and hasattr(stream.file, "readwrite_lock"):
-            lock = stream.file.readwrite_lock.gen_rlock()
+            read_lock = stream.file.readwrite_lock.gen_rlock()
+        else:
+            read_lock = contextlib.nullcontext()
 
         with file.readwrite_lock.gen_wlock():
             file.seek(0)
@@ -120,17 +122,12 @@ class EphemeralS3StoredObject(S3StoredObject):
 
             etag = hashlib.md5(usedforsecurity=False)
 
-            if lock:
-                lock.acquire()
-
-            while data := stream.read(S3_CHUNK_SIZE):
-                file.write(data)
-                etag.update(data)
-                if self.checksum_hash:
-                    self.checksum_hash.update(data)
-
-            if lock:
-                lock.release()
+            with read_lock:
+                while data := stream.read(S3_CHUNK_SIZE):
+                    file.write(data)
+                    etag.update(data)
+                    if self.checksum_hash:
+                        self.checksum_hash.update(data)
 
             etag = etag.hexdigest()
             self.size = self.s3_object.size = file.tell()

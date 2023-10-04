@@ -174,6 +174,7 @@ class Service:
             name=provider.service,
             listener=AwsApiListener(provider.service, delegate=delegate),
             lifecycle_hook=service_lifecycle_hook,
+            check=None,
         )
         service._provider = provider
 

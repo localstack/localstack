@@ -1,3 +1,4 @@
+import decimal
 from typing import Any
 
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
@@ -13,6 +14,18 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
     StatesFunctionName,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+
+
+def _round_like_java(f: float) -> int:
+    # this behaves a bit weird for boundary values
+    # AWS stepfunctions is implemented in Java, so we need to adjust the rounding accordingly
+    # python by default rounds half to even
+    if f >= 0:
+        decimal.getcontext().rounding = decimal.ROUND_HALF_UP
+    else:
+        decimal.getcontext().rounding = decimal.ROUND_HALF_DOWN
+    d = decimal.Decimal(f)
+    return round(d, 0)
 
 
 class MathAdd(StatesFunction):
@@ -47,7 +60,12 @@ class MathAdd(StatesFunction):
             raise TypeError(f"Expected integer value, but got: '{value}'.")
         # If you specify a non-integer value for one or both the arguments,
         # Step Functions will round it off to the nearest integer.
-        return int(value)
+
+        if isinstance(value, float):
+            result = _round_like_java(value)
+            return int(result)
+
+        return value
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)

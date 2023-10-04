@@ -427,11 +427,8 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 # whether legacy s3 is enabled
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
 
-# whether the S3 streaming provider is enabled (beware, it breaks persistence for now)
-STREAM_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "stream"
-
-# whether the S3 native provider is enabled (beware, it breaks persistence for now)
-NATIVE_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "v3"
+# whether the S3 native provider is enabled
+NATIVE_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v3", "stream")
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
@@ -542,8 +539,18 @@ class HostAndPort:
 
         return cls(host=host, port=port)
 
+    def _get_unprivileged_port_range_start(self) -> int:
+        try:
+            with open(
+                "/proc/sys/net/ipv4/ip_unprivileged_port_start", "rt"
+            ) as unprivileged_port_start:
+                port = unprivileged_port_start.read()
+                return int(port.strip())
+        except Exception:
+            return 1024
+
     def is_unprivileged(self) -> bool:
-        return self.port >= 1024
+        return self.port >= self._get_unprivileged_port_range_start()
 
     def __hash__(self) -> int:
         return hash((self.host, self.port))
@@ -564,9 +571,49 @@ class HostAndPort:
         return f"HostAndPort(host={self.host}, port={self.port})"
 
 
+class UniqueHostAndPortList(List[HostAndPort]):
+    """
+    Container type that ensures that ports added to the list are unique based
+    on these rules:
+        - 0.0.0.0 "trumps" any other binding, i.e. adding 127.0.0.1:4566 to
+          [0.0.0.0:4566] is a no-op
+        - adding identical hosts and ports is a no-op
+        - adding `0.0.0.0:4566` to [`127.0.0.1:4566`] "upgrades" the binding to
+          create [`0.0.0.0:4566`]
+    """
+
+    def __init__(self, iterable=None):
+        super().__init__()
+        for item in iterable or []:
+            self.append(item)
+
+    def append(self, value: HostAndPort):
+        # no exact duplicates
+        if value in self:
+            return
+
+        # if 0.0.0.0:<port> already exists in the list, then do not add the new
+        # item
+        for item in self:
+            if item.host == "0.0.0.0" and item.port == value.port:
+                return
+
+        # if we add 0.0.0.0:<port> and already contain *:<port> then bind on
+        # 0.0.0.0
+        contained_ports = set(every.port for every in self)
+        if value.host == "0.0.0.0" and value.port in contained_ports:
+            for item in self:
+                if item.port == value.port:
+                    item.host = value.host
+            return
+
+        # append the item
+        super().append(value)
+
+
 def populate_legacy_edge_configuration(
     environment: Mapping[str, str]
-) -> Tuple[HostAndPort, List[HostAndPort], str, int, int]:
+) -> Tuple[HostAndPort, UniqueHostAndPortList, str, int, int]:
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
@@ -621,7 +668,13 @@ def populate_legacy_edge_configuration(
         legacy_fallback("EDGE_PORT_HTTP", 0),
     )
 
-    return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
+    return (
+        localstack_host,
+        UniqueHostAndPortList(gateway_listen),
+        edge_bind_host,
+        edge_port,
+        edge_port_http,
+    )
 
 
 # How to access LocalStack
@@ -735,6 +788,11 @@ if not DOCKER_BRIDGE_IP:
                 DOCKER_BRIDGE_IP = ip
                 break
 
+# AWS account used to store internal resources such as Lambda archives or internal SQS queues.
+# It should not be modified by the user, or visible to him, except as through a presigned url with the
+# get-function call.
+INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "949334387222"
+
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
 # -----
@@ -768,6 +826,9 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 
 # Delay between data persistence (in seconds)
 KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
+
+# Kinesis mock log level override when inconsistent with LS_LOG (e.g., when LS_LOG=debug)
+KINESIS_MOCK_LOG_LEVEL = os.environ.get("KINESIS_MOCK_LOG_LEVEL", "").strip()
 
 # DEPRECATED: 1 (default) only applies to old lambda provider
 # Whether to handle Kinesis Lambda event sources as synchronous invocations.
@@ -985,9 +1046,11 @@ LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 
 # INTERNAL: 60 (default matching AWS) only applies to new lambda provider
 # Base delay in seconds for async retries. Further retries use: NUM_ATTEMPTS * LAMBDA_RETRY_BASE_DELAY_SECONDS
+# 300 (5min) is the maximum because NUM_ATTEMPTS can be at most 3 and SQS has a message timer limit of 15 min.
 # For example:
 # 1x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between initial invocation and first retry
 # 2x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between the first retry and the second retry
+# 3x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between the second retry and the third retry
 LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60)
 
 # PUBLIC: 0 (default)
@@ -1086,8 +1149,9 @@ DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
 # HINT: Please add deprecated environment variables to deprecations.py
 
-# list of environment variable names used for configuration.
+# List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # Make sure to keep this in sync with the above!
+# Do *not* include any internal developer configurations that apply to host-mode only in this list.
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
@@ -1144,6 +1208,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",
+    "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
     "LAMBDA_CODE_EXTRACT_TIME",
     "LAMBDA_CONTAINER_REGISTRY",
@@ -1166,7 +1231,6 @@ CONFIG_ENV_VARS = [
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
-    "LAMBDA_DEV_PORT_EXPOSE",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LAMBDA_STAY_OPEN_MODE",
@@ -1263,7 +1327,10 @@ def populate_config_env_var_names():
     CONFIG_ENV_VARS += [
         key
         for key in [key.upper() for key in os.environ]
-        if key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_")
+        if (key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_"))
+        # explicitly exclude LOCALSTACK_CLI (it's prefixed with "LOCALSTACK_",
+        # but is only used in the CLI (should not be forwarded to the container)
+        and key != "LOCALSTACK_CLI"
     ]
 
     # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
