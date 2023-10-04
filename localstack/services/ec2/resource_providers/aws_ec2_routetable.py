@@ -70,7 +70,7 @@ class EC2RouteTableProvider(ResourceProvider[EC2RouteTableProperties]):
         #     params=params,
         #     logical_resource_id=request.logical_resource_id,
         # )
-        response = ec2.create_route_table(VpcId=params["VpcId"]) #, TagSpecifications=tags)
+        response = ec2.create_route_table(VpcId=params["VpcId"])  # , TagSpecifications=tags)
         model["RouteTableId"] = response["RouteTable"]["RouteTableId"]
 
         return ProgressEvent(
@@ -124,4 +124,3 @@ class EC2RouteTableProvider(ResourceProvider[EC2RouteTableProperties]):
           - ec2:DescribeRouteTables
         """
         raise NotImplementedError
-

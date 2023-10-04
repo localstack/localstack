@@ -69,9 +69,11 @@ class EC2RouteProvider(ResourceProvider[EC2RouteProperties]):
         ipv6_cidr_block = model.get("DestinationIpv6CidrBlock")
         # from moto.ec2.utils.generate_route_id:generate_route_id
 
-        ec2.create_route(DestinationCidrBlock=cidr_block,
-                         DestinationIpv6CidrBlock=ipv6_cidr_block,
-                         RouteTableId=model["RouteTableId"])
+        ec2.create_route(
+            DestinationCidrBlock=cidr_block,
+            DestinationIpv6CidrBlock=ipv6_cidr_block,
+            RouteTableId=model["RouteTableId"],
+        )
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
@@ -105,9 +107,11 @@ class EC2RouteProvider(ResourceProvider[EC2RouteProperties]):
         cidr_block = model.get("DestinationCidrBlock")
         ipv6_cidr_block = model.get("DestinationIpv6CidrBlock")
 
-        ec2.delete_route(DestinationCidrBlock=cidr_block,
-                         DestinationIpv6CidrBlock=ipv6_cidr_block,
-                         RouteTableId=model["RouteTableId"])
+        ec2.delete_route(
+            DestinationCidrBlock=cidr_block,
+            DestinationIpv6CidrBlock=ipv6_cidr_block,
+            RouteTableId=model["RouteTableId"],
+        )
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,

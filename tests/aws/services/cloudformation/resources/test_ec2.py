@@ -10,12 +10,10 @@ THIS_FOLDER = os.path.dirname(__file__)
 @markers.aws.unknown
 def test_simple_route_table_creation_without_vpc(deploy_cfn_template, aws_client):
     ec2 = aws_client.ec2
-    vpc_id = ec2.create_vpc(CidrBlock='10.0.0.0/16')["Vpc"]["VpcId"]
+    vpc_id = ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
     stack = deploy_cfn_template(
         template_path=os.path.join(THIS_FOLDER, "../../../templates/ec2_route_table_isolated.yaml"),
-        parameters={
-            "MyVpcId": vpc_id
-        }
+        parameters={"MyVpcId": vpc_id},
     )
 
     route_table_id = stack.outputs["RouteTableId"]
