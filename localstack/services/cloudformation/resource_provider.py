@@ -67,6 +67,7 @@ PROVIDER_DEFAULTS = {
     "AWS::EC2::Route": "ResourceProvider",
     "AWS::EC2::InternetGateway": "ResourceProvider",
     "AWS::EC2::SubnetRouteTableAssociation": "ResourceProvider",
+    "AWS::EC2::VPCGatewayAttachment": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }
