@@ -294,8 +294,8 @@ class DependencyMountConfigurator:
 
         # find dependencies from the host
         for dep_path in self.host_paths.venv_dir.glob("lib/python3.*/site-packages/*"):
-            # filter out everything that heuristically cannot be a source directory
-            if not dep_path.is_dir():
+            # filter out everything that heuristically cannot be a source path
+            if not self._can_be_source_path(dep_path):
                 continue
             if dep_path.name.endswith(".dist-info"):
                 continue
@@ -315,6 +315,9 @@ class DependencyMountConfigurator:
                 continue
 
             cfg.volumes.append(VolumeBind(str(dep_path), target_path))
+
+    def _can_be_source_path(self, path: Path) -> bool:
+        return path.is_dir() or (path.name.endswith(".py") and not path.name.startswith("__"))
 
     def _has_mount(self, volumes: VolumeMappings, target_path: str) -> bool:
         return True if volumes.find_target_mapping(target_path) else False
