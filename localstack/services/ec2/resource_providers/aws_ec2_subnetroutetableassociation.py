@@ -77,7 +77,9 @@ class EC2SubnetRouteTableAssociationProvider(
             )
 
         # we need to check association status
-        route_table = ec2.describe_route_tables(RouteTableIds=[model["RouteTableId"]])[0]
+        route_table = ec2.describe_route_tables(RouteTableIds=[model["RouteTableId"]])[
+            "RouteTables"
+        ][0]
         for association in route_table["Associations"]:
             if association["RouteTableAssociationId"] == model["Id"]:
                 # if it is showing up here, it's associated
