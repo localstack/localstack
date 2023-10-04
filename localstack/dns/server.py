@@ -824,11 +824,16 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
 
     LOG.debug("Starting DNS servers (tcp/udp port %s on %s)..." % (port, host))
     dns_server = DnsServer(port, protocols=["tcp", "udp"], host=host, upstream_dns=upstream_dns)
+
     for name in NAME_PATTERNS_POINTING_TO_LOCALSTACK:
         dns_server.add_host_pointing_to_localstack(name)
+    if config.LOCALSTACK_HOST.host != LOCALHOST_HOSTNAME:
+        dns_server.add_host_pointing_to_localstack(f".*{config.LOCALSTACK_HOST.host}")
+
     if config.DNS_LOCAL_NAME_PATTERNS:
         for skip_pattern in re.split(r"[,;\s]+", config.DNS_LOCAL_NAME_PATTERNS):
             dns_server.add_skip(skip_pattern)
+
     dns_server.start()
     if not dns_server.wait_is_up(timeout=5):
         LOG.warning("DNS server did not come up within 5 seconds.")

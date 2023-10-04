@@ -528,8 +528,8 @@ class ComplianceUploadType(str):
 
 
 class ConnectionStatus(str):
-    Connected = "Connected"
-    NotConnected = "NotConnected"
+    connected = "connected"
+    notconnected = "notconnected"
 
 
 class DescribeActivationsFilterKeys(str):
@@ -935,7 +935,6 @@ class ResourceDataSyncS3Format(str):
 
 class ResourceType(str):
     ManagedInstance = "ManagedInstance"
-    Document = "Document"
     EC2Instance = "EC2Instance"
 
 

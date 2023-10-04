@@ -238,6 +238,19 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def cfn_stack_resource():
+        """
+        :return: array with Transformers, for cloudformation stack resource description;
+                recommended for verifying the stack resources deployed for scenario tests
+        """
+        return [
+            KeyValueBasedTransformer(_resource_name_transformer, "resource"),
+            KeyValueBasedTransformer(_change_set_id_transformer, "change-set-id"),
+            TransformerUtility.key_value("LogicalResourceId"),
+            TransformerUtility.key_value("PhysicalResourceId", reference_replacement=False),
+        ]
+
+    @staticmethod
     def dynamodb_api():
         """
         :return: array with Transformers, for dynamodb api.

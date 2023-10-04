@@ -1657,16 +1657,16 @@ def add_permission_policy_statement(
     new_statement = new_policy["Statement"][0]
     result = {"Statement": json.dumps(new_statement)}
     if previous_policy:
-        statment_with_sid = next(
+        statement_with_sid = next(
             (statement for statement in previous_policy["Statement"] if statement["Sid"] == sid),
             None,
         )
-        if statment_with_sid and statment_with_sid == new_statement:
+        if statement_with_sid and statement_with_sid == new_statement:
             LOG.debug(
                 f"Policy Statement SID '{sid}' for Lambda '{resource_arn_qualified}' already exists"
             )
             return result
-        if statment_with_sid:
+        if statement_with_sid:
             msg = (
                 f"The statement id {sid} provided already exists. Please provide a new "
                 "statement id, or remove the existing statement."
@@ -1809,7 +1809,7 @@ def invoke_function(function):
             details["Headers"]["X-Amz-Function-Error"] = str(details["FunctionError"])
         # LogResult contains the last 4KB (~4k characters) of log outputs
         logs = log_output[-4000:] if log_type == "Tail" else ""
-        details["Headers"]["X-Amz-Log-Result"] = base64.b64encode(to_bytes(logs))
+        details["Headers"]["X-Amz-Log-Result"] = to_str(base64.b64encode(to_bytes(logs)))
         details["Headers"]["X-Amz-Executed-Version"] = str(qualifier or VERSION_LATEST)
         # Construct response object
         response_obj = details["Payload"]

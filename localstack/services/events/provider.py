@@ -12,7 +12,7 @@ from moto.events.responses import EventsHandler as MotoEventsHandler
 
 from localstack import config
 from localstack.aws.api import RequestContext
-from localstack.aws.api.core import CommonServiceException
+from localstack.aws.api.core import CommonServiceException, ServiceException
 from localstack.aws.api.events import (
     Boolean,
     ConnectionAuthorizationType,
@@ -56,6 +56,12 @@ EVENTS_TMP_DIR = "cw_events"
 DEFAULT_EVENT_BUS_NAME = "default"
 CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "exists"]
 CONNECTION_NAME_PATTERN = re.compile("^[\\.\\-_A-Za-z0-9]+$")
+
+
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class EventsProvider(EventsApi, ServiceLifecycleHook):
@@ -145,14 +151,23 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if re.match(rate_regex, schedule):
             rate = re.sub(rate_regex, r"\1", schedule)
             value, unit = re.split(r"\s+", rate.strip())
-            # TODO: when 1 is given as value, unit has to be singular, e.g., 1 minute/hour/day - aws throws 'Parameter ScheduleExpression is not valid' otherwise
+
+            value = int(value)
+            if value < 1:
+                raise ValueError("Rate value must be larger than 0")
+            # see https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rate-expressions.html
+            if value == 1 and unit.endswith("s"):
+                raise ValueError("If the value is equal to 1, then the unit must be singular")
+            if value > 1 and not unit.endswith("s"):
+                raise ValueError("If the value is greater than 1, the unit must be plural")
+
             if "minute" in unit:
                 return "*/%s * * * *" % value
             if "hour" in unit:
                 return "0 */%s * * *" % value
             if "day" in unit:
                 return "0 0 */%s * *" % value
-            raise Exception("Unable to parse events schedule expression: %s" % schedule)
+            raise ValueError("Unable to parse events schedule expression: %s" % schedule)
         return schedule
 
     @staticmethod
@@ -166,10 +181,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if not schedule_expression:
             return
 
+        try:
+            cron = EventsProvider.convert_schedule_to_cron(schedule_expression)
+        except ValueError as e:
+            LOG.error("Error parsing schedule expression: %s", e)
+            raise ValidationException("Parameter ScheduleExpression is not valid.") from e
+
         job_func = EventsProvider.get_scheduled_rule_func(
             store, name, event_bus_name_or_arn=event_bus_name_or_arn
         )
-        cron = EventsProvider.convert_schedule_to_cron(schedule_expression)
         LOG.debug("Adding new scheduled Events rule with cron schedule %s", cron)
 
         enabled = state != "DISABLED"

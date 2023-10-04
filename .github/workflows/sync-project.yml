@@ -2,65 +2,13 @@ name: Sync Project Cards
 
 on:
   issues:
-    types: [labeled, unlabeled]
+    types:
+    - labeled
+    - unlabeled
+    - opened
 
 jobs:
-  sync-project-card:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Project status change necessary?
-        uses: actions/github-script@v6
-        id: determine-status
-        with:
-          result-encoding: string
-          script: |
-            // Get the labels on the issue
-            const listLabelsOnIssueResponse = await github.rest.issues.listLabelsOnIssue({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            const issueLabels = listLabelsOnIssueResponse.data.map(e => e.name);
-
-            // define the mapping
-            // the order is important, the further down the more important (if multiple status labels are set)
-            const mapping = {
-                "status: triage needed": "status: triage needed ❓",
-                "status: backlog": "status: backlog 🗃",
-                "status: confirmed": "status: backlog 🗃",
-                "status: accepted": "status: backlog 🗃",
-                "status: stale": "status: stale 😴",
-                "status: response required": "status: response required 🗨",
-                "status: in progress": "status: in progress 🧑‍💻",
-                "status: resolved/stale": "status: stale 😴",
-                "status: resolved/fixed": "status: closed ✔",
-                "status: resolved/workaround": "status: closed ✔"
-            };
-
-            // apply the most important mapped project status
-            let result = false;
-            for (const label in mapping) {
-              if (issueLabels.includes(label)) {
-                result = mapping[label];
-              }
-            }
-
-            // if none was found (no known status label is set on the issue), use the fallback (triaging)
-            if (result == false) {
-              result = "status: triage needed ❓";
-            }
-
-            // return the result - usable as "steps.<step-id>.outputs.result" by other steps
-            return result;
-
-      - name: Sync Card Status
-        if: ${{steps.determine-status.outputs.result}}
-        uses: leonsteinhaeuser/project-beta-automations@v2.2.1
-        env:
-          DEBUG_LOG: "true"
-        with:
-          gh_token: ${{ secrets.PRO_ACCESS_TOKEN }}
-          organization: ${{ github.repository_owner }}
-          project_id: 17
-          resource_node_id: ${{ github.event.issue.node_id }}
-          status_value: ${{steps.determine-status.outputs.result}}
+  sync-with-project:
+    uses: localstack/meta/.github/workflows/sync-project.yml@main
+    secrets:
+      github-token: ${{ secrets.PRO_ACCESS_TOKEN }}

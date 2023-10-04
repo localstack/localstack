@@ -219,6 +219,77 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_port_http == 20202
 
 
+class TestUniquePortList:
+    def test_construction(self):
+        ports = config.UniqueHostAndPortList(
+            [
+                HostAndPort("127.0.0.1", 53),
+                HostAndPort("127.0.0.1", 53),
+            ]
+        )
+        assert ports == [
+            HostAndPort("127.0.0.1", 53),
+        ]
+
+    def test_add_separate_values(self):
+        ports = config.UniqueHostAndPortList()
+        ports.append(HostAndPort("127.0.0.1", 42))
+        ports.append(HostAndPort("127.0.0.1", 43))
+
+        assert ports == [HostAndPort("127.0.0.1", 42), HostAndPort("127.0.0.1", 43)]
+
+    def test_add_same_value(self):
+        ports = config.UniqueHostAndPortList()
+        ports.append(HostAndPort("127.0.0.1", 42))
+        ports.append(HostAndPort("127.0.0.1", 42))
+
+        assert ports == [
+            HostAndPort("127.0.0.1", 42),
+        ]
+
+    def test_add_all_interfaces_value(self):
+        ports = config.UniqueHostAndPortList()
+        ports.append(HostAndPort("0.0.0.0", 42))
+        ports.append(HostAndPort("127.0.0.1", 42))
+
+        assert ports == [
+            HostAndPort("0.0.0.0", 42),
+        ]
+
+    def test_add_all_interfaces_value_after(self):
+        ports = config.UniqueHostAndPortList()
+        ports.append(HostAndPort("127.0.0.1", 42))
+        ports.append(HostAndPort("0.0.0.0", 42))
+
+        assert ports == [
+            HostAndPort("0.0.0.0", 42),
+        ]
+
+    def test_index_access(self):
+        ports = config.UniqueHostAndPortList(
+            [
+                HostAndPort("0.0.0.0", 42),
+            ]
+        )
+
+        assert ports[0] == HostAndPort("0.0.0.0", 42)
+        with pytest.raises(IndexError):
+            _ = ports[10]
+
+    def test_iteration(self):
+        ports = config.UniqueHostAndPortList(
+            [
+                HostAndPort("127.0.0.1", 42),
+                HostAndPort("127.0.0.1", 43),
+            ]
+        )
+        n = 0
+        for _ in ports:
+            n += 1
+
+        assert n == len(ports) == 2
+
+
 class TestHostAndPort:
     def test_parsing_hostname_and_ip(self):
         h = config.HostAndPort.parse("0.0.0.0:1000", default_host="", default_port=0)
