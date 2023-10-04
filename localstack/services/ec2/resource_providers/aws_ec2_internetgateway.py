@@ -89,6 +89,16 @@ class EC2InternetGatewayProvider(ResourceProvider[EC2InternetGatewayProperties])
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
 
+        # detach it first before deleting it
+        response = ec2.describe_internet_gateways(InternetGatewayIds=[model["InternetGatewayId"]])
+
+        if len(response.get("InternetGateways", [])) > 0:
+            gateway = response["InternetGateways"][0]
+
+            for attachment in gateway.get("Attachments", []):
+                ec2.detach_internet_gateway(
+                    InternetGatewayId=model["InternetGatewayId"], VpcId=attachment["VpcId"]
+                )
         ec2.delete_internet_gateway(InternetGatewayId=model["InternetGatewayId"])
         return ProgressEvent(
             status=OperationStatus.SUCCESS,

@@ -66,8 +66,9 @@ class EC2SubnetRouteTableAssociationProvider(
             # this is the first time this callback is invoked
             # TODO: defaults
             # TODO: idempotency
-            model["Id"] = ec2.associate_route_table(RouteTableId=model["RouteTableId"],
-                                                    SubnetId=model["SubnetId"])["AssociationId"]
+            model["Id"] = ec2.associate_route_table(
+                RouteTableId=model["RouteTableId"], SubnetId=model["SubnetId"]
+            )["AssociationId"]
             request.custom_context[REPEATED_INVOCATION] = True
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
@@ -77,7 +78,7 @@ class EC2SubnetRouteTableAssociationProvider(
 
         # we need to check association status
         route_table = ec2.describe_route_tables(RouteTableIds=[model["RouteTableId"]])[0]
-        for association in route_table['Associations']:
+        for association in route_table["Associations"]:
             if association["RouteTableAssociationId"] == model["Id"]:
                 # if it is showing up here, it's associated
                 return ProgressEvent(
@@ -136,4 +137,3 @@ class EC2SubnetRouteTableAssociationProvider(
 
         """
         raise NotImplementedError
-

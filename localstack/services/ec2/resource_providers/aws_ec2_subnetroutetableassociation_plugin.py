@@ -18,4 +18,3 @@ class EC2SubnetRouteTableAssociationProviderPlugin(CloudFormationResourceProvide
         )
 
         self.factory = EC2SubnetRouteTableAssociationProvider
-
