@@ -18,3 +18,4 @@ class EC2RouteTableProviderPlugin(CloudFormationResourceProviderPlugin):
         )
 
         self.factory = EC2RouteTableProvider
+

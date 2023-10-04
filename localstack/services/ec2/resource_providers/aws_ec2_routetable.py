@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Optional, Type, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
-from localstack.services.cloudformation.cfn_utils import get_tags_param
 from localstack.services.cloudformation.resource_provider import (
     CloudFormationResourceProviderPlugin,
     OperationStatus,
@@ -61,16 +60,17 @@ class EC2RouteTableProvider(ResourceProvider[EC2RouteTableProperties]):
         """
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
+        # TODO: validations
         params = util.select_attributes(model, ["VpcId", "Tags"])
 
-        # TODO simplify this function
-        tags = get_tags_param("route-table")(
-            account_id=request.account_id,
-            region_name=request.region_name,
-            params=params,
-            logical_resource_id=request.logical_resource_id,
-        )
-        response = ec2.create_route_table(VpcId=params["VpcId"], TagSpecifications=tags)
+        # # TODO simplify this function
+        # tags = get_tags_param("route-table")(
+        #     account_id=request.account_id,
+        #     region_name=request.region_name,
+        #     params=params,
+        #     logical_resource_id=request.logical_resource_id,
+        # )
+        response = ec2.create_route_table(VpcId=params["VpcId"]) #, TagSpecifications=tags)
         model["RouteTableId"] = response["RouteTable"]["RouteTableId"]
 
         return ProgressEvent(
@@ -124,3 +124,4 @@ class EC2RouteTableProvider(ResourceProvider[EC2RouteTableProperties]):
           - ec2:DescribeRouteTables
         """
         raise NotImplementedError
+
