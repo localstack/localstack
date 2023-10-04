@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Type, TypedDict
+from typing import TYPE_CHECKING, Optional, TypedDict
 
 if TYPE_CHECKING:
     from mypy_boto3_route53 import Route53Client
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -199,13 +198,3 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
 
         """
         raise NotImplementedError
-
-
-class Route53RecordSetProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::Route53::RecordSet"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = Route53RecordSetProvider

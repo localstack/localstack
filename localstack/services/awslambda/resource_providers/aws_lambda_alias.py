@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -161,13 +160,3 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
 
         """
         raise NotImplementedError
-
-
-class LambdaAliasProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::Lambda::Alias"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = LambdaAliasProvider

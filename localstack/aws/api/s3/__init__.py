@@ -498,6 +498,7 @@ class ReplicationStatus(str):
     PENDING = "PENDING"
     FAILED = "FAILED"
     REPLICA = "REPLICA"
+    COMPLETED = "COMPLETED"
 
 
 class ReplicationTimeStatus(str):

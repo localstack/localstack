@@ -1,10 +1,6 @@
 import json
 import os
-import shutil
-import tempfile
-import zipfile
 from operator import itemgetter
-from typing import TYPE_CHECKING
 
 import aws_cdk as cdk
 import aws_cdk.aws_dynamodb as dynamodb
@@ -17,15 +13,13 @@ from aws_cdk.aws_lambda_event_sources import DynamoEventSource
 from constructs import Construct
 
 from localstack.testing.pytest import markers
+from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_s3
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.testing.snapshots.transformer import GenericTransformer, KeyValueBasedTransformer
 from localstack.utils.files import load_file
-from localstack.utils.run import run
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry
 
-if TYPE_CHECKING:
-    from mypy_boto3_s3 import S3Client
 """
 
 This scenario is based on https://github.com/aws-samples/aws-bookstore-demo-app
@@ -50,49 +44,6 @@ SEARCH_KEY = "search.zip"
 SEARCH_UPDATE_KEY = "search_update.zip"
 
 
-def setup_lambda(s3_client: "S3Client", bucket_name: str, key_name: str, code_path: str):
-    """
-    Helper function to setup Lambdas that need additional python libs.
-    Will create a temp-zip and upload in the s3 bucket.
-    Installs additional libs and package it with the zip:
-     * requests
-     * requests-aws4auth
-     * urllib3==1.26.6 (had some issues with default urllib3 version)
-
-    :param s3_client: client for S3
-    :param bucket_name: bucket name (bucket will be created)
-    :param key_name: key name for the uploaded zip file
-    :param code_path: the path to the source code that should be included
-    :return: None
-    """
-    try:
-        temp_dir = tempfile.mkdtemp()
-        tmp_zip_path = None
-
-        run(f"cd {temp_dir} && pip install requests requests-aws4auth urllib3==1.26.6 -t .")
-
-        new_resource_temp_path = os.path.join(temp_dir, "index.py")
-
-        shutil.copy2(code_path, new_resource_temp_path)
-        tmp_zip_path = os.path.join(tempfile.gettempdir(), "search.zip")
-        with zipfile.ZipFile(tmp_zip_path, "w") as temp_zip:
-            # Add the contents of the existing ZIP file
-            for root, _, files in os.walk(temp_dir):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    archive_name = os.path.relpath(file_path, temp_dir)
-                    temp_zip.write(file_path, archive_name)
-
-        s3_client.create_bucket(Bucket=bucket_name)
-        s3_client.upload_file(Filename=tmp_zip_path, Bucket=bucket_name, Key=key_name)
-
-    finally:
-        if temp_dir:
-            shutil.rmtree(temp_dir)
-        if tmp_zip_path and os.path.exists(tmp_zip_path):
-            os.remove(tmp_zip_path)
-
-
 @markers.acceptance_test_beta
 class TestBookstoreApplication:
     @pytest.fixture(scope="class")
@@ -110,18 +61,27 @@ class TestBookstoreApplication:
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client, patch_opensearch_strategy):
         infra = InfraProvisioner(aws_client)
-        search_book_fn_path = os.path.join(
-            os.path.dirname(__file__), "resources_bookstore/books/search.py"
-        )
+        search_book_fn_path = os.path.join(os.path.dirname(__file__), "functions/search.py")
         search_update_fn_path = os.path.join(
-            os.path.dirname(__file__), "resources_bookstore/books/update_search_cluster.py"
+            os.path.dirname(__file__), "functions/update_search_cluster.py"
+        )
+        additional_packages = ["requests", "requests-aws4auth", "urllib3==1.26.6"]
+        infra.add_custom_setup_provisioning_step(
+            lambda: load_python_lambda_to_s3(
+                aws_client.s3,
+                bucket_name=SEARCH_BUCKET,
+                key_name=SEARCH_KEY,
+                code_path=search_book_fn_path,
+                additional_python_packages=additional_packages,
+            )
         )
         infra.add_custom_setup_provisioning_step(
-            lambda: setup_lambda(aws_client.s3, SEARCH_BUCKET, SEARCH_KEY, search_book_fn_path)
-        )
-        infra.add_custom_setup_provisioning_step(
-            lambda: setup_lambda(
-                aws_client.s3, SEARCH_BUCKET, SEARCH_UPDATE_KEY, search_update_fn_path
+            lambda: load_python_lambda_to_s3(
+                aws_client.s3,
+                bucket_name=SEARCH_BUCKET,
+                key_name=SEARCH_UPDATE_KEY,
+                code_path=search_update_fn_path,
+                additional_python_packages=additional_packages,
             )
         )
         app = cdk.App()
@@ -170,9 +130,7 @@ class TestBookstoreApplication:
             )
         )
 
-        file_name = os.path.join(
-            os.path.dirname(__file__), "./resources_bookstore/books/initial_books.json"
-        )
+        file_name = os.path.join(os.path.dirname(__file__), "./resources/initial_books.json")
         aws_client.s3.upload_file(
             Filename=file_name,
             Bucket=S3_BUCKET_BOOKS_INIT,
@@ -420,13 +378,9 @@ class BooksApi(Construct):
     books_table: dynamodb.Table
     opensearch_domain: opensearch.Domain
 
-    LOAD_BOOKS_HELPER_PATH = os.path.join(
-        os.path.dirname(__file__), "resources_bookstore/books/loadBooksHelper.js"
-    )
-    GET_BOOK_PATH = os.path.join(os.path.dirname(__file__), "resources_bookstore/books/getBook.js")
-    LIST_BOOKS_PATH = os.path.join(
-        os.path.dirname(__file__), "resources_bookstore/books/listBooks.js"
-    )
+    LOAD_BOOKS_HELPER_PATH = os.path.join(os.path.dirname(__file__), "functions/loadBooksHelper.js")
+    GET_BOOK_PATH = os.path.join(os.path.dirname(__file__), "functions/getBook.js")
+    LIST_BOOKS_PATH = os.path.join(os.path.dirname(__file__), "functions/listBooks.js")
 
     def __init__(
         self,

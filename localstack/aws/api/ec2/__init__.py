@@ -179,6 +179,7 @@ Ipv6PoolMaxResults = int
 KernelId = str
 KeyPairId = str
 KeyPairName = str
+KmsKeyArn = str
 KmsKeyId = str
 LaunchTemplateElasticInferenceAcceleratorCount = int
 LaunchTemplateId = str
@@ -4429,6 +4430,12 @@ class VerifiedAccessInstance(TypedDict, total=False):
     CreationTime: Optional[String]
     LastUpdatedTime: Optional[String]
     Tags: Optional[TagList]
+    FipsEnabled: Optional[Boolean]
+
+
+class VerifiedAccessSseSpecificationResponse(TypedDict, total=False):
+    CustomerManagedKeyEnabled: Optional[Boolean]
+    KmsKeyArn: Optional[KmsKeyArn]
 
 
 class DeviceOptions(TypedDict, total=False):
@@ -4457,6 +4464,7 @@ class VerifiedAccessTrustProvider(TypedDict, total=False):
     CreationTime: Optional[String]
     LastUpdatedTime: Optional[String]
     Tags: Optional[TagList]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class AttachVerifiedAccessTrustProviderResult(TypedDict, total=False):
@@ -5633,7 +5641,7 @@ class CreateCustomerGatewayResult(TypedDict, total=False):
 
 
 class CreateDefaultSubnetRequest(ServiceRequest):
-    AvailabilityZone: String
+    AvailabilityZone: AvailabilityZoneName
     DryRun: Optional[Boolean]
     Ipv6Native: Optional[Boolean]
 
@@ -8108,6 +8116,11 @@ class CreateVerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
     SubnetIds: Optional[CreateVerifiedAccessEndpointSubnetIdList]
 
 
+class VerifiedAccessSseSpecificationRequest(TypedDict, total=False):
+    CustomerManagedKeyEnabled: Optional[Boolean]
+    KmsKeyArn: Optional[KmsKeyArn]
+
+
 SecurityGroupIdList = List[SecurityGroupId]
 
 
@@ -8126,6 +8139,7 @@ class CreateVerifiedAccessEndpointRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class VerifiedAccessEndpointStatus(TypedDict, total=False):
@@ -8168,6 +8182,7 @@ class VerifiedAccessEndpoint(TypedDict, total=False):
     LastUpdatedTime: Optional[String]
     DeletionTime: Optional[String]
     Tags: Optional[TagList]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class CreateVerifiedAccessEndpointResult(TypedDict, total=False):
@@ -8181,6 +8196,7 @@ class CreateVerifiedAccessGroupRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class VerifiedAccessGroup(TypedDict, total=False):
@@ -8193,6 +8209,7 @@ class VerifiedAccessGroup(TypedDict, total=False):
     LastUpdatedTime: Optional[String]
     DeletionTime: Optional[String]
     Tags: Optional[TagList]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class CreateVerifiedAccessGroupResult(TypedDict, total=False):
@@ -8204,6 +8221,7 @@ class CreateVerifiedAccessInstanceRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    FIPSEnabled: Optional[Boolean]
 
 
 class CreateVerifiedAccessInstanceResult(TypedDict, total=False):
@@ -8235,6 +8253,7 @@ class CreateVerifiedAccessTrustProviderRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class CreateVerifiedAccessTrustProviderResult(TypedDict, total=False):
@@ -16196,15 +16215,17 @@ class ModifyVerifiedAccessEndpointLoadBalancerOptions(TypedDict, total=False):
 
 class ModifyVerifiedAccessEndpointPolicyRequest(ServiceRequest):
     VerifiedAccessEndpointId: VerifiedAccessEndpointId
-    PolicyEnabled: Boolean
+    PolicyEnabled: Optional[Boolean]
     PolicyDocument: Optional[String]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class ModifyVerifiedAccessEndpointPolicyResult(TypedDict, total=False):
     PolicyEnabled: Optional[Boolean]
     PolicyDocument: Optional[String]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class ModifyVerifiedAccessEndpointRequest(ServiceRequest):
@@ -16223,15 +16244,17 @@ class ModifyVerifiedAccessEndpointResult(TypedDict, total=False):
 
 class ModifyVerifiedAccessGroupPolicyRequest(ServiceRequest):
     VerifiedAccessGroupId: VerifiedAccessGroupId
-    PolicyEnabled: Boolean
+    PolicyEnabled: Optional[Boolean]
     PolicyDocument: Optional[String]
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class ModifyVerifiedAccessGroupPolicyResult(TypedDict, total=False):
     PolicyEnabled: Optional[Boolean]
     PolicyDocument: Optional[String]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationResponse]
 
 
 class ModifyVerifiedAccessGroupRequest(ServiceRequest):
@@ -16309,6 +16332,7 @@ class ModifyVerifiedAccessTrustProviderRequest(ServiceRequest):
     Description: Optional[String]
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
+    SseSpecification: Optional[VerifiedAccessSseSpecificationRequest]
 
 
 class ModifyVerifiedAccessTrustProviderResult(TypedDict, total=False):
@@ -18202,7 +18226,7 @@ class Ec2Api:
     def create_default_subnet(
         self,
         context: RequestContext,
-        availability_zone: String,
+        availability_zone: AvailabilityZoneName,
         dry_run: Boolean = None,
         ipv6_native: Boolean = None,
     ) -> CreateDefaultSubnetResult:
@@ -19002,6 +19026,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> CreateVerifiedAccessEndpointResult:
         raise NotImplementedError
 
@@ -19015,6 +19040,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> CreateVerifiedAccessGroupResult:
         raise NotImplementedError
 
@@ -19026,6 +19052,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        fips_enabled: Boolean = None,
     ) -> CreateVerifiedAccessInstanceResult:
         raise NotImplementedError
 
@@ -19043,6 +19070,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> CreateVerifiedAccessTrustProviderResult:
         raise NotImplementedError
 
@@ -23132,10 +23160,11 @@ class Ec2Api:
         self,
         context: RequestContext,
         verified_access_endpoint_id: VerifiedAccessEndpointId,
-        policy_enabled: Boolean,
+        policy_enabled: Boolean = None,
         policy_document: String = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> ModifyVerifiedAccessEndpointPolicyResult:
         raise NotImplementedError
 
@@ -23156,10 +23185,11 @@ class Ec2Api:
         self,
         context: RequestContext,
         verified_access_group_id: VerifiedAccessGroupId,
-        policy_enabled: Boolean,
+        policy_enabled: Boolean = None,
         policy_document: String = None,
         client_token: String = None,
         dry_run: Boolean = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> ModifyVerifiedAccessGroupPolicyResult:
         raise NotImplementedError
 
@@ -23194,6 +23224,7 @@ class Ec2Api:
         description: String = None,
         dry_run: Boolean = None,
         client_token: String = None,
+        sse_specification: VerifiedAccessSseSpecificationRequest = None,
     ) -> ModifyVerifiedAccessTrustProviderResult:
         raise NotImplementedError
 

@@ -158,18 +158,56 @@ class TestEvents:
         for field in expected_fields:
             assert field in event
 
-    @markers.aws.unknown
-    def test_put_rule(self, aws_client, clean_up):
+    @markers.aws.validated
+    def test_put_rule(self, aws_client, snapshot, clean_up):
         rule_name = f"rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
 
-        aws_client.events.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
+        response = aws_client.events.put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN)
+        )
+        snapshot.match("put-rule", response)
 
-        rules = aws_client.events.list_rules(NamePrefix=rule_name)["Rules"]
+        response = aws_client.events.list_rules(NamePrefix=rule_name)
+        snapshot.match("list-rules", response)
+        rules = response["Rules"]
         assert len(rules) == 1
         assert json.loads(rules[0]["EventPattern"]) == TEST_EVENT_PATTERN
 
         # clean up
         clean_up(rule_name=rule_name)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "expression",
+        [
+            "rate(10 seconds)",
+            "rate(10 years)",
+            "rate(1 minutes)",
+            "rate(1 hours)",
+            "rate(1 days)",
+            "rate(10 minute)",
+            "rate(10 hour)",
+            "rate(10 day)",
+            "rate()",
+            "rate(10)",
+            "rate(10 minutess)",
+            "rate(foo minutes)",
+            "rate(0 minutes)",
+            "rate(-10 minutes)",
+            "rate(10 MINUTES)",
+            "rate( 10 minutes )",
+            " rate(10 minutes)",
+        ],
+    )
+    def test_put_rule_invalid_rate_schedule_expression(self, expression, aws_client):
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_rule(Name=f"rule-{short_uid()}", ScheduleExpression=expression)
+
+        assert e.value.response["Error"] == {
+            "Code": "ValidationException",
+            "Message": "Parameter ScheduleExpression is not valid.",
+        }
 
     @markers.aws.unknown
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
@@ -207,7 +245,7 @@ class TestEvents:
             == event_details_to_publish
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_list_tags_for_resource(self, aws_client, clean_up):
         rule_name = "rule-{}".format(short_uid())
 
@@ -629,10 +667,10 @@ class TestEvents:
         self.assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_rule_disable(self, aws_client, clean_up):
-        rule_name = "rule-{}".format(short_uid())
-        aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+        rule_name = f"rule-{short_uid()}"
+        aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
 
         response = aws_client.events.list_rules()
         assert response["Rules"][0]["State"] == "ENABLED"
@@ -712,7 +750,7 @@ class TestEvents:
         event = {"env": "testing"}
         event_json = json.dumps(event)
 
-        aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+        aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
 
         aws_client.events.put_targets(
             Rule=rule_name,
@@ -1465,18 +1503,6 @@ class TestEvents:
             aws_client.events.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
         finally:
             clean_up(rule_name=rule_name)
-
-    @pytest.mark.parametrize(
-        "schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"]
-    )
-    @markers.aws.validated
-    @pytest.mark.xfail
-    def test_create_rule_with_one_unit_in_plural_should_fail(self, schedule_expression, aws_client):
-        rule_name = f"rule-{short_uid()}"
-
-        # rule should not be creatable with given expression
-        with pytest.raises(ClientError):
-            aws_client.events.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
 
     @markers.aws.validated
     @pytest.mark.xfail

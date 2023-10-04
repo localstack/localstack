@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -169,13 +168,3 @@ class KinesisStreamProvider(ResourceProvider[KinesisStreamProperties]):
           - kinesis:ListTagsForStream
         """
         raise NotImplementedError
-
-
-class KinesisStreamProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::Kinesis::Stream"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = KinesisStreamProvider
