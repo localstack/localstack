@@ -1,0 +1,78 @@
+{
+  "typeName": "AWS::EC2::InternetGateway",
+  "description": "Resource Type definition for AWS::EC2::InternetGateway",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
+  "additionalProperties": false,
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "Value": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "properties": {
+    "InternetGatewayId": {
+      "description": "ID of internet gateway.",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Any tags to assign to the internet gateway.",
+      "type": "array",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    }
+  },
+  "taggable": true,
+  "readOnlyProperties": [
+    "/properties/InternetGatewayId"
+  ],
+  "primaryIdentifier": [
+    "/properties/InternetGatewayId"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:CreateInternetGateway",
+        "ec2:CreateTags"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeInternetGateways"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DeleteInternetGateway"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ec2:DeleteTags",
+        "ec2:CreateTags"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeInternetGateways"
+      ]
+    }
+  }
+}
