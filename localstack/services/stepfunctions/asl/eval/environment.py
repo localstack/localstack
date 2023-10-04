@@ -3,9 +3,12 @@ from __future__ import annotations
 import copy
 import logging
 import threading
-from typing import Any, Optional
+from typing import Any, Final, Optional
 
 from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, Timestamp
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
+    MapRunRecordPoolManager,
+)
 from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackPoolManager
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObject,
@@ -26,22 +29,41 @@ LOG = logging.getLogger(__name__)
 
 
 class Environment:
+    _state_mutex: Final[threading.RLock()]
+    _program_state: Optional[ProgramState]
+    program_state_event: Final[threading.Event()]
+
+    _frames: Final[list[Environment]]
+    _is_frame: bool = False
+
+    event_history: EventHistory
+    callback_pool_manager: CallbackPoolManager
+    map_run_record_pool_manager: MapRunRecordPoolManager
+
+    heap: dict[str, Any] = dict()
+    stack: list[Any] = list()
+    inp: Optional[Any] = None
+
+    context_object_manager: Final[ContextObjectManager]
+
     def __init__(self, context_object_init: ContextObjectInitData):
         super(Environment, self).__init__()
         self._state_mutex = threading.RLock()
-        self._program_state: Optional[ProgramState] = None
+        self._program_state = None
         self.program_state_event = threading.Event()
-        self._frames: list[Environment] = list()
 
-        self.event_history: EventHistory = EventHistory()
-        self.callback_pool_manager: CallbackPoolManager = CallbackPoolManager()
+        self._frames = list()
+        self._is_frame = False
 
-        self._is_frame: bool = False
-        self.heap: dict[str, Any] = dict()
-        self.stack: list[Any] = list()
-        self.inp: Optional[Any] = None
+        self.event_history = EventHistory()
+        self.callback_pool_manager = CallbackPoolManager()
+        self.map_run_record_pool_manager = MapRunRecordPoolManager()
 
-        self.context_object_manager: ContextObjectManager = ContextObjectManager(
+        self.heap = dict()
+        self.stack = list()
+        self.inp = None
+
+        self.context_object_manager = ContextObjectManager(
             context_object=ContextObject(
                 Execution=context_object_init["Execution"],
                 StateMachine=context_object_init["StateMachine"],
@@ -58,6 +80,7 @@ class Environment:
         frame._is_frame = True
         frame.event_history = env.event_history
         frame.callback_pool_manager = env.callback_pool_manager
+        frame.map_run_record_pool_manager = env.map_run_record_pool_manager
         frame.heap = env.heap
         frame._program_state = copy.deepcopy(env._program_state)
         return frame

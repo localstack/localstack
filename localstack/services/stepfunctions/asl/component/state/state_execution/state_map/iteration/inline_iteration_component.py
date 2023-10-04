@@ -26,7 +26,7 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.utils.threads import TMP_THREADS
 
 
-class DistributedIterationComponentEvalInput:
+class InlineIterationComponentEvalInput:
     state_name: Final[str]
     max_concurrency: Final[int]
     input_items: Final[list[json]]
@@ -37,8 +37,8 @@ class DistributedIterationComponentEvalInput:
         self.input_items = input_items
 
 
-class DistributedIterationComponent(IterationComponent, abc.ABC):
-    _eval_input: Optional[DistributedIterationComponentEvalInput]
+class InlineIterationComponent(IterationComponent, abc.ABC):
+    _eval_input: Optional[InlineIterationComponentEvalInput]
     _job_pool: Optional[JobPool]
 
     def __init__(
@@ -54,6 +54,13 @@ class DistributedIterationComponent(IterationComponent, abc.ABC):
     @abc.abstractmethod
     def _create_worker(self, env: Environment) -> IterationWorker:
         ...
+
+    def _launch_worker(self, env: Environment) -> IterationWorker:
+        worker = self._create_worker(env=env)
+        worker_thread = threading.Thread(target=worker.eval)
+        TMP_THREADS.append(worker_thread)
+        worker_thread.start()
+        return worker
 
     def _eval_body(self, env: Environment) -> None:
         self._eval_input = env.stack.pop()
@@ -75,10 +82,7 @@ class DistributedIterationComponent(IterationComponent, abc.ABC):
             len(input_items) if max_concurrency == MaxConcurrency.DEFAULT else max_concurrency
         )
         for _ in range(number_of_workers):
-            worker = self._create_worker(env=env)
-            worker_thread = threading.Thread(target=worker.eval)
-            TMP_THREADS.append(worker_thread)
-            worker_thread.start()
+            self._launch_worker(env=env)
 
         self._job_pool.await_jobs()
 
