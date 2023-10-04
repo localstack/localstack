@@ -5,9 +5,13 @@ from localstack.services.stepfunctions.asl.component.component import Component
 
 
 class InputTypeValue(enum.Enum):
+    """
+    Represents the supported InputType values for ItemReader configurations.
+    """
+
+    # TODO: add support for MANIFEST InputTypeValue.
     CSV = "CSV"
     JSON = "JSON"
-    # TODO: add support for MANIFEST
 
 
 class InputType(Component):

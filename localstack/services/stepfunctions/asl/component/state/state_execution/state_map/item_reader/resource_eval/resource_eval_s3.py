@@ -4,7 +4,7 @@ from typing import Callable, Final
 
 from botocore.config import Config
 
-from localstack.aws.connect import connect_externally_to
+from localstack.aws.connect import connect_to
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.resource_eval.resource_eval import (
     ResourceEval,
 )
@@ -18,8 +18,11 @@ class ResourceEvalS3(ResourceEval):
 
     @staticmethod
     def _get_s3_client():
-        # TODO: connect_externally_to is being deprecated, update to new pattern.
-        return connect_externally_to(config=Config(parameter_validation=False)).s3
+        # TODO: adjust following multi-account and invocation region changes.
+        return connect_to.get_client(
+            service_name="s3",
+            config=Config(parameter_validation=False),
+        )
 
     @staticmethod
     def _handle_get_object(env: Environment) -> None:

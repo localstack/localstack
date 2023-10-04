@@ -430,6 +430,9 @@ class TestBaseScenarios:
         )
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_map_run_arn(map_run_arn, 0))
 
+        # Normalise s3 ListObjectV2 response in the execution events output to ensure variable fields such as
+        # Etag and LastModified are mapped to repeatable static values. Such normalisation is only necessary in
+        # ItemReader calls invoking s3:ListObjectV2, of which result is directly mapped to the output of the iteration.
         output_str = execution_history["events"][-1]["executionSucceededEventDetails"]["output"]
         output_json = json.loads(output_str)
         output_norm = []
