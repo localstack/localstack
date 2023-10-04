@@ -1,7 +1,6 @@
 import json
 import os
 from operator import itemgetter
-from typing import TYPE_CHECKING
 
 import aws_cdk as cdk
 import aws_cdk.aws_dynamodb as dynamodb
@@ -21,8 +20,6 @@ from localstack.utils.files import load_file
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry
 
-if TYPE_CHECKING:
-    pass
 """
 
 This scenario is based on https://github.com/aws-samples/aws-bookstore-demo-app
