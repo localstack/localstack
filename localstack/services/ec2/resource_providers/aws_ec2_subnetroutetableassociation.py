@@ -122,7 +122,10 @@ class EC2SubnetRouteTableAssociationProvider(
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
         # TODO add async
-        ec2.disassociate_route_table(AssociationId=model["Id"])
+        try:
+            ec2.disassociate_route_table(AssociationId=model["Id"])
+        except ec2.exceptions.ClientError:
+            pass
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,

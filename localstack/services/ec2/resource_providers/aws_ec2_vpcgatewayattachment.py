@@ -90,12 +90,16 @@ class EC2VPCGatewayAttachmentProvider(ResourceProvider[EC2VPCGatewayAttachmentPr
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
         # TODO: validations
-        if model.get("InternetGatewayId"):
-            ec2.detach_internet_gateway(
-                InternetGatewayId=model["InternetGatewayId"], VpcId=model["VpcId"]
-            )
-        else:
-            ec2.detach_vpn_gateway(VpnGatewayId=model["VpnGatewayId"], VpcId=model["VpcId"])
+        try:
+            if model.get("InternetGatewayId"):
+                ec2.detach_internet_gateway(
+                    InternetGatewayId=model["InternetGatewayId"], VpcId=model["VpcId"]
+                )
+            else:
+                ec2.detach_vpn_gateway(VpnGatewayId=model["VpnGatewayId"], VpcId=model["VpcId"])
+        except ec2.exceptions.ClientError:
+            pass
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,

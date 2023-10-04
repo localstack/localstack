@@ -106,11 +106,14 @@ class EC2RouteProvider(ResourceProvider[EC2RouteProperties]):
         cidr_block = model.get("DestinationCidrBlock")
         ipv6_cidr_block = model.get("DestinationIpv6CidrBlock", "")
 
-        ec2.delete_route(
-            DestinationCidrBlock=cidr_block,
-            DestinationIpv6CidrBlock=ipv6_cidr_block,
-            RouteTableId=model["RouteTableId"],
-        )
+        try:
+            ec2.delete_route(
+                DestinationCidrBlock=cidr_block,
+                DestinationIpv6CidrBlock=ipv6_cidr_block,
+                RouteTableId=model["RouteTableId"],
+            )
+        except ec2.exceptions.ClientError:
+            pass
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
