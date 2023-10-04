@@ -127,27 +127,24 @@ class InfoResource:
     """
 
     def on_get(self, request):
-        try:
+        return self.get_info_data()
 
-            client_metadata = get_client_metadata()
-            uptime = int(time.time() - config.load_start_time)
+    @staticmethod
+    def get_info_data() -> dict:
+        client_metadata = get_client_metadata()
+        uptime = int(time.time() - config.load_start_time)
 
-            response = {
-                "version": client_metadata.version,
-                "edition": get_localstack_edition() or "unknown",
-                "is_license_activated": is_license_activated(),
-                "session_id": client_metadata.session_id,
-                "machine_id": client_metadata.machine_id,
-                "system": client_metadata.system,
-                "is_docker": client_metadata.is_docker,
-                "server_time_utc": datetime.utcnow().isoformat(timespec="seconds"),
-                "uptime": uptime,
-            }
-        except Exception:
-            LOG.exception("Error")
-            return
-
-        return response
+        return {
+            "version": client_metadata.version,
+            "edition": get_localstack_edition() or "unknown",
+            "is_license_activated": is_license_activated(),
+            "session_id": client_metadata.session_id,
+            "machine_id": client_metadata.machine_id,
+            "system": client_metadata.system,
+            "is_docker": client_metadata.is_docker,
+            "server_time_utc": datetime.utcnow().isoformat(timespec="seconds"),
+            "uptime": uptime,
+        }
 
 
 class CloudFormationUi:
@@ -204,6 +201,7 @@ class DiagnoseResource:
                     "kernel": call_safe(diagnose.get_host_kernel_version),
                 },
             },
+            "info": call_safe(InfoResource.get_info_data),
             "services": call_safe(diagnose.get_service_stats),
             "config": call_safe(diagnose.get_localstack_config),
             "docker-inspect": call_safe(diagnose.inspect_main_container),
