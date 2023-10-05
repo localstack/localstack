@@ -118,10 +118,16 @@ def get_localstack_edition() -> Optional[Literal["enterprise", "pro", "community
 
 def is_license_activated() -> bool:
     try:
+        from localstack_ext import config  # noqa
+    except ImportError:
+        return False
+
+    try:
         from localstack_ext.bootstrap import licensingv2
 
         return licensingv2.get_licensed_environment().activated
-    except ImportError:
+    except Exception:
+        LOG.exception("Could not determine license activation status")
         return False
 
 
