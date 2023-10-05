@@ -4,7 +4,6 @@ import aws_cdk.aws_lambda as awslambda
 import pytest
 
 from localstack.testing.pytest import markers
-from localstack.testing.scenario.provisioning import InfraProvisioner
 
 FN_CODE = """
 import json
@@ -21,9 +20,10 @@ def handler(event, context):
 @markers.acceptance_test_beta
 class TestApigatewayLambdaIntegration:
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client):
-        app = cdk.App()
-        stack = cdk.Stack(app, "ApiGatewayStack")
+    def infrastructure(self, aws_client, infrastructure_setup):
+        infra = infrastructure_setup(namespace="APIGWtest")
+
+        stack = cdk.Stack(infra.cdk_app, "ApiGatewayStack")
         api = apigateway.RestApi(stack, "rest-api")
         backend = awslambda.Function(
             stack,
@@ -52,12 +52,8 @@ class TestApigatewayLambdaIntegration:
 
         cdk.CfnOutput(stack, "ApiId", value=api.rest_api_id)
 
-        provisioner = InfraProvisioner(aws_client)
-        provisioner.add_cdk_stack(stack)
-        provisioner.provision()
-
-        yield provisioner
-        provisioner.teardown()
+        with infra.provisioner() as prov:
+            yield prov
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

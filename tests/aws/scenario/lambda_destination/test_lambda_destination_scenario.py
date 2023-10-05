@@ -6,9 +6,8 @@ import aws_cdk.aws_sns as sns
 import pytest
 
 from localstack.aws.api.lambda_ import InvocationType
-from localstack.aws.connect import connect_to
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import wait_until
 
@@ -34,33 +33,29 @@ def handler(event, context):
 
 class TestLambdaDestinationScenario:
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client):
-        # stack definition
-        stack = cdk.Stack(cdk.App(), "LambdaTestStack")
+    def infrastructure(self, aws_client, infrastructure_setup):
+        infra = infrastructure_setup(namespace="LambdaDestinationScenario")
+
+        stack = cdk.Stack(infra.cdk_app, "LambdaTestStack")
 
         collect_fn = awslambda.Function(
             stack,
             "CollectFn",
             code=awslambda.InlineCode(COLLECT_FN_CODE),
-            handler="handler.handler",
+            handler="index.handler",
             runtime=awslambda.Runtime.PYTHON_3_10,  # noqa
         )
-        cdk.CfnOutput(stack, "CollectFunctionName", value=collect_fn.function_name)
 
         # event_bus = events.EventBus(stack, "DestinationBus")
         # queue = sqs.Queue(stack, "DestinationQueue")
         topic = sns.Topic(stack, "DestinationTopic")
-        cdk.CfnOutput(stack, "DestinationTopicName", value=topic.topic_name)
-        cdk.CfnOutput(stack, "DestinationTopicArn", value=topic.topic_arn)
-
         fn = awslambda.Function(
             stack,
             "DestinationFn",
             code=awslambda.InlineCode(MAIN_FN_CODE),
-            handler="handler.handler",
+            handler="index.handler",
             runtime=awslambda.Runtime.PYTHON_3_10,  # noqa
         )
-        cdk.CfnOutput(stack, "DestinationFunctionName", value=fn.function_name)
         awslambda.EventInvokeConfig(
             stack,
             "TopicEic",
@@ -68,19 +63,24 @@ class TestLambdaDestinationScenario:
             on_success=cdk.aws_lambda_destinations.SnsDestination(topic=topic),
             on_failure=cdk.aws_lambda_destinations.SnsDestination(topic=topic),
             retry_attempts=0,
+            max_event_age=cdk.Duration.minutes(1),
         )
+        topic.grant_publish(fn)
+        collect_fn.grant_invoke(cdk.aws_iam.ServicePrincipal("sns.amazonaws.com"))
         collect_fn.add_event_source(cdk.aws_lambda_event_sources.SnsEventSource(topic))
 
+        cdk.CfnOutput(stack, "CollectFunctionName", value=collect_fn.function_name)
+        cdk.CfnOutput(stack, "DestinationTopicName", value=topic.topic_name)
+        cdk.CfnOutput(stack, "DestinationTopicArn", value=topic.topic_arn)
+        cdk.CfnOutput(stack, "DestinationFunctionName", value=fn.function_name)
+
         # provisioning
-        provisioner = InfraProvisioner(aws_client)
-        provisioner.add_cdk_stack(stack)
-        with provisioner.provisioner(skip_teardown=False) as prov:
+        with infra.provisioner(skip_teardown=False) as prov:
             yield prov
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Configuration.CodeSha256",
             "$..Tags",
             "$..Attributes.DeliveryPolicy",
             "$..Attributes.EffectiveDeliveryPolicy.defaultHealthyRetryPolicy",
@@ -99,6 +99,11 @@ class TestLambdaDestinationScenario:
         topic_arn = outputs["DestinationTopicArn"]
 
         snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "CodeSha256", "<code-sha-256>", reference_replacement=False
+            )
+        )
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "aws:cloudformation:logical-id", "replaced-value", reference_replacement=False
@@ -133,8 +138,22 @@ class TestLambdaDestinationScenario:
         outputs = infrastructure.get_stack_outputs("LambdaTestStack")
         invoke_fn_name = outputs["DestinationFunctionName"]
         collect_fn_name = outputs["CollectFunctionName"]
+        topic_arn = outputs["DestinationTopicArn"]
 
         msg = f"message-{short_uid()}"
+
+        if is_aws_cloud():
+            # TODO: needs to be fixed in SNS provider. SubscriptionsConfirmed is currently always "0"
+            # wait until the subscription to SNS is actually active
+            def _wait_atts():
+                return (
+                    aws_client.sns.get_topic_attributes(TopicArn=topic_arn)["Attributes"][
+                        "SubscriptionsConfirmed"
+                    ]
+                    == "1"
+                )
+
+            assert wait_until(_wait_atts, strategy="static", wait=5, max_retries=60)
 
         # Success case
         response = aws_client.lambda_.invoke(
@@ -142,7 +161,7 @@ class TestLambdaDestinationScenario:
             Payload=to_bytes(json.dumps({"message": msg, "should_fail": "0"})),
             InvocationType=InvocationType.Event,
         )
-        snapshot.match("successfull_invoke", response)
+        snapshot.match("successful_invoke", response)
 
         # Failure case
         response = aws_client.lambda_.invoke(
@@ -153,10 +172,12 @@ class TestLambdaDestinationScenario:
         snapshot.match("unsuccessful_invoke", response)
 
         def wait_for_logs():
-            events = connect_to().logs.filter_log_events(
-                logGroupName=f"/aws/lambda/{collect_fn_name}"
-            )["events"]
+            events = (
+                aws_client.logs.get_paginator("filter_log_events")
+                .paginate(logGroupName=f"/aws/lambda/{collect_fn_name}")
+                .build_full_result()["events"]
+            )
             message_events = [e["message"] for e in events if msg in e["message"]]
             return len(message_events) >= 2
 
-        wait_until(wait_for_logs)
+        assert wait_until(wait_for_logs, strategy="static", max_retries=10, wait=5)

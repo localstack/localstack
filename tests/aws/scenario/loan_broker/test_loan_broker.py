@@ -15,8 +15,8 @@ import aws_cdk.aws_stepfunctions as sfn
 import aws_cdk.aws_stepfunctions_tasks as tasks
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.utils import await_execution_terminated
@@ -67,15 +67,12 @@ class TestLoanBrokerScenario:
     }
 
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client):
-        infra = InfraProvisioner(aws_client)
-        app = cdk.App()
-        recipient_stack = cdk.Stack(app, RECIPIENT_LIST_STACK_NAME)
+    def infrastructure(self, aws_client, infrastructure_setup):
+        infra = infrastructure_setup(namespace="LoanBroaker")
+        recipient_stack = cdk.Stack(infra.cdk_app, RECIPIENT_LIST_STACK_NAME)
         cdk.Tags.of(recipient_stack).add("Project", PROJECT_NAME)
         cdk.Tags.of(recipient_stack).add("Stackname", RECIPIENT_LIST_STACK_NAME)
         self.setup_recipient_list_stack(recipient_stack)
-
-        infra.add_cdk_stack(recipient_stack)
 
         # set skip_teardown=True to prevent the stack to be deleted
         with infra.provisioner(skip_teardown=False) as prov:
@@ -91,9 +88,6 @@ class TestLoanBrokerScenario:
         ]
     )
     def test_prefill_dynamodb_table(self, aws_client, infrastructure, snapshot):
-        if infrastructure.skipped_provisioning:
-            pytest.skip("prefilling the dynamodb should only happen once")
-
         """setups the dynamodb for the following tests,
         additionally tests some typical dynamodb APIs
         """
@@ -162,7 +156,10 @@ class TestLoanBrokerScenario:
             pytest.param(
                 {"SSN": "234-45-6789"},
                 "FAILED",
-                marks=pytest.mark.xfail(reason="stays in RUNNING on LS, but should be FAILED"),
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="stays in RUNNING on LS, but should be FAILED",
+                ),
             ),  # FIXME
         ],
     )
