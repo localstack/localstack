@@ -86,7 +86,7 @@ class EC2VPCProvider(ResourceProvider[EC2VPCProperties]):
                 ["CidrBlock", "InstanceTenancy"],
             )
             if model.get("Tags"):
-                tags = [{"ResourceType": "subnet", "Tags": model.get("Tags")}]
+                tags = [{"ResourceType": "vpc", "Tags": model.get("Tags")}]
                 params["TagSpecifications"] = tags
 
             response = ec2.create_vpc(**params)
