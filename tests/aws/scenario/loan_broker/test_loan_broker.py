@@ -15,6 +15,7 @@ import aws_cdk.aws_stepfunctions as sfn
 import aws_cdk.aws_stepfunctions_tasks as tasks
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -158,7 +159,10 @@ class TestLoanBrokerScenario:
             pytest.param(
                 {"SSN": "234-45-6789"},
                 "FAILED",
-                marks=pytest.mark.xfail(reason="stays in RUNNING on LS, but should be FAILED"),
+                marks=pytest.mark.skipif(
+                    condition=not is_aws_cloud(),
+                    reason="stays in RUNNING on LS, but should be FAILED",
+                ),
             ),  # FIXME
         ],
     )
