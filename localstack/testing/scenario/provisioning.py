@@ -114,9 +114,10 @@ class InfraProvisioner:
                 The provisioner will perform a stack update instead of a create, should the stack still exist.
 
         Example usage:
-        def my_fixture(infra_provisioner):
+        def my_fixture(infrastructure_setup):
             ...
-            with infra_provisioner.provisioner() as prov:
+            infra = infrastructure_setup(namespace="...")
+            with infra.provisioner() as prov:
                 yield prov
         """
         try:
