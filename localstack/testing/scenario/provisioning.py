@@ -401,3 +401,8 @@ class InfraProvisioner:
 
         for stack in self.cdk_app.node.children:
             self.add_cdk_stack(cdk_stack=stack)
+
+    # TODO: move to a util class/module
+    @staticmethod
+    def get_asset_bucket_cdk(stack: cdk.Stack):
+        return cdk.Fn.join("-", ["localstack", "testing", stack.account, stack.region])

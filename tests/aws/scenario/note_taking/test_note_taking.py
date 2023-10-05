@@ -19,6 +19,7 @@ from constructs import Construct
 
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.cdk_lambda_helper import load_nodejs_lambda_to_s3
+from localstack.testing.scenario.provisioning import InfraProvisioner
 
 LOG = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ class TestNoteTakingScenario:
         _add_endpoints(
             resource=notes_endpoint,
             stack=stack,
-            bucket_name=cdk.Fn.join("-", ["localstack", "testing", stack.account, stack.region]),
+            bucket_name=InfraProvisioner.get_asset_bucket_cdk(stack),
             table=table,
             endpoints=[
                 Endpoint(http_method="GET", endpoint_id="listNotes", grant_actions="dynamodb:Scan"),
@@ -130,7 +131,7 @@ class TestNoteTakingScenario:
         _add_endpoints(
             resource=single_note_endpoint,
             stack=stack,
-            bucket_name=cdk.Fn.join("-", ["localstack", "testing", stack.account, stack.region]),
+            bucket_name=InfraProvisioner.get_asset_bucket_cdk(stack),
             table=table,
             endpoints=[
                 Endpoint(

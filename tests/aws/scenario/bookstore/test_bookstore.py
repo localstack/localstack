@@ -14,7 +14,7 @@ from constructs import Construct
 
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_s3
-from localstack.testing.scenario.provisioning import cleanup_s3_bucket
+from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.testing.snapshots.transformer import GenericTransformer, KeyValueBasedTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import to_bytes, to_str
@@ -458,7 +458,7 @@ class BooksApi(Construct):
         bucket = cdk.aws_s3.Bucket.from_bucket_name(
             stack,
             "bucket_name",
-            bucket_name=cdk.Fn.join("-", ["localstack", "testing", stack.account, stack.region]),
+            bucket_name=InfraProvisioner.get_asset_bucket_cdk(stack),
         )
         self.search_book_fn = awslambda.Function(
             stack,
