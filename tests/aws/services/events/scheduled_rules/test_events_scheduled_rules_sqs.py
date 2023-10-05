@@ -1,6 +1,10 @@
 import json
 import logging
 
+from localstack.testing.aws.eventbus_utils import (
+    allow_event_rule_to_sqs_queue,
+    trigger_scheduled_rule,
+)
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.strings import short_uid
@@ -13,8 +17,6 @@ LOG = logging.getLogger(__name__)
 def test_scheduled_rule_sqs(
     sqs_create_queue,
     events_put_rule,
-    events_allow_event_rule_to_sqs_queue,
-    trigger_scheduled_rule,
     aws_client,
     snapshot,
 ):
@@ -33,7 +35,7 @@ def test_scheduled_rule_sqs(
 
     rule_arn = events_put_rule(Name=rule_name, ScheduleExpression=schedule_expression)["RuleArn"]
 
-    events_allow_event_rule_to_sqs_queue(queue_url, queue_arn, rule_arn)
+    allow_event_rule_to_sqs_queue(aws_client, queue_url, queue_arn, rule_arn)
     aws_client.events.put_targets(
         Rule=rule_name,
         Targets=[

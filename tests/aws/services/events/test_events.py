@@ -15,6 +15,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.events.provider import _get_events_tmp_dir
+from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns, resources
@@ -1490,7 +1491,6 @@ class TestEvents:
         sqs_get_queue_arn,
         create_role,
         create_policy,
-        events_allow_event_rule_to_sqs_queue,
         s3_bucket,
         snapshot,
         aws_client,
@@ -1579,8 +1579,11 @@ class TestEvents:
         rule_on_custom_bus_arn = rule_on_custom_bus["RuleArn"]
         snapshot.match("create-rule-2", rule_on_custom_bus)
 
-        events_allow_event_rule_to_sqs_queue(
-            sqs_queue_url=queue_url, sqs_queue_arn=queue_arn, event_rule_arn=rule_on_custom_bus_arn
+        allow_event_rule_to_sqs_queue(
+            aws_client=aws_client,
+            sqs_queue_url=queue_url,
+            sqs_queue_arn=queue_arn,
+            event_rule_arn=rule_on_custom_bus_arn,
         )
 
         resp = aws_client.events.put_targets(
@@ -1716,7 +1719,6 @@ class TestEvents:
         sqs_create_queue,
         sqs_get_queue_arn,
         events_put_rule,
-        events_allow_event_rule_to_sqs_queue,
         snapshot,
     ):
         default_bus_rule_name = f"rule-{short_uid()}"
@@ -1742,7 +1744,8 @@ class TestEvents:
             State="ENABLED",
         )
 
-        events_allow_event_rule_to_sqs_queue(
+        allow_event_rule_to_sqs_queue(
+            aws_client=aws_client,
             event_rule_arn=rule_on_default_bus["RuleArn"],
             sqs_queue_arn=queue_arn,
             sqs_queue_url=queue_url,
@@ -1840,7 +1843,6 @@ class TestEvents:
         sqs_create_queue,
         sqs_get_queue_arn,
         events_put_rule,
-        events_allow_event_rule_to_sqs_queue,
         snapshot,
     ):
         default_bus_rule_name = f"rule-{short_uid()}"
@@ -1862,7 +1864,8 @@ class TestEvents:
             State="ENABLED",
         )
 
-        events_allow_event_rule_to_sqs_queue(
+        allow_event_rule_to_sqs_queue(
+            aws_client=aws_client,
             event_rule_arn=rule_on_default_bus["RuleArn"],
             sqs_queue_arn=queue_arn,
             sqs_queue_url=queue_url,

@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 
 
@@ -88,21 +89,28 @@ def clean_up(aws_client):
         kwargs = {"EventBusName": bus_name} if bus_name else {}
         if target_ids:
             target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
-            events_client.remove_targets(Rule=rule_name, Ids=target_ids, Force=True, **kwargs)
+            call_safe(
+                events_client.remove_targets,
+                kwargs=dict(Rule=rule_name, Ids=target_ids, Force=True, **kwargs),
+            )
         if rule_name:
-            events_client.delete_rule(Name=rule_name, Force=True, **kwargs)
+            call_safe(events_client.delete_rule, kwargs=dict(Name=rule_name, Force=True, **kwargs))
         if bus_name:
-            events_client.delete_event_bus(Name=bus_name)
+            call_safe(events_client.delete_event_bus, kwargs=dict(Name=bus_name))
         if queue_url:
             sqs_client = aws_client.sqs
-            sqs_client.delete_queue(QueueUrl=queue_url)
+            call_safe(sqs_client.delete_queue, kwargs=dict(QueueUrl=queue_url))
         if log_group_name:
             logs_client = aws_client.logs
-            log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
-            for log_stream in log_streams["logStreams"]:
-                logs_client.delete_log_stream(
-                    logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
-                )
-            logs_client.delete_log_group(logGroupName=log_group_name)
+
+            def _delete_log_group():
+                log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+                for log_stream in log_streams["logStreams"]:
+                    logs_client.delete_log_stream(
+                        logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
+                    )
+                logs_client.delete_log_group(logGroupName=log_group_name)
+
+            call_safe(_delete_log_group)
 
     yield _clean_up

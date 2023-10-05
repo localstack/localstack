@@ -3,6 +3,7 @@ import logging
 
 import pytest
 
+from localstack.testing.aws.eventbus_utils import trigger_scheduled_rule
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -57,7 +58,6 @@ def add_logs_resource_policy_for_rule(aws_client):
 def test_scheduled_rule_logs(
     logs_log_group,
     events_put_rule,
-    trigger_scheduled_rule,
     add_logs_resource_policy_for_rule,
     aws_client,
     snapshot,
