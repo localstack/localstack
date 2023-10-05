@@ -5,6 +5,7 @@ import pytest
 
 from localstack.testing.aws.eventbus_utils import trigger_scheduled_rule
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
@@ -55,6 +56,15 @@ def add_logs_resource_policy_for_rule(aws_client):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # tokens and IDs cannot be properly transformed
+        "$..eventId",
+        "$..uploadSequenceToken",
+        # FIXME: storedBytes should be implemented
+        "$..storedBytes",
+    ]
+)
 def test_scheduled_rule_logs(
     logs_log_group,
     events_put_rule,
@@ -64,7 +74,13 @@ def test_scheduled_rule_logs(
 ):
     schedule_expression = "rate(1 minute)"
     rule_name = f"rule-{short_uid()}"
-    snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.regex(rule_name, "<rule-name>"),
+            snapshot.transform.regex(logs_log_group, "<log-group-name>"),
+        ]
+    )
+    snapshot.add_transformer(TransformerUtility.logs_api())
 
     response = aws_client.logs.describe_log_groups(logGroupNamePrefix=logs_log_group)
     log_group_arn = response["logGroups"][0]["arn"]
@@ -77,6 +93,7 @@ def test_scheduled_rule_logs(
         Rule=rule_name,
         Targets=[
             {"Id": "1", "Arn": log_group_arn},
+            {"Id": "2", "Arn": log_group_arn},
         ],
     )
 
@@ -84,26 +101,37 @@ def test_scheduled_rule_logs(
 
     # wait for log stream to be created
     def _get_log_stream():
-        return aws_client.logs.describe_log_streams(logGroupName=logs_log_group)["logStreams"][0]
+        result = (
+            aws_client.logs.get_paginator("describe_log_streams")
+            .paginate(logGroupName=logs_log_group)
+            .build_full_result()
+        )
+        assert len(result["logStreams"]) >= 1
+        return result["logStreams"]
 
-    retry(_get_log_stream, 60)
+    log_streams = retry(_get_log_stream, 60)
+    log_streams.sort(key=lambda stream: stream["logStreamName"])
+    snapshot.match("log-streams", log_streams)
 
     # collect events from log streams in group
     def _get_events():
         _events = []
 
-        for log_stream in aws_client.logs.describe_log_streams(logGroupName=logs_log_group)[
-            "logStreams"
-        ]:
-            _response = aws_client.logs.get_log_events(
-                logGroupName=logs_log_group, logStreamName=log_stream["logStreamName"], limit=10
-            )
-            _events.extend(_response.get("events", []))
+        _response = (
+            aws_client.logs.get_paginator("filter_log_events")
+            .paginate(logGroupName=logs_log_group)
+            .build_full_result()
+        )
+        _events.extend(_response["events"])
 
-        if len(_events) < 1:
-            raise AssertionError(f"Expected at least two events in log stream, was {_events}")
+        if len(_events) < 2:
+            raise AssertionError(
+                f"Expected at least two events in log group streams, was {_events}"
+            )
         return _events
 
     events = retry(_get_events, retries=5)
 
-    snapshot.match("log-evens", events)
+    events.sort(key=lambda stream: stream["logStreamName"])
+
+    snapshot.match("log-events", events)

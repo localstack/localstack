@@ -8,6 +8,13 @@ from localstack.utils.aws.client_types import TypedServiceClientFactory
 
 
 def trigger_scheduled_rule(rule_arn: str):
+    """
+    Call the internal /_aws/events/rules/<rule_arn>/trigger endpoint to expire the deadline of a rule and
+    trigger it ASAP.
+
+    :param rule_arn: the rule to run
+    :raises ValueError: if the response return a >=400 code
+    """
     if is_aws_cloud():
         return
 

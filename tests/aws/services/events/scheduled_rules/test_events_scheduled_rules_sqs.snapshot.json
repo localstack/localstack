@@ -1,6 +1,6 @@
 {
   "tests/aws/services/events/scheduled_rules/test_events_scheduled_rules_sqs.py::test_scheduled_rule_sqs": {
-    "recorded-date": "01-10-2023, 16:03:41",
+    "recorded-date": "05-10-2023, 19:18:50",
     "recorded-content": {
       "sqs-messages": [
         {

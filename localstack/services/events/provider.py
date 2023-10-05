@@ -142,23 +142,26 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     len(rule.targets),
                     rule_name,
                 )
+
+            default_event = {
+                "version": "0",
+                "id": long_uid(),
+                "detail-type": "Scheduled Event",
+                "source": "aws.events",
+                "account": account_id,
+                "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
+                "region": region,
+                "resources": [rule.arn],
+                "detail": {},
+            }
+
             for target in rule.targets:
                 arn = target.get("Arn")
 
                 if input_ := target.get("Input"):
                     event = json.loads(input_)
                 else:
-                    event = {
-                        "version": "0",
-                        "id": long_uid(),
-                        "detail-type": "Scheduled Event",
-                        "source": "aws.events",
-                        "account": account_id,
-                        "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
-                        "region": region,
-                        "resources": [rule.arn],
-                        "detail": {},
-                    }
+                    event = default_event
                     if target.get("InputPath"):
                         event = filter_event_with_target_input_path(target, event)
                     if target.get("InputTransformer"):
