@@ -105,7 +105,7 @@ class TestBookstoreApplication:
         cdk.CfnOutput(stack, "SearchForBooksFn", value=books_api.search_book_fn.function_name)
 
         # set skip_teardown=True to prevent the stack to be deleted
-        with infra.provisioner(skip_teardown=True) as prov:
+        with infra.provisioner(skip_teardown=False) as prov:
             yield prov
 
     @markers.aws.validated
