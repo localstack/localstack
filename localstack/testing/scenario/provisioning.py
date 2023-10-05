@@ -107,7 +107,7 @@ class InfraProvisioner:
         """
         :param skip_deployment: Set to True to skip stack creation and re-use existing stack without modifications.
             Also skips custom setup steps.
-            Use-case: When you only want to regenerate the synethsized template without actually deploying.
+            Use-case: When you only want to regenerate the synthesized template without actually deploying.
         :param skip_teardown: Set to True to skip deleting any previously created stacks.
             Also skips custom teardown steps.
             Use-case: When you're dealing with resource-heavy stacks that take a long time to provision.
