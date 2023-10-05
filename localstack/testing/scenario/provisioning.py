@@ -68,13 +68,14 @@ class InfraProvisioner:
     base_path: str | None
     cdk_app: cdk.App
     persist_output: bool
+    force_synth: bool
 
     def __init__(
         self,
         aws_client: ServiceLevelClientFactory,
         namespace: str,
         base_path: Optional[str] = None,
-        force_template_update: Optional[bool] = False,
+        force_synth: Optional[bool] = False,
         persist_output: Optional[bool] = False,
     ):
         """
@@ -91,7 +92,7 @@ class InfraProvisioner:
         self.custom_cleanup_steps = []
         self.custom_setup_steps = []
         self.aws_client = aws_client
-        self.force_template_update = force_template_update
+        self.force_synth = force_synth
         self.persist_output = persist_output
         if self.base_path is None:
             self.persist_output = False
@@ -307,7 +308,7 @@ class InfraProvisioner:
             template_path = dir_path / f"{cdk_stack.stack_name}.json"
 
             should_update_template = (
-                is_env_true("TEST_INFRA_UPDATE_TEMPLATE") or self.force_template_update
+                is_env_true("TEST_CDK_FORCE_SYNTH") or self.force_synth
             )  # EXPERIMENTAL / API subject to change
             if not template_path.exists() or should_update_template:
                 with open(template_path, "wt") as fd:

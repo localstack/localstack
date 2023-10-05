@@ -66,19 +66,19 @@ def cdk_template_path():
 @pytest.fixture(scope="session")
 def infrastructure_setup(cdk_template_path, aws_client):
     def _infrastructure_setup(
-        namespace: str, force_template_update: Optional[bool] = False
+        namespace: str, force_synth: Optional[bool] = False
     ) -> InfraProvisioner:
         """
         :param namespace: repo-unique identifier for this CDK app.
             A directory with this name will be created at `tests/aws/cdk_templates/<namespace>/`
-        :param force_template_update: set to True to always re-synth the CDK app
+        :param force_synth: set to True to always re-synth the CDK app
         :return: an instantiated CDK InfraProvisioner which can be used to deploy a CDK app
         """
         return InfraProvisioner(
             base_path=cdk_template_path,
             aws_client=aws_client,
             namespace=namespace,
-            force_template_update=force_template_update,
+            force_synth=force_synth,
             persist_output=True,
         )
 
