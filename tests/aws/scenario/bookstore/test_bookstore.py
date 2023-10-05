@@ -110,9 +110,6 @@ class TestBookstoreApplication:
 
     @markers.aws.validated
     def test_setup(self, aws_client, infrastructure, snapshot, cleanups):
-        if infrastructure.skipped_provisioning:
-            pytest.skip("setup only running once")
-
         outputs = infrastructure.get_stack_outputs("BookstoreStack")
         load_books_helper_fn = outputs.get("InitBooksTableFn")
 

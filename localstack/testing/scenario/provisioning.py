@@ -63,7 +63,6 @@ class InfraProvisioner:
     cloudformation_stacks: dict[str, dict]
     custom_cleanup_steps: list[Callable]
     custom_setup_steps: list[Callable]
-    skipped_provisioning: bool = False
     aws_client: ServiceLevelClientFactory
     namespace: str
     base_path: str | None

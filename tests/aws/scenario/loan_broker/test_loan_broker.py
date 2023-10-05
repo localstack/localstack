@@ -88,9 +88,6 @@ class TestLoanBrokerScenario:
         ]
     )
     def test_prefill_dynamodb_table(self, aws_client, infrastructure, snapshot):
-        if infrastructure.skipped_provisioning:
-            pytest.skip("prefilling the dynamodb should only happen once")
-
         """setups the dynamodb for the following tests,
         additionally tests some typical dynamodb APIs
         """
