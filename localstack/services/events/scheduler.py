@@ -1,101 +1,222 @@
 import logging
+import re
 import threading
+import time
+from concurrent.futures.thread import ThreadPoolExecutor
+from datetime import timedelta
+from typing import Callable
 
 from crontab import CronTab
 
 from localstack.utils.common import short_uid
-from localstack.utils.run import FuncThread
+from localstack.utils.scheduler import ScheduledTask, Scheduler
 
 LOG = logging.getLogger(__name__)
 
 
-class Job:
-    def __init__(self, job_func, schedule, enabled):
-        self.job_func = job_func
+class CronScheduledTask(ScheduledTask):
+    """
+    Special implementation of a ScheduledTask that dynamically determines the next deadline based on a
+    CronTab expression.
+    """
+
+    schedule: CronTab
+
+    def __init__(
+        self, task: Callable, schedule: CronTab, on_error: Callable[[Exception], None] = None
+    ) -> None:
+        super().__init__(task, on_error=on_error)
         self.schedule = schedule
+        self.set_next_deadline()
+
+    def is_periodic(self) -> bool:
+        return True
+
+    def set_next_deadline(self):
+        delay = self.schedule.next()
+        self.deadline = time.time() + delay
+
+
+JobId = str
+
+
+class Job:
+    """Glue between JobScheduler and Scheduler API"""
+
+    func: Callable
+    schedule_expression: str
+    job_id: JobId
+    enabled: bool
+    task: ScheduledTask | None
+    schedule: CronTab | timedelta
+
+    def __init__(self, func: Callable, scheduler_expression: str):
+        self.func = func
+        self.schedule_expression = scheduler_expression
         self.job_id = short_uid()
-        self.is_enabled = enabled
+        self.task = None
+        self.schedule = parse_schedule_expression(scheduler_expression)
 
-    def run(self):
-        try:
-            if self.should_run_now() and self.is_enabled:
-                self.do_run()
-        except Exception as e:
-            LOG.debug("Unable to run scheduled function %s: %s", self.job_func, e)
+    @property
+    def enabled(self) -> bool:
+        return self.task is not None
 
-    def should_run_now(self):
-        schedule = CronTab(self.schedule)
-        delay_secs = schedule.next()
-        return delay_secs is not None and delay_secs < 60
+    def disable(self):
+        if self.task:
+            LOG.debug("Disabling job %s", self.job_id)
+            self.task.cancel()
+            self.task = None
 
-    def do_run(self):
-        FuncThread(self.job_func, name="events-job-run").start()
+    def enable(self, scheduler: Scheduler):
+        if self.task:
+            return
+
+        schedule = parse_schedule_expression(self.schedule_expression)
+
+        if isinstance(schedule, CronTab):
+            LOG.debug("Scheduling job %s with crontab %s", self.job_id, schedule)
+            self.task = CronScheduledTask(
+                self.func,
+                schedule=CronTab(self.schedule_expression),
+                on_error=self.on_execute_error,
+            )
+        elif isinstance(schedule, timedelta):
+            LOG.debug("Scheduling job %s every %d seconds", self.job_id, schedule.seconds)
+            self.task = ScheduledTask(
+                self.func,
+                period=schedule.seconds,
+                on_error=self.on_execute_error,
+            )
+        else:
+            raise ValueError(f"unexpected return type {type(schedule)}")
+
+        scheduler.schedule_task(self.task)
+
+    def on_execute_error(self, exception: Exception):
+        LOG.error("Error executing job %s", self.job_id, exc_info=exception)
 
 
 class JobScheduler:
-    _instance = None
+    """
+    A singleton wrapper around a Scheduler that allows you to toggle scheduled tasks based on a unique job id.
+    """
 
     def __init__(self):
-        # TODO: introduce RLock for mutating jobs list
-        self.jobs = []
-        self.thread = None
-        self._stop_event = threading.Event()
+        self.jobs: dict[str, Job] = {}
+        self.mutex = threading.RLock()
+        self.executor = ThreadPoolExecutor(10, thread_name_prefix="events-jobscheduler-worker")
+        self.scheduler = Scheduler(executor=self.executor)
 
-    def add_job(self, job_func, schedule, enabled=True):
-        job = Job(job_func, schedule, enabled=enabled)
-        self.jobs.append(job)
-        return job.job_id
+    def add_job(self, job_func: Callable, schedule_expression: str, enabled: bool = True) -> JobId:
+        with self.mutex:
+            job = Job(job_func, schedule_expression)
+            self.jobs[job.job_id] = job
+            if enabled:
+                job.enable(self.scheduler)
+            return job.job_id
 
-    def get_job(self, job_id) -> Job | None:
-        for job in self.jobs:
-            if job.job_id == job_id:
-                return job
+    def get_job(self, job_id: JobId) -> Job | None:
+        return self.jobs.get(job_id)
 
-    def disable_job(self, job_id):
-        for job in self.jobs:
-            if job.job_id == job_id:
-                job.is_enabled = False
-                break
-
-    def cancel_job(self, job_id):
-        i = 0
-        while i < len(self.jobs):
-            if self.jobs[i].job_id == job_id:
-                del self.jobs[i]
-            else:
-                i += 1
-
-    def loop(self, *args):
-        while not self._stop_event.is_set():
+    def enable_job(self, job_id: JobId):
+        with self.mutex:
             try:
-                for job in list(self.jobs):
-                    job.run()
-            except Exception:
-                pass
-            # This is a simple heuristic to cause the loop to run apprx every minute
-            # TODO: we should keep track of jobs execution times, to avoid duplicate executions
-            self._stop_event.wait(timeout=59.9)
+                self.jobs[job_id].enable(self.scheduler)
+            except KeyError:
+                raise ValueError(f"No job with id {job_id}")
 
-    def start_loop(self):
-        self.thread = FuncThread(self.loop, name="events-jobscheduler-loop")
-        self.thread.start()
+    def disable_job(self, job_id: JobId):
+        with self.mutex:
+            try:
+                self.jobs[job_id].disable()
+            except KeyError:
+                raise ValueError(f"No job with id {job_id}")
 
-    @classmethod
-    def instance(cls):
-        if not cls._instance:
-            cls._instance = JobScheduler()
-        return cls._instance
+    def cancel_job(self, job_id: JobId):
+        with self.mutex:
+            try:
+                self.jobs.pop(job_id).disable()
+            except KeyError:
+                raise ValueError(f"No job with id {job_id}")
 
-    @classmethod
-    def start(cls):
-        instance = cls.instance()
-        if not instance.thread:
-            instance.start_loop()
-        return instance
+    def shutdown(self):
+        self.scheduler.close()
+        self.executor.shutdown(cancel_futures=True)
 
-    @classmethod
-    def shutdown(cls):
-        instance = cls.instance()
-        if not instance.thread:
-            return
-        instance._stop_event.set()
+    def start(self):
+        thread = threading.Thread(
+            target=self.scheduler.run,
+            name="events-jobscheduler-loop",
+            daemon=True,
+        )
+        thread.start()
+
+
+def parse_schedule_expression(expression: str) -> CronTab | timedelta:
+    """
+    Parses a scheduling expression which can either be ``cron(<crontab expression>)`` or
+    ``rate(<value> <unit>)``. In the first case, a ``CronTab`` object will be returned, and in the second case
+    a ``timedelta`` object will be returned.
+
+    See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-rule-schedule.html
+
+    :param expression: the expression
+    :return: a CronTab or timedelta
+    """
+    if expression.startswith("cron"):
+        return parse_cron_expression(expression)
+    if expression.startswith("rate"):
+        return parse_rate_expression(expression)
+
+    raise ValueError("Syntax error in expression")
+
+
+def parse_rate_expression(expression: str) -> timedelta:
+    """
+    Parses a rate expression as defined in
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rate-expressions.html.
+
+    :param expression: a rate expression, e.g. rate(5 minutes)
+    :return: a timedelta describing the rate
+    """
+    rate_pattern = r"rate\(([0-9]+) (minutes?|hours?|days?)\)"
+
+    if matcher := re.match(rate_pattern, expression):
+        value = int(matcher.group(1))
+        unit = matcher.group(2)
+
+        if value < 1:
+            raise ValueError("Value needs to be larger than 0")
+        if value == 1 and unit.endswith("s"):
+            raise ValueError("If the value is equal to 1, then the unit must be singular")
+        if value > 1 and not unit.endswith("s"):
+            raise ValueError("If the value is greater than 1, the unit must be plural")
+
+        if unit.startswith("minute"):
+            return timedelta(minutes=value)
+        elif unit.startswith("hour"):
+            return timedelta(hours=value)
+        elif unit.startswith("day"):
+            return timedelta(days=value)
+        else:
+            raise ValueError(f"Unknown rate unit {unit}")
+
+    raise ValueError(f"Rate expression did not match pattern {rate_pattern}")
+
+
+def parse_cron_expression(expression: str) -> CronTab:
+    """
+    Parses a crontab expression as defined in
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html.
+
+    :param expression: a cron expression, e.g., cron(0 12 * * ? *)
+    :return: a CronTab instance
+    """
+    if not expression.startswith("cron(") or not expression.endswith(")"):
+        raise ValueError("Cron expression did not match pattern cron(<expression>)")
+
+    expression = expression[5:-1]
+    if expression.startswith(" ") or expression.endswith(" "):
+        raise ValueError("Superfluous whitespaces in cron expression")
+
+    return CronTab(expression)

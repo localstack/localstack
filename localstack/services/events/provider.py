@@ -7,7 +7,6 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-from moto.events import events_backends
 from moto.events.responses import EventsHandler as MotoEventsHandler
 from werkzeug import Request
 from werkzeug.exceptions import NotFound
@@ -40,8 +39,9 @@ from localstack.aws.api.events import (
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.http import route
 from localstack.services.edge import ROUTER
+from localstack.services.events.dispatcher import Event, EventDispatcher
 from localstack.services.events.models import EventsStore, events_stores
-from localstack.services.events.scheduler import JobScheduler
+from localstack.services.events.scheduler import JobId, JobScheduler, parse_schedule_expression
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import event_bus_arn, parse_arn
@@ -51,7 +51,6 @@ from localstack.utils.collections import pick_attributes
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import long_uid, short_uid
-from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
 
@@ -72,15 +71,16 @@ class ValidationException(ServiceException):
 class EventsProvider(EventsApi, ServiceLifecycleHook):
     def __init__(self):
         apply_patches()
+        self.job_scheduler = JobScheduler()
 
     def on_after_init(self):
         ROUTER.add(self.trigger_scheduled_rule)
 
     def on_before_start(self):
-        JobScheduler.start()
+        self.job_scheduler.start()
 
     def on_before_stop(self):
-        JobScheduler.shutdown()
+        self.job_scheduler.shutdown()
 
     @route("/_aws/events/rules/<path:rule_arn>/trigger")
     def trigger_scheduled_rule(self, request: Request, rule_arn: str):
@@ -93,13 +93,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         job_id = events_stores[account_id][region].rule_scheduled_jobs.get(rule_name)
         if not job_id:
             raise NotFound()
-        job = JobScheduler().instance().get_job(job_id)
+        job = self.job_scheduler.get_job(job_id)
         if not job:
             raise NotFound()
+        if not job.task:
+            raise NotFound(f"Job {job_id} not started")
 
-        # TODO: once job scheduler is refactored, we can update the deadline of the task instead of running
-        #  it here
-        job.run()
+        job.task.deadline = 0
+        self.job_scheduler.scheduler.notify()
 
     @staticmethod
     def get_store(context: RequestContext) -> EventsStore:
@@ -119,134 +120,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             return TestEventPatternResponse(Result=False)
         return TestEventPatternResponse(Result=True)
 
-    @staticmethod
-    def get_scheduled_rule_func(
-        store: EventsStore,
-        rule_name: RuleName,
-        event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
-    ):
-        def func(*args, **kwargs):
-            account_id = store._account_id
-            region = store._region_name
-            moto_backend = events_backends[account_id][region]
-            event_bus_name = get_event_bus_name(event_bus_name_or_arn)
-            event_bus = moto_backend.event_buses[event_bus_name]
-            rule = event_bus.rules.get(rule_name)
-            if not rule:
-                LOG.info("Unable to find rule `%s` for event bus `%s`", rule_name, event_bus_name)
-                return
-            if rule.targets:
-                LOG.debug(
-                    "Notifying %s targets in response to triggered Events rule %s",
-                    len(rule.targets),
-                    rule_name,
-                )
-
-            default_event = {
-                "version": "0",
-                "id": long_uid(),
-                "detail-type": "Scheduled Event",
-                "source": "aws.events",
-                "account": account_id,
-                "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
-                "region": region,
-                "resources": [rule.arn],
-                "detail": {},
-            }
-
-            for target in rule.targets:
-                arn = target.get("Arn")
-
-                if input_ := target.get("Input"):
-                    event = json.loads(input_)
-                else:
-                    event = default_event
-                    if target.get("InputPath"):
-                        event = filter_event_with_target_input_path(target, event)
-                    if target.get("InputTransformer"):
-                        LOG.warning(
-                            "InputTransformer is currently not supported for scheduled rules"
-                        )
-
-                attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
-
-                try:
-                    send_event_to_target(
-                        arn,
-                        event,
-                        target_attributes=attr,
-                        role=target.get("RoleArn"),
-                        target=target,
-                        source_arn=rule.arn,
-                        source_service=ServicePrincipal.events,
-                    )
-                except Exception as e:
-                    LOG.info(
-                        "Unable to send event notification %s to target %s: %s",
-                        truncate(event),
-                        target,
-                        e,
-                    )
-
-        return func
-
-    @staticmethod
-    def convert_schedule_to_cron(schedule):
-        """Convert Events schedule like "cron(0 20 * * ? *)" or "rate(5 minutes)" """
-        cron_regex = r"\s*cron\s*\(([^\)]*)\)\s*"
-        if re.match(cron_regex, schedule):
-            cron = re.sub(cron_regex, r"\1", schedule)
-            return cron
-        rate_regex = r"\s*rate\s*\(([^\)]*)\)\s*"
-        if re.match(rate_regex, schedule):
-            rate = re.sub(rate_regex, r"\1", schedule)
-            value, unit = re.split(r"\s+", rate.strip())
-
-            value = int(value)
-            if value < 1:
-                raise ValueError("Rate value must be larger than 0")
-            # see https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rate-expressions.html
-            if value == 1 and unit.endswith("s"):
-                raise ValueError("If the value is equal to 1, then the unit must be singular")
-            if value > 1 and not unit.endswith("s"):
-                raise ValueError("If the value is greater than 1, the unit must be plural")
-
-            if "minute" in unit:
-                return "*/%s * * * *" % value
-            if "hour" in unit:
-                return "0 */%s * * *" % value
-            if "day" in unit:
-                return "0 0 */%s * *" % value
-            raise ValueError("Unable to parse events schedule expression: %s" % schedule)
-        return schedule
-
-    @staticmethod
-    def put_rule_job_scheduler(
-        store: EventsStore,
-        name: Optional[RuleName],
-        state: Optional[RuleState],
-        schedule_expression: Optional[ScheduleExpression],
-        event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
-    ):
-        if not schedule_expression:
-            return
-
-        try:
-            cron = EventsProvider.convert_schedule_to_cron(schedule_expression)
-        except ValueError as e:
-            LOG.error("Error parsing schedule expression: %s", e)
-            raise ValidationException("Parameter ScheduleExpression is not valid.") from e
-
-        job_func = EventsProvider.get_scheduled_rule_func(
-            store, name, event_bus_name_or_arn=event_bus_name_or_arn
-        )
-        LOG.debug("Adding new scheduled Events rule with cron schedule %s", cron)
-
-        enabled = state != "DISABLED"
-        job_id = JobScheduler.instance().add_job(job_func, cron, enabled)
-        rule_scheduled_jobs = store.rule_scheduled_jobs
-        rule_scheduled_jobs[name] = job_id
-
     def put_rule(
         self,
         context: RequestContext,
@@ -259,11 +132,23 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         tags: TagList = None,
         event_bus_name: EventBusNameOrArn = None,
     ) -> PutRuleResponse:
-        store = self.get_store(context)
-        self.put_rule_job_scheduler(
-            store, name, state, schedule_expression, event_bus_name_or_arn=event_bus_name
-        )
-        return call_moto(context)
+        response = call_moto(context)
+
+        # rules are defined with either an event_pattern or a schedule_expression. the event_pattern case
+        # is currently handled with moto patches, and the scheduled_expression case is handled here
+        # explicitly.
+        if schedule_expression:
+            job_id = self._schedule_rule_job(
+                region=context.region,
+                account_id=context.account_id,
+                event_bus_name_or_arn=event_bus_name,
+                rule_name=name,
+                rule_state=state,
+                schedule_expression=schedule_expression,
+            )
+            self.get_store(context).rule_scheduled_jobs[name] = job_id
+
+        return response
 
     def delete_rule(
         self,
@@ -273,10 +158,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         force: Boolean = None,
     ) -> None:
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
-        job_id = rule_scheduled_jobs.get(name)
+        job_id = rule_scheduled_jobs.pop(name, None)
         if job_id:
-            LOG.debug("Removing scheduled Events: {} | job_id: {}".format(name, job_id))
-            JobScheduler.instance().cancel_job(job_id=job_id)
+            LOG.debug("Removing rule: %s (job_id: %s)", name, job_id)
+            self.job_scheduler.cancel_job(job_id=job_id)
         call_moto(context)
 
     def disable_rule(
@@ -285,8 +170,18 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
         if job_id:
-            LOG.debug("Disabling Rule: {} | job_id: {}".format(name, job_id))
-            JobScheduler.instance().disable_job(job_id=job_id)
+            LOG.debug("Disabling rule %s (job_id: %s)", name, job_id)
+            self.job_scheduler.disable_job(job_id=job_id)
+        call_moto(context)
+
+    def enable_rule(
+        self, context: RequestContext, name: RuleName, event_bus_name: EventBusNameOrArn = None
+    ) -> None:
+        rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
+        job_id = rule_scheduled_jobs.get(name)
+        if job_id:
+            LOG.debug("Enabling rule %s (job_id: %s)", name, job_id)
+            self.job_scheduler.enable_job(job_id=job_id)
         call_moto(context)
 
     def create_connection(
@@ -348,6 +243,87 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             raise CommonServiceException(message=message, code="ValidationException")
 
         return call_moto(context)
+
+    def _schedule_rule_job(
+        self,
+        region: str,
+        account_id: str,
+        event_bus_name_or_arn: EventBusNameOrArn,
+        rule_name: RuleName,
+        rule_state: RuleState,
+        schedule_expression: ScheduleExpression,
+    ) -> JobId | None:
+        """Used when PutRule is used with a ScheduleExpression. It creates a RuleEventDispatcher and
+        schedules it using the JobScheduler. Returns the JobId assigned by the JobScheduler."""
+        try:
+            # guard against invalid expressions
+            parse_schedule_expression(schedule_expression)
+        except ValueError as e:
+            LOG.error("Error parsing schedule expression %s: %s", schedule_expression, e)
+            raise ValidationException("Parameter ScheduleExpression is not valid.") from e
+
+        dispatcher = ScheduledRuleDispatcher(
+            region, account_id, get_event_bus_name(event_bus_name_or_arn), rule_name
+        )
+
+        enabled = rule_state != "DISABLED"
+        job_id = self.job_scheduler.add_job(dispatcher, schedule_expression, enabled)
+        return job_id
+
+
+class ScheduledRuleDispatcher:
+    """
+    Callable used as a Job function for a Rule that was scheduled using a schedule expression.
+    """
+
+    def __init__(self, region: str, account_id: str, event_bus_name: str, rule_name: str):
+        self.region = region
+        self.account_id = account_id
+        self.event_bus_name = event_bus_name
+        self.rule_name = rule_name
+
+    def __call__(self, *args, **kwargs):
+        # look up rule on every call from moto to pick up any updated targets
+        from moto.events import events_backends
+
+        moto_backend = events_backends[self.account_id][self.region]
+        event_bus = moto_backend.event_buses[self.event_bus_name]
+        rule = event_bus.rules.get(self.rule_name)
+
+        if not rule:
+            # this should not happen, since the dispatcher is scheduled only after the rule has been
+            # created, and is removed once the rule is removed. but we guard against the case anyway.
+            LOG.warning(
+                "Event rule %s was not found in event bus %s", self.rule_name, self.event_bus_name
+            )
+            return
+
+        if not rule.targets:
+            LOG.debug("Event rule %s was triggered but has no targets", self.rule_name)
+            return
+
+        # event id and timestamp should stay the same across targets
+        event = Event(
+            source="aws.events",
+            detail_type="Scheduled Event",
+            resources=rule.arn,
+            account=self.account_id,
+            region=self.region,
+        )
+
+        for target in rule.targets:
+            # TODO: RetryPolicy
+            dispatcher = EventDispatcher.dispatcher_for_target(target.get("Arn"))
+            try:
+                dispatcher.dispatch(event, target)
+            except Exception as e:
+                LOG.error(
+                    "Failed to dispatch event notification rule %s to %s: %s",
+                    rule.name,
+                    target,
+                    e,
+                    exc_info=e if LOG.isEnabledFor(logging.DEBUG) else None,
+                )
 
 
 def _get_events_tmp_dir():
@@ -622,6 +598,7 @@ def get_event_bus_name(event_bus_name_or_arn: Optional[EventBusNameOrArn] = None
 
 # specific logic for put_events which forwards matching events to target listeners
 def events_handler_put_events(self):
+    # TODO: replace with EventDispatcher
     entries = self._get_param("Entries")
 
     # keep track of events for local integration testing
