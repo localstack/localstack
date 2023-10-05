@@ -839,7 +839,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
-                response[f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
+                response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
         if s3_object.parts:
             response["PartsCount"] = len(s3_object.parts)
