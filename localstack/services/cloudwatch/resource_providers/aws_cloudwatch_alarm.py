@@ -119,6 +119,7 @@ class CloudWatchAlarmProvider(ResourceProvider[CloudWatchAlarmProperties]):
         )
         alarm = cloud_watch.describe_alarms(AlarmNames=[model["AlarmName"]])["MetricAlarms"][0]
         model["Arn"] = alarm["AlarmArn"]
+        model["Id"] = alarm["AlarmName"]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
