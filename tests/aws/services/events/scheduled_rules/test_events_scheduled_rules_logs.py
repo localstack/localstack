@@ -110,7 +110,7 @@ def test_scheduled_rule_logs(
         return result["logStreams"]
 
     log_streams = retry(_get_log_stream, 60)
-    log_streams.sort(key=lambda stream: stream["logStreamName"])
+    log_streams.sort(key=lambda stream: stream["creationTime"])
     snapshot.match("log-streams", log_streams)
 
     # collect events from log streams in group
@@ -132,6 +132,6 @@ def test_scheduled_rule_logs(
 
     events = retry(_get_events, retries=5)
 
-    events.sort(key=lambda stream: stream["logStreamName"])
+    events.sort(key=lambda event: event["timestamp"])
 
     snapshot.match("log-events", events)
