@@ -1,0 +1,25 @@
+{
+  "Resources": {
+    "MyTopic86869434": {
+      "Type": "AWS::SNS::Topic"
+    }
+  },
+  "Outputs": {
+    "TopicArn": {
+      "Value": {
+        "Ref": "MyTopic86869434"
+      }
+    },
+    "ExportsOutputFnGetAttMyTopic86869434TopicNameFCC96FA2": {
+      "Value": {
+        "Fn::GetAtt": [
+          "MyTopic86869434",
+          "TopicName"
+        ]
+      },
+      "Export": {
+        "Name": "DemoTest:ExportsOutputFnGetAttMyTopic86869434TopicNameFCC96FA2"
+      }
+    }
+  }
+}

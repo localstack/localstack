@@ -1,0 +1,30 @@
+{
+  "Resources": {
+    "MyTopic86869434": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": {
+          "Fn::Join": [
+            "-",
+            [
+              {
+                "Fn::ImportValue": "DemoTest:ExportsOutputFnGetAttMyTopic86869434TopicNameFCC96FA2"
+              },
+              "demosuffix",
+              {
+                "Ref": "AWS::AccountId"
+              }
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "TopicArn": {
+      "Value": {
+        "Ref": "MyTopic86869434"
+      }
+    }
+  }
+}
