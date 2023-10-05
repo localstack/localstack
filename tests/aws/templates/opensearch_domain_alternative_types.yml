@@ -1,3 +1,4 @@
+# sample from https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html
 Resources:
   OpenSearchServiceDomain:
     Type: AWS::OpenSearchService::Domain
