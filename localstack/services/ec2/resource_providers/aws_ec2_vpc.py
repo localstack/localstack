@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.models.ec2 import (
@@ -10,7 +10,6 @@ from localstack.services.cloudformation.models.ec2 import (
     _get_default_security_group_for_vpc,
 )
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
