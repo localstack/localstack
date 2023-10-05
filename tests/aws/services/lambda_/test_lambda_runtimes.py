@@ -134,8 +134,7 @@ class TestNodeJSRuntimes:
 
 class TestJavaRuntimes:
     @pytest.fixture(scope="class")
-    @markers.aws.unknown
-    def test_java_jar(self) -> bytes:
+    def java_jar(self) -> bytes:
         lambda_java_testlibs_package.install()
         java_file = load_file(
             lambda_java_testlibs_package.get_installer().get_executable_path(), mode="rb"
@@ -143,8 +142,7 @@ class TestJavaRuntimes:
         return java_file
 
     @pytest.fixture(scope="class")
-    @markers.aws.unknown
-    def test_java_zip(self, tmpdir_factory, test_java_jar) -> bytes:
+    def java_zip(self, tmpdir_factory, java_jar) -> bytes:
         tmpdir = tmpdir_factory.mktemp("tmp-java-zip")
         zip_lib_dir = os.path.join(tmpdir, "lib")
         zip_jar_path = os.path.join(zip_lib_dir, "test.lambda.jar")
@@ -156,7 +154,7 @@ class TestJavaRuntimes:
             java_lib_dir,
             os.path.join(zip_lib_dir, "executor.lambda.jar"),
         )
-        save_file(zip_jar_path, test_java_jar)
+        save_file(zip_jar_path, java_jar)
         return testutil.create_zip_file(tmpdir, get_content=True)
 
     @markers.snapshot.skip_snapshot_verify(
@@ -210,13 +208,11 @@ class TestJavaRuntimes:
 
     @parametrize_java_runtimes
     @markers.aws.validated
-    def test_stream_handler(
-        self, create_lambda_function, test_java_jar, runtime, snapshot, aws_client
-    ):
+    def test_stream_handler(self, create_lambda_function, java_jar, runtime, snapshot, aws_client):
         function_name = f"test-lambda-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
-            zip_file=test_java_jar,
+            zip_file=java_jar,
             runtime=runtime,
             handler="cloud.localstack.awssdkv1.sample.LambdaStreamHandler",
         )
@@ -229,13 +225,13 @@ class TestJavaRuntimes:
     @parametrize_java_runtimes
     @markers.aws.validated
     def test_serializable_input_object(
-        self, create_lambda_function, test_java_zip, runtime, snapshot, aws_client
+        self, create_lambda_function, java_zip, runtime, snapshot, aws_client
     ):
         # deploy lambda - Java with serializable input object
         function_name = f"test-lambda-{short_uid()}"
         create_result = create_lambda_function(
             func_name=function_name,
-            zip_file=test_java_zip,
+            zip_file=java_zip,
             runtime=runtime,
             handler="cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
         )
@@ -328,7 +324,7 @@ class TestJavaRuntimes:
         sns_create_topic,
         snapshot,
         create_lambda_function,
-        test_java_zip,
+        java_zip,
         aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -338,7 +334,7 @@ class TestJavaRuntimes:
         key = f"key-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
-            zip_file=test_java_zip,
+            zip_file=java_zip,
             runtime=Runtime.java11,
             handler="cloud.localstack.sample.LambdaHandler",
         )

@@ -1,0 +1,56 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_map_run.py::TestSnfApiMapRun::test_list_map_runs_and_describe_map_run": {
+    "recorded-date": "21-09-2023, 21:21:35",
+    "recorded-content": {
+      "list_map_runs": {
+        "mapRuns": [
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>",
+            "startDate": "start-date",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>/<MapRunArnPart0_0idx>",
+            "stopDate": "stop-date"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_map_run": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "executionCounts": {
+          "aborted": 0,
+          "failed": 0,
+          "pending": 0,
+          "resultsWritten": 2,
+          "running": 0,
+          "succeeded": 2,
+          "timedOut": 0,
+          "total": 2
+        },
+        "itemCounts": {
+          "aborted": 0,
+          "failed": 0,
+          "pending": 0,
+          "resultsWritten": 2,
+          "running": 0,
+          "succeeded": 2,
+          "timedOut": 0,
+          "total": 2
+        },
+        "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>",
+        "maxConcurrency": 1,
+        "startDate": "start-date",
+        "status": "SUCCEEDED",
+        "stopDate": "stop-date",
+        "toleratedFailureCount": 0,
+        "toleratedFailurePercentage": 0.0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

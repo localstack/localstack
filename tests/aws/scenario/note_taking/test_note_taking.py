@@ -6,12 +6,8 @@ import copy
 import json
 import logging
 import os
-import shutil
-import tempfile
-import zipfile
 from dataclasses import dataclass
 from operator import itemgetter
-from typing import TYPE_CHECKING, Callable
 
 import aws_cdk as cdk
 import aws_cdk.aws_apigateway as apigw
@@ -21,13 +17,9 @@ import pytest
 import requests
 from constructs import Construct
 
-from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.testing.pytest import markers
-
-if TYPE_CHECKING:
-    from mypy_boto3_s3 import S3Client
-
-from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
+from localstack.testing.scenario.cdk_lambda_helper import load_nodejs_lambda_to_s3
+from localstack.testing.scenario.provisioning import InfraProvisioner
 
 LOG = logging.getLogger(__name__)
 
@@ -86,94 +78,29 @@ def _add_endpoints(
         )
 
 
-def setup_lambdas(
-    s3_client: "S3Client", create_archive_for_lambda_resource: Callable, bucket_name: str
-):
-    options = {"Bucket": bucket_name}
-    region_name = s3_client.meta.region_name
-    if region_name != AWS_REGION_US_EAST_1:
-        options["CreateBucketConfiguration"] = {"LocationConstraint": region_name}
-    s3_client.create_bucket(**options)
-    lambda_notes = ["createNote", "deleteNote", "getNote", "listNotes", "updateNote"]
-    object_keys = []
-    for note in lambda_notes:
-        archive = create_archive_for_lambda_resource(lambda_name=note)
-        key = f"{note}.zip"
-        object_keys.append({"Key": key})
-        s3_client.upload_file(
-            Filename=archive,
-            Bucket=bucket_name,
-            Key=key,
-        )
-
-
 class TestNoteTakingScenario:
     STACK_NAME = "NoteTakingStack"
 
-    @pytest.fixture(scope="class")
-    def create_archive_for_lambda_resource(self):
-        libs_file = os.path.join(os.path.dirname(__file__), "./functions/libs/response.js")
-        tmp_dir_list = []
-        tmp_zip_path_list = []
-
-        def create_tmp_zip(**kwargs):
-            lambda_file_base_name = kwargs["lambda_name"]
-
-            # Create a temporary directory
-            temp_dir = tempfile.mkdtemp()
-            tmp_dir_list.append(temp_dir)
-            # Extract the existing ZIP file contents to the temporary directory
-
-            # Add the libs to the temporary directory
-            new_resource_filename = os.path.basename(libs_file)
-            os.mkdir(os.path.join(temp_dir, "libs"))
-            new_resource_temp_path = os.path.join(temp_dir, "libs", new_resource_filename)
-            shutil.copy2(libs_file, new_resource_temp_path)
-
-            # Add the lambda to the temporary directory
-            lambda_file = f"{lambda_file_base_name}.js"
-            lambda_file_path = os.path.join(os.path.dirname(__file__), f"./functions/{lambda_file}")
-            new_resource_temp_path = os.path.join(temp_dir, "index.js")
-            shutil.copy2(lambda_file_path, new_resource_temp_path)
-
-            # Create a temporary ZIP file
-            temp_zip_path = os.path.join(tempfile.gettempdir(), f"{lambda_file_base_name}.zip")
-            tmp_zip_path_list.append(temp_zip_path)
-            with zipfile.ZipFile(temp_zip_path, "w") as temp_zip:
-                # Add the contents of the existing ZIP file
-                for root, _, files in os.walk(temp_dir):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        archive_name = os.path.relpath(file_path, temp_dir)
-                        temp_zip.write(file_path, archive_name)
-            return temp_zip_path
-
-        yield create_tmp_zip
-
-        # Clean up the temporary directory
-        for tmp_dir in tmp_dir_list:
-            shutil.rmtree(tmp_dir)
-
-        # Clean up the temporary ZIP file if it exists
-        for tmp_zip_path in tmp_zip_path_list:
-            if os.path.exists(tmp_zip_path):
-                os.remove(tmp_zip_path)
-
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client, create_archive_for_lambda_resource):
-        infra = InfraProvisioner(aws_client)
-        app = cdk.App()
-        stack = cdk.Stack(app, self.STACK_NAME)
+    def infrastructure(self, aws_client, infrastructure_setup):
+        infra = infrastructure_setup(namespace="NoteTaking")
+        stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
-        bucket_name = "notes-sample-scenario-test"
+        # manually upload lambda to s3
+        def _create_lambdas():
+            lambda_notes = ["createNote", "deleteNote", "getNote", "listNotes", "updateNote"]
+            additional_resources = [os.path.join(os.path.dirname(__file__), "./functions/libs")]
+            for note in lambda_notes:
+                code_path = os.path.join(os.path.dirname(__file__), f"./functions/{note}.js")
+                load_nodejs_lambda_to_s3(
+                    aws_client.s3,
+                    infra.get_asset_bucket(),
+                    key_name=f"{note}.zip",
+                    code_path=code_path,
+                    additional_resources=additional_resources,
+                )
 
-        # manually create s3 bucket + upload lambda
-        infra.add_custom_setup_provisioning_step(
-            lambda: setup_lambdas(aws_client.s3, create_archive_for_lambda_resource, bucket_name)
-        )
-        # add custom tear down for deleting bucket + content
-        infra.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name))
-        infra.add_custom_teardown(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
+        infra.add_custom_setup_provisioning_step(_create_lambdas)
 
         table = dynamodb.Table(
             stack,
@@ -186,7 +113,7 @@ class TestNoteTakingScenario:
         _add_endpoints(
             resource=notes_endpoint,
             stack=stack,
-            bucket_name=bucket_name,
+            bucket_name=InfraProvisioner.get_asset_bucket_cdk(stack),
             table=table,
             endpoints=[
                 Endpoint(http_method="GET", endpoint_id="listNotes", grant_actions="dynamodb:Scan"),
@@ -204,7 +131,7 @@ class TestNoteTakingScenario:
         _add_endpoints(
             resource=single_note_endpoint,
             stack=stack,
-            bucket_name=bucket_name,
+            bucket_name=InfraProvisioner.get_asset_bucket_cdk(stack),
             table=table,
             endpoints=[
                 Endpoint(
@@ -225,8 +152,6 @@ class TestNoteTakingScenario:
 
         cdk.CfnOutput(stack, "GatewayUrl", value=api.url)
         cdk.CfnOutput(stack, "Region", value=stack.region)
-
-        infra.add_cdk_stack(stack)
 
         with infra.provisioner() as prov:
             yield prov

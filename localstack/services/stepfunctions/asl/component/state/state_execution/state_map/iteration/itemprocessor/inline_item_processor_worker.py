@@ -16,7 +16,7 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 LOG = logging.getLogger(__name__)
 
 
-class ItemProcessorWorker(IterationWorker):
+class InlineItemProcessorWorker(IterationWorker):
 
     _item_selector: Final[Optional[ItemSelector]]
 

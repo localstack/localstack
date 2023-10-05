@@ -30,7 +30,6 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
-# TODO: improve on factory constructor (don't use SubtypeManager)
 class StateTaskService(StateTask, abc.ABC):
     resource: ServiceResource
 
@@ -110,58 +109,3 @@ class StateTaskService(StateTask, abc.ABC):
         self._eval_service_task(env=env, parameters=normalised_parameters)
 
         self._after_eval_execution(env=env)
-
-    @classmethod
-    def for_service(cls, service_name: str) -> StateTaskService:
-        match service_name:
-            case "aws-sdk":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_aws_sdk import (
-                    StateTaskServiceAwsSdk,
-                )
-
-                return StateTaskServiceAwsSdk()
-            case "lambda":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_lambda import (
-                    StateTaskServiceLambda,
-                )
-
-                return StateTaskServiceLambda()
-            case "sqs":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sqs import (
-                    StateTaskServiceSqs,
-                )
-
-                return StateTaskServiceSqs()
-            case "states":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sfn import (
-                    StateTaskServiceSfn,
-                )
-
-                return StateTaskServiceSfn()
-            case "dynamodb":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_dynamodb import (
-                    StateTaskServiceDynamoDB,
-                )
-
-                return StateTaskServiceDynamoDB()
-            case "apigateway":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_api_gateway import (
-                    StateTaskServiceApiGateway,
-                )
-
-                return StateTaskServiceApiGateway()
-            case "sns":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sns import (
-                    StateTaskServiceSns,
-                )
-
-                return StateTaskServiceSns()
-            case "events":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_events import (
-                    StateTaskServiceEvents,
-                )
-
-                return StateTaskServiceEvents()
-
-            case unknown:
-                raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa

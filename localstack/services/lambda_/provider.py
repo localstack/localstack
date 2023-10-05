@@ -238,7 +238,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service = LambdaService()
         self.router.lambda_service = self.lambda_service
 
-        # TODO: provisioned concurrency
         for account_id, account_bundle in lambda_stores.items():
             for region_name, state in account_bundle.items():
                 for fn in state.functions.values():
@@ -260,6 +259,37 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                             LOG.warning(
                                 "Failed to restore function version %s",
                                 fn_version.id.qualified_arn(),
+                                exc_info=True,
+                            )
+                    # restore provisioned concurrency per function considering both versions and aliases
+                    for (
+                        provisioned_qualifier,
+                        provisioned_config,
+                    ) in fn.provisioned_concurrency_configs.items():
+                        fn_arn = None
+                        try:
+                            if api_utils.qualifier_is_alias(provisioned_qualifier):
+                                alias = fn.aliases.get(provisioned_qualifier)
+                                resolved_version = fn.versions.get(alias.function_version)
+                                fn_arn = resolved_version.id.qualified_arn()
+                            elif api_utils.qualifier_is_version(provisioned_qualifier):
+                                fn_version = fn.versions.get(provisioned_qualifier)
+                                fn_arn = fn_version.id.qualified_arn()
+                            else:
+                                raise InvalidParameterValueException(
+                                    "Invalid qualifier type:"
+                                    " Qualifier can only be an alias or a version for provisioned concurrency."
+                                )
+
+                            manager = self.lambda_service.get_lambda_version_manager(fn_arn)
+                            manager.update_provisioned_concurrency_config(
+                                provisioned_config.provisioned_concurrent_executions
+                            )
+                        except Exception:
+                            LOG.warning(
+                                "Failed to restore provisioned concurrency %s for function %s",
+                                provisioned_config,
+                                fn_arn,
                                 exc_info=True,
                             )
 
@@ -2334,6 +2364,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
 
     # CAVE: these settings & usages are *per* region!
+    # Lambda quotas: https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html
     def get_account_settings(
         self,
         context: RequestContext,
@@ -2346,7 +2377,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         for fn in state.functions.values():
             fn_count += 1
             for fn_version in fn.versions.values():
-                code_size_sum += fn_version.config.code.code_size
+                # Image-based Lambdas do not have a code attribute and count against the ECR quotas instead
+                if fn_version.config.package_type == PackageType.Zip:
+                    code_size_sum += fn_version.config.code.code_size
             if fn.reserved_concurrent_executions is not None:
                 reserved_concurrency_sum += fn.reserved_concurrent_executions
             for c in fn.provisioned_concurrency_configs.values():
