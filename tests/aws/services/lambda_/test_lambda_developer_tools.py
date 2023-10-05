@@ -35,7 +35,7 @@ class TestHotReloading:
         ],
         ids=["nodejs18.x", "python3.9"],
     )
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_hot_reloading(
         self,
         create_lambda_function_aws,
@@ -104,7 +104,7 @@ class TestHotReloading:
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_hot_reloading_publish_version(
         self, create_lambda_function_aws, lambda_su_role, cleanups, aws_client
     ):
@@ -137,7 +137,7 @@ class TestHotReloading:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
 class TestDockerFlags:
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_additional_docker_flags(self, create_lambda_function, monkeypatch, aws_client):
         env_value = short_uid()
         monkeypatch.setattr(config, "LAMBDA_DOCKER_FLAGS", f"-e Hello={env_value}")
@@ -154,7 +154,7 @@ class TestDockerFlags:
         result_data = json.loads(to_str(result_data))
         assert {"Hello": env_value} == result_data
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_lambda_docker_networks(self, lambda_su_role, monkeypatch, aws_client, cleanups):
         function_name = f"test-network-{short_uid()}"
         container_name = f"server-{short_uid()}"

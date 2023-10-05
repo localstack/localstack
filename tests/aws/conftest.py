@@ -1,7 +1,12 @@
+import os
+from typing import Optional
+
+import pytest
 from _pytest.config import Config
 
 from localstack import config as localstack_config
 from localstack import constants
+from localstack.testing.scenario.provisioning import InfraProvisioner
 from tests.aws.services.es.test_es import install_async as es_install_async
 from tests.aws.services.opensearch.test_opensearch import install_async as opensearch_install_async
 from tests.aws.test_terraform import TestTerraform
@@ -49,3 +54,32 @@ def pytest_runtestloop(session):
 
     for fn in test_init_functions:
         fn()
+
+
+# Note: Don't move this into testing lib
+@pytest.fixture(scope="session")
+def cdk_template_path():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "cdk_templates"))
+
+
+# Note: Don't move this into testing lib
+@pytest.fixture(scope="session")
+def infrastructure_setup(cdk_template_path, aws_client):
+    def _infrastructure_setup(
+        namespace: str, force_synth: Optional[bool] = False
+    ) -> InfraProvisioner:
+        """
+        :param namespace: repo-unique identifier for this CDK app.
+            A directory with this name will be created at `tests/aws/cdk_templates/<namespace>/`
+        :param force_synth: set to True to always re-synth the CDK app
+        :return: an instantiated CDK InfraProvisioner which can be used to deploy a CDK app
+        """
+        return InfraProvisioner(
+            base_path=cdk_template_path,
+            aws_client=aws_client,
+            namespace=namespace,
+            force_synth=force_synth,
+            persist_output=True,
+        )
+
+    return _infrastructure_setup

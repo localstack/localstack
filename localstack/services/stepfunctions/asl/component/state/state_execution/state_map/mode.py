@@ -5,3 +5,4 @@ from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexe
 
 class Mode(Enum):
     Inline = ASLLexer.INLINE
+    Distributed = ASLLexer.DISTRIBUTED

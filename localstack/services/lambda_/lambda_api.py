@@ -1809,7 +1809,7 @@ def invoke_function(function):
             details["Headers"]["X-Amz-Function-Error"] = str(details["FunctionError"])
         # LogResult contains the last 4KB (~4k characters) of log outputs
         logs = log_output[-4000:] if log_type == "Tail" else ""
-        details["Headers"]["X-Amz-Log-Result"] = base64.b64encode(to_bytes(logs))
+        details["Headers"]["X-Amz-Log-Result"] = to_str(base64.b64encode(to_bytes(logs)))
         details["Headers"]["X-Amz-Executed-Version"] = str(qualifier or VERSION_LATEST)
         # Construct response object
         response_obj = details["Payload"]

@@ -6,7 +6,7 @@ from json import JSONDecodeError
 from typing import Optional, Pattern
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
-from localstack.aws.api.stepfunctions import CreateStateMachineOutput, StartExecutionOutput
+from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
 from localstack.testing.snapshots.transformer import (
     JsonpathTransformer,
     KeyValueBasedTransformer,
@@ -235,6 +235,19 @@ class TransformerUtility:
             TransformerUtility.key_value("ChangeSetName"),
             TransformerUtility.key_value("ChangeSetId"),
             TransformerUtility.key_value("StackName"),
+        ]
+
+    @staticmethod
+    def cfn_stack_resource():
+        """
+        :return: array with Transformers, for cloudformation stack resource description;
+                recommended for verifying the stack resources deployed for scenario tests
+        """
+        return [
+            KeyValueBasedTransformer(_resource_name_transformer, "resource"),
+            KeyValueBasedTransformer(_change_set_id_transformer, "change-set-id"),
+            TransformerUtility.key_value("LogicalResourceId"),
+            TransformerUtility.key_value("PhysicalResourceId", reference_replacement=False),
         ]
 
     @staticmethod
@@ -561,6 +574,15 @@ class TransformerUtility:
         arn_part_repl = f"<ExecArnPart_{index}idx>"
         arn_part: str = "".join(start_exec["executionArn"].rpartition(":")[-1])
         return RegexTransformer(arn_part, arn_part_repl)
+
+    @staticmethod
+    def sfn_map_run_arn(map_run_arn: LongArn, index: int) -> list[RegexTransformer]:
+        map_run_arn_part = map_run_arn.split("/")[-1]
+        arn_parts = map_run_arn_part.split(":")
+        return [
+            RegexTransformer(arn_parts[0], f"<MapRunArnPart0_{index}idx>"),
+            RegexTransformer(arn_parts[1], f"<MapRunArnPart1_{index}idx>"),
+        ]
 
     @staticmethod
     def stepfunctions_api():
