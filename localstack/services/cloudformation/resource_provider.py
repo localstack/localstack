@@ -70,6 +70,7 @@ PROVIDER_DEFAULTS = {
     "AWS::EC2::VPCGatewayAttachment": "ResourceProvider",
     "AWS::EC2::SecurityGroup": "ResourceProvider",
     "AWS::EC2::Subnet": "ResourceProvider",
+    "AWS::EC2::VPC": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }
