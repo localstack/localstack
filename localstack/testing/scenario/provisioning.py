@@ -64,8 +64,9 @@ class InfraProvisioner:
     custom_cleanup_steps: list[Callable]
     custom_setup_steps: list[Callable]
     skipped_provisioning: bool = False
+    aws_client: ServiceLevelClientFactory
     namespace: str
-    base_path: str
+    base_path: str | None
     cdk_app: cdk.App
     persist_output: bool
 
@@ -73,7 +74,7 @@ class InfraProvisioner:
         self,
         aws_client: ServiceLevelClientFactory,
         namespace: str,
-        base_path: str,
+        base_path: Optional[str] = None,
         force_template_update: Optional[bool] = False,
         persist_output: Optional[bool] = False,
     ):
@@ -93,6 +94,8 @@ class InfraProvisioner:
         self.aws_client = aws_client
         self.force_template_update = force_template_update
         self.persist_output = persist_output
+        if self.base_path is None:
+            self.persist_output = False
         self.cdk_app = cdk.App(default_stack_synthesizer=cdk.BootstraplessSynthesizer())
 
     def get_asset_bucket(self):
