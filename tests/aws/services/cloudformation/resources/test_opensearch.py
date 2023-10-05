@@ -51,7 +51,27 @@ def test_domain(deploy_cfn_template, aws_client, snapshot):
 
 
 @markers.aws.validated
-def test_domain_with_alternative_types(deploy_cfn_template, aws_client):
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..DomainStatus.AccessPolicies",
+        "$..DomainStatus.AdvancedOptions.override_main_response_version",
+        "$..DomainStatus.AdvancedSecurityOptions.AnonymousAuthEnabled",
+        "$..DomainStatus.AutoTuneOptions.State",
+        "$..DomainStatus.AutoTuneOptions.UseOffPeakWindow",
+        "$..DomainStatus.ChangeProgressDetails",
+        "$..DomainStatus.ClusterConfig.DedicatedMasterCount",
+        "$..DomainStatus.ClusterConfig.InstanceCount",
+        "$..DomainStatus.ClusterConfig.MultiAZWithStandbyEnabled",
+        "$..DomainStatus.ClusterConfig.ZoneAwarenessConfig",
+        "$..DomainStatus.ClusterConfig.ZoneAwarenessEnabled",
+        "$..DomainStatus.EBSOptions.VolumeSize",
+        "$..DomainStatus.Endpoint",
+        "$..DomainStatus.OffPeakWindowOptions",
+        "$..DomainStatus.ServiceSoftwareOptions.CurrentVersion",
+        "$..DomainStatus.SoftwareUpdateOptions",
+    ]
+)
+def test_domain_with_alternative_types(deploy_cfn_template, aws_client, snapshot):
     """
     Test that the alternative types for the OpenSearch domain are accepted using the resource documentation example
     """
@@ -62,4 +82,4 @@ def test_domain_with_alternative_types(deploy_cfn_template, aws_client):
     )
     domain_name = stack.outputs["SearchDomain"]
     domain = aws_client.opensearch.describe_domain(DomainName=domain_name)
-    assert domain["DomainStatus"]["DomainName"] == domain_name
+    snapshot.match("describe_domain", domain)

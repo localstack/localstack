@@ -228,11 +228,10 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
                     if key in cluster_config and isinstance(cluster_config[key], str):
                         cluster_config[key] = int(cluster_config[key])
 
-            if properties.get("AccessPolicies") and isinstance(properties["AccessPolicies"], dict):
+            if properties.get("AccessPolicies"):
                 properties["AccessPolicies"] = json.dumps(properties["AccessPolicies"])
 
-            ebs_options = properties.get("EBSOptions")
-            if isinstance(ebs_options, dict):
+            if ebs_options := properties.get("EBSOptions"):
                 for key in ["Iops", "Throughput", "VolumeSize"]:
                     if key in ebs_options and isinstance(ebs_options[key], str):
                         ebs_options[key] = int(ebs_options[key])
