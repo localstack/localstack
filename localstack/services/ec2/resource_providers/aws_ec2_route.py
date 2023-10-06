@@ -4,6 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, TypedDict
 
+from moto.ec2.utils import generate_route_id
+
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
@@ -72,7 +74,11 @@ class EC2RouteProvider(ResourceProvider[EC2RouteProperties]):
             DestinationIpv6CidrBlock=ipv6_cidr_block,
             RouteTableId=model["RouteTableId"],
         )
-
+        model["Id"] = generate_route_id(
+            model["RouteTableId"],
+            cidr_block,
+            ipv6_cidr_block,
+        )
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
