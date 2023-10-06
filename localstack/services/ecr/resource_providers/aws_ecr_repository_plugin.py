@@ -18,4 +18,3 @@ class ECRRepositoryProviderPlugin(CloudFormationResourceProviderPlugin):
         )
 
         self.factory = ECRRepositoryProvider
-

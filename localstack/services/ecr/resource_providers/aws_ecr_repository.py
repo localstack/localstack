@@ -1,17 +1,23 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import logging
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
     ResourceRequest,
 )
+from localstack.utils.aws import arns
+
+LOG = logging.getLogger(__name__)
+
+# simple mock state
+default_repos_per_stack = {}
 
 
 class ECRRepositoryProperties(TypedDict):
@@ -63,8 +69,6 @@ class ECRRepositoryProvider(ResourceProvider[ECRRepositoryProperties]):
         Primary identifier fields:
           - /properties/RepositoryName
 
-
-
         Create-only properties:
           - /properties/RepositoryName
           - /properties/EncryptionConfiguration
@@ -87,27 +91,23 @@ class ECRRepositoryProvider(ResourceProvider[ECRRepositoryProperties]):
         """
         model = request.desired_state
 
-        # TODO: validations
-
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
-
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
+        default_repos_per_stack[request.stack_name] = model["RepositoryName"]
+        LOG.warning(
+            "Creating a Mock ECR Repository for CloudFormation. This is only intended to be used for allowing a successful CDK bootstrap and does not provision any underlying ECR repository."
+        )
+        model.update(
+            {
+                "Arn": arns.get_ecr_repository_arn(model["RepositoryName"]),
+                "RepositoryUri": "http://localhost:4566",
+                "ImageTagMutability": "MUTABLE",
+                "ImageScanningConfiguration": {"scanOnPush": True},
+            }
+        )
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def read(
         self,
@@ -135,7 +135,14 @@ class ECRRepositoryProvider(ResourceProvider[ECRRepositoryProperties]):
           - ecr:DeleteRepository
           - kms:RetireGrant
         """
-        raise NotImplementedError
+        if default_repos_per_stack.get(request.stack_name):
+            del default_repos_per_stack[request.stack_name]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=request.desired_state,
+            custom_context=request.custom_context,
+        )
 
     def update(
         self,
@@ -158,4 +165,3 @@ class ECRRepositoryProvider(ResourceProvider[ECRRepositoryProperties]):
           - kms:RetireGrant
         """
         raise NotImplementedError
-
