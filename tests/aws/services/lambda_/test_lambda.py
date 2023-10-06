@@ -2,7 +2,9 @@ import base64
 import json
 import logging
 import os
+import random
 import re
+import string
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -197,6 +199,22 @@ pytestmark = markers.snapshot.skip_snapshot_verify(
 
 
 class TestLambdaBaseFeatures:
+    @markers.aws.validated
+    def test_create_lambda_short_name(self, create_lambda_function, aws_client, snapshot):
+        """Motivated by GitHub issue where a single-character function name fails to start upon invocation
+        https://github.com/localstack/localstack/issues/9016
+        """
+        # Generate single-character name (matching [a-z]/i)
+        function_name = random.choice(string.ascii_letters)
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_10,
+        )
+
+        result = aws_client.lambda_.invoke(FunctionName=function_name)
+        snapshot.match("invoke-result", result)
+
     @markers.snapshot.skip_snapshot_verify(paths=["$..LogResult"])
     @markers.aws.validated
     def test_large_payloads(self, caplog, create_lambda_function, aws_client):
