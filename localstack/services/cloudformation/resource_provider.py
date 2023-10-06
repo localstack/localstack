@@ -74,6 +74,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ElasticBeanstalk::Environment": "ResourceProvider",
     "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
+    "AWS::EKS::Nodegroup": "ResourceProvider",
 }
 
 
