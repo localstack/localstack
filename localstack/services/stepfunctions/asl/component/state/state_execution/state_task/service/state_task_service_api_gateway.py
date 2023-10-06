@@ -24,6 +24,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceRuntimePart,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
@@ -98,7 +101,7 @@ class SfnGatewayException(Exception):
 class StateTaskServiceApiGateway(StateTaskServiceCallback):
 
     _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
-        SupportedApiCalls.invoke: set(TaskParameters.__required_keys__)
+        SupportedApiCalls.invoke: set(TaskParameters.__required_keys__)  # noqa
     }
 
     _FORBIDDEN_HTTP_HEADERS_PREFIX: Final[set[str]] = {"X-Forwarded", "X-Amz", "X-Amzn"}
@@ -246,9 +249,14 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
             ),
         )
 
-    def _eval_service_task(self, env: Environment, parameters: dict):
+    def _eval_service_task(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ):
         task_parameters: TaskParameters = select_from_typed_dict(
-            typed_dict=TaskParameters, obj=parameters
+            typed_dict=TaskParameters, obj=normalised_parameters
         )
 
         method = task_parameters["Method"]

@@ -238,7 +238,7 @@ class RegionBundle(dict, Generic[BaseStoreType]):
 
                 store_obj._global = self._global
                 store_obj._universal = self._universal
-                store_obj._service_name = self.service_name
+                store_obj.service_name = self.service_name
                 store_obj._account_id = self.account_id
                 store_obj._region_name = region_name
 

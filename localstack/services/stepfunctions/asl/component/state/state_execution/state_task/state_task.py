@@ -51,8 +51,8 @@ class StateTask(ExecutionState, abc.ABC):
     def _get_parameters_normalising_bindings(self) -> dict[str, str]:  # noqa
         return dict()
 
-    def _normalised_parameters_bindings(self, parameters: dict[str, str]) -> dict[str, str]:
-        normalised_parameters = copy.deepcopy(parameters)
+    def _normalised_parameters_bindings(self, raw_parameters: dict[str, str]) -> dict[str, str]:
+        normalised_parameters = copy.deepcopy(raw_parameters)
         # Normalise bindings.
         parameter_normalisers = self._get_parameters_normalising_bindings()
         for parameter_key in list(normalised_parameters.keys()):
