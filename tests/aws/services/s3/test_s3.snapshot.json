@@ -529,7 +529,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[CRC32]": {
-    "recorded-date": "03-08-2023, 04:14:32",
+    "recorded-date": "05-10-2023, 20:33:28",
     "recorded-content": {
       "put-wrong-checksum": {
         "Error": {
@@ -581,9 +581,8 @@
           "HTTPStatusCode": 200
         }
       },
-      "get-object-with-checksum": {
+      "head-object-with-checksum": {
         "AcceptRanges": "bytes",
-        "Body": "test data..",
         "ChecksumCRC32": "cZWHwQ==",
         "ContentEncoding": "",
         "ContentLength": 11,
@@ -600,7 +599,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[CRC32C]": {
-    "recorded-date": "03-08-2023, 04:14:35",
+    "recorded-date": "05-10-2023, 20:33:33",
     "recorded-content": {
       "put-wrong-checksum": {
         "Error": {
@@ -652,9 +651,8 @@
           "HTTPStatusCode": 200
         }
       },
-      "get-object-with-checksum": {
+      "head-object-with-checksum": {
         "AcceptRanges": "bytes",
-        "Body": "test data..",
         "ChecksumCRC32C": "Pf4upw==",
         "ContentEncoding": "",
         "ContentLength": 11,
@@ -671,7 +669,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[SHA1]": {
-    "recorded-date": "03-08-2023, 04:14:38",
+    "recorded-date": "05-10-2023, 20:33:38",
     "recorded-content": {
       "put-wrong-checksum": {
         "Error": {
@@ -723,9 +721,8 @@
           "HTTPStatusCode": 200
         }
       },
-      "get-object-with-checksum": {
+      "head-object-with-checksum": {
         "AcceptRanges": "bytes",
-        "Body": "test data..",
         "ChecksumSHA1": "B++3uSfJMSHWToQMQ1g6lIJY5Eo=",
         "ContentEncoding": "",
         "ContentLength": 11,
@@ -742,7 +739,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[SHA256]": {
-    "recorded-date": "03-08-2023, 04:14:41",
+    "recorded-date": "05-10-2023, 20:33:43",
     "recorded-content": {
       "put-wrong-checksum": {
         "Error": {
@@ -794,9 +791,8 @@
           "HTTPStatusCode": 200
         }
       },
-      "get-object-with-checksum": {
+      "head-object-with-checksum": {
         "AcceptRanges": "bytes",
-        "Body": "test data..",
         "ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik=",
         "ContentEncoding": "",
         "ContentLength": 11,

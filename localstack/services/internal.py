@@ -3,7 +3,9 @@ import json
 import logging
 import os
 import re
+import time
 from collections import defaultdict
+from datetime import datetime
 from typing import List
 
 import requests
@@ -15,6 +17,11 @@ from localstack.http import Request, Resource, Response, Router
 from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.services.infra import exit_infra, signal_supervisor_restart
+from localstack.utils.analytics.metadata import (
+    get_client_metadata,
+    get_localstack_edition,
+    is_license_activated,
+)
 from localstack.utils.collections import merge_recursive
 from localstack.utils.config_listener import update_config_variable
 from localstack.utils.files import load_file
@@ -86,6 +93,7 @@ class HealthResource:
         # build state dict from internal state and merge into it the service states
         result = dict(self.state)
         result = merge_recursive({"services": services}, result)
+        result["edition"] = get_localstack_edition()
         result["version"] = constants.VERSION
         return result
 
@@ -110,6 +118,33 @@ class HealthResource:
 
         self.state = merge_recursive(state, self.state, overwrite=True)
         return {"status": "OK"}
+
+
+class InfoResource:
+    """
+    Resource that is exposed to /_localstack/info and used to get generalized information about the current
+    localstack instance.
+    """
+
+    def on_get(self, request):
+        return self.get_info_data()
+
+    @staticmethod
+    def get_info_data() -> dict:
+        client_metadata = get_client_metadata()
+        uptime = int(time.time() - config.load_start_time)
+
+        return {
+            "version": client_metadata.version,
+            "edition": get_localstack_edition() or "unknown",
+            "is_license_activated": is_license_activated(),
+            "session_id": client_metadata.session_id,
+            "machine_id": client_metadata.machine_id,
+            "system": client_metadata.system,
+            "is_docker": client_metadata.is_docker,
+            "server_time_utc": datetime.utcnow().isoformat(timespec="seconds"),
+            "uptime": uptime,
+        }
 
 
 class CloudFormationUi:
@@ -166,6 +201,7 @@ class DiagnoseResource:
                     "kernel": call_safe(diagnose.get_host_kernel_version),
                 },
             },
+            "info": call_safe(InfoResource.get_info_data),
             "services": call_safe(diagnose.get_service_stats),
             "config": call_safe(diagnose.get_localstack_config),
             "docker-inspect": call_safe(diagnose.inspect_main_container),
@@ -303,6 +339,7 @@ class LocalstackResources(Router):
         )
         self.add(Resource("/_localstack/health", health_resource))
 
+        self.add(Resource("/_localstack/info", InfoResource()))
         self.add(Resource("/_localstack/plugins", PluginsResource()))
         self.add(Resource("/_localstack/init", InitScriptsResource()))
         self.add(Resource("/_localstack/init/<stage>", InitScriptsStageResource()))

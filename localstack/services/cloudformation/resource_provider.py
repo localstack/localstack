@@ -64,6 +64,8 @@ PROVIDER_DEFAULTS = {
     "AWS::Kinesis::StreamConsumer": "ResourceProvider",
     "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
     "AWS::DynamoDB::Table": "ResourceProvider",
+    "AWS::CloudWatch::Alarm": "ResourceProvider",
+    "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
     "AWS::EC2::RouteTable": "ResourceProvider",
     "AWS::EC2::Route": "ResourceProvider",
     "AWS::EC2::InternetGateway": "ResourceProvider",
