@@ -1169,10 +1169,10 @@ class TestS3:
                 ObjectAttributes=["ETag", "Checksum"],
             )
             snapshot.match("get-object-attrs-auto-generated", object_attrs)
-        get_object_with_checksum = aws_client.s3.get_object(
+        get_object_with_checksum = aws_client.s3.head_object(
             Bucket=bucket, Key=key, ChecksumMode="ENABLED"
         )
-        snapshot.match("get-object-with-checksum", get_object_with_checksum)
+        snapshot.match("head-object-with-checksum", get_object_with_checksum)
 
     @markers.aws.validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", None])

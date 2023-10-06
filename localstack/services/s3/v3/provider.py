@@ -805,8 +805,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ObjectLockLegalHoldStatus"] = s3_object.lock_legal_status
 
         for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
-            if request_param_value := request.get(request_param):  # noqa
-                response[response_param] = request_param_value  # noqa
+            if request_param_value := request.get(request_param):
+                response[response_param] = request_param_value
 
         return response
 
@@ -839,7 +839,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
-                response[f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
+                response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
         if s3_object.parts:
             response["PartsCount"] = len(s3_object.parts)
@@ -1634,7 +1634,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if "ObjectSize" in object_attrs:
             response["ObjectSize"] = s3_object.size
         if "Checksum" in object_attrs and (checksum_algorithm := s3_object.checksum_algorithm):
-            response["Checksum"] = {  # noqa
+            response["Checksum"] = {
                 f"Checksum{checksum_algorithm.upper()}": s3_object.checksum_value
             }
 

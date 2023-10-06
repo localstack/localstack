@@ -36,8 +36,25 @@ class TestHealthResource:
         response = requests.get(get_edge_url() + "/_localstack/health")
         assert response.ok
         assert "services" in response.json()
+        assert "edition" in response.json()
 
     def test_head(self):
         response = requests.head(get_edge_url() + "/_localstack/health")
         assert response.ok
         assert not response.text
+
+
+class TestInfoEndpoint:
+    def test_get(self):
+        response = requests.get(get_edge_url() + "/_localstack/info")
+        assert response.ok
+        doc = response.json()
+
+        from localstack import __version__ as version
+
+        # we're being specifically vague here since we want this test to be robust against pro or community
+        assert doc["version"].startswith(str(version))
+        assert doc["session_id"]
+        assert doc["machine_id"]
+        assert doc["system"]
+        assert type(doc["is_license_activated"]) == bool
