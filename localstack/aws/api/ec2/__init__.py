@@ -1906,6 +1906,14 @@ class InstanceType(str):
     c7i_24xlarge = "c7i.24xlarge"
     c7i_48xlarge = "c7i.48xlarge"
     mac2_m2pro_metal = "mac2-m2pro.metal"
+    r7iz_large = "r7iz.large"
+    r7iz_xlarge = "r7iz.xlarge"
+    r7iz_2xlarge = "r7iz.2xlarge"
+    r7iz_4xlarge = "r7iz.4xlarge"
+    r7iz_8xlarge = "r7iz.8xlarge"
+    r7iz_12xlarge = "r7iz.12xlarge"
+    r7iz_16xlarge = "r7iz.16xlarge"
+    r7iz_32xlarge = "r7iz.32xlarge"
 
 
 class InstanceTypeHypervisor(str):
