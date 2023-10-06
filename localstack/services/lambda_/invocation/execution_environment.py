@@ -333,7 +333,7 @@ class ExecutionEnvironment:
         # TODO we should probably set a maximum alive duration for environments, due to the session expiration
         return sts_client.assume_role(
             RoleArn=self.function_version.config.role,
-            RoleSessionName=self.function_version.id.function_name,
+            RoleSessionName=f"role_session_{self.function_version.id.function_name}",
             DurationSeconds=43200,
         )["Credentials"]
 
