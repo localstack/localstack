@@ -759,7 +759,7 @@ class ResourceProviderExecutor:
             return plugin.factory()
         except Exception:
             LOG.warning(
-                "Failed to load resource type as a ResourceProvider.",
+                "Failed to load resource type %s as a ResourceProvider.",
                 resource_type,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
