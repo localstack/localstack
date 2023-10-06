@@ -1048,7 +1048,8 @@ def deploy_cfn_template(
 
     yield _deploy
 
-    for entry in state:
+    # delete the stacks in the reverse order they were created in case of inter-stack dependencies
+    for entry in state[::-1]:
         entry_stack_id = entry.get("stack_id")
         try:
             if entry_stack_id:
