@@ -6,13 +6,13 @@ from localstack.services.cloudformation.resource_provider import (
 )
 
 
-class KMSKeyProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::KMS::Key"
+class KMSAliasProviderPlugin(CloudFormationResourceProviderPlugin):
+    name = "AWS::KMS::Alias"
 
     def __init__(self):
         self.factory: Optional[Type[ResourceProvider]] = None
 
     def load(self):
-        from localstack.services.kms.resource_providers.aws_kms_key import KMSKeyProvider
+        from localstack.services.kms.resource_providers.aws_kms_alias import KMSAliasProvider
 
-        self.factory = KMSKeyProvider
+        self.factory = KMSAliasProvider

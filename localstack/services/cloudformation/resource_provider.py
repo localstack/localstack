@@ -67,6 +67,7 @@ PROVIDER_DEFAULTS = {
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
     "AWS::KMS::Key": "ResourceProvider",
+    "AWS::KMS::Alias": "ResourceProvider",
 }
 
 
