@@ -91,9 +91,7 @@ class EC2InternetGatewayProvider(ResourceProvider[EC2InternetGatewayProperties])
         # detach it first before deleting it
         response = ec2.describe_internet_gateways(InternetGatewayIds=[model["InternetGatewayId"]])
 
-        if len(response.get("InternetGateways", [])) > 0:
-            gateway = response["InternetGateways"][0]
-
+        for gateway in response.get("InternetGateways", []):
             for attachment in gateway.get("Attachments", []):
                 ec2.detach_internet_gateway(
                     InternetGatewayId=model["InternetGatewayId"], VpcId=attachment["VpcId"]
