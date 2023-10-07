@@ -96,7 +96,7 @@ class EC2NatGatewayProvider(ResourceProvider[EC2NatGatewayProperties]):
                 resource_model=model,
                 custom_context=request.custom_context,
             )
-        response = ec2.describe_nat_gateways(NatGatewayIds=["NAT_GATEWAY_ID"])
+        response = ec2.describe_nat_gateways(NatGatewayIds=[model["NatGatewayId"]])
         if response["NatGateways"][0]["State"] == "pending":
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
@@ -135,13 +135,30 @@ class EC2NatGatewayProvider(ResourceProvider[EC2NatGatewayProperties]):
         """
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
-        """
-        boto3 documentation only has method for deleting single nat gateway
-        instead of the one used bellow
-        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2/client/delete_nat_gateway.html
-        """
-        ec2.describe_nat_gateways(NatGatewayIds=[model["NatGatewayId"]])
 
+        if not request.custom_context.get(REPEATED_INVOCATION):
+            request.custom_context[REPEATED_INVOCATION] = True
+            ec2.delete_nat_gateway(NatGatewayId=model["NatGatewayId"])
+
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
+
+        is_deleting = False
+        try:
+            response = ec2.describe_nat_gateways(NatGatewayIds=[model["NatGatewayId"]])
+            is_deleting = response["NatGateways"][0]["State"] == "deleting"
+        except ec2.exceptions.ClientError:
+            pass
+
+        if is_deleting:
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,

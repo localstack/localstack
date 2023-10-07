@@ -101,6 +101,7 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
             Description=params.get("GroupDescription", ""),
         )
         model["GroupId"] = response["GroupId"]
+        model["Id"] = response["GroupId"]
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
