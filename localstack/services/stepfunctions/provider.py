@@ -3,6 +3,7 @@ import os
 import threading
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.stepfunctions import (
     CreateStateMachineInput,
@@ -16,12 +17,9 @@ from localstack.aws.api.stepfunctions import (
 from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import LOCALHOST
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.stepfunctions.stepfunctions_starter import (
-    start_stepfunctions,
-    stop_stepfunctions,
-    wait_for_stepfunctions,
-)
+from localstack.services.stepfunctions.stepfunctions_starter import StepFunctionsServerManager
 from localstack.state import AssetDirectory, StateVisitor
+from localstack.utils.aws import aws_stack
 
 # lock to avoid concurrency issues when creating state machines in parallel (required for StepFunctions-Local)
 CREATION_LOCK = threading.RLock()
@@ -30,6 +28,8 @@ LOG = logging.getLogger(__name__)
 
 
 class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
+    server_manager = StepFunctionsServerManager()
+
     def __init__(self):
         self.forward_request = get_request_forwarder_http(self.get_forward_url)
 
@@ -41,28 +41,22 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
     def get_forward_url(self) -> str:
         """Return the URL of the backend StepFunctions server to forward requests to"""
-        return f"http://{LOCALHOST}:{config.LOCAL_PORT_STEPFUNCTIONS}"
+        account_id = get_aws_account_id()
+        region_name = aws_stack.get_region()
+        server = self.server_manager.get_server_for_account_region(account_id, region_name)
+        return f"http://{LOCALHOST}:{server.port}"
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, self.service)))
 
-    def on_before_start(self):
-        start_stepfunctions()
-        wait_for_stepfunctions()
+    def on_before_state_load(self):
+        self.server_manager.shutdown_all()
 
     def on_before_state_reset(self):
-        stop_stepfunctions()
+        self.server_manager.shutdown_all()
 
-    def on_before_state_load(self):
-        stop_stepfunctions()
-
-    def on_after_state_reset(self):
-        start_stepfunctions()
-        wait_for_stepfunctions()
-
-    def on_after_state_load(self):
-        start_stepfunctions()
-        wait_for_stepfunctions()
+    def on_before_stop(self):
+        self.server_manager.shutdown_all()
 
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput

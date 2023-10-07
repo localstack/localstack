@@ -9,6 +9,7 @@ from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, Timest
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
     MapRunRecordPoolManager,
 )
+from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
 from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackPoolManager
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObject,
@@ -33,36 +34,31 @@ class Environment:
     _program_state: Optional[ProgramState]
     program_state_event: Final[threading.Event()]
 
-    _frames: Final[list[Environment]]
-    _is_frame: bool = False
-
     event_history: EventHistory
+    aws_execution_details: Final[AWSExecutionDetails]
     callback_pool_manager: CallbackPoolManager
     map_run_record_pool_manager: MapRunRecordPoolManager
+    context_object_manager: Final[ContextObjectManager]
+
+    _frames: Final[list[Environment]]
+    _is_frame: bool = False
 
     heap: dict[str, Any] = dict()
     stack: list[Any] = list()
     inp: Optional[Any] = None
 
-    context_object_manager: Final[ContextObjectManager]
-
-    def __init__(self, context_object_init: ContextObjectInitData):
+    def __init__(
+        self, aws_execution_details: AWSExecutionDetails, context_object_init: ContextObjectInitData
+    ):
         super(Environment, self).__init__()
         self._state_mutex = threading.RLock()
         self._program_state = None
         self.program_state_event = threading.Event()
 
-        self._frames = list()
-        self._is_frame = False
-
         self.event_history = EventHistory()
+        self.aws_execution_details = aws_execution_details
         self.callback_pool_manager = CallbackPoolManager()
         self.map_run_record_pool_manager = MapRunRecordPoolManager()
-
-        self.heap = dict()
-        self.stack = list()
-        self.inp = None
-
         self.context_object_manager = ContextObjectManager(
             context_object=ContextObject(
                 Execution=context_object_init["Execution"],
@@ -70,13 +66,23 @@ class Environment:
             )
         )
 
+        self._frames = list()
+        self._is_frame = False
+
+        self.heap = dict()
+        self.stack = list()
+        self.inp = None
+
     @classmethod
     def as_frame_of(cls, env: Environment):
         context_object_init = ContextObjectInitData(
             Execution=env.context_object_manager.context_object["Execution"],
             StateMachine=env.context_object_manager.context_object["StateMachine"],
         )
-        frame = cls(context_object_init=context_object_init)
+        frame = cls(
+            aws_execution_details=env.aws_execution_details,
+            context_object_init=context_object_init,
+        )
         frame._is_frame = True
         frame.event_history = env.event_history
         frame.callback_pool_manager = env.callback_pool_manager

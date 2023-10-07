@@ -131,9 +131,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         state_machines: list[StateMachineInstance] = list(
             self.get_store(context).state_machines.values()
         )
-        revisions = filter(
-            lambda state_machine: isinstance(state_machine, StateMachineRevision), state_machines
-        )
+        revisions = filter(lambda sm: isinstance(sm, StateMachineRevision), state_machines)
         for state_machine in revisions:
             check = all(
                 [
@@ -363,6 +361,8 @@ class StepFunctionsProvider(StepfunctionsApi):
             name=exec_name,
             role_arn=state_machine_clone.role_arn,
             exec_arn=exec_arn,
+            account_id=context.account_id,
+            region_name=context.region,
             state_machine=state_machine_clone,
             start_date=datetime.datetime.now(),
             input_data=input_data,
