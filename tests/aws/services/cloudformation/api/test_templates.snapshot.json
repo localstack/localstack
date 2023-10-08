@@ -75,9 +75,5 @@
         }
       }
     }
-  },
-  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_external]": {
-    "recorded-date": "08-10-2023, 16:33:26",
-    "recorded-content": {}
   }
 }
