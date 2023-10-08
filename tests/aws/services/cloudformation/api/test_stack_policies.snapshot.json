@@ -242,5 +242,13 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_prevent_stack_update": {
+    "recorded-date": "28-10-2022, 12:10:42",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_prevent_resource_deletion": {
+    "recorded-date": "28-10-2022, 12:29:11",
+    "recorded-content": {}
   }
 }
