@@ -1,6 +1,6 @@
 {
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_topic_with_attributes": {
-    "recorded-date": "24-08-2023, 22:30:43",
+    "recorded-date": "06-10-2023, 20:11:02",
     "recorded-content": {
       "get-topic-attrs": {
         "Attributes": {
@@ -74,6 +74,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "get-attrs-malformed-topic": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
