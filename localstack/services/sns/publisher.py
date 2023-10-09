@@ -403,23 +403,24 @@ class HttpTopicPublisher(TopicPublisher):
         message_body = self.prepare_message(message_context, subscriber)
         try:
             message_headers = {
-                "Content-Type": "text/plain",
+                "Content-Type": "text/plain; charset=UTF-8",
+                "Accept-Encoding": "gzip,deflate",
+                "User-Agent": "Amazon Simple Notification Service Agent",
                 # AWS headers according to
                 # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
                 "x-amz-sns-message-type": message_context.type,
                 "x-amz-sns-message-id": message_context.message_id,
                 "x-amz-sns-topic-arn": subscriber["TopicArn"],
-                "User-Agent": "Amazon Simple Notification Service Agent",
             }
             if message_context.type != "SubscriptionConfirmation":
                 # while testing, never had those from AWS but the docs above states it should be there
                 message_headers["x-amz-sns-subscription-arn"] = subscriber["SubscriptionArn"]
 
-            # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
-            # indicating that the message has been published without JSON formatting.
-            # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-            elif message_context.type == "Notification" and is_raw_message_delivery(subscriber):
-                message_headers["x-amz-sns-rawdelivery"] = "true"
+                # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
+                # indicating that the message has been published without JSON formatting.
+                # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
+                if message_context.type == "Notification" and is_raw_message_delivery(subscriber):
+                    message_headers["x-amz-sns-rawdelivery"] = "true"
 
             response = requests.post(
                 subscriber["Endpoint"],

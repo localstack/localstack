@@ -4284,7 +4284,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint[True]": {
-    "recorded-date": "25-08-2023, 17:28:02",
+    "recorded-date": "09-10-2023, 16:01:30",
     "recorded-content": {
       "subscription-confirmation": {
         "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
@@ -4350,6 +4350,19 @@
           }
         }
       },
+      "http-message-headers-raw": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:2>",
+        "X-Amz-Sns-Message-Type": "Notification",
+        "X-Amz-Sns-Rawdelivery": "true",
+        "X-Amz-Sns-Subscription-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
+        "X-Amz-Sns-Topic-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+      },
       "unsubscribe-response": {
         "UnsubscribeResponse": {
           "ResponseMetadata": {
@@ -4360,7 +4373,7 @@
       },
       "unsubscribe-request": {
         "Message": "You have chosen to deactivate subscription arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
-        "MessageId": "<uuid:2>",
+        "MessageId": "<uuid:3>",
         "Signature": "<signature>",
         "SignatureVersion": "1",
         "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
@@ -4373,7 +4386,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint[False]": {
-    "recorded-date": "25-08-2023, 17:28:08",
+    "recorded-date": "09-10-2023, 16:01:39",
     "recorded-content": {
       "subscription-confirmation": {
         "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
@@ -4449,6 +4462,18 @@
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
         "Type": "Notification",
         "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+      },
+      "http-message-headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:2>",
+        "X-Amz-Sns-Message-Type": "Notification",
+        "X-Amz-Sns-Subscription-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
+        "X-Amz-Sns-Topic-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>"
       },
       "unsubscribe-response": {
         "UnsubscribeResponse": {
