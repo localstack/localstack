@@ -66,7 +66,7 @@ PROVIDER_DEFAULTS = {
     "AWS::DynamoDB::Table": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
-    "AWS::ECR::Repository": "ResourceProvider",
+    # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
     "AWS::EC2::RouteTable": "ResourceProvider",
     "AWS::EC2::Route": "ResourceProvider",
     "AWS::EC2::InternetGateway": "ResourceProvider",

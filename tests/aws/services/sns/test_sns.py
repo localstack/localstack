@@ -112,6 +112,11 @@ class TestSNSTopicCrud:
 
         snapshot.match("get-attrs-nonexistent-topic", e.value.response)
 
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.get_topic_attributes(TopicArn="test-topic")
+
+        snapshot.match("get-attrs-malformed-topic", e.value.response)
+
     @markers.aws.validated
     def test_tags(self, sns_create_topic, snapshot, aws_client):
 

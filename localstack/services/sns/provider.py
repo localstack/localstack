@@ -112,6 +112,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
+        # get the Topic from moto manually first, because Moto does not handle well the case where the ARN is malformed
+        # (raises ValueError: not enough values to unpack (expected 6, got 1))
+        moto_topic_model = self._get_topic(topic_arn, context)
         moto_response: GetTopicAttributesResponse = call_moto(context)
         # TODO: fix some attributes by moto, see snapshot
         # DeliveryPolicy
@@ -120,7 +123,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # see the attributes we need: https://docs.aws.amazon.com/sns/latest/dg/sns-topic-attributes.html
         # would need more work to have the proper format out of moto, maybe extract the model to our store
-        moto_topic_model = self._get_topic(topic_arn, context)
         for attr in vars(moto_topic_model):
             if "success_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
