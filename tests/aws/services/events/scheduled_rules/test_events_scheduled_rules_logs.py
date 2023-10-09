@@ -106,7 +106,7 @@ def test_scheduled_rule_logs(
             .paginate(logGroupName=logs_log_group)
             .build_full_result()
         )
-        assert len(result["logStreams"]) >= 1
+        assert len(result["logStreams"]) >= 2
         return result["logStreams"]
 
     log_streams = retry(_get_log_stream, 60)
