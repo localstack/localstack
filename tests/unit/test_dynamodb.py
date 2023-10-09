@@ -96,7 +96,9 @@ def test_invalidate_table_schema():
     ]
     table_name = "nonexistent_table"
 
-    key = dynamodb_table_arn(table_name=table_name, account_id=None, region_name=None)
+    key = dynamodb_table_arn(
+        table_name=table_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+    )
 
     table_schema = {"Table": {"KeySchema": key_schema, "AttributeDefinitions": attr_definitions}}
     # This isn't great but we need to inject into the cache here so that we're not trying to hit dynamodb
@@ -112,7 +114,7 @@ def test_invalidate_table_schema():
     # Invalidate the cache now for the table
     schema_extractor.invalidate_table_schema(table_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
     # Assert that the key is now set to None
-    assert SCHEMA_CACHE[key] is None
+    assert SCHEMA_CACHE.get(key) is None
 
 
 @pytest.mark.parametrize(
