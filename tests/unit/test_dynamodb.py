@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.dynamodb.provider import DynamoDBProvider, get_store
 from localstack.services.dynamodb.utils import (
     SCHEMA_CACHE,
@@ -102,12 +103,14 @@ def test_invalidate_table_schema():
     # to look up the table later on
     SCHEMA_CACHE[key] = table_schema
 
-    schema = schema_extractor.get_table_schema(table_name)
+    schema = schema_extractor.get_table_schema(
+        table_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+    )
 
     # Assert output is expected from the get_table_schema (fallback)
     assert schema == table_schema
     # Invalidate the cache now for the table
-    schema_extractor.invalidate_table_schema(table_name)
+    schema_extractor.invalidate_table_schema(table_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
     # Assert that the key is now set to None
     assert SCHEMA_CACHE[key] is None
 

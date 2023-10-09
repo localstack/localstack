@@ -115,9 +115,7 @@ class SchemaExtractor:
         return schema
 
     @classmethod
-    def invalidate_table_schema(
-        cls, table_name: str, account_id: str = None, region_name: str = None
-    ):
+    def invalidate_table_schema(cls, table_name: str, account_id: str, region_name: str):
         """
         Allow cached table schemas to be invalidated without waiting for the TTL to expire
         """
@@ -128,7 +126,7 @@ class SchemaExtractor:
         )
         schema = SCHEMA_CACHE.get(key)
         if schema:
-            SCHEMA_CACHE[key] = None
+            SCHEMA_CACHE.pop(key, None)
 
 
 class ItemFinder:
