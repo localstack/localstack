@@ -3523,6 +3523,12 @@ class TestSNSSubscriptionHttp:
 
     @markers.aws.manual_setup_required
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.http-message-headers.Accept",  # requests adds the header but not SNS, not very important
+            "$.http-message-headers-raw.Accept",  # requests adds the header but not SNS, not very important
+        ]
+    )
     def test_subscribe_external_http_endpoint(
         self, sns_create_http_endpoint, raw_message_delivery, aws_client, snapshot
     ):
@@ -3535,10 +3541,20 @@ class TestSNSSubscriptionHttp:
                     fields["ResponseMetadata"]["HTTPStatusCode"] = response.status_code
             return parsed_xml_body
 
+        def _clean_headers(response_headers: dict):
+            return {key: val for key, val in response_headers.items() if "Forwarded" not in key}
+
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("RequestId"),
                 snapshot.transform.key_value("Token"),
+                snapshot.transform.key_value("Host"),
+                snapshot.transform.key_value(
+                    "Content-Length", reference_replacement=False
+                ),  # might change depending on compression
+                snapshot.transform.key_value(
+                    "Connection", reference_replacement=False
+                ),  # casing might change
                 snapshot.transform.regex(
                     r"(?i)(?<=SubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=ConfirmSubscription)",
                     replacement="<subscribe-domain>",
@@ -3651,6 +3667,7 @@ class TestSNSSubscriptionHttp:
         if raw_message_delivery:
             payload = notification_request.data.decode()
             assert payload == message
+            snapshot.match("http-message-headers-raw", _clean_headers(notification_request.headers))
         else:
             payload = notification_request.get_json(force=True)
             assert payload["Type"] == "Notification"
@@ -3659,6 +3676,7 @@ class TestSNSSubscriptionHttp:
             assert payload["Message"] == message
             assert payload["UnsubscribeURL"] == expected_unsubscribe_url
             snapshot.match("http-message", payload)
+            snapshot.match("http-message-headers", _clean_headers(notification_request.headers))
 
         unsub_request = requests.get(expected_unsubscribe_url)
         unsubscribe_confirmation = xmltodict.parse(unsub_request.content)
