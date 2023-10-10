@@ -329,11 +329,15 @@ class ExecutionEnvironment:
         return self.runtime_executor.invoke(payload=invoke_payload)
 
     def get_credentials(self) -> Credentials:
-        sts_client = connect_to().sts.request_metadata(service_principal="lambda")
+        sts_client = connect_to().sts.request_metadata(service_principal="lambda")        
+        role_session_name = self.function_version.id.function_name        
+        # Use a conditional for the special case where function length is 1 character
+        if len(role_session_name) == 1:
+            role_session_name = f"{role_session_name}@lambda_function"
         # TODO we should probably set a maximum alive duration for environments, due to the session expiration
         return sts_client.assume_role(
             RoleArn=self.function_version.config.role,
-            RoleSessionName=self.function_version.id.function_name,
+            RoleSessionName=role_session_name,
             DurationSeconds=43200,
         )["Credentials"]
 
