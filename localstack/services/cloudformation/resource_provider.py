@@ -68,6 +68,7 @@ PROVIDER_DEFAULTS = {
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
     # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
     "AWS::ApiGateway::GatewayResponse": "ResourceProvider",
+    "AWS::ApiGateway::RequestValidator": "ResourceProvider",
 }
 
 
