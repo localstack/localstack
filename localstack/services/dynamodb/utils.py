@@ -122,9 +122,7 @@ class SchemaExtractor:
         key = dynamodb_table_arn(
             table_name=table_name, account_id=account_id, region_name=region_name
         )
-        schema = SCHEMA_CACHE.get(key)
-        if schema:
-            SCHEMA_CACHE.pop(key, None)
+        SCHEMA_CACHE.pop(key, None)
 
 
 class ItemFinder:
