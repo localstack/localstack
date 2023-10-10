@@ -420,6 +420,60 @@ class TestSecretsManagerParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
+    @markers.aws.validated
+    @pytest.mark.skip(reason="WIP")
+    def test_embedded_references(self, deploy_cfn_template, aws_client, snapshot):
+        secret_name = "/devops/infrastructure"
+        # {{ and }} cause problems with f-strings and .format()
+        endpoint_definition = (
+            "https://example.com/v0/json/cloudwatch?apiKey={{resolve:secretsmanager:%s:SecretString:APIKey}}"
+            % (secret_name,)
+        )
+        template = {
+            "Resources": {
+                "Secret": {
+                    "Type": "AWS::SecretsManager::Secret",
+                    "Properties": {
+                        "Name": secret_name,
+                        "Description": "secret value",
+                        "SecretString": '{"APIKey":"dummy-key"}',
+                    },
+                },
+                "Topic": {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "DisplayName": "Topic",
+                        "TopicName": f"topic-{short_uid()}",
+                    },
+                },
+                "ConfigOpsgenieSubscription": {
+                    "Type": "AWS::SNS::Subscription",
+                    "Properties": {
+                        "Endpoint": endpoint_definition,
+                        "Protocol": "https",
+                        "TopicArn": {"Ref": "Topic"},
+                    },
+                },
+            },
+            "Outputs": {
+                "TopicArn": {
+                    "Value": {
+                        "Ref": "Topic",
+                    },
+                },
+            },
+        }
+
+        stack = deploy_cfn_template(template=json.dumps(template))
+
+        subs = aws_client.sns.list_subscriptions_by_topic(TopicArn=stack.outputs["TopicArn"])[
+            "Subscriptions"
+        ]
+        assert len(subs) == 1
+        sub = subs[0]
+
+        snapshot.match("endpoint-url", sub["Endpoint"])
+
 
 class TestPreviousValues:
     @pytest.mark.xfail(reason="outputs don't behave well in combination with conditions")
