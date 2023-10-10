@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Conditions:
+  IsGrapes: !Equals [!Select [ 1, ['apples', 'grapes', 'bananas']], 'grapes']
+
+Resources:
+  StreamWriterPolicy2:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Condition: IsGrapes
+    Properties:
+      ManagedPolicyName: Test2
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: "kinesis:PutRecord"
+            Resource: !Join
+              - ':'
+              - - arn:aws:kinesis
+                - !Ref AWS::Region
+                - !Ref AWS::AccountId
+                - !Sub stream/${AWS::StackName}-*
+Outputs:
+  PolicyArn:
+    Description: StreamWriterPolicy2
+    Value: !Ref StreamWriterPolicy2
