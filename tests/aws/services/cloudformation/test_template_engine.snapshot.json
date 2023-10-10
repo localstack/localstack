@@ -600,8 +600,8 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/test_template_engine.py::TestSecretsManagerParameters::test_foo": {
-    "recorded-date": "10-10-2023, 15:04:55",
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSecretsManagerParameters::test_embedded_references": {
+    "recorded-date": "10-10-2023, 15:15:06",
     "recorded-content": {
       "endpoint-url": "https://example.com/v0/json/cloudwatch?apiKey=dummy-key"
     }

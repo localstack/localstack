@@ -446,7 +446,7 @@ class TestSecretsManagerParameters:
                         "TopicName": f"topic-{short_uid()}",
                     },
                 },
-                "ConfigOpsgenieSubscription": {
+                "Subscription": {
                     "Type": "AWS::SNS::Subscription",
                     "Properties": {
                         "Endpoint": endpoint_definition,
