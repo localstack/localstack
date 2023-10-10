@@ -69,7 +69,9 @@ class ApiGatewayRequestValidatorProvider(ResourceProvider[ApiGatewayRequestValid
             validateRequestParameters=model["ValidateRequestParameters"],
         )
         model["RequestValidatorId"] = response["id"]
-
+        # FIXME error happens when other resources try to reference this one
+        #  "An error occurred (BadRequestException) when calling the PutMethod operation:
+        #  Invalid Request Validator identifier specified"
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
