@@ -657,7 +657,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 store.REPLICAS[table_name] = replicas
 
             # update response content
-            # SchemaExtractor.invalidate_table_schema(table_name)
             SchemaExtractor.invalidate_table_schema(
                 table_name, context.account_id, global_table_region
             )
