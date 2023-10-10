@@ -119,8 +119,6 @@ class SchemaExtractor:
         """
         Allow cached table schemas to be invalidated without waiting for the TTL to expire
         """
-        account_id = account_id or get_aws_account_id()
-        region_name = region_name or aws_stack.get_region()
         key = dynamodb_table_arn(
             table_name=table_name, account_id=account_id, region_name=region_name
         )
