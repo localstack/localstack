@@ -18,4 +18,3 @@ class ApiGatewayRequestValidatorProviderPlugin(CloudFormationResourceProviderPlu
         )
 
         self.factory = ApiGatewayRequestValidatorProvider
-

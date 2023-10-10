@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -102,14 +101,15 @@ class ApiGatewayRequestValidatorProvider(ResourceProvider[ApiGatewayRequestValid
         model = request.desired_state
         api = request.aws_client_factory.apigateway
 
-        api.delete_request_validator(restApiId=model["RestApiId"], requestValidatorId=model["RequestValidatorId"])
+        api.delete_request_validator(
+            restApiId=model["RestApiId"], requestValidatorId=model["RequestValidatorId"]
+        )
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
             custom_context=request.custom_context,
         )
-
 
     def update(
         self,
