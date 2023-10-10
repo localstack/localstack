@@ -461,66 +461,6 @@ def test_notifications(
 
 
 @markers.aws.validated
-@pytest.mark.skip(reason="feature not implemented")
-def test_prevent_stack_update(deploy_cfn_template, snapshot, aws_client):
-    template = load_file(
-        os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_parameter.yml")
-    )
-    stack = deploy_cfn_template(template=template, parameters={"TopicName": f"topic-{short_uid()}"})
-    policy = {
-        "Statement": [
-            {"Effect": "Deny", "Action": "Update:*", "Principal": "*", "Resource": "*"},
-        ]
-    }
-    aws_client.cloudformation.set_stack_policy(
-        StackName=stack.stack_name, StackPolicyBody=json.dumps(policy)
-    )
-
-    policy = aws_client.cloudformation.get_stack_policy(StackName=stack.stack_name)
-
-    aws_client.cloudformation.update_stack(
-        StackName=stack.stack_name,
-        TemplateBody=template,
-        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"new-topic-{short_uid()}"}],
-    )
-
-    def _assert_failing_update_state():
-        events = aws_client.cloudformation.describe_stack_events(StackName=stack.stack_name)[
-            "StackEvents"
-        ]
-        failed_event_update = [
-            event for event in events if event["ResourceStatus"] == "UPDATE_FAILED"
-        ]
-        assert failed_event_update
-        assert "Action denied by stack policy" in failed_event_update[0]["ResourceStatusReason"]
-
-    try:
-        retry(_assert_failing_update_state, retries=5, sleep=2, sleep_before=2)
-    finally:
-        progress_is_finished = False
-        while not progress_is_finished:
-            status = aws_client.cloudformation.describe_stacks(StackName=stack.stack_name)[
-                "Stacks"
-            ][0]["StackStatus"]
-            progress_is_finished = "PROGRESS" not in status
-        aws_client.cloudformation.delete_stack(StackName=stack.stack_name)
-
-
-@markers.aws.validated
-@pytest.mark.skip(reason="feature not implemented")
-def test_prevent_resource_deletion(deploy_cfn_template, snapshot, aws_client):
-    template = load_file(
-        os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_parameter.yml")
-    )
-
-    template = template.replace("DeletionPolicy: Delete", "DeletionPolicy: Retain")
-    stack = deploy_cfn_template(template=template, parameters={"TopicName": f"topic-{short_uid()}"})
-    aws_client.cloudformation.delete_stack(StackName=stack.stack_name)
-
-    aws_client.sns.get_topic_attributes(TopicArn=stack.outputs["TopicArn"])
-
-
-@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # parameters may be out of order
