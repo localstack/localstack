@@ -334,8 +334,7 @@ class ExecutionEnvironment:
 
         # To handle single character function names #9016
         if len(role_session_name) == 1:
-            role_session_name += '@lambda_function'
-        
+            role_session_name += "@lambda_function"
         # TODO we should probably set a maximum alive duration for environments, due to the session expiration
         return sts_client.assume_role(
             RoleArn=self.function_version.config.role,
