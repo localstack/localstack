@@ -71,7 +71,7 @@ PROVIDER_DEFAULTS = {
     "AWS::KMS::Alias": "ResourceProvider",
     "AWS::ApiGateway::GatewayResponse": "ResourceProvider",
     "AWS::ApiGateway::RequestValidator": "ResourceProvider",
-    # "AWS::ApiGateway::RestApi": "ResourceProvider",
+    "AWS::ApiGateway::RestApi": "ResourceProvider",
 }
 
 
