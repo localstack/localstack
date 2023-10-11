@@ -27,6 +27,16 @@ from localstack.services.cloudformation.deployment_utils import (
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
 
+PRO_RESOURCE_PROVIDERS = False
+try:
+    from localstack_ext.services.cloudformation.cloudformation_extended import (
+        CloudFormationResourceProviderPluginExt,
+    )
+
+    PRO_RESOURCE_PROVIDERS = True
+except ImportError:
+    pass
+
 if TYPE_CHECKING:
     from localstack.services.cloudformation.engine.types import (
         FuncDetails,
@@ -782,6 +792,18 @@ class ResourceProviderExecutor:
         if self.should_use_legacy_provider(resource_type):
             return self._load_legacy_resource_provider(resource_type)
 
+        # prioritise pro resource providers
+        if PRO_RESOURCE_PROVIDERS:
+            try:
+                plugin = pro_plugin_manager.load(resource_type)
+                return plugin.factory()
+            except Exception:
+                LOG.warning(
+                    "Failed to load resource type from pro as a ResourceProvider.",
+                    resource_type,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+
         try:
             plugin = plugin_manager.load(resource_type)
             return plugin.factory()
@@ -824,3 +846,5 @@ class ResourceProviderExecutor:
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
+if PRO_RESOURCE_PROVIDERS:
+    pro_plugin_manager = PluginManager(CloudFormationResourceProviderPluginExt.namespace)
