@@ -1,14 +1,23 @@
 from typing import Optional, Type
 
-from localstack.services.cloudformation.resource_provider import CloudFormationResourceProviderPlugin, ResourceProvider
+from localstack.services.cloudformation.resource_provider import ResourceProvider
+{%- if pro %}
+{%- set base_class = "CloudFormationResourceProviderPluginExt" %}
+{%- set root_module = "localstack_ext" %}
+from {{ root_module }}.services.cloudformation.cloudformation_extended import {{ base_class }}
+{%- else %}
+{%- set base_class = "CloudFormationResourceProviderPlugin" %}
+{%- set root_module = "localstack" %}
+from {{ root_module }}.services.cloudformation.resource_provider import {{ base_class }}
+{%- endif %}
 
-class {{ resource }}ProviderPlugin(CloudFormationResourceProviderPlugin):
+class {{ resource }}ProviderPlugin({{ base_class }}):
     name = "{{ name }}"
 
     def __init__(self):
         self.factory: Optional[Type[ResourceProvider]] = None
 
     def load(self):
-        from localstack.services.{{ service }}.resource_providers.aws_{{ service }}_{{ lower_resource }} import {{ resource }}Provider
+        from {{ root_module }}.services.{{ service }}.resource_providers.aws_{{ service }}_{{ lower_resource }} import {{ resource }}Provider
 
         self.factory = {{ resource }}Provider
