@@ -897,6 +897,7 @@ def register_sns_api_resource(router: Router):
     """Register the retrospection endpoints as internal LocalStack endpoints."""
     router.add(SNSServicePlatformEndpointMessagesApiResource())
     router.add(SNSServiceSMSMessagesApiResource())
+    router.add(SNSServiceSubscriptionTokenApiResource())
 
 
 def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[str]):
@@ -1041,3 +1042,44 @@ class SNSServiceSMSMessagesApiResource:
 
         store.sms_messages.clear()
         return Response("", status=204)
+
+
+class SNSServiceSubscriptionTokenApiResource:
+    """Provides a REST API for retrospective access to Subscription Confirmation Tokens to confirm subscriptions.
+    Those are not sent for email, and sometimes inaccessible when working with external HTTPS endpoint which won't be
+    able to reach your local host.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint accepts:
+    - GET param `accountId`: selector for AWS account. If not specified, return fallback `000000000000` test ID
+    - GET param `region`: selector for AWS `region`. If not specified, return default "us-east-1"
+    - GET param `subscriptionArn`: filter for `subscriptionArn` resource in SNS
+    """
+
+    @route(sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT, methods=["GET"])
+    def on_get(self, request: Request):
+        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+        region = request.args.get("region", AWS_REGION_US_EAST_1)
+        subscription_arn = request.args.get("subscriptionArn")
+        store: SnsStore = sns_stores[account_id][region]
+        if subscription_arn:
+            subscription_tokens = {}
+            for token, sub_arn in store.subscription_tokens.items():
+                if sub_arn == subscription_arn:
+                    subscription_tokens[subscription_arn] = token
+                    break
+
+            return {
+                "subscription_tokens": subscription_tokens,
+                "region": region,
+            }
+
+        subscription_tokens = {
+            subscription_arn: token for token, subscription_arn in store.subscription_tokens.items()
+        }
+
+        return {
+            "subscription_tokens": subscription_tokens,
+            "region": region,
+        }

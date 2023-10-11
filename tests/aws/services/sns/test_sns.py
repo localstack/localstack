@@ -24,7 +24,11 @@ from localstack.constants import (
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
-from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SMS_MSGS_ENDPOINT
+from localstack.services.sns.constants import (
+    PLATFORM_ENDPOINT_MSGS_ENDPOINT,
+    SMS_MSGS_ENDPOINT,
+    SUBSCRIPTION_TOKENS_ENDPOINT,
+)
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -3703,6 +3707,9 @@ class TestSNSSubscriptionHttp:
         assert "Signature" in payload
         assert "SigningCertURL" in payload
 
+        snapshot.match("http-confirm-sub-headers", _clean_headers(sub_request.headers))
+        snapshot.match("http-confirm-sub-payload", payload)
+
         token = payload["Token"]
         subscribe_url = payload["SubscribeURL"]
         service_url, subscribe_url_path = payload["SubscribeURL"].rsplit("/", maxsplit=1)
@@ -4529,3 +4536,68 @@ class TestSNSRetrospectionEndpoints:
         assert delete_res.status_code == 204
         msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
         assert not msg_with_region["sms_messages"]
+
+    @markers.aws.only_localstack
+    def test_subscription_tokens_can_retrospect(
+        self, sns_create_topic, sns_subscription, sns_create_http_endpoint, aws_client
+    ):
+        sns_store = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        # clean up the saved tokens
+        sns_store.subscription_tokens.clear()
+
+        message = "Good news everyone!"
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
+        topic_arn, subscription_arn, endpoint_url, server = sns_create_http_endpoint()
+        assert poll_condition(
+            lambda: len(server.log) >= 1,
+            timeout=5,
+        )
+        sub_request, _ = server.log[0]
+        payload = sub_request.get_json(force=True)
+        assert payload["Type"] == "SubscriptionConfirmation"
+        token = payload["Token"]
+        server.clear()
+
+        # we won't confirm the subscription, to simulate an external provider that wouldn't be able to access LocalStack
+        # try to access the internal to confirm the Token is there
+        tokens_url = config.get_edge_url() + SUBSCRIPTION_TOKENS_ENDPOINT
+        api_contents = requests.get(tokens_url, params={"region": TEST_AWS_REGION_NAME}).json()
+        api_sub_tokens = api_contents["subscription_tokens"]
+        assert api_sub_tokens[subscription_arn] == token
+
+        # try to send a message to an unconfirmed subscription, assert that the message isn't received
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
+
+        assert poll_condition(
+            lambda: len(server.log) == 0,
+            timeout=1,
+        )
+
+        aws_client.sns.confirm_subscription(TopicArn=topic_arn, Token=token)
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
+        assert poll_condition(
+            lambda: len(server.log) == 1,
+            timeout=2,
+        )
+
+        # Ensure you can select the region
+        msg_with_region = requests.get(
+            tokens_url, params={"region": SECONDARY_TEST_AWS_REGION_NAME}
+        ).json()
+        assert len(msg_with_region["subscription_tokens"]) == 0
+        assert msg_with_region["region"] == SECONDARY_TEST_AWS_REGION_NAME
+
+        # Ensure default region is us-east-1
+        msg_with_region = requests.get(tokens_url).json()
+        assert msg_with_region["region"] == AWS_REGION_US_EAST_1
+
+        # Ensure messages can be filtered by SubscriptionArn
+        api_contents_with_sub_arn = requests.get(
+            tokens_url, params={"subscriptionArn": "randomArnHere"}
+        ).json()
+        assert len(api_contents_with_sub_arn["subscription_tokens"]) == 0
+
+        api_contents_with_sub_arn = requests.get(
+            tokens_url, params={"subscriptionArn": subscription_arn}
+        ).json()
+        assert len(api_contents_with_sub_arn["subscription_tokens"]) == 1
