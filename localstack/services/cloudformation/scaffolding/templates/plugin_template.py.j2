@@ -4,12 +4,11 @@ from localstack.services.cloudformation.resource_provider import ResourceProvide
 {%- if pro %}
 {%- set base_class = "CloudFormationResourceProviderPluginExt" %}
 {%- set root_module = "localstack_ext" %}
-from {{ root_module }}.services.cloudformation.cloudformation_extended import {{ base_class }}
 {%- else %}
 {%- set base_class = "CloudFormationResourceProviderPlugin" %}
 {%- set root_module = "localstack" %}
-from {{ root_module }}.services.cloudformation.resource_provider import {{ base_class }}
 {%- endif %}
+from {{ root_module }}.services.cloudformation.resource_provider import {{ base_class }}
 
 class {{ resource }}ProviderPlugin({{ base_class }}):
     name = "{{ name }}"
