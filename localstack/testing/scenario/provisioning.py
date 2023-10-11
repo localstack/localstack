@@ -3,7 +3,7 @@ import logging
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, ContextManager, Optional
 
 import aws_cdk as cdk
 from botocore.exceptions import WaiterError
@@ -107,7 +107,7 @@ class InfraProvisioner:
     @contextmanager
     def provisioner(
         self, skip_deployment: Optional[bool] = False, skip_teardown: Optional[bool] = False
-    ):
+    ) -> ContextManager["InfraProvisioner"]:
         """
         :param skip_deployment: Set to True to skip stack creation and re-use existing stack without modifications.
             Also skips custom setup steps.
