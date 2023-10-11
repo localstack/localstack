@@ -169,6 +169,11 @@ class ApiGatewayRestApiProvider(ResourceProvider[ApiGatewayRestApiProperties]):
                 **put_kwargs,
             )
 
+        resources = api.get_resources(restApiId=result["id"])["items"]
+        for res in resources:
+            if res["path"] == "/" and not res.get("parentId"):
+                model["RootResourceId"] = res["id"]
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
