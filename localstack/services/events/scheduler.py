@@ -47,6 +47,11 @@ class JobScheduler:
         self.jobs.append(job)
         return job.job_id
 
+    def get_job(self, job_id) -> Job | None:
+        for job in self.jobs:
+            if job.job_id == job_id:
+                return job
+
     def disable_job(self, job_id):
         for job in self.jobs:
             if job.job_id == job_id:

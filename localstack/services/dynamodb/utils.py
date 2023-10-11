@@ -114,6 +114,16 @@ class SchemaExtractor:
                 raise
         return schema
 
+    @classmethod
+    def invalidate_table_schema(cls, table_name: str, account_id: str, region_name: str):
+        """
+        Allow cached table schemas to be invalidated without waiting for the TTL to expire
+        """
+        key = dynamodb_table_arn(
+            table_name=table_name, account_id=account_id, region_name=region_name
+        )
+        SCHEMA_CACHE.pop(key, None)
+
 
 class ItemFinder:
     @staticmethod

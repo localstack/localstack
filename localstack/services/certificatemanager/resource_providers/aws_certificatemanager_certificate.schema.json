@@ -1,0 +1,95 @@
+{
+  "typeName": "AWS::CertificateManager::Certificate",
+  "description": "Resource Type definition for AWS::CertificateManager::Certificate",
+  "additionalProperties": false,
+  "properties": {
+    "CertificateAuthorityArn": {
+      "type": "string"
+    },
+    "DomainValidationOptions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/DomainValidationOption"
+      }
+    },
+    "CertificateTransparencyLoggingPreference": {
+      "type": "string"
+    },
+    "DomainName": {
+      "type": "string"
+    },
+    "ValidationMethod": {
+      "type": "string"
+    },
+    "SubjectAlternativeNames": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Id": {
+      "type": "string"
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    }
+  },
+  "definitions": {
+    "DomainValidationOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "DomainName": {
+          "type": "string"
+        },
+        "ValidationDomain": {
+          "type": "string"
+        },
+        "HostedZoneId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "DomainName"
+      ]
+    },
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Value": {
+          "type": "string"
+        },
+        "Key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "required": [
+    "DomainName"
+  ],
+  "createOnlyProperties": [
+    "/properties/SubjectAlternativeNames",
+    "/properties/DomainValidationOptions",
+    "/properties/ValidationMethod",
+    "/properties/DomainName",
+    "/properties/CertificateAuthorityArn"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

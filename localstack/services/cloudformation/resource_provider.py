@@ -69,6 +69,7 @@ PROVIDER_DEFAULTS = {
     # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
     "AWS::KMS::Key": "ResourceProvider",
     "AWS::KMS::Alias": "ResourceProvider",
+    "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::ApiGateway::GatewayResponse": "ResourceProvider",
     "AWS::ApiGateway::RequestValidator": "ResourceProvider",
     "AWS::ApiGateway::RestApi": "ResourceProvider",

@@ -55,15 +55,15 @@ def test_create_stack_from_s3_template_url(
     """
     )
 
-    aws_client.s3.put_object(Bucket=bucket_name, Key="template.yml", Body=to_bytes(template))
+    aws_client.s3.put_object(Bucket=bucket_name, Key="test/template.yml", Body=to_bytes(template))
 
     match url_style:
         case "s3_url":
-            template_url = f"s3://{bucket_name}/template.yml"
+            template_url = f"s3://{bucket_name}/test/template.yml"
         case "http_path":
-            template_url = f"https://s3.amazonaws.com/{bucket_name}/template.yml"
+            template_url = f"https://s3.amazonaws.com/{bucket_name}/test/template.yml"
         case "http_host":
-            template_url = f"https://{bucket_name}.s3.amazonaws.com/template.yml"
+            template_url = f"https://{bucket_name}.s3.amazonaws.com/test/template.yml"
         case "http_invalid":
             # note: using an invalid (non-existing) URL here, but in fact all non-S3 HTTP URLs are invalid in real AWS
             template_url = "https://example.com/dummy.yml"
