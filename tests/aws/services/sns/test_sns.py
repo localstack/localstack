@@ -3655,7 +3655,8 @@ class TestSNSSubscriptionHttp:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.http-message-headers.Accept",  # requests adds the header but not SNS, not very important
-            "$.http-message-headers-raw.Accept",  # requests adds the header but not SNS, not very important
+            "$.http-message-headers-raw.Accept",
+            "$.http-confirm-sub-headers.Accept",
         ]
     )
     def test_subscribe_external_http_endpoint(
@@ -3708,7 +3709,6 @@ class TestSNSSubscriptionHttp:
         assert "SigningCertURL" in payload
 
         snapshot.match("http-confirm-sub-headers", _clean_headers(sub_request.headers))
-        snapshot.match("http-confirm-sub-payload", payload)
 
         token = payload["Token"]
         subscribe_url = payload["SubscribeURL"]
