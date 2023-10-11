@@ -73,6 +73,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ElasticBeanstalk::ApplicationVersion": "ResourceProvider",
     "AWS::ElasticBeanstalk::Environment": "ResourceProvider",
     "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
+    "AWS::CertificateManager::Certificate": "ResourceProvider",
 }
 
 
