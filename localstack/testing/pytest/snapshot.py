@@ -9,7 +9,7 @@ from _pytest.fixtures import SubRequest
 from _pytest.nodes import Item
 from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
-from pluggy.callers import _Result
+from pluggy import Result
 
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 from localstack.testing.snapshots.report import render_report
@@ -37,7 +37,7 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> Optional[TestReport]:
     use_legacy_report = os.environ.get("SNAPSHOT_LEGACY_REPORT", "0") == "1"
 
-    result: _Result = yield
+    result: Result = yield
     report: TestReport = result.get_result()
 
     if call.excinfo is not None and isinstance(call.excinfo.value, SnapshotAssertionError):
