@@ -12,7 +12,7 @@ Since this is therefore rather part of the cloudformation layer and *not* the re
 # note: format here is subject to change (e.g. it might not be a pure str -> str mapping, it could also involve more sophisticated handlers
 PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     # Example
-    # "AWS::ApiGateway::RequestValidator": "/properties/restApiId",
+    "AWS::ApiGateway::RequestValidator": "/properties/RequestValidatorId",
 }
 
 # You can usually find the available GetAtt targets in the official resource documentation:
