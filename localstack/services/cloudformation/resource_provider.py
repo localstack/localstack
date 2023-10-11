@@ -69,6 +69,10 @@ PROVIDER_DEFAULTS = {
     # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
     "AWS::KMS::Key": "ResourceProvider",
     "AWS::KMS::Alias": "ResourceProvider",
+    "AWS::ElasticBeanstalk::Application": "ResourceProvider",
+    "AWS::ElasticBeanstalk::ApplicationVersion": "ResourceProvider",
+    "AWS::ElasticBeanstalk::Environment": "ResourceProvider",
+    "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
 }
 
