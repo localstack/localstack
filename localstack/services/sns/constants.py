@@ -32,5 +32,6 @@ GCM_URL = "https://fcm.googleapis.com/fcm/send"
 # Endpoint to access all the PlatformEndpoint sent Messages
 PLATFORM_ENDPOINT_MSGS_ENDPOINT = "/_aws/sns/platform-endpoint-messages"
 SMS_MSGS_ENDPOINT = "/_aws/sns/sms-messages"
+SUBSCRIPTION_TOKENS_ENDPOINT = "/_aws/sns/subscription-tokens"
 
 DUMMY_SUBSCRIPTION_PRINCIPAL = "arn:aws:iam::{{account_id}}:user/DummySNSPrincipal"

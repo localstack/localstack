@@ -413,18 +413,6 @@
       "deletion": true
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::test_prevent_stack_deletion_and_update": {
-    "recorded-date": "28-10-2022, 11:41:53",
-    "recorded-content": {}
-  },
-  "tests/aws/services/cloudformation/api/test_stacks.py::test_prevent_stack_update": {
-    "recorded-date": "28-10-2022, 12:10:42",
-    "recorded-content": {}
-  },
-  "tests/aws/services/cloudformation/api/test_stacks.py::test_prevent_resource_deletion": {
-    "recorded-date": "28-10-2022, 12:29:11",
-    "recorded-content": {}
-  },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_linting_error_during_creation": {
     "recorded-date": "11-11-2022, 08:10:14",
     "recorded-content": {
