@@ -75,6 +75,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::RestApi": "ResourceProvider",
     "AWS::ApiGateway::Deployment": "ResourceProvider",
     "AWS::ApiGateway::Resource": "ResourceProvider",
+    "AWS::ApiGateway::Method": "ResourceProvider",
 }
 
 
