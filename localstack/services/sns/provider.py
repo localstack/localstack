@@ -1071,23 +1071,18 @@ class SNSServiceSubscriptionTokenApiResource:
 
         store: SnsStore = sns_stores[parsed_arn["account"]][parsed_arn["region"]]
 
-        found_token = None
         for token, sub_arn in store.subscription_tokens.items():
             if sub_arn == subscription_arn:
-                found_token = token
-                break
-
-        if not found_token:
-            response = Response("", 404)
-            response.set_json(
-                {
-                    "error": "The provided SubscriptionARN is not found",
+                return {
+                    "subscription_token": token,
                     "subscription_arn": subscription_arn,
                 }
-            )
-            return response
 
-        return {
-            "subscription_token": found_token,
-            "subscription_arn": subscription_arn,
-        }
+        response = Response("", 404)
+        response.set_json(
+            {
+                "error": "The provided SubscriptionARN is not found",
+                "subscription_arn": subscription_arn,
+            }
+        )
+        return response
