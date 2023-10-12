@@ -134,25 +134,3 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
 
     def eval(self) -> None:
         self._eval_pool(job=self._job_pool.next_job(), worker_frame=self._env)
-
-    # def eval(self) -> None:
-    #     job: Optional[Job] = self._job_pool.next_job()
-    #     while job is not None:
-    #         self._map_run_record.execution_counter.total.count()
-    #         self._map_run_record.execution_counter.running.count()
-    #         # Create the job's frame and prevent dumping events on the program's event history.
-    #         previous_event_id = self._env.event_history_context.source_event_id
-    #         job_frame: Environment = self._env.open_frame(
-    #             event_history_frame_cache=EventHistoryContext(previous_event_id=previous_event_id)
-    #         )
-    #         job_frame.event_history = EventHistory()
-    #         try:
-    #             self._eval_job(env=job_frame, job=job)
-    #             if self.stopped():
-    #                 break
-    #             job = self._job_pool.next_job()
-    #         finally:
-    #             self._env.close_frame(job_frame)
-    #         self._map_run_record.execution_counter.succeeded.count()
-    #         self._map_run_record.execution_counter.results_written.count()
-    #         self._map_run_record.execution_counter.running.offset(-1)
