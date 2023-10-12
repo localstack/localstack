@@ -14,6 +14,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     # Example
     "AWS::ApiGateway::RequestValidator": "/properties/RequestValidatorId",
     "AWS::ApiGateway::Deployment": "/properties/DeploymentId",
+    "AWS::ApiGateway::Resource": "/properties/ResourceId",
 }
 
 # You can usually find the available GetAtt targets in the official resource documentation:
