@@ -1051,35 +1051,43 @@ class SNSServiceSubscriptionTokenApiResource:
 
     This is registered as a LocalStack internal HTTP resource.
 
-    This endpoint accepts:
-    - GET param `accountId`: selector for AWS account. If not specified, return fallback `000000000000` test ID
-    - GET param `region`: selector for AWS `region`. If not specified, return default "us-east-1"
-    - GET param `subscriptionArn`: filter for `subscriptionArn` resource in SNS
+    This endpoint has the following parameter:
+    - GET `subscription_arn`: `subscriptionArn`resource in SNS for which you want the SubscriptionToken
     """
 
-    @route(sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT, methods=["GET"])
-    def on_get(self, request: Request):
-        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
-        region = request.args.get("region", AWS_REGION_US_EAST_1)
-        subscription_arn = request.args.get("subscriptionArn")
-        store: SnsStore = sns_stores[account_id][region]
-        if subscription_arn:
-            subscription_tokens = {}
-            for token, sub_arn in store.subscription_tokens.items():
-                if sub_arn == subscription_arn:
-                    subscription_tokens[subscription_arn] = token
-                    break
+    @route(f"{sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>", methods=["GET"])
+    def on_get(self, _request: Request, subscription_arn: str):
+        try:
+            parsed_arn = parse_arn(subscription_arn)
+        except InvalidArnException:
+            response = Response("", 400)
+            response.set_json(
+                {
+                    "error": "The provided SubscriptionARN is invalid",
+                    "subscription_arn": subscription_arn,
+                }
+            )
+            return response
 
-            return {
-                "subscription_tokens": subscription_tokens,
-                "region": region,
-            }
+        store: SnsStore = sns_stores[parsed_arn["account"]][parsed_arn["region"]]
 
-        subscription_tokens = {
-            subscription_arn: token for token, subscription_arn in store.subscription_tokens.items()
-        }
+        found_token = None
+        for token, sub_arn in store.subscription_tokens.items():
+            if sub_arn == subscription_arn:
+                found_token = token
+                break
+
+        if not found_token:
+            response = Response("", 404)
+            response.set_json(
+                {
+                    "error": "The provided SubscriptionARN is not found",
+                    "subscription_arn": subscription_arn,
+                }
+            )
+            return response
 
         return {
-            "subscription_tokens": subscription_tokens,
-            "region": region,
+            "subscription_token": found_token,
+            "subscription_arn": subscription_arn,
         }

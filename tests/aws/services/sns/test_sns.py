@@ -4560,10 +4560,10 @@ class TestSNSRetrospectionEndpoints:
 
         # we won't confirm the subscription, to simulate an external provider that wouldn't be able to access LocalStack
         # try to access the internal to confirm the Token is there
-        tokens_url = config.get_edge_url() + SUBSCRIPTION_TOKENS_ENDPOINT
-        api_contents = requests.get(tokens_url, params={"region": TEST_AWS_REGION_NAME}).json()
-        api_sub_tokens = api_contents["subscription_tokens"]
-        assert api_sub_tokens[subscription_arn] == token
+        tokens_base_url = config.get_edge_url() + SUBSCRIPTION_TOKENS_ENDPOINT
+        api_contents = requests.get(f"{tokens_base_url}/{subscription_arn}").json()
+        assert api_contents["subscription_token"] == token
+        assert api_contents["subscription_arn"] == subscription_arn
 
         # try to send a message to an unconfirmed subscription, assert that the message isn't received
         aws_client.sns.publish(Message=message, TopicArn=topic_arn)
@@ -4580,24 +4580,18 @@ class TestSNSRetrospectionEndpoints:
             timeout=2,
         )
 
-        # Ensure you can select the region
-        msg_with_region = requests.get(
-            tokens_url, params={"region": SECONDARY_TEST_AWS_REGION_NAME}
-        ).json()
-        assert len(msg_with_region["subscription_tokens"]) == 0
-        assert msg_with_region["region"] == SECONDARY_TEST_AWS_REGION_NAME
+        wrong_sub_arn = subscription_arn.replace(TEST_AWS_REGION_NAME, "us-west-1")
+        wrong_region_req = requests.get(f"{tokens_base_url}/{wrong_sub_arn}")
+        assert wrong_region_req.status_code == 404
+        assert wrong_region_req.json() == {
+            "error": "The provided SubscriptionARN is not found",
+            "subscription_arn": wrong_sub_arn,
+        }
 
-        # Ensure default region is us-east-1
-        msg_with_region = requests.get(tokens_url).json()
-        assert msg_with_region["region"] == AWS_REGION_US_EAST_1
-
-        # Ensure messages can be filtered by SubscriptionArn
-        api_contents_with_sub_arn = requests.get(
-            tokens_url, params={"subscriptionArn": "randomArnHere"}
-        ).json()
-        assert len(api_contents_with_sub_arn["subscription_tokens"]) == 0
-
-        api_contents_with_sub_arn = requests.get(
-            tokens_url, params={"subscriptionArn": subscription_arn}
-        ).json()
-        assert len(api_contents_with_sub_arn["subscription_tokens"]) == 1
+        # Ensure proper error is raised with wrong ARN
+        incorrect_arn_req = requests.get(f"{tokens_base_url}/randomarnhere")
+        assert incorrect_arn_req.status_code == 400
+        assert incorrect_arn_req.json() == {
+            "error": "The provided SubscriptionARN is invalid",
+            "subscription_arn": "randomarnhere",
+        }
