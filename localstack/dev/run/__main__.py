@@ -7,11 +7,10 @@ from rich.rule import Rule
 
 from localstack import config
 from localstack.cli import console
-from localstack.utils.bootstrap import ContainerConfigurators
+from localstack.utils.bootstrap import Container, ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     PortMappings,
-    VolumeBind,
     VolumeMappings,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
@@ -22,7 +21,6 @@ from localstack.utils.strings import short_uid
 from .configurators import (
     ConfigEnvironmentConfigurator,
     CoverageRunScriptConfigurator,
-    CustomEntryPointConfigurator,
     DependencyMountConfigurator,
     EntryPointMountConfigurator,
     ImageConfigurator,
@@ -289,22 +287,17 @@ def run(
         configurators.append(ContainerConfigurators.develop)
     if dev_extensions:
         if pro:
-            from localstack_ext.extensions.bootstrap import _ENTRYPOINT_SCRIPT
+            from localstack_ext.extensions.bootstrap import (
+                run_on_configure_host_hook,
+                run_on_configure_localstack_container_hook,
+            )
 
-            from localstack.utils.json import FileMappedDocument
+            # collect dev extensions
+            run_on_configure_host_hook()
 
-            doc = FileMappedDocument(os.path.join(config.CONFIG_DIR, "extensions-dev.json"))
-            configurators.append(CustomEntryPointConfigurator(_ENTRYPOINT_SCRIPT))
-
-            for extensions_spec in doc.get("extensions", []):
-                path = extensions_spec.get("host_path")
-                if not os.path.exists(path):
-                    continue
-
-                target = os.path.join("/opt/code/extensions", os.path.basename(path))
-                configurators.append(
-                    ContainerConfigurators.volume(VolumeBind(path, target, read_only=True))
-                )
+            # create stub container with configuration to apply
+            c = Container(container_config=container_config)
+            run_on_configure_localstack_container_hook(c)
 
         else:
             click.echo("Pro mode is required for extensions support")
