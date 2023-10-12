@@ -521,6 +521,15 @@ class ContainerConfigurators:
     def debug(cfg: ContainerConfiguration):
         cfg.env_vars["DEBUG"] = "1"
 
+    @classmethod
+    def develop(cls, cfg: ContainerConfiguration):
+        cls.env_vars(
+            {
+                "DEVELOP": "1",
+            }
+        )(cfg)
+        cls.port(5678)(cfg)
+
     @staticmethod
     def network(network: str):
         def _cfg(cfg: ContainerConfiguration):

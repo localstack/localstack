@@ -704,8 +704,7 @@ class TestLambdaImages:
             )
 
     @pytest.fixture(scope="class")
-    @markers.aws.unknown
-    def test_image(self, aws_client, login_docker_client):
+    def ecr_image(self, aws_client, login_docker_client):
         repository_names = []
         image_names = []
 
@@ -751,10 +750,10 @@ class TestLambdaImages:
 
     @markers.aws.validated
     def test_lambda_image_crud(
-        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
+        self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
         """Test lambda crud with package type image"""
-        image = test_image("alpine")
+        image = ecr_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
         function_name = f"test-function-{short_uid()}"
@@ -782,7 +781,7 @@ class TestLambdaImages:
             )
         snapshot.match("image-to-zipfile-error", e.value.response)
 
-        image_2 = test_image("debian")
+        image_2 = ecr_image("debian")
         repo_uri_2 = image_2.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri_2, "<repo_uri_2>"))
         update_function_code_response = aws_client.lambda_.update_function_code(
@@ -800,10 +799,10 @@ class TestLambdaImages:
 
     @markers.aws.validated
     def test_lambda_zip_file_to_image(
-        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
+        self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
         """Test that verifies conversion from zip file lambda to image lambda is not possible"""
-        image = test_image("alpine")
+        image = ecr_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
         function_name = f"test-function-{short_uid()}"
@@ -840,10 +839,10 @@ class TestLambdaImages:
 
     @markers.aws.validated
     def test_lambda_image_and_image_config_crud(
-        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
+        self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
         """Test lambda crud with packagetype image and image configs"""
-        image = test_image("alpine")
+        image = ecr_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
         # Create another lambda with image config
@@ -908,10 +907,10 @@ class TestLambdaImages:
 
     @markers.aws.validated
     def test_lambda_image_versions(
-        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
+        self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
         """Test lambda versions with package type image"""
-        image = test_image("alpine")
+        image = ecr_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
         function_name = f"test-function-{short_uid()}"
@@ -3377,8 +3376,7 @@ class TestLambdaUrl:
         # function name + qualifier tests
         fn_arn_doesnotexist = fn_arn.replace(function_name, "doesnotexist")
 
-        @markers.aws.unknown
-        def test_name_and_qualifier(method: Callable, snapshot_prefix: str, tests, **kwargs):
+        def assert_name_and_qualifier(method: Callable, snapshot_prefix: str, tests, **kwargs):
             for t in tests:
                 with pytest.raises(t["exc"]) as e:
                     method(**t["args"], **kwargs)
@@ -3440,23 +3438,23 @@ class TestLambdaUrl:
             },
         ]
 
-        test_name_and_qualifier(
+        assert_name_and_qualifier(
             aws_client.lambda_.create_function_url_config,
             "create_function_url_config",
             tests,
             AuthType="NONE",
         )
-        test_name_and_qualifier(
+        assert_name_and_qualifier(
             aws_client.lambda_.get_function_url_config,
             "get_function_url_config",
             tests + config_doesnotexist_tests,
         )
-        test_name_and_qualifier(
+        assert_name_and_qualifier(
             aws_client.lambda_.delete_function_url_config,
             "delete_function_url_config",
             tests + config_doesnotexist_tests,
         )
-        test_name_and_qualifier(
+        assert_name_and_qualifier(
             aws_client.lambda_.update_function_url_config,
             "update_function_url_config",
             tests + config_doesnotexist_tests,

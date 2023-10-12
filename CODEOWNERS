@@ -116,6 +116,7 @@
 /tests/aws/services/ec2/ @viren-nadkarni
 
 # ecr
+/localstack/services/ecr/ @dfangl
 /localstack/services/cloudformation/models/ecr.py @dfangl
 
 # es

@@ -191,6 +191,7 @@ def template_path(
 
 class FileType(Enum):
     # service code
+    plugin = auto()
     provider = auto()
 
     # meta test files
@@ -237,6 +238,7 @@ class TemplateRenderer:
             return json.dumps(self.schema, indent=2)
 
         template_mapping = {
+            FileType.plugin: "plugin_template.py.j2",
             FileType.provider: "provider_template.py.j2",
             FileType.getatt_test: "test_getatt_template.py.j2",
             FileType.integration_test: "test_integration_template.py.j2",
@@ -289,6 +291,9 @@ class TemplateRenderer:
                 kwargs["list_permissions"] = (
                     self.schema.get("handlers", {}).get("list", {}).get("permissions")
                 )
+            case FileType.plugin:
+                kwargs["service"] = resource_name.service.lower()
+                kwargs["lower_resource"] = resource_name.resource.lower()
             case FileType.integration_test:
                 kwargs["black_box_template_path"] = str(
                     template_path(resource_name, FileType.minimal_template, tests_output_path)
@@ -481,6 +486,13 @@ class FileWriter:
                 "resource_providers",
                 f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
+            FileType.plugin: LOCALSTACK_ROOT_DIR.joinpath(
+                "localstack",
+                "services",
+                self.resource_name.python_compatible_service_name.lower(),
+                "resource_providers",
+                f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_plugin.py",
+            ),
             FileType.schema: LOCALSTACK_ROOT_DIR.joinpath(
                 "localstack",
                 "services",
@@ -541,6 +553,10 @@ class FileWriter:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written provider to {file_destination}")
+            case FileType.plugin:
+                self.ensure_python_init_files(destination_path)
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written plugin to {file_destination}")
 
             # tests meta
             case FileType.conftest:
@@ -659,7 +675,9 @@ class Output:
             case FileType.provider:
                 self.printer.print("\n[underline]Provider template[/underline]\n")
                 self.printer.print(Syntax(self.contents, "python"))
-
+            case FileType.plugin:
+                self.printer.print("\n[underline]Plugin[/underline]\n")
+                self.printer.print(Syntax(self.contents, "python"))
             # tests
             case FileType.integration_test:
                 self.printer.print("\n[underline]Integration test file[/underline]\n")

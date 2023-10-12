@@ -24,7 +24,11 @@ from localstack.constants import (
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
-from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SMS_MSGS_ENDPOINT
+from localstack.services.sns.constants import (
+    PLATFORM_ENDPOINT_MSGS_ENDPOINT,
+    SMS_MSGS_ENDPOINT,
+    SUBSCRIPTION_TOKENS_ENDPOINT,
+)
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -111,6 +115,11 @@ class TestSNSTopicCrud:
             aws_client.sns.get_topic_attributes(TopicArn=wrong_topic_arn)
 
         snapshot.match("get-attrs-nonexistent-topic", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.get_topic_attributes(TopicArn="test-topic")
+
+        snapshot.match("get-attrs-malformed-topic", e.value.response)
 
     @markers.aws.validated
     def test_tags(self, sns_create_topic, snapshot, aws_client):
@@ -3095,6 +3104,131 @@ class TestSNSFilter:
         # there should be no messages in this queue
         snapshot.match("messages-with-filter-after-publish-filtered", response_after_publish_filter)
 
+    @markers.aws.validated
+    def test_filter_policy_on_message_body_dot_attribute(
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
+        snapshot,
+        aws_client,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        nested_filter_policy = json.dumps(
+            {
+                "object.nested": ["string.value"],
+            }
+        )
+
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicyScope",
+            AttributeValue="MessageBody",
+        )
+
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=nested_filter_policy,
+        )
+
+        def get_filter_policy():
+            subscription_attrs = aws_client.sns.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            return subscription_attrs["Attributes"]["FilterPolicy"]
+
+        # wait for the new filter policy to be in effect
+        poll_condition(lambda: get_filter_policy() == nested_filter_policy, timeout=4)
+
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
+        )
+        snapshot.match("recv-init", response)
+        # assert there are no messages in the queue
+        assert "Messages" not in response
+
+        def _verify_and_snapshot_sqs_messages(msg_to_send: list[dict], snapshot_prefix: str):
+            for i, _message in enumerate(msg_to_send):
+                aws_client.sns.publish(
+                    TopicArn=topic_arn,
+                    Message=json.dumps(_message),
+                )
+
+                _response = aws_client.sqs.receive_message(
+                    QueueUrl=queue_url,
+                    VisibilityTimeout=0,
+                    WaitTimeSeconds=5 if is_aws_cloud() else 2,
+                )
+                snapshot.match(f"{snapshot_prefix}-{i}", _response)
+                receipt_handle = _response["Messages"][0]["ReceiptHandle"]
+                aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        # publish messages that satisfies the filter policy, assert that messages are received
+        messages = [
+            {"object": {"nested": "string.value"}},
+            {"object.nested": "string.value"},
+        ]
+        _verify_and_snapshot_sqs_messages(messages, snapshot_prefix="recv-nested-msg")
+
+        # publish messages that do not satisfy the filter policy, assert those messages are not received
+        messages = [
+            {"object": {"nested": "test-auto"}},
+        ]
+        for message in messages:
+            aws_client.sns.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
+
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
+        )
+        # assert there are no messages in the queue
+        assert "Messages" not in response
+
+        # assert with more nesting
+        deep_nested_filter_policy = json.dumps(
+            {
+                "object.nested.test": ["string.value"],
+            }
+        )
+
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=deep_nested_filter_policy,
+        )
+        # wait for the new filter policy to be in effect
+        poll_condition(lambda: get_filter_policy() == deep_nested_filter_policy, timeout=4)
+
+        messages = [
+            {"object": {"nested": {"test": "string.value"}}},
+            {"object.nested.test": "string.value"},
+            {"object.nested": {"test": "string.value"}},
+            {"object": {"nested.test": "string.value"}},
+        ]
+        _verify_and_snapshot_sqs_messages(messages, snapshot_prefix="recv-deep-nested-msg")
+        # publish messages that do not satisfy the filter policy, assert those messages are not received
+        messages = [
+            {"object": {"nested": {"test": "string.notvalue"}}},
+        ]
+        for message in messages:
+            aws_client.sns.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
+
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
+        )
+        # assert there are no messages in the queue
+        assert "Messages" not in response
+
 
 class TestSNSPlatformEndpoint:
     @markers.aws.only_localstack
@@ -3518,6 +3652,13 @@ class TestSNSSubscriptionHttp:
 
     @markers.aws.manual_setup_required
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.http-message-headers.Accept",  # requests adds the header but not SNS, not very important
+            "$.http-message-headers-raw.Accept",
+            "$.http-confirm-sub-headers.Accept",
+        ]
+    )
     def test_subscribe_external_http_endpoint(
         self, sns_create_http_endpoint, raw_message_delivery, aws_client, snapshot
     ):
@@ -3530,10 +3671,20 @@ class TestSNSSubscriptionHttp:
                     fields["ResponseMetadata"]["HTTPStatusCode"] = response.status_code
             return parsed_xml_body
 
+        def _clean_headers(response_headers: dict):
+            return {key: val for key, val in response_headers.items() if "Forwarded" not in key}
+
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("RequestId"),
                 snapshot.transform.key_value("Token"),
+                snapshot.transform.key_value("Host"),
+                snapshot.transform.key_value(
+                    "Content-Length", reference_replacement=False
+                ),  # might change depending on compression
+                snapshot.transform.key_value(
+                    "Connection", reference_replacement=False
+                ),  # casing might change
                 snapshot.transform.regex(
                     r"(?i)(?<=SubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=ConfirmSubscription)",
                     replacement="<subscribe-domain>",
@@ -3556,6 +3707,8 @@ class TestSNSSubscriptionHttp:
         assert sub_request.headers["x-amz-sns-message-type"] == "SubscriptionConfirmation"
         assert "Signature" in payload
         assert "SigningCertURL" in payload
+
+        snapshot.match("http-confirm-sub-headers", _clean_headers(sub_request.headers))
 
         token = payload["Token"]
         subscribe_url = payload["SubscribeURL"]
@@ -3646,6 +3799,7 @@ class TestSNSSubscriptionHttp:
         if raw_message_delivery:
             payload = notification_request.data.decode()
             assert payload == message
+            snapshot.match("http-message-headers-raw", _clean_headers(notification_request.headers))
         else:
             payload = notification_request.get_json(force=True)
             assert payload["Type"] == "Notification"
@@ -3654,6 +3808,7 @@ class TestSNSSubscriptionHttp:
             assert payload["Message"] == message
             assert payload["UnsubscribeURL"] == expected_unsubscribe_url
             snapshot.match("http-message", payload)
+            snapshot.match("http-message-headers", _clean_headers(notification_request.headers))
 
         unsub_request = requests.get(expected_unsubscribe_url)
         unsubscribe_confirmation = xmltodict.parse(unsub_request.content)
@@ -4381,3 +4536,62 @@ class TestSNSRetrospectionEndpoints:
         assert delete_res.status_code == 204
         msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
         assert not msg_with_region["sms_messages"]
+
+    @markers.aws.only_localstack
+    def test_subscription_tokens_can_retrospect(
+        self, sns_create_topic, sns_subscription, sns_create_http_endpoint, aws_client
+    ):
+        sns_store = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        # clean up the saved tokens
+        sns_store.subscription_tokens.clear()
+
+        message = "Good news everyone!"
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
+        topic_arn, subscription_arn, endpoint_url, server = sns_create_http_endpoint()
+        assert poll_condition(
+            lambda: len(server.log) >= 1,
+            timeout=5,
+        )
+        sub_request, _ = server.log[0]
+        payload = sub_request.get_json(force=True)
+        assert payload["Type"] == "SubscriptionConfirmation"
+        token = payload["Token"]
+        server.clear()
+
+        # we won't confirm the subscription, to simulate an external provider that wouldn't be able to access LocalStack
+        # try to access the internal to confirm the Token is there
+        tokens_base_url = config.get_edge_url() + SUBSCRIPTION_TOKENS_ENDPOINT
+        api_contents = requests.get(f"{tokens_base_url}/{subscription_arn}").json()
+        assert api_contents["subscription_token"] == token
+        assert api_contents["subscription_arn"] == subscription_arn
+
+        # try to send a message to an unconfirmed subscription, assert that the message isn't received
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
+
+        assert poll_condition(
+            lambda: len(server.log) == 0,
+            timeout=1,
+        )
+
+        aws_client.sns.confirm_subscription(TopicArn=topic_arn, Token=token)
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
+        assert poll_condition(
+            lambda: len(server.log) == 1,
+            timeout=2,
+        )
+
+        wrong_sub_arn = subscription_arn.replace(TEST_AWS_REGION_NAME, "us-west-1")
+        wrong_region_req = requests.get(f"{tokens_base_url}/{wrong_sub_arn}")
+        assert wrong_region_req.status_code == 404
+        assert wrong_region_req.json() == {
+            "error": "The provided SubscriptionARN is not found",
+            "subscription_arn": wrong_sub_arn,
+        }
+
+        # Ensure proper error is raised with wrong ARN
+        incorrect_arn_req = requests.get(f"{tokens_base_url}/randomarnhere")
+        assert incorrect_arn_req.status_code == 400
+        assert incorrect_arn_req.json() == {
+            "error": "The provided SubscriptionARN is invalid",
+            "subscription_arn": "randomarnhere",
+        }
