@@ -112,11 +112,15 @@ class StateTaskLambda(StateTask):
             timeout_seconds = env.stack.pop()
             scheduled_event_details["timeoutInSeconds"] = timeout_seconds
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.LambdaFunctionScheduled,
             event_detail=EventDetails(lambdaFunctionScheduledEventDetails=scheduled_event_details),
         )
 
-        env.event_history.add_event(hist_type_event=HistoryEventType.LambdaFunctionStarted)
+        env.event_history.add_event(
+            context=env.event_history_context,
+            hist_type_event=HistoryEventType.LambdaFunctionStarted,
+        )
 
         parameters = self._eval_parameters(env=env)
         if "Payload" in parameters:
@@ -138,6 +142,7 @@ class StateTaskLambda(StateTask):
         env.stack.append(output_payload)
 
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.LambdaFunctionSucceeded,
             event_detail=EventDetails(
                 lambdaFunctionSucceededEventDetails=LambdaFunctionSucceededEventDetails(

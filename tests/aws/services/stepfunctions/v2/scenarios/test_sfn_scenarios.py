@@ -117,7 +117,6 @@ class TestFundamental:
             "$..taskFailedEventDetails.resource",
             "$..taskFailedEventDetails.resourceType",
             "$..taskSubmittedEventDetails.output",
-            "$..previousEventId",
         ],
     )
     @markers.aws.validated
