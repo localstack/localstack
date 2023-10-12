@@ -1,0 +1,24 @@
+{
+  "Resources": {
+    "TestQueue6F0069AA": {
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    }
+  },
+  "Outputs": {
+    "QueueName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "TestQueue6F0069AA",
+          "QueueName"
+        ]
+      }
+    },
+    "QueueURL": {
+      "Value": {
+        "Ref": "TestQueue6F0069AA"
+      }
+    }
+  }
+}

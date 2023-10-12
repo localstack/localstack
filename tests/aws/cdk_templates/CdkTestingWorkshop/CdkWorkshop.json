@@ -17,6 +17,48 @@
       "UpdateReplacePolicy": "Delete",
       "DeletionPolicy": "Delete"
     },
+    "queuePolicy89DB7105": {
+      "Type": "AWS::SQS::QueuePolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl"
+              ],
+              "Condition": {
+                "ArnEquals": {
+                  "aws:SourceArn": {
+                    "Fn::GetAtt": [
+                      "s3rule40E3CE6D",
+                      "Arn"
+                    ]
+                  }
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "queue276F7297",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Queues": [
+          {
+            "Ref": "queue276F7297"
+          }
+        ]
+      }
+    },
     "fnServiceRole5D180AFD": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -66,12 +108,83 @@
       "DependsOn": [
         "fnServiceRole5D180AFD"
       ]
+    },
+    "s3rule40E3CE6D": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventPattern": {
+          "detail-type": [
+            "Object Created"
+          ],
+          "source": [
+            "aws.s3"
+          ]
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "fn5FF616E3",
+                "Arn"
+              ]
+            },
+            "Id": "Target0"
+          },
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "queue276F7297",
+                "Arn"
+              ]
+            },
+            "Id": "Target1"
+          }
+        ]
+      }
+    },
+    "s3ruleAllowEventRuleCdkWorkshopfn820FE915A0FE0418": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "fn5FF616E3",
+            "Arn"
+          ]
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "s3rule40E3CE6D",
+            "Arn"
+          ]
+        }
+      }
     }
   },
   "Outputs": {
     "QueueUrl": {
       "Value": {
         "Ref": "queue276F7297"
+      }
+    },
+    "BucketName": {
+      "Value": {
+        "Ref": "bucket43879C71"
+      }
+    },
+    "FunctionArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "fn5FF616E3",
+          "Arn"
+        ]
+      }
+    },
+    "FunctionName": {
+      "Value": {
+        "Ref": "fn5FF616E3"
       }
     }
   }

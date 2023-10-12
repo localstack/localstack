@@ -1,0 +1,193 @@
+{
+  "Resources": {
+    "InlineLambdaServiceRole70B922E7": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "InlineLambda5E92236C": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "\ndef handler(event, ctx):\n    print(\"hello world from inline code\")\n    print(event)\n"
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "InlineLambdaServiceRole70B922E7",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.11"
+      },
+      "DependsOn": [
+        "InlineLambdaServiceRole70B922E7"
+      ]
+    },
+    "ComplexLambdaServiceRoleAB56294F": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "ComplexLambdaServiceRoleDefaultPolicyE88B804B": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:*",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "SampleTable08FBB2D0",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "ComplexLambdaServiceRoleDefaultPolicyE88B804B",
+        "Roles": [
+          {
+            "Ref": "ComplexLambdaServiceRoleAB56294F"
+          }
+        ]
+      }
+    },
+    "ComplexLambda47195451": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Join": [
+              "-",
+              [
+                "localstack-testing",
+                {
+                  "Ref": "AWS::AccountId"
+                },
+                {
+                  "Ref": "AWS::Region"
+                }
+              ]
+            ]
+          },
+          "S3Key": "lambda_source.zip"
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "ComplexLambdaServiceRoleAB56294F",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.11"
+      },
+      "DependsOn": [
+        "ComplexLambdaServiceRoleDefaultPolicyE88B804B",
+        "ComplexLambdaServiceRoleAB56294F"
+      ]
+    },
+    "SampleTable08FBB2D0": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "N"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5
+        },
+        "StreamSpecification": {
+          "StreamViewType": "NEW_AND_OLD_IMAGES"
+        }
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    }
+  },
+  "Outputs": {
+    "tablename": {
+      "Value": {
+        "Ref": "SampleTable08FBB2D0"
+      }
+    },
+    "fnname1": {
+      "Value": {
+        "Ref": "InlineLambda5E92236C"
+      }
+    },
+    "fnname2": {
+      "Value": {
+        "Ref": "ComplexLambda47195451"
+      }
+    }
+  }
+}

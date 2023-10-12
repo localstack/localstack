@@ -2,6 +2,8 @@ import time
 
 import aws_cdk as cdk
 import pytest
+from aws_cdk import aws_events as events
+from aws_cdk import aws_events_targets as targets
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -31,7 +33,7 @@ class TestCdkWorkshop:
         These events should then be forwarded to both the SQS queue and the Lambda function.
 
         """
-        infra = infrastructure_setup(namespace="CdkTestingWorkshop", force_synth=False)
+        infra = infrastructure_setup(namespace="CdkTestingWorkshop", force_synth=True)
         stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
         upload_bucket = cdk.aws_s3.Bucket(stack, "bucket", removal_policy=cdk.RemovalPolicy.DESTROY)
@@ -47,7 +49,7 @@ class TestCdkWorkshop:
             )
         )
         queue = cdk.aws_sqs.Queue(stack, "queue")
-        cdk.aws_lambda.Function(
+        fn = cdk.aws_lambda.Function(
             stack,
             "fn",
             runtime=cdk.aws_lambda.Runtime.PYTHON_3_11,
@@ -58,8 +60,20 @@ class TestCdkWorkshop:
         # TODO: add a rule here that forwards events (only when an object was created) to the SQS queue and the lambda function
         #       hint: we added a (hopefully) helpful link at the very bottom of the file.
 
+        events.Rule(
+            stack,
+            "s3rule",
+            event_pattern=events.EventPattern(
+                source=["aws.s3"],
+                detail_type=["Object Created"],
+            ),
+            targets=[targets.LambdaFunction(fn), targets.SqsQueue(queue)],
+        )
         # TODO: add missing outputs
         cdk.CfnOutput(stack, "QueueUrl", value=queue.queue_url)
+        cdk.CfnOutput(stack, "BucketName", value=upload_bucket.bucket_name)
+        cdk.CfnOutput(stack, "FunctionArn", value=fn.function_arn)
+        cdk.CfnOutput(stack, "FunctionName", value=fn.function_name)
 
         with infra.provisioner(skip_teardown=False) as prov:
             yield prov
