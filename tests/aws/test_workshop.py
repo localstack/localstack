@@ -56,6 +56,7 @@ class TestCdkWorkshop:
         )
 
         # TODO: add a rule here that forwards events (only when an object was created) to the SQS queue and the lambda function
+        #       hint: we added a (hopefully) helpful link at the very bottom of the file.
 
         # TODO: add missing outputs
         cdk.CfnOutput(stack, "QueueUrl", value=queue.queue_url)
@@ -115,5 +116,13 @@ class TestCdkWorkshop:
             assert len(filtered_events) == 1
             return filtered_events[0]
 
-        msg = retry(wait_for_lambda_invoke)
+        msg = retry(
+            wait_for_lambda_invoke,
+            retries=20 if is_aws_cloud() else 5,
+            sleep_before=2 if is_aws_cloud() else 0,
+        )
         assert key in msg
+
+
+# this might be helpful
+#  event patterns docs: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
