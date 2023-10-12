@@ -11,6 +11,7 @@ from localstack.utils.bootstrap import ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     PortMappings,
+    VolumeBind,
     VolumeMappings,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
@@ -21,6 +22,7 @@ from localstack.utils.strings import short_uid
 from .configurators import (
     ConfigEnvironmentConfigurator,
     CoverageRunScriptConfigurator,
+    CustomEntryPointConfigurator,
     DependencyMountConfigurator,
     EntryPointMountConfigurator,
     ImageConfigurator,
@@ -114,6 +116,9 @@ from .paths import HostPaths
     required=False,
     help="Docker network to start the container in",
 )
+@click.option(
+    "--dev-extensions", is_flag=True, default=False, help="Load extensions in develop mode"
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     image: str = None,
@@ -131,6 +136,7 @@ def run(
     entrypoint: str = None,
     network: str = None,
     command: str = None,
+    dev_extensions: bool = False,
 ):
     """
     A tool for localstack developers to start localstack containers. Run this in your localstack or
@@ -281,6 +287,27 @@ def run(
         configurators.append(DependencyMountConfigurator(host_paths=host_paths))
     if develop:
         configurators.append(ContainerConfigurators.develop)
+    if dev_extensions:
+        if pro:
+            from localstack_ext.extensions.bootstrap import _ENTRYPOINT_SCRIPT
+
+            from localstack.utils.json import FileMappedDocument
+
+            doc = FileMappedDocument(os.path.join(config.CONFIG_DIR, "extensions-dev.json"))
+            configurators.append(CustomEntryPointConfigurator(_ENTRYPOINT_SCRIPT))
+
+            for extensions_spec in doc.get("extensions", []):
+                path = extensions_spec.get("host_path")
+                if not os.path.exists(path):
+                    continue
+
+                target = os.path.join("/opt/code/extensions", os.path.basename(path))
+                configurators.append(
+                    ContainerConfigurators.volume(VolumeBind(path, target, read_only=True))
+                )
+
+        else:
+            click.echo("Pro mode is required for extensions support")
 
     # make sure anything coming from CLI arguments has priority
     configurators.extend(
