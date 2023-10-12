@@ -137,3 +137,8 @@ class TestCSRF:
         headers["Origin"] = f"http://{test_domain}"
         response = requests.post(url, headers=headers, data=data)
         assert not response.ok
+
+    def test_no_cors_without_origin_header(self):
+        response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/")
+        assert response.status_code == 200
+        assert "access-control-allow-origin" not in response.headers

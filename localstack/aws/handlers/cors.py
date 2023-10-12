@@ -229,9 +229,14 @@ class CorsResponseEnricher(Handler):
             if headers.get(header) == "":
                 del headers[header]
 
+        # CORS headers should only be returned when an Origin header is set.
         # use DISABLE_CORS_HEADERS to disable returning CORS headers entirely (more restrictive security setting)
         # also don't add CORS response headers if the service manages the CORS handling
-        if config.DISABLE_CORS_HEADERS or not should_enforce_self_managed_service(context):
+        if (
+            "Origin" not in headers
+            or config.DISABLE_CORS_HEADERS
+            or not should_enforce_self_managed_service(context)
+        ):
             return
 
         request_headers = context.request.headers
