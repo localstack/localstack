@@ -8,7 +8,6 @@ It's originally written via TypeScript CDK but has been adapted here into a Pyth
 import base64
 import json
 
-import aws_cdk as cdk
 import pytest
 import requests
 
@@ -34,25 +33,14 @@ class TestMythicalMisfitsScenario:
     """
 
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client):
-        # setup the bucket name so that we can clean it up
+    def infrastructure(self, aws_client, infrastructure_setup):
+        # set up the bucket name so that we can clean it up
         bucket_name = f"test-mythical-mysfits-{short_uid()}"
-        # ================================================================================================
-        # CDK App/stack
-        # ================================================================================================
-        app = cdk.App(auto_synth=False)
-        stack = MythicalMysfitsCoreStack(app, STACK_NAME, bucket_name=bucket_name)
+        infra = infrastructure_setup(namespace="MythicalMisfits")
+        MythicalMysfitsCoreStack(infra.cdk_app, STACK_NAME, bucket_name=bucket_name)
 
-        # ================================================================================================
-        # Provisioner setup
-        # ================================================================================================
-
-        provisioner = InfraProvisioner(aws_client)
-        provisioner.add_cdk_stack(stack)
-        provisioner.add_custom_teardown(
-            lambda: cleanup_s3_bucket(aws_client.s3, bucket_name=bucket_name)
-        )
-        with provisioner.provisioner(skip_teardown=False) as prov:
+        infra.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name=bucket_name))
+        with infra.provisioner(skip_teardown=False) as prov:
             yield prov
 
     def _clean_table(self, aws_client, table_name: str):
@@ -179,7 +167,6 @@ class TestMythicalMisfitsScenario:
         # TODO: snapshot headers?
 
         # TODO: instead of polling S3, maybe we could set up S3 notifications to SQS and poll a Queue?
-
         def _poll_s3_for_firehose(expected_objects: int):
             resp = aws_client.s3.list_objects_v2(Bucket=bucket_name, Prefix="firehose/")
             assert resp["KeyCount"] == expected_objects

@@ -90,6 +90,7 @@ class UserClicksService(constructs.Construct):
         firehose_delivery_role.add_to_policy(firehose_delivery_policy_s3_stmt)
         firehose_delivery_role.add_to_policy(firehose_delivery_policy_lambda_stmt)
 
+        # TODO: check the alpha library for KinesisFirehose DeliveryStream
         self.mysfits_firehose_to_s3 = cdk.aws_kinesisfirehose.CfnDeliveryStream(
             self,
             "DeliveryStream",
@@ -147,6 +148,7 @@ class UserClicksService(constructs.Construct):
             "APIEndpoint",
             rest_api_name="ClickProcessing API Service",
             endpoint_types=[apigw.EndpointType.REGIONAL],
+            cloud_watch_role_removal_policy=cdk.RemovalPolicy.DESTROY,
         )
 
         clicks = self.api.root.add_resource("clicks")

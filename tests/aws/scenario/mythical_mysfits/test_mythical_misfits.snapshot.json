@@ -1,6 +1,6 @@
 {
   "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_deployed_infra_state": {
-    "recorded-date": "29-09-2023, 23:33:28",
+    "recorded-date": "12-10-2023, 16:56:10",
     "recorded-content": {
       "outputs": {
         "ClicksBucketDestinationName": "<clicks-bucket-destination-name:1>",
@@ -19,12 +19,14 @@
           "CAPABILITY_IAM",
           "CAPABILITY_NAMED_IAM"
         ],
+        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/test-cs-345eec05/0d4a799e-bb70-4765-9700-a46492f82211",
         "CreationTime": "datetime",
         "DisableRollback": false,
         "DriftInformation": {
           "StackDriftStatus": "NOT_CHECKED"
         },
         "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
         "NotificationARNs": [],
         "Outputs": [
           {
@@ -62,13 +64,6 @@
           {
             "OutputKey": "<physical-resource-id:1>Name",
             "OutputValue": "<physical-resource-id:1>"
-          }
-        ],
-        "Parameters": [
-          {
-            "ParameterKey": "BootstrapVersion",
-            "ParameterValue": "/cdk-bootstrap/hnb659fds/version",
-            "ResolvedValue": "10"
           }
         ],
         "RollbackConfiguration": {},
@@ -312,7 +307,7 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "<logical-resource-id:20>",
-            "PhysicalResourceId": "MythicalMisfitsStack-<logical-resource-id:20>-7EX7YrHEUDO5",
+            "PhysicalResourceId": "MythicalMisfitsStack-<logical-resource-id:20>-p4CPVmcnU8Wp",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
             "StackId": "<stack-id:1>",
@@ -538,7 +533,7 @@
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "JdLiunxfB54RngQRCOoPE51Clg1ssKAzABNMTAyF4ig=",
+            "CodeSha256": "P6sIrO6IOcEYns5wTBIS8b/A9Psxqmum78z0a6uSgLc=",
             "CodeSize": "<code-size>",
             "Description": "",
             "Environment": {
@@ -592,7 +587,7 @@
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "mSdZ92KHZDdK+2yvPDVkzvZoRpv6zJQMrDvhTgipg5o=",
+            "CodeSha256": "XIWUe8KM6njPK07NoKIrd/N0nWMlcKMfKrijUpag8NU=",
             "CodeSize": "<code-size>",
             "Description": "An Amazon Kinesis Firehose stream processor that enriches click records to not just include a mysfitId, but also other attributes that can be analyzed later.",
             "Environment": {
@@ -641,7 +636,7 @@
     }
   },
   "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_user_clicks_are_stored": {
-    "recorded-date": "29-09-2023, 23:33:31",
+    "recorded-date": "12-10-2023, 17:00:25",
     "recorded-content": {
       "cors-req-headers": {
         "Access-Control-Allow-Credentials": "false",
