@@ -287,18 +287,21 @@ def run(
         configurators.append(ContainerConfigurators.develop)
     if dev_extensions:
         if pro:
-            from localstack_ext.extensions.bootstrap import (
-                run_on_configure_host_hook,
-                run_on_configure_localstack_container_hook,
-            )
+            try:
+                from localstack_ext.extensions.bootstrap import (
+                    run_on_configure_host_hook,
+                    run_on_configure_localstack_container_hook,
+                )
 
-            # collect dev extensions
-            run_on_configure_host_hook()
+                # collect dev extensions
+                run_on_configure_host_hook()
 
-            # create stub container with configuration to apply
-            c = Container(container_config=container_config)
-            run_on_configure_localstack_container_hook(c)
+                # create stub container with configuration to apply
+                c = Container(container_config=container_config)
+                run_on_configure_localstack_container_hook(c)
 
+            except ImportError:
+                pass
         else:
             click.echo("Pro mode is required for extensions support")
 
