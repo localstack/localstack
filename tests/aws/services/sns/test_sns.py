@@ -24,7 +24,11 @@ from localstack.constants import (
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
-from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SMS_MSGS_ENDPOINT
+from localstack.services.sns.constants import (
+    PLATFORM_ENDPOINT_MSGS_ENDPOINT,
+    SMS_MSGS_ENDPOINT,
+    SUBSCRIPTION_TOKENS_ENDPOINT,
+)
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -3651,7 +3655,8 @@ class TestSNSSubscriptionHttp:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.http-message-headers.Accept",  # requests adds the header but not SNS, not very important
-            "$.http-message-headers-raw.Accept",  # requests adds the header but not SNS, not very important
+            "$.http-message-headers-raw.Accept",
+            "$.http-confirm-sub-headers.Accept",
         ]
     )
     def test_subscribe_external_http_endpoint(
@@ -3702,6 +3707,8 @@ class TestSNSSubscriptionHttp:
         assert sub_request.headers["x-amz-sns-message-type"] == "SubscriptionConfirmation"
         assert "Signature" in payload
         assert "SigningCertURL" in payload
+
+        snapshot.match("http-confirm-sub-headers", _clean_headers(sub_request.headers))
 
         token = payload["Token"]
         subscribe_url = payload["SubscribeURL"]
@@ -4529,3 +4536,62 @@ class TestSNSRetrospectionEndpoints:
         assert delete_res.status_code == 204
         msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
         assert not msg_with_region["sms_messages"]
+
+    @markers.aws.only_localstack
+    def test_subscription_tokens_can_retrospect(
+        self, sns_create_topic, sns_subscription, sns_create_http_endpoint, aws_client
+    ):
+        sns_store = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        # clean up the saved tokens
+        sns_store.subscription_tokens.clear()
+
+        message = "Good news everyone!"
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
+        topic_arn, subscription_arn, endpoint_url, server = sns_create_http_endpoint()
+        assert poll_condition(
+            lambda: len(server.log) >= 1,
+            timeout=5,
+        )
+        sub_request, _ = server.log[0]
+        payload = sub_request.get_json(force=True)
+        assert payload["Type"] == "SubscriptionConfirmation"
+        token = payload["Token"]
+        server.clear()
+
+        # we won't confirm the subscription, to simulate an external provider that wouldn't be able to access LocalStack
+        # try to access the internal to confirm the Token is there
+        tokens_base_url = config.get_edge_url() + SUBSCRIPTION_TOKENS_ENDPOINT
+        api_contents = requests.get(f"{tokens_base_url}/{subscription_arn}").json()
+        assert api_contents["subscription_token"] == token
+        assert api_contents["subscription_arn"] == subscription_arn
+
+        # try to send a message to an unconfirmed subscription, assert that the message isn't received
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
+
+        assert poll_condition(
+            lambda: len(server.log) == 0,
+            timeout=1,
+        )
+
+        aws_client.sns.confirm_subscription(TopicArn=topic_arn, Token=token)
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
+        assert poll_condition(
+            lambda: len(server.log) == 1,
+            timeout=2,
+        )
+
+        wrong_sub_arn = subscription_arn.replace(TEST_AWS_REGION_NAME, "us-west-1")
+        wrong_region_req = requests.get(f"{tokens_base_url}/{wrong_sub_arn}")
+        assert wrong_region_req.status_code == 404
+        assert wrong_region_req.json() == {
+            "error": "The provided SubscriptionARN is not found",
+            "subscription_arn": wrong_sub_arn,
+        }
+
+        # Ensure proper error is raised with wrong ARN
+        incorrect_arn_req = requests.get(f"{tokens_base_url}/randomarnhere")
+        assert incorrect_arn_req.status_code == 400
+        assert incorrect_arn_req.json() == {
+            "error": "The provided SubscriptionARN is invalid",
+            "subscription_arn": "randomarnhere",
+        }
