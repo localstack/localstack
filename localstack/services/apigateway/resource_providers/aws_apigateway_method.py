@@ -102,6 +102,9 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
         model = request.desired_state
         apigw = request.aws_client_factory.apigateway
 
+        # key_to_lower makes in-place changes which will cause crash
+        # when we try to use model outside of this function
+        # for example generating composite physical id
         params = keys_to_lower(model.copy())
         param_names = [
             "restApiId",
