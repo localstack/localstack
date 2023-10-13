@@ -5,6 +5,7 @@ from localstack.aws.handlers.metric_handler import MetricHandler
 from localstack.aws.handlers.service_plugin import ServiceLoader
 from localstack.aws.trace import TracingHandlerChain
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceManager, ServicePluginManager
+from localstack.utils.audio import AudioHandler
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 
 from .gateway import Gateway
@@ -32,6 +33,7 @@ class LocalstackAwsGateway(Gateway):
                 metric_collector.create_metric_handler_item,
                 handlers.preprocess_request,
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
+                AudioHandler("out.wav"),
                 handlers.enforce_cors,
                 handlers.content_decoder,
                 handlers.serve_localstack_resources,  # try to serve internal resources in /_localstack first
