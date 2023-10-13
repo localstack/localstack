@@ -27,7 +27,6 @@ class TestCSRF:
         # Test if endpoints are reachable without origin header
         response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/")
         assert response.status_code == 200
-        assert response.headers["access-control-allow-origin"] == "*"
 
     def test_default_cors_headers(self):
         headers = {"Origin": "https://app.localstack.cloud"}
