@@ -1,3 +1,5 @@
+import os
+
 from localstack import config
 from localstack.aws import handlers
 from localstack.aws.chain import HandlerChain
@@ -22,6 +24,8 @@ class LocalstackAwsGateway(Gateway):
         self.service_request_router = ServiceRequestRouter()
         # lazy-loads services into the router
         load_service = ServiceLoader(self.service_manager, self.service_request_router)
+        audio_out_path = os.path.join(config.dirs.var_libs, "audio/out.wav")
+        self.audio_handler = AudioHandler(audio_out_path)
 
         metric_collector = MetricHandler()
         # the main request handler chain
@@ -33,7 +37,7 @@ class LocalstackAwsGateway(Gateway):
                 metric_collector.create_metric_handler_item,
                 handlers.preprocess_request,
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
-                AudioHandler("out.wav"),
+                self.audio_handler,
                 handlers.enforce_cors,
                 handlers.content_decoder,
                 handlers.serve_localstack_resources,  # try to serve internal resources in /_localstack first
