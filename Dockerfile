@@ -94,7 +94,7 @@ RUN { \
     && chmod +x /usr/local/bin/docker-java-home
 ENV JAVA_HOME /usr/lib/jvm/java-11
 COPY --from=java-builder /usr/lib/jvm/java-11 $JAVA_HOME
-RUN ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
+RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
 ENV PATH "${PATH}:${JAVA_HOME}/bin"
 
 # set workdir
@@ -127,7 +127,7 @@ ADD bin/hosts /etc/hosts
 # expose default environment
 # Set edge bind host so localstack can be reached by other containers
 # set library path and default LocalStack hostname
-ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
+ENV LD_LIBRARY_PATH=$JAVA_HOME/lib:$JAVA_HOME/lib/server
 ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
 
