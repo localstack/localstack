@@ -149,8 +149,12 @@ class ApiGatewayStageProvider(ResourceProvider[ApiGatewayStageProperties]):
         """
         model = request.desired_state
         apigw = request.aws_client_factory.apigateway
-
-        apigw.delete_stage(restApiId=model["RestApiId"], stageName=model["StageName"])
+        try:
+            # we are checking if stage api has already been deleted before calling delete
+            apigw.get_stage(restApiId=model["RestApiId"], stageName=model["StageName"])
+            apigw.delete_stage(restApiId=model["RestApiId"], stageName=model["StageName"])
+        except apigw.exceptions.NotFoundException:
+            pass
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,

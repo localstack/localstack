@@ -77,6 +77,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::Resource": "ResourceProvider",
     "AWS::ApiGateway::Method": "ResourceProvider",
     "AWS::ApiGateway::Stage": "ResourceProvider",
+    "AWS::ApiGateway::UsagePlan": "ResourceProvider",
 }
 
 
