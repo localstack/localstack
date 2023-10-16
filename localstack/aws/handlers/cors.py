@@ -182,7 +182,6 @@ class CorsEnforcer(Handler):
         elif context.request.method == "OPTIONS" and not config.DISABLE_PREFLIGHT_PROCESSING:
             # we want to return immediately here, but we do not want to omit our response chain for cors headers
             response.status_code = 204
-            print("stopping chain here?")
             chain.stop()
 
     @staticmethod
