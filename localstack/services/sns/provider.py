@@ -897,6 +897,7 @@ def register_sns_api_resource(router: Router):
     """Register the retrospection endpoints as internal LocalStack endpoints."""
     router.add(SNSServicePlatformEndpointMessagesApiResource())
     router.add(SNSServiceSMSMessagesApiResource())
+    router.add(SNSServiceSubscriptionTokenApiResource())
 
 
 def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[str]):
@@ -1041,3 +1042,47 @@ class SNSServiceSMSMessagesApiResource:
 
         store.sms_messages.clear()
         return Response("", status=204)
+
+
+class SNSServiceSubscriptionTokenApiResource:
+    """Provides a REST API for retrospective access to Subscription Confirmation Tokens to confirm subscriptions.
+    Those are not sent for email, and sometimes inaccessible when working with external HTTPS endpoint which won't be
+    able to reach your local host.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint has the following parameter:
+    - GET `subscription_arn`: `subscriptionArn`resource in SNS for which you want the SubscriptionToken
+    """
+
+    @route(f"{sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>", methods=["GET"])
+    def on_get(self, _request: Request, subscription_arn: str):
+        try:
+            parsed_arn = parse_arn(subscription_arn)
+        except InvalidArnException:
+            response = Response("", 400)
+            response.set_json(
+                {
+                    "error": "The provided SubscriptionARN is invalid",
+                    "subscription_arn": subscription_arn,
+                }
+            )
+            return response
+
+        store: SnsStore = sns_stores[parsed_arn["account"]][parsed_arn["region"]]
+
+        for token, sub_arn in store.subscription_tokens.items():
+            if sub_arn == subscription_arn:
+                return {
+                    "subscription_token": token,
+                    "subscription_arn": subscription_arn,
+                }
+
+        response = Response("", 404)
+        response.set_json(
+            {
+                "error": "The provided SubscriptionARN is not found",
+                "subscription_arn": subscription_arn,
+            }
+        )
+        return response

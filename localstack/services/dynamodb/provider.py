@@ -657,10 +657,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 store.REPLICAS[table_name] = replicas
 
             # update response content
+            SchemaExtractor.invalidate_table_schema(
+                table_name, context.account_id, global_table_region
+            )
+
             schema = SchemaExtractor.get_table_schema(
                 table_name, context.account_id, global_table_region
             )
             return UpdateTableOutput(TableDescription=schema["Table"])
+
+        SchemaExtractor.invalidate_table_schema(table_name, context.account_id, global_table_region)
 
         # TODO: DDB streams must also be created for replicas
         if update_table_input.get("StreamSpecification"):
