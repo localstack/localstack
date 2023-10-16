@@ -424,6 +424,16 @@ USE_SSL = is_env_true("USE_SSL")
 # whether to use the legacy edge proxy or the newer Gateway/HandlerChain framework
 LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
+
+# is in the S3 image only
+# S3_IMAGE = is_env_true("S3_IMAGE")
+S3_IMAGE = True
+if S3_IMAGE:
+    os.environ["PROVIDER_OVERRIDE_S3"] = "v3"
+    os.environ["EAGER_SERVICE_LOADING"] = "true"
+    os.environ["SERVICES"] = "s3"
+    os.environ["DNS_ADDRESS"] = "false"
+
 # whether legacy s3 is enabled
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
 

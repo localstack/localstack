@@ -9,15 +9,12 @@ from typing import Dict, List, Union
 
 import boto3
 from localstack_client.config import get_service_port
-from moto.core import BaseModel
-from moto.core.base_backend import InstanceTrackerMeta
 
 from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
 from localstack.runtime import events, hooks
 from localstack.runtime.exceptions import LocalstackExit
-from localstack.services import motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import config_listener, files, objects
@@ -96,6 +93,8 @@ def patch_urllib3_connection_pool(**constructor_kwargs):
 
 def patch_instance_tracker_meta():
     """Avoid instance collection for moto dashboard"""
+    from moto.core import BaseModel
+    from moto.core.base_backend import InstanceTrackerMeta
 
     if hasattr(InstanceTrackerMeta, "_ls_patch_applied"):
         return  # ensure we're not applying the patch multiple times
@@ -212,6 +211,7 @@ def start_moto_server(
     #  a proxy listener around the already started motoserver singleton.
     # TODO: remove asynchronous parameter (from all calls to this function)
     # TODO: re-think backend_port parameter (still needed since determined by motoserver singleton?)
+    from localstack.services import motoserver
 
     if not name:
         name = key
@@ -381,7 +381,8 @@ def start_infra(asynchronous=False, apis=None):
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
-        patch_instance_tracker_meta()
+        if not config.S3_IMAGE:
+            patch_instance_tracker_meta()
 
         # set up logging
         setup_logging()
@@ -436,7 +437,8 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         os.environ["ENV"] = ENV_DEV
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
-        patch_moto_request_handling()
+        if not config.S3_IMAGE:
+            patch_moto_request_handling()
 
     @log_duration()
     def preload_services():

@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from typing import NamedTuple, Optional, Set
 
 import botocore
@@ -7,11 +8,13 @@ from werkzeug.http import parse_dict_header
 
 import localstack
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.spec import ServiceCatalog, build_service_index_cache, load_service_index_cache
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
 from localstack.services.s3.utils import uses_host_addressing
-from localstack.services.sqs.utils import is_sqs_queue_url
+
+# from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import hostname_from_url
@@ -145,8 +148,8 @@ def custom_path_addressing_rules(path: str) -> Optional[str]:
     """
     Rules which are only based on the request path.
     """
-
-    if is_sqs_queue_url(path):
+    path = path.partition("?")[0]
+    if re.match(r"^/(queue|%s)/[a-zA-Z0-9_-]+(.fifo)?$" % get_aws_account_id(), path):
         return "sqs"
 
     if path.startswith("/2015-03-31/functions/"):
@@ -294,6 +297,8 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
     :param services: service catalog (can be handed in for caching purposes)
     :return: service name string (or None if the targeting service could not be determined exactly)
     """
+    if config.S3_IMAGE:
+        return "s3"
     services = services or get_service_catalog()
     signing_name, target_prefix, operation, host, path = _extract_service_indicators(request)
     candidates = set()

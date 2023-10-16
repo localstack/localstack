@@ -1,7 +1,9 @@
 from localstack import config
 from localstack.aws.forwarder import HttpFallbackDispatcher
-from localstack.services.moto import MotoFallbackDispatcher
 from localstack.services.plugins import Service, aws_provider
+
+if not config.S3_IMAGE:
+    from localstack.services.moto import MotoFallbackDispatcher
 
 
 @aws_provider()
