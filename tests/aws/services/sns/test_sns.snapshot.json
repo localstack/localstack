@@ -4284,7 +4284,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint[True]": {
-    "recorded-date": "09-10-2023, 16:01:30",
+    "recorded-date": "12-10-2023, 00:47:24",
     "recorded-content": {
       "subscription-confirmation": {
         "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
@@ -4297,6 +4297,17 @@
         "Token": "<token:1>",
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
         "Type": "SubscriptionConfirmation"
+      },
+      "http-confirm-sub-headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:1>",
+        "X-Amz-Sns-Message-Type": "SubscriptionConfirmation",
+        "X-Amz-Sns-Topic-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>"
       },
       "broken-topic-arn-confirm": {
         "ErrorResponse": {
@@ -4386,7 +4397,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint[False]": {
-    "recorded-date": "09-10-2023, 16:01:39",
+    "recorded-date": "12-10-2023, 00:47:29",
     "recorded-content": {
       "subscription-confirmation": {
         "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
@@ -4399,6 +4410,17 @@
         "Token": "<token:1>",
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
         "Type": "SubscriptionConfirmation"
+      },
+      "http-confirm-sub-headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:1>",
+        "X-Amz-Sns-Message-Type": "SubscriptionConfirmation",
+        "X-Amz-Sns-Topic-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>"
       },
       "broken-topic-arn-confirm": {
         "ErrorResponse": {

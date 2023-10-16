@@ -580,6 +580,7 @@ class CapacityReservationInstancePlatform(str):
     RHEL_with_HA = "RHEL with HA"
     RHEL_with_HA_and_SQL_Server_Standard = "RHEL with HA and SQL Server Standard"
     RHEL_with_HA_and_SQL_Server_Enterprise = "RHEL with HA and SQL Server Enterprise"
+    Ubuntu_Pro = "Ubuntu Pro"
 
 
 class CapacityReservationPreference(str):
@@ -1051,6 +1052,7 @@ class ImageState(str):
     transient = "transient"
     failed = "failed"
     error = "error"
+    disabled = "disabled"
 
 
 class ImageTypeValues(str):
@@ -10564,6 +10566,7 @@ class DescribeImagesRequest(ServiceRequest):
     ImageIds: Optional[ImageIdStringList]
     Owners: Optional[OwnerStringList]
     IncludeDeprecated: Optional[Boolean]
+    IncludeDisabled: Optional[Boolean]
     DryRun: Optional[Boolean]
     MaxResults: Optional[Integer]
     NextToken: Optional[String]
@@ -10600,6 +10603,7 @@ class Image(TypedDict, total=False):
     TpmSupport: Optional[TpmSupportValues]
     DeprecationTime: Optional[String]
     ImdsSupport: Optional[ImdsSupportValues]
+    SourceInstanceId: Optional[String]
 
 
 ImageList = List[Image]
@@ -13895,6 +13899,15 @@ class DisableImageDeprecationResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
+class DisableImageRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Optional[Boolean]
+
+
+class DisableImageResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
 class DisableIpamOrganizationAdminAccountRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     DelegatedAdminAccountId: String
@@ -14262,6 +14275,15 @@ class EnableImageDeprecationRequest(ServiceRequest):
 
 
 class EnableImageDeprecationResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
+class EnableImageRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Optional[Boolean]
+
+
+class EnableImageResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
@@ -20348,6 +20370,7 @@ class Ec2Api:
         image_ids: ImageIdStringList = None,
         owners: OwnerStringList = None,
         include_deprecated: Boolean = None,
+        include_disabled: Boolean = None,
         dry_run: Boolean = None,
         max_results: Integer = None,
         next_token: String = None,
@@ -21684,6 +21707,12 @@ class Ec2Api:
     ) -> DisableFastSnapshotRestoresResult:
         raise NotImplementedError
 
+    @handler("DisableImage")
+    def disable_image(
+        self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
+    ) -> DisableImageResult:
+        raise NotImplementedError
+
     @handler("DisableImageBlockPublicAccess")
     def disable_image_block_public_access(
         self, context: RequestContext, dry_run: Boolean = None
@@ -21918,6 +21947,12 @@ class Ec2Api:
         source_snapshot_ids: SnapshotIdStringList,
         dry_run: Boolean = None,
     ) -> EnableFastSnapshotRestoresResult:
+        raise NotImplementedError
+
+    @handler("EnableImage")
+    def enable_image(
+        self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
+    ) -> EnableImageResult:
         raise NotImplementedError
 
     @handler("EnableImageBlockPublicAccess")

@@ -113,6 +113,7 @@ class MediaFormat(str):
     ogg = "ogg"
     amr = "amr"
     webm = "webm"
+    m4a = "m4a"
 
 
 class MedicalContentIdentificationType(str):
