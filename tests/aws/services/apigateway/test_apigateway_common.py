@@ -539,7 +539,6 @@ class TestStages:
         snapshot.match("error-update-tags", ctx.value.response)
 
         # update & get stage
-
         response = client.update_stage(
             restApiId=api_id,
             stageName="s1",
@@ -550,12 +549,24 @@ class TestStages:
                 {"op": "replace", "path": "/*/*/throttling/burstLimit", "value": "123"},
                 {"op": "replace", "path": "/*/*/caching/enabled", "value": "true"},
                 {"op": "replace", "path": "/tracingEnabled", "value": "true"},
+                {"op": "replace", "path": "/test/GET/throttling/burstLimit", "value": "124"},
             ],
         )
         snapshot.match("update-stage", response)
 
         response = client.get_stage(restApiId=api_id, stageName="s1")
         snapshot.match("get-stage", response)
+
+        # show that updating */* does not override previously set values, only provides default values then like shown
+        # above
+        response = client.update_stage(
+            restApiId=api_id,
+            stageName="s1",
+            patchOperations=[
+                {"op": "replace", "path": "/*/*/throttling/burstLimit", "value": "100"},
+            ],
+        )
+        snapshot.match("update-stage-override", response)
 
 
 class TestDeployments:
