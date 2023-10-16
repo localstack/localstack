@@ -18,4 +18,3 @@ class ApiGatewayUsagePlanProviderPlugin(CloudFormationResourceProviderPlugin):
         )
 
         self.factory = ApiGatewayUsagePlanProvider
-
