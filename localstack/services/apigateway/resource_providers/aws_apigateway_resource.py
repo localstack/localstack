@@ -108,7 +108,10 @@ class ApiGatewayResourceProvider(ResourceProvider[ApiGatewayResourceProperties])
         model = request.desired_state
         apigw = request.aws_client_factory.apigateway
 
-        apigw.delete_resource(restApiId=model["RestApiId"], resourceId=model["ResourceId"])
+        try:
+            apigw.delete_resource(restApiId=model["RestApiId"], resourceId=model["ResourceId"])
+        except apigw.exceptions.NotFoundException:
+            pass
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
