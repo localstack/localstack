@@ -11,6 +11,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProvider,
     ResourceRequest,
 )
+from localstack.utils.objects import keys_to_lower
 
 
 class ApiGatewayGatewayResponseProperties(TypedDict):
@@ -60,13 +61,14 @@ class ApiGatewayGatewayResponseProvider(ResourceProvider[ApiGatewayGatewayRespon
         api = request.aws_client_factory.apigateway
         # TODO: validations
         model["Id"] = util.generate_default_name_without_stack(request.logical_resource_id)
-        api.put_gateway_response(
-            restApiId=model["RestApiId"],
-            responseType=model["ResponseType"],
-            statusCode=model["StatusCode"],
-            responseParameters=model["ResponseParameters"],
-            responseTemplates=model["ResponseTemplates"],
+
+        params = util.select_attributes(
+            model,
+            ["RestApiId", "ResponseType", "StatusCode", "ResponseParameters", "ResponseTemplates"],
         )
+        params = keys_to_lower(params.copy())
+
+        api.put_gateway_response(**params)
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
