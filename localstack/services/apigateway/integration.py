@@ -635,15 +635,21 @@ class S3Integration(BackendIntegration):
 
         integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
 
+        accepts = integration_parameters.get("headers", {}).get("Accept")
+        request_templates = integration.get("requestTemplates", {})
+        template = request_templates.get(accepts, request_templates.get(APPLICATION_JSON, ""))
+        variables = self.request_templates.build_variables_mapping(invocation_context)
+        # Apply the requestOverride path values to the integration URI
+        if path_params := variables.get("context", {}).get("requestOverride", {}).get("path", {}):
+            for key, value in path_params.items():
+                uri_path = uri_path.replace(f"{{{key}}}", value)
+
         mocked_headers = get_internal_mocked_headers(
             service_name="s3",
             region_name=region_name,
             role_arn=invocation_context.integration.get("credentials"),
             source_arn=get_source_arn(invocation_context),
         )
-
-        accepts = integration_parameters.get("headers", {}).get("Accept")
-        template = integration.get("requestTemplates", {}).get(accepts, APPLICATION_JSON)
 
         if uri_arn.endswith("path"):
             response = self._invoke_path(
