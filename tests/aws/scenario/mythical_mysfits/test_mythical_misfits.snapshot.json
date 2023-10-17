@@ -1,6 +1,6 @@
 {
   "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_deployed_infra_state": {
-    "recorded-date": "12-10-2023, 16:56:10",
+    "recorded-date": "17-10-2023, 20:07:08",
     "recorded-content": {
       "outputs": {
         "ClicksBucketDestinationName": "<clicks-bucket-destination-name:1>",
@@ -19,7 +19,7 @@
           "CAPABILITY_IAM",
           "CAPABILITY_NAMED_IAM"
         ],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/test-cs-345eec05/0d4a799e-bb70-4765-9700-a46492f82211",
+        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/test-cs-ca7a7051/3d2a3934-f24e-4fd3-955f-9579c69b55ba",
         "CreationTime": "datetime",
         "DisableRollback": false,
         "DriftInformation": {
@@ -307,7 +307,7 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "<logical-resource-id:20>",
-            "PhysicalResourceId": "MythicalMisfitsStack-<logical-resource-id:20>-p4CPVmcnU8Wp",
+            "PhysicalResourceId": "MythicalMisfitsStack-<logical-resource-id:20>-z6K0tP6e6kbE",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
             "StackId": "<stack-id:1>",
@@ -533,7 +533,7 @@
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "P6sIrO6IOcEYns5wTBIS8b/A9Psxqmum78z0a6uSgLc=",
+            "CodeSha256": "La3zLdqIsk/cKmJeuZNs23JiacBxEf3rYPe3mqPK3o0=",
             "CodeSize": "<code-size>",
             "Description": "",
             "Environment": {
@@ -587,7 +587,7 @@
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "XIWUe8KM6njPK07NoKIrd/N0nWMlcKMfKrijUpag8NU=",
+            "CodeSha256": "CrubTvLPal4InFdsTyMWcbfFxsSdPgBKKkp7on4dVRQ=",
             "CodeSize": "<code-size>",
             "Description": "An Amazon Kinesis Firehose stream processor that enriches click records to not just include a mysfitId, but also other attributes that can be analyzed later.",
             "Environment": {
@@ -636,7 +636,7 @@
     }
   },
   "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_user_clicks_are_stored": {
-    "recorded-date": "12-10-2023, 17:00:25",
+    "recorded-date": "17-10-2023, 20:12:30",
     "recorded-content": {
       "cors-req-headers": {
         "Access-Control-Allow-Credentials": "false",

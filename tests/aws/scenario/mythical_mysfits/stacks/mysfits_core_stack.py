@@ -8,7 +8,7 @@ from tests.aws.scenario.mythical_mysfits.constructs.user_clicks_service import U
 
 
 class MythicalMysfitsCoreStack(cdk.Stack):
-    def __init__(self, scope: constructs.Construct, id: str, *, bucket_name: str, **kwargs):
+    def __init__(self, scope: constructs.Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
         # TODO: full Mysfits microservice with Fargate + NLB
@@ -51,13 +51,12 @@ class MythicalMysfitsCoreStack(cdk.Stack):
             "UserClicksService",
             account_id=self.account,
             mysfits_table=mysfits_table,
-            bucket_name=bucket_name,
         )
 
         # ================================================================================================
         # initial seed data
         # ================================================================================================
-
+        # TODO: put the data inside an S3 bucket instead of a JSON string inside the lambda code
         populate_db_fn_handler = load_file(
             os.path.join(os.path.dirname(__file__), "../artefacts/functions/populate_db.py")
         )

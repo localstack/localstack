@@ -18,7 +18,6 @@ class UserClicksService(constructs.Construct):
         scope: constructs.Construct,
         id: str,
         *,
-        bucket_name: str,
         account_id: str,
         mysfits_table: dynamodb.Table
     ):
@@ -27,9 +26,7 @@ class UserClicksService(constructs.Construct):
         self.clicks_destination_bucket = s3.Bucket(
             self,
             "ClicksBucketDestination",
-            bucket_name=bucket_name,
-            # versioned=True,  # in the sample the bucket is versioned but it seems just trickier to clean up for no real gain? TODO: adapt cleanup for versioned
-            # auto_delete_objects=True,  # FIXME: this created a custom resource, so it fails
+            # versioned=True,  # in the sample the bucket is versioned but it seems just trickier to clean up for no real gain?
             removal_policy=cdk.RemovalPolicy.DESTROY,
         )
 
@@ -55,9 +52,6 @@ class UserClicksService(constructs.Construct):
             },
             timeout=cdk.Duration.seconds(30),
         )
-
-        # TODO: this is a lot of manual setup of roles and permissions and statements? Couldn't it be automated?
-        # Is this made in the sample on purpose? Kinda defeat the purpose for now...
 
         firehose_delivery_role = iam.Role(
             self,

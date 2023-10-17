@@ -13,8 +13,8 @@ import requests
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
-from localstack.utils.strings import short_uid, to_str
+from localstack.testing.scenario.provisioning import InfraProvisioner
+from localstack.utils.strings import to_str
 from localstack.utils.sync import retry
 from tests.aws.scenario.mythical_mysfits.stacks.mysfits_core_stack import MythicalMysfitsCoreStack
 
@@ -34,12 +34,8 @@ class TestMythicalMisfitsScenario:
 
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client, infrastructure_setup):
-        # set up the bucket name so that we can clean it up
-        bucket_name = f"test-mythical-mysfits-{short_uid()}"
         infra = infrastructure_setup(namespace="MythicalMisfits")
-        MythicalMysfitsCoreStack(infra.cdk_app, STACK_NAME, bucket_name=bucket_name)
-
-        infra.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name=bucket_name))
+        MythicalMysfitsCoreStack(infra.cdk_app, STACK_NAME)
         with infra.provisioner(skip_teardown=False) as prov:
             yield prov
 
@@ -75,6 +71,7 @@ class TestMythicalMisfitsScenario:
             ]
         )
         outputs = infrastructure.get_stack_outputs(stack_name=STACK_NAME)
+        # TODO: UserClicksServiceAPIEndpoint from output will be different in AWS and LocalStack
         snapshot.match("outputs", outputs)
         describe_stack = aws_client.cloudformation.describe_stacks(StackName=STACK_NAME)["Stacks"][
             0
