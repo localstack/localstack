@@ -9,7 +9,6 @@ LOG = logging.getLogger(__name__)
 
 TRACKED_ENV_VAR = [
     "DEBUG",
-    "DEFAULT_REGION",
     "DISABLE_CORS_CHECK",
     "DISABLE_CORS_HEADERS",
     "DNS_ADDRESS",
