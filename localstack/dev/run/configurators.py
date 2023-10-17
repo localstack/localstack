@@ -140,6 +140,9 @@ class SourceVolumeMountConfigurator:
         # moto code if available
         self.try_mount_to_site_packages(cfg, self.host_paths.moto_project_dir / "moto")
 
+        # postgresql-proxy code if available
+        self.try_mount_to_site_packages(cfg, self.host_paths.postgresql_proxy / "postgresql_proxy")
+
         # persistence plugin
         self.try_mount_to_site_packages(
             cfg,
