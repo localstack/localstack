@@ -8,6 +8,7 @@ import pytest
 from boto3.dynamodb.types import STRING
 
 from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
+from localstack.constants import AWS_REGION_US_EAST_1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
@@ -15,6 +16,7 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries, resources
+from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.sync import poll_condition, wait_until
 from tests.aws.services.kinesis.test_kinesis import get_shard_iterator
@@ -191,6 +193,7 @@ class TestDynamoDB:
             table_name,
             partition_key=PARTITION_KEY,
             stream_view_type="NEW_AND_OLD_IMAGES",
+            client=aws_client.dynamodb,
         )
 
         table = aws_client.dynamodb.describe_table(TableName=table_name)["Table"]
@@ -1382,7 +1385,9 @@ class TestDynamoDB:
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
-        kms_master_key_arn = arns.kms_key_arn(kms_master_key_id)
+        kms_master_key_arn = arns.kms_key_arn(
+            kms_master_key_id, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+        )
 
         result = dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -1579,16 +1584,20 @@ class TestDynamoDB:
         assert "retries" not in str(ctx)
 
     @markers.aws.only_localstack
-    def test_nosql_workbench_localhost_region(
-        self, dynamodb_create_table, aws_client, aws_client_factory
-    ):
-        """Test for AWS NoSQL Workbench, which sends "localhost" as region in header"""
+    def test_nosql_workbench_localhost_region(self, dynamodb_create_table, aws_client_factory):
+        """
+        Test for AWS NoSQL Workbench, which sends "localhost" as region in header.
+        LocalStack must assume "us-east-1" region in such cases.
+        """
         table_name = f"t-{short_uid()}"
-        dynamodb_create_table(table_name=table_name, partition_key=PARTITION_KEY)
-        # describe table for default region
-        table = aws_client.dynamodb.describe_table(TableName=table_name)
+
+        # Create a table in the `us-east-1` region
+        client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).dynamodb
+        create_dynamodb_table(table_name, PARTITION_KEY, client=client)
+        table = client.describe_table(TableName=table_name)
         assert table.get("Table")
-        # describe table for "localhost" region
+
+        # Ensure the `localhost` region points to `us-east-1`
         client = aws_client_factory(region_name="localhost").dynamodb
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
