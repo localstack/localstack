@@ -1,6 +1,5 @@
 import json
 import logging
-import platform
 import time
 import zipfile
 
@@ -10,6 +9,7 @@ from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
+from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ def snapshot_transformers(snapshot):
     reason="Local executor does not support the majority of the runtimes",
 )
 @pytest.mark.skipif(
-    condition=platform.machine() != "x86_64", reason="build process doesn't support arm64 right now"
+    condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
 )
 class TestLambdaRuntimesCommon:
     """
@@ -255,7 +255,7 @@ class TestLambdaRuntimesCommon:
     reason="Local executor does not support the majority of the runtimes",
 )
 @pytest.mark.skipif(
-    condition=platform.machine() != "x86_64", reason="build process doesn't support arm64 right now"
+    condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
 )
 class TestLambdaCallingLocalstack:
     @markers.multiruntime(
