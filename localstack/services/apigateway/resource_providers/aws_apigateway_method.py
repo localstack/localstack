@@ -214,11 +214,15 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
         #  restAPI or resource has been already deleted
         model = request.desired_state
         apigw = request.aws_client_factory.apigateway
-        apigw.delete_method(
-            restApiId=model["RestApiId"],
-            resourceId=model["ResourceId"],
-            httpMethod=model["HttpMethod"],
-        )
+
+        try:
+            apigw.delete_method(
+                restApiId=model["RestApiId"],
+                resourceId=model["ResourceId"],
+                httpMethod=model["HttpMethod"],
+            )
+        except apigw.exceptions.NotFoundException:
+            pass
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,

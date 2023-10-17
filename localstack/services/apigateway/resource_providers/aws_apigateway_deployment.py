@@ -161,8 +161,10 @@ class ApiGatewayDeploymentProvider(ResourceProvider[ApiGatewayDeploymentProperti
         """
         model = request.desired_state
         api = request.aws_client_factory.apigateway
-
-        api.delete_deployment(restApiId=model["RestApiId"], deploymentId=model["DeploymentId"])
+        try:
+            api.delete_deployment(restApiId=model["RestApiId"], deploymentId=model["DeploymentId"])
+        except api.exceptions.NotFoundException:
+            pass
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
