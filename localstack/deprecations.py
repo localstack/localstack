@@ -53,11 +53,6 @@ DEPRECATIONS = [
         "0.12.7",
         "LocalStack now has full multi-region support. Please remove this environment variable.",
     ),
-    EnvVarDeprecation(
-        "DEFAULT_REGION",
-        "0.12.7",
-        "LocalStack now has full multi-region support. Please remove this environment variable.",
-    ),
     # Since 1.0.0 - New Persistence and file system
     EnvVarDeprecation(
         "DATA_DIR",
