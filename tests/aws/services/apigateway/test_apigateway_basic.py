@@ -1748,9 +1748,7 @@ def test_rest_api_multi_region(
     lambda_eu_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_us_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_eu_arn = arns.lambda_function_arn(lambda_name, TEST_AWS_ACCOUNT_ID, "eu-west-1")
-    uri_eu = arns.apigateway_invocations_arn(
-        lambda_eu_arn, TEST_AWS_ACCOUNT_ID, region_name="eu-west-1"
-    )
+    uri_eu = arns.apigateway_invocations_arn(lambda_eu_arn, region_name="eu-west-1")
 
     integration_uri, _ = create_rest_api_integration(
         apigateway_client_eu,
