@@ -763,7 +763,9 @@ class EventBridgeNotifier(BaseNotifier):
     def notify(self, ctx: S3EventNotificationContext, config: EventBridgeConfiguration):
         # does not require permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-permissions.html
-        events_client = connect_to(aws_access_key_id=ctx.account_id, region_name=ctx.region).events
+        events_client = connect_to(
+            aws_access_key_id=ctx.account_id, region_name=ctx.bucket_location
+        ).events
         entry = self._get_event_payload(ctx)
         try:
             events_client.put_events(Entries=[entry])
