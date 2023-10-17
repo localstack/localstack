@@ -1,7 +1,6 @@
 from moto.s3 import s3_backends as moto_s3_backends
 from moto.s3.models import S3Backend as MotoS3Backend
 
-from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import (
     AnalyticsConfiguration,
@@ -17,7 +16,7 @@ from localstack.aws.api.s3 import (
     ReplicationConfiguration,
     WebsiteConfiguration,
 )
-from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
+from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
 
 
@@ -89,7 +88,7 @@ class BucketCorsIndex:
     def _build_cors_index() -> dict[BucketName, CORSConfiguration]:
         result = {}
         for account_id, regions in s3_stores.items():
-            result.update(regions[config.DEFAULT_REGION].bucket_cors)
+            result.update(regions[AWS_REGION_US_EAST_1].bucket_cors)
         return result
 
     @staticmethod

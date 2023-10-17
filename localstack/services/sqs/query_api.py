@@ -10,14 +10,17 @@ from botocore.exceptions import ClientError
 from botocore.model import OperationModel
 from werkzeug.datastructures import Headers
 
-from localstack import config
 from localstack.aws.api import CommonServiceException
 from localstack.aws.connect import connect_to
 from localstack.aws.protocol.parser import OperationNotFoundParserError, create_parser
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.protocol.validate import MissingRequiredField, validate_request
 from localstack.aws.spec import load_service
-from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID, INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    INTERNAL_AWS_ACCESS_KEY_ID,
+    INTERNAL_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.http import Request, Response, Router, route
 from localstack.http.dispatcher import Handler
 from localstack.services.sqs.exceptions import MissingParameter
@@ -66,7 +69,7 @@ def domain_strategy_handler(
     """Uses the endpoint host to extract the region. See:
     https://docs.aws.amazon.com/general/latest/gr/sqs-service.html"""
     if not region:
-        region = config.DEFAULT_REGION
+        region = AWS_REGION_US_EAST_1
     else:
         region = region.rstrip(".")
 

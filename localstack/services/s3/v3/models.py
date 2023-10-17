@@ -7,7 +7,6 @@ from typing import Literal, NamedTuple, Optional, Union
 
 from zoneinfo import ZoneInfo
 
-from localstack import config
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.s3 import (
     AccessControlPolicy,
@@ -63,6 +62,7 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
     WebsiteRedirectLocation,
 )
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.s3.constants import (
     DEFAULT_BUCKET_ENCRYPTION,
     DEFAULT_PUBLIC_BLOCK_ACCESS,
@@ -685,7 +685,7 @@ class BucketCorsIndex:
         buckets = set()
         cors_index = {}
         for account_id, regions in s3_stores.items():
-            for bucket_name, bucket in regions[config.DEFAULT_REGION].buckets.items():
+            for bucket_name, bucket in regions[AWS_REGION_US_EAST_1].buckets.items():
                 bucket: S3Bucket
                 buckets.add(bucket_name)
                 if bucket.cors_rules is not None:

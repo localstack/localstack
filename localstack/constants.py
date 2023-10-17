@@ -135,7 +135,7 @@ ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack
 # environment variable to indicates this process should run the localstack infrastructure
 LOCALSTACK_INFRA_PROCESS = "LOCALSTACK_INFRA_PROCESS"
 
-# default AWS region us-east-1
+# AWS region us-east-1
 AWS_REGION_US_EAST_1 = "us-east-1"
 
 # default lambda registry

@@ -414,13 +414,11 @@ class ClientFactory(ABC):
         """
         Return the AWS region name from following sources, in order of availability.
         - LocalStack request context
-        - LocalStack default region
         - Boto session
+        - us-east-1
         """
         return (
-            get_region_from_request_context()
-            or self._get_session_region()
-            or localstack_config.DEFAULT_REGION
+            get_region_from_request_context() or self._get_session_region() or AWS_REGION_US_EAST_1
         )
 
 

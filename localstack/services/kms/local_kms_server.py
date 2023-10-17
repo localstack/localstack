@@ -2,6 +2,7 @@ import logging
 from typing import Dict, List, Optional, Tuple
 
 from localstack import config
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.kms.packages import kms_local_package
 from localstack.utils.net import get_free_tcp_port
 from localstack.utils.run import ShellCommandThread
@@ -54,8 +55,8 @@ class LocalKMSServer(Server):
             "PORT": str(self.port),
             "ACCOUNT_ID": self._account_id,
             "KMS_ACCOUNT_ID": self._account_id,
-            "REGION": config.DEFAULT_REGION,
-            "KMS_REGION": config.DEFAULT_REGION,
+            "REGION": AWS_REGION_US_EAST_1,
+            "KMS_REGION": AWS_REGION_US_EAST_1,
         }
         if self._kms_data_path and config.PERSISTENCE:
             env_vars["KMS_DATA_PATH"] = self._kms_data_path
