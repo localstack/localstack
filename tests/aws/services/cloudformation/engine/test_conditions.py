@@ -396,3 +396,15 @@ class TestCloudFormationConditions:
             assert stack.outputs["Result"] == "true"
         else:
             assert stack.outputs["Result"] == "false"
+
+    @markers.aws.validated
+    def test_conditional_with_select(self, deploy_cfn_template, aws_client):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/conditions/conditional-with-select.yml",
+            ),
+        )
+
+        managed_policy_arn = stack.outputs["PolicyArn"]
+        assert aws_client.iam.get_policy(PolicyArn=managed_policy_arn)

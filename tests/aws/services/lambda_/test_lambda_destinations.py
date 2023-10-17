@@ -19,7 +19,6 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from tests.aws.services.lambda_.functions import lambda_integration
@@ -527,17 +526,16 @@ def handler(event, context):
 """
 
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client):
-        infra = InfraProvisioner(aws_client)
+    def infrastructure(self, aws_client, infrastructure_setup):
+        infra = infrastructure_setup(namespace="LambdaDestinationEventbridge")
         input_fn_name = f"input-fn-{short_uid()}"
         triggered_fn_name = f"triggered-fn-{short_uid()}"
-        app = cdk.App()
 
         # setup a stack with two lambdas:
         #  - input-lambda will be invoked manually
         #      - its output is written to SQS queue by using an EventBridge
         #  - triggered lambda invoked by SQS event source
-        stack = cdk.Stack(app, self.EVENT_BRIDGE_STACK)
+        stack = cdk.Stack(infra.cdk_app, self.EVENT_BRIDGE_STACK)
         event_bus = events.EventBus(
             stack, "MortgageQuotesEventBus", event_bus_name="MortgageQuotesEventBus"
         )
@@ -588,7 +586,6 @@ def handler(event, context):
         cdk.CfnOutput(stack, self.INPUT_FUNCTION_NAME, value=input_func.function_name)
         cdk.CfnOutput(stack, self.TRIGGERED_FUNCTION_NAME, value=triggered_func.function_name)
         cdk.CfnOutput(stack, self.TEST_QUEUE_NAME, value=test_queue.queue_name)
-        infra.add_cdk_stack(stack)
 
         with infra.provisioner(skip_teardown=False) as prov:
             yield prov

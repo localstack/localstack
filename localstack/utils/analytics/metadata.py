@@ -2,11 +2,12 @@ import dataclasses
 import logging
 import os
 import platform
-from typing import Optional
+from typing import Literal, Optional
 
 from localstack import config, constants
 from localstack.runtime import hooks
 from localstack.utils.bootstrap import Container
+from localstack.utils.files import rm_rf
 from localstack.utils.functions import call_safe
 from localstack.utils.json import FileMappedDocument
 from localstack.utils.objects import singleton_factory
@@ -83,7 +84,17 @@ def get_client_metadata() -> ClientMetadata:
 @singleton_factory
 def get_machine_id() -> str:
     cache_path = os.path.join(config.dirs.cache, "machine.json")
-    doc = FileMappedDocument(cache_path)
+    try:
+        doc = FileMappedDocument(cache_path)
+    except Exception:
+        # it's possible that the file is somehow messed up, so we try to delete the file first and try again.
+        # if that fails, we return a generated ID.
+        call_safe(rm_rf, args=(cache_path,))
+
+        try:
+            doc = FileMappedDocument(cache_path)
+        except Exception:
+            return _generate_machine_id()
 
     if "machine_id" not in doc:
         # generate a machine id
@@ -92,6 +103,32 @@ def get_machine_id() -> str:
         call_safe(doc.save)
 
     return doc["machine_id"]
+
+
+def get_localstack_edition() -> Optional[Literal["enterprise", "pro", "community"]]:
+    if os.path.exists("/usr/lib/localstack/.enterprise-version"):
+        return "enterprise"
+    elif os.path.exists("/usr/lib/localstack/.pro-version"):
+        return "pro"
+    elif os.path.exists("/usr/lib/localstack/.community-version"):
+        return "community"
+
+    return None
+
+
+def is_license_activated() -> bool:
+    try:
+        from localstack_ext import config  # noqa
+    except ImportError:
+        return False
+
+    try:
+        from localstack_ext.bootstrap import licensingv2
+
+        return licensingv2.get_licensed_environment().activated
+    except Exception:
+        LOG.exception("Could not determine license activation status")
+        return False
 
 
 def _generate_session_id() -> str:

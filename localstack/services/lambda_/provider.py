@@ -238,7 +238,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service = LambdaService()
         self.router.lambda_service = self.lambda_service
 
-        # TODO: provisioned concurrency
         for account_id, account_bundle in lambda_stores.items():
             for region_name, state in account_bundle.items():
                 for fn in state.functions.values():
@@ -260,6 +259,37 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                             LOG.warning(
                                 "Failed to restore function version %s",
                                 fn_version.id.qualified_arn(),
+                                exc_info=True,
+                            )
+                    # restore provisioned concurrency per function considering both versions and aliases
+                    for (
+                        provisioned_qualifier,
+                        provisioned_config,
+                    ) in fn.provisioned_concurrency_configs.items():
+                        fn_arn = None
+                        try:
+                            if api_utils.qualifier_is_alias(provisioned_qualifier):
+                                alias = fn.aliases.get(provisioned_qualifier)
+                                resolved_version = fn.versions.get(alias.function_version)
+                                fn_arn = resolved_version.id.qualified_arn()
+                            elif api_utils.qualifier_is_version(provisioned_qualifier):
+                                fn_version = fn.versions.get(provisioned_qualifier)
+                                fn_arn = fn_version.id.qualified_arn()
+                            else:
+                                raise InvalidParameterValueException(
+                                    "Invalid qualifier type:"
+                                    " Qualifier can only be an alias or a version for provisioned concurrency."
+                                )
+
+                            manager = self.lambda_service.get_lambda_version_manager(fn_arn)
+                            manager.update_provisioned_concurrency_config(
+                                provisioned_config.provisioned_concurrent_executions
+                            )
+                        except Exception:
+                            LOG.warning(
+                                "Failed to restore provisioned concurrency %s for function %s",
+                                provisioned_config,
+                                fn_arn,
                                 exc_info=True,
                             )
 
@@ -588,10 +618,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         visited_layers = dict()
         for layer_version_arn in new_layers:
-            layer_region, layer_account_id, layer_name, layer_version = api_utils.parse_layer_arn(
-                layer_version_arn
-            )
-            if layer_version is None:
+            (
+                layer_region,
+                layer_account_id,
+                layer_name,
+                layer_version_str,
+            ) = api_utils.parse_layer_arn(layer_version_arn)
+            if layer_version_str is None:
                 raise ValidationException(
                     f"1 validation error detected: Value '[{layer_version_arn}]'"
                     + r" at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]",
@@ -599,6 +632,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
             state = lambda_stores[layer_account_id][layer_region]
             layer = state.layers.get(layer_name)
+            layer_version = None
+            if layer is not None:
+                layer_version = layer.layer_versions.get(layer_version_str)
             if layer_account_id == get_aws_account_id():
                 if region and layer_region != region:
                     raise InvalidParameterValueException(
@@ -606,7 +642,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         f"Layers are expected to be in region {region}.",
                         Type="User",
                     )
-                if layer is None or layer.layer_versions.get(layer_version) is None:
+                if layer is None or layer.layer_versions.get(layer_version_str) is None:
                     raise InvalidParameterValueException(
                         f"Layer version {layer_version_arn} does not exist.", Type="User"
                     )
@@ -618,7 +654,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     raise AccessDeniedException(
                         f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
                     )
-                if layer is None:
+                if layer is None or layer_version is None:
                     # Limitation: cannot fetch external layers when using the same account id as the target layer
                     # because we do not want to trigger the layer fetcher for every non-existing layer.
                     if self.layer_fetcher is None:
@@ -633,7 +669,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         raise AccessDeniedException(
                             f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
                         )
-                    state.layers[layer_name] = layer
+
+                    # Distinguish between new layer and new layer version
+                    if layer_version is None:
+                        # Create whole layer from scratch
+                        state.layers[layer_name] = layer
+                    else:
+                        # Create layer version if another version of the same layer already exists
+                        state.layers[layer_name].layer_versions[
+                            layer_version_str
+                        ] = layer.layer_versions.get(layer_version_str)
 
             # only the first two matches in the array are considered for the error message
             layer_arn = ":".join(layer_version_arn.split(":")[:-1])
@@ -2334,6 +2379,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
 
     # CAVE: these settings & usages are *per* region!
+    # Lambda quotas: https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html
     def get_account_settings(
         self,
         context: RequestContext,
@@ -2346,7 +2392,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         for fn in state.functions.values():
             fn_count += 1
             for fn_version in fn.versions.values():
-                code_size_sum += fn_version.config.code.code_size
+                # Image-based Lambdas do not have a code attribute and count against the ECR quotas instead
+                if fn_version.config.package_type == PackageType.Zip:
+                    code_size_sum += fn_version.config.code.code_size
             if fn.reserved_concurrent_executions is not None:
                 reserved_concurrency_sum += fn.reserved_concurrent_executions
             for c in fn.provisioned_concurrency_configs.values():

@@ -609,7 +609,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_aws_sqs_metrics_created": {
-    "recorded-date": "17-11-2022, 14:40:11",
+    "recorded-date": "25-09-2023, 10:25:29",
     "recorded-content": {
       "get_metric_data": {
         "Messages": [],
@@ -677,7 +677,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list": {
-    "recorded-date": "11-11-2022, 16:04:47",
+    "recorded-date": "25-09-2023, 10:26:17",
     "recorded-content": {
       "get_metric_statistics": {
         "Datapoints": [

@@ -1,12 +1,12 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -223,6 +223,18 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
                 cluster_config.setdefault("DedicatedMasterType", "m3.medium.search")
                 cluster_config.setdefault("WarmType", "ultrawarm1.medium.search")
 
+                for key in ["DedicatedMasterCount", "InstanceCount", "WarmCount"]:
+                    if key in cluster_config and isinstance(cluster_config[key], str):
+                        cluster_config[key] = int(cluster_config[key])
+
+            if properties.get("AccessPolicies"):
+                properties["AccessPolicies"] = json.dumps(properties["AccessPolicies"])
+
+            if ebs_options := properties.get("EBSOptions"):
+                for key in ["Iops", "Throughput", "VolumeSize"]:
+                    if key in ebs_options and isinstance(ebs_options[key], str):
+                        ebs_options[key] = int(ebs_options[key])
+
             create_kwargs = {**util.deselect_attributes(properties, ["Tags"])}
             if tags := properties.get("Tags"):
                 create_kwargs["TagList"] = tags
@@ -299,13 +311,3 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
           - es:ListTags
         """
         raise NotImplementedError
-
-
-class OpenSearchServiceDomainProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::OpenSearchService::Domain"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = OpenSearchServiceDomainProvider

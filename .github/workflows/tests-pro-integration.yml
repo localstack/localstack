@@ -150,11 +150,11 @@ jobs:
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           path: localstack-ext
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Set up Node 18.x
         uses: actions/setup-node@v3
@@ -175,7 +175,7 @@ jobs:
       - name: Install OS packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --allow-downgrades libsasl2-dev jq postgresql-14=14.9-0ubuntu0* postgresql-client postgresql-plpython3
+          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.9-0ubuntu0* postgresql-client postgresql-plpython3
 
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true

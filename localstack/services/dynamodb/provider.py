@@ -200,7 +200,6 @@ class EventForwarder:
             if table_def.get("KinesisDataStreamDestinationStatus") != "ACTIVE":
                 continue
             stream_arn = table_def["KinesisDataStreamDestinations"][-1]["StreamArn"]
-            stream_name = stream_arn.split("/", 1)[-1]
             record["tableName"] = table_name
             record.pop("eventSourceARN", None)
             record["dynamodb"].pop("StreamViewType", None)
@@ -213,9 +212,9 @@ class EventForwarder:
                 aws_access_key_id=stream_account_id,
                 aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
                 region_name=stream_region_name,
-            ).kinesis
+            ).kinesis.request_metadata(service_principal="dynamodb", source_arn=event_source_arn)
             kinesis.put_record(
-                StreamName=stream_name,
+                StreamARN=stream_arn,
                 Data=json.dumps(record, cls=BytesEncoder),
                 PartitionKey=partition_key,
             )
@@ -658,10 +657,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 store.REPLICAS[table_name] = replicas
 
             # update response content
+            SchemaExtractor.invalidate_table_schema(
+                table_name, context.account_id, global_table_region
+            )
+
             schema = SchemaExtractor.get_table_schema(
                 table_name, context.account_id, global_table_region
             )
             return UpdateTableOutput(TableDescription=schema["Table"])
+
+        SchemaExtractor.invalidate_table_schema(table_name, context.account_id, global_table_region)
 
         # TODO: DDB streams must also be created for replicas
         if update_table_input.get("StreamSpecification"):

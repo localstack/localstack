@@ -112,6 +112,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
+        # get the Topic from moto manually first, because Moto does not handle well the case where the ARN is malformed
+        # (raises ValueError: not enough values to unpack (expected 6, got 1))
+        moto_topic_model = self._get_topic(topic_arn, context)
         moto_response: GetTopicAttributesResponse = call_moto(context)
         # TODO: fix some attributes by moto, see snapshot
         # DeliveryPolicy
@@ -120,7 +123,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # see the attributes we need: https://docs.aws.amazon.com/sns/latest/dg/sns-topic-attributes.html
         # would need more work to have the proper format out of moto, maybe extract the model to our store
-        moto_topic_model = self._get_topic(topic_arn, context)
         for attr in vars(moto_topic_model):
             if "success_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
@@ -895,6 +897,7 @@ def register_sns_api_resource(router: Router):
     """Register the retrospection endpoints as internal LocalStack endpoints."""
     router.add(SNSServicePlatformEndpointMessagesApiResource())
     router.add(SNSServiceSMSMessagesApiResource())
+    router.add(SNSServiceSubscriptionTokenApiResource())
 
 
 def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[str]):
@@ -1039,3 +1042,47 @@ class SNSServiceSMSMessagesApiResource:
 
         store.sms_messages.clear()
         return Response("", status=204)
+
+
+class SNSServiceSubscriptionTokenApiResource:
+    """Provides a REST API for retrospective access to Subscription Confirmation Tokens to confirm subscriptions.
+    Those are not sent for email, and sometimes inaccessible when working with external HTTPS endpoint which won't be
+    able to reach your local host.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint has the following parameter:
+    - GET `subscription_arn`: `subscriptionArn`resource in SNS for which you want the SubscriptionToken
+    """
+
+    @route(f"{sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>", methods=["GET"])
+    def on_get(self, _request: Request, subscription_arn: str):
+        try:
+            parsed_arn = parse_arn(subscription_arn)
+        except InvalidArnException:
+            response = Response("", 400)
+            response.set_json(
+                {
+                    "error": "The provided SubscriptionARN is invalid",
+                    "subscription_arn": subscription_arn,
+                }
+            )
+            return response
+
+        store: SnsStore = sns_stores[parsed_arn["account"]][parsed_arn["region"]]
+
+        for token, sub_arn in store.subscription_tokens.items():
+            if sub_arn == subscription_arn:
+                return {
+                    "subscription_token": token,
+                    "subscription_arn": subscription_arn,
+                }
+
+        response = Response("", 404)
+        response.set_json(
+            {
+                "error": "The provided SubscriptionARN is not found",
+                "subscription_arn": subscription_arn,
+            }
+        )
+        return response

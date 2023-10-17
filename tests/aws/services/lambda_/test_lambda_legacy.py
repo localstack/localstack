@@ -29,6 +29,8 @@ from tests.aws.services.lambda_.test_lambda import (
     read_streams,
 )
 
+# TODO: remove these tests with 3.0 because they are only for the legacy provider and not aws-validated.
+#   not worth fixing the unknown markers.
 pytestmark = pytest.mark.skipif(
     condition=is_new_provider(), reason="only relevant for old provider"
 )

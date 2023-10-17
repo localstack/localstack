@@ -60,6 +60,7 @@ NameSpacedFunctionArn = str
 NamespacedFunctionName = str
 NamespacedStatementId = str
 NonNegativeInteger = int
+NullableBoolean = bool
 OrganizationId = str
 Origin = str
 ParallelizationFactor = int
@@ -852,6 +853,7 @@ SubnetIds = List[SubnetId]
 class VpcConfig(TypedDict, total=False):
     SubnetIds: Optional[SubnetIds]
     SecurityGroupIds: Optional[SecurityGroupIds]
+    Ipv6AllowedForDualStack: Optional[NullableBoolean]
 
 
 class FunctionCode(TypedDict, total=False):
@@ -1049,6 +1051,7 @@ class VpcConfigResponse(TypedDict, total=False):
     SubnetIds: Optional[SubnetIds]
     SecurityGroupIds: Optional[SecurityGroupIds]
     VpcId: Optional[VpcId]
+    Ipv6AllowedForDualStack: Optional[NullableBoolean]
 
 
 class FunctionConfiguration(TypedDict, total=False):

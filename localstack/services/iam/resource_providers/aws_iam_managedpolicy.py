@@ -3,11 +3,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -117,13 +116,3 @@ class IAMManagedPolicyProvider(ResourceProvider[IAMManagedPolicyProperties]):
         Update a resource
         """
         raise NotImplementedError
-
-
-class IAMManagedPolicyProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::IAM::ManagedPolicy"
-
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
-
-    def load(self):
-        self.factory = IAMManagedPolicyProvider

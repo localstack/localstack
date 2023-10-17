@@ -13,11 +13,16 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 
 
 class EventHistory:
+    _mutex: Final[threading.Lock]
+    _history_event_list: Final[HistoryEventList]
+    _id: int
+    _prev_id: int
+
     def __init__(self):
-        self._mutex: Final[threading.Lock] = threading.Lock()
-        self._history_event_list: Final[HistoryEventList] = list()
+        self._mutex = threading.Lock()
+        self._history_event_list = list()
         self._id = 1
-        self._prev_id = 0  # TODO: implement previousEventId behaviour.
+        self._prev_id = 0
 
     def add_event(
         self,

@@ -55,9 +55,26 @@ PROVIDER_DEFAULTS = {
     "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
     "AWS::Lambda::Alias": "ResourceProvider",
-    "AWS::SNS::Topic": "ResourceProvider"
-    # "AWS::SSM::Parameter": "GenericBaseModel",
-    # "AWS::OpenSearchService::Domain": "GenericBaseModel",
+    "AWS::Scheduler::Schedule": "ResourceProvider",
+    "AWS::Scheduler::ScheduleGroup": "ResourceProvider",
+    "AWS::Route53::HealthCheck": "ResourceProvider",
+    "AWS::Route53::RecordSet": "ResourceProvider",
+    "AWS::SNS::Topic": "ResourceProvider",
+    "AWS::Kinesis::Stream": "ResourceProvider",
+    "AWS::Kinesis::StreamConsumer": "ResourceProvider",
+    "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
+    "AWS::DynamoDB::Table": "ResourceProvider",
+    "AWS::CloudWatch::Alarm": "ResourceProvider",
+    "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
+    # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
+    "AWS::KMS::Key": "ResourceProvider",
+    "AWS::KMS::Alias": "ResourceProvider",
+    "AWS::ElasticBeanstalk::Application": "ResourceProvider",
+    "AWS::ElasticBeanstalk::ApplicationVersion": "ResourceProvider",
+    "AWS::ElasticBeanstalk::Environment": "ResourceProvider",
+    "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
+    "AWS::CertificateManager::Certificate": "ResourceProvider",
+    "AWS::EKS::Nodegroup": "ResourceProvider",
 }
 
 
@@ -516,11 +533,7 @@ class LegacyResourceProvider(ResourceProvider):
             elif not executed:
                 service = get_service_name(resource)
                 try:
-                    client = connect_to.get_client(
-                        aws_access_key_id=request.account_id,
-                        region_name=request.region_name,
-                        service_name=service,
-                    )
+                    client = request.aws_client_factory.get_client(service=service)
                     if client:
                         # get the method on that function
                         function = getattr(client, func["function"])
@@ -746,7 +759,7 @@ class ResourceProviderExecutor:
             return plugin.factory()
         except Exception:
             LOG.warning(
-                "Failed to load resource type as a ResourceProvider.",
+                "Failed to load resource type %s as a ResourceProvider.",
                 resource_type,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )

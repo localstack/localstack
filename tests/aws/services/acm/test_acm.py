@@ -36,7 +36,7 @@ class TestACM:
             aws_client.acm.import_certificate(Certificate=b"CERT123", PrivateKey=b"KEY123")
         assert "PEM" in str(exec_info)
 
-        private_key = ec2_utils.random_key_pair()["material"]
+        private_key = ec2_utils.random_rsa_key_pair()["material"]
         result = None
         try:
             result = aws_client.acm.import_certificate(

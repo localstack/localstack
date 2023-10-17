@@ -138,7 +138,9 @@ STAGE_UPDATE_PATHS = [
     "/{resourcePath}/{httpMethod}/metrics/enabled",
     "/{resourcePath}/{httpMethod}/logging/dataTrace",
     "/{resourcePath}/{httpMethod}/logging/loglevel",
-    "/{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+    "/{resourcePath}/{httpMethod}/throttling/burstLimit",
+    "/{resourcePath}/{httpMethod}/throttling/rateLimit",
+    "/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
     "/{resourcePath}/{httpMethod}/caching/enabled",
     "/{resourcePath}/{httpMethod}/caching/dataEncrypted",
     "/{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl",
@@ -940,6 +942,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             if not path_valid:
                 valid_paths = f"[{', '.join(STAGE_UPDATE_PATHS)}]"
                 # note: weird formatting in AWS - required for snapshot testing
+                valid_paths = valid_paths.replace(
+                    "/{resourcePath}/{httpMethod}/throttling/burstLimit, /{resourcePath}/{httpMethod}/throttling/rateLimit, /{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+                    "/{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+                )
                 valid_paths = valid_paths.replace("/burstLimit, /", "/burstLimit /")
                 valid_paths = valid_paths.replace("/rateLimit, /", "/rateLimit /")
                 raise BadRequestException(
