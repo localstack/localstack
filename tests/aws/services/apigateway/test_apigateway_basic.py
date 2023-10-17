@@ -233,7 +233,7 @@ class TestAPIGateway:
             handler_file=TEST_LAMBDA_AWS_PROXY,
             runtime=Runtime.python3_9,
         )
-        lambda_arn = arns.lambda_function_arn(fn_name)
+        lambda_arn = arns.lambda_function_arn(fn_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         api_id, _, root = create_rest_apigw(name="aws lambda api")
         resource_id, _ = create_rest_resource(
@@ -449,7 +449,7 @@ class TestAPIGateway:
           data dictionary before sending it off to the lambda.
         """
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = arns.lambda_function_arn(fn_name)
+        lambda_uri = arns.lambda_function_arn(fn_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         invocation_uri = "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations"
         target_uri = invocation_uri % (TEST_AWS_REGION_NAME, lambda_uri)
 
@@ -576,7 +576,7 @@ class TestAPIGateway:
         create_lambda_function(
             handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=Runtime.nodejs16_x
         )
-        lambda_arn = arns.lambda_function_arn(fn_name)
+        lambda_arn = arns.lambda_function_arn(fn_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         spec_file = load_file(TEST_IMPORT_REST_API_ASYNC_LAMBDA)
         spec_file = spec_file.replace("${lambda_invocation_arn}", lambda_arn)
@@ -662,7 +662,9 @@ class TestAPIGateway:
             handler="apigw_502.handler",
         )
 
-        lambda_uri = arns.lambda_function_arn(lambda_name)
+        lambda_uri = arns.lambda_function_arn(
+            lambda_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+        )
         target_uri = f"arn:aws:apigateway:{TEST_AWS_REGION_NAME}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway",
@@ -692,8 +694,8 @@ class TestAPIGateway:
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
 
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = arns.lambda_function_arn(fn_name)
-        target_uri = arns.apigateway_invocations_arn(lambda_uri)
+        lambda_uri = arns.lambda_function_arn(fn_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        target_uri = arns.apigateway_invocations_arn(lambda_uri, TEST_AWS_REGION_NAME)
 
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway3",
@@ -724,7 +726,9 @@ class TestAPIGateway:
     ):
 
         # create Lambda function
-        lambda_uri = arns.lambda_function_arn(integration_lambda)
+        lambda_uri = arns.lambda_function_arn(
+            integration_lambda, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+        )
 
         # create REST API
         api_id, _, _ = create_rest_apigw(name="test-api")
@@ -1388,7 +1392,7 @@ class TestAPIGateway:
         create_lambda_function(
             handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=Runtime.nodejs16_x
         )
-        lambda_arn_1 = arns.lambda_function_arn(fn_name)
+        lambda_arn_1 = arns.lambda_function_arn(fn_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         # create REST API and test resource
         rest_api_id, _, _ = create_rest_apigw(name="test", description="test")
@@ -1743,8 +1747,10 @@ def test_rest_api_multi_region(
     )
     lambda_eu_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_us_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
-    lambda_eu_arn = arns.lambda_function_arn(lambda_name, region_name="eu-west-1")
-    uri_eu = arns.apigateway_invocations_arn(lambda_eu_arn, region_name="eu-west-1")
+    lambda_eu_arn = arns.lambda_function_arn(lambda_name, TEST_AWS_ACCOUNT_ID, "eu-west-1")
+    uri_eu = arns.apigateway_invocations_arn(
+        lambda_eu_arn, TEST_AWS_ACCOUNT_ID, region_name="eu-west-1"
+    )
 
     integration_uri, _ = create_rest_api_integration(
         apigateway_client_eu,
@@ -1756,7 +1762,7 @@ def test_rest_api_multi_region(
         uri=uri_eu,
     )
 
-    lambda_us_arn = arns.lambda_function_arn(lambda_name, region_name="us-west-1")
+    lambda_us_arn = arns.lambda_function_arn(lambda_name, TEST_AWS_ACCOUNT_ID, "us-west-1")
     uri_us = arns.apigateway_invocations_arn(lambda_us_arn, region_name="us-west-1")
 
     integration_uri, _ = create_rest_api_integration(
