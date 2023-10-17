@@ -381,7 +381,7 @@ class BaseNotifier:
         record = EventRecord(
             eventVersion="2.1",
             eventSource="aws:s3",
-            awsRegion=ctx.region,
+            awsRegion=ctx.bucket_location,
             eventTime=timestamp_millis(ctx.event_time),
             eventName=ctx.event_type.removeprefix("s3:"),
             userIdentity={"principalId": "AIDAJDPLRKLG7UEXAMPLE"},  # TODO: use the real one?
