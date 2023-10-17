@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional, TypedDict
 
@@ -12,6 +13,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceRequest,
 )
 from localstack.utils.objects import keys_to_lower
+from localstack.utils.strings import first_char_to_lower
 
 
 class ApiGatewayUsagePlanProperties(TypedDict):
@@ -150,4 +152,70 @@ class ApiGatewayUsagePlanProvider(ResourceProvider[ApiGatewayUsagePlanProperties
           - apigateway:PATCH
           - apigateway:PUT
         """
-        raise NotImplementedError
+        model = request.desired_state
+        apigw = request.aws_client_factory.apigateway
+
+        parameters_to_select = [
+            "UsagePlanName",
+            "Description",
+            "ApiStages",
+            "Quota",
+            "Throttle",
+            "Tags",
+        ]
+        update_config_props = util.select_attributes(model, parameters_to_select)
+
+        if "Tags" in update_config_props:
+            tags_dict = {}
+            for tag in update_config_props:
+                tags_dict.update({tag["Key"]: tag["Value"]})
+            update_config_props["Tags"] = tags_dict
+
+        usage_plan_id = model["Id"]
+
+        patch_operations = []
+
+        for parameter in update_config_props:
+            value = update_config_props[parameter]
+            if parameter == "ApiStages":
+                patch_operations.append(
+                    {
+                        "op": "remove",
+                        "path": f"/{first_char_to_lower(parameter)}",
+                    }
+                )
+
+                for stage in value:
+                    patch_operations.append(
+                        {
+                            "op": "replace",
+                            "path": f"/{first_char_to_lower(parameter)}",
+                            "value": f'{stage["ApiId"]}:{stage["Stage"]}',
+                        }
+                    )
+
+                    if "Throttle" in stage:
+                        patch_operations.append(
+                            {
+                                "op": "replace",
+                                "path": f'/{first_char_to_lower(parameter)}/{stage["ApiId"]}:{stage["Stage"]}',
+                                "value": json.dumps(stage["Throttle"]),
+                            }
+                        )
+
+            elif isinstance(value, dict):
+                for item in value:
+                    last_value = value[item]
+                    path = f"/{first_char_to_lower(parameter)}/{first_char_to_lower(item)}"
+                    patch_operations.append({"op": "replace", "path": path, "value": last_value})
+            else:
+                patch_operations.append(
+                    {"op": "replace", "path": f"/{first_char_to_lower(parameter)}", "value": value}
+                )
+        apigw.update_usage_plan(usagePlanId=usage_plan_id, patchOperations=patch_operations)
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
