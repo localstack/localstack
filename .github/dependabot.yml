@@ -14,6 +14,10 @@ updates:
     labels:
       - "area: dependencies"
       - "semver: patch"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
