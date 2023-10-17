@@ -44,6 +44,7 @@ from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import (
+    UrlType,
     api_invoke_url,
     create_rest_api_deployment,
     create_rest_api_integration,
@@ -357,12 +358,12 @@ class TestAPIGateway:
         assert response.headers["Content-Type"] == "text/html"
         assert response.headers["Access-Control-Allow-Origin"] == "*"
 
-    @pytest.mark.parametrize("use_hostname", [True, False])
+    @pytest.mark.parametrize("url_type", [UrlType.HOST_BASED, UrlType.PATH_BASED])
     @pytest.mark.parametrize("disable_custom_cors", [True, False])
     @pytest.mark.parametrize("origin", ["http://allowed", "http://denied"])
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_invoke_endpoint_cors_headers(
-        self, use_hostname, disable_custom_cors, origin, monkeypatch, aws_client
+        self, url_type, disable_custom_cors, origin, monkeypatch, aws_client
     ):
         monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", disable_custom_cors)
         monkeypatch.setattr(
@@ -387,9 +388,7 @@ class TestAPIGateway:
         )
 
         # invoke endpoint with Origin header
-        endpoint = self._get_invoke_endpoint(
-            api_id, stage=TEST_STAGE_NAME, path="/", use_hostname=use_hostname
-        )
+        endpoint = api_invoke_url(api_id, stage=TEST_STAGE_NAME, path="/", url_type=url_type)
         response = requests.options(endpoint, headers={"Origin": origin})
 
         # assert response codes and CORS headers
