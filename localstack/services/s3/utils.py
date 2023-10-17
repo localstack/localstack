@@ -124,11 +124,11 @@ def get_bucket_region(bucket_name: str) -> Optional[str]:
     """
     Return a bucket's region. Returns a None, if the bucket does not exist.
     """
-    if account_id := moto_s3_models.s3_backends.bucket_accounts.get(bucket_name):
-        with contextlib.suppress(MissingBucket):
-            return (
-                moto_s3_models.s3_backends[account_id]["global"].get_bucket(bucket_name).region_name
-            )
+    # It is not necessary to set aws_access_key_id or region_name in connect_to for the head_bucket call because
+    # it allows cross-account lookups
+    with contextlib.suppress(ClientError):
+        response = connect_to().s3.head_bucket(Bucket=bucket_name)
+        return response["ResponseMetadata"]["HTTPHeaders"].get("x-amz-bucket-region")
 
 
 def extract_bucket_key_version_id_from_copy_source(
