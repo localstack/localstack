@@ -238,4 +238,35 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
           - apigateway:DELETE
           - apigateway:PUT
         """
-        raise NotImplementedError
+        model = request.desired_state
+        apigw = request.aws_client_factory.apigateway
+
+        params = keys_to_lower(model.copy())
+        param_names = [
+            "restApiId",
+            "resourceId",
+            "httpMethod",
+            "requestParameters",
+        ]
+        params = util.select_attributes(params, param_names)
+
+        if integration := model.get("Integration"):
+            params["type"] = integration["type"]
+            if integration.get("IntegrationHttpMethod"):
+                params["integrationHttpMethod"] = integration.get("IntegrationHttpMethod")
+            if integration.get("Uri"):
+                params["uri"] = integration.get("Uri")
+            params["requestParameters"] = integration.get("RequestParameters") or {}
+            params["requestTemplates"] = integration.get("RequestTemplates") or {}
+
+            apigw.put_integration(**params)
+
+        else:
+            params["authorizationType"] = model.get("AuthorizationType")
+            apigw.put_method(**params)
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
