@@ -143,8 +143,19 @@ def apply_patches():
     @patch(apigateway_models.Stage._get_default_method_settings)
     def _get_default_method_settings(fn, self):
         result = fn(self)
-        result["cacheDataEncrypted"] = False
-        result["throttlingRateLimit"] = 10000.0
+        default_settings = self.method_settings.get("*/*", {})
+        result["cacheDataEncrypted"] = default_settings.get("cacheDataEncrypted", False)
+        result["throttlingRateLimit"] = default_settings.get("throttlingRateLimit", 10000.0)
+        result["metricsEnabled"] = default_settings.get("metricsEnabled", False)
+        result["dataTraceEnabled"] = default_settings.get("dataTraceEnabled", False)
+        result["unauthorizedCacheControlHeaderStrategy"] = default_settings.get(
+            "unauthorizedCacheControlHeaderStrategy", "SUCCEED_WITH_RESPONSE_HEADER"
+        )
+        result["cacheTtlInSeconds"] = default_settings.get("cacheTtlInSeconds", 300)
+        result["cachingEnabled"] = default_settings.get("cachingEnabled", False)
+        result["requireAuthorizationForCacheControl"] = default_settings.get(
+            "requireAuthorizationForCacheControl", True
+        )
         return result
 
     # patch integration error responses
