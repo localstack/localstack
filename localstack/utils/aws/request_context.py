@@ -9,7 +9,12 @@ from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, APPLICATION_XML, HEADER_CONTENT_TYPE
+from localstack.constants import (
+    APPLICATION_JSON,
+    APPLICATION_XML,
+    AWS_REGION_US_EAST_1,
+    HEADER_CONTENT_TYPE,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     is_json_request,
@@ -74,13 +79,7 @@ def extract_region_from_headers(headers):
     if region:
         return region
 
-    region = extract_region_from_auth_header(headers)
-
-    if not region:
-        # fall back to local region
-        region = aws_stack.get_local_region()
-
-    return region
+    return extract_region_from_auth_header(headers) or AWS_REGION_US_EAST_1
 
 
 def get_request_context():

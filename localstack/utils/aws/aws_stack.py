@@ -150,6 +150,7 @@ def get_partition(region_name: str = None):
     return boto3.session.Session().get_partition_for_region(region_name)
 
 
+# TODO: Deprecate and remove this
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
