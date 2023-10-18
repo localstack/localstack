@@ -10165,7 +10165,7 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
         else:
             return f"https://{bucket_name}.s3.{region}.amazonaws.com"
 
-    host_definition = get_localstack_host(use_localhost_cloud=True)
+    host_definition = get_localstack_host()
     if localstack_host:
         host_and_port = f"{localstack_host}:{config.get_edge_port_http()}"
     else:

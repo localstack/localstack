@@ -250,4 +250,4 @@ class TestLambda:
 
         function_url = r.json()["FunctionUrl"]
 
-        assert_host_customisation(function_url, use_localstack_cloud=True)
+        assert_host_customisation(function_url)
