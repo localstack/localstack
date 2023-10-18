@@ -8,6 +8,7 @@ import pytest
 from boto3.dynamodb.types import STRING
 
 from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
@@ -1382,7 +1383,9 @@ class TestDynamoDB:
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
-        kms_master_key_arn = arns.kms_key_arn(kms_master_key_id)
+        kms_master_key_arn = arns.kms_key_arn(
+            kms_master_key_id, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+        )
 
         result = dynamodb_create_table_with_parameters(
             TableName=table_name,

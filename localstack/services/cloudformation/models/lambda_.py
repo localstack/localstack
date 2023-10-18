@@ -583,7 +583,7 @@ class LambdaLayerVersionPermission(LambdaPermission):
         props = self.props
         props["LayerVersionArn"] = props["LayerVersionArn"]
         layer_name, version_number = self.layer_name_and_version(props)
-        layer_arn = arns.lambda_layer_arn(layer_name)
+        layer_arn = arns.lambda_layer_arn(layer_name, self.account_id, self.region_name)
         layer_arn_qualified = "%s:%s" % (layer_arn, version_number)
         result = self.do_fetch_state(layer_name, layer_arn_qualified)
         return result

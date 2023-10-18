@@ -26,7 +26,7 @@ from flask_cors import CORS
 from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.connect import connect_to
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request
 from localstack.http import Response as HttpResponse
 from localstack.services.lambda_ import lambda_executors
@@ -2283,7 +2283,7 @@ def create_code_signing_config():
     signing_profile_version_arns = data.get("AllowedPublishers").get("SigningProfileVersionArns")
 
     code_signing_id = "csc-%s" % long_uid().replace("-", "")[0:17]
-    arn = arns.code_signing_arn(code_signing_id)
+    arn = arns.code_signing_arn(code_signing_id, DEFAULT_AWS_ACCOUNT_ID, AWS_REGION_US_EAST_1)
 
     store.code_signing_configs[arn] = CodeSigningConfig(
         arn, code_signing_id, signing_profile_version_arns

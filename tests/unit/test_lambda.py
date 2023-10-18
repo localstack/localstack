@@ -8,6 +8,7 @@ from unittest import mock
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.lambda_ import lambda_api, lambda_executors, lambda_utils
 from localstack.services.lambda_.api_utils import RUNTIMES
 from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING
@@ -1165,7 +1166,12 @@ class TestLambdaStore:
             # check lookup for function ARNs
             _lookup(arns.lambda_function_arn("myfunc", region_name=region), region)
             # check lookup for layer ARNs
-            _lookup(arns.lambda_layer_arn("mylayer", region_name=region), region)
+            _lookup(
+                arns.lambda_layer_arn(
+                    "mylayer", account_id=TEST_AWS_ACCOUNT_ID, region_name=region
+                ),
+                region,
+            )
 
 
 class TestLambdaUtils:

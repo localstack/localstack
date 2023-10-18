@@ -294,7 +294,7 @@ class SSEUtils:
             if not kms_master_key_id:
                 # this is of course not the actual key for dynamodb, just a better, since existing, mock
                 kms_master_key_id = cls.get_sse_kms_managed_key(account_id, region_name)
-            kms_master_key_id = arns.kms_key_arn(kms_master_key_id)
+            kms_master_key_id = arns.kms_key_arn(kms_master_key_id, account_id, region_name)
             return {
                 "Status": "ENABLED",
                 "SSEType": "KMS",  # no other value is allowed here
