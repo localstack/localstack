@@ -49,7 +49,6 @@ from localstack.utils.http import parse_request_data
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.net import get_free_tcp_port
 from localstack.utils.run import is_root, run
-from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.utils.server.proxy_server import start_tcp_proxy
 from localstack.utils.strings import to_bytes, truncate
 from localstack.utils.threads import FuncThread, start_thread
@@ -235,6 +234,7 @@ class ProxyListenerEdge(ProxyListener):
             response.headers["Content-Encoding"] = "gzip"
 
     def _require_service(self, api):
+        from localstack.utils.server.http2_server import HTTPErrorResponse
         if not self.service_manager.exists(api):
             raise HTTPErrorResponse("no provider exists for service %s" % api, code=500)
 
@@ -260,6 +260,7 @@ def get_handler_for_api(api, headers):
 
 
 def do_forward_request_inmem(api, method, path, data, headers, port=None):
+    from localstack.utils.server.http2_server import HTTPErrorResponse
     listener_details = get_handler_for_api(api, headers)
     if not listener_details:
         message = f'Unable to find listener for service "{api}" - please make sure to include it in $SERVICES'

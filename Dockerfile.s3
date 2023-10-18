@@ -74,12 +74,10 @@ ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
 # install dependencies to run the LocalStack Pro runtime and save which ones were installed
 RUN --mount=type=cache,target=/root/.cache \
-    make install-runtime
+    make install-s3
 RUN . .venv/bin/activate && pip3 freeze -l > requirements-runtime.txt
 
 # delete the botocore specs for other services (>80mb)
-# delete the API specs stubs for other services
-# delete the providers implementations for other services
 RUN find .venv/lib/python3.11/site-packages/botocore/data/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
 
 
@@ -95,11 +93,17 @@ ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
 # add the code as late as possible
 ADD localstack/ localstack/
+
+# delete the API specs stubs for other services
+# delete the providers implementations for other services
 RUN find localstack/aws/api/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \; && \
     find localstack/services/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
 
 # Generate the plugin entrypoints
 RUN make entrypoints
+
+# Remove dependecies
+RUN apt-get uninstall -y make
 
 # remove the other services from the entrypoints
 RUN sed -i '/\[localstack\.aws\.provider\]/,/^$/ { /^\[localstack\.aws\.provider\]/ b; /^$/ b; /localstack.services.providers:s3_v3/!d; }' ./localstack_core.egg-info/entry_points.txt

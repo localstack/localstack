@@ -3,7 +3,6 @@
 migration from the edge proxy to the new HTTP framework, and will be removed in the future. """
 from urllib.parse import urlsplit
 
-from quart import request as quart_request
 from requests.models import Response as _RequestsResponse
 from werkzeug.exceptions import NotFound
 
@@ -13,6 +12,11 @@ from ..services.messages import Headers, MessagePayload
 from .request import Request, get_raw_path
 from .response import Response
 from .router import Router
+
+try:
+    from quart import request as quart_request
+except ImportError:
+    pass
 
 
 def create_request_from_parts(method: str, path: str, data: MessagePayload, headers: Headers):

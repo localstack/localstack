@@ -4,7 +4,6 @@ import threading
 from typing import Dict, Optional
 from urllib.parse import urlparse
 
-from flask import request
 from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
@@ -21,6 +20,11 @@ from localstack.utils.coverage_docs import get_coverage_link_for_service
 from localstack.utils.patch import patch
 from localstack.utils.strings import snake_to_camel_case
 from localstack.utils.threads import FuncThread
+
+try:
+    from flask import request
+except ImportError:
+    pass
 
 LOG = logging.getLogger(__name__)
 
@@ -55,8 +59,9 @@ def get_flask_request_for_thread():
         # swallow error: "Working outside of request context."
         if "Working outside" in str(e):
             return None
+        if isinstance(e, NameError):
+            return None
         raise
-
 
 def extract_region_from_auth_header(headers):
     auth = headers.get("Authorization") or ""

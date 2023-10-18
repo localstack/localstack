@@ -14,7 +14,6 @@ from werkzeug.exceptions import NotFound
 from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Resource, Response, Router
-from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.services.infra import exit_infra, signal_supervisor_restart
 from localstack.utils.analytics.metadata import (
@@ -28,7 +27,14 @@ from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.objects import singleton_factory
-from localstack.utils.server.http2_server import HTTP_METHODS
+# from localstack.utils.server.http2_server import HTTP_METHODS
+HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"]
+
+try:
+    from localstack.http.adapters import RouterListener
+except ImportError:
+    class RouterListener:
+        pass
 
 LOG = logging.getLogger(__name__)
 

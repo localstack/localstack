@@ -14,13 +14,16 @@ from typing import Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 import requests
-from flask_cors.core import (
-    ACL_ALLOW_HEADERS,
-    ACL_EXPOSE_HEADERS,
-    ACL_METHODS,
-    ACL_ORIGIN,
-    ACL_REQUEST_HEADERS,
-)
+
+# Response Headers
+ACL_ORIGIN = 'Access-Control-Allow-Origin'
+ACL_METHODS = 'Access-Control-Allow-Methods'
+ACL_ALLOW_HEADERS = 'Access-Control-Allow-Headers'
+ACL_EXPOSE_HEADERS = 'Access-Control-Expose-Headers'
+
+# Request Header
+ACL_REQUEST_HEADERS = 'Access-Control-Request-Headers'
+
 from requests.models import Request, Response
 from werkzeug.exceptions import HTTPException
 
@@ -37,7 +40,6 @@ from localstack.utils.aws.request_context import RequestContextManager, get_prox
 from localstack.utils.functions import empty_context_manager
 from localstack.utils.json import json_safe
 from localstack.utils.net import wait_for_port_open
-from localstack.utils.server import http2_server
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 
 # set up logger
@@ -328,6 +330,7 @@ def modify_and_forward(
     """This is the central function that coordinates the incoming/outgoing messages
     with the proxy listeners (message interceptors)."""
     from localstack.services.edge import ProxyListenerEdge
+    from localstack.utils.server import http2_server
 
     # Check origin / referer header before anything else happens.
     if (
@@ -595,6 +598,7 @@ def start_proxy_server(
     max_content_length: int = None,
     send_timeout: int = None,
 ):
+    from localstack.utils.server import http2_server
     if bind_address:
         bind_addresses = bind_address if isinstance(bind_address, List) else [bind_address]
     else:
