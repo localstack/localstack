@@ -87,8 +87,7 @@ class EphemeralS3StoredObject(S3StoredObject):
         :return: the position after seeking, from beginning of the stream
         """
         with self.file.position_lock:
-            self.file.seek(offset, whence)
-            self._pos = self.file.tell()
+            self._pos = self.file.seek(offset, whence)
 
         return self._pos
 
@@ -258,6 +257,9 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :return: the resulting EphemeralS3StoredObject
         """
         s3_stored_object = self._s3_store.open(self.bucket, self.s3_multipart.object)
+        # reset the file to overwrite
+        s3_stored_object.file.seek(0)
+        s3_stored_object.file.truncate()
         for s3_part in parts:
             stored_part = self.parts.get(s3_part.part_number)
             s3_stored_object.append(stored_part)
