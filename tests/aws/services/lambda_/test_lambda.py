@@ -50,6 +50,7 @@ FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_REQUEST_ID = os.path.join(THIS_FOLDER, "functions/lambda_request_id.py")
 TEST_LAMBDA_PYTHON_ROLE = os.path.join(THIS_FOLDER, "functions/lambda_role.py")
 TEST_LAMBDA_MAPPING_RESPONSES = os.path.join(THIS_FOLDER, "functions/lambda_mapping_responses.py")
 TEST_LAMBDA_PYTHON_SELECT_PATTERN = os.path.join(THIS_FOLDER, "functions/lambda_select_pattern.py")
@@ -403,8 +404,6 @@ class TestLambdaBehavior:
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # fixable by setting /tmp permissions to 700
-            "$..Payload.paths._tmp_mode",
             # requires creating a new user `slicer` and chown /var/task
             "$..Payload.paths._var_task_gid",
             "$..Payload.paths._var_task_owner",
@@ -434,8 +433,6 @@ class TestLambdaBehavior:
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # fixable by setting /tmp permissions to 700
-            "$..Payload.paths._tmp_mode",
             # requires creating a new user `slicer` and chown /var/task
             "$..Payload.paths._var_task_gid",
             "$..Payload.paths._var_task_owner",
@@ -1031,15 +1028,8 @@ class TestLambdaFeatures:
         # assert that logs are contained in response
         logs = result.get("LogResult", "")
         logs = to_str(base64.b64decode(to_str(logs)))
-        snapshot.add_transformer(
-            snapshot.transform.regex(
-                re.compile(r"Duration: \d+(\.\d{2})? ms"), "Duration: <duration> ms"
-            )
-        )
-        snapshot.add_transformer(
-            snapshot.transform.regex(re.compile(r"Used: \d+ MB"), "Used: <memory> MB")
-        )
-        snapshot.match("logs", {"logs": logs})
+        snapshot.add_transformer(snapshot.transform.lambda_report_logs())
+        snapshot.match("logs", {"logs": logs.splitlines(keepends=True)})
         assert "START" in logs
         assert "{}" in logs
         assert "END" in logs
@@ -2430,21 +2420,24 @@ class TestRequestIdHandling:
             r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", request_id
         )
 
+    # TODO remove, currently missing init duration in REPORT
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_old_provider(), paths=["$..logs"]
+    )
     @markers.aws.validated
     def test_request_id_invoke(self, aws_client, create_lambda_function, snapshot):
+        """Test that the request_id within the Lambda context matches with CloudWatch logs."""
         func_name = f"test_lambda_{short_uid()}"
         log_group_name = f"/aws/lambda/{func_name}"
 
         create_lambda_function(
             func_name=func_name,
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler_file=TEST_LAMBDA_PYTHON_REQUEST_ID,
             runtime=Runtime.python3_10,
             client=aws_client.lambda_,
         )
 
-        result = aws_client.lambda_.invoke(
-            FunctionName=func_name, Payload=json.dumps({"hello": "world"})
-        )
+        result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_result", result)
         snapshot.add_transformer(
             snapshot.transform.regex(result["ResponseMetadata"]["RequestId"], "<request-id>")
@@ -2456,10 +2449,13 @@ class TestRequestIdHandling:
             return log_events_result
 
         log_events = retry(fetch_logs, retries=10, sleep=2)
-        end_log_entries = [
-            e["message"].rstrip() for e in log_events["events"] if e["message"].startswith("END")
+        log_entries = [
+            line["message"].rstrip()
+            for line in log_events["events"]
+            if "RequestId" in line["message"]
         ]
-        snapshot.match("end_log_entries", end_log_entries)
+        snapshot.match("log_entries", {"logs": log_entries})
+        snapshot.add_transformer(snapshot.transform.lambda_report_logs())
 
     @markers.aws.validated
     def test_request_id_invoke_url(self, aws_client, create_lambda_function, snapshot):

@@ -1,13 +1,5 @@
-# builder: Stage to build a custom JRE (with jlink)
-FROM python:3.11.5-slim-buster@sha256:9f35f3a6420693c209c11bba63dcf103d88e47ebe0b205336b5168c122967edf as java-builder
-ARG TARGETARCH
-
-# install OpenJDK 11
-RUN apt-get update && \
-        apt-get install -y openjdk-11-jdk-headless && \
-        apt-get clean && rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${TARGETARCH}
+# java-builder: Stage to build a custom JRE (with jlink)
+FROM eclipse-temurin:11@sha256:f05c8dfa25aa75d994e48c54eef6be4c05326627c066f67497fb4a86f545ec4a as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -37,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.5-slim-buster@sha256:9f35f3a6420693c209c11bba63dcf103d88e47ebe0b205336b5168c122967edf as base
+FROM python:3.11.6-slim-bookworm@sha256:fda05d00fc47a4133a1b65bdd89007facf4ec0fa5fb737a35652699b18029830 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -100,11 +92,9 @@ RUN { \
         echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
     } > /usr/local/bin/docker-java-home \
     && chmod +x /usr/local/bin/docker-java-home
-COPY --from=java-builder /usr/lib/jvm/java-11 /usr/lib/jvm/java-11
-COPY --from=java-builder /etc/ssl/certs/java /etc/ssl/certs/java
-COPY --from=java-builder /etc/java-11-openjdk/security /etc/java-11-openjdk/security
-RUN ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
 ENV JAVA_HOME /usr/lib/jvm/java-11
+COPY --from=java-builder /usr/lib/jvm/java-11 $JAVA_HOME
+RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
 ENV PATH "${PATH}:${JAVA_HOME}/bin"
 
 # set workdir
@@ -137,7 +127,7 @@ ADD bin/hosts /etc/hosts
 # expose default environment
 # Set edge bind host so localstack can be reached by other containers
 # set library path and default LocalStack hostname
-ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
+ENV LD_LIBRARY_PATH=$JAVA_HOME/lib:$JAVA_HOME/lib/server
 ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
 
