@@ -1823,7 +1823,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         url_id = api_utils.generate_random_url_id()
 
         host_definition = localstack_host(
-            use_localhost_cloud=True, custom_port=config.EDGE_PORT_HTTP or config.EDGE_PORT
+            use_localhost_cloud=True,
+            custom_port=config.EDGE_PORT_HTTP or config.GATEWAY_LISTEN[0].port,
         )
         fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(
             function_arn=function_arn,
