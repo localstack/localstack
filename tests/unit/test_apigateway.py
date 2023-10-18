@@ -7,9 +7,13 @@ from unittest.mock import MagicMock, Mock
 import boto3
 import pytest
 
-from localstack import config
 from localstack.aws.api.apigateway import Model
-from localstack.constants import APPLICATION_JSON, DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import (
+    APPLICATION_JSON,
+    AWS_REGION_US_EAST_1,
+    DEFAULT_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.apigateway.helpers import (
     ModelResolver,
     OpenAPISpecificationResolver,
@@ -387,7 +391,7 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
         self.assertTrue(validator.is_request_valid())
 
     def _mock_client(self):
-        return Mock(boto3.client("apigateway", region_name=config.AWS_REGION_US_EAST_1))
+        return Mock(boto3.client("apigateway", region_name=AWS_REGION_US_EAST_1))
 
     def _mock_store(self):
         return ApiGatewayStore()

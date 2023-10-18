@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import base64
 import gzip
 import json
@@ -6,9 +5,8 @@ import re
 
 import pytest
 
-from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.constants import APPLICATION_AMZ_JSON_1_1, AWS_REGION_US_EAST_1
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
@@ -19,7 +17,7 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 logs_role = {
     "Statement": {
         "Effect": "Allow",
-        "Principal": {"Service": f"logs.{config.AWS_REGION_US_EAST_1}.amazonaws.com"},
+        "Principal": {"Service": f"logs.{AWS_REGION_US_EAST_1}.amazonaws.com"},
         "Action": "sts:AssumeRole",
     }
 }
@@ -208,7 +206,7 @@ class TestCloudWatchLogs:
             logGroupIdentifier=arns.log_group_arn(
                 logs_log_group,
                 account_id=aws_client.sts.get_caller_identity()["Account"],
-                region_name=config.AWS_REGION_US_EAST_1,
+                region_name=AWS_REGION_US_EAST_1,
             )
         ).get("logStreams")
         snapshot.match("log_group_identifier-arn", response)
@@ -289,9 +287,9 @@ class TestCloudWatchLogs:
         result = aws_client.lambda_.add_permission(
             FunctionName=test_lambda_name,
             StatementId=test_lambda_name,
-            Principal=f"logs.{config.AWS_REGION_US_EAST_1}.amazonaws.com",
+            Principal=f"logs.{AWS_REGION_US_EAST_1}.amazonaws.com",
             Action="lambda:InvokeFunction",
-            SourceArn=f"arn:aws:logs:{config.AWS_REGION_US_EAST_1}:{account_id}:log-group:{logs_log_group}:*",
+            SourceArn=f"arn:aws:logs:{AWS_REGION_US_EAST_1}:{account_id}:log-group:{logs_log_group}:*",
             SourceAccount=account_id,
         )
 
