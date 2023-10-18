@@ -19,9 +19,8 @@ from .routes import RouterHandler
 LOG = logging.getLogger(__name__)
 
 try:
-    import flask
-    import quart
-
+    import flask  # noqa
+    import quart  # noqa
 
     def push_request_context(_chain: HandlerChain, context: RequestContext, _response: Response):
         # hack for legacy compatibility. various parts of localstack access the global flask/quart/our own request
@@ -40,7 +39,6 @@ try:
         reset_aws_access_key_id()
         reset_aws_account_id()
 
-
     def pop_request_context(_chain: HandlerChain, _context: RequestContext, _response: Response):
         # hack for legacy compatibility
         import flask.globals
@@ -53,6 +51,7 @@ try:
         request_context.THREAD_LOCAL.request_context = None
 
 except ImportError:
+
     def push_request_context(_chain: HandlerChain, context: RequestContext, _response: Response):
         return
 

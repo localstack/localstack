@@ -63,6 +63,7 @@ def get_flask_request_for_thread():
             return None
         raise
 
+
 def extract_region_from_auth_header(headers):
     auth = headers.get("Authorization") or ""
     region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)

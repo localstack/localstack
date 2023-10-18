@@ -14,16 +14,6 @@ from typing import Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 import requests
-
-# Response Headers
-ACL_ORIGIN = 'Access-Control-Allow-Origin'
-ACL_METHODS = 'Access-Control-Allow-Methods'
-ACL_ALLOW_HEADERS = 'Access-Control-Allow-Headers'
-ACL_EXPOSE_HEADERS = 'Access-Control-Expose-Headers'
-
-# Request Header
-ACL_REQUEST_HEADERS = 'Access-Control-Request-Headers'
-
 from requests.models import Request, Response
 from werkzeug.exceptions import HTTPException
 
@@ -44,6 +34,15 @@ from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_ava
 
 # set up logger
 LOG = logging.getLogger(__name__)
+
+# Response Headers
+ACL_ORIGIN = "Access-Control-Allow-Origin"
+ACL_METHODS = "Access-Control-Allow-Methods"
+ACL_ALLOW_HEADERS = "Access-Control-Allow-Headers"
+ACL_EXPOSE_HEADERS = "Access-Control-Expose-Headers"
+
+# Request Header
+ACL_REQUEST_HEADERS = "Access-Control-Request-Headers"
 
 # CORS constants below
 CORS_ALLOWED_HEADERS = [
@@ -599,6 +598,7 @@ def start_proxy_server(
     send_timeout: int = None,
 ):
     from localstack.utils.server import http2_server
+
     if bind_address:
         bind_addresses = bind_address if isinstance(bind_address, List) else [bind_address]
     else:

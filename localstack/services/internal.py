@@ -27,14 +27,17 @@ from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.objects import singleton_factory
+
 # from localstack.utils.server.http2_server import HTTP_METHODS
 HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"]
 
 try:
     from localstack.http.adapters import RouterListener
 except ImportError:
+
     class RouterListener:
         pass
+
 
 LOG = logging.getLogger(__name__)
 

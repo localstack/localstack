@@ -17,20 +17,20 @@ from localstack.http import Response
 
 LOG = logging.getLogger(__name__)
 # Response Headers
-ACL_ORIGIN = 'Access-Control-Allow-Origin'
-ACL_METHODS = 'Access-Control-Allow-Methods'
-ACL_ALLOW_HEADERS = 'Access-Control-Allow-Headers'
-ACL_EXPOSE_HEADERS = 'Access-Control-Expose-Headers'
-ACL_CREDENTIALS = 'Access-Control-Allow-Credentials'
-ACL_MAX_AGE = 'Access-Control-Max-Age'
-ACL_RESPONSE_PRIVATE_NETWORK = 'Access-Control-Allow-Private-Network'
+ACL_ORIGIN = "Access-Control-Allow-Origin"
+ACL_METHODS = "Access-Control-Allow-Methods"
+ACL_ALLOW_HEADERS = "Access-Control-Allow-Headers"
+ACL_EXPOSE_HEADERS = "Access-Control-Expose-Headers"
+ACL_CREDENTIALS = "Access-Control-Allow-Credentials"
+ACL_MAX_AGE = "Access-Control-Max-Age"
+ACL_RESPONSE_PRIVATE_NETWORK = "Access-Control-Allow-Private-Network"
 
 # Request Header
-ACL_REQUEST_METHOD = 'Access-Control-Request-Method'
-ACL_REQUEST_HEADERS = 'Access-Control-Request-Headers'
-ACL_REQUEST_HEADER_PRIVATE_NETWORK = 'Access-Control-Request-Private-Network'
+ACL_REQUEST_METHOD = "Access-Control-Request-Method"
+ACL_REQUEST_HEADERS = "Access-Control-Request-Headers"
+ACL_REQUEST_HEADER_PRIVATE_NETWORK = "Access-Control-Request-Private-Network"
 
-ALL_METHODS = ['GET', 'HEAD', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE']
+ALL_METHODS = ["GET", "HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"]
 
 # CORS constants below
 CORS_ALLOWED_HEADERS = [

@@ -235,6 +235,7 @@ class ProxyListenerEdge(ProxyListener):
 
     def _require_service(self, api):
         from localstack.utils.server.http2_server import HTTPErrorResponse
+
         if not self.service_manager.exists(api):
             raise HTTPErrorResponse("no provider exists for service %s" % api, code=500)
 
@@ -261,6 +262,7 @@ def get_handler_for_api(api, headers):
 
 def do_forward_request_inmem(api, method, path, data, headers, port=None):
     from localstack.utils.server.http2_server import HTTPErrorResponse
+
     listener_details = get_handler_for_api(api, headers)
     if not listener_details:
         message = f'Unable to find listener for service "{api}" - please make sure to include it in $SERVICES'

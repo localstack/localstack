@@ -15,6 +15,7 @@ from localstack.config import DEFAULT_ENCODING
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.utils.json import json_safe
 from localstack.utils.strings import short_uid, str_startswith_ignore_case, to_bytes, to_str
+
 try:
     from flask import Response as FlaskResponse
 except ImportError:
