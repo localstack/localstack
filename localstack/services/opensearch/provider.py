@@ -83,7 +83,6 @@ from localstack.aws.api.opensearch import (
     VPCDerivedInfoStatus,
     VPCOptions,
 )
-from localstack.config import LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import SecurityOptions
@@ -97,6 +96,7 @@ from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
 from localstack.utils.serving import Server
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -169,7 +169,7 @@ def create_cluster(
     # Replacing only 0.0.0.0 here as usage of this bind address mostly means running in docker which is used locally
     # If another bind address is used we want to keep it in the endpoint as this is a conscious user decision to
     # access from another device on the network.
-    status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", LOCALSTACK_HOSTNAME)
+    status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", localstack_host().host)
     status["EngineVersion"] = engine_version
 
     if cluster.is_up():

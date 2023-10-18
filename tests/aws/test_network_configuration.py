@@ -36,7 +36,7 @@ class TestOpenSearch:
             "Endpoint"
         ]
 
-        assert_host_customisation(endpoint, use_localstack_cloud=True)
+        assert_host_customisation(endpoint)
 
     @markers.aws.only_localstack
     def test_port_strategy(
@@ -54,10 +54,7 @@ class TestOpenSearch:
             "Endpoint"
         ]
 
-        if config.is_in_docker:
-            assert_host_customisation(endpoint, use_localhost=True)
-        else:
-            assert_host_customisation(endpoint, custom_host="127.0.0.1")
+        assert_host_customisation(endpoint)
 
     @markers.aws.only_localstack
     def test_path_strategy(
@@ -75,7 +72,7 @@ class TestOpenSearch:
             "Endpoint"
         ]
 
-        assert_host_customisation(endpoint, use_localstack_hostname=True)
+        assert_host_customisation(endpoint)
 
 
 class TestS3:
@@ -97,7 +94,7 @@ class TestS3:
 
         cleanups.append(cleanup)
 
-        assert_host_customisation(res["Location"], use_hostname_external=True)
+        assert_host_customisation(res["Location"])
 
     @markers.aws.only_localstack
     def test_multipart_upload(self, s3_bucket, assert_host_customisation, aws_client):
@@ -115,7 +112,7 @@ class TestS3:
             UploadId=upload_id,
         )
 
-        assert_host_customisation(res["Location"], use_hostname_external=True)
+        assert_host_customisation(res["Location"])
 
     @markers.aws.only_localstack
     def test_201_response(self, s3_bucket, assert_host_customisation, aws_client):
@@ -137,7 +134,7 @@ class TestS3:
         res.raise_for_status()
         json_response = xmltodict.parse(res.content)["PostResponse"]
 
-        assert_host_customisation(json_response["Location"], use_hostname_external=True)
+        assert_host_customisation(json_response["Location"])
 
 
 class TestSQS:
@@ -158,7 +155,7 @@ class TestSQS:
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
-        assert_host_customisation(queue_url, use_localhost=True)
+        assert_host_customisation(queue_url)
         assert queue_name in queue_url
 
     @markers.aws.only_localstack
@@ -172,7 +169,7 @@ class TestSQS:
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
-        assert_host_customisation(queue_url, use_hostname_external=True)
+        assert_host_customisation(queue_url)
         assert queue_name in queue_url
         assert f":{external_port}" in queue_url
 
@@ -186,7 +183,7 @@ class TestSQS:
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
-        assert_host_customisation(queue_url, use_localstack_cloud=True)
+        assert_host_customisation(queue_url)
         assert queue_name in queue_url
 
     @markers.aws.only_localstack
@@ -196,7 +193,7 @@ class TestSQS:
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
-        assert_host_customisation(queue_url, use_localhost=True)
+        assert_host_customisation(queue_url)
         assert queue_name in queue_url
 
 
@@ -220,7 +217,7 @@ class TestLambda:
             AuthType="NONE",
         )["FunctionUrl"]
 
-        assert_host_customisation(function_url, use_localstack_cloud=True)
+        assert_host_customisation(function_url)
 
     @pytest.mark.skipif(condition=is_new_provider(), reason="Not implemented for new provider")
     @markers.aws.only_localstack
