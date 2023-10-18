@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 import pytest
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.dynamodb.provider import DynamoDBProvider, get_store
 from localstack.services.dynamodb.utils import (
@@ -21,7 +20,7 @@ def test_fix_region_in_headers():
 
     for region_name in ["local", "localhost"]:
         headers = aws_stack.mock_aws_request_headers("dynamodb", region_name=region_name)
-        assert aws_stack.get_region() not in headers.get("Authorization")
+        assert TEST_AWS_REGION_NAME not in headers.get("Authorization")
 
         # Ensure that the correct namespacing key is passed as Access Key ID to DynamoDB Local
         DynamoDBProvider.prepare_request_headers(
@@ -73,12 +72,14 @@ def test_get_key_schema_without_table_definition(mock_get_table_schema):
         "Table": {"KeySchema": key_schema, "AttributeDefinitions": attr_definitions}
     }
 
-    schema = schema_extractor.get_key_schema(table_name)
+    schema = schema_extractor.get_key_schema(
+        table_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+    )
 
     # Assert output is expected from the get_table_schema (fallback)
     assert schema == key_schema
     # Assert table_definitions has new table entry (cache)
-    dynamodb_store = get_store(account_id=get_aws_account_id(), region_name=aws_stack.get_region())
+    dynamodb_store = get_store(account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME)
     assert table_name in dynamodb_store.table_definitions
     # Assert table_definitions has the correct content
     assert (
