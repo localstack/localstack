@@ -103,7 +103,7 @@ RUN find localstack/aws/api/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec
 RUN make entrypoints
 
 # Remove dependecies
-RUN apt-get uninstall -y make
+RUN apt-get remove -y make
 
 # remove the other services from the entrypoints
 RUN sed -i '/\[localstack\.aws\.provider\]/,/^$/ { /^\[localstack\.aws\.provider\]/ b; /^$/ b; /localstack.services.providers:s3_v3/!d; }' ./localstack_core.egg-info/entry_points.txt
