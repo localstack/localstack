@@ -135,6 +135,7 @@ You can run LocalStack through the following options:
 - [Docker](https://docs.localstack.cloud/getting-started/installation/#docker)
 - [Docker Compose](https://docs.localstack.cloud/getting-started/installation/#docker-compose)
 - [Helm](https://docs.localstack.cloud/getting-started/installation/#helm)
+- [Elestio](https://elest.io/open-source/localstack)
 
 ## Usage
 
