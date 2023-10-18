@@ -69,7 +69,7 @@ class ApiGatewayModelProvider(ResourceProvider[ApiGatewayModelProperties]):
 
         schema = json.dumps(model.get("Schema", {}))
 
-        response = apigw.create_model(
+        apigw.create_model(
             restApiId=model["RestApiId"],
             name=model["Name"],
             contentType=model["ContentType"],
