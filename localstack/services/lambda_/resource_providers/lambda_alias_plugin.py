@@ -13,8 +13,6 @@ class LambdaAliasProviderPlugin(CloudFormationResourceProviderPlugin):
         self.factory: Optional[Type[ResourceProvider]] = None
 
     def load(self):
-        from localstack.services.awslambda.resource_providers.aws_lambda_alias import (
-            LambdaAliasProvider,
-        )
+        from localstack.services.lambda_.resource_providers.lambda_alias import LambdaAliasProvider
 
         self.factory = LambdaAliasProvider
