@@ -26,12 +26,14 @@ from localstack.aws.api.kinesis import (
     SubscribeToShardEventStream,
     SubscribeToShardOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.constants import LOCALHOST
 from localstack.services.kinesis.kinesis_mock_server import KinesisServerManager
 from localstack.services.kinesis.models import KinesisStore, kinesis_stores
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
+from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
@@ -40,9 +42,11 @@ SERVER_STARTUP_TIMEOUT = 120
 
 
 def find_stream_for_consumer(consumer_arn):
-    kinesis = aws_stack.connect_to_service("kinesis")
+    account_id = extract_account_id_from_arn(consumer_arn)
+    region_name = extract_region_from_arn(consumer_arn)
+    kinesis = connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis
     for stream_name in kinesis.list_streams()["StreamNames"]:
-        stream_arn = arns.kinesis_stream_arn(stream_name)
+        stream_arn = arns.kinesis_stream_arn(stream_name, account_id, region_name)
         for cons in kinesis.list_stream_consumers(StreamARN=stream_arn)["Consumers"]:
             if cons["ConsumerARN"] == consumer_arn:
                 return stream_name
@@ -58,7 +62,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(kinesis_stores)
-        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "kinesis")))
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, "kinesis")))
 
     def on_before_state_load(self):
         # no need to restart servers, since that happens lazily in `server_manager.get_server_for_account`.
@@ -87,7 +91,9 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         shard_id: ShardId,
         starting_position: StartingPosition,
     ) -> SubscribeToShardOutput:
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = connect_to(
+            aws_access_key_id=context.account_id, region_name=context.region
+        ).kinesis
         stream_name = find_stream_for_consumer(consumer_arn)
         iter_type = starting_position["Type"]
         kwargs = {}

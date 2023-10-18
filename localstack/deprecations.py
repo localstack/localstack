@@ -29,7 +29,11 @@ class EnvVarDeprecation:
         return os.environ.get(self.env_var) is not None
 
 
+#
 # List of deprecations
+#
+# Please make sure this is in-sync with https://docs.localstack.cloud/references/configuration/
+#
 DEPRECATIONS = [
     # Since 0.11.3 - HTTP / HTTPS multiplexing
     EnvVarDeprecation(
@@ -203,12 +207,6 @@ DEPRECATIONS = [
         "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
     ),
     EnvVarDeprecation(
-        "LAMBDA_DOCKER_DNS",
-        "2.0.0",
-        "This feature is currently not supported in the new lambda provider "
-        "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
-    ),
-    EnvVarDeprecation(
         "LAMBDA_CONTAINER_REGISTRY",
         "2.0.0",
         "The new lambda provider uses LAMBDA_RUNTIME_IMAGE_MAPPING instead "
@@ -237,6 +235,26 @@ DEPRECATIONS = [
         "2.0.0",
         "The X-Ray daemon is always initialized in the new lambda provider "
         "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
+    ),
+    EnvVarDeprecation(
+        "KINESIS_INITIALIZE_STREAMS",
+        "1.4.0",
+        "This feature is marked for removal. Please use AWS client API to seed Kinesis streams.",
+    ),
+    EnvVarDeprecation(
+        "ES_CUSTOM_BACKEND",
+        "0.14.0",
+        "This option is marked for removal. Please use OPENSEARCH_CUSTOM_BACKEND instead.",
+    ),
+    EnvVarDeprecation(
+        "ES_MULTI_CLUSTER",
+        "0.14.0",
+        "This option is marked for removal. Please use OPENSEARCH_MULTI_CLUSTER instead.",
+    ),
+    EnvVarDeprecation(
+        "ES_ENDPOINT_STRATEGY",
+        "0.14.0",
+        "This option is marked for removal. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
     ),
 ]
 
@@ -284,6 +302,22 @@ def log_env_warning(deprecations: List[EnvVarDeprecation]) -> None:
 def log_deprecation_warnings(deprecations: Optional[List[EnvVarDeprecation]] = None) -> None:
     affected_deprecations = collect_affected_deprecations(deprecations)
     log_env_warning(affected_deprecations)
+
+    provider_override_lambda = os.environ.get("PROVIDER_OVERRIDE_LAMBDA")
+    if provider_override_lambda and provider_override_lambda in ["v1", "legacy"]:
+        env_var_value = f"PROVIDER_OVERRIDE_LAMBDA={provider_override_lambda}"
+        deprecation_version = "2.0.0"
+        deprecation_path = (
+            f"Remove {env_var_value} to use the new Lambda 'v2' provider (current default). "
+            "For more details, refer to our Lambda migration guide "
+            "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2"
+        )
+        LOG.warning(
+            "%s is deprecated (since %s) and will be removed in upcoming releases of LocalStack! %s",
+            env_var_value,
+            deprecation_version,
+            deprecation_path,
+        )
 
 
 def deprecated_endpoint(

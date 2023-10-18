@@ -48,6 +48,7 @@ from localstack.aws.api.ec2 import (
     Ec2Api,
     InstanceType,
     IpAddressType,
+    LaunchTemplate,
     ModifyLaunchTemplateRequest,
     ModifyLaunchTemplateResult,
     ModifySubnetAttributeRequest,
@@ -66,6 +67,7 @@ from localstack.aws.api.ec2 import (
     RevokeSecurityGroupEgressResult,
     RIProductDescription,
     String,
+    SubnetConfigurationsList,
     Tenancy,
     VpcEndpointId,
     VpcEndpointRouteTableIdList,
@@ -80,7 +82,6 @@ from localstack.services.ec2.exceptions import (
 )
 from localstack.services.ec2.models import get_ec2_backend
 from localstack.services.moto import call_moto
-from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.strings import first_char_to_upper, long_uid, short_uid
 
@@ -96,25 +97,26 @@ class Ec2Provider(Ec2Api, ABC):
         describe_availability_zones_request: DescribeAvailabilityZonesRequest,
     ) -> DescribeAvailabilityZonesResult:
         backend = get_ec2_backend(context.account_id, context.region)
-
-        availability_zones = []
         zone_names = describe_availability_zones_request.get("ZoneNames")
-        if zone_names:
-            for zone in zone_names:
-                zone_detail = backend.get_zone_by_name(zone)
-                if zone_detail:
-                    availability_zones.append(
-                        AvailabilityZone(
-                            State="available",
-                            Messages=[],
-                            RegionName=zone_detail.region_name,
-                            ZoneName=zone_detail.name,
-                            ZoneId=zone_detail.zone_id,
-                        )
-                    )
-
+        zone_ids = describe_availability_zones_request.get("ZoneIds")
+        if zone_names or zone_ids:
+            filters = {
+                "zone-name": zone_names,
+                "zone-id": zone_ids,
+            }
+            filtered_zones = backend.describe_availability_zones(filters)
+            availability_zones = [
+                AvailabilityZone(
+                    State="available",
+                    Messages=[],
+                    RegionName=zone.region_name,
+                    ZoneName=zone.name,
+                    ZoneId=zone.zone_id,
+                    ZoneType=zone.zone_type,
+                )
+                for zone in filtered_zones
+            ]
             return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
-
         return call_moto(context)
 
     @handler("DescribeReservedInstancesOfferings", expand=False)
@@ -204,6 +206,7 @@ class Ec2Provider(Ec2Api, ABC):
         ip_address_type: IpAddressType = None,
         dns_options: DnsOptionsSpecification = None,
         private_dns_enabled: Boolean = None,
+        subnet_configurations: SubnetConfigurationsList = None,
     ) -> ModifyVpcEndpointResult:
         backend = get_ec2_backend(context.account_id, context.region)
 
@@ -386,14 +389,16 @@ class Ec2Provider(Ec2Api, ABC):
 
         template.default_version_number = int(request["DefaultVersion"])
 
-        client = aws_stack.connect_to_service("ec2")
-        retrieved_template = client.describe_launch_templates(LaunchTemplateIds=[template.id])
-
-        result: ModifyLaunchTemplateResult = {
-            "LaunchTemplate": retrieved_template["LaunchTemplates"][0],
-        }
-
-        return result
+        return ModifyLaunchTemplateResult(
+            LaunchTemplate=LaunchTemplate(
+                LaunchTemplateId=template.id,
+                LaunchTemplateName=template.name,
+                CreateTime=template.create_time,
+                DefaultVersionNumber=template.default_version_number,
+                LatestVersionNumber=template.latest_version_number,
+                Tags=template.tags,
+            )
+        )
 
     @handler("DescribeVpcEndpointServices", expand=False)
     def describe_vpc_endpoint_services(

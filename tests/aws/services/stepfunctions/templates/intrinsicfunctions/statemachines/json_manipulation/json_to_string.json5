@@ -1,0 +1,13 @@
+{
+    "Comment": "JSON_TO_STRING",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.JsonToString($.FunctionInput)",
+            },
+            "End": true,
+        },
+    },
+}

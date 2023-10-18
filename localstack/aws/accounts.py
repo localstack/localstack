@@ -32,6 +32,13 @@ def set_aws_access_key_id(access_key_id: str):
     REQUEST_CTX_TLS.access_key_id = access_key_id
 
 
+def reset_aws_access_key_id() -> None:
+    try:
+        del REQUEST_CTX_TLS.access_key_id
+    except AttributeError:
+        pass
+
+
 #
 # Account IDs
 #
@@ -51,6 +58,13 @@ def get_aws_account_id() -> str:
 
 def set_aws_account_id(account_id: str) -> None:
     REQUEST_CTX_TLS.account_id = account_id
+
+
+def reset_aws_account_id() -> None:
+    try:
+        del REQUEST_CTX_TLS.account_id
+    except AttributeError:
+        pass
 
 
 def extract_account_id_from_access_key_id(access_key_id: str) -> str:
@@ -103,7 +117,7 @@ def get_account_id_from_access_key_id(access_key_id: str) -> str:
         if not config.PARITY_AWS_ACCESS_KEY_ID:
             # If AWS_ACCESS_KEY_ID has production AWS credentials, ignore them
             if access_key_id.startswith("ASIA") or access_key_id.startswith("AKIA"):
-                LOG.warning(
+                LOG.debug(
                     "Ignoring production AWS credentials provided to LocalStack. Falling back to default account ID."
                 )
 

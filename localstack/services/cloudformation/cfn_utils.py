@@ -5,8 +5,12 @@ from localstack.utils.objects import recurse_object
 
 
 def rename_params(func, rename_map):
-    def do_rename(params, **kwargs):
-        values = func(params, **kwargs) if func else params
+    def do_rename(account_id, region_name, params, logical_resource_id, *args, **kwargs):
+        values = (
+            func(account_id, region_name, params, logical_resource_id, *args, **kwargs)
+            if func
+            else params
+        )
         for old_param, new_param in rename_map.items():
             values[new_param] = values.pop(old_param, None)
         return values
@@ -14,23 +18,18 @@ def rename_params(func, rename_map):
     return do_rename
 
 
-def lambda_add_tags(func):
-    return lambda params, **kwargs: add_tags(func(params, **kwargs))
-
-
 def lambda_convert_types(func, types):
-    return lambda params, **kwargs: convert_types(func(params, **kwargs), types)
+    return (
+        lambda account_id, region_name, params, logical_resource_id, *args, **kwargs: convert_types(
+            func(account_id, region_name, params, *args, **kwargs), types
+        )
+    )
 
 
 def lambda_to_json(attr):
-    return lambda params, **kwargs: json.dumps(params[attr])
-
-
-def add_tags(obj, tags=[]):
-    tags = tags or []
-    obj["tags"] = obj.get("tags") or []
-    obj["tags"].extend(tags)
-    return obj
+    return lambda account_id, region_name, params, logical_resource_id, *args, **kwargs: json.dumps(
+        params[attr]
+    )
 
 
 def lambda_rename_attributes(attrs, func=None):
@@ -42,8 +41,10 @@ def lambda_rename_attributes(attrs, func=None):
                         o[attrs[k]] = o.pop(k)
         return o
 
-    func = func or (lambda x, **kwargs: x)
-    return lambda params, **kwargs: recurse_object(func(params, **kwargs), recurse)
+    func = func or (lambda account_id, region_name, x, logical_resource_id, *args, **kwargs: x)
+    return lambda account_id, region_name, params, logical_resource_id, *args, **kwargs: recurse_object(
+        func(account_id, region_name, params, logical_resource_id, *args, **kwargs), recurse
+    )
 
 
 def convert_types(obj, types):
@@ -66,7 +67,7 @@ def convert_types(obj, types):
 def get_tags_param(resource_type: str) -> Callable:
     """Return a tag parameters creation function for the given resource type"""
 
-    def _param(params, **kwargs):
+    def _param(account_id: str, region_name: str, params, logical_resource_id, *args, **kwargs):
         tags = params.get("Tags")
         if not tags:
             return None

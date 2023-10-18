@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -534,8 +528,8 @@ class ComplianceUploadType(str):
 
 
 class ConnectionStatus(str):
-    Connected = "Connected"
-    NotConnected = "NotConnected"
+    connected = "connected"
+    notconnected = "notconnected"
 
 
 class DescribeActivationsFilterKeys(str):
@@ -941,7 +935,6 @@ class ResourceDataSyncS3Format(str):
 
 class ResourceType(str):
     ManagedInstance = "ManagedInstance"
-    Document = "Document"
     EC2Instance = "EC2Instance"
 
 

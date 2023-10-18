@@ -1,7 +1,9 @@
 from unittest.mock import ANY, MagicMock, patch
 
 import boto3
+import botocore
 import pytest
+from botocore.config import Config
 
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
@@ -13,6 +15,8 @@ from localstack.aws.connect import (
 )
 from localstack.aws.gateway import Gateway
 from localstack.aws.handlers import add_internal_request_params, add_region_from_header
+from localstack.config import HostAndPort
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
 from localstack.http.hypercorn import GatewayServer
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
@@ -32,7 +36,8 @@ class TestClientFactory:
             for handler in request_handlers:
                 gateway.request_handlers.append(handler)
             port = get_free_tcp_port()
-            server = GatewayServer(gateway, port, "127.0.0.1", use_ssl=True)
+            gateway_listen = HostAndPort(host="127.0.0.1", port=port)
+            server = GatewayServer(gateway, gateway_listen, use_ssl=True)
             server.start()
             server.wait_is_up(timeout=10)
             return f"http://localhost:{port}"
@@ -58,9 +63,7 @@ class TestClientFactory:
         mock.meta.events.register.assert_not_called()
 
     @patch.object(ExternalClientFactory, "_get_client")
-    def test_external_client_credentials_not_loaded_from_env_if_set_to_none(
-        self, mock, monkeypatch
-    ):
+    def test_external_client_credentials_origin(self, mock, monkeypatch):
         connect_to = ExternalClientFactory(use_ssl=True)
         connect_to.get_client(
             "abc", region_name="xx-south-1", aws_access_key_id="foo", aws_secret_access_key="bar"
@@ -78,8 +81,6 @@ class TestClientFactory:
         )
 
         mock.reset_mock()
-        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "lorem")
-        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "ipsum")
 
         connect_to.get_client(
             "def", region_name=None, aws_secret_access_key=None, aws_access_key_id=None
@@ -90,8 +91,23 @@ class TestClientFactory:
             use_ssl=True,
             verify=False,
             endpoint_url="http://localhost:4566",
-            aws_access_key_id="test",
-            aws_secret_access_key="test",
+            aws_access_key_id=None,
+            aws_secret_access_key=None,
+            aws_session_token=None,
+            config=connect_to._config,
+        )
+
+        mock.reset_mock()
+
+        connect_to.get_client("def", region_name=None, aws_access_key_id=TEST_AWS_ACCESS_KEY_ID)
+        mock.assert_called_once_with(
+            service_name="def",
+            region_name="us-east-1",
+            use_ssl=True,
+            verify=False,
+            endpoint_url="http://localhost:4566",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             aws_session_token=None,
             config=connect_to._config,
         )
@@ -147,7 +163,7 @@ class TestClientFactory:
             "appsync",
             "athena",
             "autoscaling",
-            "awslambda",
+            "lambda_",
             "backup",
             "batch",
             "ce",
@@ -233,9 +249,43 @@ class TestClientFactory:
         # TODO does it really make sense to test the caching?
         # TODO pretty ugly way of accessing the internal client
         factory = InternalClientFactory()
-        assert factory().s3._client == factory().s3._client
+        assert factory().s3._client is factory().s3._client
         factory_2 = InternalClientFactory()
         assert factory().s3._client != factory_2().s3._client
+
+    def test_client_caching_with_config(self):
+        """Test client caching. Same factory for the same service should result in the same client.
+        Different factories should result in different (identity wise) clients"""
+        # This test might get flaky if some internal boto3 caching is introduced at some point
+        config = Config(read_timeout=2, signature_version=botocore.UNSIGNED)
+        second_config = Config(read_timeout=2, signature_version=botocore.UNSIGNED)
+        third_config = Config(read_timeout=3, signature_version=botocore.UNSIGNED)
+        factory = InternalClientFactory()
+        client_1 = factory(config=config).s3._client
+        client_2 = factory(config=config).s3._client
+        client_3 = factory(config=second_config).s3._client
+        client_4 = factory(config=third_config).s3._client
+        assert client_1 is client_2
+        assert client_2 is client_3
+        assert client_3 is not client_4
+
+    def test_client_caching_with_merged_configs(self):
+        """Test client caching. Same factory for the same service should result in the same client.
+        Different factories should result in different (identity wise) clients"""
+        # This test might get flaky if some internal boto3 caching is introduced at some point
+        config_1 = Config(read_timeout=2)
+        config_2 = Config(signature_version=botocore.UNSIGNED)
+        config_3 = config_1.merge(config_2)
+        config_4 = config_1.merge(config_2)
+        factory = InternalClientFactory()
+        client_1 = factory(config=config_1).s3._client
+        client_2 = factory(config=config_2).s3._client
+        client_3 = factory(config=config_3).s3._client
+        client_4 = factory(config=config_4).s3._client
+        assert client_1 is not client_2
+        assert client_2 is not client_3
+        assert client_1 is not client_3
+        assert client_3 is client_4
 
     def test_internal_request_parameters(self, create_dummy_request_parameter_gateway):
         internal_dto = None
@@ -253,13 +303,13 @@ class TestClientFactory:
             "source_arn": "arn:aws:apigateway:us-east-1::/apis/api-id",
         }
         internal_factory = InternalClientFactory()
-        internal_lambda_client = internal_factory(endpoint_url=endpoint_url).awslambda
+        internal_lambda_client = internal_factory(endpoint_url=endpoint_url).lambda_
         internal_lambda_client.request_metadata(
             service_principal=sent_dto["service_principal"], source_arn=sent_dto["source_arn"]
         ).list_functions()
         assert internal_dto == sent_dto
         external_factory = ExternalClientFactory()
-        external_lambda_client = external_factory(endpoint_url=endpoint_url).awslambda
+        external_lambda_client = external_factory(endpoint_url=endpoint_url).lambda_
         external_lambda_client.list_functions()
         assert internal_dto is None
 
@@ -277,7 +327,7 @@ class TestClientFactory:
 
         endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
 
-        factory(endpoint_url=endpoint_url).awslambda.list_functions()
+        factory(endpoint_url=endpoint_url).lambda_.list_functions()
 
         assert test_params == {"is_internal": True}
 
@@ -302,7 +352,7 @@ class TestClientFactory:
             endpoint_url=endpoint_url,
             aws_access_key_id="AKIAQAAAAAAALX6GRE2E",
             aws_secret_access_key="something",
-        ).awslambda.list_functions()
+        ).lambda_.list_functions()
 
         assert test_params == {"is_internal": True, "access_key_id": "AKIAQAAAAAAALX6GRE2E"}
 
@@ -335,7 +385,7 @@ class TestClientFactory:
         assert test_params == {"is_internal": True, "service_principal": "apigateway"}
         test_params = {}
 
-        client.awslambda.list_functions()
+        client.lambda_.list_functions()
 
         assert test_params == {"is_internal": True, "access_key_id": "ASIAQAAAAAAAKZ4L3POJ"}
 
@@ -360,7 +410,7 @@ class TestClientFactory:
             "service_principal": "apigatway",
             "source_arn": "arn:aws:apigateway:us-east-1::/apis/a1a1a1a1",
         }
-        clients.awslambda.request_metadata(
+        clients.lambda_.request_metadata(
             source_arn=expected_result["source_arn"],
             service_principal=expected_result["service_principal"],
         ).list_functions()
@@ -383,7 +433,7 @@ class TestClientFactory:
         )
 
         expected_result = {"is_internal": False, "params": None}
-        clients.awslambda.list_functions()
+        clients.lambda_.list_functions()
 
         assert test_params == expected_result
 
@@ -409,6 +459,19 @@ class TestClientFactory:
         )
 
         expected_result = {"is_internal": False, "params": None, "region": "eu-central-1"}
-        clients.awslambda.list_functions()
+        clients.lambda_.list_functions()
 
         assert test_params == expected_result
+
+    def test_region_override(self):
+        # Boto has an odd behaviour when using a non-default (any other region than us-east-1) in config
+        # If the region in arg is non-default, it gives the arg the precedence
+        # But if the region in arg is default (us-east-1), it gives precedence to one in config
+        # This test asserts that this behaviour is handled by client factories and always give precedence to arg region
+
+        factory = ExternalClientFactory()
+
+        config = botocore.config.Config(region_name="eu-north-1")
+
+        assert factory(region_name="us-east-1", config=config).s3.meta.region_name == "us-east-1"
+        assert factory(region_name="us-west-1", config=config).s3.meta.region_name == "us-west-1"

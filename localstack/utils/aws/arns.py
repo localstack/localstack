@@ -1,40 +1,44 @@
 import logging
 import re
+from functools import cache
 from typing import Optional, TypedDict
 
 from botocore.utils import ArnParser, InvalidArnException
 
-from localstack.aws.accounts import get_aws_account_id
-from localstack.utils.aws.aws_stack import connect_to_service, get_region, get_valid_regions
+from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID, get_aws_account_id
+from localstack.aws.connect import connect_to
+from localstack.utils.aws.aws_stack import get_region, get_valid_regions
 
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# maps SQS queue ARNs to queue URLs
-SQS_ARN_TO_URL_CACHE = {}
 
 # TODO: extract ARN utils into separate file!
 
 _arn_parser = ArnParser()
 
 
-def sqs_queue_url_for_arn(queue_arn):
+@cache
+def sqs_queue_url_for_arn(queue_arn: str) -> str:
+    """
+    Return the SQS queue URL for the given queue ARN.
+    """
     if "://" in queue_arn:
         return queue_arn
-    if queue_arn in SQS_ARN_TO_URL_CACHE:
-        return SQS_ARN_TO_URL_CACHE[queue_arn]
 
     try:
         arn = parse_arn(queue_arn)
+        account_id = arn["account"]
         region_name = arn["region"]
         queue_name = arn["resource"]
     except InvalidArnException:
+        account_id = DEFAULT_AWS_ACCOUNT_ID
         region_name = None
         queue_name = queue_arn
 
-    sqs_client = connect_to_service("sqs", region_name=region_name)
-    result = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-    SQS_ARN_TO_URL_CACHE[queue_arn] = result
+    sqs_client = connect_to(region_name=region_name).sqs
+    result = sqs_client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
+        "QueueUrl"
+    ]
     return result
 
 
@@ -189,7 +193,7 @@ def lambda_function_or_layer_arn(
     if re.match(pattern, entity_name):
         return entity_name
     if ":" in entity_name:
-        client = connect_to_service("lambda")
+        client = connect_to().lambda_
         entity_name, _, alias = entity_name.rpartition(":")
         try:
             alias_response = client.get_alias(FunctionName=entity_name, Name=alias)
@@ -245,9 +249,10 @@ def cognito_user_pool_arn(user_pool_id, account_id=None, region_name=None):
     return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
+# TODO: Make account_id and region_name mandatory
 def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
     pattern = "arn:aws:kinesis:%s:%s:stream/%s"
-    return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
+    return _resource_arn(stream_name, pattern, account_id, region_name)
 
 
 def elasticsearch_domain_arn(domain_name, account_id=None, region_name=None):
@@ -260,7 +265,7 @@ def firehose_stream_arn(stream_name, account_id=None, region_name=None):
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def es_domain_arn(domain_name, account_id=None, region_name=None):
+def es_domain_arn(domain_name, account_id, region_name):
     pattern = "arn:aws:es:%s:%s:domain/%s"
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
@@ -307,6 +312,7 @@ def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: 
     return pattern % (region_name, account_id, name)
 
 
+# TODO make account ID and region mandatory
 def sqs_queue_arn(queue_name, account_id=None, region_name=None):
     account_id = account_id or get_aws_account_id()
     region_name = region_name or get_region()

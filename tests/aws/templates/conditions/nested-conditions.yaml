@@ -1,0 +1,45 @@
+# sample from https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/conditions-section-structure.html
+Parameters:
+  EnvType:
+    Type: String
+    AllowedValues:
+      - prod
+      - test
+  BucketName:
+    Default: ''
+    Type: String
+Conditions:
+  IsProduction: !Equals
+    - !Ref EnvType
+    - prod
+  CreateBucket: !Not
+    - !Equals
+      - !Ref BucketName
+      - ''
+  CreateBucketPolicy: !And
+    - !Condition IsProduction
+    - !Condition CreateBucket
+Resources:
+  Bucket:
+    Type: 'AWS::S3::Bucket'
+    Condition: CreateBucket
+    Properties:
+      BucketName: !Ref BucketName
+  Policy:
+    Type: 'AWS::S3::BucketPolicy'
+    Condition: CreateBucketPolicy
+    Properties:
+      Bucket: !Ref Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - s3:GetObject
+            Resource:
+              - !Join
+                - ""
+                - - !GetAtt Bucket.Arn
+                  - "/*"

@@ -4,7 +4,6 @@ import logging
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.eval.programstate.program_running import ProgramRunning
 
 LOG = logging.getLogger(__name__)
 
@@ -23,13 +22,13 @@ class WaitFunction(EvalComponent, abc.ABC):
         tot_sec_waited = seconds_waited + round_sec_waited
         if tot_sec_waited >= max_seconds:
             return
-        elif isinstance(env.program_state(), ProgramRunning):
+        elif env.is_running():
             # Unrelated interrupt: continue waiting.
-            LOG.info(
+            LOG.warning(
                 f"Wait function '{self}' successfully reentered waiting for "
                 f"another '{max_seconds - tot_sec_waited}' seconds."
             )
-            return WaitFunction._wait_interval(
+            return self._wait_interval(
                 env=env, seconds_waited=tot_sec_waited, max_seconds=max_seconds
             )
         else:

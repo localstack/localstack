@@ -17,7 +17,7 @@ from localstack.aws.protocol.parser import (
 )
 from localstack.aws.spec import load_service
 from localstack.http import Request as HttpRequest
-from localstack.services.s3 import s3_utils
+from localstack.services.s3.legacy import s3_utils
 from localstack.utils.common import to_bytes, to_str
 
 
@@ -305,8 +305,11 @@ def _botocore_parser_integration_test(
 
     # botocore >= 1.28 might modify the url path of the request dict (specifically for S3).
     # It will then set the original url path as "auth_path". If the auth_path is set, we reset the url_path.
+    # Since botocore 1.31.2, botocore will strip the query from the `authPart`
+    # We need to add it back from `requestUri` field
     if auth_path := serialized_request.get("auth_path"):
-        serialized_request["url_path"] = auth_path
+        path, sep, query = serialized_request["url_path"].partition("?")
+        serialized_request["url_path"] = f"{auth_path}{sep}{query}"
 
     prepare_request_dict(serialized_request, "")
     split_url = urlsplit(serialized_request.get("url"))
@@ -752,7 +755,7 @@ def test_restjson_opensearch_with_botocore():
     )
 
 
-def test_restjson_awslambda_invoke_with_botocore():
+def test_restjson_lambda_invoke_with_botocore():
     _botocore_parser_integration_test(
         service="lambda",
         action="Invoke",
@@ -1116,6 +1119,12 @@ def test_restxml_header_list_parsing():
         # ObjectAttributesList is a list of strings with location:"header"
         ObjectAttributes=["ObjectSize", "StorageClass"],
     )
+
+
+def test_restxml_header_optional_list_parsing():
+    """Tests that non-existing header list attributes are working correctly."""
+    # OptionalObjectAttributes (the "x-amz-optional-object-attributes") in ListObjectsV2Request is optional
+    _botocore_parser_integration_test(service="s3", action="ListObjectsV2", Bucket="test-bucket")
 
 
 def test_restxml_header_date_parsing():

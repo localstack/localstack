@@ -1,6 +1,6 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.12.0
+# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.13.1
 from antlr4 import *
-if __name__ is not None and "." in __name__:
+if "." in __name__:
     from .ASLParser import ASLParser
 else:
     from ASLParser import ASLParser
@@ -144,6 +144,26 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#timeout_seconds_decl.
+    def visitTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#timeout_seconds_path_decl.
+    def visitTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_decl.
+    def visitHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
+    def visitHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#payload_tmpl_decl.
     def visitPayload_tmpl_decl(self, ctx:ASLParser.Payload_tmpl_declContext):
         return self.visitChildren(ctx)
@@ -224,23 +244,23 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#choice_rule.
-    def visitChoice_rule(self, ctx:ASLParser.Choice_ruleContext):
+    # Visit a parse tree produced by ASLParser#choice_rule_comparison_variable.
+    def visitChoice_rule_comparison_variable(self, ctx:ASLParser.Choice_rule_comparison_variableContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#choice_rule_stmt.
-    def visitChoice_rule_stmt(self, ctx:ASLParser.Choice_rule_stmtContext):
+    # Visit a parse tree produced by ASLParser#choice_rule_comparison_composite.
+    def visitChoice_rule_comparison_composite(self, ctx:ASLParser.Choice_rule_comparison_compositeContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#comparison.
-    def visitComparison(self, ctx:ASLParser.ComparisonContext):
+    # Visit a parse tree produced by ASLParser#comparison_variable_stmt.
+    def visitComparison_variable_stmt(self, ctx:ASLParser.Comparison_variable_stmtContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ASLParser#comparison_stmt.
-    def visitComparison_stmt(self, ctx:ASLParser.Comparison_stmtContext):
+    # Visit a parse tree produced by ASLParser#comparison_composite_stmt.
+    def visitComparison_composite_stmt(self, ctx:ASLParser.Comparison_composite_stmtContext):
         return self.visitChildren(ctx)
 
 
@@ -279,6 +299,11 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#processor_config_field.
+    def visitProcessor_config_field(self, ctx:ASLParser.Processor_config_fieldContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#mode_decl.
     def visitMode_decl(self, ctx:ASLParser.Mode_declContext):
         return self.visitChildren(ctx)
@@ -286,6 +311,76 @@ class ASLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLParser#mode_type.
     def visitMode_type(self, ctx:ASLParser.Mode_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#execution_decl.
+    def visitExecution_decl(self, ctx:ASLParser.Execution_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#execution_type.
+    def visitExecution_type(self, ctx:ASLParser.Execution_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#iterator_decl.
+    def visitIterator_decl(self, ctx:ASLParser.Iterator_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#iterator_decl_item.
+    def visitIterator_decl_item(self, ctx:ASLParser.Iterator_decl_itemContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#item_selector_decl.
+    def visitItem_selector_decl(self, ctx:ASLParser.Item_selector_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#item_reader_decl.
+    def visitItem_reader_decl(self, ctx:ASLParser.Item_reader_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#items_reader_field.
+    def visitItems_reader_field(self, ctx:ASLParser.Items_reader_fieldContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#reader_config_decl.
+    def visitReader_config_decl(self, ctx:ASLParser.Reader_config_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#reader_config_field.
+    def visitReader_config_field(self, ctx:ASLParser.Reader_config_fieldContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#input_type_decl.
+    def visitInput_type_decl(self, ctx:ASLParser.Input_type_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#csv_header_location_decl.
+    def visitCsv_header_location_decl(self, ctx:ASLParser.Csv_header_location_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#csv_headers_decl.
+    def visitCsv_headers_decl(self, ctx:ASLParser.Csv_headers_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#max_items_decl.
+    def visitMax_items_decl(self, ctx:ASLParser.Max_items_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#max_items_path_decl.
+    def visitMax_items_path_decl(self, ctx:ASLParser.Max_items_path_declContext):
         return self.visitChildren(ctx)
 
 

@@ -27,7 +27,6 @@ venv
 *.egg-info/
 .eggs/
 .vagrant/
-*.sw*
 ~*
 *~
 
@@ -58,11 +57,14 @@ requirements.copy.txt
 venv
 api_states
 
-/integration/lambdas/golang/handler.zip
-/tests/integration/lambdas/golang/handler.zip
+/aws/lambdas/golang/handler.zip
+/tests/aws/lambdas/golang/handler.zip
 tmp/
 
 volume/
 
 # ANTLR4 ID plugin.
 gen/
+
+# hypothesis pytest plugin
+.hypothesis

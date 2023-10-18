@@ -1,24 +1,19 @@
+from localstack.aws.api.dynamodb import CreateTableOutput, DescribeTableOutput
+from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.utils.aws.aws_models import KinesisStream
-from localstack.utils.aws.aws_stack import (
-    LOG,
-    connect_to_resource,
-    connect_to_service,
-    get_environment,
-)
+from localstack.utils.aws.aws_stack import LOG
 from localstack.utils.functions import run_safe
 from localstack.utils.sync import poll_condition
 
 
-def create_sqs_queue(queue_name, env=None):
-    env = get_environment(env)
-    # queue
-    conn = connect_to_service("sqs", env=env)
-    return conn.create_queue(QueueName=queue_name)
+def create_sqs_queue(queue_name):
+    return connect_to().sqs.create_queue(QueueName=queue_name)
 
 
+# TODO: make s3_client mandatory
 def get_or_create_bucket(bucket_name: str, s3_client=None):
-    s3_client = s3_client or connect_to_service("s3")
+    s3_client = s3_client or connect_to().s3
     try:
         return s3_client.head_bucket(Bucket=bucket_name)
     except Exception:
@@ -28,7 +23,7 @@ def get_or_create_bucket(bucket_name: str, s3_client=None):
 def create_s3_bucket(bucket_name: str, s3_client=None):
     """Creates a bucket in the region that is associated with the current request
     context, or with the given boto3 S3 client, if specified."""
-    s3_client = s3_client or connect_to_service("s3")
+    s3_client = s3_client or connect_to().s3
     region = s3_client.meta.region_name
     kwargs = {}
     if region != AWS_REGION_US_EAST_1:
@@ -36,6 +31,7 @@ def create_s3_bucket(bucket_name: str, s3_client=None):
     return s3_client.create_bucket(Bucket=bucket_name, **kwargs)
 
 
+# TODO: Harmonise the return value
 def create_dynamodb_table(
     table_name: str,
     partition_key: str,
@@ -43,10 +39,10 @@ def create_dynamodb_table(
     region_name: str = None,
     client=None,
     wait_for_active: bool = True,
-):
+) -> CreateTableOutput | DescribeTableOutput:
     """Utility method to create a DynamoDB table"""
 
-    dynamodb = client or connect_to_service("dynamodb", region_name=region_name)
+    dynamodb = client or connect_to(region_name=region_name).dynamodb
     stream_spec = {"StreamEnabled": False}
     key_schema = [{"AttributeName": partition_key, "KeyType": "HASH"}]
     attr_defs = [{"AttributeName": partition_key, "AttributeType": "S"}]
@@ -64,7 +60,7 @@ def create_dynamodb_table(
     except Exception as e:
         if "ResourceInUseException" in str(e):
             # Table already exists -> return table reference
-            return connect_to_resource("dynamodb", region_name=region_name).Table(table_name)
+            return dynamodb.describe_table(TableName=table_name)
         if "AccessDeniedException" in str(e):
             raise
 
@@ -77,22 +73,21 @@ def create_dynamodb_table(
     return table
 
 
+# TODO make client mandatory
 def create_api_gateway(
     name,
     description=None,
     resources=None,
     stage_name=None,
     enabled_api_keys=None,
-    env=None,
     usage_plan_name=None,
-    region_name=None,
     auth_creator_func=None,  # function that receives an api_id and returns an authorizer_id
     client=None,
 ):
     if enabled_api_keys is None:
         enabled_api_keys = []
     if not client:
-        client = connect_to_service("apigateway", env=env, region_name=region_name)
+        client = connect_to().apigateway
     resources = resources or []
     stage_name = stage_name or "testing"
     usage_plan_name = usage_plan_name or "Basic Usage"
@@ -137,22 +132,20 @@ def create_api_gateway(
                 api_resource["id"],
                 method,
                 integrations,
-                env=env,
-                region_name=region_name,
                 client=client,
             )
+
     # deploy the API gateway
     client.create_deployment(restApiId=api_id, stageName=stage_name)
     return api
 
 
-def create_api_gateway_integrations(
-    api_id, resource_id, method, integrations=None, env=None, region_name=None, client=None
-):
+# TODO make client mandatory
+def create_api_gateway_integrations(api_id, resource_id, method, integrations=None, client=None):
     if integrations is None:
         integrations = []
     if not client:
-        client = connect_to_service("apigateway", env=env, region_name=region_name)
+        client = connect_to().apigateway
     for integration in integrations:
         req_templates = integration.get("requestTemplates") or {}
         res_templates = integration.get("responseTemplates") or {}
@@ -160,6 +153,7 @@ def create_api_gateway_integrations(
         client_error_code = integration.get("clientErrorCode") or "400"
         server_error_code = integration.get("serverErrorCode") or "500"
         request_parameters = integration.get("requestParameters") or {}
+
         # create integration
         client.put_integration(
             restApiId=api_id,
@@ -196,11 +190,9 @@ def create_api_gateway_integrations(
             )
 
 
-def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
-    env = get_environment(env)
+def create_kinesis_stream(client, stream_name: str, shards: int = 1, delete: bool = False):
     stream = KinesisStream(id=stream_name, num_shards=shards)
-    conn = connect_to_service("kinesis", env=env)
-    stream.connect(conn)
+    stream.connect(client)
     if delete:
         run_safe(lambda: stream.destroy(), print_error=False)
     stream.create()

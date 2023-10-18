@@ -11,10 +11,12 @@ from . import (
     internal_requests,
     legacy,
     logging,
+    presigned_url,
     region,
     service,
 )
 
+handle_runtime_shutdown = internal.RuntimeShutdownHandler()
 enforce_cors = cors.CorsEnforcer()
 preprocess_request = chain.CompositeHandler()
 add_cors_response_headers = cors.CorsResponseEnricher()
@@ -35,6 +37,7 @@ serve_localstack_resources = internal.LocalstackResourceHandler()
 run_custom_response_handlers = chain.CompositeResponseHandler()
 modify_service_response = service.ServiceResponseHandlers()
 parse_service_response = service.ServiceResponseParser()
+parse_pre_signed_url_request = presigned_url.ParsePreSignedUrlRequest()
 # legacy compatibility handlers
 serve_edge_router_rules = legacy.EdgeRouterHandler()
 serve_default_listeners = legacy.DefaultListenerHandler()

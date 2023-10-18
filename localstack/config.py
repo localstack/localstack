@@ -5,8 +5,7 @@ import socket
 import subprocess
 import tempfile
 import time
-from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Tuple, TypeVar
+from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
 from localstack.constants import (
@@ -197,43 +196,55 @@ class Directories:
         return str(self.__dict__)
 
 
-def eval_log_type(env_var_name):
-    """get the log type from environment variable"""
+def eval_log_type(env_var_name: str) -> Union[str, bool]:
+    """Get the log type from environment variable"""
     ls_log = os.environ.get(env_var_name, "").lower().strip()
     return ls_log if ls_log in LOG_LEVELS else False
 
 
-def is_env_true(env_var_name):
+def parse_boolean_env(env_var_name: str) -> Optional[bool]:
+    """Parse the value of the given env variable and return True/False, or None if it is not a boolean value."""
+    value = os.environ.get(env_var_name, "").lower().strip()
+    if value in TRUE_STRINGS:
+        return True
+    if value in FALSE_STRINGS:
+        return False
+    return None
+
+
+def is_env_true(env_var_name: str) -> bool:
     """Whether the given environment variable has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() in TRUE_STRINGS
 
 
-def is_env_not_false(env_var_name):
+def is_env_not_false(env_var_name: str) -> bool:
     """Whether the given environment variable is empty or has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
 
-def load_environment(profile: str = None):
+def load_environment(profile: str = None) -> Optional[str]:
     """Loads the environment variables from ~/.localstack/{profile}.env
     :param profile: the profile to load (defaults to "default")
+    :returns str: the name of the actually loaded profile (might be the fallback)
     """
     if not profile:
         profile = "default"
 
     path = os.path.join(CONFIG_DIR, f"{profile}.env")
     if not os.path.exists(path):
-        return
+        return None
 
     import dotenv
 
     dotenv.load_dotenv(path, override=False)
+    return profile
 
 
 def is_persistence_enabled() -> bool:
     return PERSISTENCE and dirs.data
 
 
-def is_linux():
+def is_linux() -> bool:
     return platform.system() == "Linux"
 
 
@@ -253,8 +264,8 @@ def in_docker():
     Returns True if running in a docker container, else False
     Ref. https://docs.docker.com/config/containers/runmetrics/#control-groups
     """
-    if OVERRIDE_IN_DOCKER:
-        return True
+    if OVERRIDE_IN_DOCKER is not None:
+        return OVERRIDE_IN_DOCKER
 
     # check some marker files that we create in our Dockerfiles
     for path in [
@@ -336,11 +347,12 @@ def in_docker():
     return False
 
 
-# whether the in_docker check should always return true
-OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
+# whether the in_docker check should always return True or False
+OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
 is_in_linux = is_linux()
+default_ip = "0.0.0.0" if is_in_docker else "127.0.0.1"
 
 # CLI specific: the configuration profile to load
 CONFIG_PROFILE = os.environ.get("CONFIG_PROFILE", "").strip()
@@ -350,12 +362,13 @@ CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 
 # keep this on top to populate environment
 try:
-    load_environment(CONFIG_PROFILE)
+    # CLI specific: the actually loaded configuration profile
+    LOADED_PROFILE = load_environment(CONFIG_PROFILE)
 except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
-    pass
+    LOADED_PROFILE = None
 
-# default AWS region
+# default AWS region (DEPRECATED!)
 DEFAULT_REGION = (
     os.environ.get("DEFAULT_REGION") or os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
 )
@@ -372,6 +385,9 @@ SNAPSHOT_LOAD_STRATEGY = os.environ.get("SNAPSHOT_LOAD_STRATEGY", "").upper()
 # the strategy saving snapshots to disk when `PERSISTENCE=1` is used (on_shutdown, on_request, scheduled, manual)
 SNAPSHOT_SAVE_STRATEGY = os.environ.get("SNAPSHOT_SAVE_STRATEGY", "").upper()
 
+# the flush interval (in seconds) for persistence when the snapshot save strategy is set to "scheduled"
+SNAPSHOT_FLUSH_INTERVAL = int(os.environ.get("SNAPSHOT_FLUSH_INTERVAL") or 15)
+
 # whether to clear config.dirs.tmp on startup and shutdown
 CLEAR_TMP_FOLDER = is_env_not_false("CLEAR_TMP_FOLDER")
 
@@ -385,7 +401,7 @@ VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip() or TMP_FOLDER
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
     TMP_FOLDER = "/private%s" % TMP_FOLDER
 
-# temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
+# temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set. (DEPRECATED!)
 HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
 
 # whether to enable verbose debug logging
@@ -411,10 +427,13 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 # whether legacy s3 is enabled
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
 
+# whether the S3 native provider is enabled
+NATIVE_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v3", "stream")
+
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 
-# whether to use the legacy single-region mode, defined via DEFAULT_REGION
+# whether to use the legacy single-region mode, defined via DEFAULT_REGION (DEPRECATED!)
 USE_SINGLE_REGION = is_env_true("USE_SINGLE_REGION")
 
 # whether to run in TF compatibility mode for TF integration tests
@@ -463,7 +482,6 @@ if is_trace_logging_enabled():
         "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
     )
 
-
 # expose services on a specific host externally
 # DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
 HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
@@ -473,37 +491,129 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
 
-def parse_hostname_and_ip(
-    value: str, default_host: str, default_port: int = constants.DEFAULT_PORT_EDGE
-) -> str:
+class HostAndPort:
     """
-    Given a string that should contain a <hostname>:<port>, if either are
-    absent then use the defaults.
-    """
-    host, port = default_host, default_port
-    if ":" in value:
-        hostname, port_s = value.split(":", 1)
-        if hostname.strip():
-            host = hostname.strip()
-        try:
-            port = int(port_s)
-        except (ValueError, TypeError):
-            pass
-    else:
-        if value.strip():
-            host = value.strip()
+    Definition of an address for a server to listen to.
 
-    return f"{host}:{port}"
+    Includes a `parse` method to convert from `str`, allowing for default fallbacks, as well as
+    some helper methods to help tests - particularly testing for equality and a hash function
+    so that `HostAndPort` instances can be used as keys to dictionaries.
+    """
+
+    host: str
+    port: int
+
+    def __init__(self, host: str, port: int):
+        self.host = host
+        self.port = port
+
+    @classmethod
+    def parse(
+        cls,
+        input: str,
+        default_host: str,
+        default_port: int,
+    ) -> "HostAndPort":
+        """
+        Parse a `HostAndPort` from strings like:
+            - 0.0.0.0:4566 -> host=0.0.0.0, port=4566
+            - 0.0.0.0      -> host=0.0.0.0, port=`default_port`
+            - :4566        -> host=`default_host`, port=4566
+        """
+        host, port = default_host, default_port
+        if ":" in input:
+            hostname, port_s = input.split(":", 1)
+            if hostname.strip():
+                host = hostname.strip()
+            try:
+                port = int(port_s)
+            except ValueError as e:
+                raise ValueError(f"specified port {port_s} not a number") from e
+        else:
+            if input.strip():
+                host = input.strip()
+
+        # validation
+        if port < 0 or port >= 2**16:
+            raise ValueError("port out of range")
+
+        return cls(host=host, port=port)
+
+    def _get_unprivileged_port_range_start(self) -> int:
+        try:
+            with open(
+                "/proc/sys/net/ipv4/ip_unprivileged_port_start", "rt"
+            ) as unprivileged_port_start:
+                port = unprivileged_port_start.read()
+                return int(port.strip())
+        except Exception:
+            return 1024
+
+    def is_unprivileged(self) -> bool:
+        return self.port >= self._get_unprivileged_port_range_start()
+
+    def __hash__(self) -> int:
+        return hash((self.host, self.port))
+
+    # easier tests
+    def __eq__(self, other: "str | HostAndPort") -> bool:
+        if isinstance(other, self.__class__):
+            return self.host == other.host and self.port == other.port
+        elif isinstance(other, str):
+            return str(self) == other
+        else:
+            raise TypeError(f"cannot compare {self.__class__} to {other.__class__}")
+
+    def __str__(self) -> str:
+        return f"{self.host}:{self.port}" if self.port is not None else self.host
+
+    def __repr__(self) -> str:
+        return f"HostAndPort(host={self.host}, port={self.port})"
+
+
+class UniqueHostAndPortList(List[HostAndPort]):
+    """
+    Container type that ensures that ports added to the list are unique based
+    on these rules:
+        - 0.0.0.0 "trumps" any other binding, i.e. adding 127.0.0.1:4566 to
+          [0.0.0.0:4566] is a no-op
+        - adding identical hosts and ports is a no-op
+        - adding `0.0.0.0:4566` to [`127.0.0.1:4566`] "upgrades" the binding to
+          create [`0.0.0.0:4566`]
+    """
+
+    def __init__(self, iterable=None):
+        super().__init__()
+        for item in iterable or []:
+            self.append(item)
+
+    def append(self, value: HostAndPort):
+        # no exact duplicates
+        if value in self:
+            return
+
+        # if 0.0.0.0:<port> already exists in the list, then do not add the new
+        # item
+        for item in self:
+            if item.host == "0.0.0.0" and item.port == value.port:
+                return
+
+        # if we add 0.0.0.0:<port> and already contain *:<port> then bind on
+        # 0.0.0.0
+        contained_ports = set(every.port for every in self)
+        if value.host == "0.0.0.0" and value.port in contained_ports:
+            for item in self:
+                if item.port == value.port:
+                    item.host = value.host
+            return
+
+        # append the item
+        super().append(value)
 
 
 def populate_legacy_edge_configuration(
-    environment: Dict[str, str]
-) -> Tuple[str, str, str, int, int]:
-    if is_in_docker:
-        default_ip = "0.0.0.0"
-    else:
-        default_ip = "127.0.0.1"
-
+    environment: Mapping[str, str]
+) -> Tuple[HostAndPort, UniqueHostAndPortList, str, int, int]:
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
@@ -511,38 +621,15 @@ def populate_legacy_edge_configuration(
     # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
     localstack_host = localstack_host_raw
     if localstack_host is None:
-        localstack_host = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
+        localstack_host = HostAndPort(
+            host=constants.LOCALHOST_HOSTNAME, port=constants.DEFAULT_PORT_EDGE
+        )
     else:
-        localstack_host = parse_hostname_and_ip(
+        localstack_host = HostAndPort.parse(
             localstack_host,
             default_host=constants.LOCALHOST_HOSTNAME,
+            default_port=constants.DEFAULT_PORT_EDGE,
         )
-
-    gateway_listen = gateway_listen_raw
-    if gateway_listen is None:
-        # default to existing behaviour
-        try:
-            port = int(localstack_host.split(":", 1)[-1])
-        except ValueError:
-            port = constants.DEFAULT_PORT_EDGE
-        gateway_listen = f"{default_ip}:{port}"
-    else:
-        components = gateway_listen.split(",")
-        if len(components) > 1:
-            LOG.warning("multiple GATEWAY_LISTEN addresses are not currently supported")
-
-        gateway_listen = ",".join(
-            [
-                parse_hostname_and_ip(
-                    component.strip(),
-                    default_host=default_ip,
-                )
-                for component in components
-            ]
-        )
-
-    assert gateway_listen is not None
-    assert localstack_host is not None
 
     def legacy_fallback(envar_name: str, default: T) -> T:
         result = default
@@ -552,42 +639,46 @@ def populate_legacy_edge_configuration(
 
         return result
 
+    # parse gateway listen from multiple components
+    if gateway_listen_raw is not None:
+        gateway_listen = []
+        for address in gateway_listen_raw.split(","):
+            gateway_listen.append(
+                HostAndPort.parse(
+                    address.strip(),
+                    default_host=default_ip,
+                    default_port=localstack_host.port,
+                )
+            )
+    else:
+        edge_port = int(environment.get("EDGE_PORT", localstack_host.port))
+        edge_port_http = int(environment.get("EDGE_PORT_HTTP", 0))
+        gateway_listen = [HostAndPort(host=default_ip, port=edge_port)]
+        if edge_port_http:
+            gateway_listen.append(HostAndPort(host=default_ip, port=edge_port_http))
+
+    assert gateway_listen is not None
+    assert localstack_host is not None
+
     # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
     # legacy variables are
-    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", get_gateway_listen(gateway_listen)[0].host)
-    edge_port = int(legacy_fallback("EDGE_PORT", get_gateway_listen(gateway_listen)[0].port))
+    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", gateway_listen[0].host)
+    edge_port = int(legacy_fallback("EDGE_PORT", gateway_listen[0].port))
     edge_port_http = int(
         legacy_fallback("EDGE_PORT_HTTP", 0),
     )
 
-    return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
-
-
-@dataclass
-class HostAndPort:
-    host: str
-    port: int
-
-    @classmethod
-    def parse(cls, input: str) -> "HostAndPort":
-        host, port_s = input.split(":")
-        return cls(host=host, port=int(port_s))
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-
-        return self.host == other.host and self.port == other.port
-
-
-def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:
-    result = []
-    for bind_address in gateway_listen.split(","):
-        result.append(HostAndPort.parse(bind_address))
-    return result
+    return (
+        localstack_host,
+        UniqueHostAndPortList(gateway_listen),
+        edge_bind_host,
+        edge_port,
+        edge_port_http,
+    )
 
 
 # How to access LocalStack
+GATEWAY_LISTEN: List[HostAndPort]
 (
     # -- Cosmetic
     LOCALSTACK_HOST,
@@ -600,7 +691,6 @@ def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:
     EDGE_PORT,
     EDGE_PORT_HTTP,
 ) = populate_legacy_edge_configuration(os.environ)
-
 
 # optional target URL to forward all edge requests to
 EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
@@ -693,25 +783,15 @@ if not DOCKER_BRIDGE_IP:
     if is_in_docker:
         candidates = (DOCKER_BRIDGE_IP, "172.18.0.1")
         for ip in candidates:
+            # TODO: remove from here - should not perform I/O operations in top-level config.py
             if ping(ip):
                 DOCKER_BRIDGE_IP = ip
                 break
 
-# determine route to Docker host from container
-try:
-    DOCKER_HOST_FROM_CONTAINER = DOCKER_BRIDGE_IP
-    if not is_in_docker and not is_in_linux:
-        # If we're running outside docker, and would like the Lambda containers to be able
-        # to access services running on the local machine, set DOCKER_HOST_FROM_CONTAINER accordingly
-        if LOCALSTACK_HOSTNAME == LOCALHOST:
-            DOCKER_HOST_FROM_CONTAINER = "host.docker.internal"
-    # update LOCALSTACK_HOSTNAME if host.docker.internal is available
-    if is_in_docker:
-        DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname("host.docker.internal")
-        if LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
-            LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
-except socket.error:
-    pass
+# AWS account used to store internal resources such as Lambda archives or internal SQS queues.
+# It should not be modified by the user, or visible to him, except as through a presigned url with the
+# get-function call.
+INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "949334387222"
 
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
@@ -746,6 +826,9 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 
 # Delay between data persistence (in seconds)
 KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
+
+# Kinesis mock log level override when inconsistent with LS_LOG (e.g., when LS_LOG=debug)
+KINESIS_MOCK_LOG_LEVEL = os.environ.get("KINESIS_MOCK_LOG_LEVEL", "").strip()
 
 # DEPRECATED: 1 (default) only applies to old lambda provider
 # Whether to handle Kinesis Lambda event sources as synchronous invocations.
@@ -847,7 +930,7 @@ LAMBDA_CONTAINER_REGISTRY = (
 )
 
 # PUBLIC: base images for Lambda (default) https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html
-# localstack/services/awslambda/invocation/lambda_models.py:IMAGE_MAPPING
+# localstack/services/lambda_/invocation/lambda_models.py:IMAGE_MAPPING
 # Customize the Docker image of Lambda runtimes, either by:
 # a) pattern with <runtime> placeholder, e.g. custom-repo/lambda-<runtime>:2022
 # b) json dict mapping the <runtime> to an image, e.g. {"python3.9": "custom-repo/lambda-py:thon3.9"}
@@ -884,7 +967,7 @@ LAMBDA_LIMITS_CODE_SIZE_ZIPPED = int(os.environ.get("LAMBDA_LIMITS_CODE_SIZE_ZIP
 LAMBDA_LIMITS_CODE_SIZE_UNZIPPED = int(
     os.environ.get("LAMBDA_LIMITS_CODE_SIZE_UNZIPPED", 262_144_000)
 )
-# SEMI-PUBLIC: not actively communicated
+# PUBLIC: documented upon customer request
 LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE = int(
     os.environ.get("LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE", 69_905_067)
 )
@@ -963,9 +1046,11 @@ LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 
 # INTERNAL: 60 (default matching AWS) only applies to new lambda provider
 # Base delay in seconds for async retries. Further retries use: NUM_ATTEMPTS * LAMBDA_RETRY_BASE_DELAY_SECONDS
+# 300 (5min) is the maximum because NUM_ATTEMPTS can be at most 3 and SQS has a message timer limit of 15 min.
 # For example:
 # 1x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between initial invocation and first retry
 # 2x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between the first retry and the second retry
+# 3x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between the second retry and the third retry
 LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60)
 
 # PUBLIC: 0 (default)
@@ -985,6 +1070,7 @@ KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
 
 # URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
 # create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
+# `ES_CUSTOM_BACKEND` is DEPRECATED!
 OPENSEARCH_CUSTOM_BACKEND = (
     os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
     or os.environ.get("ES_CUSTOM_BACKEND", "").strip()
@@ -992,6 +1078,7 @@ OPENSEARCH_CUSTOM_BACKEND = (
 
 # Strategy used when creating OpenSearch/Elasticsearch domain endpoints routed through the edge proxy
 # valid values: domain | path | port (off)
+# `ES_ENDPOINT_STRATEGY` is DEPRECATED!
 OPENSEARCH_ENDPOINT_STRATEGY = (
     os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip()
     or os.environ.get("ES_ENDPOINT_STRATEGY", "").strip()
@@ -1001,6 +1088,7 @@ if OPENSEARCH_ENDPOINT_STRATEGY == "off":
     OPENSEARCH_ENDPOINT_STRATEGY = "port"
 
 # Whether to start one cluster per domain (default), or multiplex opensearch domains to a single clusters
+# `ES_MULTI_CLUSTER` is DEPRECATED!
 OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_env_true(
     "ES_MULTI_CLUSTER"
 )
@@ -1014,26 +1102,85 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Whether to return and parse access key ids starting with an "A", like on AWS
 PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 
+# Show exceptions for CloudFormation deploy errors
+CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
+
+# How localstack will react to encountering unsupported resource types.
+# By default unsupported resource types will be ignored.
+# EXPERIMENTAL
+CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES")
+
+# Selectively enable/disable new resource providers
+# e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
+CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
+
+# bind address of local DNS server
+DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
+# port of the local DNS server
+DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
+
+# Comma-separated list of regex patterns for DNS names to resolve locally.
+# Any DNS name not matched against any of the patterns on this whitelist
+# will resolve to the real DNS entry, rather than the local one.
+DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()
+
+# IP address that AWS endpoints should resolve to in our local DNS server. By default,
+# hostnames resolve to 127.0.0.1, which allows to use the LocalStack APIs transparently
+# from the host machine. If your code is running in Docker, this should be configured
+# to resolve to the Docker bridge network address, e.g., DNS_RESOLVE_IP=172.17.0.1
+DNS_RESOLVE_IP = os.environ.get("DNS_RESOLVE_IP") or LOCALHOST_IP
+
+# fallback DNS server to send upstream requests to
+DNS_SERVER = os.environ.get("DNS_SERVER")
+DNS_VERIFICATION_DOMAIN = os.environ.get("DNS_VERIFICATION_DOMAIN") or "localstack.cloud"
+
+
+def use_custom_dns():
+    return str(DNS_ADDRESS) not in FALSE_STRINGS
+
+
+BOTO_WAITER_DELAY = int(os.environ.get("BOTO_WAITER_DELAY") or "1")
+BOTO_WAITER_MAX_ATTEMPTS = int(os.environ.get("BOTO_WAITER_MAX_ATTEMPTS") or "120")
+DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONFIG")
+
+# defaults to false
+# if `DISABLE_BOTO_RETRIES=1` is set, all our created boto clients will have retries disabled
+DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
-# list of environment variable names used for configuration.
+# List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # Make sure to keep this in sync with the above!
+# Do *not* include any internal developer configurations that apply to host-mode only in this list.
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
+    "BOTO_WAITER_DELAY",
+    "BOTO_WAITER_MAX_ATTEMPTS",
     "BUCKET_MARKER_LOCAL",
-    "CFN_ENABLE_RESOLVE_REFS_IN_MODELS",
+    "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
+    "CFN_VERBOSE_ERRORS",
+    "CFN_RESOURCE_PROVIDER_OVERRIDES",
+    "CI",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
     "DEFAULT_REGION",
     "DEVELOP",
     "DEVELOP_PORT",
+    "DISABLE_BOTO_RETRIES",
     "DISABLE_CORS_CHECKS",
     "DISABLE_CORS_HEADERS",
+    "DISABLE_CUSTOM_BOTO_WAITER_CONFIG",
     "DISABLE_CUSTOM_CORS_APIGATEWAY",
     "DISABLE_CUSTOM_CORS_S3",
     "DISABLE_EVENTS",
+    "DNS_ADDRESS",
+    "DNS_PORT",
+    "DNS_LOCAL_NAME_PATTERNS",
+    "DNS_RESOLVE_IP",
+    "DNS_SERVER",
+    "DNS_VERIFICATION_DOMAIN",
     "DOCKER_BRIDGE_IP",
     "DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS",
     "DYNAMODB_ERROR_PROBABILITY",
@@ -1061,6 +1208,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",
+    "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
     "LAMBDA_CODE_EXTRACT_TIME",
     "LAMBDA_CONTAINER_REGISTRY",
@@ -1075,14 +1223,14 @@ CONFIG_ENV_VARS = [
     "LAMBDA_INIT_BOOTSTRAP_PATH",
     "LAMBDA_INIT_DELVE_PATH",
     "LAMBDA_INIT_DELVE_PORT",
-    "LAMBDA_INIT_POST_INVOKE_WAIT",
+    "LAMBDA_INIT_POST_INVOKE_WAIT_MS",
     "LAMBDA_INIT_USER",
     "LAMBDA_INIT_RELEASE_VERSION",
+    "LAMBDA_KEEPALIVE_MS",
     "LAMBDA_RUNTIME_IMAGE_MAPPING",
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
-    "LAMBDA_DEV_PORT_EXPOSE",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LAMBDA_STAY_OPEN_MODE",
@@ -1101,11 +1249,13 @@ CONFIG_ENV_VARS = [
     "LEGACY_EDGE_PROXY",
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
+    "LOCALSTACK_AUTH_TOKEN",
     "LOCALSTACK_HOST",
     "LOCALSTACK_HOSTNAME",
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
+    "MAIN_DOCKER_NETWORK",
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
@@ -1120,6 +1270,7 @@ CONFIG_ENV_VARS = [
     "SKIP_SSL_CERT_DOWNLOAD",
     "SNAPSHOT_LOAD_STRATEGY",
     "SNAPSHOT_SAVE_STRATEGY",
+    "SNAPSHOT_FLUSH_INTERVAL",
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",
@@ -1130,13 +1281,7 @@ CONFIG_ENV_VARS = [
     "SYNCHRONOUS_KINESIS_EVENTS",
     "SYNCHRONOUS_SNS_EVENTS",
     "TEST_AWS_ACCOUNT_ID",
-    "TEST_IAM_USER_ID",
-    "TEST_IAM_USER_NAME",
     "TF_COMPAT_MODE",
-    "THUNDRA_APIKEY",
-    "THUNDRA_AGENT_JAVA_VERSION",
-    "THUNDRA_AGENT_NODE_VERSION",
-    "THUNDRA_AGENT_PYTHON_VERSION",
     "USE_SINGLE_REGION",
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",
@@ -1182,7 +1327,10 @@ def populate_config_env_var_names():
     CONFIG_ENV_VARS += [
         key
         for key in [key.upper() for key in os.environ]
-        if key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_")
+        if (key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_"))
+        # explicitly exclude LOCALSTACK_CLI (it's prefixed with "LOCALSTACK_",
+        # but is only used in the CLI (should not be forwarded to the container)
+        and key != "LOCALSTACK_CLI"
     ]
 
     # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
@@ -1221,6 +1369,8 @@ def external_service_url(service_key, host=None, port=None):
     return service_url(service_key, host=host, port=port)
 
 
+# FIXME: we don't separate http and non-http ports any more,
+#        so this function should be removed
 def get_edge_port_http():
     return EDGE_PORT_HTTP or EDGE_PORT
 

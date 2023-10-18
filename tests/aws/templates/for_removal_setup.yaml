@@ -1,0 +1,18 @@
+Resources:
+  TestBucket560B80BC:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: {{ first_bucket_name }}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  HestBucketABE4AE1C:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: {{ second_bucket_name }}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+Outputs:
+  FirstBucket:
+    Value: !Ref TestBucket560B80BC
+  SecondBucket:
+    Value: !Ref HestBucketABE4AE1C

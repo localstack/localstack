@@ -132,13 +132,16 @@ def get_host_path_for_path_in_docker(path):
     return path
 
 
-def container_ports_can_be_bound(ports: Union[IntOrPort, List[IntOrPort]]) -> bool:
+def container_ports_can_be_bound(
+    ports: Union[IntOrPort, List[IntOrPort]],
+    address: Optional[str] = None,
+) -> bool:
     """Determine whether a given list of ports can be bound by Docker containers
 
     :param ports: single port or list of ports to check
     :return: True iff all ports can be bound
     """
-    port_mappings = PortMappings()
+    port_mappings = PortMappings(bind_host=address or "")
     ports = ensure_list(ports)
     for port in ports:
         port = Port.wrap(port)
@@ -146,8 +149,8 @@ def container_ports_can_be_bound(ports: Union[IntOrPort, List[IntOrPort]]) -> bo
     try:
         result = DOCKER_CLIENT.run_container(
             _get_ports_check_docker_image(),
-            entrypoint="",
-            command=["echo", "test123"],
+            entrypoint="sh",
+            command=["-c", "echo test123"],
             ports=port_mappings,
             remove=True,
         )
@@ -157,7 +160,9 @@ def container_ports_can_be_bound(ports: Union[IntOrPort, List[IntOrPort]]) -> bo
                 "Unexpected error when attempting to determine container port status: %s", e
             )
         return False
-    if to_str(result[0]).strip() != "test123":
+    # TODO(srw): sometimes the command output from the docker container is "None", particularly when this function is
+    #  invoked multiple times consecutively. Work out why.
+    if to_str(result[0] or "").strip() != "test123":
         LOG.warning(
             "Unexpected output when attempting to determine container port status: %s", result[0]
         )
@@ -169,17 +174,8 @@ class _DockerPortRange(PortRange):
     PortRange which checks whether the port can be bound on the host instead of inside the container.
     """
 
-    def _try_reserve_port(self, port: IntOrPort, duration: int) -> int:
-        """Checks if the given port is currently not reserved."""
-        port = Port.wrap(port)
-        if not self.is_port_reserved(port) and container_ports_can_be_bound(port):
-            # reserve the port for a short period of time
-            self._ports_cache[port] = "__reserved__"
-            if duration:
-                self._ports_cache.set_expiry(port, duration)
-            return port.port
-        else:
-            raise PortNotAvailableException(f"The given port ({port}) is already reserved.")
+    def _port_can_be_bound(self, port: IntOrPort) -> bool:
+        return container_ports_can_be_bound(port)
 
 
 reserved_docker_ports = _DockerPortRange(PORT_START, PORT_END)
@@ -202,9 +198,22 @@ def is_container_port_reserved(port: IntOrPort) -> bool:
 
 
 def reserve_available_container_port(
-    duration: int = None, port_start: int = None, port_end: int = None, protocol: str = None
+    duration: int = None,
+    port_start: int = None,
+    port_end: int = None,
+    protocol: str = None,
 ) -> int:
-    """Determine and reserve a port that can then be bound by a Docker container"""
+    """
+    Determine a free port within the given port range that can be bound by a Docker container, and reserve
+    the port for the given number of seconds
+
+    :param duration: the number of seconds to reserve the port (default: ~6 seconds)
+    :param port_start: the start of the port range to check (default: 1024)
+    :param port_end: the end of the port range to check (default: 65536)
+    :param protocol: the network protocol (default: tcp)
+    :return: a random port
+    :raises PortNotAvailableException: if no port is available within the given range
+    """
 
     protocol = protocol or "tcp"
 

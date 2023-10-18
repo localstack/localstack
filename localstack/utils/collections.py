@@ -5,30 +5,27 @@ and manipulate python collection (dicts, list, sets).
 
 import logging
 import re
-import sys
 from collections.abc import Mapping
 from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     Iterator,
     List,
     Optional,
     Sized,
     Tuple,
     Type,
+    TypedDict,
     TypeVar,
     Union,
     cast,
+    get_args,
+    get_origin,
 )
 
 import cachetools
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict, get_args, get_origin
-else:
-    from typing_extensions import TypedDict, get_args, get_origin
-
 
 LOG = logging.getLogger(__name__)
 
@@ -503,3 +500,20 @@ def dict_multi_values(elements: Union[List, Dict]) -> Dict[str, List[Any]]:
         else:
             result_dict[elements[0]] = elements[1:]
     return result_dict
+
+
+ItemType = TypeVar("ItemType")
+
+
+def split_list_by(
+    lst: Iterable[ItemType], predicate: Callable[[ItemType], bool]
+) -> Tuple[List[ItemType], List[ItemType]]:
+    truthy, falsy = [], []
+
+    for item in lst:
+        if predicate(item):
+            truthy.append(item)
+        else:
+            falsy.append(item)
+
+    return truthy, falsy

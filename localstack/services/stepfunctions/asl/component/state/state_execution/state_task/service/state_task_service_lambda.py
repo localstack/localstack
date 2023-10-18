@@ -1,38 +1,43 @@
+from typing import Final, Optional
+
 from botocore.exceptions import ClientError
 
-from localstack.aws.api.stepfunctions import (
-    HistoryEventExecutionDataDetails,
-    HistoryEventType,
-    TaskFailedEventDetails,
-    TaskScheduledEventDetails,
-    TaskStartedEventDetails,
-    TaskSucceededEventDetails,
-)
+from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
-    StatesErrorName,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task import (
+    lambda_eval_utils,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
-    StatesErrorNameType,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceRuntimePart,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
-    StateTaskService,
-)
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_lambda import (
-    LambdaFunctionErrorException,
-    StateTaskLambda,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
+    StateTaskServiceCallback,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
-class StateTaskServiceLambda(StateTaskService, StateTaskLambda):
+class StateTaskServiceLambda(StateTaskServiceCallback):
+    _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
+        "invoke": {
+            "ClientContext",
+            "FunctionName",
+            "InvocationType",
+            "Qualifier",
+            "Payload",
+            # Outside the specification, but supported in practice:
+            "LogType",
+        }
+    }
+
+    def _get_supported_parameters(self) -> Optional[set[str]]:
+        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+
     @staticmethod
     def _error_cause_from_client_error(client_error: ClientError) -> tuple[str, str]:
         error_code: str = client_error.response["Error"]["Code"]
@@ -51,7 +56,7 @@ class StateTaskServiceLambda(StateTaskService, StateTaskLambda):
         return error, cause
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        if isinstance(ex, LambdaFunctionErrorException):
+        if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
             error = "Exception"
             error_name = CustomErrorName(error)
             cause = ex.payload
@@ -59,10 +64,7 @@ class StateTaskServiceLambda(StateTaskService, StateTaskLambda):
             error, cause = self._error_cause_from_client_error(ex)
             error_name = CustomErrorName(error)
         else:
-            error = "Exception"
-            error_name = StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed)
-            cause = str(ex)
-
+            return super()._from_error(env=env, ex=ex)
         return FailureEvent(
             error_name=error_name,
             event_type=HistoryEventType.TaskFailed,
@@ -70,47 +72,25 @@ class StateTaskServiceLambda(StateTaskService, StateTaskLambda):
                 taskFailedEventDetails=TaskFailedEventDetails(
                     error=error,
                     cause=cause,
-                    resourceType=self._get_resource_type(),
-                    resource=self.resource.api_action,
+                    resource=self._get_sfn_resource(),
+                    resourceType=self._get_sfn_resource_type(),
                 )
             ),
         )
 
-    def _eval_execution(self, env: Environment) -> None:
-        parameters = self._eval_parameters(env=env)
-        parameters_str = to_json_str(parameters)
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.TaskScheduled,
-            event_detail=EventDetails(
-                taskScheduledEventDetails=TaskScheduledEventDetails(
-                    resourceType=self._get_resource_type(),
-                    resource=self.resource.api_action,
-                    region=self.resource.region,
-                    parameters=parameters_str,
-                )
-            ),
-        )
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.TaskStarted,
-            event_detail=EventDetails(
-                taskStartedEventDetails=TaskStartedEventDetails(
-                    resourceType=self._get_resource_type(),
-                    resource=self.resource.api_action,
-                )
-            ),
-        )
-
-        super()._exec_lambda_function(env=env)
-        response = env.stack[-1]
-
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.TaskSucceeded,
-            event_detail=EventDetails(
-                taskSucceededEventDetails=TaskSucceededEventDetails(
-                    resourceType=self._get_resource_type(),
-                    resource=self.resource.api_action,
-                    output=to_json_str(response),
-                    outputDetails=HistoryEventExecutionDataDetails(truncated=False),
-                )
-            ),
+    def _eval_service_task(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ):
+        if "Payload" in normalised_parameters:
+            normalised_parameters["Payload"] = lambda_eval_utils.to_payload_type(
+                normalised_parameters["Payload"]
+            )
+        lambda_eval_utils.exec_lambda_function(
+            env=env,
+            parameters=normalised_parameters,
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
         )

@@ -1,0 +1,21 @@
+{
+  "tests/aws/services/cloudformation/resources/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
+    "recorded-date": "24-05-2023, 15:32:47",
+    "recorded-content": {
+      "create_stack_set": {
+        "StackSetId": "<stack-set-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_stack_instances": {
+        "OperationId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

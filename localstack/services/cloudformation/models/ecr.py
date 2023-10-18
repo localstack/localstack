@@ -21,23 +21,12 @@ class ECRRepository(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ECR::Repository"
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return self.props.get("repositoryArn")
-        if attribute_name == "RepositoryUri":
-            return self.props.get("repositoryUri")
-        return super(ECRRepository, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        repo_name = self.props.get("RepositoryName")
-        return arns.get_ecr_repository_arn(repo_name)
-
     def fetch_state(self, stack_name, resources):
         repo_name = default_repos_per_stack.get(stack_name)
         if repo_name:
             return {
                 "repositoryArn": arns.get_ecr_repository_arn(repo_name),
-                "registryId": "000000000000",
+                "registryId": self.account_id,
                 "repositoryName": repo_name,
                 "repositoryUri": "http://localhost:4566",
                 "createdAt": datetime.time(),
@@ -49,20 +38,46 @@ class ECRRepository(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create_repo(resource_id, resources, resource_type, func, stack_name):
-            resource = resources[resource_id]
+        def _create_repo(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
             default_repos_per_stack[stack_name] = resource["Properties"]["RepositoryName"]
             LOG.warning(
                 "Creating a Mock ECR Repository for CloudFormation. This is only intended to be used for allowing a successful CDK bootstrap and does not provision any underlying ECR repository."
             )
 
-        def _delete_repo(resource_id, resources, resource_type, func, stack_name):
+        def _delete_repo(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
             if default_repos_per_stack.get(stack_name):
                 del default_repos_per_stack[stack_name]
+
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            repo_name = resource["Properties"]["RepositoryName"]
+            resource["PhysicalResourceId"] = arns.get_ecr_repository_arn(repo_name)
+
+            # add in some properties required for GetAtt and Ref
+            resource["Properties"]["Arn"] = arns.get_ecr_repository_arn(repo_name)
+            resource["Properties"]["RepositoryUri"] = "http://localhost:4566"
 
         return {
             "create": {
                 "function": _create_repo,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": _delete_repo,

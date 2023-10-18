@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -157,6 +151,7 @@ class CloudWatchRegion(str):
     us_iso_west_1 = "us-iso-west-1"
     us_isob_east_1 = "us-isob-east-1"
     ap_southeast_4 = "ap-southeast-4"
+    il_central_1 = "il-central-1"
 
 
 class ComparisonOperator(str):
@@ -191,6 +186,10 @@ class HealthCheckType(str):
 class HostedZoneLimitType(str):
     MAX_RRSETS_BY_ZONE = "MAX_RRSETS_BY_ZONE"
     MAX_VPCS_ASSOCIATED_BY_ZONE = "MAX_VPCS_ASSOCIATED_BY_ZONE"
+
+
+class HostedZoneType(str):
+    PrivateHostedZone = "PrivateHostedZone"
 
 
 class InsufficientDataHealthStatus(str):
@@ -257,6 +256,7 @@ class ResourceRecordSetRegion(str):
     eu_south_1 = "eu-south-1"
     eu_south_2 = "eu-south-2"
     ap_southeast_4 = "ap-southeast-4"
+    il_central_1 = "il-central-1"
 
 
 class ReusableDelegationSetLimitType(str):
@@ -310,6 +310,7 @@ class VPCRegion(str):
     eu_south_1 = "eu-south-1"
     eu_south_2 = "eu-south-2"
     ap_southeast_4 = "ap-southeast-4"
+    il_central_1 = "il-central-1"
 
 
 class CidrBlockInUseException(ServiceException):
@@ -1609,6 +1610,7 @@ class ListHostedZonesRequest(ServiceRequest):
     Marker: Optional[PageMarker]
     MaxItems: Optional[PageMaxItems]
     DelegationSetId: Optional[ResourceId]
+    HostedZoneType: Optional[HostedZoneType]
 
 
 class ListHostedZonesResponse(TypedDict, total=False):
@@ -2261,6 +2263,7 @@ class Route53Api:
         marker: PageMarker = None,
         max_items: PageMaxItems = None,
         delegation_set_id: ResourceId = None,
+        hosted_zone_type: HostedZoneType = None,
     ) -> ListHostedZonesResponse:
         raise NotImplementedError
 

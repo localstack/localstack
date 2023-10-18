@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 from typing import Dict, List, Optional
 from urllib.parse import quote
@@ -26,8 +27,10 @@ from localstack.aws.api.iam import (
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserResponse,
     IamApi,
+    InvalidInputException,
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
+    MalformedPolicyDocumentException,
     NoSuchEntityException,
     PolicyEvaluationDecisionType,
     ResourceHandlingOptionType,
@@ -54,9 +57,9 @@ from localstack.aws.api.iam import (
     tagListType,
     userNameType,
 )
+from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.moto import call_moto
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
@@ -88,6 +91,8 @@ ADDITIONAL_MANAGED_POLICIES = {
     }
 }
 
+POLICY_ARN_REGEX = re.compile(r"arn:[^:]+:iam::(?:\d{12}|aws):policy/.*")
+
 
 def get_iam_backend(context: RequestContext) -> IAMBackend:
     return iam_backends[context.account_id]["global"]
@@ -101,12 +106,13 @@ class IamProvider(IamApi):
     def create_role(
         self, context: RequestContext, request: CreateRoleRequest
     ) -> CreateRoleResponse:
+        try:
+            json.loads(request["AssumeRolePolicyDocument"])
+        except json.JSONDecodeError:
+            raise MalformedPolicyDocumentException("This policy contains invalid Json")
         result = call_moto(context)
 
         if not request.get("MaxSessionDuration") and result["Role"].get("MaxSessionDuration"):
-            backend = get_iam_backend(context)
-            role = backend.get_role(request["RoleName"])
-            role.max_session_duration = None
             result["Role"].pop("MaxSessionDuration")
 
         if "RoleLastUsed" in result["Role"] and not result["Role"]["RoleLastUsed"]:
@@ -225,6 +231,8 @@ class IamProvider(IamApi):
         response_roles = []
         for moto_role in moto_roles:
             response_role = self.moto_role_to_role_type(moto_role)
+            # Permission boundary should not be a part of the response
+            response_role.pop("PermissionsBoundary", None)
             response_roles.append(response_role)
             if (
                 path_prefix
@@ -382,11 +390,10 @@ class IamProvider(IamApi):
         # if the user does not exist or is no user
         if not moto_user and not user_name:
             access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
-            sts_client = aws_stack.connect_to_service(
-                "sts",
+            sts_client = connect_to(
                 aws_access_key_id=access_key_id,
                 aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-            )
+            ).sts
             caller_identity = sts_client.get_caller_identity()
             caller_arn = caller_identity["Arn"]
             if caller_arn.endswith(":root"):
@@ -411,6 +418,20 @@ class IamProvider(IamApi):
             )
 
         return response
+
+    def attach_role_policy(
+        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
+    ) -> None:
+        if not POLICY_ARN_REGEX.match(policy_arn):
+            raise InvalidInputException(f"ARN {policy_arn} is not valid.")
+        return call_moto(context=context)
+
+    def attach_user_policy(
+        self, context: RequestContext, user_name: userNameType, policy_arn: arnType
+    ) -> None:
+        if not POLICY_ARN_REGEX.match(policy_arn):
+            raise InvalidInputException(f"ARN {policy_arn} is not valid.")
+        return call_moto(context=context)
 
     # def get_user(
     #     self, context: RequestContext, user_name: existingUserNameType = None

@@ -51,9 +51,11 @@ from localstack.aws.api.cloudformation import (
     ListStacksOutput,
     LogicalResourceId,
     NextToken,
+    Parameter,
     PhysicalResourceId,
     RegisterTypeInput,
     RegisterTypeOutput,
+    RetainExceptOnCreate,
     RetainResources,
     RoleARN,
     StackName,
@@ -70,7 +72,9 @@ from localstack.aws.api.cloudformation import (
     ValidateTemplateInput,
     ValidateTemplateOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
+from localstack.services.cloudformation.engine import parameters as param_resolver
 from localstack.services.cloudformation.engine import template_deployer, template_preparer
 from localstack.services.cloudformation.engine.entities import (
     Stack,
@@ -78,16 +82,17 @@ from localstack.services.cloudformation.engine.entities import (
     StackInstance,
     StackSet,
 )
+from localstack.services.cloudformation.engine.parameters import strip_parameter_type
 from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
 from localstack.services.cloudformation.engine.template_preparer import (
     FailedTransformationException,
 )
+from localstack.services.cloudformation.engine.template_utils import resolve_stack_conditions
 from localstack.services.cloudformation.stores import (
     find_change_set,
     find_stack,
     get_cloudformation_store,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.collections import (
     remove_attributes,
     select_attributes,
@@ -153,7 +158,7 @@ class CloudformationProvider(CloudformationApi):
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
 
         # TODO: test what happens when both TemplateUrl and Body are specified
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         template_body = request.get("TemplateBody") or ""
         if len(template_body) > 51200:
             raise ValidationError(
@@ -187,13 +192,32 @@ class CloudformationProvider(CloudformationApi):
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
-        parameters = template_preparer.resolve_parameters(
-            template.get("Parameters", {}), request.get("Parameters", [])
+        # resolve stack parameters
+        new_parameters = param_resolver.convert_stack_parameters_to_dict(request.get("Parameters"))
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
+        resolved_parameters = param_resolver.resolve_parameters(
+            account_id=context.account_id,
+            region_name=context.region,
+            parameter_declarations=parameter_declarations,
+            new_parameters=new_parameters,
+            old_parameters={},
         )
 
+        # handle conditions
         stack = Stack(request, template)
+
         try:
-            template = template_preparer.transform_template(template, parameters, stack=stack)
+            template = template_preparer.transform_template(
+                context.account_id,
+                context.region,
+                template,
+                list(resolved_parameters.values()),
+                stack.stack_name,
+                stack.resources,
+                stack.mappings,
+                {},  # TODO
+                resolved_parameters,
+            )
         except FailedTransformationException as e:
             stack.add_stack_event(
                 stack.stack_name,
@@ -206,6 +230,20 @@ class CloudformationProvider(CloudformationApi):
             return CreateStackOutput(StackId=stack.stack_id)
 
         stack = Stack(request, template)
+
+        # resolve conditions
+        raw_conditions = template.get("Conditions", {})
+        resolved_stack_conditions = resolve_stack_conditions(
+            account_id=context.account_id,
+            region_name=context.region,
+            conditions=raw_conditions,
+            parameters=resolved_parameters,
+            mappings=stack.mappings,
+            stack_name=stack_name,
+        )
+        stack.set_resolved_stack_conditions(resolved_stack_conditions)
+
+        stack.set_resolved_parameters(resolved_parameters)
         stack.template_body = json.dumps(template)
         state.stacks[stack.stack_id] = stack
         LOG.debug(
@@ -213,7 +251,7 @@ class CloudformationProvider(CloudformationApi):
             stack.stack_name,
             len(stack.template_resources),
         )
-        deployer = template_deployer.TemplateDeployer(stack)
+        deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         try:
             deployer.deploy_stack()
         except Exception as e:
@@ -233,8 +271,8 @@ class CloudformationProvider(CloudformationApi):
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
     ) -> None:
-        stack = find_stack(stack_name)
-        deployer = template_deployer.TemplateDeployer(stack)
+        stack = find_stack(context.account_id, context.region, stack_name)
+        deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         deployer.delete_stack()
 
     @handler("UpdateStack", expand=False)
@@ -244,7 +282,7 @@ class CloudformationProvider(CloudformationApi):
         request: UpdateStackInput,
     ) -> UpdateStackOutput:
         stack_name = request.get("StackName")
-        stack = find_stack(stack_name)
+        stack = find_stack(context.account_id, context.region, stack_name)
         if not stack:
             return not_found_error(f'Unable to update non-existing stack "{stack_name}"')
 
@@ -259,12 +297,39 @@ class CloudformationProvider(CloudformationApi):
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
-        parameters = template_preparer.resolve_parameters(
-            template.get("Parameters", {}), request.get("Parameters", [])
+        new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
+            request.get("Parameters")
+        )
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
+        resolved_parameters = param_resolver.resolve_parameters(
+            account_id=context.account_id,
+            region_name=context.region,
+            parameter_declarations=parameter_declarations,
+            new_parameters=new_parameters,
+            old_parameters=stack.resolved_parameters,
+        )
+
+        resolved_stack_conditions = resolve_stack_conditions(
+            account_id=context.account_id,
+            region_name=context.region,
+            conditions=template.get("Conditions", {}),
+            parameters=resolved_parameters,
+            mappings=template.get("Mappings", {}),
+            stack_name=stack_name,
         )
 
         try:
-            template = template_preparer.transform_template(template, parameters, stack=stack)
+            template = template_preparer.transform_template(
+                context.account_id,
+                context.region,
+                template,
+                list(resolved_parameters.values()),
+                stack.stack_name,
+                stack.resources,
+                stack.mappings,
+                resolved_stack_conditions,
+                resolved_parameters,
+            )
         except FailedTransformationException as e:
             stack.add_stack_event(
                 stack.stack_name,
@@ -275,8 +340,12 @@ class CloudformationProvider(CloudformationApi):
             stack.set_stack_status("ROLLBACK_COMPLETE")
             return CreateStackOutput(StackId=stack.stack_id)
 
-        deployer = template_deployer.TemplateDeployer(stack)
+        deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
+        # TODO: there shouldn't be a "new" stack on update
         new_stack = Stack(request, template)
+        new_stack.set_resolved_parameters(resolved_parameters)
+        stack.set_resolved_parameters(resolved_parameters)
+        stack.set_resolved_stack_conditions(resolved_stack_conditions)
         try:
             deployer.update_stack(new_stack)
         except Exception as e:
@@ -291,7 +360,7 @@ class CloudformationProvider(CloudformationApi):
     def describe_stacks(
         self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
     ) -> DescribeStacksOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         stack_list = list(state.stacks.values())
         stacks = [
             s.describe_details()
@@ -311,7 +380,7 @@ class CloudformationProvider(CloudformationApi):
         next_token: NextToken = None,
         stack_status_filter: StackStatusFilter = None,
     ) -> ListStacksOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
 
         stacks = [
             s.describe_details()
@@ -343,12 +412,12 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId = None,
         template_stage: TemplateStage = None,
     ) -> GetTemplateOutput:
-
-        stack = None
         if change_set_name:
-            stack = find_change_set(stack_name=stack_name, cs_name=change_set_name)
+            stack = find_change_set(
+                context.account_id, context.region, stack_name=stack_name, cs_name=change_set_name
+            )
         else:
-            stack = find_stack(stack_name)
+            stack = find_stack(context.account_id, context.region, stack_name)
         if not stack:
             return stack_not_found_error(stack_name)
 
@@ -366,9 +435,10 @@ class CloudformationProvider(CloudformationApi):
         stack_name = request.get("StackName")
 
         if stack_name:
-            stack = find_stack(stack_name)
+            stack = find_stack(context.account_id, context.region, stack_name)
             if not stack:
                 return stack_not_found_error(stack_name)
+            template = stack.template
         else:
             api_utils.prepare_template_body(request)
             template = template_preparer.parse_template(request["TemplateBody"])
@@ -376,7 +446,12 @@ class CloudformationProvider(CloudformationApi):
             stack = Stack(request, template)
 
         result: GetTemplateSummaryOutput = stack.describe_details()
-        result["Parameters"] = result.get("Parameters") or []
+
+        # build parameter declarations
+        result["Parameters"] = list(
+            param_resolver.extract_stack_parameter_declarations(template).values()
+        )
+
         id_summaries = defaultdict(list)
         for resource_id, resource in stack.template_resources.items():
             res_type = resource["Type"]
@@ -400,7 +475,7 @@ class CloudformationProvider(CloudformationApi):
         enable_termination_protection: EnableTerminationProtection,
         stack_name: StackNameOrId,
     ) -> UpdateTerminationProtectionOutput:
-        stack = find_stack(stack_name)
+        stack = find_stack(context.account_id, context.region, stack_name)
         if not stack:
             raise ValidationError(f"Stack '{stack_name}' does not exist.")
         stack.metadata["EnableTerminationProtection"] = enable_termination_protection
@@ -418,7 +493,7 @@ class CloudformationProvider(CloudformationApi):
         # s3 or secretsmanager url
         template_url = req_params.get("TemplateURL")
 
-        stack = find_stack(stack_name)
+        stack = find_stack(context.account_id, context.region, stack_name)
 
         # validate and resolve template
         if template_body and template_url:
@@ -444,14 +519,18 @@ class CloudformationProvider(CloudformationApi):
         template["StackName"] = stack_name
         # TODO: validate with AWS what this is actually doing?
         template["ChangeSetName"] = change_set_name
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
 
+        old_parameters: dict[str, Parameter] = {}
         if change_set_type == "UPDATE":
             # add changeset to existing stack
             if stack is None:
                 raise ValidationError(
                     f"Stack '{stack_name}' does not exist."
                 )  # stack should exist already
+            old_parameters = {
+                k: strip_parameter_type(v) for k, v in stack.resolved_parameters.items()
+            }
         elif change_set_type == "CREATE":
             # create new (empty) stack
             if stack is not None:
@@ -477,15 +556,62 @@ class CloudformationProvider(CloudformationApi):
             )
             raise ValidationError(msg)
 
-        # apply template transformations
-        parameters = template_preparer.resolve_parameters(
-            template.get("Parameters", {}), request.get("Parameters", [])
+        # resolve parameters
+        new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
+            request.get("Parameters")
         )
-        template = template_preparer.transform_template(template, parameters, stack=stack)
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
+        resolved_parameters = param_resolver.resolve_parameters(
+            account_id=context.account_id,
+            region_name=context.region,
+            parameter_declarations=parameter_declarations,
+            new_parameters=new_parameters,
+            old_parameters=old_parameters,
+        )
+
+        parameters = list(resolved_parameters.values())
+
+        # TODO: remove this when fixing Stack.resources and transformation order
+        #   currently we need to create a stack with existing resources + parameters so that resolve refs recursively in here will work.
+        #   The correct way to do it would be at a later stage anyway just like a normal intrinsic function
+        req_params_copy = clone_stack_params(req_params)
+        temp_stack = Stack(req_params_copy, template)
+        temp_stack.set_resolved_parameters(resolved_parameters)
+
+        # TODO: everything below should be async
+        # apply template transformations
+        transformed_template = template_preparer.transform_template(
+            context.account_id,
+            context.region,
+            template,
+            parameters,
+            stack_name=temp_stack.stack_name,
+            resources=temp_stack.resources,
+            mappings=temp_stack.mappings,
+            conditions={},  # TODO: we don't have any resolved conditions yet at this point but we need the conditions because of the samtranslator...
+            resolved_parameters=resolved_parameters,
+        )
 
         # create change set for the stack and apply changes
-        change_set = StackChangeSet(stack, req_params, template)
-        deployer = template_deployer.TemplateDeployer(change_set)
+        change_set = StackChangeSet(stack, req_params, transformed_template)
+        # only set parameters for the changeset, then switch to stack on execute_change_set
+        change_set.set_resolved_parameters(resolved_parameters)
+
+        # TODO: evaluate conditions
+        raw_conditions = transformed_template.get("Conditions", {})
+        resolved_stack_conditions = resolve_stack_conditions(
+            account_id=context.account_id,
+            region_name=context.region,
+            conditions=raw_conditions,
+            parameters=resolved_parameters,
+            mappings=temp_stack.mappings,
+            stack_name=stack_name,
+        )
+        change_set.set_resolved_stack_conditions(resolved_stack_conditions)
+
+        deployer = template_deployer.TemplateDeployer(
+            context.account_id, context.region, change_set
+        )
         changes = deployer.construct_changes(
             stack,
             change_set,
@@ -493,9 +619,6 @@ class CloudformationProvider(CloudformationApi):
             append_to_changeset=True,
             filter_unchanged_resources=True,
         )
-        deployer.apply_parameter_changes(
-            change_set, change_set
-        )  # TODO: bandaid to populate metadata
         stack.change_sets.append(change_set)
         if not changes:
             change_set.metadata["Status"] = "FAILED"
@@ -529,11 +652,13 @@ class CloudformationProvider(CloudformationApi):
                     "StackName must be specified if ChangeSetName is not specified as an ARN."
                 )
 
-            stack = find_stack(stack_name)
+            stack = find_stack(context.account_id, context.region, stack_name)
             if not stack:
                 raise ValidationError(f"Stack [{stack_name}] does not exist")
 
-        change_set = find_change_set(change_set_name, stack_name=stack_name)
+        change_set = find_change_set(
+            context.account_id, context.region, change_set_name, stack_name=stack_name
+        )
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
@@ -546,6 +671,8 @@ class CloudformationProvider(CloudformationApi):
             "Transform",
         ]
         result = remove_attributes(deepcopy(change_set.metadata), attrs)
+        # TODO: replace this patch with a better solution
+        result["Parameters"] = [strip_parameter_type(p) for p in result.get("Parameters", [])]
         return result
 
     @handler("DeleteChangeSet")
@@ -563,11 +690,13 @@ class CloudformationProvider(CloudformationApi):
                     "StackName must be specified if ChangeSetName is not specified as an ARN."
                 )
 
-            stack = find_stack(stack_name)
+            stack = find_stack(context.account_id, context.region, stack_name)
             if not stack:
                 raise ValidationError(f"Stack [{stack_name}] does not exist")
 
-        change_set = find_change_set(change_set_name, stack_name=stack_name)
+        change_set = find_change_set(
+            context.account_id, context.region, change_set_name, stack_name=stack_name
+        )
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         change_set.stack.change_sets = [
@@ -585,8 +714,11 @@ class CloudformationProvider(CloudformationApi):
         stack_name: StackNameOrId = None,
         client_request_token: ClientRequestToken = None,
         disable_rollback: DisableRollback = None,
+        retain_except_on_create: RetainExceptOnCreate = None,
     ) -> ExecuteChangeSetOutput:
-        change_set = find_change_set(change_set_name, stack_name=stack_name)
+        change_set = find_change_set(
+            context.account_id, context.region, change_set_name, stack_name=stack_name
+        )
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         if change_set.metadata.get("ExecutionStatus") != ExecutionStatus.AVAILABLE:
@@ -601,7 +733,9 @@ class CloudformationProvider(CloudformationApi):
             stack_name,
             len(change_set.template_resources),
         )
-        deployer = template_deployer.TemplateDeployer(change_set.stack)
+        deployer = template_deployer.TemplateDeployer(
+            context.account_id, context.region, change_set.stack
+        )
         try:
             deployer.apply_change_set(change_set)
             change_set.stack.metadata["ChangeSetId"] = change_set.change_set_id
@@ -615,7 +749,7 @@ class CloudformationProvider(CloudformationApi):
     def list_change_sets(
         self, context: RequestContext, stack_name: StackNameOrId, next_token: NextToken = None
     ) -> ListChangeSetsOutput:
-        stack = find_stack(stack_name)
+        stack = find_stack(context.account_id, context.region, stack_name)
         if not stack:
             return not_found_error(f'Unable to find stack "{stack_name}"')
         result = [cs.metadata for cs in stack.change_sets]
@@ -625,14 +759,14 @@ class CloudformationProvider(CloudformationApi):
     def list_exports(
         self, context: RequestContext, next_token: NextToken = None
     ) -> ListExportsOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         return ListExportsOutput(Exports=state.exports)
 
     @handler("ListImports")
     def list_imports(
         self, context: RequestContext, export_name: ExportName, next_token: NextToken = None
     ) -> ListImportsOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
 
         importing_stack_names = []
         for stack in state.stacks.values():
@@ -645,7 +779,7 @@ class CloudformationProvider(CloudformationApi):
     def describe_stack_events(
         self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
     ) -> DescribeStackEventsOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
 
         events = []
         for stack_id, stack in state.stacks.items():
@@ -658,7 +792,7 @@ class CloudformationProvider(CloudformationApi):
     def describe_stack_resource(
         self, context: RequestContext, stack_name: StackName, logical_resource_id: LogicalResourceId
     ) -> DescribeStackResourceOutput:
-        stack = find_stack(stack_name)
+        stack = find_stack(context.account_id, context.region, stack_name)
 
         if not stack:
             return stack_not_found_error(stack_name)
@@ -678,7 +812,7 @@ class CloudformationProvider(CloudformationApi):
         if physical_resource_id and stack_name:
             raise ValidationError("Cannot specify both StackName and PhysicalResourceId")
         # TODO: filter stack by PhysicalResourceId!
-        stack = find_stack(stack_name)
+        stack = find_stack(context.account_id, context.region, stack_name)
         if not stack:
             return stack_not_found_error(stack_name)
         statuses = [
@@ -737,7 +871,7 @@ class CloudformationProvider(CloudformationApi):
     def create_stack_set(
         self, context: RequestContext, request: CreateStackSetInput
     ) -> CreateStackSetOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         stack_set = StackSet(request)
         stack_set_id = f"{stack_set.stack_set_name}:{long_uid()}"
         stack_set.metadata["StackSetId"] = stack_set_id
@@ -753,7 +887,7 @@ class CloudformationProvider(CloudformationApi):
         operation_id: ClientRequestToken,
         call_as: CallAs = None,
     ) -> DescribeStackSetOperationOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
 
         set_name = stack_set_name
 
@@ -779,7 +913,7 @@ class CloudformationProvider(CloudformationApi):
     def describe_stack_set(
         self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
     ) -> DescribeStackSetOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         result = [
             sset.metadata
             for sset in state.stack_sets.values()
@@ -794,7 +928,7 @@ class CloudformationProvider(CloudformationApi):
     def list_stack_sets(
         self, context: RequestContext, request: ListStackSetsInput
     ) -> ListStackSetsOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         result = [sset.metadata for sset in state.stack_sets.values()]
         return ListStackSetsOutput(Summaries=result)
 
@@ -802,7 +936,7 @@ class CloudformationProvider(CloudformationApi):
     def update_stack_set(
         self, context: RequestContext, request: UpdateStackSetInput
     ) -> UpdateStackSetOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         set_name = request.get("StackSetName")
         stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
         if not stack_set:
@@ -823,7 +957,7 @@ class CloudformationProvider(CloudformationApi):
     def delete_stack_set(
         self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
     ) -> DeleteStackSetOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         stack_set = [
             sset for sset in state.stack_sets.values() if sset.stack_set_name == stack_set_name
         ]
@@ -834,7 +968,9 @@ class CloudformationProvider(CloudformationApi):
         # TODO: add a check for remaining stack instances
 
         for instance in stack_set[0].stack_instances:
-            deployer = template_deployer.TemplateDeployer(instance.stack)
+            deployer = template_deployer.TemplateDeployer(
+                context.account_id, context.region, instance.stack
+            )
             deployer.delete_stack()
         return DeleteStackSetOutput()
 
@@ -844,7 +980,7 @@ class CloudformationProvider(CloudformationApi):
         context: RequestContext,
         request: CreateStackInstancesInput,
     ) -> CreateStackInstancesOutput:
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
 
         set_name = request.get("StackSetName")
         stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
@@ -862,19 +998,24 @@ class CloudformationProvider(CloudformationApi):
         for account in accounts:
             for region in regions:
                 # deploy new stack
-                LOG.debug('Deploying instance for stack set "%s" in region "%s"', set_name, region)
-                cf_client = aws_stack.connect_to_service("cloudformation", region_name=region)
+                LOG.debug(
+                    'Deploying instance for stack set "%s" in account: %s region %s',
+                    set_name,
+                    account,
+                    region,
+                )
+                cf_client = connect_to(aws_access_key_id=account, region_name=region).cloudformation
                 kwargs = select_attributes(sset_meta, ["TemplateBody"]) or select_attributes(
                     sset_meta, ["TemplateURL"]
                 )
                 stack_name = f"sset-{set_name}-{account}"
 
                 # skip creation of existing stacks
-                if find_stack(stack_name):
+                if find_stack(context.account_id, context.region, stack_name):
                     continue
 
                 result = cf_client.create_stack(StackName=stack_name, **kwargs)
-                stacks_to_await.append((stack_name, region))
+                stacks_to_await.append((stack_name, account, region))
                 # store stack instance
                 instance = {
                     "StackSetId": sset_meta["StackSetId"],
@@ -889,9 +1030,11 @@ class CloudformationProvider(CloudformationApi):
                 stack_set.stack_instances.append(instance)
 
         # wait for completion of stack
-        for stack in stacks_to_await:
-            client = aws_stack.connect_to_service("cloudformation", region_name=stack[1])
-            client.get_waiter("stack_create_complete").wait(StackName=stack[0])
+        for stack_name, account_id, region_name in stacks_to_await:
+            client = connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).cloudformation
+            client.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
         # record operation
         operation = {
@@ -911,7 +1054,7 @@ class CloudformationProvider(CloudformationApi):
         request: ListStackInstancesInput,
     ) -> ListStackInstancesOutput:
         set_name = request.get("StackSetName")
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
         if not stack_set:
             return not_found_error(f'Stack set named "{set_name}" does not exist')
@@ -931,7 +1074,7 @@ class CloudformationProvider(CloudformationApi):
         accounts = request["Accounts"]
         regions = request["Regions"]
 
-        state = get_cloudformation_store()
+        state = get_cloudformation_store(context.account_id, context.region)
         stack_sets = state.stack_sets.values()
 
         set_name = request.get("StackSetName")

@@ -9,40 +9,97 @@ import logging
 import re
 import threading
 from abc import ABC, abstractmethod
-from functools import cache, partial
+from functools import lru_cache, partial
 from typing import Any, Callable, Generic, Optional, TypedDict, TypeVar
 
 from boto3.session import Session
 from botocore.client import BaseClient
 from botocore.config import Config
+from botocore.waiter import Waiter
 
 from localstack import config as localstack_config
 from localstack.constants import (
+    AWS_REGION_US_EAST_1,
     INTERNAL_AWS_ACCESS_KEY_ID,
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
-    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.aws.aws_stack import get_local_service_url, get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.aws.request_context import get_region_from_request_context
+from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
 
+@patch(target=Waiter.wait, pass_target=True)
+def my_patch(fn, self, **kwargs):
+    """
+    We're patching defaults in here that will override the defaults specified in the waiter spec since these are usually way too long
+
+    Alternatively we could also try to find a solution where we patch the loader used in the generated clients
+    so that we can dynamically fix the waiter config when it's loaded instead of when it's being used for wait execution
+    """
+
+    if localstack_config.DISABLE_CUSTOM_BOTO_WAITER_CONFIG:
+        return fn(self, **kwargs)
+    else:
+        patched_kwargs = {
+            **kwargs,
+            "WaiterConfig": {
+                "Delay": localstack_config.BOTO_WAITER_DELAY,
+                "MaxAttempts": localstack_config.BOTO_WAITER_MAX_ATTEMPTS,
+                **kwargs.get(
+                    "WaiterConfig", {}
+                ),  # we still allow client users to override these defaults
+            },
+        }
+        return fn(self, **patched_kwargs)
+
+
+# patch the botocore.Config object to be comparable and hashable.
+# this solution does not validates the hashable (https://docs.python.org/3/glossary.html#term-hashable) definition on python
+# It would do so only when someone accesses the internals of the Config option to change the dict directly.
+# Since this is not a proper way to use the config object (but via config.merge), this should be fine
+def make_hash(o):
+    if isinstance(o, (set, tuple, list)):
+        return tuple([make_hash(e) for e in o])
+
+    elif not isinstance(o, dict):
+        return hash(o)
+
+    new_o = {}
+    for k, v in o.items():
+        new_o[k] = make_hash(v)
+
+    return hash(frozenset(sorted(new_o.items())))
+
+
+def config_equality_patch(self, other: object):
+    return type(self) == type(other) and self._user_provided_options == other._user_provided_options
+
+
+def config_hash_patch(self):
+    return make_hash(self._user_provided_options)
+
+
+Config.__eq__ = config_equality_patch
+Config.__hash__ = config_hash_patch
+
+
 def attribute_name_to_service_name(attribute_name):
     """
     Converts a python-compatible attribute name to the boto service name
-    :param attribute_name: Python compatible attribute name. In essential the service name, if it is a python keyword
-        prefixed by `aws`, and all `-` replaced by `_`.
+    :param attribute_name: Python compatible attribute name using the following replacements:
+                            a) Add an underscore suffix `_` to any reserved Python keyword (PEP-8).
+                            b) Replace any dash `-` with an underscore `_`
     :return:
     """
-    if attribute_name.startswith("aws"):
-        # remove aws prefix for services named like a keyword.
-        # Most notably, "awslambda" -> "lambda"
-        attribute_name = attribute_name[3:]
+    if attribute_name.endswith("_"):
+        # lambda_ -> lambda
+        attribute_name = attribute_name[:-1]
     # replace all _ with -: cognito_idp -> cognito-idp
     return attribute_name.replace("_", "-")
 
@@ -105,7 +162,7 @@ class MetadataRequestInjector(Generic[T]):
         self, source_arn: str | None = None, service_principal: str | None = None
     ) -> T:
         """
-        Provides request metadata to this client.
+        Returns a new client instance preset with the given request metadata.
         Identical to providing _ServicePrincipal and _SourceArn directly as operation arguments but typing
         compatible.
 
@@ -141,6 +198,11 @@ class ServiceLevelClientFactory(TypedServiceClientFactory):
     ):
         self._factory = factory
         self._client_creation_params = client_creation_params
+
+    def get_client(self, service: str):
+        return MetadataRequestInjector(
+            client=self._factory.get_client(service_name=service, **self._client_creation_params)
+        )
 
     def __getattr__(self, service: str):
         service = attribute_name_to_service_name(service)
@@ -282,10 +344,10 @@ class ClientFactory(ABC):
         """
         return client
 
-    # TODO @cache here might result in a memory leak, as it keeps a reference to `self`
+    # TODO @lru_cache here might result in a memory leak, as it keeps a reference to `self`
     # We might need an alternative caching decorator with a weak ref to `self`
     # Otherwise factories might never be garbage collected
-    @cache
+    @lru_cache(maxsize=256)
     def _get_client(
         self,
         service_name: str,
@@ -319,6 +381,12 @@ class ClientFactory(ABC):
         :return: Boto3 client.
         """
         with self._create_client_lock:
+            default_config = (
+                Config(retries={"max_attempts": 0})
+                if localstack_config.DISABLE_BOTO_RETRIES
+                else Config()
+            )
+
             client = self._session.client(
                 service_name=service_name,
                 region_name=region_name,
@@ -328,7 +396,7 @@ class ClientFactory(ABC):
                 aws_access_key_id=aws_access_key_id,
                 aws_secret_access_key=aws_secret_access_key,
                 aws_session_token=aws_session_token,
-                config=config,
+                config=config.merge(default_config),
             )
 
         return self._get_client_post_hook(client)
@@ -447,9 +515,9 @@ class ExternalClientFactory(ClientFactory):
         :param region_name: Name of the AWS region to be associated with the client
             If set to None, loads from botocore session.
         :param aws_access_key_id: Access key to use for the client.
-            Defaults to dummy value ("test")
+            If set to None, loads from botocore session.
         :param aws_secret_access_key: Secret key to use for the client.
-            Defaults to "dummy value ("test")
+            If set to None, uses a placeholder value
         :param aws_session_token: Session token to use for the client.
             Not being used if not set.
         :param endpoint_url: Full endpoint URL to be used by the client.
@@ -461,10 +529,23 @@ class ExternalClientFactory(ClientFactory):
         else:
             config = self._config.merge(config)
 
+        # Boto has an odd behaviour when using a non-default (any other region than us-east-1) in config
+        # If the region in arg is non-default, it gives the arg the precedence
+        # But if the region in arg is default (us-east-1), it gives precedence to one in config
+        # Below: always give precedence to arg region
+        if config and config.region_name != AWS_REGION_US_EAST_1:
+            if region_name == AWS_REGION_US_EAST_1:
+                config = config.merge(Config(region_name=region_name))
+
         endpoint_url = endpoint_url or get_local_service_url(service_name)
         if service_name == "s3":
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
+
+        # Prevent `PartialCredentialsError` when only access key ID is provided
+        # The value of secret access key is insignificant and can be set to anything
+        if aws_access_key_id:
+            aws_secret_access_key = aws_secret_access_key or TEST_AWS_SECRET_ACCESS_KEY
 
         return self._get_client(
             service_name=service_name,
@@ -472,8 +553,8 @@ class ExternalClientFactory(ClientFactory):
             use_ssl=self._use_ssl,
             verify=self._verify,
             endpoint_url=endpoint_url,
-            aws_access_key_id=aws_access_key_id or TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=aws_secret_access_key or TEST_AWS_SECRET_ACCESS_KEY,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
             config=config,
         )

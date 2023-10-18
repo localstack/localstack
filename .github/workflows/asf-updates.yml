@@ -10,20 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Open Source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up system wide dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install libsasl2-dev jq
+          sudo apt-get install jq
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.11
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Cache LocalStack community dependencies (venv)
         uses: actions/cache@v3
@@ -76,7 +76,7 @@ jobs:
           replace: ${{ steps.check-for-changes.outputs.changed-services }}
 
       - name: Create PR
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         with:
           title: "Update ASF APIs"
@@ -85,6 +85,6 @@ jobs:
           author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
           committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
           commit-message: "update generated ASF APIs to latest version"
-          labels: "area: asf, area: dependencies"
+          labels: "area: asf, area: dependencies, semver: patch"
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           reviewers: alexrashed

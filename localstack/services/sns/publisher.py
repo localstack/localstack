@@ -25,8 +25,8 @@ from localstack.services.sns.models import (
     SnsStore,
     SnsSubscription,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
     extract_region_from_arn,
     extract_resource_from_arn,
     parse_arn,
@@ -168,7 +168,7 @@ class LambdaTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
             region = extract_region_from_arn(subscriber["Endpoint"])
-            lambda_client = connect_to(region_name=region).awslambda.request_metadata(
+            lambda_client = connect_to(region_name=region).lambda_.request_metadata(
                 source_arn=subscriber["TopicArn"], service_principal="sns"
             )
             event = self.prepare_message(context.message, subscriber)
@@ -208,6 +208,7 @@ class LambdaTopicPublisher(TopicPublisher):
         external_url = external_service_url("sns")
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
         message_attributes = prepare_message_attributes(message_context.message_attributes)
+        region_name = extract_region_from_arn(subscriber["SubscriptionArn"])
         event = {
             "Records": [
                 {
@@ -225,7 +226,7 @@ class LambdaTopicPublisher(TopicPublisher):
                         # TODO Add a more sophisticated solution with an actual signature
                         # Hardcoded
                         "Signature": "EXAMPLEpH+..",
-                        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+                        "SigningCertUrl": f"https://sns.{region_name}.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
                         "UnsubscribeUrl": unsubscribe_url,
                         "MessageAttributes": message_attributes,
                     },
@@ -278,16 +279,22 @@ class SqsTopicPublisher(TopicPublisher):
         kwargs = {}
         if is_raw_message_delivery(subscriber) and msg_context.message_attributes:
             kwargs["MessageAttributes"] = msg_context.message_attributes
-        if msg_context.message_group_id:
-            kwargs["MessageGroupId"] = msg_context.message_group_id
-        if msg_context.message_deduplication_id:
-            kwargs["MessageDeduplicationId"] = msg_context.message_deduplication_id
-        elif subscriber["TopicArn"].endswith(".fifo"):
-            # Amazon SNS uses the message body provided to generate a unique hash value to use as the deduplication
-            # ID for each message, so you don't need to set a deduplication ID when you send each message.
-            # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
-            content = msg_context.message_content("sqs")
-            kwargs["MessageDeduplicationId"] = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+        # SNS now allows regular non-fifo subscriptions to FIFO topics. Validate that the subscription target is fifo
+        # before passing the FIFO-only parameters
+        if subscriber["Endpoint"].endswith(".fifo"):
+            if msg_context.message_group_id:
+                kwargs["MessageGroupId"] = msg_context.message_group_id
+            if msg_context.message_deduplication_id:
+                kwargs["MessageDeduplicationId"] = msg_context.message_deduplication_id
+            elif subscriber["TopicArn"].endswith(".fifo"):
+                # Amazon SNS uses the message body provided to generate a unique hash value to use as the deduplication
+                # ID for each message, so you don't need to set a deduplication ID when you send each message.
+                # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
+                content = msg_context.message_content("sqs")
+                kwargs["MessageDeduplicationId"] = hashlib.sha256(
+                    content.encode("utf-8")
+                ).hexdigest()
 
         # TODO: for message deduplication, we are using the underlying features of the SQS queue
         # however, SQS queue only deduplicate at the Queue level, where the SNS topic deduplicate on the topic level
@@ -326,10 +333,13 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
 
         try:
             queue_url = sqs_queue_url_for_arn(subscriber["Endpoint"])
+
+            account_id = extract_account_id_from_arn(subscriber["Endpoint"])
             region = extract_region_from_arn(subscriber["Endpoint"])
-            sqs_client = connect_to(region_name=region).sqs.request_metadata(
-                source_arn=subscriber["TopicArn"], service_principal="sns"
-            )
+
+            sqs_client = connect_to(
+                aws_access_key_id=account_id, region_name=region
+            ).sqs.request_metadata(source_arn=subscriber["TopicArn"], service_principal="sns")
             response = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=entries)
 
             for message_ctx in context.messages:
@@ -393,23 +403,24 @@ class HttpTopicPublisher(TopicPublisher):
         message_body = self.prepare_message(message_context, subscriber)
         try:
             message_headers = {
-                "Content-Type": "text/plain",
+                "Content-Type": "text/plain; charset=UTF-8",
+                "Accept-Encoding": "gzip,deflate",
+                "User-Agent": "Amazon Simple Notification Service Agent",
                 # AWS headers according to
                 # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
                 "x-amz-sns-message-type": message_context.type,
                 "x-amz-sns-message-id": message_context.message_id,
                 "x-amz-sns-topic-arn": subscriber["TopicArn"],
-                "User-Agent": "Amazon Simple Notification Service Agent",
             }
             if message_context.type != "SubscriptionConfirmation":
                 # while testing, never had those from AWS but the docs above states it should be there
                 message_headers["x-amz-sns-subscription-arn"] = subscriber["SubscriptionArn"]
 
-            # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
-            # indicating that the message has been published without JSON formatting.
-            # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-            elif message_context.type == "Notification" and is_raw_message_delivery(subscriber):
-                message_headers["x-amz-sns-rawdelivery"] = "true"
+                # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
+                # indicating that the message has been published without JSON formatting.
+                # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
+                if message_context.type == "Notification" and is_raw_message_delivery(subscriber):
+                    message_headers["x-amz-sns-rawdelivery"] = "true"
 
             response = requests.post(
                 subscriber["Endpoint"],
@@ -446,8 +457,9 @@ class EmailJsonTopicPublisher(TopicPublisher):
     """
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
+        account_id = extract_account_id_from_arn(subscriber["Endpoint"])
         region = extract_region_from_arn(subscriber["Endpoint"])
-        ses_client = connect_to(region_name=region).ses
+        ses_client = connect_to(aws_access_key_id=account_id, region_name=region).ses
         if endpoint := subscriber.get("Endpoint"):
             ses_client.verify_email_address(EmailAddress=endpoint)
             ses_client.verify_email_address(EmailAddress="admin@localstack.com")
@@ -544,9 +556,9 @@ class SmsTopicPublisher(TopicPublisher):
         context.store.sms_messages.append(event)
         LOG.info(
             "Delivering SMS message to %s: %s from topic: %s",
-            event["endpoint"],
-            event["message_content"],
-            event["topic_arn"],
+            event["PhoneNumber"],
+            event["Message"],
+            event["TopicArn"],
         )
 
         # MOCK DATA
@@ -563,9 +575,14 @@ class SmsTopicPublisher(TopicPublisher):
 
     def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription) -> dict:
         return {
-            "topic_arn": subscriber["TopicArn"],
-            "endpoint": subscriber["Endpoint"],
-            "message_content": message_context.message_content(subscriber["Protocol"]),
+            "PhoneNumber": subscriber["Endpoint"],
+            "TopicArn": subscriber["TopicArn"],
+            "SubscriptionArn": subscriber["SubscriptionArn"],
+            "MessageId": message_context.message_id,
+            "Message": message_context.message_content(protocol=subscriber["Protocol"]),
+            "MessageAttributes": message_context.message_attributes,
+            "MessageStructure": message_context.message_structure,
+            "Subject": message_context.subject,
         }
 
 
@@ -586,7 +603,8 @@ class FirehoseTopicPublisher(TopicPublisher):
                     role_arn=role_arn, service_principal=ServicePrincipal.sns, region_name=region
                 )
             else:
-                factory = connect_to(region_name=region)
+                account_id = extract_account_id_from_arn(subscriber["Endpoint"])
+                factory = connect_to(aws_access_key_id=account_id, region_name=region)
             firehose_client = factory.firehose.request_metadata(
                 source_arn=subscriber["TopicArn"], service_principal=ServicePrincipal.sns
             )
@@ -616,8 +634,8 @@ class SmsPhoneNumberPublisher(EndpointPublisher):
         context.store.sms_messages.append(event)
         LOG.info(
             "Delivering SMS message to %s: %s",
-            event["endpoint"],
-            event["message_content"],
+            event["PhoneNumber"],
+            event["Message"],
         )
 
         # TODO: check about delivery logs for individual call, need a real AWS test
@@ -625,9 +643,14 @@ class SmsPhoneNumberPublisher(EndpointPublisher):
 
     def prepare_message(self, message_context: SnsMessage, endpoint: str) -> dict:
         return {
-            "topic_arn": None,
-            "endpoint": endpoint,
-            "message_content": message_context.message_content("sms"),
+            "PhoneNumber": endpoint,
+            "TopicArn": None,
+            "SubscriptionArn": None,
+            "MessageId": message_context.message_id,
+            "Message": message_context.message_content(protocol="sms"),
+            "MessageAttributes": message_context.message_attributes,
+            "MessageStructure": message_context.message_structure,
+            "Subject": message_context.subject,
         }
 
 
@@ -705,7 +728,11 @@ def get_attributes_for_application_endpoint(endpoint_arn: str) -> Tuple[Dict, Di
     :param endpoint_arn:
     :return:
     """
-    sns_client = aws_stack.connect_to_service("sns")
+    account_id = extract_account_id_from_arn(endpoint_arn)
+    region_name = extract_region_from_arn(endpoint_arn)
+
+    sns_client = connect_to(aws_access_key_id=account_id, region_name=region_name).sns
+
     # TODO: we should access this from the moto store directly
     endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=endpoint_arn)
 
@@ -764,6 +791,7 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
     }
     # FIFO topics do not add the signature in the message
     if not subscriber.get("TopicArn", "").endswith(".fifo"):
+        region_name = extract_region_from_arn(subscriber["SubscriptionArn"])
         data.update(
             {
                 "SignatureVersion": "1",
@@ -771,7 +799,7 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
                 #  check KMS for providing real cert and how to serve them
                 # Hardcoded
                 "Signature": "EXAMPLEpH+..",
-                "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+                "SigningCertURL": f"https://sns.{region_name}.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             }
         )
     else:
@@ -862,7 +890,13 @@ def store_delivery_log(
 
     log_output = json.dumps(delivery_log)
 
-    return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
+    account_id = extract_account_id_from_arn(subscriber["TopicArn"])
+    region_name = extract_region_from_arn(subscriber["TopicArn"])
+    logs_client = connect_to(aws_access_key_id=account_id, region_name=region_name).logs
+
+    return store_cloudwatch_logs(
+        logs_client, log_group_name, log_stream_name, log_output, invocation_time
+    )
 
 
 def create_subscribe_url(external_url, topic_arn, subscription_token):
@@ -901,55 +935,29 @@ class SubscriptionFilter:
 
     def _evaluate_nested_filter_policy_on_dict(self, filter_policy, payload: dict) -> bool:
         """
-        This method evaluate the filter policy recursively, while still being able to validate the `exists` condition.
+        This method evaluates the filter policy against the JSON decoded payload.
+        Although it's not documented anywhere, AWS allows `.` in the fields name in the filter policy and the payload,
+        and will evaluate them. However, it's not JSONPath compatible:
         Example:
-        nested_filter_policy = {
-            "object": {
-                "key": [{"prefix": "auto-"}],
-                "nested_key": [{"exists": False}],
-            },
-            "test": [{"exists": False}],
-        }
-        payload = {
-            "object": {
-                "key": "auto-test",
-            }
-        }
-        This function then iterates on top level keys of the filter policy: ("object", "test")
-        The value of "object" is a dict, we need to evaluate this level of the filter policy.
-        We pass the nested property values (the dict) as well as the values of the payload's field to the recursive
-        function, to evaluate the conditions on the same level of depth.
-        We now have these parameters to the function:
-        filter_policy = {
-            "key": [{"prefix": "auto-"}],
-            "nested_key": [{"exists": False}],
-        }
-        payload = {
-            "key": "auto-test",
-        }
-        We can now properly evaluate the conditions on the same level of depth in the dict object.
-        As it passes the filter policy, we then continue to evaluate the top keys, going back to "test".
+        Policy: `{"field1.field2": "value1"}`
+        This policy will match both `{"field1.field2": "value1"}` and  {"field1: {"field2": "value1"}}`, unlike JSONPath
+        for which `.` points to a child node.
+        This might show they are flattening the both dictionaries to a single level for an easier matching without
+        recursion.
         :param filter_policy: a dict, starting at the FilterPolicy
         :param payload: a dict, starting at the MessageBody
         :return: True if the payload respect the filter policy, otherwise False
         """
-        for field_name, values in filter_policy.items():
-            # if values is not a dict, then it's a nested property
-            if not isinstance(values, list):
-                if not self._evaluate_nested_filter_policy_on_dict(
-                    values, payload.get(field_name, {})
-                ):
-                    return False
-            else:
-                # else, values represents the list of conditions of the filter policy
-                if not any(
-                    self._evaluate_condition(
-                        payload.get(field_name), condition, field_exists=field_name in payload
-                    )
-                    for condition in values
-                ):
-                    return False
-
+        flat_policy = self._flatten_dict(filter_policy)
+        flat_payload = self._flatten_dict(payload)
+        for key, values in flat_policy.items():
+            if not any(
+                self._evaluate_condition(
+                    flat_payload.get(key), condition, field_exists=key in flat_payload
+                )
+                for condition in values
+            ):
+                return False
         return True
 
     def _evaluate_filter_policy_conditions_on_attribute(
@@ -977,16 +985,9 @@ class SubscriptionFilter:
 
         return False
 
-    def _evaluate_filter_policy_conditions_on_field(self, conditions, value, field_exists: bool):
-        for condition in conditions:
-            if self._evaluate_condition(value, condition, field_exists):
-                return True
-
-        return False
-
     def _evaluate_condition(self, value, condition, field_exists: bool):
         if not isinstance(condition, dict):
-            return value == condition
+            return field_exists and value == condition
         elif (must_exist := condition.get("exists")) is not None:
             # if must_exists is True then field_exists must be True
             # if must_exists is False then fields_exists must be False
@@ -1032,6 +1033,33 @@ class SubscriptionFilter:
                     return False
 
         return True
+
+    @staticmethod
+    def _flatten_dict(nested_dict: dict):
+        """
+        Takes a dictionary as input and will output the dictionary on a single level.
+        Input:
+        `{"field1": {"field2: {"field3: "val1", "field4": "val2"}}}`
+        Output:
+        `{
+            "field1.field2.field3": "val1",
+            "field1.field2.field4": "val1"
+        }`
+        :param nested_dict: a (nested) dictionary
+        :return: flatten_dict: a dictionary with no nested dict inside, flattened to a single level
+        """
+        flatten = {}
+
+        def _traverse(_policy: dict, parent_key=None):
+            for key, values in _policy.items():
+                pkey = key if not parent_key else f"{parent_key}.{key}"
+                if not isinstance(values, dict):
+                    flatten[pkey] = values
+                else:
+                    _traverse(values, parent_key=pkey)
+
+        _traverse(nested_dict)
+        return flatten
 
 
 class PublishDispatcher:

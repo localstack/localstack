@@ -1,17 +1,13 @@
-import sys
 from datetime import datetime
-from typing import List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 AuthenticationProfileNameString = str
 Boolean = bool
 BooleanOptional = bool
+CustomDomainCertificateArnString = str
+CustomDomainNameString = str
 Double = float
 DoubleOptional = float
 Integer = int
@@ -372,6 +368,18 @@ class CopyToRegionDisabledFault(ServiceException):
     code: str = "CopyToRegionDisabledFault"
     sender_fault: bool = True
     status_code: int = 400
+
+
+class CustomCnameAssociationFault(ServiceException):
+    code: str = "CustomCnameAssociationFault"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class CustomDomainAssociationNotFoundFault(ServiceException):
+    code: str = "CustomDomainAssociationNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class DependentServiceRequestThrottlingFault(ServiceException):
@@ -1035,6 +1043,23 @@ class ClusterAssociatedToSchedule(TypedDict, total=False):
 
 
 AssociatedClusterList = List[ClusterAssociatedToSchedule]
+
+
+class CertificateAssociation(TypedDict, total=False):
+    CustomDomainName: Optional[String]
+    ClusterIdentifier: Optional[String]
+
+
+CertificateAssociationList = List[CertificateAssociation]
+
+
+class Association(TypedDict, total=False):
+    CustomDomainCertificateArn: Optional[String]
+    CustomDomainCertificateExpiryDate: Optional[TStamp]
+    CertificateAssociations: Optional[CertificateAssociationList]
+
+
+AssociationList = List[Association]
 AttributeNameList = List[String]
 
 
@@ -1428,6 +1453,9 @@ class Cluster(TypedDict, total=False):
     AquaConfiguration: Optional[AquaConfiguration]
     DefaultIamRoleArn: Optional[String]
     ReservedNodeExchangeStatus: Optional[ReservedNodeExchangeStatus]
+    CustomDomainName: Optional[String]
+    CustomDomainCertificateArn: Optional[String]
+    CustomDomainCertificateExpiryDate: Optional[TStamp]
 
 
 class ClusterCredentials(TypedDict, total=False):
@@ -1678,6 +1706,19 @@ class CreateClusterSubnetGroupResult(TypedDict, total=False):
     ClusterSubnetGroup: Optional[ClusterSubnetGroup]
 
 
+class CreateCustomDomainAssociationMessage(ServiceRequest):
+    CustomDomainName: CustomDomainNameString
+    CustomDomainCertificateArn: CustomDomainCertificateArnString
+    ClusterIdentifier: String
+
+
+class CreateCustomDomainAssociationResult(TypedDict, total=False):
+    CustomDomainName: Optional[CustomDomainNameString]
+    CustomDomainCertificateArn: Optional[CustomDomainCertificateArnString]
+    ClusterIdentifier: Optional[String]
+    CustomDomainCertExpiryTime: Optional[String]
+
+
 class CreateEndpointAccessMessage(ServiceRequest):
     ClusterIdentifier: Optional[String]
     ResourceOwner: Optional[String]
@@ -1834,6 +1875,11 @@ class CreateUsageLimitMessage(ServiceRequest):
     Tags: Optional[TagList]
 
 
+class CustomDomainAssociationsMessage(TypedDict, total=False):
+    Marker: Optional[String]
+    Associations: Optional[AssociationList]
+
+
 class CustomerStorageMessage(TypedDict, total=False):
     TotalBackupSizeInMegaBytes: Optional[Double]
     TotalProvisionedStorageInMegaBytes: Optional[Double]
@@ -1906,6 +1952,10 @@ class DeleteClusterSnapshotResult(TypedDict, total=False):
 
 class DeleteClusterSubnetGroupMessage(ServiceRequest):
     ClusterSubnetGroupName: String
+
+
+class DeleteCustomDomainAssociationMessage(ServiceRequest):
+    ClusterIdentifier: String
 
 
 class DeleteEndpointAccessMessage(ServiceRequest):
@@ -2043,6 +2093,13 @@ class DescribeClustersMessage(ServiceRequest):
     Marker: Optional[String]
     TagKeys: Optional[TagKeyList]
     TagValues: Optional[TagValueList]
+
+
+class DescribeCustomDomainAssociationsMessage(ServiceRequest):
+    CustomDomainName: Optional[CustomDomainNameString]
+    CustomDomainCertificateArn: Optional[CustomDomainCertificateArnString]
+    MaxRecords: Optional[IntegerOptional]
+    Marker: Optional[String]
 
 
 class DescribeDataSharesForConsumerMessage(ServiceRequest):
@@ -2462,16 +2519,18 @@ class EventsMessage(TypedDict, total=False):
 class GetClusterCredentialsMessage(ServiceRequest):
     DbUser: String
     DbName: Optional[String]
-    ClusterIdentifier: String
+    ClusterIdentifier: Optional[String]
     DurationSeconds: Optional[IntegerOptional]
     AutoCreate: Optional[BooleanOptional]
     DbGroups: Optional[DbGroupList]
+    CustomDomainName: Optional[String]
 
 
 class GetClusterCredentialsWithIAMMessage(ServiceRequest):
     DbName: Optional[String]
-    ClusterIdentifier: String
+    ClusterIdentifier: Optional[String]
     DurationSeconds: Optional[IntegerOptional]
+    CustomDomainName: Optional[String]
 
 
 class GetReservedNodeExchangeConfigurationOptionsInputMessage(ServiceRequest):
@@ -2673,6 +2732,19 @@ class ModifyClusterSubnetGroupMessage(ServiceRequest):
 
 class ModifyClusterSubnetGroupResult(TypedDict, total=False):
     ClusterSubnetGroup: Optional[ClusterSubnetGroup]
+
+
+class ModifyCustomDomainAssociationMessage(ServiceRequest):
+    CustomDomainName: Optional[CustomDomainNameString]
+    CustomDomainCertificateArn: Optional[CustomDomainCertificateArnString]
+    ClusterIdentifier: String
+
+
+class ModifyCustomDomainAssociationResult(TypedDict, total=False):
+    CustomDomainName: Optional[CustomDomainNameString]
+    CustomDomainCertificateArn: Optional[CustomDomainCertificateArnString]
+    ClusterIdentifier: Optional[String]
+    CustomDomainCertExpiryTime: Optional[String]
 
 
 class ModifyEndpointAccessMessage(ServiceRequest):
@@ -3246,6 +3318,16 @@ class RedshiftApi:
     ) -> CreateClusterSubnetGroupResult:
         raise NotImplementedError
 
+    @handler("CreateCustomDomainAssociation")
+    def create_custom_domain_association(
+        self,
+        context: RequestContext,
+        custom_domain_name: CustomDomainNameString,
+        custom_domain_certificate_arn: CustomDomainCertificateArnString,
+        cluster_identifier: String,
+    ) -> CreateCustomDomainAssociationResult:
+        raise NotImplementedError
+
     @handler("CreateEndpointAccess")
     def create_endpoint_access(
         self,
@@ -3399,6 +3481,12 @@ class RedshiftApi:
     @handler("DeleteClusterSubnetGroup")
     def delete_cluster_subnet_group(
         self, context: RequestContext, cluster_subnet_group_name: String
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteCustomDomainAssociation")
+    def delete_custom_domain_association(
+        self, context: RequestContext, cluster_identifier: String
     ) -> None:
         raise NotImplementedError
 
@@ -3585,6 +3673,17 @@ class RedshiftApi:
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
     ) -> ClustersMessage:
+        raise NotImplementedError
+
+    @handler("DescribeCustomDomainAssociations")
+    def describe_custom_domain_associations(
+        self,
+        context: RequestContext,
+        custom_domain_name: CustomDomainNameString = None,
+        custom_domain_certificate_arn: CustomDomainCertificateArnString = None,
+        max_records: IntegerOptional = None,
+        marker: String = None,
+    ) -> CustomDomainAssociationsMessage:
         raise NotImplementedError
 
     @handler("DescribeDataShares")
@@ -3925,11 +4024,12 @@ class RedshiftApi:
         self,
         context: RequestContext,
         db_user: String,
-        cluster_identifier: String,
         db_name: String = None,
+        cluster_identifier: String = None,
         duration_seconds: IntegerOptional = None,
         auto_create: BooleanOptional = None,
         db_groups: DbGroupList = None,
+        custom_domain_name: String = None,
     ) -> ClusterCredentials:
         raise NotImplementedError
 
@@ -3937,9 +4037,10 @@ class RedshiftApi:
     def get_cluster_credentials_with_iam(
         self,
         context: RequestContext,
-        cluster_identifier: String,
         db_name: String = None,
+        cluster_identifier: String = None,
         duration_seconds: IntegerOptional = None,
+        custom_domain_name: String = None,
     ) -> ClusterExtendedCredentials:
         raise NotImplementedError
 
@@ -4079,6 +4180,16 @@ class RedshiftApi:
         subnet_ids: SubnetIdentifierList,
         description: String = None,
     ) -> ModifyClusterSubnetGroupResult:
+        raise NotImplementedError
+
+    @handler("ModifyCustomDomainAssociation")
+    def modify_custom_domain_association(
+        self,
+        context: RequestContext,
+        cluster_identifier: String,
+        custom_domain_name: CustomDomainNameString = None,
+        custom_domain_certificate_arn: CustomDomainCertificateArnString = None,
+    ) -> ModifyCustomDomainAssociationResult:
         raise NotImplementedError
 
     @handler("ModifyEndpointAccess")

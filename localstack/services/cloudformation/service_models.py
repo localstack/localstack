@@ -1,7 +1,7 @@
 import logging
-from typing import Optional, TypedDict
+from typing import TypedDict
 
-from localstack.utils.aws import aws_stack
+from localstack.services.cloudformation.deployment_utils import check_not_found_exception
 
 LOG = logging.getLogger(__name__)
 
@@ -34,9 +34,10 @@ class GenericBaseModel:
     e.g., fetching the latest deployment state, getting the resource name, etc.
     """
 
-    def __init__(self, resource_json: dict, region_name: Optional[str] = None, **params):
+    def __init__(self, account_id: str, region_name: str, resource_json: dict, **params):
         # self.stack_name = stack_name # TODO: add stack name to params
-        self.region_name = region_name or aws_stack.get_region()
+        self.account_id = account_id
+        self.region_name = region_name
         self.resource_json = resource_json
         self.resource_type = resource_json["Type"]
         # Properties, as defined in the resource template
@@ -49,10 +50,6 @@ class GenericBaseModel:
     # ----------------------
     # ABSTRACT BASE METHODS
     # ----------------------
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        """Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses)"""
-        return None
 
     def fetch_state(self, stack_name, resources):
         """Fetch the latest deployment state of this resource, or return None if not currently deployed (NOTE: THIS IS NOT ALWAYS TRUE)."""
@@ -81,58 +78,43 @@ class GenericBaseModel:
         """Set any defaults required, including auto-generating names. Must be called before deploying the resource"""
         pass
 
-    # ----------------------
-    # GENERIC BASE METHODS
-    # ----------------------
-
-    def get_cfn_attribute(self, attribute_name):
-        """Retrieve the given CF attribute for this resource"""
-        return self.props.get(attribute_name)
-
-    # TODO: make this stricter
-    def get_ref(self):
-        return self.physical_resource_id or self.get_physical_resource_id()
-
     # ---------------------
     # GENERIC UTIL METHODS
     # ---------------------
 
     # TODO: remove
     def fetch_and_update_state(self, *args, **kwargs):
-        from localstack.services.cloudformation.engine import template_deployer
+        if self.physical_resource_id is None:
+            return None
 
         try:
             state = self.fetch_state(*args, **kwargs)
             self.update_state(state)
             return state
         except Exception as e:
-            if not template_deployer.check_not_found_exception(
-                e, self.resource_type, self.properties
-            ):
-                LOG.debug("Unable to fetch state for resource %s: %s", self, e)
-
-    # TODO: remove
-    def fetch_state_if_missing(self, *args, **kwargs):
-        if not self.state:
-            self.fetch_and_update_state(*args, **kwargs)
-        return self.state
+            if not check_not_found_exception(e, self.resource_type, self.properties):
+                LOG.warning(
+                    "Unable to fetch state for resource %s: %s",
+                    self,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
 
     # TODO: remove
     def update_state(self, details):
         """Update the deployment state of this resource (existing attributes will be overwritten)."""
         details = details or {}
         self.state.update(details)
-        return self.props
 
     @property
-    def physical_resource_id(self):
+    def physical_resource_id(self) -> str | None:
         """Return the (cached) physical resource ID."""
         return self.resource_json.get("PhysicalResourceId")
 
     @property
-    def logical_resource_id(self):
+    def logical_resource_id(self) -> str:
         """Return the logical resource ID."""
-        return self.resource_json.get("LogicalResourceId")
+        return self.resource_json["LogicalResourceId"]
 
     # TODO: rename? make it clearer what props are in comparison with state, properties and resource_json
     @property
@@ -141,4 +123,6 @@ class GenericBaseModel:
         (2) the current deployment state properties of the resource."""
         result = dict(self.properties)
         result.update(self.state or {})
+        last_state = self.resource_json.get("_last_deployed_state", {})
+        result.update(last_state)
         return result

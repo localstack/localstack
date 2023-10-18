@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, List, Optional
 
 from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery, StateValue
+from localstack.aws.connect import connect_to
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.scheduler import Scheduler
 
@@ -94,9 +95,8 @@ class AlarmScheduler:
         """
         Only used re-create persistent state. Reschedules alarms that already exist
         """
-        service = "cloudwatch"
-        for region in aws_stack.get_valid_regions_for_service(service):
-            client = aws_stack.connect_to_service(service, region_name=region)
+        for region in aws_stack.get_valid_regions_for_service("cloudwatch"):
+            client = connect_to(region_name=region).cloudwatch
             result = client.describe_alarms()
             for metric_alarm in result["MetricAlarms"]:
                 arn = metric_alarm["AlarmArn"]
@@ -127,7 +127,7 @@ def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> Optional[MetricAla
 
 def get_cloudwatch_client_for_region_of_alarm(alarm_arn: str) -> "CloudWatchClient":
     region = arns.extract_region_from_arn(alarm_arn)
-    return aws_stack.connect_to_service("cloudwatch", region_name=region)
+    return connect_to(region_name=region).cloudwatch
 
 
 def generate_metric_query(alarm_details: MetricAlarm) -> MetricDataQuery:

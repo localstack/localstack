@@ -12,7 +12,6 @@ from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.sqs import (
     ActionNameList,
@@ -71,15 +70,18 @@ from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import InvalidParameterValue
 from localstack.services.sqs.models import (
     FifoQueue,
-    Permission,
     SqsMessage,
     SqsQueue,
     SqsStore,
     StandardQueue,
     sqs_stores,
 )
-from localstack.services.sqs.utils import generate_message_id, parse_queue_url
-from localstack.utils.aws import aws_stack
+from localstack.services.sqs.utils import (
+    generate_message_id,
+    is_fifo_queue,
+    is_message_deduplication_id_required,
+    parse_queue_url,
+)
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.cloudwatch.cloudwatch_util import publish_sqs_metric
@@ -92,6 +94,7 @@ from localstack.utils.time import now
 LOG = logging.getLogger(__name__)
 
 MAX_NUMBER_OF_MESSAGES = 10
+_STORE_LOCK = threading.RLock()
 
 
 class InvalidAddress(ServiceException):
@@ -479,9 +482,7 @@ class SqsDeveloperEndpoints:
         self, request: Request, region: str, account_id: str, queue_name: str
     ) -> ReceiveMessageResult:
         try:
-            store = self.stores[account_id or get_aws_account_id()][
-                region or aws_stack.get_region()
-            ]
+            store = SqsProvider.get_store(account_id, region)
             queue = store.queues[queue_name]
         except KeyError:
             LOG.info(
@@ -550,14 +551,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def __init__(self) -> None:
         super().__init__()
-        self._mutex = threading.RLock()
         self._queue_update_worker = QueueUpdateWorker()
         self._router_rules = []
         self._init_cloudwatch_metrics_reporting()
 
     @staticmethod
-    def get_store(account_id: str = None, region: str = None) -> SqsStore:
-        return sqs_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
+    def get_store(account_id: str, region: str) -> SqsStore:
+        return sqs_stores[account_id][region]
 
     def on_before_start(self):
         self._router_rules = ROUTER.add(SqsDeveloperEndpoints())
@@ -571,7 +571,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._queue_update_worker.stop()
         self._stop_cloudwatch_metrics_reporting()
 
-    def _require_queue(self, account_id: str, region_name: str, name: str) -> SqsQueue:
+    @staticmethod
+    def _require_queue(account_id: str, region_name: str, name: str) -> SqsQueue:
         """
         Returns the queue for the given name, or raises QueueDoesNotExist if it does not exist.
 
@@ -580,8 +581,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
-        store = self.get_store(account_id, region_name)
-        with self._mutex:
+        store = SqsProvider.get_store(account_id, region_name)
+        with _STORE_LOCK:
             if name not in store.queues.keys():
                 raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
@@ -627,7 +628,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         store = self.get_store(context.account_id, context.region)
 
-        with self._mutex:
+        with _STORE_LOCK:
             if queue_name in store.queues:
                 queue = store.queues[queue_name]
 
@@ -675,7 +676,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        store = self.get_store(context.account_id, context.region)
+        store = self.get_store(queue_owner_aws_account_id or context.account_id, context.region)
         if queue_name not in store.queues.keys():
             raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
@@ -767,9 +768,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 context.account_id,
             )
 
-        store = self.get_store(account_id, region)
-
-        with self._mutex:
+        with _STORE_LOCK:
+            store = self.get_store(account_id, region)
             queue = self._resolve_queue(context, queue_url=queue_url)
             LOG.debug(
                 "deleting queue name=%s, region=%s, account=%s",
@@ -849,12 +849,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> SendMessageBatchResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        if entries and (no_entries := len(entries)) > 10:
-            raise TooManyEntriesInBatchRequest(
-                f"Maximum number of entries per request are 10. You have sent {no_entries}."
-            )
-
-        self._assert_batch(entries)
+        self._assert_batch(
+            entries,
+            require_fifo_queue_params=is_fifo_queue(queue),
+            require_message_deduplication_id=is_message_deduplication_id_required(queue),
+        )
         # check the total batch size first and raise BatchRequestTooLong id > DEFAULT_MAXIMUM_MESSAGE_SIZE.
         # This is checked before any messages in the batch are sent.  Raising the exception here should
         # cause error response, rather than batching error results and returning
@@ -1155,16 +1154,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._validate_actions(actions)
 
-        for account_id in aws_account_ids:
-            for action in actions:
-                queue.permissions.add(Permission(label, account_id, action))
+        queue.add_permission(label=label, actions=actions, account_ids=aws_account_ids)
 
     def remove_permission(self, context: RequestContext, queue_url: String, label: String) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        candidates = [p for p in queue.permissions if p.label == label]
-        if candidates:
-            queue.permissions.remove(candidates[0])
+        queue.remove_permission(label=label)
 
     def _create_message_attributes(
         self,
@@ -1196,9 +1191,19 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     "WSDL for a list of valid actions. "
                 )
 
-    def _assert_batch(self, batch: List) -> None:
+    def _assert_batch(
+        self,
+        batch: List,
+        *,
+        require_fifo_queue_params: bool = False,
+        require_message_deduplication_id: bool = False,
+    ) -> None:
         if not batch:
             raise EmptyBatchRequest
+        if batch and (no_entries := len(batch)) > MAX_NUMBER_OF_MESSAGES:
+            raise TooManyEntriesInBatchRequest(
+                f"Maximum number of entries per request are {MAX_NUMBER_OF_MESSAGES}. You have sent {no_entries}."
+            )
         visited = set()
         for entry in batch:
             entry_id = entry["Id"]
@@ -1206,6 +1211,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 raise InvalidBatchEntryId(
                     "A batch entry id can only contain alphanumeric characters, hyphens and underscores. "
                     "It can be at most 80 letters long."
+                )
+            if require_message_deduplication_id and not entry.get("MessageDeduplicationId"):
+                raise InvalidParameterValue(
+                    "The queue should either have ContentBasedDeduplication enabled or "
+                    "MessageDeduplicationId provided explicitly"
+                )
+            if require_fifo_queue_params and not entry.get("MessageGroupId"):
+                raise InvalidParameterValue(
+                    "The request must contain the parameter MessageGroupId."
                 )
             if entry_id in visited:
                 raise BatchEntryIdsNotDistinct()
@@ -1371,7 +1385,7 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
     https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message.
 
     :param message: The message to filter (it will be modified)
-    :param names: the attributes names/filters (can be 'All', '.*', or prefix filters like 'Foo.*')
+    :param names: the attributes names/filters (can be 'All', '.*', '*' or prefix filters like 'Foo.*')
     """
     if not message.get("MessageAttributes"):
         return
@@ -1380,7 +1394,7 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
         del message["MessageAttributes"]
         return
 
-    if "All" in names or ".*" in names:
+    if "All" in names or ".*" in names or "*" in names:
         return
 
     attributes = message["MessageAttributes"]

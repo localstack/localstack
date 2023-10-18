@@ -35,11 +35,12 @@ from localstack.aws.api.logs import (
     TagList,
     Tags,
 )
+from localstack.aws.connect import connect_to
 from localstack.services import moto
 from localstack.services.logs.models import get_moto_logs_backend, logs_stores
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
@@ -50,7 +51,7 @@ LOG = logging.getLogger(__name__)
 class LogsProvider(LogsApi, ServiceLifecycleHook):
     def __init__(self):
         super().__init__()
-        self.cw_client = aws_stack.connect_to_service("cloudwatch")
+        self.cw_client = connect_to().cloudwatch
 
     def put_log_events(
         self,
@@ -251,9 +252,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
         raise ResourceNotFoundException("The specified log group does not exist.")
 
     if ":lambda:" in destination_arn:
-        client = aws_stack.connect_to_service(
-            "lambda", region_name=extract_region_from_arn(destination_arn)
-        )
+        client = connect_to(region_name=extract_region_from_arn(destination_arn)).lambda_
         lambda_name = arns.lambda_function_name(destination_arn)
         try:
             client.get_function(FunctionName=lambda_name)
@@ -263,7 +262,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
             )
 
     elif ":kinesis:" in destination_arn:
-        client = aws_stack.connect_to_service("kinesis")
+        client = connect_to().kinesis
         stream_name = arns.kinesis_stream_name(destination_arn)
         try:
             client.describe_stream(StreamName=stream_name)
@@ -274,7 +273,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
             )
 
     elif ":firehose:" in destination_arn:
-        client = aws_stack.connect_to_service("firehose")
+        client = connect_to().firehose
         firehose_name = arns.firehose_name(destination_arn)
         try:
             client.describe_delivery_stream(DeliveryStreamName=firehose_name)
@@ -298,7 +297,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
 
 
 @patch(MotoLogStream.put_log_events, pass_target=False)
-def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
+def moto_put_log_events(self: "MotoLogStream", log_events):
     # TODO: call/patch upstream method here, instead of duplicating the code!
     self.last_ingestion_time = int(unix_time_millis())
     self.stored_bytes += sum([len(log_event["message"]) for log_event in log_events])
@@ -306,62 +305,63 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
     self.events += events
     self.upload_sequence_token += 1
 
-    # apply filterpattern -> only forward what matches the pattern
-    if self.filter_pattern:
-        # TODO only patched in pro
-        matches = get_pattern_matcher(self.filter_pattern)
-        events = [
-            LogEvent(self.last_ingestion_time, event)
-            for event in log_events
-            if matches(self.filter_pattern, event)
-        ]
+    # apply filter_pattern -> only forward what matches the pattern
+    for subscription_filter in self.log_group.subscription_filters.values():
+        if subscription_filter.filter_pattern:
+            # TODO only patched in pro
+            matches = get_pattern_matcher(subscription_filter.filter_pattern)
+            events = [
+                LogEvent(self.last_ingestion_time, event)
+                for event in log_events
+                if matches(subscription_filter.filter_pattern, event)
+            ]
 
-    if events and self.destination_arn:
-        log_events = [
-            {
-                "id": str(event.event_id),
-                "timestamp": event.timestamp,
-                "message": event.message,
+        if events and subscription_filter.destination_arn:
+            destination_arn = subscription_filter.destination_arn
+            log_events = [
+                {
+                    "id": str(event.event_id),
+                    "timestamp": event.timestamp,
+                    "message": event.message,
+                }
+                for event in events
+            ]
+
+            data = {
+                "messageType": "DATA_MESSAGE",
+                "owner": get_aws_account_id(),
+                "logGroup": self.log_group.name,
+                "logStream": self.log_stream_name,
+                "subscriptionFilters": [subscription_filter.name],
+                "logEvents": log_events,
             }
-            for event in events
-        ]
 
-        data = {
-            "messageType": "DATA_MESSAGE",
-            "owner": get_aws_account_id(),
-            "logGroup": log_group_name,
-            "logStream": log_stream_name,
-            "subscriptionFilters": [self.filter_name],
-            "logEvents": log_events,
-        }
+            output = io.BytesIO()
+            with GzipFile(fileobj=output, mode="w") as f:
+                f.write(json.dumps(data, separators=(",", ":")).encode("utf-8"))
+            payload_gz_encoded = output.getvalue()
+            event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
 
-        output = io.BytesIO()
-        with GzipFile(fileobj=output, mode="w") as f:
-            f.write(json.dumps(data, separators=(",", ":")).encode("utf-8"))
-        payload_gz_encoded = output.getvalue()
-        event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
+            if ":lambda:" in destination_arn:
+                client = connect_to(region_name=extract_region_from_arn(destination_arn)).lambda_
+                lambda_name = arns.lambda_function_name(destination_arn)
+                client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
+            if ":kinesis:" in destination_arn:
+                client = connect_to().kinesis
+                stream_name = arns.kinesis_stream_name(destination_arn)
+                client.put_record(
+                    StreamName=stream_name,
+                    Data=payload_gz_encoded,
+                    PartitionKey=self.log_group.name,
+                )
+            if ":firehose:" in destination_arn:
+                client = connect_to().firehose
+                firehose_name = arns.firehose_name(destination_arn)
+                client.put_record(
+                    DeliveryStreamName=firehose_name,
+                    Record={"Data": payload_gz_encoded},
+                )
 
-        if ":lambda:" in self.destination_arn:
-            client = aws_stack.connect_to_service(
-                "lambda", region_name=extract_region_from_arn(self.destination_arn)
-            )
-            lambda_name = arns.lambda_function_name(self.destination_arn)
-            client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
-        if ":kinesis:" in self.destination_arn:
-            client = aws_stack.connect_to_service("kinesis")
-            stream_name = arns.kinesis_stream_name(self.destination_arn)
-            client.put_record(
-                StreamName=stream_name,
-                Data=payload_gz_encoded,
-                PartitionKey=log_group_name,
-            )
-        if ":firehose:" in self.destination_arn:
-            client = aws_stack.connect_to_service("firehose")
-            firehose_name = arns.firehose_name(self.destination_arn)
-            client.put_record(
-                DeliveryStreamName=firehose_name,
-                Record={"Data": payload_gz_encoded},
-            )
     return "{:056d}".format(self.upload_sequence_token)
 
 

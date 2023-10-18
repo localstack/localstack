@@ -3,15 +3,33 @@ version: 2.1
 parameters:
   ubuntu-amd64-machine-image:
     type: string
-    default: "ubuntu-2004:2022.04.1"
+    default: "ubuntu-2204:2023.02.1"
   ubuntu-arm64-machine-image:
     type: string
-    default: "ubuntu-2004:2022.04.1"
+    default: "ubuntu-2204:2023.02.1"
 
 executors:
   ubuntu-machine-amd64:
     machine:
       image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+
+commands:
+  prepare-pytest-tinybird:
+    steps:
+      - run:
+          name: Setup Environment Variables
+          command: |
+            if [[ $CIRCLE_BRANCH == "master" ]] ; then
+              echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
+            fi
+            echo "export TINYBIRD_DATASOURCE=localstack-tests-circleci" >> $BASH_ENV
+            echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
+            echo "export CI_COMMIT_BRANCH=${CIRCLE_BRANCH}" >> $BASH_ENV
+            echo "export CI_COMMIT_SHA=${CIRCLE_SHA1}" >> $BASH_ENV
+            echo "export CI_JOB_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
+            echo "export CI_JOB_NAME=${CIRCLE_JOB}" >> $BASH_ENV
+            echo "export CI_JOB_ID=${CIRCLE_WORKFLOW_JOB_ID}" >> $BASH_ENV
+            source $BASH_ENV
 
 jobs:
   install:
@@ -21,13 +39,6 @@ jobs:
       - checkout
       - restore_cache:
           key: python-requirements-{{ checksum "setup.cfg" }}
-      - run:
-          name: Install prerequisites
-          command: |
-            # fix for: https://discuss.circleci.com/t/heroku-gpg-issues-in-ubuntu-images/43834/3
-            sudo rm -rf /etc/apt/sources.list.d/heroku.list
-            sudo apt-get update
-            sudo apt-get install -y libsasl2-dev
       - run:
           name: Setup environment
           command: |
@@ -53,6 +64,9 @@ jobs:
       - run:
           name: Linting
           command: make lint
+      - run:
+          name: Checking AWS compatibility markers
+          command: make check-aws-markers
 
   unit-tests:
     executor: ubuntu-machine-amd64
@@ -60,18 +74,18 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-pytest-tinybird
       - run:
           name: Unit tests
           environment:
             TEST_PATH: "tests/unit"
-            PYTEST_ARGS: "--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests"
             COVERAGE_ARGS: "-p"
-          command: make test-coverage
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.unit.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" \
+            make test-coverage
       - store_test_results:
           path: target/reports/
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -84,18 +98,26 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          # legacy tests are executed locally, new runners ship with Java 17, downgrade to Java 11 for stepfunctions
+          name: Install OpenJDK 11
+          command: |
+            sudo apt-get update && sudo apt-get install openjdk-11-jdk
+            sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java
+            sudo update-alternatives --set javac /usr/lib/jvm/java-11-openjdk-amd64/bin/javac
+            java -version
       - run:
           name: Test 'local' Lambda executor
           environment:
             LAMBDA_EXECUTOR: "local"
             PROVIDER_OVERRIDE_LAMBDA: "legacy"
-            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/apigateway/test_apigateway_basic.py tests/integration/cloudformation/resources/test_lambda.py"
-            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'"
+            TEST_PATH: "tests/aws/services/lambda_/ tests/aws/test_integration.py tests/aws/services/apigateway/test_apigateway_basic.py tests/aws/services/cloudformation/resources/test_lambda.py"
             COVERAGE_ARGS: "-p"
-          command: make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.lambdav1.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" \
+            make test-coverage
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -110,17 +132,69 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-pytest-tinybird
       - run:
           name: Test SFN V2 provider
           environment:
             PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
-            TEST_PATH: "tests/integration/stepfunctions/v2/"
-            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'"
+            TEST_PATH: "tests/aws/services/stepfunctions/v2/"
             COVERAGE_ARGS: "-p"
-          command: make test-coverage
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.sfnv2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  acceptance-tests:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
       - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
+          name: Acceptance tests (EXPERIMENTAL)
+          environment:
+            TEST_PATH: "tests/aws/"
+            COVERAGE_ARGS: "-p"
+            LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.acceptance.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance_test.xml -o junit_suite_name='acceptance_test'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/reports/
+            - repo/target/metric_reports/
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-s3-v3-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Test S3 v3 provider
+          environment:
+            PROVIDER_OVERRIDE_S3: "v3"
+            TEST_PATH: "tests/aws/services/s3/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.s3stream.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_stream.xml -o junit_suite_name='s3_stream'" \
+            make test-coverage
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -194,22 +268,23 @@ jobs:
             - run:
                 name: compute-src-hashes
                 command: |
-                  find tests/integration/awslambda/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
+                  find tests/aws/services/lambda_/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
             - restore_cache:
                 key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
             - run:
                 name: pre-build lambda common test packages
-                command: ./scripts/build_common_test_functions.sh `pwd`/tests/integration/awslambda/functions/common
+                command: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
             - save_cache:
                 key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
                 paths:
-                  - "tests/integration/awslambda/functions/common"
+                  - "tests/aws/services/lambda_/functions/common"
+      - prepare-pytest-tinybird
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
-            TEST_FILES=$(circleci tests glob "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
-            PYTEST_ARGS="-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+            TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
             DEBUG=1 \
@@ -223,6 +298,34 @@ jobs:
             - repo/target/reports/
             - repo/target/coverage/
             - repo/target/metric_reports
+
+  bootstrap-tests:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          command: docker load -i target/localstack-docker-image-amd64.tar
+      - prepare-pytest-tinybird
+      - run:
+          name: Run bootstrap tests
+          environment:
+            TEST_PATH: "tests/bootstrap"
+            COVERAGE_ARGS: "-p"
+          command: |
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/bootstrap-tests.xml -o junit_suite_name=bootstrap-tests" make test-coverage
+      - store_test_results:
+          path: target/reports/
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
 
   capture-not-implemented:
     executor: ubuntu-machine-amd64
@@ -267,6 +370,14 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      # store (uncombined) coverage from acceptance tests
+      - run:
+          name: fetch isolated acceptance coverage
+          # might need to combine coverage files in future
+          command: |
+            cp target/coverage/.coverage.acceptance.* .coverage.acceptance
+      - store_artifacts:
+          path: .coverage.acceptance
       - run:
           name: Collect coverage
           command: |
@@ -283,6 +394,11 @@ jobs:
             coverage html || true
             coveralls || true
       - run:
+          name: store acceptance parity metrics
+          command: |
+            mkdir acceptance_parity_metrics
+            mv target/metric_reports/metric-report*acceptance* acceptance_parity_metrics/
+      - run:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
             source .venv/bin/activate
@@ -291,14 +407,52 @@ jobs:
             IMPLEMENTATION_COVERAGE_FILE=scripts/implementation_coverage_full.csv \
             SOURCE_TYPE=community \
             python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
+      - run:
+          name: Create Coverage Diff (Code Coverage)
+          # pycobertura diff will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
+          # but we still want cirecleci to continue with the tasks, so we return 0.
+          # From the docs:
+          # Upon exit, the diff command may return various exit codes:
+          #    0: all changes are covered, no new uncovered statements have been introduced
+          #    1: some exception occurred (likely due to inappropriate usage or a bug in pycobertura)
+          #    2: the changes worsened the overall coverage
+          #    3: the changes introduced uncovered statements but the overall coverage is still better than before
+          command: |
+            source .venv/bin/activate
+            pip install pycobertura
+            coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack/services/*/**" --omit="*/**/__init__.py"
+            coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack/services/*/**"  --omit="*/**/__init__.py"
+            pycobertura show --format html -s localstack/ acceptance.coverage.report.xml -o coverage-acceptance.html
+            bash -c "pycobertura diff --format html -s1 localstack/ -s2 localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html; if [[ \$? -eq 1 ]] ; then exit 1 ; else exit 0 ; fi"
+      - run:
+          name: Create Metric Coverage Diff (API Coverage)
+          environment:
+            COVERAGE_DIR_ALL: "parity_metrics"
+            COVERAGE_DIR_ACCEPTANCE: "acceptance_parity_metrics"
+            OUTPUT_DIR: "api-coverage"
+          command: |
+            source .venv/bin/activate
+            mkdir api-coverage
+            python -m scripts.metrics_coverage.diff_metrics_coverage
+      - store_artifacts:
+          path: api-coverage/
+      - store_artifacts:
+          path: coverage-acceptance.html
+      - store_artifacts:
+          path: coverage-diff.html
       - store_artifacts:
           path: parity_metrics/
+      - store_artifacts:
+          path: acceptance_parity_metrics/
       - store_artifacts:
           path: scripts/implementation_coverage_aggregated.csv
           destination: community/implementation_coverage_aggregated.csv
       - store_artifacts:
           path: scripts/implementation_coverage_full.csv
           destination: community/implementation_coverage_full.csv
+      - store_artifacts:
+          path: .coverage
+
 
   push:
     executor: ubuntu-machine-amd64
@@ -357,10 +511,16 @@ workflows:
       - preflight:
           requires:
             - install
+      - acceptance-tests:
+          requires:
+            - preflight
       - itest-lambda-legacy-local:
           requires:
             - preflight
       - itest-sfn-v2-provider:
+          requires:
+            - preflight
+      - itest-s3-v3-provider:
           requires:
             - preflight
       - unit-tests:
@@ -396,6 +556,9 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           requires:
             - docker-build-amd64
+      - bootstrap-tests:
+          requires:
+            - docker-build-amd64
       - capture-not-implemented:
           name: collect-not-implemented
           requires:
@@ -404,6 +567,8 @@ workflows:
           requires:
             - itest-lambda-legacy-local
             - itest-sfn-v2-provider
+            - itest-s3-v3-provider
+            - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
             - collect-not-implemented
@@ -415,6 +580,8 @@ workflows:
           requires:
             - itest-lambda-legacy-local
             - itest-sfn-v2-provider
+            - itest-s3-v3-provider
+            - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests

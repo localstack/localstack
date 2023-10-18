@@ -23,12 +23,17 @@ def parse_profile_argument(args) -> Optional[str]:
     :param args: list of CLI arguments
     :returns: the value of ``--profile``.
     """
-    for i, arg in enumerate(args):
-        if arg.startswith("--profile="):
-            return arg[10:]
-        if arg == "--profile":
+    for i, current_arg in enumerate(args):
+        if current_arg.startswith("--profile="):
+            # if using the "<arg>=<value>" notation, we remove the "--profile=" prefix to get the value
+            return current_arg[10:]
+        elif current_arg.startswith("-p="):
+            # if using the "<arg>=<value>" notation, we remove the "-p=" prefix to get the value
+            return current_arg[3:]
+        if current_arg in ["--profile", "-p"]:
+            # otherwise use the next arg in the args list as value
             try:
-                return arg[i + 1]
+                return args[i + 1]
             except KeyError:
                 return None
 

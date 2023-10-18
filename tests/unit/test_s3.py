@@ -1,24 +1,27 @@
 import datetime
+import os
 import unittest
 import zoneinfo
+from io import BytesIO
 from urllib.parse import urlparse
 
 import pytest
 from requests.models import Response
 
 from localstack.aws.api import RequestContext
+from localstack.aws.api.s3 import InvalidArgument
 from localstack.constants import LOCALHOST, S3_VIRTUAL_HOSTNAME
 from localstack.http import Request
 from localstack.services.infra import patch_instance_tracker_meta
-from localstack.services.s3 import (
-    multipart_content,
-    presigned_url,
-    s3_listener,
-    s3_starter,
-    s3_utils,
-)
+from localstack.services.s3 import presigned_url
 from localstack.services.s3 import utils as s3_utils_asf
-from localstack.services.s3.s3_utils import get_key_from_s3_url, get_s3_backend
+from localstack.services.s3.codec import AwsChunkedDecoder
+from localstack.services.s3.constants import S3_CHUNK_SIZE
+from localstack.services.s3.exceptions import MalformedXML
+from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
+from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
+from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
+from localstack.services.s3.validation import validate_canned_acl
 from localstack.utils.strings import short_uid
 
 
@@ -426,7 +429,7 @@ class TestS3Utils:
                 for key in ["my/key/123", "/mykey"]:
                     url = f"{prefix}{key}"
                     expected = f"{'/' if slash_prefix else ''}{key.lstrip('/')}"
-                    assert get_key_from_s3_url(url, leading_slash=slash_prefix) == expected
+                    assert s3_utils.get_key_from_s3_url(url, leading_slash=slash_prefix) == expected
 
 
 class S3BackendTest(unittest.TestCase):
@@ -436,7 +439,7 @@ class S3BackendTest(unittest.TestCase):
         patch_instance_tracker_meta()
 
     def test_key_instances_before_removing(self):
-        s3_backend = get_s3_backend()
+        s3_backend = s3_utils.get_s3_backend()
 
         bucket_name = "test"
         region = "us-east-1"
@@ -454,7 +457,7 @@ class S3BackendTest(unittest.TestCase):
         self.assertNotIn(key, key.instances or [])
 
     def test_no_bucket_in_instances(self):
-        s3_backend = get_s3_backend()
+        s3_backend = s3_utils.get_s3_backend()
 
         bucket_name = f"b-{short_uid()}"
         region = "us-east-1"
@@ -472,6 +475,7 @@ class TestS3UtilsAsf:
     Testing the new utils from ASF
     Some utils are duplicated, but it will be easier once we remove the old listener, we won't have to
     untangle and leave old functions around
+    TODO: move tests from legacy to new utils when duplicated, to keep coverage
     """
 
     # test whether method correctly distinguishes between hosted and path style bucket references
@@ -480,41 +484,35 @@ class TestS3UtilsAsf:
     # region is optional in localstack
     # the requested has been forwarded by the router, and S3_VIRTUAL_HOST_FORWARDED_HEADER has been added with the
     # original host header
-    def test_forwarded_from_virtual_host_addressed_request(self):
-        host_header = s3_utils_asf.S3_VIRTUAL_HOST_FORWARDED_HEADER
+    def test_uses_virtual_host_addressing(self):
         addresses = [
-            ({host_header: f"https://aws.{LOCALHOST}:4566"}, False),
-            # attention: This is **not** a host style reference according to s3 specs but a special case from our side
-            ({host_header: f"https://aws.{LOCALHOST}.localstack.cloud:4566"}, True),
-            ({host_header: f"https://{LOCALHOST}.aws:4566"}, False),
-            ({host_header: f"https://{LOCALHOST}.swa:4566"}, False),
-            ({host_header: f"https://swa.{LOCALHOST}:4566"}, False),
-            ({host_header: "https://bucket.s3.localhost.localstack.cloud"}, True),
-            ({host_header: "bucket.s3.eu-west-1.amazonaws.com"}, True),
-            ({host_header: "https://s3.eu-west-1.localhost.localstack.cloud/bucket"}, False),
-            ({host_header: "https://s3.eu-west-1.localhost.localstack.cloud/bucket/key"}, False),
-            ({host_header: "https://s3.localhost.localstack.cloud/bucket"}, False),
-            ({host_header: "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key"}, True),
+            ({"host": f"https://aws.{LOCALHOST}:4566"}, False),
+            ({"host": f"https://{LOCALHOST}.aws:4566"}, False),
+            ({"host": f"https://{LOCALHOST}.swa:4566"}, False),
+            ({"host": f"https://swa.{LOCALHOST}:4566"}, False),
+            ({"host": "https://bucket.s3.localhost.localstack.cloud"}, True),
+            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, True),
+            ({"host": "https://s3.eu-west-1.localhost.localstack.cloud/bucket"}, False),
+            ({"host": "https://s3.eu-west-1.localhost.localstack.cloud/bucket/key"}, False),
+            ({"host": "https://s3.localhost.localstack.cloud/bucket"}, False),
+            ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key"}, True),
             (
                 {
-                    host_header: "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key/key/content.png"
+                    "host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key/key/content.png"
                 },
                 True,
             ),
-            ({host_header: "https://s3.localhost.localstack.cloud/bucket/key"}, False),
-            ({host_header: "https://bucket.s3.eu-west-1.localhost.localstack.cloud"}, True),
-            ({host_header: "https://bucket.s3.localhost.localstack.cloud/key"}, True),
-            ({host_header: "bucket.s3.eu-west-1.amazonaws.com"}, True),
-            ({host_header: "bucket.s3.amazonaws.com"}, True),
-            ({host_header: "notabucket.amazonaws.com"}, False),
-            ({host_header: "s3.amazonaws.com"}, False),
-            ({host_header: "s3.eu-west-1.amazonaws.com"}, False),
+            ({"host": "https://s3.localhost.localstack.cloud/bucket/key"}, False),
+            ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud"}, True),
+            ({"host": "https://bucket.s3.localhost.localstack.cloud/key"}, True),
+            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, True),
+            ({"host": "bucket.s3.amazonaws.com"}, True),
+            ({"host": "notabucket.amazonaws.com"}, False),
+            ({"host": "s3.amazonaws.com"}, False),
+            ({"host": "s3.eu-west-1.amazonaws.com"}, False),
         ]
         for headers, expected_result in addresses:
-            assert (
-                s3_utils_asf.forwarded_from_virtual_host_addressed_request(headers)
-                == expected_result
-            )
+            assert s3_utils_asf.uses_host_addressing(headers) == expected_result
 
     def test_is_valid_canonical_id(self):
         canonical_ids = [
@@ -533,38 +531,51 @@ class TestS3UtilsAsf:
         for canonical_id, expected_result in canonical_ids:
             assert s3_utils_asf.is_valid_canonical_id(canonical_id) == expected_result
 
-    def test_get_header_name(self):
+    @pytest.mark.parametrize(
+        "request_member, permission, response_header",
+        [
+            ("GrantFullControl", "FULL_CONTROL", "x-amz-grant-full-control"),
+            ("GrantRead", "READ", "x-amz-grant-read"),
+            ("GrantReadACP", "READ_ACP", "x-amz-grant-read-acp"),
+            ("GrantWrite", "WRITE", "x-amz-grant-write"),
+            ("GrantWriteACP", "WRITE_ACP", "x-amz-grant-write-acp"),
+        ],
+    )
+    def test_get_permission_from_request_header_to_response_header(
+        self, request_member, permission, response_header
+    ):
         """
         Test to transform shape member names into their header location
         We could maybe use the specs for this
         """
-        query_params = [
-            ("GrantFullControl", "x-amz-grant-full-control"),
-            ("GrantRead", "x-amz-grant-read"),
-            ("GrantReadACP", "x-amz-grant-read-acp"),
-            ("GrantWrite", "x-amz-grant-write"),
-            ("GrantWriteACP", "x-amz-grant-write-acp"),
-        ]
+        parsed_permission = s3_utils_asf.get_permission_from_header(request_member)
+        assert parsed_permission == permission
+        assert s3_utils_asf.get_permission_header_name(parsed_permission) == response_header
 
-        for query_param, expected_header_name in query_params:
-            assert s3_utils_asf.get_header_name(query_param) == expected_header_name
+    @pytest.mark.parametrize(
+        "canned_acl, raise_exception",
+        [
+            ("private", False),
+            ("public-read", False),
+            ("public-read-write", False),
+            ("authenticated-read", False),
+            ("aws-exec-read", False),
+            ("bucket-owner-read", False),
+            ("bucket-owner-full-control", False),
+            ("not-a-canned-one", True),
+            ("aws--exec-read", True),
+            ("log-delivery-write", False),
+        ],
+    )
+    def test_validate_canned_acl(self, canned_acl, raise_exception):
+        if raise_exception:
+            with pytest.raises(InvalidArgument) as e:
+                validate_canned_acl(canned_acl)
+            assert e.value.ArgumentName == "x-amz-acl"
+            assert e.value.ArgumentValue == canned_acl
 
-    def test_is_canned_acl_valid(self):
-        canned_acls = [
-            ("private", True),
-            ("public-read", True),
-            ("public-read-write", True),
-            ("authenticated-read", True),
-            ("aws-exec-read", True),
-            ("bucket-owner-read", True),
-            ("bucket-owner-full-control", True),
-            ("not-a-canned-one", False),
-            ("aws--exec-read", False),
-            ("log-delivery-write", True),
-        ]
-
-        for canned_acl, expected_result in canned_acls:
-            assert s3_utils_asf.is_canned_acl_bucket_valid(canned_acl) == expected_result
+        else:
+            validate_canned_acl(canned_acl)
 
     def test_s3_bucket_name(self):
         bucket_names = [
@@ -621,6 +632,179 @@ class TestS3UtilsAsf:
         for checksum_algorithm, data, request in invalid_checksums:
             with pytest.raises(Exception):
                 s3_utils_asf.verify_checksum(checksum_algorithm, data, request)
+
+    @pytest.mark.parametrize(
+        "presign_url, expected_output_bucket, expected_output_key",
+        [
+            pytest.param(
+                "http://s3.localhost.localstack.cloud:4566/test-output-bucket-2/test-transcribe-job-e1895bdf.json?AWSAccessKeyId=000000000000&Signature=2Yc%2BvwhXx8UzmH8imzySfLOW6OI%3D&Expires=1688561914",
+                "test-output-bucket-2",
+                "test-transcribe-job-e1895bdf.json",
+                id="output key as a single file",
+            ),
+            pytest.param(
+                "http://s3.localhost.localstack.cloud:4566/test-output-bucket-5/test-files/test-output.json?AWSAccessKeyId=000000000000&Signature=F6bwF1M2N%2BLzEXTZnUtjE23S%2Bb0%3D&Expires=1688561920",
+                "test-output-bucket-5",
+                "test-files/test-output.json",
+                id="output key with subdirectories",
+            ),
+            pytest.param(
+                "http://s3.localhost.localstack.cloud:4566/test-output-bucket-2?AWSAccessKeyId=000000000000&Signature=2Yc%2BvwhXx8UzmH8imzySfLOW6OI%3D&Expires=1688561914",
+                "test-output-bucket-2",
+                "",
+                id="output key as None",
+            ),
+        ],
+    )
+    def test_bucket_and_key_presign_url(
+        self, presign_url, expected_output_bucket, expected_output_key
+    ):
+        bucket, key = s3_utils_asf.get_bucket_and_key_from_presign_url(presign_url)
+        assert bucket == expected_output_bucket
+        assert key == expected_output_key
+
+    @pytest.mark.parametrize(
+        "header, dateobj, rule_id",
+        [
+            (
+                'expiry-date="Sat, 15 Jul 2023 00:00:00 GMT", rule-id="rule1"',
+                datetime.datetime(day=15, month=7, year=2023, tzinfo=zoneinfo.ZoneInfo(key="GMT")),
+                "rule1",
+            ),
+            (
+                'expiry-date="Mon, 29 Dec 2030 00:00:00 GMT", rule-id="rule2"',
+                datetime.datetime(day=29, month=12, year=2030, tzinfo=zoneinfo.ZoneInfo(key="GMT")),
+                "rule2",
+            ),
+            (
+                'expiry-date="Tes, 32 Jul 2023 00:00:00 GMT", rule-id="rule3"',
+                None,
+                None,
+            ),
+            (
+                'expiry="Sat, 15 Jul 2023 00:00:00 GMT", rule-id="rule4"',
+                None,
+                None,
+            ),
+            (
+                'expiry-date="Sat, 15 Jul 2023 00:00:00 GMT"',
+                None,
+                None,
+            ),
+        ],
+    )
+    def test_parse_expiration_header(self, header, dateobj, rule_id):
+        parsed_dateobj, parsed_rule_id = s3_utils_asf.parse_expiration_header(header)
+        assert parsed_dateobj == dateobj
+        assert parsed_rule_id == rule_id
+
+    @pytest.mark.parametrize(
+        "rule_id, lifecycle_exp, last_modified, header",
+        [
+            (
+                "rule1",
+                {
+                    "Date": datetime.datetime(
+                        day=15, month=7, year=2023, tzinfo=zoneinfo.ZoneInfo(key="GMT")
+                    )
+                },
+                datetime.datetime(
+                    day=15,
+                    month=9,
+                    year=2024,
+                    hour=0,
+                    minute=0,
+                    second=0,
+                    microsecond=0,
+                    tzinfo=None,
+                ),
+                'expiry-date="Sat, 15 Jul 2023 00:00:00 GMT", rule-id="rule1"',
+            ),
+            (
+                "rule2",
+                {"Days": 5},
+                datetime.datetime(day=15, month=7, year=2023, tzinfo=None),
+                'expiry-date="Fri, 21 Jul 2023 00:00:00 GMT", rule-id="rule2"',
+            ),
+            (
+                "rule3",
+                {"Days": 3},
+                datetime.datetime(day=31, month=12, year=2030, microsecond=1, tzinfo=None),
+                'expiry-date="Sat, 04 Jan 2031 00:00:00 GMT", rule-id="rule3"',
+            ),
+        ],
+    )
+    def test_serialize_expiration_header(self, rule_id, lifecycle_exp, last_modified, header):
+        serialized_header = s3_utils_asf.serialize_expiration_header(
+            rule_id, lifecycle_exp, last_modified
+        )
+        assert serialized_header == header
+
+    @pytest.mark.parametrize(
+        "data, required, optional, result",
+        [
+            (
+                {"field1": "", "field2": "", "field3": ""},
+                {"field1"},
+                {"field2", "field3"},
+                True,
+            ),
+            (
+                {"field1": ""},
+                {"field1"},
+                {"field2", "field3"},
+                True,
+            ),
+            (
+                {"field1": "", "field2": "", "field3": ""},  # field3 is not a field
+                {"field1"},
+                {"field2"},
+                False,
+            ),
+            (
+                {"field2": ""},  # missing field1
+                {"field1"},
+                {"field2"},
+                False,
+            ),
+            (
+                {"field3": ""},  # missing field1 and field3 is not a field
+                {"field1"},
+                {"field2"},
+                False,
+            ),
+        ],
+    )
+    def test_validate_dict_fields(self, data, required, optional, result):
+        assert s3_utils_asf.validate_dict_fields(data, required, optional) == result
+
+    @pytest.mark.parametrize(
+        "tagging, result",
+        [
+            (
+                "<Tagging><TagSet><Tag><Key>TagName</Key><Value>TagValue</Value></Tag></TagSet></Tagging>",
+                {"TagName": "TagValue"},
+            ),
+            (
+                "<Tagging><TagSet><Tag><Key>TagName</Key><Value>TagValue</Value></Tag><Tag><Key>TagName2</Key><Value>TagValue2</Value></Tag></TagSet></Tagging>",
+                {"TagName": "TagValue", "TagName2": "TagValue2"},
+            ),
+            (
+                "<InvalidXmlTagging></InvalidXmlTagging>",
+                None,
+            ),
+        ],
+        ids=["single", "list", "invalid"],
+    )
+    def test_parse_post_object_tagging_xml(self, tagging, result):
+        assert s3_utils_asf.parse_post_object_tagging_xml(tagging) == result
+
+    def test_parse_post_object_tagging_xml_exception(self):
+        with pytest.raises(MalformedXML) as e:
+            s3_utils_asf.parse_post_object_tagging_xml("not-xml")
+        e.match(
+            "The XML you provided was not well-formed or did not validate against our published schema"
+        )
 
 
 class TestS3PresignedUrlAsf:
@@ -767,3 +951,178 @@ class TestS3PresignedUrlAsf:
             else:
                 with pytest.raises(Exception):
                     presigned_url.is_valid_sig_v4(query_args)
+
+
+class TestS3AwsChunkedDecoder:
+    """See https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html"""
+
+    def test_s3_aws_chunked_decoder(self):
+        body = "Hello\r\n\r\n\r\n\r\n"
+        decoded_content_length = len(body)
+        data = (
+            "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            f"{body}\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+        )
+
+        stream = AwsChunkedDecoder(BytesIO(data.encode()), decoded_content_length)
+        assert stream.read() == body.encode()
+
+    def test_s3_aws_chunked_decoder_with_trailing_headers(self):
+        body = "Hello Blob"
+        decoded_content_length = len(body)
+
+        data = (
+            "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+            f"x-amz-checksum-sha256:abcdef1234\r\n"
+            "x-amz-trailer-signature:712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c\r\n\r\n"
+        )
+
+        stream = AwsChunkedDecoder(BytesIO(data.encode()), decoded_content_length)
+        assert stream.read() == body.encode()
+        assert stream.trailing_headers == {
+            "x-amz-checksum-sha256": "abcdef1234",
+            "x-amz-trailer-signature": "712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c",
+        }
+
+    def test_s3_aws_chunked_decoder_multiple_chunks(self):
+        total_body = os.urandom(66560)
+        decoded_content_length = len(total_body)
+        chunk_size = 8192
+        encoded_data = b""
+
+        for index in range(0, decoded_content_length, chunk_size):
+            chunk = total_body[index : min(index + chunk_size, decoded_content_length)]
+            chunk_size_hex = str(hex(len(chunk)))[2:].encode()
+            info_chunk = (
+                chunk_size_hex
+                + b";chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            )
+            encoded_data += info_chunk
+            encoded_data += chunk + b"\r\n"
+
+        encoded_data += b"0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+
+        stream = AwsChunkedDecoder(BytesIO(encoded_data), decoded_content_length)
+        assert stream.read() == total_body
+
+        stream = AwsChunkedDecoder(BytesIO(encoded_data), decoded_content_length)
+        # assert that even if we read more than a chunk size, we will get max chunk_size
+        assert stream.read(chunk_size + 1000) == total_body[:chunk_size]
+        # assert that even if we read more, when accessing the rest, we're still at the same position
+        assert stream.read(10) == total_body[chunk_size : chunk_size + 10]
+
+    def test_s3_aws_chunked_decoder_access_trailing(self):
+        body = "Hello\r\n\r\n\r\n\r\n"
+        decoded_content_length = len(body)
+        data = (
+            "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            f"{body}\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+        )
+
+        stream = AwsChunkedDecoder(BytesIO(data.encode()), decoded_content_length)
+        with pytest.raises(AttributeError) as e:
+            _ = stream.trailing_headers
+        e.match("The stream has not been fully read yet, the trailing headers are not available.")
+
+        stream.read()
+        assert stream.trailing_headers == {}
+
+    def test_s3_aws_chunked_decoder_chunk_bigger_than_s3_chunk(self):
+        total_body = os.urandom(S3_CHUNK_SIZE * 2)
+        decoded_content_length = len(total_body)
+        chunk_size = S3_CHUNK_SIZE + 10
+        encoded_data = b""
+
+        for index in range(0, decoded_content_length, chunk_size):
+            chunk = total_body[index : min(index + chunk_size, decoded_content_length)]
+            chunk_size_hex = str(hex(len(chunk)))[2:].encode()
+            info_chunk = (
+                chunk_size_hex
+                + b";chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            )
+            encoded_data += info_chunk
+            encoded_data += chunk + b"\r\n"
+
+        encoded_data += b"0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+
+        stream = AwsChunkedDecoder(BytesIO(encoded_data), decoded_content_length)
+        assert stream.read() == total_body
+
+        stream = AwsChunkedDecoder(BytesIO(encoded_data), decoded_content_length)
+        # assert that even if we read more than a chunk size, we will get max chunk_size
+        assert stream.read(chunk_size + 1000) == total_body[:chunk_size]
+        # assert that even if we read more, when accessing the rest, we're still at the same position
+        assert stream.read(10) == total_body[chunk_size : chunk_size + 10]
+
+
+class TestS3TemporaryStorageBackend:
+    def test_get_fileobj_no_bucket(self, tmpdir):
+        temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
+        fake_object = S3Object(key="test-key")
+        s3_stored_object = temp_storage_backend.open("test-bucket", fake_object)
+
+        s3_stored_object.write(BytesIO(b"abc"))
+
+        assert s3_stored_object.read() == b"abc"
+
+        s3_stored_object.seek(1)
+        assert s3_stored_object.read() == b"bc"
+
+        s3_stored_object.seek(0)
+        assert s3_stored_object.read(1) == b"a"
+
+        temp_storage_backend.remove("test-bucket", fake_object)
+        assert s3_stored_object.file.closed
+
+        temp_storage_backend.close()
+
+    def test_ephemeral_multipart(self, tmpdir):
+        temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
+        fake_multipart = S3Multipart(key="test-multipart")
+
+        s3_stored_multipart = temp_storage_backend.get_multipart("test-bucket", fake_multipart)
+        parts = []
+        stored_parts = []
+        for i in range(1, 6):
+            fake_s3_part = S3Part(part_number=i)
+            stored_part = s3_stored_multipart.open(fake_s3_part)
+            stored_part.write(BytesIO(b"abc"))
+            parts.append(fake_s3_part)
+            stored_parts.append(stored_part)
+
+        s3_stored_object = s3_stored_multipart.complete_multipart(parts=parts)
+        temp_storage_backend.remove_multipart("test-bucket", fake_multipart)
+
+        assert s3_stored_object.read() == b"abc" * 5
+
+        assert all(stored_part.file.closed for stored_part in stored_parts)
+
+        temp_storage_backend.close()
+        assert s3_stored_object.file.closed
+
+    def test_concurrent_file_access(self, tmpdir):
+        temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
+        fake_object = S3Object(key="test-key")
+        s3_stored_object_1 = temp_storage_backend.open("test-bucket", fake_object)
+        s3_stored_object_2 = temp_storage_backend.open("test-bucket", fake_object)
+
+        s3_stored_object_1.write(BytesIO(b"abc"))
+
+        assert s3_stored_object_1.read() == b"abc"
+
+        # assert that another StoredObject moving the position does not influence the other object
+        s3_stored_object_1.seek(1)
+        s3_stored_object_2.seek(2)
+        assert s3_stored_object_1.read() == b"bc"
+        assert s3_stored_object_2.read() == b"c"
+
+        s3_stored_object_1.seek(0)
+        assert s3_stored_object_1.read(1) == b"a"
+
+        temp_storage_backend.remove("test-bucket", fake_object)
+        assert s3_stored_object_1.file.closed
+        assert s3_stored_object_2.file.closed
+
+        temp_storage_backend.close()

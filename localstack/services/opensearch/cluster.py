@@ -20,6 +20,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import (
     ShellCommandThread,
     chmod_r,
@@ -303,6 +304,10 @@ class OpensearchCluster(Server):
         self.is_security_enabled = self.security_options and self.security_options.enabled
         self.auth = security_options.auth if self.is_security_enabled else None
 
+        parsed_arn = parse_arn(arn)
+        self.account_id = parsed_arn["account"]
+        self.region_name = parsed_arn["region"]
+
     @property
     def default_version(self) -> str:
         return constants.OPENSEARCH_DEFAULT_VERSION
@@ -411,7 +416,7 @@ class OpensearchCluster(Server):
             "http.publish_port": self.port,
             "transport.port": "0",
             "network.host": self.host,
-            "http.compression": "false",
+            "http.compression": "true",
             "path.data": f'"{dirs.data}"',
             "path.repo": f'"{dirs.backup}"',
             "discovery.type": "single-node",
@@ -456,10 +461,21 @@ class OpensearchCluster(Server):
         return cmd
 
     def _create_env_vars(self, directories: Directories) -> Dict:
-        return {
+        env_vars = {
             "OPENSEARCH_JAVA_OPTS": os.environ.get("OPENSEARCH_JAVA_OPTS", "-Xms200m -Xmx600m"),
             "OPENSEARCH_TMPDIR": directories.tmp,
         }
+
+        # if the "opensearch-knn" plugin exists and has a "lib" directory, add it to the LD_LIBRARY_PATH
+        # see https://forum.opensearch.org/t/issue-with-opensearch-knn/12633
+        knn_lib_dir = os.path.join(directories.install, "plugins", "opensearch-knn", "lib")
+        if os.path.isdir(knn_lib_dir):
+            prefix = (
+                f"{os.environ.get('LD_LIBRARY_PATH')}:" if "LD_LIBRARY_PATH" in os.environ else ""
+            )
+            env_vars["LD_LIBRARY_PATH"] = prefix + f"{knn_lib_dir}"
+
+        return env_vars
 
     def _log_listener(self, line, **_kwargs):
         # logging the port before each line to be able to connect logs to specific instances
@@ -549,6 +565,10 @@ class EdgeProxiedOpensearchCluster(Server):
         self.cluster = None
         self.cluster_port = None
         self.proxy = None
+
+        parsed_arn = parse_arn(arn)
+        self.account_id = parsed_arn["account"]
+        self.region_name = parsed_arn["region"]
 
     @property
     def version(self):

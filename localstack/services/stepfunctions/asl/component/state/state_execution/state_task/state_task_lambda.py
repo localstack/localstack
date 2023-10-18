@@ -1,15 +1,15 @@
-import json
-from typing import Final, Optional
+from typing import Optional
 
 from botocore.exceptions import ClientError
 
-from localstack.aws.api.lambda_ import InvocationRequest, InvocationResponse, InvocationType
+from localstack.aws.api.lambda_ import InvocationRequest, InvocationType
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
     LambdaFunctionFailedEventDetails,
     LambdaFunctionScheduledEventDetails,
     LambdaFunctionSucceededEventDetails,
+    LambdaFunctionTimedOutEventDetails,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
@@ -23,8 +23,12 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task import (
+    lambda_eval_utils,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     LambdaResource,
+    ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
     StateTask,
@@ -32,26 +36,25 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.utils.aws.aws_stack import connect_to_service
-from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.strings import to_bytes, to_str
-
-
-class LambdaFunctionErrorException(Exception):
-    function_error: Final[Optional[str]]
-    payload: Final[str]
-
-    def __init__(self, function_error: Optional[str], payload: str):
-        self.function_error = function_error
-        self.payload = payload
 
 
 class StateTaskLambda(StateTask):
     resource: LambdaResource
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, TimeoutError):
+            return FailureEvent(
+                error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
+                event_type=HistoryEventType.LambdaFunctionTimedOut,
+                event_details=EventDetails(
+                    lambdaFunctionTimedOutEventDetails=LambdaFunctionTimedOutEventDetails(
+                        error=StatesErrorNameType.StatesTimeout.to_name(),
+                    )
+                ),
+            )
+
         error = "Exception"
-        if isinstance(ex, LambdaFunctionErrorException):
+        if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
             error_name = CustomErrorName(error)
             cause = ex.payload
         elif isinstance(ex, ClientError):
@@ -72,65 +75,62 @@ class StateTaskLambda(StateTask):
             ),
         )
 
-    def _exec_lambda_function(self, env: Environment) -> None:
-        # TODO: check type? input (file) path as lm input? raw binary inputs? always json?
-        tmp = env.stack.pop()
+    def _get_supported_parameters(self) -> Optional[set[str]]:
+        # Filter parameters to set of lambda invoke api action.
+        return {
+            "FunctionName",
+            "InvocationType",
+            "LogType",
+            "ClientContext",
+            "Payload",
+            "Qualifier",
+        }
 
-        parameters: InvocationRequest = dict()
-        parameters["FunctionName"] = self.resource.resource_arn
-        parameters["Payload"] = to_bytes(json.dumps(tmp))  # TODO: IO[bytes]
-        parameters["InvocationType"] = InvocationType.RequestResponse
-        if self.parameters:
-            self.parameters.eval(env=env)
-            gen_parameters: dict = env.stack.pop()
+    def _eval_parameters(self, env: Environment) -> dict:
+        env_state_input = env.stack.pop()
+        parameters = InvocationRequest(
+            FunctionName=self.resource.resource_arn,
+            InvocationType=InvocationType.RequestResponse,
+            Payload=env_state_input,
+        )
 
-            parameters.update(gen_parameters)
-            p_payload = parameters["Payload"]
-            if not isinstance(p_payload, bytes):
-                if not isinstance(p_payload, str):
-                    p_payload = json.dumps(p_payload)
-                parameters["Payload"] = to_bytes(p_payload)  # TODO: IO[bytes]
+        explicit_parameters = super()._eval_parameters(env=env)
+        parameters.update(explicit_parameters)
 
-        # TODO: check for type and support other types.
-        lambda_client = connect_to_service("lambda")
-        invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
-
-        func_error: Optional[str] = invocation_resp.get("FunctionError")
-        if func_error:
-            payload = json.loads(to_str(invocation_resp["Payload"].read()))
-            payload_str = json.dumps(payload, separators=(",", ":"))
-            raise LambdaFunctionErrorException(func_error, payload_str)
-
-        # TODO: supported response types?
-        resp_payload = invocation_resp["Payload"].read()
-        resp_payload_str = to_str(resp_payload)
-        resp_payload_json: json = json.loads(resp_payload_str) or dict()
-        if resp_payload_json:
-            resp_payload_json.pop("ResponseMetadata", None)
-        invocation_resp["Payload"] = resp_payload_json
-
-        response = select_from_typed_dict(typed_dict=InvocationResponse, obj=invocation_resp)
-        env.stack.append(response)
+        return parameters
 
     def _eval_execution(self, env: Environment) -> None:
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.LambdaFunctionScheduled,
-            event_detail=EventDetails(
-                lambdaFunctionScheduledEventDetails=LambdaFunctionScheduledEventDetails(
-                    resource=self.resource.resource_arn,
-                    input=to_json_str(env.inp),
-                    inputDetails=HistoryEventExecutionDataDetails(
-                        truncated=False  # Always False for api calls.
-                    ),
-                )
+        scheduled_event_details = LambdaFunctionScheduledEventDetails(
+            resource=self.resource.resource_arn,
+            input=to_json_str(env.inp),
+            inputDetails=HistoryEventExecutionDataDetails(
+                truncated=False  # Always False for api calls.
             ),
         )
+        if not self.timeout.is_default_value():
+            self.timeout.eval(env=env)
+            timeout_seconds = env.stack.pop()
+            scheduled_event_details["timeoutInSeconds"] = timeout_seconds
         env.event_history.add_event(
-            hist_type_event=HistoryEventType.LambdaFunctionStarted,
-            event_detail=EventDetails(),
+            hist_type_event=HistoryEventType.LambdaFunctionScheduled,
+            event_detail=EventDetails(lambdaFunctionScheduledEventDetails=scheduled_event_details),
         )
 
-        self._exec_lambda_function(env=env)
+        env.event_history.add_event(hist_type_event=HistoryEventType.LambdaFunctionStarted)
+
+        parameters = self._eval_parameters(env=env)
+        if "Payload" in parameters:
+            parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
+
+        self.resource.eval(env=env)
+        resource_runtime_part: ResourceRuntimePart = env.stack.pop()
+
+        lambda_eval_utils.exec_lambda_function(
+            env=env,
+            parameters=parameters,
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
+        )
 
         # In lambda invocations, only payload is passed on as output.
         output = env.stack.pop()

@@ -2,11 +2,12 @@ import logging
 import re
 from urllib.parse import urlparse
 
-from requests.structures import CaseInsensitiveDict
-
 from localstack import config, constants
-from localstack.services.s3 import s3_listener, s3_utils
-from localstack.utils.aws import aws_stack
+from localstack.aws.connect import connect_to
+from localstack.services.s3.utils import (
+    extract_bucket_name_and_key_from_headers_and_path,
+    normalize_bucket_name,
+)
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests
 from localstack.utils.strings import to_str
@@ -45,7 +46,7 @@ def get_template_body(req_data: dict) -> str:
             if is_local_service_url(url):
                 parsed_path = urlparse(url).path.lstrip("/")
                 parts = parsed_path.partition("/")
-                client = aws_stack.connect_to_service("s3")
+                client = connect_to().s3
                 LOG.debug(
                     "Download CloudFormation template content from local S3: %s - %s",
                     parts[0],
@@ -77,15 +78,25 @@ def is_local_service_url(url: str) -> bool:
 
 
 def convert_s3_to_local_url(url: str) -> str:
+    from localstack.services.cloudformation.provider import ValidationError
+
     url_parsed = urlparse(url)
     path = url_parsed.path
 
-    headers = CaseInsensitiveDict({"Host": url_parsed.netloc})
-    bucket_name = s3_utils.extract_bucket_name(headers, path)
-    key_name = s3_utils.extract_key_name(headers, path)
+    headers = {"host": url_parsed.netloc}
+    bucket_name, key_name = extract_bucket_name_and_key_from_headers_and_path(headers, path)
+
+    if url_parsed.scheme == "s3":
+        raise ValidationError(
+            f"S3 error: Domain name specified in {url_parsed.netloc} is not a valid S3 domain"
+        )
+
+    if not bucket_name or not key_name:
+        if not (url_parsed.netloc.startswith("s3.") or ".s3." in url_parsed.netloc):
+            raise ValidationError("TemplateURL must be a supported URL.")
 
     # note: make sure to normalize the bucket name here!
-    bucket_name = s3_listener.normalize_bucket_name(bucket_name)
+    bucket_name = normalize_bucket_name(bucket_name)
     local_url = f"{config.service_url('s3')}/{bucket_name}/{key_name}"
     return local_url
 

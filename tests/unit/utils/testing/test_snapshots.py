@@ -3,7 +3,10 @@ import pytest
 from localstack.testing.snapshots import SnapshotSession
 from localstack.testing.snapshots.report import _format_json_path
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
-from localstack.testing.snapshots.transformer_utility import _resource_name_transformer
+from localstack.testing.snapshots.transformer_utility import (
+    TransformerUtility,
+    _resource_name_transformer,
+)
 
 
 class TestSnapshotManager:
@@ -36,6 +39,13 @@ class TestSnapshotManager:
         )
         sm.recorded_state = {"key_a": {"aaa": "<A:1>", "bbb": "<A:1> hello"}}
         sm.match("key_a", {"aaa": "something", "bbb": "something hello"})
+        sm._assert_all()
+
+    def test_context_replacement_no_change(self):
+        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm.add_transformer(TransformerUtility.key_value("name"))
+        sm.recorded_state = {"key_a": {"name": ""}}
+        sm.match("key_a", {"name": ""})
         sm._assert_all()
 
     def test_match_order_reference_replacement(self):

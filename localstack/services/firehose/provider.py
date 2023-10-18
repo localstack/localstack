@@ -48,6 +48,7 @@ from localstack.aws.api.firehose import (
     ListTagsForDeliveryStreamInputLimit,
     ListTagsForDeliveryStreamOutput,
     ListTagsForDeliveryStreamOutputTagList,
+    MSKSourceConfiguration,
     PutRecordBatchOutput,
     PutRecordBatchRequestEntryList,
     PutRecordBatchResponseEntry,
@@ -85,6 +86,7 @@ from localstack.services.firehose.mappers import (
 from localstack.services.firehose.models import FirehoseStore, firehose_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
     extract_region_from_arn,
     firehose_stream_arn,
     opensearch_domain_name,
@@ -140,12 +142,11 @@ def get_opensearch_endpoint(domain_arn: str) -> str:
     :returns: cluster endpoint
     :raises: ValueError if the domain_arn is malformed
     """
+    account_id = extract_account_id_from_arn(domain_arn)
     region_name = extract_region_from_arn(domain_arn)
     if region_name is None:
         raise ValueError("unable to parse region from opensearch domain ARN")
-    opensearch_client = aws_stack.connect_to_service(
-        service_name="opensearch", region_name=region_name
-    )
+    opensearch_client = connect_to(aws_access_key_id=account_id, region_name=region_name).opensearch
     domain_name = opensearch_domain_name(domain_arn)
     info = opensearch_client.describe_domain(DomainName=domain_name)
     base_domain = info["DomainStatus"]["Endpoint"]
@@ -219,6 +220,7 @@ class FirehoseProvider(FirehoseApi):
         http_endpoint_destination_configuration: HttpEndpointDestinationConfiguration = None,
         tags: TagDeliveryStreamInputTagList = None,
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
+        msk_source_configuration: MSKSourceConfiguration = None,
     ) -> CreateDeliveryStreamOutput:
         store = self.get_store()
 
@@ -683,9 +685,11 @@ class FirehoseProvider(FirehoseApi):
                     record["Data"] = to_str(record["Data"])
             event = {"records": records}
             event = to_bytes(json.dumps(event))
-            client = aws_stack.connect_to_service(
-                "lambda", region_name=extract_region_from_arn(lambda_arn)
-            )
+
+            account_id = extract_account_id_from_arn(lambda_arn)
+            region_name = extract_region_from_arn(lambda_arn)
+            client = connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_
+
             response = client.invoke(FunctionName=lambda_arn, Payload=event)
             result = response.get("Payload").read()
             result = json.loads(to_str(result))

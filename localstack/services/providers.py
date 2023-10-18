@@ -140,8 +140,8 @@ def kms():
 
 
 @aws_provider(api="lambda", name="legacy")
-def awslambda_legacy():
-    from localstack.services.awslambda import lambda_starter
+def lambda_legacy():
+    from localstack.services.lambda_ import lambda_starter
 
     return Service(
         "lambda",
@@ -153,8 +153,8 @@ def awslambda_legacy():
 
 
 @aws_provider(api="lambda", name="v1")
-def awslambda_v1():
-    from localstack.services.awslambda import lambda_starter
+def lambda_v1():
+    from localstack.services.lambda_ import lambda_starter
 
     return Service(
         "lambda",
@@ -166,24 +166,24 @@ def awslambda_v1():
 
 
 @aws_provider(api="lambda")
-def awslambda():
-    from localstack.services.awslambda.provider import LambdaProvider
+def lambda_():
+    from localstack.services.lambda_.provider import LambdaProvider
 
     provider = LambdaProvider()
     return Service.for_provider(provider)
 
 
 @aws_provider(api="lambda", name="asf")
-def awslambda_asf():
-    from localstack.services.awslambda.provider import LambdaProvider
+def lambda_asf():
+    from localstack.services.lambda_.provider import LambdaProvider
 
     provider = LambdaProvider()
     return Service.for_provider(provider)
 
 
 @aws_provider(api="lambda", name="v2")
-def awslambda_v2():
-    from localstack.services.awslambda.provider import LambdaProvider
+def lambda_v2():
+    from localstack.services.lambda_.provider import LambdaProvider
 
     provider = LambdaProvider()
     return Service.for_provider(provider)
@@ -203,6 +203,14 @@ def opensearch():
 
     provider = OpensearchProvider()
     return Service.for_provider(provider)
+
+
+@aws_provider()
+def ram():
+    from localstack.services.ram.provider import RamProvider
+
+    provider = RamProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -231,19 +239,27 @@ def route53resolver():
 
 @aws_provider(api="s3", name="legacy")
 def s3_legacy():
-    from localstack.services.s3 import s3_listener, s3_starter
+    from localstack.services.s3.legacy import s3_listener, s3_starter
 
     return Service(
-        "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
+        "s3",
+        listener=s3_listener.UPDATE_S3,
+        start=s3_starter.start_s3,
+        check=s3_starter.check_s3,
+        lifecycle_hook=s3_starter.S3LifecycleHook(),
     )
 
 
 @aws_provider(api="s3", name="v1")
 def s3_v1():
-    from localstack.services.s3 import s3_listener, s3_starter
+    from localstack.services.s3.legacy import s3_listener, s3_starter
 
     return Service(
-        "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
+        "s3",
+        listener=s3_listener.UPDATE_S3,
+        start=s3_starter.start_s3,
+        check=s3_starter.check_s3,
+        lifecycle_hook=s3_starter.S3LifecycleHook(),
     )
 
 
@@ -271,11 +287,35 @@ def s3_v2():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+@aws_provider(api="s3", name="stream")
+def s3_stream():
+    from localstack.services.s3.v3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider)
+
+
+@aws_provider(api="s3", name="v3")
+def s3_v3():
+    from localstack.services.s3.v3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def s3control():
     from localstack.services.s3control.provider import S3ControlProvider
 
     provider = S3ControlProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider()
+def scheduler():
+    from localstack.services.scheduler.provider import SchedulerProvider
+
+    provider = SchedulerProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
@@ -388,7 +428,7 @@ def resourcegroupstaggingapi():
 
 @aws_provider(api="resource-groups")
 def resource_groups():
-    from localstack.services.resourcegroups.provider import ResourceGroupsProvider
+    from localstack.services.resource_groups.provider import ResourceGroupsProvider
 
     provider = ResourceGroupsProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)

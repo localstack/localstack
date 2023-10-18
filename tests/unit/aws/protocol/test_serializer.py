@@ -602,6 +602,32 @@ def test_restxml_protocol_custom_error_serialization():
     )
 
 
+def test_s3_xml_protocol_custom_error_serialization_headers():
+    class NoSuchKey(ServiceException):
+        code: str = "NoSuchKey"
+        sender_fault: bool = False
+        status_code: int = 404
+        DeleteMarker: Optional[bool]
+        VersionId: Optional[str]
+
+    exception = NoSuchKey(
+        "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
+        DeleteMarker=True,
+        VersionId="version-id",
+    )
+
+    response = _botocore_error_serializer_integration_test(
+        "s3",
+        "GetObject",
+        exception,
+        "NoSuchKey",
+        404,
+        "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
+    )
+    assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-delete-marker"] == "true"
+    assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-version-id"] == "version-id"
+
+
 def test_json_protocol_error_serialization():
     class UserPoolTaggingException(ServiceException):
         code: str = "UserPoolTaggingException"
@@ -1330,6 +1356,7 @@ def test_restxml_headers_location():
             "ContentType": "application/octet-stream",
             # The content length should explicitly be tested here.
             "ContentLength": 159,
+            "StatusCode": 200,
         },
     )
 

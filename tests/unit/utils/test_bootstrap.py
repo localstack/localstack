@@ -4,7 +4,14 @@ from typing import Any, Dict
 
 import pytest
 
-from localstack.utils.bootstrap import get_enabled_apis
+from localstack import constants
+from localstack.utils.bootstrap import (
+    Container,
+    ContainerConfigurators,
+    get_enabled_apis,
+    get_gateway_port,
+)
+from localstack.utils.container_utils.container_client import ContainerConfiguration, VolumeBind
 
 
 @contextmanager
@@ -71,3 +78,84 @@ class TestGetEnabledServices:
             "cognito-idp",
             "cognito-identity",
         }
+
+
+class TestGetGatewayPort:
+    def test_fails_if_nothing_set(self):
+        # error case
+        with pytest.raises(ValueError):
+            get_gateway_port(Container(ContainerConfiguration("")))
+
+    def test_fails_if_not_exposed(self):
+        # gateway_listen set but not exposed
+        c = Container(ContainerConfiguration(""))
+        c.config.env_vars["GATEWAY_LISTEN"] = ":4566"
+        with pytest.raises(ValueError):
+            get_gateway_port(Container(ContainerConfiguration("")))
+
+    def test_default(self):
+        # default case
+        c = Container(ContainerConfiguration(""))
+        c.config.ports.add(constants.DEFAULT_PORT_EDGE)
+        assert get_gateway_port(c) == constants.DEFAULT_PORT_EDGE
+
+    def test_single_mapping(self):
+        # gateway_listen set and exposed to different port
+        c = Container(ContainerConfiguration(""))
+        c.config.env_vars["GATEWAY_LISTEN"] = ":4566"
+        c.config.ports.add(5000, 4566)
+        assert get_gateway_port(c) == 5000
+
+    def test_in_port_range_mapping(self):
+        # gateway_listen set and port range exposed
+        c = Container(ContainerConfiguration(""))
+        c.config.env_vars["GATEWAY_LISTEN"] = ":4566"
+        c.config.ports.add([4000, 5000])
+        assert get_gateway_port(c) == 4566
+
+    def test_multiple_gateway_listen_ports_returns_first(self):
+        # gateway_listen set to multiple values returns first case
+        c = Container(ContainerConfiguration(""))
+        c.config.env_vars["GATEWAY_LISTEN"] = ":5000,:443"
+        c.config.ports.add(443)
+        c.config.ports.add(5000)
+        assert get_gateway_port(c) == 5000
+
+    def test_multiple_gateway_listen_ports_only_one_exposed(self):
+        # gateway_listen set to multiple values but first port not exposed
+        c = Container(ContainerConfiguration(""))
+        c.config.env_vars["GATEWAY_LISTEN"] = ":4566,:443"
+        c.config.ports.add(443)
+        assert get_gateway_port(c) == 443
+
+
+class TestContainerConfigurators:
+    def test_cli_params(self, monkeypatch):
+        monkeypatch.setenv("BAR", "BAZ")
+
+        c = ContainerConfiguration("localstack/localstack")
+        ContainerConfigurators.cli_params(
+            {
+                "network": "my-network",
+                "publish": ("4566", "5000:6000", "53:53/udp", "4510-4513:4610-4613"),
+                "volume": ("foo:/tmp/foo", "/bar:/tmp/bar:ro"),
+                "env": ("FOO=BAR", "BAR"),
+            }
+        )(c)
+
+        assert c.network == "my-network"
+        assert c.env_vars == {
+            "FOO": "BAR",
+            "BAR": "BAZ",
+        }
+        assert c.ports.to_dict() == {
+            "4566/tcp": 4566,
+            "4610/tcp": 4510,
+            "4611/tcp": 4511,
+            "4612/tcp": 4512,
+            "4613/tcp": 4513,
+            "53/udp": 53,
+            "6000/tcp": 5000,
+        }
+        assert VolumeBind(host_dir="foo", container_dir="/tmp/foo", read_only=False) in c.volumes
+        assert VolumeBind(host_dir="/bar", container_dir="/tmp/bar", read_only=True) in c.volumes

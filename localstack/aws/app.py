@@ -27,6 +27,8 @@ class LocalstackAwsGateway(Gateway):
         self.request_handlers.extend(
             [
                 handlers.push_request_context,
+                handlers.add_internal_request_params,
+                handlers.handle_runtime_shutdown,
                 metric_collector.create_metric_handler_item,
                 handlers.preprocess_request,
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
@@ -36,10 +38,10 @@ class LocalstackAwsGateway(Gateway):
                 handlers.serve_default_listeners,  # legacy proxy default listeners
                 handlers.serve_edge_router_rules,
                 # start aws handler chain
+                handlers.parse_pre_signed_url_request,
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,
                 handlers.add_account_id,
-                handlers.add_internal_request_params,
                 handlers.parse_service_request,
                 metric_collector.record_parsed_request,
                 handlers.serve_custom_service_request_handlers,

@@ -14,6 +14,7 @@ top_layer_stmt
     : comment_decl
     | startat_decl
     | states_decl
+    | timeout_seconds_decl
     ;
 
 startat_decl
@@ -44,7 +45,14 @@ state_stmt
     | timestamp_path_decl
     | items_path_decl
     | item_processor_decl
+    | iterator_decl
+    | item_selector_decl
+    | item_reader_decl
     | max_concurrency_decl
+    | timeout_seconds_decl
+    | timeout_seconds_path_decl
+    | heartbeat_seconds_decl
+    | heartbeat_seconds_path_decl
     | branches_decl
     | parameters_decl
     | retry_decl
@@ -98,7 +106,7 @@ result_decl
     ;
 
 result_path_decl
-    : RESULTPATH COLON keyword_or_string // TODO keywords too?
+    : RESULTPATH COLON (NULL | keyword_or_string)
     ;
 
 output_path_decl
@@ -147,6 +155,22 @@ max_concurrency_decl
 
 parameters_decl
     : PARAMETERS COLON payload_tmpl_decl
+    ;
+
+timeout_seconds_decl
+    : TIMEOUTSECONDS COLON INT
+    ;
+
+timeout_seconds_path_decl
+    : TIMEOUTSECONDSPATH COLON STRINGPATH
+    ;
+
+heartbeat_seconds_decl
+    : HEARTBEATSECONDS COLON INT
+    ;
+
+heartbeat_seconds_path_decl
+    : HEARTBEATSECONDSPATH COLON STRINGPATH
     ;
 
 payload_tmpl_decl
@@ -210,23 +234,22 @@ choices_decl
 
 choice_rule
     : LBRACE
-      choice_rule_stmt (COMMA choice_rule_stmt)*
-      RBRACE
+      comparison_variable_stmt (COMMA comparison_variable_stmt)+
+      RBRACE  #choice_rule_comparison_variable
+    | LBRACE
+      comparison_composite_stmt (COMMA comparison_composite_stmt)*
+      RBRACE  #choice_rule_comparison_composite
     ;
 
-choice_rule_stmt
-    : comparison
-    | comparison_composite
+comparison_variable_stmt
+    : variable_decl
+    | comparison_func
     | next_decl
     ;
 
-comparison
-    : comparison_stmt (COMMA comparison_stmt)+
-    ;
-
-comparison_stmt
-    : variable_decl
-    | comparison_func
+comparison_composite_stmt
+    : comparison_composite
+    | next_decl
     ;
 
 comparison_composite
@@ -274,10 +297,13 @@ processor_config_decl
     : PROCESSORCONFIG
       COLON
       LBRACE
-      ( mode_decl
-      | json_binding  // TODO
-      )*
+      processor_config_field (COMMA processor_config_field)*
       RBRACE
+    ;
+
+processor_config_field
+    : mode_decl
+    | execution_decl
     ;
 
 mode_decl
@@ -286,13 +312,94 @@ mode_decl
 
 mode_type
     : INLINE
+    | DISTRIBUTED
+    ;
+
+execution_decl
+    : EXECUTIONTYPE COLON execution_type
+    ;
+
+execution_type
+    : STANDARD
+    ;
+
+iterator_decl
+    : ITERATOR
+      COLON
+      LBRACE
+      iterator_decl_item (COMMA iterator_decl_item)*
+      RBRACE
+    ;
+
+iterator_decl_item
+    : startat_decl
+    | states_decl
+    | comment_decl
+    ;
+
+item_selector_decl
+    : ITEMSELECTOR COLON payload_tmpl_decl
+    ;
+
+item_reader_decl
+    : ITEMREADER
+      COLON
+      LBRACE
+      items_reader_field (COMMA items_reader_field)*
+      RBRACE
+    ;
+
+items_reader_field
+    : resource_decl
+    | parameters_decl
+    | reader_config_decl
+    ;
+
+reader_config_decl
+    : READERCONFIG
+      COLON
+      LBRACE
+      reader_config_field (COMMA reader_config_field)*
+      RBRACE
+    ;
+
+reader_config_field
+    : input_type_decl
+    | csv_header_location_decl
+    | csv_headers_decl
+    | max_items_decl
+    | max_items_path_decl
+    ;
+
+input_type_decl
+    : INPUTTYPE COLON keyword_or_string
+    ;
+
+csv_header_location_decl
+    : CSVHEADERLOCATION COLON keyword_or_string
+    ;
+
+csv_headers_decl  // TODO: are empty "CSVHeaders" list values supported?
+    : CSVHEADERS
+      COLON
+      LBRACK
+      keyword_or_string (COMMA keyword_or_string)*
+      RBRACK
+    ;
+
+max_items_decl
+    : MAXITEMS COLON INT
+    ;
+
+max_items_path_decl
+    : MAXITEMSPATH COLON STRINGPATH
     ;
 
 retry_decl
     : RETRY
       COLON
       LBRACK
-      retrier_decl (COMMA retry_decl)*
+      retrier_decl (COMMA retrier_decl)*
       RBRACK
     ;
 
@@ -326,7 +433,7 @@ max_attempts_decl
     ;
 
 backoff_rate_decl
-    : BACKOFFRATE COLON NUMBER
+    : BACKOFFRATE COLON (INT | NUMBER)
     ;
 
 catch_decl
@@ -445,10 +552,10 @@ json_value_decl
    ;
 
 keyword_or_string // TODO: check keywords can be used as strings.
-    : STRING
-    | STRINGDOLLAR
-    | STRINGPATH
+    : STRINGDOLLAR
     | STRINGPATHCONTEXTOBJ
+    | STRINGPATH
+    | STRING
     //
     | COMMENT
     | STATES
@@ -457,38 +564,113 @@ keyword_or_string // TODO: check keywords can be used as strings.
     | TYPE
     | TASK
     | CHOICE
-    | CHOICES
     | FAIL
+    | SUCCEED
+    | PASS
     | WAIT
     | PARALLEL
     | MAP
-    | SUCCEED
+    | CHOICES
     | VARIABLE
-    | RESOURCE
-    | RESULT
-    | END
-    | CAUSE
-    | ERROR
     | DEFAULT
-    | ITEMSPATH
-    | MODE
-    | PROCESSORCONFIG
-    | INLINE
-    | OUTPUTPATH
-    | RESULTPATH
-    | INPUTPATH
+    | BRANCHES
+    | AND
+    | BOOLEANEQUALS
+    | BOOLEANQUALSPATH
+    | ISBOOLEAN
+    | ISNULL
+    | ISNUMERIC
+    | ISPRESENT
+    | ISSTRING
+    | ISTIMESTAMP
+    | NOT
+    | NUMERICEQUALS
+    | NUMERICEQUALSPATH
+    | NUMERICGREATERTHAN
+    | NUMERICGREATERTHANPATH
+    | NUMERICGREATERTHANEQUALS
+    | NUMERICGREATERTHANEQUALSPATH
+    | NUMERICLESSTHAN
+    | NUMERICLESSTHANPATH
+    | NUMERICLESSTHANEQUALS
+    | NUMERICLESSTHANEQUALSPATH
+    | OR
+    | STRINGEQUALS
+    | STRINGEQUALSPATH
+    | STRINGGREATERTHAN
+    | STRINGGREATERTHANPATH
+    | STRINGGREATERTHANEQUALS
+    | STRINGGREATERTHANEQUALSPATH
+    | STRINGLESSTHAN
+    | STRINGLESSTHANPATH
+    | STRINGLESSTHANEQUALS
+    | STRINGLESSTHANEQUALSPATH
+    | STRINGMATCHES
+    | TIMESTAMPEQUALS
+    | TIMESTAMPEQUALSPATH
+    | TIMESTAMPGREATERTHAN
+    | TIMESTAMPGREATERTHANPATH
+    | TIMESTAMPGREATERTHANEQUALS
+    | TIMESTAMPGREATERTHANEQUALSPATH
+    | TIMESTAMPLESSTHAN
+    | TIMESTAMPLESSTHANPATH
+    | TIMESTAMPLESSTHANEQUALS
+    | TIMESTAMPLESSTHANEQUALSPATH
     | SECONDSPATH
     | SECONDS
     | TIMESTAMPPATH
     | TIMESTAMP
+    | TIMEOUTSECONDS
+    | TIMEOUTSECONDSPATH
+    | HEARTBEATSECONDS
+    | HEARTBEATSECONDSPATH
+    | PROCESSORCONFIG
+    | MODE
+    | INLINE
+    | DISTRIBUTED
+    | EXECUTIONTYPE
+    | STANDARD
+    | ITEMPROCESSOR
+    | ITERATOR
+    | ITEMSELECTOR
+    | MAXCONCURRENCY
+    | RESOURCE
+    | INPUTPATH
+    | OUTPUTPATH
+    | ITEMSPATH
+    | RESULTPATH
+    | RESULT
+    | PARAMETERS
+    | RESULTSELECTOR
+    | ITEMREADER
+    | READERCONFIG
+    | INPUTTYPE
+    | CSVHEADERLOCATION
+    | CSVHEADERS
+    | MAXITEMS
+    | MAXITEMSPATH
+    | NEXT
+    | END
+    | CAUSE
+    | ERROR
     | RETRY
     | ERROREQUALS
     | INTERVALSECONDS
     | MAXATTEMPTS
     | BACKOFFRATE
     | CATCH
-    //
-    | comparison_func
-    | choice_operator
-    | states_error_name
+    | ERRORNAMEStatesALL
+    | ERRORNAMEStatesHeartbeatTimeout
+    | ERRORNAMEStatesTimeout
+    | ERRORNAMEStatesTaskFailed
+    | ERRORNAMEStatesPermissions
+    | ERRORNAMEStatesResultPathMatchFailure
+    | ERRORNAMEStatesParameterPathFailure
+    | ERRORNAMEStatesBranchFailed
+    | ERRORNAMEStatesNoChoiceMatched
+    | ERRORNAMEStatesIntrinsicFailure
+    | ERRORNAMEStatesExceedToleratedFailureThreshold
+    | ERRORNAMEStatesItemReaderFailed
+    | ERRORNAMEStatesResultWriterFailed
+    | ERRORNAMEStatesRuntime
     ;

@@ -1,5 +1,5 @@
 <p align="center">
-:zap: We are thrilled to announce <a href="https://discuss.localstack.cloud/t/localstack-release-v2-1-0/357">LocalStack 2.1</a> which brings new features, enhancements and bugfixes :zap:
+:zap: Join the <a href="https://localstack.cloud/insiders/">LocalStack Insiders program</a> to help us shape the future of LocalStack! Test drive new features & engage in conversations with us so we can learn from your use cases :zap:
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@
   <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/localstack/sponsors/badge.svg"></a>
   <a href="https://img.shields.io/pypi/l/localstack.svg"><img alt="PyPI License" src="https://img.shields.io/pypi/l/localstack.svg"></a>
   <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-  <a href="https://twitter.com/_localstack"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>
+  <a href="https://twitter.com/localstack"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>
 </p>
 
 <p align="center">
@@ -47,18 +47,34 @@ LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynam
 
 LocalStack also provides additional features to make your life as a cloud developer easier! Check out LocalStack's [Cloud Developer Tools](https://docs.localstack.cloud/user-guide/tools/) for more information.
 
-## Requirements
+## Installation
+The quickest way get started with LocalStack is by using the LocalStack CLI.
+It allows you to start and manage the LocalStack Docker container from your command line.
+Please make sure that you have a working [`docker` environment](https://docs.docker.com/get-docker/) on your machine before moving on.
 
-* `python` (Python 3.7 up to 3.11 supported)
-* `pip` (Python package manager)
-* `Docker`
-
-## Installing
-
-The easiest way to install LocalStack is via `pip`:
-
+### Brew (MacOS or Linux with Homebrew)
+Install the LocalStack CLI by using our [official LocalStack Brew Tap](https://github.com/localstack/homebrew-tap):
 ```
-pip install localstack
+$ brew install localstack/tap/localstack-cli
+```
+
+### Binary download (MacOS, Linux, Windows)
+If you do not have Brew on your machine, you can directly download the pre-built LocalStack CLI binary for your system:
+- Download the latest release for your platform on [localstack/localstack-cli](https://github.com/localstack/localstack-cli/releases/latest).
+- Extract the archive to a folder in your `PATH` variable:
+  - MacOS / Linux: ```sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin```
+
+### Python package (MacOS, Linux, Windows)
+LocalStack is built with Python.
+You can directly install the LocalStack CLI in your Python environment using `pip`.
+
+#### Prerequisites
+
+* `python` (Python 3.8 up to 3.11 supported)
+
+#### Installation
+```
+python3 -m pip install localstack
 ```
 
 This installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime. The `awslocal` CLI for interacting with the local AWS services is installed separately. See the [`awslocal` documentation](https://docs.localstack.cloud/user-guide/integrations/aws-cli/#localstack-aws-cli-awslocal) for installation instructions.
@@ -78,7 +94,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 2.0.0
+ 💻 LocalStack CLI 2.3.0
 
 [20:22:20] starting LocalStack in Docker mode 🐳
 [20:22:21] detaching

@@ -28,7 +28,7 @@ from localstack.services.stepfunctions.asl.component.state.state_type import Sta
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import State
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.eval.programstate.program_running import ProgramRunning
+from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunning
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 LOG = logging.getLogger(__name__)
@@ -85,10 +85,10 @@ class CommonStateField(EvalComponent, ABC):
         else:
             LOG.error(f"Could not handle ContinueWith type of '{type(self.continue_with)}'.")
 
-    def _get_state_entered_even_details(self, env: Environment) -> StateEnteredEventDetails:
+    def _get_state_entered_event_details(self, env: Environment) -> StateEnteredEventDetails:
         return StateEnteredEventDetails(
             name=self.name,
-            input=to_json_str(env.inp),
+            input=to_json_str(env.inp, separators=(",", ":")),
             inputDetails=HistoryEventExecutionDataDetails(
                 truncated=False  # Always False for api calls.
             ),
@@ -97,7 +97,7 @@ class CommonStateField(EvalComponent, ABC):
     def _get_state_exited_event_details(self, env: Environment) -> StateExitedEventDetails:
         return StateExitedEventDetails(
             name=self.name,
-            output=to_json_str(env.inp),
+            output=to_json_str(env.inp, separators=(",", ":")),
             outputDetails=HistoryEventExecutionDataDetails(
                 truncated=False  # Always False for api calls.
             ),
@@ -111,12 +111,12 @@ class CommonStateField(EvalComponent, ABC):
         env.event_history.add_event(
             hist_type_event=self.state_entered_event_type,
             event_detail=EventDetails(
-                stateEnteredEventDetails=self._get_state_entered_even_details(env=env)
+                stateEnteredEventDetails=self._get_state_entered_event_details(env=env)
             ),
         )
 
-        env.context_object["State"] = State(
-            EnteredTime=datetime.datetime.now().isoformat(), Name=self.name, RetryCount=0
+        env.context_object_manager.context_object["State"] = State(
+            EnteredTime=datetime.datetime.now().isoformat(), Name=self.name
         )
 
         # Filter the input onto the stack.

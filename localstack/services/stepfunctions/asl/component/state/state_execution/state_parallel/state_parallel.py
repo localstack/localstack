@@ -17,9 +17,9 @@ class StateParallel(ExecutionState):
     branches: BranchesDecl
 
     def __init__(self):
-        super(StateParallel).__init__(
-            state_entered_event_type=HistoryEventType.ParallelStateExited,
-            state_exited_event_type=HistoryEventType.ParallelStateEntered,
+        super().__init__(
+            state_entered_event_type=HistoryEventType.ParallelStateEntered,
+            state_exited_event_type=HistoryEventType.ParallelStateExited,
         )
 
     def from_state_props(self, state_props: StateProps) -> None:
@@ -30,4 +30,8 @@ class StateParallel(ExecutionState):
         )
 
     def _eval_execution(self, env: Environment) -> None:
+        env.event_history.add_event(
+            hist_type_event=HistoryEventType.ParallelStateStarted,
+        )
         self.branches.eval(env)
+        env.event_history.add_event(hist_type_event=HistoryEventType.ParallelStateSucceeded)

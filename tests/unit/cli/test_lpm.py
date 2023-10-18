@@ -7,6 +7,7 @@ from click.testing import CliRunner
 from localstack.cli.lpm import cli, console
 from localstack.packages import InstallTarget, Package, PackageException, PackageInstaller
 from localstack.packages.api import PackagesPluginManager
+from localstack.testing.pytest import markers
 from localstack.utils.patch import Patch
 
 
@@ -15,7 +16,7 @@ def runner():
     return CliRunner()
 
 
-@pytest.mark.skip_offline
+@markers.skip_offline
 def test_list(runner, monkeypatch):
     monkeypatch.setattr(console, "no_color", True)
 
@@ -24,14 +25,14 @@ def test_list(runner, monkeypatch):
     assert "kinesis-mock/community" in result.output
 
 
-@pytest.mark.skip_offline
+@markers.skip_offline
 def test_install_with_non_existing_package_fails(runner):
     result = runner.invoke(cli, ["install", "kinesis-mock", "funny"])
     assert result.exit_code == 1
     assert "unable to locate installer for package funny" in result.output
 
 
-@pytest.mark.skip_offline
+@markers.skip_offline
 def test_install_with_non_existing_version_fails(runner):
     result = runner.invoke(cli, ["install", "kinesis-mock", "--version", "non-existing-version"])
     assert result.exit_code == 1
@@ -41,7 +42,7 @@ def test_install_with_non_existing_version_fails(runner):
     )
 
 
-@pytest.mark.skip_offline
+@markers.skip_offline
 def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
     class FailingPackage(Package):
         def __init__(self):
@@ -94,7 +95,7 @@ def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
         assert "one or more package installations failed." in result.output
 
 
-@pytest.mark.skip_offline
+@markers.skip_offline
 def test_install_with_package(runner):
     from localstack.services.kinesis.packages import kinesismock_package
 

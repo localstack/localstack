@@ -70,6 +70,7 @@ from abc import ABC
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 from typing.io import IO
+from urllib.parse import unquote
 from xml.etree import ElementTree as ETree
 
 import cbor2
@@ -233,7 +234,7 @@ class RequestParser(abc.ABC):
             if location == "header":
                 header_name = shape.serialization.get("name")
                 payload = request.headers.get(header_name)
-                if shape.type_name == "list":
+                if payload and shape.type_name == "list":
                     # headers may contain a comma separated list of values (e.g., the ObjectAttributes member in
                     # s3.GetObjectAttributes), so we prepare it here for the handler, which will be `_parse_list`.
                     payload = payload.split(",")
@@ -1047,7 +1048,7 @@ class S3RequestParser(RestXMLRequestParser):
 
         @staticmethod
         def _is_vhost_address(request: HttpRequest) -> bool:
-            from localstack.services.s3.s3_utils import uses_host_addressing
+            from localstack.services.s3.utils import uses_host_addressing
 
             return uses_host_addressing(request.headers)
 
@@ -1067,14 +1068,14 @@ class S3RequestParser(RestXMLRequestParser):
         Special handling of parsing the shape for s3 object-names (=key):
         trailing '/' are valid and need to be preserved, however, the url-matcher removes it from the key
         we check the request.url to verify the name.
-        We might want to encode the key to take into account the ones with special characters.
+        We decode the key for the comparison with `base_url` in case of special characters.
         """
         if (
             shape is not None
             and uri_params is not None
             and shape.serialization.get("location") == "uri"
             and shape.serialization.get("name") == "Key"
-            and request.base_url.endswith(f"{uri_params['Key']}/")
+            and request.base_url.endswith(f"{unquote(uri_params['Key'])}/")
         ):
             uri_params = dict(uri_params)
             uri_params["Key"] = uri_params["Key"] + "/"

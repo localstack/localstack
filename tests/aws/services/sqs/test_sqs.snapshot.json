@@ -1,0 +1,1078 @@
+{
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_attribute_names_filters": {
+    "recorded-date": "06-07-2023, 11:20:02",
+    "recorded-content": {
+      "send_message_response": {
+        "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+        "MD5OfMessageBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "empty_filter": {
+        "Messages": [
+          {
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "all_name": {
+        "Messages": [
+          {
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+            "MessageAttributes": {
+              "General": {
+                "DataType": "String",
+                "StringValue": "Kenobi"
+              },
+              "Hello": {
+                "DataType": "String",
+                "StringValue": "There"
+              },
+              "Help.Me": {
+                "DataType": "String",
+                "StringValue": "Me"
+              }
+            },
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "all_wildcard_asterisk": {
+        "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+        "MessageAttributes": {
+          "General": {
+            "DataType": "String",
+            "StringValue": "Kenobi"
+          },
+          "Hello": {
+            "DataType": "String",
+            "StringValue": "There"
+          },
+          "Help.Me": {
+            "DataType": "String",
+            "StringValue": "Me"
+          }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:3>"
+      },
+      "all_wildcard": {
+        "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+        "MessageAttributes": {
+          "General": {
+            "DataType": "String",
+            "StringValue": "Kenobi"
+          },
+          "Hello": {
+            "DataType": "String",
+            "StringValue": "There"
+          },
+          "Help.Me": {
+            "DataType": "String",
+            "StringValue": "Me"
+          }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:4>"
+      },
+      "only_non_existing_names": {
+        "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:5>"
+      },
+      "only_existing": {
+        "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MD5OfMessageAttributes": "fca026605781cb4126a1e9044df24232",
+        "MessageAttributes": {
+          "General": {
+            "DataType": "String",
+            "StringValue": "Kenobi"
+          },
+          "Hello": {
+            "DataType": "String",
+            "StringValue": "There"
+          }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:6>"
+      },
+      "existing_and_non_existing": {
+        "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MD5OfMessageAttributes": "a311262e065454b75da111d535b8dacd",
+        "MessageAttributes": {
+          "Hello": {
+            "DataType": "String",
+            "StringValue": "There"
+          }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:7>"
+      },
+      "prefix_filter": {
+        "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MD5OfMessageAttributes": "83fee93c1bcd8b9a5a923ffacdc636c7",
+        "MessageAttributes": {
+          "Hello": {
+            "DataType": "String",
+            "StringValue": "There"
+          },
+          "Help.Me": {
+            "DataType": "String",
+            "StringValue": "Me"
+          }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:8>"
+      },
+      "illegal_name_1": {
+        "Messages": [
+          {
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:9>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "illegal_name_2": {
+        "Messages": [
+          {
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:10>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters": {
+    "recorded-date": "29-08-2023, 11:15:01",
+    "recorded-content": {
+      "all_attributes": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "all_system_and_message_attributes": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "2",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MD5OfMessageAttributes": "ae7155c6026991b6d54b11589678bf9c",
+            "MessageAttributes": {
+              "Foo": {
+                "DataType": "String",
+                "StringValue": "Bar"
+              }
+            },
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "single_attribute": {
+        "Messages": [
+          {
+            "Attributes": {
+              "SenderId": "<sender-id:1>"
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "multiple_attributes": {
+        "Messages": [
+          {
+            "Attributes": {
+              "SenderId": "<sender-id:1>"
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes": {
+    "recorded-date": "29-08-2023, 11:14:51",
+    "recorded-content": {
+      "get_queue_attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "0",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "604800",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "10",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "20"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_updated_queue_attributes": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "CreatedTimestamp": "timestamp",
+          "DelaySeconds": "420",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "2048",
+          "MessageRetentionPeriod": "604800",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "10",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "69"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sse_queue_attributes": {
+    "recorded-date": "29-08-2023, 11:04:58",
+    "recorded-content": {
+      "sse_kms_attributes": {
+        "Attributes": {
+          "KmsDataKeyReusePeriodSeconds": "6000",
+          "KmsMasterKeyId": "testKeyId",
+          "SqsManagedSseEnabled": "false"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sse_sqs_attributes": {
+        "Attributes": {
+          "SqsManagedSseEnabled": "true"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sse_kms_and_sqs_are_mutually_exclusive": {
+    "recorded-date": "01-08-2022, 21:16:38",
+    "recorded-content": {
+      "error": "An error occurred (InvalidAttributeName) when calling the SetQueueAttributes operation: You can use one type of server-side encryption (SSE) at one time. You can either enable KMS SSE or SQS SSE."
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_seconds_fails": {
+    "recorded-date": "29-08-2023, 11:14:59",
+    "recorded-content": {
+      "send_message": "An error occurred (InvalidParameterValue) when calling the SendMessage operation: Value 2 for parameter DelaySeconds is invalid. Reason: The request include parameter that is not valid for this queue type."
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_different_attributes_raises_exception": {
+    "recorded-date": "29-08-2023, 11:14:54",
+    "recorded-content": {
+      "create_queue_01": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds",
+      "create_queue_02": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds"
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_attributes": {
+    "recorded-date": "29-08-2023, 11:14:58",
+    "recorded-content": {
+      "send_message": {
+        "MD5OfMessageBody": "19c9e282d65f9733bc6b35d50062c7ee",
+        "MessageId": "<uuid:1>",
+        "SequenceNumber": "<sequence-number:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "receive_message_0": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "dedup-1",
+              "MessageGroupId": "group-1",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": "message-body-1",
+            "MD5OfBody": "19c9e282d65f9733bc6b35d50062c7ee",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "receive_message_1": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "2",
+              "MessageDeduplicationId": "dedup-1",
+              "MessageGroupId": "group-1",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": "message-body-1",
+            "MD5OfBody": "19c9e282d65f9733bc6b35d50062c7ee",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_dead_letter_arn_rejected_before_lookup": {
+    "recorded-date": "29-08-2023, 11:14:59",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value {\"deadLetterTargetArn\": \"dummy\", \"maxReceiveCount\": 42} for parameter RedrivePolicy is invalid. Reason: Invalid value for deadLetterTargetArn.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_successive_purge_calls_fail": {
+    "recorded-date": "29-08-2023, 11:03:34",
+    "recorded-content": {
+      "purge_queue_error": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.PurgeQueueInProgress",
+          "Detail": null,
+          "Message": "Only one PurgeQueue operation on <queue-name> is allowed every 60 seconds.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message": {
+    "recorded-date": "29-08-2023, 11:09:40",
+    "recorded-content": {
+      "send_oversized_message": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 262144 bytes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_updated_maximum_message_size": {
+    "recorded-date": "29-08-2023, 11:15:06",
+    "recorded-content": {
+      "send_oversized_message": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 1024 bytes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents": {
+    "recorded-date": "29-08-2023, 11:15:03",
+    "recorded-content": {
+      "send_oversized_message_batch": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.BatchRequestTooLong",
+          "Detail": null,
+          "Message": "Batch requests cannot be longer than 262144 bytes. You have sent 262145 bytes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size": {
+    "recorded-date": "29-08-2023, 11:15:05",
+    "recorded-content": {
+      "send_oversized_message_batch": {
+        "Successful": [
+          {
+            "Id": "1",
+            "MD5OfMessageAttributes": "a45daa70926828a2f0a1db3418e6feb4",
+            "MD5OfMessageBody": "f44facf5a7ee0af446ecf3e0f854441e",
+            "MessageId": "<uuid:1>"
+          },
+          {
+            "Id": "2",
+            "MD5OfMessageBody": "0cc175b9c0f1b6a831c399e269772661",
+            "MessageId": "<uuid:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[]": {
+    "recorded-date": "29-08-2023, 11:14:55",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
+          "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[testLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongId]": {
+    "recorded-date": "29-08-2023, 11:14:56",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
+          "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[invalid:id]": {
+    "recorded-date": "29-08-2023, 11:14:57",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
+          "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_too_many_entries_in_batch_request": {
+    "recorded-date": "29-08-2023, 11:02:09",
+    "recorded-content": {
+      "test_too_many_entries_in_batch_request": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Detail": null,
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_batch_id": {
+    "recorded-date": "12-12-2022, 21:57:35",
+    "recorded-content": {
+      "test_invalid_batch_id": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
+          "Detail": null,
+          "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_binary_attributes": {
+    "recorded-date": "22-12-2022, 16:28:53",
+    "recorded-content": {
+      "binary-attrs-msg": {
+        "Messages": [
+          {
+            "Body": "test",
+            "MD5OfBody": "098f6bcd4621d373cade4e832627b4f6",
+            "MD5OfMessageAttributes": "8cbe4db156db8a94db8b801b7addb984",
+            "MessageAttributes": {
+              "attr1": {
+                "BinaryValue": "b'traceparent\\x1e00-774062d6c37081a5a0b9b5b88e30627c-2d2482211f6489da-01'",
+                "DataType": "Binary"
+              }
+            },
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_max_number_of_messages": {
+    "recorded-date": "29-12-2022, 08:55:47",
+    "recorded-content": {
+      "send_max_number_of_messages": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value 11 for parameter MaxNumberOfMessages is invalid. Reason: Must be between 1 and 10, if provided.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[True]": {
+    "recorded-date": "14-04-2023, 19:30:06",
+    "recorded-content": {
+      "get-messages": {
+        "Messages": [
+          {
+            "Body": {
+              "foo": "bar"
+            },
+            "MD5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-messages-duplicate": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[False]": {
+    "recorded-date": "14-04-2023, 19:30:08",
+    "recorded-content": {
+      "get-messages": {
+        "Messages": [
+          {
+            "Body": {
+              "foo": "bar"
+            },
+            "MD5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-messages-duplicate": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[True]": {
+    "recorded-date": "14-04-2023, 20:25:10",
+    "recorded-content": {
+      "get-messages": {
+        "Messages": [
+          {
+            "Body": {
+              "foo": "bar"
+            },
+            "MD5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-dedup-messages": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[False]": {
+    "recorded-date": "14-04-2023, 20:25:12",
+    "recorded-content": {
+      "get-messages": {
+        "Messages": [
+          {
+            "Body": {
+              "foo": "bar"
+            },
+            "MD5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-dedup-messages": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_message_with_expired_receipt_handle": {
+    "recorded-date": "06-05-2023, 04:18:50",
+    "recorded-content": {
+      "response": {
+        "Messages": [
+          {
+            "Body": "g1-m1",
+            "MD5OfBody": "fc4286b824b39ddf3606c9f27ff664bd",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value <receipt-handle:1> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_cross_account_access[domain]": {
+    "recorded-date": "06-05-2023, 04:43:43",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_cross_account_access[path]": {
+    "recorded-date": "06-05-2023, 04:43:44",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues": {
+    "recorded-date": "06-05-2023, 04:43:47",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy": {
+    "recorded-date": "30-05-2023, 20:20:59",
+    "recorded-content": {
+      "before-update": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "true",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "after-update": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle": {
+    "recorded-date": "22-06-2023, 17:01:51",
+    "recorded-content": {
+      "add-permission-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": [
+                    "arn:aws:iam::111111111111:<resource:3>",
+                    "arn:aws:iam::668614515564:<resource:3>"
+                  ]
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-permission-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-after-removal": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-first-account-same-label": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-second-account-same-label": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value crossaccountpermission for parameter Label is invalid. Reason: Already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-queue-policy-attribute-second-account-different-label": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              },
+              {
+                "Sid": "crossaccountpermission2",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-delete-first-permission": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission2",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-delete-second-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-delete-non-existent-label": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value crossaccountpermission2 for parameter Label is invalid. Reason: can't find label.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_with_too_large_batch": {
+    "recorded-date": "24-06-2023, 17:14:03",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_batch_with_too_large_batch": {
+    "recorded-date": "24-06-2023, 17:14:36",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_message_group_id_for_fifo_queue": {
+    "recorded-date": "02-08-2023, 12:36:06",
+    "recorded-content": {
+      "test_missing_message_group_id_for_fifo_queue": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "The request must contain the parameter MessageGroupId.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_deduplication_id_for_fifo_queue": {
+    "recorded-date": "02-08-2023, 12:37:36",
+    "recorded-content": {
+      "test_missing_deduplication_id_for_fifo_queue": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "The queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

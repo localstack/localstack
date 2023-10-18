@@ -52,6 +52,7 @@ CORS_ALLOWED_HEADERS = [
     "content-type",
     "etag",
     "location",
+    # AWS specific headers
     "x-amz-acl",
     "x-amz-content-sha256",
     "x-amz-date",
@@ -62,6 +63,8 @@ CORS_ALLOWED_HEADERS = [
     "x-amz-user-agent",
     "x-amz-version-id",
     "x-amzn-requestid",
+    "x-api-key",  # for API Gateway or AppSync GraphQL request
+    # LocalStack specific headers
     "x-localstack-target",
     # for AWS SDK v3
     "amz-sdk-invocation-id",
@@ -494,7 +497,7 @@ def modify_and_forward(
             response = updated_response
 
     # allow pre-flight CORS headers by default
-    from localstack.services.s3.s3_listener import ProxyListenerS3
+    from localstack.services.s3.legacy.s3_listener import ProxyListenerS3
 
     is_s3_listener = any(
         isinstance(service_listener, ProxyListenerS3) for service_listener in listeners

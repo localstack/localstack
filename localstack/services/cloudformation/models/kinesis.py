@@ -1,6 +1,6 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 
 
 class KinesisStreamConsumer(GenericBaseModel):
@@ -8,20 +8,33 @@ class KinesisStreamConsumer(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Kinesis::StreamConsumer"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("ConsumerARN")
-
     def fetch_state(self, stack_name, resources):
         props = self.props
         stream_arn = props["StreamARN"]
-        result = aws_stack.connect_to_service("kinesis").list_stream_consumers(StreamARN=stream_arn)
+        result = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).kinesis.list_stream_consumers(StreamARN=stream_arn)
         result = [r for r in result["Consumers"] if r["ConsumerName"] == props["ConsumerName"]]
         return (result or [None])[0]
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["Consumer"]["ConsumerARN"]
+            resource["Properties"]["ConsumerARN"] = result["Consumer"]["ConsumerARN"]
+            resource["Properties"]["ConsumerCreationTimestamp"] = result["Consumer"][
+                "ConsumerCreationTimestamp"
+            ]
+            resource["Properties"]["ConsumerStatus"] = result["Consumer"]["ConsumerStatus"]
+
         return {
-            "create": {"function": "register_stream_consumer"},
+            "create": {"function": "register_stream_consumer", "result_handler": _handle_result},
             "delete": {"function": "deregister_stream_consumer"},
         }
 
@@ -31,15 +44,10 @@ class KinesisStream(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Kinesis::Stream"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return self.props.get("Arn")
-        return self.physical_resource_id
-
-    def fetch_state(self, stack_name, resources):
-        stream_name = self.props["Name"]
-        result = aws_stack.connect_to_service("kinesis").describe_stream(StreamName=stream_name)
-        return result
+    # def fetch_state(self, stack_name, resources):
+    #     stream_name = self.props["Name"]
+    #     result = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).kinesis.describe_stream(StreamName=stream_name)
+    #     return result
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -54,27 +62,37 @@ class KinesisStream(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_delete_params(params, **kwargs):
-            return {"StreamName": params["Name"], "EnforceConsumerDeletion": True}
+        def get_delete_params(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict:
+            return {"StreamName": properties["Name"], "EnforceConsumerDeletion": True}
 
-        def _store_arn(result, resource_id, resources, resource_type):
-            client = aws_stack.connect_to_service("kinesis")
-            stream_name = resources[resource_id]["Properties"]["Name"]
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            client = connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis
+            stream_name = resource["Properties"]["Name"]
+
+            client.get_waiter("stream_exists").wait(StreamName=stream_name)
 
             description = client.describe_stream(StreamName=stream_name)
-            while description["StreamDescription"]["StreamStatus"] != "ACTIVE":
-                description = client.describe_stream(StreamName=stream_name)
-
-            resources[resource_id]["PhysicalResourceId"] = stream_name
-            resources[resource_id]["Properties"]["Arn"] = description["StreamDescription"][
-                "StreamARN"
-            ]
+            resource["Properties"]["Arn"] = description["StreamDescription"]["StreamARN"]
+            resource["PhysicalResourceId"] = stream_name
 
         return {
             "create": {
                 "function": "create_stream",
                 "parameters": {"StreamName": "Name", "ShardCount": "ShardCount"},
-                "result_handler": _store_arn,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_stream", "parameters": get_delete_params},
         }

@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -192,6 +186,16 @@ class ExportStatus(str):
     FAILED = "FAILED"
 
 
+class ExportType(str):
+    FULL_EXPORT = "FULL_EXPORT"
+    INCREMENTAL_EXPORT = "INCREMENTAL_EXPORT"
+
+
+class ExportViewType(str):
+    NEW_IMAGE = "NEW_IMAGE"
+    NEW_AND_OLD_IMAGES = "NEW_AND_OLD_IMAGES"
+
+
 class GlobalTableStatus(str):
     CREATING = "CREATING"
     ACTIVE = "ACTIVE"
@@ -348,10 +352,33 @@ class BackupNotFoundException(ServiceException):
     status_code: int = 400
 
 
+class AttributeValue(TypedDict, total=False):
+    S: Optional["StringAttributeValue"]
+    N: Optional["NumberAttributeValue"]
+    B: Optional["BinaryAttributeValue"]
+    SS: Optional["StringSetAttributeValue"]
+    NS: Optional["NumberSetAttributeValue"]
+    BS: Optional["BinarySetAttributeValue"]
+    M: Optional["MapAttributeValue"]
+    L: Optional["ListAttributeValue"]
+    NULL: Optional["NullAttributeValue"]
+    BOOL: Optional["BooleanAttributeValue"]
+
+
+ListAttributeValue = List[AttributeValue]
+MapAttributeValue = Dict[AttributeName, AttributeValue]
+BinaryAttributeValue = bytes
+BinarySetAttributeValue = List[BinaryAttributeValue]
+NumberSetAttributeValue = List[NumberAttributeValue]
+StringSetAttributeValue = List[StringAttributeValue]
+AttributeMap = Dict[AttributeName, AttributeValue]
+
+
 class ConditionalCheckFailedException(ServiceException):
     code: str = "ConditionalCheckFailedException"
     sender_fault: bool = False
     status_code: int = 400
+    Item: Optional[AttributeMap]
 
 
 class ContinuousBackupsUnavailableException(ServiceException):
@@ -502,28 +529,6 @@ class TableNotFoundException(ServiceException):
     code: str = "TableNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-
-
-class AttributeValue(TypedDict, total=False):
-    S: Optional["StringAttributeValue"]
-    N: Optional["NumberAttributeValue"]
-    B: Optional["BinaryAttributeValue"]
-    SS: Optional["StringSetAttributeValue"]
-    NS: Optional["NumberSetAttributeValue"]
-    BS: Optional["BinarySetAttributeValue"]
-    M: Optional["MapAttributeValue"]
-    L: Optional["ListAttributeValue"]
-    NULL: Optional["NullAttributeValue"]
-    BOOL: Optional["BooleanAttributeValue"]
-
-
-ListAttributeValue = List[AttributeValue]
-MapAttributeValue = Dict[AttributeName, AttributeValue]
-BinaryAttributeValue = bytes
-BinarySetAttributeValue = List[BinaryAttributeValue]
-NumberSetAttributeValue = List[NumberAttributeValue]
-StringSetAttributeValue = List[StringAttributeValue]
-AttributeMap = Dict[AttributeName, AttributeValue]
 
 
 class CancellationReason(TypedDict, total=False):
@@ -754,6 +759,7 @@ class BatchStatementRequest(TypedDict, total=False):
     Statement: PartiQLStatement
     Parameters: Optional[PreparedStatementParameters]
     ConsistentRead: Optional[ConsistentRead]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 PartiQLBatchRequest = List[BatchStatementRequest]
@@ -789,6 +795,7 @@ ConsumedCapacityMultiple = List[ConsumedCapacity]
 class BatchStatementError(TypedDict, total=False):
     Code: Optional[BatchStatementErrorCodeEnum]
     Message: Optional[String]
+    Item: Optional[AttributeMap]
 
 
 class BatchStatementResponse(TypedDict, total=False):
@@ -1194,6 +1201,7 @@ class DeleteItemInput(ServiceRequest):
     ConditionExpression: Optional[ConditionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 class DeleteItemOutput(TypedDict, total=False):
@@ -1279,6 +1287,16 @@ class DescribeExportInput(ServiceRequest):
     ExportArn: ExportArn
 
 
+ExportToTime = datetime
+ExportFromTime = datetime
+
+
+class IncrementalExportSpecification(TypedDict, total=False):
+    ExportFromTime: Optional[ExportFromTime]
+    ExportToTime: Optional[ExportToTime]
+    ExportViewType: Optional[ExportViewType]
+
+
 ExportTime = datetime
 ExportEndTime = datetime
 ExportStartTime = datetime
@@ -1304,6 +1322,8 @@ class ExportDescription(TypedDict, total=False):
     ExportFormat: Optional[ExportFormat]
     BilledSizeBytes: Optional[BilledSizeBytes]
     ItemCount: Optional[ItemCount]
+    ExportType: Optional[ExportType]
+    IncrementalExportSpecification: Optional[IncrementalExportSpecification]
 
 
 class DescribeExportOutput(TypedDict, total=False):
@@ -1506,6 +1526,7 @@ class ExecuteStatementInput(ServiceRequest):
     NextToken: Optional[PartiQLNextToken]
     ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
     Limit: Optional[PositiveIntegerObject]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 class ExecuteStatementOutput(TypedDict, total=False):
@@ -1518,6 +1539,7 @@ class ExecuteStatementOutput(TypedDict, total=False):
 class ParameterizedStatement(TypedDict, total=False):
     Statement: PartiQLStatement
     Parameters: Optional[PreparedStatementParameters]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 ParameterizedStatements = List[ParameterizedStatement]
@@ -1544,6 +1566,7 @@ class ExecuteTransactionOutput(TypedDict, total=False):
 class ExportSummary(TypedDict, total=False):
     ExportArn: Optional[ExportArn]
     ExportStatus: Optional[ExportStatus]
+    ExportType: Optional[ExportType]
 
 
 ExportSummaries = List[ExportSummary]
@@ -1559,6 +1582,8 @@ class ExportTableToPointInTimeInput(ServiceRequest):
     S3SseAlgorithm: Optional[S3SseAlgorithm]
     S3SseKmsKeyId: Optional[S3SseKmsKeyId]
     ExportFormat: Optional[ExportFormat]
+    ExportType: Optional[ExportType]
+    IncrementalExportSpecification: Optional[IncrementalExportSpecification]
 
 
 class ExportTableToPointInTimeOutput(TypedDict, total=False):
@@ -1779,6 +1804,7 @@ class PutItemInput(ServiceRequest):
     ConditionExpression: Optional[ConditionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 class PutItemOutput(TypedDict, total=False):
@@ -2067,6 +2093,7 @@ class UpdateItemInput(ServiceRequest):
     ConditionExpression: Optional[ConditionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 class UpdateItemOutput(TypedDict, total=False):
@@ -2194,6 +2221,7 @@ class DynamodbApi:
         condition_expression: ConditionExpression = None,
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
     ) -> DeleteItemOutput:
         raise NotImplementedError
 
@@ -2301,6 +2329,7 @@ class DynamodbApi:
         next_token: PartiQLNextToken = None,
         return_consumed_capacity: ReturnConsumedCapacity = None,
         limit: PositiveIntegerObject = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
     ) -> ExecuteStatementOutput:
         raise NotImplementedError
 
@@ -2327,6 +2356,8 @@ class DynamodbApi:
         s3_sse_algorithm: S3SseAlgorithm = None,
         s3_sse_kms_key_id: S3SseKmsKeyId = None,
         export_format: ExportFormat = None,
+        export_type: ExportType = None,
+        incremental_export_specification: IncrementalExportSpecification = None,
     ) -> ExportTableToPointInTimeOutput:
         raise NotImplementedError
 
@@ -2442,6 +2473,7 @@ class DynamodbApi:
         condition_expression: ConditionExpression = None,
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
     ) -> PutItemOutput:
         raise NotImplementedError
 
@@ -2612,6 +2644,7 @@ class DynamodbApi:
         condition_expression: ConditionExpression = None,
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
     ) -> UpdateItemOutput:
         raise NotImplementedError
 

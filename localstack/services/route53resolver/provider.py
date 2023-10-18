@@ -60,6 +60,8 @@ from localstack.aws.api.route53resolver import (
     MutationProtectionStatus,
     Name,
     NextToken,
+    OutpostArn,
+    OutpostInstanceType,
     Priority,
     ResolverEndpointDirection,
     ResolverEndpointType,
@@ -542,6 +544,8 @@ class Route53ResolverProvider(Route53ResolverApi):
         name: Name = None,
         tags: TagList = None,
         resolver_endpoint_type: ResolverEndpointType = None,
+        outpost_arn: OutpostArn = None,
+        preferred_instance_type: OutpostInstanceType = None,
     ) -> CreateResolverEndpointResponse:
         create_resolver_endpoint_resp = call_moto(context)
         create_resolver_endpoint_resp["ResolverEndpoint"][

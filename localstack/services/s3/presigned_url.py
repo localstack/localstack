@@ -5,7 +5,8 @@ import json
 import logging
 import re
 import time
-from typing import Dict, List, Tuple, TypedDict, Union
+from functools import cached_property
+from typing import Dict, List, Mapping, Optional, Tuple, TypedDict
 from urllib import parse as urlparse
 
 from botocore.auth import HmacV1QueryAuth, S3SigV4QueryAuth
@@ -13,6 +14,7 @@ from botocore.awsrequest import AWSRequest, create_request_object
 from botocore.compat import HTTPHeaders, urlsplit
 from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.exceptions import NoCredentialsError
+from botocore.model import ServiceModel
 from botocore.utils import percent_encode_sequence
 from werkzeug.datastructures import Headers, ImmutableMultiDict
 
@@ -26,30 +28,24 @@ from localstack.aws.api.s3 import (
     SignatureDoesNotMatch,
 )
 from localstack.aws.chain import HandlerChain
+from localstack.aws.protocol.op_router import RestServiceOperationRouter
+from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response
+from localstack.http.request import get_raw_path
+from localstack.services.s3.constants import SIGNATURE_V2_PARAMS, SIGNATURE_V4_PARAMS
 from localstack.services.s3.utils import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
+    extract_bucket_name_and_key_from_headers_and_path,
     forwarded_from_virtual_host_addressed_request,
     is_bucket_name_valid,
+    is_presigned_url_request,
 )
 from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
-
-# params are required in presigned url
-SIGNATURE_V2_PARAMS = ["Signature", "Expires", "AWSAccessKeyId"]
-
-SIGNATURE_V4_PARAMS = [
-    "X-Amz-Algorithm",
-    "X-Amz-Credential",
-    "X-Amz-Date",
-    "X-Amz-Expires",
-    "X-Amz-SignedHeaders",
-    "X-Amz-Signature",
-]
 
 
 SIGNATURE_V2_POST_FIELDS = [
@@ -100,7 +96,7 @@ class NotValidSigV4SignatureContext(TypedDict):
     canonical_request: str
 
 
-FindSigV4Result = Tuple[Union[bytes, None], Union[NotValidSigV4SignatureContext, None]]
+FindSigV4Result = Tuple["S3SigV4SignatureContext", Optional[NotValidSigV4SignatureContext]]
 
 
 class HmacV1QueryAuthValidation(HmacV1QueryAuth):
@@ -144,43 +140,6 @@ class S3SigV4QueryAuthValidation(S3SigV4QueryAuth):
 # those exceptions are polymorphic, they can have multiple shapes under the same name
 
 
-def create_access_denied_headers_not_signed(headers_not_signed: str) -> AccessDenied:
-    ex = AccessDenied("There were headers present in the request which were not signed")
-    ex.HostId = FAKE_HOST_ID
-    ex.HeadersNotSigned = headers_not_signed
-    return ex
-
-
-def create_access_denied_missing_parameters_sig_v2() -> AccessDenied:
-    ex = AccessDenied(
-        "Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters"
-    )
-    ex.HostId = FAKE_HOST_ID
-    return ex
-
-
-def create_authorization_query_parameters_error() -> AuthorizationQueryParametersError:
-    ex = AuthorizationQueryParametersError(
-        "Query-string authentication version 4 requires the X-Amz-Algorithm, X-Amz-Credential, X-Amz-Signature, X-Amz-Date, X-Amz-SignedHeaders, and X-Amz-Expires parameters."
-    )
-    ex.HostId = FAKE_HOST_ID
-    return ex
-
-
-def create_access_denied_expired_sig_v2(expires: float) -> AccessDenied:
-    ex = AccessDenied("Request has expired")
-    ex.HostId = FAKE_HOST_ID
-    ex.Expires = expires
-    ex.ServerTime = time.time()
-    return ex
-
-
-def create_access_denied_expired_sig_v4(expires: float, amz_expires: int) -> AccessDenied:
-    ex = create_access_denied_expired_sig_v2(expires)
-    ex.X_Amz_Expires = amz_expires
-    return ex
-
-
 def create_signature_does_not_match_sig_v2(
     request_signature: str, string_to_sign: str
 ) -> SignatureDoesNotMatch:
@@ -207,64 +166,61 @@ def create_signature_does_not_match_sig_v4(
     return ex
 
 
-def s3_presigned_url_response_handler(_: HandlerChain, context: RequestContext, response: Response):
-    """
-    Pre-signed URL with PUT method (typically object upload) should return an empty body
-    """
-    if (
-        not context.request.method == "PUT"
-        or not is_presigned_url_request(context)
-        or response.status_code >= 400
-    ):
-        return
-    else:
-        response.data = b""
+class S3PreSignedURLRequestHandler:
+    @cached_property
+    def _service(self) -> ServiceModel:
+        return get_service_catalog().get("s3")
 
+    @cached_property
+    def _s3_op_router(self) -> RestServiceOperationRouter:
+        return RestServiceOperationRouter(self._service)
 
-def s3_presigned_url_request_handler(_: HandlerChain, context: RequestContext, __: Response):
-    """
-    Handler to validate S3 presigned URL. Checks the validity of the request signature, and raises an error if
-    `S3_SKIP_SIGNATURE_VALIDATION` is set to False
-    """
-    if not context.service or context.service.service_name != "s3":
-        return
+    def __call__(self, _: HandlerChain, context: RequestContext, __: Response):
+        """
+        Handler to validate S3 pre-signed URL. Checks the validity of the request signature, and raises an error if
+        `S3_SKIP_SIGNATURE_VALIDATION` is set to False
+        """
+        if not context.service or context.service.service_name != "s3":
+            return
+        try:
+            if not is_presigned_url_request(context):
+                # validate headers, as some can raise ValueError in Moto
+                _validate_headers_for_moto(context.request.headers)
+                return
+            # will raise exceptions if the url is not valid, except if S3_SKIP_SIGNATURE_VALIDATION is True
+            # will still try to validate it and log if there's an error
 
-    if not is_presigned_url_request(context):
-        # validate headers, as some can raise ValueError in Moto
-        _validate_headers_for_moto(context.request.headers)
-        return
-    # will raise exceptions if the url is not valid, except if S3_SKIP_SIGNATURE_VALIDATION is True
-    # will still try to validate it and log if there's an error
+            # We save the query args as a set to save time for lookup in validation
+            query_arg_set = set(context.request.args)
 
-    # We save the query args as a set to save time for lookup in validation
-    query_arg_set = set(context.request.args)
+            if is_valid_sig_v2(query_arg_set):
+                validate_presigned_url_s3(context)
 
-    if is_valid_sig_v2(query_arg_set):
-        validate_presigned_url_s3(context)
+            elif is_valid_sig_v4(query_arg_set):
+                validate_presigned_url_s3v4(context)
 
-    elif is_valid_sig_v4(query_arg_set):
-        validate_presigned_url_s3v4(context)
+            _validate_headers_for_moto(context.request.headers)
+            LOG.debug("Valid presign url.")
+            # TODO: set the Authorization with the data from the pre-signed query string
 
-    _validate_headers_for_moto(context.request.headers)
-    LOG.debug("Valid presign url.")
+        except Exception:
+            # as we are raising before the ServiceRequestParser, we need to
+            context.service = self._service
+            context.operation = self._get_op_from_request(context.request)
+            raise
+
+    def _get_op_from_request(self, request: Request):
+        try:
+            op, _ = self._s3_op_router.match(request)
+            return op
+        except Exception:
+            # if we can't parse the request, just set GetObject
+            return self._service.operation_model("GetObject")
 
 
 def is_expired(expiry_datetime: datetime.datetime):
     now_datetime = datetime.datetime.now(tz=expiry_datetime.tzinfo)
     return now_datetime > expiry_datetime
-
-
-def is_presigned_url_request(context: RequestContext) -> bool:
-    """
-    Detects pre-signed URL from query string parameters
-    Return True if any kind of presigned URL query string parameter is encountered
-    :param context: the request context from the handler chain
-    """
-    # Detecting pre-sign url and checking signature
-    query_parameters = context.request.args
-    return any(p in query_parameters for p in SIGNATURE_V2_PARAMS) or any(
-        p in query_parameters for p in SIGNATURE_V4_PARAMS
-    )
 
 
 def is_valid_sig_v2(query_args: set) -> bool:
@@ -276,8 +232,10 @@ def is_valid_sig_v2(query_args: set) -> bool:
     if any(p in query_args for p in SIGNATURE_V2_PARAMS):
         if not all(p in query_args for p in SIGNATURE_V2_PARAMS):
             LOG.info("Presign signature calculation failed")
-            ex: AccessDenied = create_access_denied_missing_parameters_sig_v2()
-            raise ex
+            raise AccessDenied(
+                "Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters",
+                HostId=FAKE_HOST_ID,
+            )
 
         return True
     return False
@@ -292,8 +250,10 @@ def is_valid_sig_v4(query_args: set) -> bool:
     if any(p in query_args for p in SIGNATURE_V4_PARAMS):
         if not all(p in query_args for p in SIGNATURE_V4_PARAMS):
             LOG.info("Presign signature calculation failed")
-            ex: AuthorizationQueryParametersError = create_authorization_query_parameters_error()
-            raise ex
+            raise AuthorizationQueryParametersError(
+                "Query-string authentication version 4 requires the X-Amz-Algorithm, X-Amz-Credential, X-Amz-Signature, X-Amz-Date, X-Amz-SignedHeaders, and X-Amz-Expires parameters.",
+                HostId=FAKE_HOST_ID,
+            )
 
         return True
     return False
@@ -305,6 +265,7 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
     :param context: RequestContext
     """
     query_parameters = context.request.args
+    method = context.request.method
     # todo: use the current User credentials instead? so it would not be set in stone??
     credentials = Credentials(
         access_key=TEST_AWS_ACCESS_KEY_ID,
@@ -324,18 +285,16 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
                 "Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
             )
         else:
-            ex: AccessDenied = create_access_denied_expired_sig_v2(expires=expires)
-            raise ex
+            raise AccessDenied(
+                "Request has expired", HostId=FAKE_HOST_ID, Expires=expires, ServerTime=time.time()
+            )
 
     auth_signer = HmacV1QueryAuthValidation(credentials=credentials, expires=expires)
 
-    pre_signature_request = _reverse_inject_signature_hmac_v1_query(context)
-
-    split = urlsplit(pre_signature_request.url)
-    headers = _get_aws_request_headers(pre_signature_request.headers)
+    split_url, headers = _reverse_inject_signature_hmac_v1_query(context.request)
 
     signature, string_to_sign = auth_signer.get_signature(
-        pre_signature_request.method, split, headers, auth_path=None
+        method, split_url, headers, auth_path=None
     )
     # after passing through the virtual host to path proxy, the signature is parsed and `+` are replaced by space
     req_signature = context.request.args.get("Signature").replace(" ", "+")
@@ -351,37 +310,23 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
             )
             raise ex
 
-
-def _get_aws_request_headers(werkzeug_headers: Headers) -> HTTPHeaders:
-    """
-    Converts Werkzeug headers into HTTPHeaders() needed to form an AWSRequest
-    :param werkzeug_headers: Werkzeug request headers
-    :return: headers in HTTPHeaders format
-    """
-    # Werkzeug Headers can have multiple values for the same key
-    # HTTPHeaders will append automatically the values when we set it to the same key multiple times
-    # see https://docs.python.org/3/library/http.client.html#httpmessage-objects
-    # see https://docs.python.org/3/library/email.compat32-message.html#email.message.Message.__setitem__
-    headers = HTTPHeaders()
-    for key, value in werkzeug_headers.items():
-        headers[key] = value
-
-    return headers
+    add_headers_to_original_request(context, headers)
 
 
-def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
+def _reverse_inject_signature_hmac_v1_query(
+    request: Request,
+) -> tuple[urlparse.SplitResult, HTTPHeaders]:
     """
     Reverses what does HmacV1QueryAuth._inject_signature while injecting the signature in the request.
     Transforms the query string parameters in headers to recalculate the signature
     see botocore.auth.HmacV1QueryAuth._inject_signature
-    :param context:
-    :return:
+    :param request: the original request
+    :return: tuple of a split result from the reversed request, and the reversed headers
     """
-
     new_headers = {}
     new_query_string_dict = {}
 
-    for header, value in context.request.args.items():
+    for header, value in request.args.items():
         header_low = header.lower()
         if header_low not in HmacV1QueryAuthValidation.post_signature_headers:
             new_headers[header] = value
@@ -390,7 +335,7 @@ def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
 
     # there should not be any headers here. If there are, it means they have been added by the client
     # We should verify them, they will fail the signature except if they were part of the original request
-    for header, value in context.request.headers.items():
+    for header, value in request.headers.items():
         header_low = header.lower()
         if header_low.startswith("x-amz-") or header_low in ["content-type", "date", "content-md5"]:
             new_headers[header_low] = value
@@ -398,46 +343,26 @@ def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
     # rebuild the query string
     new_query_string = percent_encode_sequence(new_query_string_dict)
 
-    # easier to recreate the request, we would have to delete every cached property otherwise
-    reversed_request = _create_new_request(
-        request=context.request,
-        headers=new_headers,
-        query_string=new_query_string,
-    )
+    # we need to URL encode the path, as the key needs to be urlencoded for the signature to match
+    encoded_path = urlparse.quote(request.path)
 
-    return reversed_request
+    reversed_url = f"{request.scheme}://{request.host}{encoded_path}?{new_query_string}"
 
+    reversed_headers = HTTPHeaders()
+    for key, value in new_headers.items():
+        reversed_headers[key] = value
 
-def _create_new_request(request: Request, headers: Dict[str, str], query_string: str) -> Request:
-    """
-    Create a new request from an existent one, with new headers and query string
-    It is easier to create a new one as the existing request has a lot of cached properties based on query_string
-    :param request: the incoming pre-signed request
-    :param headers: new headers used for signature calculation
-    :param query_string: new query string for signature calculation
-    :return: a new Request with passed headers and query_string
-    """
-    return Request(
-        method=request.method,
-        headers=headers,
-        path=request.path,
-        query_string=query_string,
-        body=request.data,
-        scheme=request.scheme,
-        root_path=request.root_path,
-        server=request.server,
-        remote_addr=request.remote_addr,
-    )
+    return urlsplit(reversed_url), reversed_headers
 
 
 def validate_presigned_url_s3v4(context: RequestContext) -> None:
     """
-    Validate the presigned URL signed with SigV2.
+    Validate the presigned URL signed with SigV4.
     :param context: RequestContext
     :return:
     """
-    signature, exception = _find_valid_signature_through_ports(context)
-    if not signature:
+    sigv4_context, exception = _find_valid_signature_through_ports(context)
+    if exception:
         if config.S3_SKIP_SIGNATURE_VALIDATION:
             LOG.warning(
                 "Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
@@ -461,10 +386,15 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
                 "Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
             )
         else:
-            ex: AccessDenied = create_access_denied_expired_sig_v4(
-                expires=expiration_time.timestamp(), amz_expires=x_amz_expires
+            raise AccessDenied(
+                "Request has expired",
+                HostId=FAKE_HOST_ID,
+                Expires=expiration_time.timestamp(),
+                ServerTime=time.time(),
+                X_Amz_Expires=x_amz_expires,
             )
-            raise ex
+
+    add_headers_to_original_request(context, sigv4_context.signed_headers)
 
 
 def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Result:
@@ -481,11 +411,11 @@ def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Res
     # get the port of the request
     match = re.match(HOST_COMBINATION_REGEX, sigv4_context.host)
     request_port = match.group(2) if match else None
-
+    # add_headers_to_original_request(context, sigv4_context.signed_headers)
     # get the signature from the request
     signature, canonical_request, string_to_sign = sigv4_context.get_signature_data()
     if signature == request_sig:
-        return signature, None
+        return sigv4_context, None
 
     # if the signature does not match, save the data for the exception
     exception_context = NotValidSigV4SignatureContext(
@@ -508,10 +438,10 @@ def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Res
         # we ignore the additional data because we want the exception raised to match the original request
         signature, _, _ = sigv4_context.get_signature_data()
         if signature == request_sig:
-            return signature, None
+            return sigv4_context, None
 
     # Return the exception data from the original request after trying to loop through ports
-    return None, exception_context
+    return sigv4_context, exception_context
 
 
 class S3SigV4SignatureContext:
@@ -519,7 +449,11 @@ class S3SigV4SignatureContext:
         self.request = context.request
         self._query_parameters = context.request.args
         self._headers = context.request.headers
-        self._bucket = context.service_request.get("Bucket")
+        self._bucket, _ = extract_bucket_name_and_key_from_headers_and_path(
+            context.request.headers, get_raw_path(context.request)
+        )
+        self._bucket = urlparse.unquote(self._bucket)
+        print(self._bucket)
         self._request_method = context.request.method
 
         credentials = ReadOnlyCredentials(
@@ -560,6 +494,8 @@ class S3SigV4SignatureContext:
             else:
                 self.path = self.request.path
 
+        # we need to URL encode the path, as the key needs to be urlencoded for the signature to match
+        self.path = urlparse.quote(self.path)
         self.aws_request = self._get_aws_request()
 
     def update_host_port(self, new_host_port: str, original_host_port: str = None):
@@ -638,10 +574,11 @@ class S3SigV4SignatureContext:
                 signature_headers[header_low] = value
 
         if not_signed_headers:
-            ex: AccessDenied = create_access_denied_headers_not_signed(
-                ", ".join(not_signed_headers)
+            raise AccessDenied(
+                "There were headers present in the request which were not signed",
+                HostId=FAKE_HOST_ID,
+                HeadersNotSigned=", ".join(not_signed_headers),
             )
-            raise ex
 
         new_query_string = percent_encode_sequence(new_query_args)
         return signature_headers, new_query_string
@@ -664,6 +601,11 @@ class S3SigV4SignatureContext:
             },
         }
         return create_request_object(request_dict)
+
+
+def add_headers_to_original_request(context: RequestContext, headers: Mapping[str, str]):
+    for header, value in headers.items():
+        context.request.headers.add(header, value)
 
 
 def _validate_headers_for_moto(headers: Headers) -> None:

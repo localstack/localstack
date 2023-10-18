@@ -22,7 +22,13 @@ from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.proxy import get_account_id_from_request
 from localstack.aws.spec import load_service
-from localstack.constants import TEST_AWS_REGION_NAME
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.sync import poll_condition
 
@@ -31,8 +37,7 @@ def is_aws_cloud() -> bool:
     return os.environ.get("TEST_TARGET", "") == "AWS_CLOUD"
 
 
-def get_lambda_logs(func_name, logs_client=None):
-    logs_client = logs_client or aws_stack.create_external_boto_client("logs")
+def get_lambda_logs(func_name, logs_client):
     log_group_name = f"/aws/lambda/{func_name}"
     streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
     streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
@@ -170,11 +175,24 @@ def RequestContextClient(client: T) -> T:
     return _RequestContextClient(client)  # noqa
 
 
-# used for the aws_session, aws_client_factory and aws_client pytest fixtures
+# Used for the aws_session, aws_client_factory and aws_client pytest fixtures
+# Supports test executions against both LocalStack and production AWS
+
+# TODO: Add the ability to use config profiles for primary and secondary clients
+# See https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-a-configuration-file
 
 
 def base_aws_session() -> boto3.Session:
-    return boto3.Session()
+    # When running against AWS, initial credentials must be read from environment or config file
+    if is_aws_cloud():
+        return boto3.Session()
+
+    # Otherwise, when running against LS, use primary test credentials to start with
+    # This set here in the session so that both `aws_client` and `aws_client_factory` can work without explicit creds.
+    return boto3.Session(
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+    )
 
 
 def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
@@ -197,5 +215,14 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
         return ExternalClientFactory(session=session, config=config)
 
 
-def base_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
+def primary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
+    # Primary test credentials are already set in the boto3 session, so they're not set here again
     return client_factory()
+
+
+def secondary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
+    # Setting secondary creds here, overriding the ones from the session
+    return client_factory(
+        aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    )

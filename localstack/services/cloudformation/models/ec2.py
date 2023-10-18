@@ -1,3 +1,4 @@
+import base64
 import json
 
 from moto.ec2.utils import generate_route_id
@@ -6,8 +7,31 @@ from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.cfn_utils import get_tags_param
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
-from localstack.utils.strings import str_to_bool
+from localstack.utils.strings import str_to_bool, to_str
+
+
+def _get_default_security_group_for_vpc(ec2_client, vpc_id: str) -> str:
+    sgs = ec2_client.describe_security_groups(
+        Filters=[
+            {"Name": "group-name", "Values": ["default"]},
+            {"Name": "vpc-id", "Values": [vpc_id]},
+        ]
+    )["SecurityGroups"]
+    if len(sgs) != 1:
+        raise Exception(f"There should only be one default group for this VPC ({vpc_id=})")
+    return sgs[0]["GroupId"]
+
+
+def _get_default_acl_for_vpc(ec2_client, vpc_id: str) -> str:
+    acls = ec2_client.describe_network_acls(
+        Filters=[
+            {"Name": "default", "Values": ["true"]},
+            {"Name": "vpc-id", "Values": [vpc_id]},
+        ]
+    )["NetworkAcls"]
+    if len(acls) != 1:
+        raise Exception(f"There should only be one default network ACL for this VPC ({vpc_id=})")
+    return acls[0]["NetworkAclId"]
 
 
 class EC2RouteTable(GenericBaseModel):
@@ -16,19 +40,22 @@ class EC2RouteTable(GenericBaseModel):
         return "AWS::EC2::RouteTable"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
         if not self.physical_resource_id:
             return None
         result = client.describe_route_tables(RouteTableIds=[self.physical_resource_id])
         return (result["RouteTables"] or [None])[0]
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id or self.props.get("RouteTableId")
-
     @staticmethod
     def get_deploy_templates():
-        def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["RouteTable"]["RouteTableId"]
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["RouteTable"]["RouteTableId"]
 
         return {
             "create": {
@@ -37,7 +64,7 @@ class EC2RouteTable(GenericBaseModel):
                     "VpcId": "VpcId",
                     "TagSpecifications": get_tags_param("route-table"),
                 },
-                "result_handler": _store_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_route_table",
@@ -52,7 +79,7 @@ class EC2Route(GenericBaseModel):
         return "AWS::EC2::Route"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
         props = self.props
         dst_cidr = props.get("DestinationCidrBlock")
         dst_cidr6 = props.get("DestinationIpv6CidrBlock")
@@ -69,20 +96,18 @@ class EC2Route(GenericBaseModel):
             ]
             return (route or [None])[0]
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        props = self.props
-        return generate_route_id(
-            props.get("RouteTableId"),
-            props.get("DestinationCidrBlock"),
-            props.get("DestinationIpv6CidrBlock"),
-        )
-
     @staticmethod
     def get_deploy_templates():
-        def _id(result, resource_id, resources, resource_type):
-            resource_props = resources[resource_id]["Properties"]
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource_props = resource["Properties"]
 
-            resources[resource_id]["PhysicalResourceId"] = generate_route_id(
+            resource["PhysicalResourceId"] = generate_route_id(
                 resource_props["RouteTableId"],
                 resource_props.get("DestinationCidrBlock", ""),
                 resource_props.get("DestinationIpv6CidrBlock"),
@@ -92,7 +117,7 @@ class EC2Route(GenericBaseModel):
             "create": {
                 "function": "create_route",
                 "parameters": ["DestinationCidrBlock", "DestinationIpv6CidrBlock", "RouteTableId"],
-                "result_handler": _id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_route",
@@ -109,32 +134,31 @@ class EC2InternetGateway(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         if not self.physical_resource_id:
             return None
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
         gateways = client.describe_internet_gateways(
             InternetGatewayIds=[self.physical_resource_id]
         )["InternetGateways"]
         return gateways[0] if gateways else None
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "InternetGatewayId":
-            return self.props.get("InternetGatewayId")
-        return super(EC2InternetGateway, self).get_cfn_attribute(attribute_name)
-
     @staticmethod
     def get_deploy_templates():
-        def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["Properties"]["InternetGatewayId"] = result["InternetGateway"][
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["Properties"]["InternetGatewayId"] = result["InternetGateway"][
                 "InternetGatewayId"
             ]
-            resources[resource_id]["PhysicalResourceId"] = result["InternetGateway"][
-                "InternetGatewayId"
-            ]
+            resource["PhysicalResourceId"] = result["InternetGateway"]["InternetGatewayId"]
 
         return {
             "create": {
                 "function": "create_internet_gateway",
                 "parameters": {"TagSpecifications": get_tags_param("internet-gateway")},
-                "result_handler": _store_id,
+                "result_handler": _handle_result,
             }
         }
 
@@ -145,7 +169,7 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
         return "AWS::EC2::SubnetRouteTableAssociation"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
         props = self.props
         table_id = props.get("RouteTableId")
         gw_id = props.get("GatewayId")
@@ -159,11 +183,17 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
                 association = [a for a in associations if a.get("SubnetId") == subnet_id]
             return (association or [None])[0]
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("RouteTableAssociationId")
-
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["AssociationId"]
+
         return {
             "create": {
                 "function": "associate_route_table",
@@ -172,6 +202,7 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
                     "RouteTableId": "RouteTableId",
                     "SubnetId": "SubnetId",
                 },
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "disassociate_route_table",
@@ -186,7 +217,7 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
         return "AWS::EC2::VPCGatewayAttachment"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
         props = self.props
         igw_id = props.get("InternetGatewayId")
         vpngw_id = props.get("VpnGatewayId")
@@ -203,29 +234,38 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
         if result:
             return gateway
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        props = self.props
-        gw_id = props.get("VpnGatewayId") or props.get("InternetGatewayId")
-        attachment = (props.get("Attachments") or props.get("VpcAttachments") or [{}])[0]
-        if attachment:
-            result = "%s-%s" % (gw_id, attachment.get("VpcId"))
-            return result
-
     @classmethod
     def get_deploy_templates(cls):
-        def _attach_gateway(resource_id, resources, *args, **kwargs):
-            client = aws_stack.connect_to_service("ec2")
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def _attach_gateway(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            client = connect_to(aws_access_key_id=account_id, region_name=region_name).ec2
+            resource_provider = cls(account_id, region_name, resource)
+            props = resource_provider.props
             igw_id = props.get("InternetGatewayId")
             vpngw_id = props.get("VpnGatewayId")
             vpc_id = props.get("VpcId")
             if igw_id:
-                client.attach_internet_gateway(VpcId=vpc_id, InternetGatewayId=igw_id)
+                return client.attach_internet_gateway(VpcId=vpc_id, InternetGatewayId=igw_id)
             elif vpngw_id:
-                client.attach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=vpngw_id)
+                return client.attach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=vpngw_id)
 
-        return {"create": {"function": _attach_gateway}}
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            props = resource["Properties"]
+            gw_id = props.get("VpnGatewayId") or props.get("InternetGatewayId")
+            resource["PhysicalResourceId"] = f"{gw_id}-{props['VpcId']}"
+
+        return {"create": {"function": _attach_gateway, "result_handler": _handle_result}}
 
 
 class SecurityGroup(GenericBaseModel):
@@ -239,28 +279,12 @@ class SecurityGroup(GenericBaseModel):
         props = self.props
         group_id = props.get("GroupId")
         group_name = props.get("GroupName")
-        client = connect_to().ec2
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
         if group_id:
             resp = client.describe_security_groups(GroupIds=[group_id])
         else:
             resp = client.describe_security_groups(GroupNames=[group_name])
         return (resp["SecurityGroups"] or [None])[0]
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "GroupId":
-            return self.props.get("GroupId")
-        return super(SecurityGroup, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if self.physical_resource_id:
-            return self.physical_resource_id
-        # see docs: "[...] Ref returns the resource ID. For SGs without a VPC, Ref returns the resource name."
-        props = self.props
-        if not props.get("GroupId"):
-            return
-        if not props.get("VpcId"):
-            return props.get("GroupName")
-        return props.get("GroupId")
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -272,9 +296,15 @@ class SecurityGroup(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_group_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["Properties"]["GroupId"] = result["GroupId"]
-            resources[resource_id]["PhysicalResourceId"] = result["GroupId"]
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["Properties"]["GroupId"] = result["GroupId"]
+            resource["PhysicalResourceId"] = result["GroupId"]
 
         return {
             "create": {
@@ -284,7 +314,7 @@ class SecurityGroup(GenericBaseModel):
                     "VpcId": "VpcId",
                     "Description": "GroupDescription",
                 },
-                "result_handler": _store_group_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_security_group",
@@ -298,10 +328,10 @@ class EC2Subnet(GenericBaseModel):
     def cloudformation_type():
         return "AWS::EC2::Subnet"
 
-    def fetch_state(self, stack_name, resources):
+    def fetch_state(self, stack_name, resources) -> dict:
         if not self.physical_resource_id:
             return None
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
         props = self.props
         filters = [
             {"Name": "cidr-block", "Values": [props["CidrBlock"]]},
@@ -310,20 +340,18 @@ class EC2Subnet(GenericBaseModel):
         subnets = client.describe_subnets(Filters=filters)["Subnets"]
         return (subnets or [None])[0]
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("SubnetId")
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "SubnetId":
-            return self.props.get("SubnetId")
-        return super(EC2Subnet, self).get_cfn_attribute(attribute_name)
-
     @classmethod
     def get_deploy_templates(cls):
-        def _post_create(resource_id, resources, resource_type, func, stack_name):
-            client = aws_stack.connect_to_service("ec2")
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def _post_create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            client = connect_to(aws_access_key_id=account_id, region_name=region_name).ec2
+            resource_provider = cls(account_id, region_name, resource)
+            props = resource_provider.props
 
             bool_attrs = [
                 "AssignIpv6AddressOnCreation",
@@ -334,8 +362,7 @@ class EC2Subnet(GenericBaseModel):
             if not any(attr in props for attr in custom_attrs):
                 return
 
-            state = resource.fetch_state(stack_name, resources)
-            subnet_id = state.get("SubnetId")
+            subnet_id = props.get("SubnetId")
 
             # update boolean attributes
             for attr in bool_attrs:
@@ -354,9 +381,15 @@ class EC2Subnet(GenericBaseModel):
                         PrivateDnsHostnameTypeOnLaunch=dns_options.get("HostnameType"),
                     )
 
-        def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["Subnet"]["SubnetId"]
-            resources[resource_id]["Properties"]["SubnetId"] = result["Subnet"]["SubnetId"]
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["Subnet"]["SubnetId"]
+            resource["Properties"]["SubnetId"] = result["Subnet"]["SubnetId"]
 
         return {
             "create": [
@@ -372,7 +405,7 @@ class EC2Subnet(GenericBaseModel):
                         {"TagSpecifications": get_tags_param("subnet")},
                         "VpcId",
                     ],
-                    "result_handler": _store_id,
+                    "result_handler": _handle_result,
                 },
                 {"function": _post_create},
             ],
@@ -389,46 +422,26 @@ class EC2VPC(GenericBaseModel):
         return "AWS::EC2::VPC"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
-        resp = client.describe_vpcs(Filters=[{"Name": "cidr", "Values": [self.props["CidrBlock"]]}])
-        return (resp["Vpcs"] or [None])[0]
-
-    def get_cfn_attribute(self, attribute_name):
-        ec2_client = aws_stack.connect_to_service("ec2")
-        vpc_id = self.props["VpcId"]
-
-        if attribute_name == "DefaultSecurityGroup":
-            sgs = ec2_client.describe_security_groups(
-                Filters=[
-                    {"Name": "group-name", "Values": ["default"]},
-                    {"Name": "vpc-id", "Values": [vpc_id]},
-                ]
-            )["SecurityGroups"]
-            if len(sgs) != 1:
-                raise Exception(f"There should only be one default group for this VPC ({vpc_id=})")
-            return sgs[0]["GroupId"]
-        elif attribute_name == "DefaultNetworkAcl":
-            acls = ec2_client.describe_network_acls(
-                Filters=[
-                    {"Name": "default", "Values": ["true"]},
-                    {"Name": "vpc-id", "Values": [vpc_id]},
-                ]
-            )["NetworkAcls"]
-            if len(acls) != 1:
-                raise Exception(
-                    f"There should only be one default network ACL for this VPC ({vpc_id=})"
-                )
-            return acls[0]["NetworkAclId"]
-        else:
-            return super(EC2VPC, self).get_cfn_attribute(attribute_name)
+        if self.physical_resource_id:
+            client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
+            resp = client.describe_vpcs(
+                Filters=[{"Name": "vpc-id", "Values": [self.physical_resource_id]}]
+            )
+            return (resp["Vpcs"] or [None])[0]
 
     @classmethod
     def get_deploy_templates(cls):
-        def _pre_delete(resource_id, resources, *args, **kwargs):
-            res = cls(resources[resource_id])
+        def _pre_delete(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            res = cls(account_id, region_name, resource)
             vpc_id = res.state.get("VpcId")
             if vpc_id:
-                ec2_client = aws_stack.connect_to_service("ec2")
+                ec2_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ec2
                 resp = ec2_client.describe_route_tables(
                     Filters=[
                         {"Name": "vpc-id", "Values": [vpc_id]},
@@ -445,9 +458,30 @@ class EC2VPC(GenericBaseModel):
                         )
                     ec2_client.delete_route_table(RouteTableId=rt["RouteTableId"])
 
-        def _store_vpc_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["Vpc"]["VpcId"]
-            resources[resource_id]["Properties"]["VpcId"] = result["Vpc"]["VpcId"]
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            ec2_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ec2
+            vpc_id = result["Vpc"]["VpcId"]
+
+            resource["Properties"]["VpcId"] = vpc_id
+            resource["Properties"]["CidrBlock"] = result["Vpc"]["CidrBlock"]
+            resource["Properties"]["CidrBlockAssociations"] = [
+                cba["AssociationId"] for cba in result["Vpc"]["CidrBlockAssociationSet"]
+            ]
+            # resource["Properties"]["Ipv6CidrBlocks"] = ?
+            resource["Properties"]["DefaultNetworkAcl"] = _get_default_acl_for_vpc(
+                ec2_client, vpc_id
+            )
+            resource["Properties"]["DefaultSecurityGroup"] = _get_default_security_group_for_vpc(
+                ec2_client, vpc_id
+            )
+
+            resource["PhysicalResourceId"] = vpc_id
 
         return {
             "create": {
@@ -457,7 +491,7 @@ class EC2VPC(GenericBaseModel):
                     "InstanceTenancy": "InstanceTenancy",
                     "TagSpecifications": get_tags_param("vpc"),
                 },
-                "result_handler": _store_vpc_id,
+                "result_handler": _handle_result,
             },
             "delete": [
                 {"function": _pre_delete},
@@ -468,9 +502,6 @@ class EC2VPC(GenericBaseModel):
             ],
         }
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id or self.props.get("VpcId")
-
 
 class EC2NatGateway(GenericBaseModel):
     @staticmethod
@@ -478,7 +509,7 @@ class EC2NatGateway(GenericBaseModel):
         return "AWS::EC2::NatGateway"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
         props = self.props
         subnet_id = props.get("SubnetId")
         assoc_id = props.get("AllocationId")
@@ -495,6 +526,15 @@ class EC2NatGateway(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["NatGateway"]["NatGatewayId"]
+
         return {
             "create": {
                 "function": "create_nat_gateway",
@@ -503,15 +543,13 @@ class EC2NatGateway(GenericBaseModel):
                     "AllocationId": "AllocationId",
                     "TagSpecifications": get_tags_param("natgateway"),
                 },
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_nat_gateway",
                 "parameters": ["NatGatewayId"],
             },
         }
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id or self.props.get("NatGatewayId")
 
 
 class EC2Instance(GenericBaseModel):
@@ -520,17 +558,17 @@ class EC2Instance(GenericBaseModel):
         return "AWS::EC2::Instance"
 
     def fetch_state(self, stack_name, resources):
-        instance_id = self.get_physical_resource_id()
+        instance_id = self.physical_resource_id
         if not instance_id:
             return
         return self._get_state()
 
     def update_resource(self, new_resource, stack_name, resources):
-        instance_id = self.get_physical_resource_id()
+        instance_id = self.physical_resource_id
         props = new_resource["Properties"]
         groups = props.get("SecurityGroups", props.get("SecurityGroupIds"))
 
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
         kwargs = {}
         if groups:
             kwargs["Groups"] = groups
@@ -542,15 +580,15 @@ class EC2Instance(GenericBaseModel):
         return self._get_state(client)
 
     def _get_state(self, client=None):
-        instance_id = self.get_physical_resource_id()
-        client = client or aws_stack.connect_to_service("ec2")
+        instance_id = self.physical_resource_id
+        client = (
+            client
+            or connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).ec2
+        )
         resp = client.describe_instances(InstanceIds=[instance_id])
         reservation = (resp.get("Reservations") or [{}])[0]
         result = (reservation.get("Instances") or [None])[0]
         return result
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id or self.props.get("InstanceId")
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -564,23 +602,37 @@ class EC2Instance(GenericBaseModel):
         if max_count is None:
             props["MaxCount"] = 1
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "PublicIp":
-            return self.props.get("PublicIpAddress") or "127.0.0.1"
-        if attribute_name == "PublicDnsName":
-            return self.props.get("PublicDnsName")
-        if attribute_name == "AvailabilityZone":
-            return (
-                self.props.get("Placement", {}).get("AvailabilityZone")
-                or f"{aws_stack.get_region()}a"
-            )
-        return super(EC2Instance, self).get_cfn_attribute(attribute_name)
-
     @staticmethod
     def get_deploy_templates():
         # TODO: validate again
-        def _store_instance_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["Instances"][0]["InstanceId"]
+
+        def get_user_data_decoded(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            if "UserData" in properties:
+                return to_str(base64.b64decode(properties["UserData"]))
+
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            instance = result["Instances"][0]
+            resource["Properties"]["PublicIp"] = instance.get("PublicIpAddress") or "127.0.0.1"
+            resource["Properties"]["PublicDnsName"] = instance.get("PublicDnsName")
+            resource["Properties"]["PrivateIp"] = instance.get("PrivateIpAddress") or "127.0.0.1"
+            resource["Properties"]["PrivateDnsName"] = instance.get("PrivateDnsName")
+            resource["Properties"]["AvailabilityZone"] = (
+                instance.get("Placement", {}).get("AvailabilityZone") or f"{region_name}a"
+            )
+            resource["PhysicalResourceId"] = result["Instances"][0]["InstanceId"]
 
         return {
             "create": {
@@ -592,8 +644,9 @@ class EC2Instance(GenericBaseModel):
                     "ImageId": "ImageId",
                     "MaxCount": "MaxCount",
                     "MinCount": "MinCount",
+                    "UserData": get_user_data_decoded,
                 },
-                "result_handler": _store_instance_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "terminate_instances",

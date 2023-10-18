@@ -1,0 +1,40 @@
+{
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "Result": [
+        1,
+        "Hello",
+        {},
+        null,
+        3.3,
+        3,
+        4,
+        5
+      ],
+      "ResultPath": "$.arr",
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "ResultPath": null,
+      "InputPath": "$.arr",
+      "MaxConcurrency": 1,
+      "Iterator": {
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "Next": "Final",
+    },
+    "Final": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

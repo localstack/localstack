@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import IO, Dict, Iterable, Iterator, List, Optional, Union
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import IO, Dict, Iterable, Iterator, List, Optional, TypedDict, Union
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -66,6 +60,7 @@ NameSpacedFunctionArn = str
 NamespacedFunctionName = str
 NamespacedStatementId = str
 NonNegativeInteger = int
+NullableBoolean = bool
 OrganizationId = str
 Origin = str
 ParallelizationFactor = int
@@ -234,6 +229,8 @@ class Runtime(str):
     nodejs18_x = "nodejs18.x"
     python3_10 = "python3.10"
     java17 = "java17"
+    ruby3_2 = "ruby3.2"
+    python3_11 = "python3.11"
 
 
 class SnapStartApplyOn(str):
@@ -486,6 +483,13 @@ class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
     code: str = "ProvisionedConcurrencyConfigNotFoundException"
     sender_fault: bool = False
     status_code: int = 404
+    Type: Optional[String]
+
+
+class RecursiveInvocationException(ServiceException):
+    code: str = "RecursiveInvocationException"
+    sender_fault: bool = False
+    status_code: int = 400
     Type: Optional[String]
 
 
@@ -849,6 +853,7 @@ SubnetIds = List[SubnetId]
 class VpcConfig(TypedDict, total=False):
     SubnetIds: Optional[SubnetIds]
     SecurityGroupIds: Optional[SecurityGroupIds]
+    Ipv6AllowedForDualStack: Optional[NullableBoolean]
 
 
 class FunctionCode(TypedDict, total=False):
@@ -1046,6 +1051,7 @@ class VpcConfigResponse(TypedDict, total=False):
     SubnetIds: Optional[SubnetIds]
     SecurityGroupIds: Optional[SecurityGroupIds]
     VpcId: Optional[VpcId]
+    Ipv6AllowedForDualStack: Optional[NullableBoolean]
 
 
 class FunctionConfiguration(TypedDict, total=False):

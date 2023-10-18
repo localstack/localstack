@@ -1,3 +1,4 @@
+import functools
 import itertools
 import json
 import logging
@@ -15,6 +16,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
+    DockerNotAvailable,
     DockerPlatform,
     NoSuchContainer,
     NoSuchImage,
@@ -65,8 +67,25 @@ class CmdDockerClient(ContainerClient):
     default_run_outfile: Optional[str] = None
 
     def _docker_cmd(self) -> List[str]:
-        """Return the string to be used for running Docker commands."""
-        return config.DOCKER_CMD.split()
+        """
+        Get the configured, tested Docker CMD.
+        :return: string to be used for running Docker commands
+        :raises: DockerNotAvailable exception if the Docker command or the socker is not available
+        """
+        if not self.has_docker():
+            raise DockerNotAvailable()
+        return shlex.split(config.DOCKER_CMD)
+
+    def get_system_info(self) -> dict:
+        cmd = [
+            *self._docker_cmd(),
+            "info",
+            "--format",
+            "{{json .}}",
+        ]
+        cmd_result = run(cmd)
+
+        return json.loads(cmd_result)
 
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         cmd = self._docker_cmd()
@@ -92,9 +111,7 @@ class CmdDockerClient(ContainerClient):
         else:
             return DockerContainerStatus.DOWN
 
-    def stop_container(self, container_name: str, timeout: int = None) -> None:
-        if timeout is None:
-            timeout = self.STOP_TIMEOUT
+    def stop_container(self, container_name: str, timeout: int = 10) -> None:
         cmd = self._docker_cmd()
         cmd += ["stop", "--time", str(timeout), container_name]
         LOG.debug("Stopping container with cmd %s", cmd)
@@ -386,7 +403,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["logs", container_name_or_id, "--follow"]
 
         process: subprocess.Popen = run(
-            cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.PIPE
+            cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.STDOUT
         )
 
         return CancellableProcessStream(process)
@@ -395,7 +412,7 @@ class CmdDockerClient(ContainerClient):
         cmd = self._docker_cmd()
         cmd += ["inspect", "--format", "{{json .}}", object_name_or_id]
         try:
-            cmd_result = run(cmd)
+            cmd_result = run(cmd, print_error=False)
         except subprocess.CalledProcessError as e:
             # note: case-insensitive comparison, to support Docker and Podman output formats
             if "no such object" in to_str(e.stdout).lower():
@@ -552,9 +569,11 @@ class CmdDockerClient(ContainerClient):
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
 
+    @functools.lru_cache(maxsize=None)
     def has_docker(self) -> bool:
         try:
-            run(self._docker_cmd() + ["ps"])
+            # do not use self._docker_cmd here (would result in a loop)
+            run(shlex.split(config.DOCKER_CMD) + ["ps"])
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False
@@ -641,6 +660,11 @@ class CmdDockerClient(ContainerClient):
         LOG.debug("Start container with cmd: %s", cmd)
         return self._run_async_cmd(cmd, stdin, container_name_or_id)
 
+    def attach_to_container(self, container_name_or_id: str):
+        cmd = self._docker_cmd() + ["attach", container_name_or_id]
+        LOG.debug("Attaching to container %s", container_name_or_id)
+        return self._run_async_cmd(cmd, stdin=None, container_name=container_name_or_id)
+
     def _run_async_cmd(
         self, cmd: List[str], stdin: bytes, container_name: str, image_name=None
     ) -> Tuple[bytes, bytes]:
@@ -690,13 +714,14 @@ class CmdDockerClient(ContainerClient):
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
+        exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
         cap_add: Optional[List[str]] = None,
         cap_drop: Optional[List[str]] = None,
         security_opt: Optional[List[str]] = None,
         network: Optional[str] = None,
-        dns: Optional[str] = None,
+        dns: Optional[Union[str, List[str]]] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
@@ -728,6 +753,8 @@ class CmdDockerClient(ContainerClient):
             cmd.append("--detach")
         if ports:
             cmd += ports.to_list()
+        if exposed_ports:
+            cmd += list(itertools.chain.from_iterable(["--expose", port] for port in exposed_ports))
         if env_vars:
             env_flags, env_file = Util.create_env_vars_file_flag(env_vars)
             cmd += env_flags
@@ -744,7 +771,8 @@ class CmdDockerClient(ContainerClient):
         if network:
             cmd += ["--network", network]
         if dns:
-            cmd += ["--dns", dns]
+            for dns_server in ensure_list(dns):
+                cmd += ["--dns", dns_server]
         if workdir:
             cmd += ["--workdir", workdir]
         if labels:

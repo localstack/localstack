@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import IO, Dict, Iterable, Iterator, List, Optional, Union
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import IO, Dict, Iterable, Iterator, List, Optional, TypedDict, Union
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -82,6 +76,7 @@ InventoryId = str
 IsEnabled = bool
 IsLatest = bool
 IsPublic = bool
+IsRestoreInProgress = bool
 IsTruncated = bool
 KMSContext = str
 KeyCount = int
@@ -145,7 +140,6 @@ SSECustomerKeyMD5 = str
 SSEKMSEncryptionContext = str
 SSEKMSKeyId = str
 Setting = bool
-Size = int
 SkipValidation = bool
 StartAfter = str
 Suffix = str
@@ -180,7 +174,6 @@ X_Amz_Expires = int
 HttpMethod = str
 ResourceType = str
 MissingHeaderName = str
-Method = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -232,6 +225,8 @@ class BucketLocationConstraint(str):
     us_gov_west_1 = "us-gov-west-1"
     us_west_1 = "us-west-1"
     us_west_2 = "us-west-2"
+    ap_south_2 = "ap-south-2"
+    eu_south_2 = "eu-south-2"
 
 
 class BucketLogsPermission(str):
@@ -368,6 +363,8 @@ class InventoryOptionalField(str):
     IntelligentTieringAccessTier = "IntelligentTieringAccessTier"
     BucketKeyStatus = "BucketKeyStatus"
     ChecksumAlgorithm = "ChecksumAlgorithm"
+    ObjectAccessControlList = "ObjectAccessControlList"
+    ObjectOwner = "ObjectOwner"
 
 
 class JSONType(str):
@@ -455,6 +452,10 @@ class ObjectVersionStorageClass(str):
     STANDARD = "STANDARD"
 
 
+class OptionalObjectAttributes(str):
+    RestoreStatus = "RestoreStatus"
+
+
 class OwnerOverride(str):
     Destination = "Destination"
 
@@ -497,6 +498,7 @@ class ReplicationStatus(str):
     PENDING = "PENDING"
     FAILED = "FAILED"
     REPLICA = "REPLICA"
+    COMPLETED = "COMPLETED"
 
 
 class ReplicationTimeStatus(str):
@@ -519,6 +521,7 @@ class RestoreRequestType(str):
 class ServerSideEncryption(str):
     AES256 = "AES256"
     aws_kms = "aws:kms"
+    aws_kms_dsse = "aws:kms:dsse"
 
 
 class SseKmsEncryptedObjectsStatus(str):
@@ -578,14 +581,14 @@ class BucketAlreadyExists(ServiceException):
 class BucketAlreadyOwnedByYou(ServiceException):
     code: str = "BucketAlreadyOwnedByYou"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 409
     BucketName: Optional[BucketName]
 
 
 class InvalidObjectState(ServiceException):
     code: str = "InvalidObjectState"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 403
     StorageClass: Optional[StorageClass]
     AccessTier: Optional[IntelligentTieringAccessTier]
 
@@ -602,12 +605,14 @@ class NoSuchKey(ServiceException):
     sender_fault: bool = False
     status_code: int = 404
     Key: Optional[ObjectKey]
+    DeleteMarker: Optional[DeleteMarker]
+    VersionId: Optional[ObjectVersionId]
 
 
 class NoSuchUpload(ServiceException):
     code: str = "NoSuchUpload"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 404
     UploadId: Optional[MultipartUploadId]
 
 
@@ -635,6 +640,14 @@ class InvalidBucketName(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     BucketName: Optional[BucketName]
+
+
+class NoSuchVersion(ServiceException):
+    code: str = "NoSuchVersion"
+    sender_fault: bool = False
+    status_code: int = 404
+    VersionId: Optional[ObjectVersionId]
+    Key: Optional[ObjectKey]
 
 
 class PreconditionFailed(ServiceException):
@@ -761,8 +774,113 @@ class MethodNotAllowed(ServiceException):
     code: str = "MethodNotAllowed"
     sender_fault: bool = False
     status_code: int = 405
-    Method: Optional[Method]
+    Method: Optional[HttpMethod]
     ResourceType: Optional[ResourceType]
+    DeleteMarker: Optional[DeleteMarker]
+    VersionId: Optional[ObjectVersionId]
+    Allow: Optional[HttpMethod]
+
+
+class CrossLocationLoggingProhibitted(ServiceException):
+    code: str = "CrossLocationLoggingProhibitted"
+    sender_fault: bool = False
+    status_code: int = 403
+    TargetBucketLocation: Optional[BucketRegion]
+
+
+class InvalidTargetBucketForLogging(ServiceException):
+    code: str = "InvalidTargetBucketForLogging"
+    sender_fault: bool = False
+    status_code: int = 400
+    TargetBucket: Optional[BucketName]
+
+
+class BucketNotEmpty(ServiceException):
+    code: str = "BucketNotEmpty"
+    sender_fault: bool = False
+    status_code: int = 409
+    BucketName: Optional[BucketName]
+
+
+ProposedSize = int
+MinSizeAllowed = int
+
+
+class EntityTooSmall(ServiceException):
+    code: str = "EntityTooSmall"
+    sender_fault: bool = False
+    status_code: int = 400
+    ETag: Optional[ETag]
+    MinSizeAllowed: Optional[MinSizeAllowed]
+    PartNumber: Optional[PartNumber]
+    ProposedSize: Optional[ProposedSize]
+
+
+class InvalidPart(ServiceException):
+    code: str = "InvalidPart"
+    sender_fault: bool = False
+    status_code: int = 400
+    ETag: Optional[ETag]
+    UploadId: Optional[MultipartUploadId]
+    PartNumber: Optional[PartNumber]
+
+
+class NoSuchTagSet(ServiceException):
+    code: str = "NoSuchTagSet"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class InvalidTag(ServiceException):
+    code: str = "InvalidTag"
+    sender_fault: bool = False
+    status_code: int = 400
+    TagKey: Optional[ObjectKey]
+    TagValue: Optional[Value]
+
+
+class ObjectLockConfigurationNotFoundError(ServiceException):
+    code: str = "ObjectLockConfigurationNotFoundError"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class InvalidPartNumber(ServiceException):
+    code: str = "InvalidPartNumber"
+    sender_fault: bool = False
+    status_code: int = 416
+    PartNumberRequested: Optional[PartNumber]
+    ActualPartCount: Optional[PartNumber]
+
+
+class OwnershipControlsNotFoundError(ServiceException):
+    code: str = "OwnershipControlsNotFoundError"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class NoSuchPublicAccessBlockConfiguration(ServiceException):
+    code: str = "NoSuchPublicAccessBlockConfiguration"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class NoSuchBucketPolicy(ServiceException):
+    code: str = "NoSuchBucketPolicy"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class InvalidDigest(ServiceException):
+    code: str = "InvalidDigest"
+    sender_fault: bool = False
+    status_code: int = 400
+    Content_MD5: Optional[ContentMD5]
 
 
 AbortDate = datetime
@@ -1478,11 +1596,13 @@ FilterRuleList = List[FilterRule]
 
 class GetBucketAccelerateConfigurationOutput(TypedDict, total=False):
     Status: Optional[BucketAccelerateStatus]
+    RequestCharged: Optional[RequestCharged]
 
 
 class GetBucketAccelerateConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: Optional[RequestPayer]
 
 
 class GetBucketAclOutput(TypedDict, total=False):
@@ -1888,6 +2008,9 @@ class GetObjectAclRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
+Size = int
+
+
 class ObjectPart(TypedDict, total=False):
     PartNumber: Optional[PartNumber]
     Size: Optional[Size]
@@ -2143,6 +2266,7 @@ class HeadObjectOutput(TypedDict, total=False):
     ObjectLockMode: Optional[ObjectLockMode]
     ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
+    StatusCode: Optional[GetObjectResponseStatusCode]
 
 
 class HeadObjectRequest(ServiceRequest):
@@ -2301,6 +2425,7 @@ class ListMultipartUploadsOutput(TypedDict, total=False):
     Uploads: Optional[MultipartUploadList]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    RequestCharged: Optional[RequestCharged]
 
 
 class ListMultipartUploadsRequest(ServiceRequest):
@@ -2312,6 +2437,15 @@ class ListMultipartUploadsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     UploadIdMarker: Optional[UploadIdMarker]
     ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: Optional[RequestPayer]
+
+
+RestoreExpiryDate = datetime
+
+
+class RestoreStatus(TypedDict, total=False):
+    IsRestoreInProgress: Optional[IsRestoreInProgress]
+    RestoreExpiryDate: Optional[RestoreExpiryDate]
 
 
 class ObjectVersion(TypedDict, total=False):
@@ -2324,6 +2458,7 @@ class ObjectVersion(TypedDict, total=False):
     IsLatest: Optional[IsLatest]
     LastModified: Optional[LastModified]
     Owner: Optional[Owner]
+    RestoreStatus: Optional[RestoreStatus]
 
 
 ObjectVersionList = List[ObjectVersion]
@@ -2343,6 +2478,10 @@ class ListObjectVersionsOutput(TypedDict, total=False):
     MaxKeys: Optional[MaxKeys]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    RequestCharged: Optional[RequestCharged]
+
+
+OptionalObjectAttributesList = List[OptionalObjectAttributes]
 
 
 class ListObjectVersionsRequest(ServiceRequest):
@@ -2354,6 +2493,8 @@ class ListObjectVersionsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     VersionIdMarker: Optional[VersionIdMarker]
     ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: Optional[RequestPayer]
+    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
 
 
 class Object(TypedDict, total=False):
@@ -2364,6 +2505,7 @@ class Object(TypedDict, total=False):
     Size: Optional[Size]
     StorageClass: Optional[ObjectStorageClass]
     Owner: Optional[Owner]
+    RestoreStatus: Optional[RestoreStatus]
 
 
 ObjectList = List[Object]
@@ -2379,6 +2521,7 @@ class ListObjectsOutput(TypedDict, total=False):
     MaxKeys: Optional[MaxKeys]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    RequestCharged: Optional[RequestCharged]
     BucketRegion: Optional[BucketRegion]
     Contents: Optional[ObjectList]
 
@@ -2392,6 +2535,7 @@ class ListObjectsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
 
 
 class ListObjectsV2Output(TypedDict, total=False):
@@ -2406,6 +2550,7 @@ class ListObjectsV2Output(TypedDict, total=False):
     ContinuationToken: Optional[Token]
     NextContinuationToken: Optional[NextToken]
     StartAfter: Optional[StartAfter]
+    RequestCharged: Optional[RequestCharged]
     BucketRegion: Optional[BucketRegion]
     Contents: Optional[ObjectList]
 
@@ -2421,6 +2566,7 @@ class ListObjectsV2Request(ServiceRequest):
     StartAfter: Optional[StartAfter]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
 
 
 class Part(TypedDict, total=False):
@@ -3384,7 +3530,11 @@ class S3Api:
 
     @handler("GetBucketAccelerateConfiguration")
     def get_bucket_accelerate_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
     ) -> GetBucketAccelerateConfigurationOutput:
         raise NotImplementedError
 
@@ -3726,6 +3876,7 @@ class S3Api:
         prefix: Prefix = None,
         upload_id_marker: UploadIdMarker = None,
         expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
     ) -> ListMultipartUploadsOutput:
         raise NotImplementedError
 
@@ -3741,6 +3892,8 @@ class S3Api:
         prefix: Prefix = None,
         version_id_marker: VersionIdMarker = None,
         expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
+        optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectVersionsOutput:
         raise NotImplementedError
 
@@ -3756,6 +3909,7 @@ class S3Api:
         prefix: Prefix = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectsOutput:
         raise NotImplementedError
 
@@ -3773,6 +3927,7 @@ class S3Api:
         start_after: StartAfter = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectsV2Output:
         raise NotImplementedError
 

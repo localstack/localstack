@@ -20,9 +20,9 @@ from botocore.exceptions import (
 from botocore.parsers import ResponseParserError
 from rich.console import Console
 
+from localstack.aws.connect import connect_externally_to
 from localstack.aws.mocking import Instance, generate_request
 from localstack.aws.spec import ServiceCatalog
-from localstack.utils.aws import aws_stack
 
 logging.basicConfig(level=logging.INFO)
 service_models = ServiceCatalog()
@@ -55,8 +55,10 @@ class RowEntry(TypedDict, total=False):
 
 def simulate_call(service: str, op: str) -> RowEntry:
     """generates a mock request based on the service and operation model and sends it to the API"""
-    client = aws_stack.create_external_boto_client(
+    client = connect_externally_to.get_client(
         service,
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
         config=botocore.config.Config(
             parameter_validation=False,
             retries={"max_attempts": 0, "total_max_attempts": 1},
@@ -71,6 +73,7 @@ def simulate_call(service: str, op: str) -> RowEntry:
     parameters = generate_request(op_model) or {}
     result = _make_api_call(client, service, op, parameters)
     error_msg = result.get("error_message", "")
+
     if result.get("error_code", "") == "InternalError":
         # some deeper investigation necessary, check for some common errors here and retry
         if service == "apigateway" and "Unexpected HTTP method" in error_msg:
@@ -131,7 +134,9 @@ def simulate_call(service: str, op: str) -> RowEntry:
                 else:
                     # keyword argument not found in the parameters
                     break
-
+    elif result.get("error_code", "") == "UnsupportedOperation" and service == "stepfunctions":
+        # the stepfunction lib returns 500 for not implemented + UnsupportedOperation
+        result["status_code"] = 501  # reflect that this is not implemented
     if result.get("status_code") in [0, 901, 902, 903]:
         # something went wrong, we do not know exactly what/why - just try again one more time
         logging.debug(

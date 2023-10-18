@@ -10,7 +10,6 @@ from localstack.aws.api.acm import (
     RequestCertificateResponse,
 )
 from localstack.services import moto
-from localstack.utils.objects import singleton_factory
 from localstack.utils.patch import patch
 
 # reduce the validation wait time from 60 (default) to 10 seconds
@@ -110,32 +109,6 @@ def describe(describe_orig, self):
         cert["ExtendedKeyUsages"] = []
 
     return result
-
-
-@singleton_factory
-def patch_cert_bundle_pickling():
-    """Apply patches to pickle CertBundle base models. It prevents the "cannot pickle 'builtins.Certificate'" errors"""
-    from cryptography.hazmat.backends import default_backend
-    from cryptography.x509 import load_pem_x509_certificate
-    from moto.acm.models import CertBundle
-
-    def cert_set_state(self, state, *args, **kwargs):
-        certificate = state.get("cert")
-        state["_cert"] = load_pem_x509_certificate(certificate, default_backend())
-        self.__dict__.update(state)
-
-    CertBundle.__setstate__ = cert_set_state
-
-    def cert_get_state(self, *args, **kwargs):
-        state = self.__dict__.copy()
-        # pop builtins.Certificate
-        state.pop("_cert", None)
-        return state
-
-    CertBundle.__getstate__ = cert_get_state
-
-
-patch_cert_bundle_pickling()
 
 
 class AcmProvider(AcmApi):

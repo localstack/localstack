@@ -60,6 +60,7 @@ def html_to_rst(html: str):
     doc = doc.replace("\_", "_")  # noqa: W605
     doc = doc.replace("\|", "|")  # noqa: W605
     doc = doc.replace("\ ", " ")  # noqa: W605
+    doc = doc.replace("\\", "\\\\")  # noqa: W605
     rst = doc.strip()
     return rst
 
@@ -311,13 +312,10 @@ class ShapeNode:
 
 
 def generate_service_types(output, service: ServiceModel, doc=True):
-    output.write("import sys\n")
-    output.write("from typing import Dict, List, Optional, Iterator, Iterable, IO, Union\n")
+    output.write(
+        "from typing import Dict, List, Optional, Iterator, Iterable, IO, Union, TypedDict\n"
+    )
     output.write("from datetime import datetime\n")
-    output.write("if sys.version_info >= (3, 8):\n")
-    output.write("    from typing import TypedDict\n")
-    output.write("else:\n")
-    output.write("    from typing_extensions import TypedDict\n")
     output.write("\n")
     output.write(
         "from localstack.aws.api import handler, RequestContext, ServiceException, ServiceRequest"
@@ -511,8 +509,10 @@ def generate_code(service_name: str, doc: bool = False) -> str:
 
         # try to sort imports
         code = isort.code(code, config=isort.Config(profile="black", line_length=100))
-    except Exception:
-        pass
+    except ImportError:
+        click.echo(
+            "Skip code cleaning / formatting due to missing tools (autoflake, isort, black)..."
+        )
 
     return code
 

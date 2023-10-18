@@ -86,9 +86,8 @@ from xml.etree import ElementTree as ETree
 
 import cbor2
 import xmltodict
-from boto.utils import ISO8601
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
-from botocore.serialize import ISO8601_MICRO
+from botocore.serialize import ISO8601, ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 from werkzeug import Request as WerkzeugRequest
 from werkzeug import Response as WerkzeugResponse
@@ -619,7 +618,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         request_id_element = ETree.SubElement(root, "RequestId")
         request_id_element.text = request_id
 
-        self._add_additional_error_tags(error, root, shape, mime_type)
+        self._add_additional_error_tags(vars(error), root, shape, mime_type)
 
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
 
@@ -636,7 +635,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             self._default_serialize(error_tag, "Sender", None, "Type", mime_type)
 
     def _add_additional_error_tags(
-        self, error: ServiceException, node: ETree, shape: StructureShape, mime_type: str
+        self, parameters: dict, node: ETree, shape: StructureShape, mime_type: str
     ):
         if shape:
             params = {}
@@ -644,8 +643,8 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             for member in shape.members:
                 # XML protocols do not add modeled default fields to the root node
                 # (tested for cloudfront, route53, cloudwatch, iam)
-                if member.lower() not in ["code", "message"] and hasattr(error, member):
-                    params[member] = getattr(error, member)
+                if member.lower() not in ["code", "message"] and member in parameters:
+                    params[member] = parameters[member]
 
             # If there is an error shape with members which should be set, they need to be added to the node
             if params:
@@ -1480,8 +1479,15 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         self._process_header_members(header_params, response, shape)
         # "HEAD" responses are basically "GET" responses without the actual body.
         # Do not process the body payload in this case (setting a body could also manipulate the headers)
-        # If the response is a redirection, the body should be empty as well
-        if operation_model.http.get("method") != "HEAD" and not 300 <= response.status_code < 400:
+        # - If the response is a redirection, the body should be empty as well
+        # - If the response is from a "PUT" request, the body should be empty except if there's a specific "payload"
+        #   field in the serialization (CopyObject and CopyObjectPart)
+        http_method = operation_model.http.get("method")
+        if (
+            http_method != "HEAD"
+            and not 300 <= response.status_code < 400
+            and not (http_method == "PUT" and shape and not shape.serialization.get("payload"))
+        ):
             self._serialize_payload(
                 payload_params,
                 response,
@@ -1512,7 +1518,10 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         self._add_error_tags(error, root, mime_type)
         request_id_element = ETree.SubElement(root, "RequestId")
         request_id_element.text = request_id
-        self._add_additional_error_tags(error, root, shape, mime_type)
+
+        header_params, payload_params = self._partition_members(vars(error), shape)
+        self._add_additional_error_tags(payload_params, root, shape, mime_type)
+        self._process_header_members(header_params, response, shape)
 
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
 

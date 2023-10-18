@@ -1,10 +1,12 @@
+import json
 import logging
 import re
 from datetime import datetime
+from json import JSONDecodeError
 from typing import Optional, Pattern
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
-from localstack.aws.api.stepfunctions import CreateStateMachineOutput, StartExecutionOutput
+from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
 from localstack.testing.snapshots.transformer import (
     JsonpathTransformer,
     KeyValueBasedTransformer,
@@ -55,7 +57,7 @@ class TransformerUtility:
         :return: KeyValueBasedTransformer
         """
         return KeyValueBasedTransformer(
-            lambda k, v: v if k == key else None,
+            lambda k, v: v if k == key and (v is not None and v != "") else None,
             replacement=value_replacement or _replace_camel_string_with_hyphen(key),
             replace_reference=reference_replacement,
         )
@@ -236,6 +238,19 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def cfn_stack_resource():
+        """
+        :return: array with Transformers, for cloudformation stack resource description;
+                recommended for verifying the stack resources deployed for scenario tests
+        """
+        return [
+            KeyValueBasedTransformer(_resource_name_transformer, "resource"),
+            KeyValueBasedTransformer(_change_set_id_transformer, "change-set-id"),
+            TransformerUtility.key_value("LogicalResourceId"),
+            TransformerUtility.key_value("PhysicalResourceId", reference_replacement=False),
+        ]
+
+    @staticmethod
     def dynamodb_api():
         """
         :return: array with Transformers, for dynamodb api.
@@ -251,7 +266,14 @@ class TransformerUtility:
         """
         :return: array with Transformers, for iam api.
         """
-        return [TransformerUtility.key_value("UserName"), TransformerUtility.key_value("UserId")]
+        return [
+            TransformerUtility.key_value("UserName"),
+            TransformerUtility.key_value("UserId"),
+            TransformerUtility.key_value("RoleId"),
+            TransformerUtility.key_value("RoleName"),
+            TransformerUtility.key_value("PolicyName"),
+            TransformerUtility.key_value("PolicyId"),
+        ]
 
     @staticmethod
     def transcribe_api():
@@ -317,6 +339,32 @@ class TransformerUtility:
                 "version-id",
                 reference_replacement=False,
             ),
+        ]
+
+    @staticmethod
+    def s3_dynamodb_notifications():
+        return [
+            TransformerUtility.jsonpath("$..uuid.S", "uuid"),
+            TransformerUtility.jsonpath("$..M.requestParameters.M.sourceIPAddress.S", "ip-address"),
+            TransformerUtility.jsonpath(
+                "$..M.responseElements.M.x-amz-id-2.S", "amz-id", reference_replacement=False
+            ),
+            TransformerUtility.jsonpath(
+                "$..M.responseElements.M.x-amz-request-id.S",
+                "amz-request-id",
+                reference_replacement=False,
+            ),
+            TransformerUtility.jsonpath("$..M.s3.M.bucket.M.name.S", "bucket-name"),
+            TransformerUtility.jsonpath("$..M.s3.M.bucket.M.arn.S", "bucket-arn"),
+            TransformerUtility.jsonpath(
+                "$..M.s3.M.bucket.M.ownerIdentity.M.principalId.S", "principal-id"
+            ),
+            TransformerUtility.jsonpath("$..M.s3.M.configurationId.S", "config-id"),
+            TransformerUtility.jsonpath("$..M.s3.M.object.M.key.S", "object-key"),
+            TransformerUtility.jsonpath(
+                "$..M.s3.M.object.M.sequencer.S", "sequencer", reference_replacement=False
+            ),
+            TransformerUtility.jsonpath("$..M.userIdentity.M.principalId.S", "principal-id"),
         ]
 
     @staticmethod
@@ -448,6 +496,7 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("AlarmName"),
+            TransformerUtility.key_value("Namespace"),
             KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
             TransformerUtility.key_value("Region", "region-name-full"),
         ]
@@ -526,6 +575,41 @@ class TransformerUtility:
         arn_part: str = "".join(start_exec["executionArn"].rpartition(":")[-1])
         return RegexTransformer(arn_part, arn_part_repl)
 
+    @staticmethod
+    def sfn_map_run_arn(map_run_arn: LongArn, index: int) -> list[RegexTransformer]:
+        map_run_arn_part = map_run_arn.split("/")[-1]
+        arn_parts = map_run_arn_part.split(":")
+        return [
+            RegexTransformer(arn_parts[0], f"<MapRunArnPart0_{index}idx>"),
+            RegexTransformer(arn_parts[1], f"<MapRunArnPart1_{index}idx>"),
+        ]
+
+    @staticmethod
+    def stepfunctions_api():
+        return [
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.AllHttpHeaders.Date",
+                "date",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.AllHttpHeaders.X-Amzn-Trace-Id",
+                "X-Amzn-Trace-Id",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.HttpHeaders.Date",
+                "date",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.HttpHeaders.X-Amzn-Trace-Id",
+                "X-Amzn-Trace-Id",
+                replace_reference=False,
+            ),
+            KeyValueBasedTransformer(_transform_stepfunctions_cause_details, "json-input"),
+        ]
+
     # TODO add example
     # @staticmethod
     # def custom(fn: Callable[[dict], dict]) -> Transformer:
@@ -592,6 +676,22 @@ def _resource_name_transformer(key: str, val: str) -> str:
                 return res.split(":")[-1]  # TODO might not work for every replacement
             return res
         return None
+
+
+def _transform_stepfunctions_cause_details(key: str, val: str) -> str:
+    if key == "cause" and isinstance(val, str):
+        # the cause might contain the entire input, including http metadata (date, request-ids etc).
+        # the input is a json: if we can match the regex and parse it as a json, we remove this part from the response
+        regex = r".*'({.*})'"
+        match = re.match(regex, val)
+        if match:
+            json_input = match.groups()[0]
+            try:
+                json.loads(json_input)
+                return json_input
+            except JSONDecodeError:
+                return None
+    return None
 
 
 def _change_set_id_transformer(key: str, val: str) -> str:

@@ -1,8 +1,8 @@
 from localstack.packages import Package, package
 
 
-@package(name="ffmpeg")
-def ffmpeg_package() -> Package:
-    from localstack.services.transcribe.packages import ffmpeg_package
+@package(name="vosk")
+def vosk_package() -> Package:
+    from localstack.services.transcribe.packages import vosk_package
 
-    return ffmpeg_package
+    return vosk_package

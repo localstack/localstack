@@ -86,7 +86,7 @@ class SnsMessage:
         )
 
 
-class SnsSubscription(TypedDict):
+class SnsSubscription(TypedDict, total=False):
     """
     In SNS, Subscription can be represented with only TopicArn, Endpoint, Protocol, SubscriptionArn and Owner, for
     example in ListSubscriptions. However, when getting a subscription with GetSubscriptionAttributes, it will return
@@ -112,6 +112,7 @@ class SnsSubscription(TypedDict):
 class SnsStore(BaseStore):
     # maps topic ARN to subscriptions ARN
     topic_subscriptions: Dict[str, List[str]] = LocalAttribute(default=dict)
+
     # maps subscription ARN to SnsSubscription
     subscriptions: Dict[str, SnsSubscription] = LocalAttribute(default=dict)
 
@@ -124,7 +125,7 @@ class SnsStore(BaseStore):
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
     platform_endpoint_messages: Dict[str, List[Dict]] = LocalAttribute(default=dict)
 
-    # list of sent SMS messages - TODO: expose via internal API
+    # list of sent SMS messages
     sms_messages: List[Dict] = LocalAttribute(default=list)
 
     # filter policy are stored as JSON string in subscriptions, store the decoded result Dict

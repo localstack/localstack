@@ -4,6 +4,7 @@ import logging
 import os
 import threading
 import wave
+from functools import cache
 from pathlib import Path
 from typing import Tuple
 from zipfile import ZipFile
@@ -28,11 +29,14 @@ from localstack.aws.api.transcribe import (
     TranscriptionJobStatus,
     TranscriptionJobSummary,
 )
-from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.s3.utils import get_bucket_and_key_from_s3_uri
+from localstack.aws.connect import connect_to
+from localstack.packages.ffmpeg import ffmpeg_package
+from localstack.services.s3.utils import (
+    get_bucket_and_key_from_presign_url,
+    get_bucket_and_key_from_s3_uri,
+)
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
-from localstack.services.transcribe.packages import ffmpeg_package
-from localstack.utils.aws import aws_stack
+from localstack.services.transcribe.packages import vosk_package
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.run import run
@@ -74,37 +78,44 @@ SUPPORTED_FORMAT_NAMES = {
     "wav": MediaFormat.wav,
 }
 
-os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
-
-# Vosk must be imported only after setting the required env vars
-from vosk import MODEL_PRE_URL, KaldiRecognizer, Model, SetLogLevel  # noqa
-
-# Suppress Vosk logging
-SetLogLevel(-1)
-
 # Mutex for when downloading models
 _DL_LOCK = threading.Lock()
 
 
-class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
-    def on_before_start(self):
-        ffmpeg_package.install()
-
-    #
-    # Handlers
-    #
-
+class TranscribeProvider(TranscribeApi):
     def get_transcription_job(
         self, context: RequestContext, transcription_job_name: TranscriptionJobName
     ) -> GetTranscriptionJobResponse:
         store = transcribe_stores[context.account_id][context.region]
 
         if job := store.transcription_jobs.get(transcription_job_name):
+            # fetch output key and output bucket
+            output_bucket, output_key = get_bucket_and_key_from_presign_url(
+                job["Transcript"]["TranscriptFileUri"]
+            )
+            job["Transcript"]["TranscriptFileUri"] = connect_to().s3.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": output_bucket, "Key": output_key},
+                ExpiresIn=60 * 15,
+            )
             return GetTranscriptionJobResponse(TranscriptionJob=job)
 
         raise NotFoundException(
             "The requested job couldn't be found. Check the job name and try your request again."
         )
+
+    @staticmethod
+    @cache
+    def _setup_vosk() -> None:
+        # Install and configure vosk
+        vosk_package.install()
+
+        # Vosk must be imported only after setting the required env vars
+        os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
+        from vosk import SetLogLevel  # noqa
+
+        # Suppress Vosk logging
+        SetLogLevel(-1)
 
     @handler("StartTranscriptionJob", expand=False)
     def start_transcription_job(
@@ -133,13 +144,19 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         output_bucket = request.get("OutputBucketName", get_bucket_and_key_from_s3_uri(s3_path)[0])
         output_key = request.get("OutputKey")
 
-        if output_key:
-            if not output_key.endswith(".json"):
-                output_key = f"{output_key}/{job_name}.json"
-        else:
+        if not output_key:
             output_key = f"{job_name}.json"
 
-        transcript = Transcript(TranscriptFileUri=f"s3://{output_bucket}/{output_key}")
+        s3_client = connect_to().s3
+
+        # the presign url is valid for 15 minutes
+        presign_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": output_bucket, "Key": output_key},
+            ExpiresIn=60 * 15,
+        )
+
+        transcript = Transcript(TranscriptFileUri=presign_url)
 
         job = TranscriptionJob(
             TranscriptionJobName=job_name,
@@ -216,6 +233,9 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             model_zip_path = str(model_path) + ".zip"
 
             LOG.debug("Downloading language model: %s", model_path.name)
+
+            from vosk import MODEL_PRE_URL  # noqa
+
             download(
                 MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path, verify_ssl=False
             )
@@ -244,11 +264,12 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
 
             # Get file from S3
             file_path = new_tmp_file()
-            s3_client = aws_stack.connect_to_service("s3")
+            s3_client = connect_to().s3
             s3_path = job["Media"]["MediaFileUri"]
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
 
+            ffmpeg_package.install()
             ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()
             ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()
 
@@ -295,7 +316,10 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             # Prepare transcriber
             language_code = job["LanguageCode"]
             model_name = LANGUAGE_MODELS[language_code]
+            self._setup_vosk()
             self.download_model(model_name)
+            from vosk import KaldiRecognizer, Model  # noqa
+
             model = Model(model_name=model_name)
 
             tc = KaldiRecognizer(model, audio.getframerate())
@@ -318,7 +342,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
                     {
                         "start_time": unigram["start"],
                         "end_time": unigram["end"],
-                        "type": "pronounciation",
+                        "type": "pronunciation",
                         "alternatives": [
                             {
                                 "confidence": unigram["conf"],
@@ -342,7 +366,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
 
             # Save to S3
             output_s3_path = job["Transcript"]["TranscriptFileUri"]
-            output_bucket, output_key = get_bucket_and_key_from_s3_uri(output_s3_path)
+            output_bucket, output_key = get_bucket_and_key_from_presign_url(output_s3_path)
             s3_client.put_object(Bucket=output_bucket, Key=output_key, Body=json.dumps(output))
 
             # Update job details

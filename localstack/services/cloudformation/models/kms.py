@@ -2,8 +2,6 @@ import json
 
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns, aws_stack
-from localstack.utils.common import short_uid
 
 
 class KMSKey(GenericBaseModel):
@@ -11,56 +9,23 @@ class KMSKey(GenericBaseModel):
     def cloudformation_type():
         return "AWS::KMS::Key"
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return self.props.get("KeyMetadata", {}).get("Arn")
-        return super(KMSKey, self).get_cfn_attribute(attribute_name)
-
     def fetch_state(self, stack_name, resources):
-        client = connect_to().kms
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).kms
         physical_res_id = self.physical_resource_id
-        props = self.props
-        res_tags = props.get("Tags", [])
-        if not physical_res_id:
-            # TODO: find a more efficient approach for this?
-            for key in client.list_keys()["Keys"]:
-                details = client.describe_key(KeyId=key["KeyId"])["KeyMetadata"]
-                tags = client.list_resource_tags(KeyId=key["KeyId"]).get("Tags", [])
-                tags = [{"Key": tag["TagKey"], "Value": tag["TagValue"]} for tag in tags]
-                if (
-                    tags == res_tags
-                    and details.get("Description") == props.get("Description")
-                    and props.get("KeyUsage") in [None, details.get("KeyUsage")]
-                ):
-                    physical_res_id = key["KeyId"]
-                    # TODO should this be removed from here? It seems that somewhere along the execution
-                    #  chain the 'PhysicalResourceId' gets overwritten with None, hence setting it here
-                    self.resource_json["PhysicalResourceId"] = physical_res_id
-                    break
-        if not physical_res_id:
-            return
         return client.describe_key(KeyId=physical_res_id)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        # TODO: ?
-        return self.physical_resource_id and arns.kms_key_arn(self.physical_resource_id)
-
-    # TODO: try to remove this workaround (ensures idempotency)
-    @staticmethod
-    def add_defaults(resource, stack_name: str):
-        props = resource["Properties"] = resource.get("Properties", {})
-        tags = props["Tags"] = props.get("Tags", [])
-        existing = [t for t in tags if t["Key"] == "localstack-key-id"]
-        if not existing:
-            # append tags, to allow us to determine in fetch_state whether this key is already deployed
-            tags.append({"Key": "localstack-key-id", "Value": short_uid()})
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
-            kms_client = aws_stack.connect_to_service("kms")
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def _create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            kms_client = connect_to(aws_access_key_id=account_id, region_name=region_name).kms
+            resource_provider = cls(account_id, region_name, resource)
+            props = resource_provider.props
             params = {}
             if props.get("KeyPolicy"):
                 params["Policy"] = json.dumps(props["KeyPolicy"])
@@ -91,12 +56,19 @@ class KMSKey(GenericBaseModel):
 
             return new_key
 
-        def _handle_key_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["KeyMetadata"]["KeyId"]
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["KeyMetadata"]["KeyId"]
+            resource["Properties"]["Arn"] = result["KeyMetadata"]["Arn"]
 
         return {
             "create": [
-                {"function": _create, "result_handler": _handle_key_result},
+                {"function": _create, "result_handler": _handle_result},
             ],
             "delete": {
                 # TODO Key needs to be deleted in KMS backend
@@ -111,11 +83,10 @@ class KMSAlias(GenericBaseModel):
     def cloudformation_type():
         return "AWS::KMS::Alias"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("AliasName")
-
     def fetch_state(self, stack_name, resources):
-        aliases = connect_to().kms.list_aliases()["Aliases"]
+        aliases = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).kms.list_aliases()["Aliases"]
         for alias in aliases:
             if alias["AliasName"] == self.props.get("AliasName"):
                 return alias
@@ -123,10 +94,20 @@ class KMSAlias(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = resource["Properties"]["AliasName"]
+
         return {
             "create": {
                 "function": "create_alias",
                 "parameters": {"AliasName": "AliasName", "TargetKeyId": "TargetKeyId"},
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_alias",

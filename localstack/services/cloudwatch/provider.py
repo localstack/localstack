@@ -5,7 +5,7 @@ from xml.sax.saxutils import escape
 from moto.cloudwatch import cloudwatch_backends
 from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm, MetricDatum
 
-from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.accounts import get_account_id_from_access_key_id, get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AlarmNames,
@@ -26,6 +26,7 @@ from localstack.aws.api.cloudwatch import (
     TagResourceOutput,
     UntagResourceOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request
@@ -70,7 +71,7 @@ def update_state(target, self, reason, reason_data, state_value):
         data = arns.parse_arn(action)
         # test for sns - can this be done in a more generic way?
         if data["service"] == "sns":
-            service = aws_stack.connect_to_service(data["service"])
+            service = connect_to.get_client(data["service"])
             subject = f"""{self.state_value}: "{self.name}" in {self.region_name}"""
             message = create_message_response_update_state(self, old_state)
             service.publish(TopicArn=action, Subject=subject, Message=message)
@@ -283,7 +284,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def get_raw_metrics(self, request: Request):
         region = aws_stack.extract_region_from_auth_header(request.headers)
         account_id = (
-            extract_access_key_id_from_auth_header(request.headers) or DEFAULT_AWS_ACCOUNT_ID
+            get_account_id_from_access_key_id(
+                extract_access_key_id_from_auth_header(request.headers)
+            )
+            or DEFAULT_AWS_ACCOUNT_ID
         )
         backend = cloudwatch_backends[account_id][region]
         if backend:

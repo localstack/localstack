@@ -8,7 +8,6 @@ import socket
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-import boto3
 import botocore.auth
 import botocore.config
 import botocore.credentials
@@ -23,8 +22,6 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config, constants
-from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -35,13 +32,12 @@ from localstack.services.stores import (
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
-from localstack.utils.json import json_safe
+from localstack.utils.json import CustomEncoder, json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
@@ -52,48 +48,14 @@ LOG = logging.getLogger(__name__)
 # URL of public HTTP echo server, used primarily for AWS parity/snapshot testing
 PUBLIC_HTTP_ECHO_SERVER_URL = "http://httpbin.org"
 
-
-def _resource(service):
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.resource(service)
-    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
-    config = (
-        botocore.config.Config(
-            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
-        )
-        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
-        else None
-    )
-    return aws_stack.connect_to_resource_external(service, config=config)
-
-
-# TODO: remove usage of this fixture
-@pytest.fixture(scope="class")
-def create_boto_client(aws_client_factory):
-    def _factory_client(
-        service, region_name=None, aws_access_key_id=None, *, additional_config=None
-    ):
-        return aws_client_factory.get_client(
-            service_name=service, region_name=region_name, config=additional_config
-        )
-
-    return _factory_client
+WAITER_CHANGE_SET_CREATE_COMPLETE = "change_set_create_complete"
+WAITER_STACK_CREATE_COMPLETE = "stack_create_complete"
+WAITER_STACK_UPDATE_COMPLETE = "stack_update_complete"
+WAITER_STACK_DELETE_COMPLETE = "stack_delete_complete"
 
 
 @pytest.fixture(scope="class")
-def boto3_session():
-    if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":
-        return boto3.Session()
-
-    return boto3.Session(
-        # LocalStack assumes AWS_ACCESS_KEY_ID config contains the AWS_ACCOUNT_ID value.
-        aws_access_key_id=get_aws_account_id(),
-        aws_secret_access_key="__test_key__",
-    )
-
-
-@pytest.fixture(scope="class")
-def aws_http_client_factory(boto3_session):
+def aws_http_client_factory(aws_session):
     """
     Returns a factory for creating new ``SigningHttpClient`` instances using a configurable botocore request signer.
     The default signer is a SigV4QueryAuth. The credentials are extracted from the ``boto3_sessions`` fixture that
@@ -120,7 +82,7 @@ def aws_http_client_factory(boto3_session):
         aws_access_key_id: str = None,
         aws_secret_access_key: str = None,
     ):
-        region = region or boto3_session.region_name
+        region = region or aws_session.region_name
         region = region or config.DEFAULT_REGION
 
         if aws_access_key_id or aws_secret_access_key:
@@ -128,16 +90,14 @@ def aws_http_client_factory(boto3_session):
                 access_key=aws_access_key_id, secret_key=aws_secret_access_key
             )
         else:
-            credentials = boto3_session.get_credentials()
+            credentials = aws_session.get_credentials()
 
         creds = credentials.get_frozen_credentials()
 
         if not endpoint_url:
             if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":
                 # FIXME: this is a bit raw. we should probably re-use boto in a better way
-                resolver: EndpointResolver = boto3_session._session.get_component(
-                    "endpoint_resolver"
-                )
+                resolver: EndpointResolver = aws_session._session.get_component("endpoint_resolver")
                 endpoint_url = "https://" + resolver.construct_endpoint(service, region)["hostname"]
             else:
                 endpoint_url = config.get_edge_url()
@@ -148,26 +108,8 @@ def aws_http_client_factory(boto3_session):
 
 
 @pytest.fixture(scope="class")
-def dynamodb_resource():
-    return _resource("dynamodb")
-
-
-@pytest.fixture(scope="class")
 def s3_vhost_client(aws_client_factory):
     return aws_client_factory(config=botocore.config.Config(s3={"addressing_style": "virtual"})).s3
-
-
-# TODO: remove
-@pytest.fixture(scope="class")
-def s3_presigned_client(aws_client_factory):
-    return aws_client_factory(
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
-    ).s3
-
-
-@pytest.fixture(scope="class")
-def s3_resource():
-    return _resource("s3")
 
 
 @pytest.fixture
@@ -237,7 +179,7 @@ def dynamodb_create_table(dynamodb_wait_for_table_active, aws_client):
 
 
 @pytest.fixture
-def s3_create_bucket(s3_resource, aws_client):
+def s3_create_bucket(s3_empty_bucket, aws_client):
     buckets = []
 
     def factory(**kwargs) -> str:
@@ -261,10 +203,8 @@ def s3_create_bucket(s3_resource, aws_client):
     # cleanup
     for bucket in buckets:
         try:
-            bucket = s3_resource.Bucket(bucket)
-            bucket.objects.all().delete()
-            bucket.object_versions.all().delete()
-            bucket.delete()
+            s3_empty_bucket(bucket)
+            aws_client.s3.delete_bucket(Bucket=bucket)
         except Exception as e:
             LOG.debug("error cleaning up bucket %s: %s", bucket, e)
 
@@ -276,6 +216,45 @@ def s3_bucket(s3_create_bucket, aws_client) -> str:
     if region != "us-east-1":
         kwargs["CreateBucketConfiguration"] = {"LocationConstraint": region}
     return s3_create_bucket(**kwargs)
+
+
+@pytest.fixture
+def s3_empty_bucket(aws_client):
+    """
+    Returns a factory that given a bucket name, deletes all objects and deletes all object versions
+    """
+    # Boto resource would make this a straightforward task, but our internal client does not support Boto resource
+    # FIXME: this won't work when bucket has more than 1000 objects
+    def factory(bucket_name: str):
+        kwargs = {}
+        try:
+            aws_client.s3.get_object_lock_configuration(Bucket=bucket_name)
+            kwargs["BypassGovernanceRetention"] = True
+        except ClientError:
+            pass
+
+        response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
+        objects = [{"Key": obj["Key"]} for obj in response.get("Contents", [])]
+        if objects:
+            aws_client.s3.delete_objects(
+                Bucket=bucket_name,
+                Delete={"Objects": objects},
+                **kwargs,
+            )
+
+        response = aws_client.s3.list_object_versions(Bucket=bucket_name)
+        versions = response.get("Versions", [])
+        versions.extend(response.get("DeleteMarkers", []))
+
+        object_versions = [{"Key": obj["Key"], "VersionId": obj["VersionId"]} for obj in versions]
+        if object_versions:
+            aws_client.s3.delete_objects(
+                Bucket=bucket_name,
+                Delete={"Objects": object_versions},
+                **kwargs,
+            )
+
+    yield factory
 
 
 @pytest.fixture
@@ -359,13 +338,13 @@ def sqs_queue(sqs_create_queue):
 
 
 @pytest.fixture
-def sqs_queue_arn(aws_client):
-    def _get_arn(queue_url: str) -> str:
+def sqs_get_queue_arn(aws_client) -> Callable:
+    def _get_queue_arn(queue_url: str) -> str:
         return aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])[
             "Attributes"
         ]["QueueArn"]
 
-    return _get_arn
+    return _get_queue_arn
 
 
 @pytest.fixture
@@ -481,11 +460,11 @@ def sns_allow_topic_sqs_queue(aws_client):
 
 
 @pytest.fixture
-def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_queue_arn, aws_client):
+def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_get_queue_arn, aws_client):
     subscriptions = []
 
     def _factory(topic_arn: str, queue_url: str, **kwargs) -> Dict[str, str]:
-        queue_arn = sqs_queue_arn(queue_url=queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
 
         # connect sns topic to sqs
         subscription = aws_client.sns.subscribe(
@@ -514,6 +493,9 @@ def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_queue_arn, aws_cl
 
 @pytest.fixture
 def sns_create_http_endpoint(sns_create_topic, sns_subscription, aws_client):
+    # This fixture can be used with manual setup to expose the HTTPServer fixture to AWS. One example is to use a
+    # a service like localhost.run, and set up a specific port to start the `HTTPServer(port=40000)` for example,
+    # and tunnel `localhost:40000` to a specific domain that you can manually return from this fixture.
     http_servers = []
 
     def _create_http_endpoint(
@@ -656,7 +638,7 @@ def wait_for_stream_ready(aws_client):
                 "UPDATING",
             ]
 
-        poll_condition(is_stream_ready)
+        return poll_condition(is_stream_ready)
 
     return _wait_for_stream_ready
 
@@ -687,28 +669,31 @@ def wait_for_dynamodb_stream_ready(aws_client):
             )
             return describe_stream_response["StreamDescription"]["StreamStatus"] == "ENABLED"
 
-        poll_condition(is_stream_ready)
+        return poll_condition(is_stream_ready)
 
     return _wait_for_stream_ready
 
 
 @pytest.fixture()
-def kms_create_key(create_boto_client):
+def kms_create_key(aws_client_factory):
     key_ids = []
 
-    def _create_key(region=None, **kwargs):
+    def _create_key(region_name: str = None, **kwargs):
         if "Description" not in kwargs:
             kwargs["Description"] = f"test description - {short_uid()}"
-        key_metadata = create_boto_client("kms", region).create_key(**kwargs)["KeyMetadata"]
-        key_ids.append((region, key_metadata["KeyId"]))
+        key_metadata = aws_client_factory(region_name=region_name).kms.create_key(**kwargs)[
+            "KeyMetadata"
+        ]
+        key_ids.append((region_name, key_metadata["KeyId"]))
         return key_metadata
 
     yield _create_key
 
-    for region, key_id in key_ids:
+    for region_name, key_id in key_ids:
         try:
+
             # shortest amount of time you can schedule the deletion
-            create_boto_client("kms", region).schedule_key_deletion(
+            aws_client_factory(region_name=region_name).kms.schedule_key_deletion(
                 KeyId=key_id, PendingWindowInDays=7
             )
         except Exception as e:
@@ -722,20 +707,20 @@ def kms_create_key(create_boto_client):
 
 
 @pytest.fixture()
-def kms_replicate_key(create_boto_client):
+def kms_replicate_key(aws_client_factory):
     key_ids = []
 
     def _replicate_key(region_from=None, **kwargs):
         region_to = kwargs.get("ReplicaRegion")
         key_ids.append((region_to, kwargs.get("KeyId")))
-        return create_boto_client("kms", region_from).replicate_key(**kwargs)
+        return aws_client_factory(region_name=region_from).kms.replicate_key(**kwargs)
 
     yield _replicate_key
 
     for region_to, key_id in key_ids:
         try:
             # shortest amount of time you can schedule the deletion
-            create_boto_client("kms", region_to).schedule_key_deletion(
+            aws_client_factory(region_name=region_to).kms.schedule_key_deletion(
                 KeyId=key_id, PendingWindowInDays=7
             )
         except Exception as e:
@@ -896,6 +881,7 @@ def cleanup_stacks(aws_client):
         for stack in stacks:
             try:
                 aws_client.cloudformation.delete_stack(StackName=stack)
+                aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack)
             except Exception:
                 LOG.debug(f"Failed to cleanup stack '{stack}'")
 
@@ -935,8 +921,26 @@ class StackDeployError(Exception):
         self.describe_result = describe_res
         self.events = events
         super().__init__(
-            f"Stack deploy failed - describe output: {self.describe_result} events: {self.events}"
+            f"Describe output:\n{json.dumps(self.describe_result, cls=CustomEncoder)}\nEvents:\n{self.format_events(events)}"
         )
+
+    def format_events(self, events: list[dict]) -> str:
+        event_details = (
+            json.dumps(
+                {
+                    key: event.get(key)
+                    for key in [
+                        "LogicalResourceId",
+                        "ResourceType",
+                        "ResourceStatus",
+                        "ResourceStatusReason",
+                    ]
+                },
+                cls=CustomEncoder,
+            )
+            for event in events
+        )
+        return "\n".join(event_details)
 
 
 @pytest.fixture
@@ -958,19 +962,23 @@ def deploy_cfn_template(
         template_path: Optional[str | os.PathLike] = None,
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
+        role_arn: Optional[str] = None,
         max_wait: Optional[int] = None,
+        delay_between_polls: Optional[int] = 2,
     ) -> DeployResult:
-
         if is_update:
             assert stack_name
         stack_name = stack_name or f"stack-{short_uid()}"
         change_set_name = change_set_name or f"change-set-{short_uid()}"
 
+        if max_wait is None:
+            max_wait = 1800 if is_aws_cloud() else 180
+
         if template_path is not None:
             template = load_template_file(template_path)
         template_rendered = render_template(template, **(template_mapping or {}))
 
-        response = aws_client.cloudformation.create_change_set(
+        kwargs = dict(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=template_rendered,
@@ -984,40 +992,53 @@ def deploy_cfn_template(
                 for (k, v) in (parameters or {}).items()
             ],
         )
+        if role_arn is not None:
+            kwargs["RoleARN"] = role_arn
+
+        response = aws_client.cloudformation.create_change_set(**kwargs)
+
         change_set_id = response["Id"]
         stack_id = response["StackId"]
         state.append({"stack_id": stack_id, "change_set_id": change_set_id})
 
-        assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
+        aws_client.cloudformation.get_waiter(WAITER_CHANGE_SET_CREATE_COMPLETE).wait(
+            ChangeSetName=change_set_id
+        )
         aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        wait_result = wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
+        stack_waiter = aws_client.cloudformation.get_waiter(
+            WAITER_STACK_UPDATE_COMPLETE if is_update else WAITER_STACK_CREATE_COMPLETE
+        )
+
+        try:
+            stack_waiter.wait(
+                StackName=stack_id,
+                WaiterConfig={
+                    "Delay": delay_between_polls,
+                    "MaxAttempts": max_wait / delay_between_polls,
+                },
+            )
+        except botocore.exceptions.WaiterError as e:
+            raise StackDeployError(
+                aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0],
+                aws_client.cloudformation.describe_stack_events(StackName=stack_id)["StackEvents"],
+            ) from e
 
         describe_stack_res = aws_client.cloudformation.describe_stacks(StackName=stack_id)[
             "Stacks"
         ][0]
-
-        if not wait_result:
-            events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)[
-                "StackEvents"
-            ]
-            raise StackDeployError(describe_stack_res, events)
-
         outputs = describe_stack_res.get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o.get("OutputValue") for o in outputs}
 
         def _destroy_stack():
             aws_client.cloudformation.delete_stack(StackName=stack_id)
-
-            def _await_stack_delete():
-                return (
-                    aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0][
-                        "StackStatus"
-                    ]
-                    == "DELETE_COMPLETE"
-                )
-
-            assert wait_until(_await_stack_delete, _max_wait=max_wait or 60)
+            aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
+                StackName=stack_id,
+                WaiterConfig={
+                    "Delay": delay_between_polls,
+                    "MaxAttempts": max_wait / delay_between_polls,
+                },
+            )
             # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
             time.sleep(2)
 
@@ -1027,16 +1048,21 @@ def deploy_cfn_template(
 
     yield _deploy
 
-    for entry in state:
+    # delete the stacks in the reverse order they were created in case of inter-stack dependencies
+    for entry in state[::-1]:
         entry_stack_id = entry.get("stack_id")
-        entry_change_set_id = entry.get("change_set_id")
         try:
-            entry_change_set_id and cleanup_changesets([entry_change_set_id])
-            entry_stack_id and cleanup_stacks([entry_stack_id])
+            if entry_stack_id:
+                aws_client.cloudformation.delete_stack(StackName=entry_stack_id)
+                aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
+                    StackName=entry_stack_id,
+                    WaiterConfig={
+                        "Delay": 2,
+                        "MaxAttempts": 120,
+                    },
+                )
         except Exception as e:
-            LOG.debug(
-                f"Failed cleaning up change set {entry_change_set_id=} and stack {entry_stack_id=}: {e}"
-            )
+            LOG.debug(f"Failed cleaning up stack {entry_stack_id=}: {e}")
 
 
 @pytest.fixture
@@ -1122,7 +1148,7 @@ def is_change_set_finished(aws_client):
 @pytest.fixture
 def wait_until_lambda_ready(aws_client):
     def _wait_until_ready(function_name: str, qualifier: str = None, client=None):
-        client = client or aws_client.awslambda
+        client = client or aws_client.lambda_
 
         def _is_not_pending():
             kwargs = {}
@@ -1185,13 +1211,13 @@ def create_lambda_function_aws(aws_client):
 
     def _create_lambda_function(**kwargs):
         def _create_function():
-            resp = aws_client.awslambda.create_function(**kwargs)
+            resp = aws_client.lambda_.create_function(**kwargs)
             lambda_arns.append(resp["FunctionArn"])
 
             def _is_not_pending():
                 try:
                     result = (
-                        aws_client.awslambda.get_function(FunctionName=resp["FunctionName"])[
+                        aws_client.lambda_.get_function(FunctionName=resp["FunctionName"])[
                             "Configuration"
                         ]["State"]
                         != "Pending"
@@ -1212,7 +1238,7 @@ def create_lambda_function_aws(aws_client):
 
     for arn in lambda_arns:
         try:
-            aws_client.awslambda.delete_function(FunctionName=arn)
+            aws_client.lambda_.delete_function(FunctionName=arn)
         except Exception:
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
@@ -1221,12 +1247,14 @@ def create_lambda_function_aws(aws_client):
 def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
     lambda_arns_and_clients = []
     log_groups = []
-    lambda_client = aws_client.awslambda
+    lambda_client = aws_client.lambda_
     logs_client = aws_client.logs
+    s3_client = aws_client.s3
 
     def _create_lambda_function(*args, **kwargs):
         client = kwargs.get("client") or lambda_client
         kwargs["client"] = client
+        kwargs["s3_client"] = s3_client
         func_name = kwargs.get("func_name")
         assert func_name
         del kwargs["func_name"]
@@ -1283,19 +1311,20 @@ def check_lambda_logs(aws_client):
 def create_policy(aws_client):
     policy_arns = []
 
-    def _create_policy(*args, **kwargs):
+    def _create_policy(*args, iam_client=None, **kwargs):
+        iam_client = iam_client or aws_client.iam
         if "PolicyName" not in kwargs:
             kwargs["PolicyName"] = f"policy-{short_uid()}"
-        response = aws_client.iam.create_policy(*args, **kwargs)
+        response = iam_client.create_policy(*args, **kwargs)
         policy_arn = response["Policy"]["Arn"]
-        policy_arns.append(policy_arn)
+        policy_arns.append((policy_arn, iam_client))
         return response
 
     yield _create_policy
 
-    for policy_arn in policy_arns:
+    for policy_arn, iam_client in policy_arns:
         try:
-            aws_client.iam.delete_policy(PolicyArn=policy_arn)
+            iam_client.delete_policy(PolicyArn=policy_arn)
         except Exception:
             LOG.debug("Could not delete policy '%s' during test cleanup", policy_arn)
 
@@ -1314,7 +1343,14 @@ def create_user(aws_client):
     yield _create_user
 
     for username in usernames:
-        inline_policies = aws_client.iam.list_user_policies(UserName=username)["PolicyNames"]
+        try:
+            inline_policies = aws_client.iam.list_user_policies(UserName=username)["PolicyNames"]
+        except ClientError as e:
+            LOG.debug(
+                "Cannot list user policies: %s. User %s probably already deleted...", e, username
+            )
+            continue
+
         for inline_policy in inline_policies:
             try:
                 aws_client.iam.delete_user_policy(UserName=username, PolicyName=inline_policy)
@@ -1379,23 +1415,32 @@ def wait_and_assume_role(aws_client):
 def create_role(aws_client):
     role_names = []
 
-    def _create_role(**kwargs):
+    def _create_role(iam_client=None, **kwargs):
         if not kwargs.get("RoleName"):
             kwargs["RoleName"] = f"role-{short_uid()}"
-        result = aws_client.iam.create_role(**kwargs)
-        role_names.append(result["Role"]["RoleName"])
+        iam_client = iam_client or aws_client.iam
+        result = iam_client.create_role(**kwargs)
+        role_names.append((result["Role"]["RoleName"], iam_client))
         return result
 
     yield _create_role
 
-    for role_name in role_names:
+    for role_name, iam_client in role_names:
         # detach policies
-        attached_policies = aws_client.iam.list_attached_role_policies(RoleName=role_name)[
-            "AttachedPolicies"
-        ]
+        try:
+            attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
+                "AttachedPolicies"
+            ]
+        except ClientError as e:
+            LOG.debug(
+                "Cannot list attached role policies: %s. Role %s probably already deleted...",
+                e,
+                role_name,
+            )
+            continue
         for attached_policy in attached_policies:
             try:
-                aws_client.iam.detach_role_policy(
+                iam_client.detach_role_policy(
                     RoleName=role_name, PolicyArn=attached_policy["PolicyArn"]
                 )
             except Exception:
@@ -1404,10 +1449,10 @@ def create_role(aws_client):
                     attached_policy["PolicyArn"],
                     role_name,
                 )
-        role_policies = aws_client.iam.list_role_policies(RoleName=role_name)["PolicyNames"]
+        role_policies = iam_client.list_role_policies(RoleName=role_name)["PolicyNames"]
         for role_policy in role_policies:
             try:
-                aws_client.iam.delete_role_policy(RoleName=role_name, PolicyName=role_policy)
+                iam_client.delete_role_policy(RoleName=role_name, PolicyName=role_policy)
             except Exception:
                 LOG.debug(
                     "Could not delete role policy '%s' from '%s' during cleanup",
@@ -1415,7 +1460,7 @@ def create_role(aws_client):
                     role_name,
                 )
         try:
-            aws_client.iam.delete_role(RoleName=role_name)
+            iam_client.delete_role(RoleName=role_name)
         except Exception:
             LOG.debug("Could not delete role '%s' during cleanup", role_name)
 
@@ -1644,7 +1689,7 @@ def ses_configuration_set_sns_event_destination(aws_client):
 
     yield factory
 
-    for (created_config_set_name, created_event_destination_name) in event_destinations:
+    for created_config_set_name, created_event_destination_name in event_destinations:
         aws_client.ses.delete_configuration_set_event_destination(
             ConfigurationSetName=created_config_set_name,
             EventDestinationName=created_event_destination_name,
@@ -1720,7 +1765,7 @@ def ec2_create_security_group(aws_client):
 
 
 @pytest.fixture
-def cleanups(aws_client):
+def cleanups():
     cleanup_fns = []
 
     yield cleanup_fns
@@ -1734,17 +1779,12 @@ def cleanups(aws_client):
 
 @pytest.fixture(scope="session")
 def account_id(aws_client):
-    sts_client = aws_client.sts
-    return sts_client.get_caller_identity()["Account"]
+    return aws_client.sts.get_caller_identity()["Account"]
 
 
-@pytest.hookimpl
-def pytest_configure(config: Config):
-    # TODO: migrate towards "whitebox" or similar structure
-    config.addinivalue_line(
-        "markers",
-        "only_localstack: mark the test as incompatible with AWS / can't be run with AWS_CLOUD target",
-    )
+@pytest.fixture(scope="session")
+def secondary_account_id(secondary_aws_client):
+    return secondary_aws_client.sts.get_caller_identity()["Account"]
 
 
 @pytest.hookimpl
@@ -1785,6 +1825,7 @@ def create_rest_apigw(aws_client_factory):
     def _create_apigateway_function(**kwargs):
         region_name = kwargs.pop("region_name", None)
         apigateway_client = aws_client_factory(region_name=region_name).apigateway
+        kwargs.setdefault("name", f"api-{short_uid()}")
 
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")
@@ -1797,9 +1838,26 @@ def create_rest_apigw(aws_client_factory):
     yield _create_apigateway_function
 
     for rest_api_id, region_name in rest_apis:
+        apigateway_client = aws_client_factory(region_name=region_name).apigateway
+        # First, retrieve the usage plans associated with the REST API
+        usage_plan_ids = []
+        usage_plans = apigateway_client.get_usage_plans()
+        for item in usage_plans.get("items", []):
+            api_stages = item.get("apiStages", [])
+            usage_plan_ids.extend(
+                item.get("id") for api_stage in api_stages if api_stage.get("apiId") == rest_api_id
+            )
+
+        # Then delete the API, as you can't delete the UsagePlan if a stage is associated with it
         with contextlib.suppress(Exception):
-            apigateway_client = aws_client_factory(region_name=region_name).apigateway
             apigateway_client.delete_rest_api(restApiId=rest_api_id)
+
+        # finally delete the usage plans and the API Keys linked to it
+        for usage_plan_id in usage_plan_ids:
+            usage_plan_keys = apigateway_client.get_usage_plan_keys(usagePlanId=usage_plan_id)
+            for key in usage_plan_keys.get("items", []):
+                apigateway_client.delete_api_key(apiKey=key["id"])
+            apigateway_client.delete_usage_plan(usagePlanId=usage_plan_id)
 
 
 @pytest.fixture
@@ -1959,10 +2017,12 @@ def create_policy_doc(effect: str, actions: List, resource=None) -> Dict:
 
 @pytest.fixture
 def create_policy_generated_document(create_policy):
-    def _create_policy_with_doc(effect, actions, policy_name=None, resource=None):
+    def _create_policy_with_doc(effect, actions, policy_name=None, resource=None, iam_client=None):
         policy_name = policy_name or f"p-{short_uid()}"
         policy = create_policy_doc(effect, actions, resource=resource)
-        response = create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy))
+        response = create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(policy), iam_client=iam_client
+        )
         policy_arn = response["Policy"]["Arn"]
         return policy_arn
 
@@ -1971,23 +2031,29 @@ def create_policy_generated_document(create_policy):
 
 @pytest.fixture
 def create_role_with_policy(create_role, create_policy_generated_document, aws_client):
-    def _create_role_with_policy(effect, actions, assume_policy_doc, resource=None, attach=True):
+    def _create_role_with_policy(
+        effect, actions, assume_policy_doc, resource=None, attach=True, iam_client=None
+    ):
+        iam_client = iam_client or aws_client.iam
+
         role_name = f"role-{short_uid()}"
-        result = create_role(RoleName=role_name, AssumeRolePolicyDocument=assume_policy_doc)
+        result = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=assume_policy_doc, iam_client=iam_client
+        )
         role_arn = result["Role"]["Arn"]
         policy_name = f"p-{short_uid()}"
 
         if attach:
             # create role and attach role policy
             policy_arn = create_policy_generated_document(
-                effect, actions, policy_name=policy_name, resource=resource
+                effect, actions, policy_name=policy_name, resource=resource, iam_client=iam_client
             )
-            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+            iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
         else:
             # put role policy
             policy_document = create_policy_doc(effect, actions, resource=resource)
             policy_document = json.dumps(policy_document)
-            aws_client.iam.put_role_policy(
+            iam_client.put_role_policy(
                 RoleName=role_name, PolicyName=policy_name, PolicyDocument=policy_document
             )
 

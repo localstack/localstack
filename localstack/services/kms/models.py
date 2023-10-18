@@ -13,33 +13,32 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import CommonServiceException
 from localstack.aws.api.kms import (
     CreateAliasRequest,
     CreateGrantRequest,
     CreateKeyRequest,
-    DisabledException,
     EncryptionContextType,
     KeyMetadata,
     KeyState,
     KMSInvalidMacException,
     KMSInvalidSignatureException,
-    KMSInvalidStateException,
     MacAlgorithmSpec,
     MessageType,
-    NotFoundException,
     OriginType,
     SigningAlgorithmSpec,
     UnsupportedOperationException,
 )
+from localstack.services.kms.exceptions import ValidationException
 from localstack.services.kms.utils import is_valid_key_arn
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn, parse_arn
+from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn
 from localstack.utils.crypto import decrypt, encrypt
 from localstack.utils.strings import long_uid, to_bytes, to_str
 
@@ -71,17 +70,6 @@ HMAC_RANGE_KEY_LENGTHS = {
     "HMAC_384": (48, 128),
     "HMAC_512": (64, 128),
 }
-
-
-class ValidationException(CommonServiceException):
-    def __init__(self, message: str):
-        super().__init__("ValidationException", message, 400, True)
-
-
-class AccessDeniedException(CommonServiceException):
-    def __init__(self, message: str):
-        super().__init__("AccessDeniedException", message, 400, True)
-
 
 KEY_ID_LEN = 36
 # Moto uses IV_LEN of 12, as it is fine for GCM encryption mode, but we use CBC, so have to set it to 16.
@@ -166,6 +154,10 @@ class KmsCryptoKey:
     by AWS and is not used by AWS.
     """
 
+    public_key: Optional[bytes]
+    private_key: Optional[bytes]
+    key_material: bytes
+
     def __init__(self, key_spec: str):
         self.private_key = None
         self.public_key = None
@@ -180,10 +172,10 @@ class KmsCryptoKey:
 
         if key_spec.startswith("RSA"):
             key_size = RSA_CRYPTO_KEY_LENGTHS.get(key_spec)
-            self.key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
+            key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
         elif key_spec.startswith("ECC"):
             curve = ECC_CURVES.get(key_spec)
-            self.key = ec.generate_private_key(curve)
+            key = ec.generate_private_key(curve)
         elif key_spec.startswith("HMAC"):
             if key_spec not in HMAC_RANGE_KEY_LENGTHS:
                 raise ValidationException(
@@ -200,14 +192,22 @@ class KmsCryptoKey:
             # but only used in China AWS regions.
             raise UnsupportedOperationException(f"KeySpec {key_spec} is not supported")
 
-        self.private_key = self.key.private_bytes(
+        self.private_key = key.private_bytes(
             crypto_serialization.Encoding.DER,
             crypto_serialization.PrivateFormat.PKCS8,
             crypto_serialization.NoEncryption(),
         )
-        self.public_key = self.key.public_key().public_bytes(
+        self.public_key = key.public_key().public_bytes(
             crypto_serialization.Encoding.DER,
             crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+
+    @property
+    def key(self) -> RSAPrivateKey:
+        return crypto_serialization.load_der_private_key(
+            self.private_key,
+            password=None,
+            backend=default_backend(),
         )
 
 
@@ -613,14 +613,6 @@ class KeyImportState:
     key: KmsKey
 
 
-def validate_alias_name(alias_name: str) -> None:
-    if not alias_name.startswith("alias/"):
-        raise ValidationException(
-            'Alias must start with the prefix "alias/". Please see '
-            "https://docs.aws.amazon.com/kms/latest/developerguide/kms-alias.html"
-        )
-
-
 class KmsStore(BaseStore):
     # maps key ids to keys
     keys: Dict[str, KmsKey] = LocalAttribute(default=dict)
@@ -642,146 +634,6 @@ class KmsStore(BaseStore):
 
     # maps import tokens to import data
     imports: Dict[str, KeyImportState] = LocalAttribute(default=dict)
-
-    # While in AWS keys have more than Enabled, Disabled and PendingDeletion states, we currently only model these 3
-    # in LocalStack, so this function is limited to them.
-    #
-    # The current default values are based on most of the operations working in AWS with enabled keys, but failing with
-    # disabled and those pending deletion.
-    #
-    # If we decide to use the other states as well, we might want to come up with a better key state validation per
-    # operation. Can consult this page for what states are supported by various operations:
-    # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
-    def get_key(
-        self,
-        any_type_of_key_id: str,
-        any_key_state_allowed: bool = False,
-        enabled_key_allowed: bool = True,
-        disabled_key_allowed: bool = False,
-        pending_deletion_key_allowed: bool = False,
-    ) -> KmsKey:
-        if any_key_state_allowed:
-            enabled_key_allowed = True
-            disabled_key_allowed = True
-            pending_deletion_key_allowed = True
-        if not (enabled_key_allowed or disabled_key_allowed or pending_deletion_key_allowed):
-            raise ValueError("A key is requested, but all possible key states are prohibited")
-
-        key_id = self.get_key_id_from_any_id(any_type_of_key_id)
-
-        key = self.keys[key_id]
-        if not disabled_key_allowed and key.metadata.get("KeyState") == "Disabled":
-            raise DisabledException(f"{key.metadata.get('Arn')} is disabled.")
-        if not pending_deletion_key_allowed and key.metadata.get("KeyState") == "PendingDeletion":
-            raise KMSInvalidStateException(f"{key.metadata.get('Arn')} is pending deletion.")
-        if not enabled_key_allowed and key.metadata.get("KeyState") == "Enabled":
-            raise KMSInvalidStateException(
-                f"{key.metadata.get('Arn')} is enabled, but the operation doesn't support "
-                f"such a state"
-            )
-        return self.keys[key_id]
-
-    # TODO account_id and region params here are somewhat redundant, the store is supposed to know them. But at the
-    #  moment there is no way to get them from the store itself. Should get rid of these params later.
-    def get_alias(self, alias_name_or_arn: str, account_id: str, region: str) -> KmsAlias:
-        if not alias_name_or_arn.startswith("arn:"):
-            alias_name = alias_name_or_arn
-        else:
-            if ":alias/" not in alias_name_or_arn:
-                raise ValidationException(f"{alias_name_or_arn} is not a valid alias ARN")
-            alias_name = "alias/" + alias_name_or_arn.split(":alias/")[1]
-
-        validate_alias_name(alias_name)
-
-        if alias_name not in self.aliases:
-            alias_arn = kms_alias_arn(alias_name, account_id, region)
-            # AWS itself uses AliasArn instead of AliasName in this exception.
-            raise NotFoundException(f"Alias {alias_arn} is not found.")
-
-        return self.aliases.get(alias_name)
-
-    # Both account_id and region here are only supposed to be used to generate things like proper ARNs etc. The
-    # store for the key is not going to be selected using these parameters. Such a store selection is supposed to
-    # happen before the call to this function is made.
-    def create_key(
-        self, request: CreateKeyRequest = None, account_id: str = None, region: str = None
-    ):
-        key = KmsKey(request, account_id, region)
-        key_id = key.metadata.get("KeyId")
-        self.keys[key_id] = key
-        return key
-
-    # Both account_id and region here are only supposed to be used to generate things like proper ARNs etc. The
-    # store for the key is not going to be selected using these parameters. Such a store selection is supposed to
-    # happen before the call to this function is made.
-    def create_alias(self, request: CreateAliasRequest, account_id: str = None, region: str = None):
-        alias = KmsAlias(request, account_id, region)
-        alias_name = request.get("AliasName")
-        self.aliases[alias_name] = alias
-
-    # TODO Currently we follow the old moto implementation where reserved aliases and corresponding keys are getting
-    #  generated on the fly when someone tries to access such an alias. This is not great, as such aliases and keys
-    #  are not visible to ListAliases prior to someone trying to access such an alias. A better way might be to
-    #  generate all such aliases and keys the moment we initialize a new set of stores. But it might be an
-    #  unnecessary overhead. Should decide later, which approach is better.
-    def _create_alias_if_reserved_and_not_exists(
-        self, alias_name: str, account_id: str = None, region: str = None
-    ):
-        if alias_name not in RESERVED_ALIASES or alias_name in self.aliases:
-            return
-        create_key_request = {}
-        key_id = self.create_key(create_key_request, account_id, region).metadata.get("KeyId")
-        create_alias_request = CreateAliasRequest(AliasName=alias_name, TargetKeyId=key_id)
-        self.create_alias(create_alias_request, account_id, region)
-
-    # In KMS, keys can be identified by
-    # - key ID
-    # - key ARN
-    # - key alias
-    # - key alias' ARN
-    # This function allows us to find a key by any of these identifiers.
-    def get_key_id_from_any_id(
-        self, some_id: str, account_id: str = None, region: str = None
-    ) -> str:
-        alias_name = None
-        key_id = None
-        key_arn = None
-        if some_id.startswith("arn:"):
-            if ":alias/" in some_id:
-                alias_arn = some_id
-                alias_name = "alias/" + alias_arn.split(":alias/")[1]
-            elif ":key/" in some_id:
-                key_arn = some_id
-                key_id = key_arn.split(":key/")[1]
-                parsed_arn = parse_arn(key_arn)
-                if parsed_arn["region"] != self._region_name:
-                    raise NotFoundException(f"Invalid arn {parsed_arn['region']}")
-            else:
-                raise ValueError(
-                    f"Supplied value of {some_id} is an ARN, but neither of a KMS key nor of a KMS key "
-                    f"alias"
-                )
-        elif some_id.startswith("alias/"):
-            alias_name = some_id
-        else:
-            key_id = some_id
-
-        if alias_name:
-            self._create_alias_if_reserved_and_not_exists(alias_name, account_id, region)
-            if alias_name not in self.aliases:
-                raise NotFoundException(f"Unable to find KMS alias with name {alias_name}")
-            key_id = self.aliases[alias_name].metadata["TargetKeyId"]
-
-        # regular KeyId are UUID, and MultiRegion keys starts with 'mrk-' and 32 hex chars
-        if not PATTERN_UUID.match(key_id) and not MULTI_REGION_PATTERN.match(key_id):
-            raise NotFoundException(f"Invalid keyId {key_id}")
-
-        if key_id not in self.keys:
-            if not key_arn:
-                key_arn = f"arn:aws:kms:{self._region_name}:{self._account_id}:key/{key_id}"
-            raise NotFoundException(f"Key '{key_arn}' does not exist")
-
-        return key_id
 
 
 kms_stores = AccountRegionBundle("kms", KmsStore)

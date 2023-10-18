@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
@@ -12,6 +13,7 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.events import PutEventsRequestEntry
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.s3 import (
+    AccountId,
     BucketName,
     BucketRegion,
     Event,
@@ -26,22 +28,23 @@ from localstack.aws.api.s3 import (
     ObjectKey,
     QueueArn,
     QueueConfiguration,
+    StorageClass,
     TopicArn,
     TopicConfiguration,
 )
 from localstack.aws.connect import connect_to
-from localstack.config import DEFAULT_REGION
 from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.utils import (
     _create_invalid_argument_exc,
     get_bucket_from_moto,
     get_key_from_moto_bucket,
 )
+from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.strings import short_uid
-from localstack.utils.time import timestamp_millis
+from localstack.utils.time import parse_timestamp, timestamp_millis
 
 LOG = logging.getLogger(__name__)
 
@@ -55,6 +58,7 @@ EVENT_OPERATION_MAP = {
     "DeleteObject": Event.s3_ObjectRemoved_Delete,
     "DeleteObjects": Event.s3_ObjectRemoved_Delete,
     "PutObjectAcl": Event.s3_ObjectAcl_Put,
+    "RestoreObject": Event.s3_ObjectRestore_Post,
 }
 
 HEADER_AMZN_XRAY = "X-Amzn-Trace-Id"
@@ -87,14 +91,20 @@ class Notification(TypedDict):
 class S3EventNotificationContext:
     request_id: str
     event_type: str
+    event_time: datetime.datetime
+    account_id: str
     region: str
     bucket_name: BucketName
     key_name: ObjectKey
     xray: str
     bucket_location: BucketRegion
+    bucket_account_id: AccountId
+    caller: AccountId
     key_size: int
     key_etag: str
     key_version_id: str
+    key_expiry: datetime.datetime
+    key_storage_class: Optional[StorageClass]
 
     @classmethod
     def from_request_context(
@@ -134,20 +144,82 @@ class S3EventNotificationContext:
         if isinstance(key, FakeDeleteMarker):
             etag = ""
             key_size = 0
+            key_expiry = None
+            storage_class = ""
         else:
             etag = key.etag.strip('"')
             key_size = key.contentsize
+            key_expiry = key._expiry
+            storage_class = key.storage_class
 
         return cls(
             request_id=request_context.request_id,
             event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
+            event_time=datetime.datetime.now(),
+            account_id=request_context.account_id,
             region=request_context.region,
+            caller=request_context.account_id,  # TODO: use it for `userIdentity`
             bucket_name=bucket_name,
             bucket_location=bucket.location,
+            bucket_account_id=bucket.account_id,  # TODO: use it for bucket owner identity
             key_name=quote(key.name),
             key_etag=etag,
             key_size=key_size,
+            key_expiry=key_expiry,
+            key_storage_class=storage_class,
             key_version_id=key.version_id if bucket.is_versioned else None,  # todo: check this?
+            xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
+        )
+
+    @classmethod
+    def from_request_context_native(
+        cls,
+        request_context: RequestContext,
+        s3_bucket: S3Bucket,
+        s3_object: S3Object | S3DeleteMarker,
+    ) -> "S3EventNotificationContext":
+        """
+        Create an S3EventNotificationContext from a RequestContext.
+        The key is not always present in the request context depending on the event type. In that case, we can use
+        a provided one.
+        :param request_context: RequestContext
+        :param s3_bucket: S3Bucket
+        :param s3_object: S3Object passed directly to the context
+        :return: S3EventNotificationContext
+        """
+        bucket_name = request_context.service_request["Bucket"]
+
+        # TODO: test notification format when the concerned key is FakeDeleteMarker
+        # it might not send notification, or s3:ObjectRemoved:DeleteMarkerCreated which we don't support yet
+        if isinstance(s3_object, S3DeleteMarker):
+            etag = ""
+            key_size = 0
+            key_expiry = None
+            storage_class = ""
+        else:
+            etag = s3_object.etag.strip('"')
+            key_size = s3_object.size
+            key_expiry = s3_object.expires
+            storage_class = s3_object.storage_class
+
+        return cls(
+            request_id=request_context.request_id,
+            event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
+            event_time=datetime.datetime.now(),
+            account_id=request_context.account_id,
+            region=request_context.region,
+            caller=request_context.account_id,  # TODO: use it for `userIdentity`
+            bucket_name=bucket_name,
+            bucket_location=s3_bucket.bucket_region,
+            bucket_account_id=s3_bucket.bucket_account_id,  # TODO: use it for bucket owner identity
+            key_name=quote(s3_object.key),
+            key_etag=etag,
+            key_size=key_size,
+            key_expiry=key_expiry,
+            key_storage_class=storage_class,
+            key_version_id=s3_object.version_id
+            if s3_bucket.versioning_status
+            else None,  # todo: check this?
             xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
         )
 
@@ -310,9 +382,9 @@ class BaseNotifier:
             eventVersion="2.1",
             eventSource="aws:s3",
             awsRegion=ctx.region,
-            eventTime=timestamp_millis(),
+            eventTime=timestamp_millis(ctx.event_time),
             eventName=ctx.event_type.removeprefix("s3:"),
-            userIdentity={"principalId": "AIDAJDPLRKLG7UEXAMPLE"},
+            userIdentity={"principalId": "AIDAJDPLRKLG7UEXAMPLE"},  # TODO: use the real one?
             requestParameters={
                 "sourceIPAddress": "127.0.0.1"
             },  # TODO sourceIPAddress was previously extracted from headers ("X-Forwarded-For")
@@ -326,7 +398,9 @@ class BaseNotifier:
                 configurationId=config_id,
                 bucket={
                     "name": ctx.bucket_name,
-                    "ownerIdentity": {"principalId": "A3NL1KOZZKExample"},
+                    "ownerIdentity": {
+                        "principalId": "A3NL1KOZZKExample"
+                    },  # TODO: use proper principal?
                     "arn": f"arn:aws:s3:::{ctx.bucket_name}",
                 },
                 object={
@@ -339,13 +413,30 @@ class BaseNotifier:
         if ctx.key_version_id:
             # object version if bucket is versioning-enabled, otherwise null
             record["s3"]["object"]["versionId"] = ctx.key_version_id
-        if "created" in ctx.event_type.lower():
+
+        event_type = ctx.event_type.lower()
+        if any(e in event_type for e in ("created", "restore")):
             record["s3"]["object"]["size"] = ctx.key_size
             record["s3"]["object"]["eTag"] = ctx.key_etag
         if "ObjectTagging" in ctx.event_type or "ObjectAcl" in ctx.event_type:
             record["eventVersion"] = "2.3"
             record["s3"]["object"]["eTag"] = ctx.key_etag
             record["s3"]["object"].pop("sequencer")
+
+        if "objectrestore:completed" in event_type:
+            record["glacierEventData"] = {
+                "restoreEventData": {
+                    "lifecycleRestorationExpiryTime": timestamp_millis(ctx.key_expiry),
+                    "lifecycleRestoreStorageClass": ctx.key_storage_class,
+                }
+            }
+            record["userIdentity"][
+                "principalId"
+            ] = "AmazonCustomer:A3NL1KOZZKExample"  # TODO: use proper principal?
+            # a bit hacky, it is to ensure the eventTime is a bit after the `Post` event, as its instant in LS
+            # the best would be to delay the publishing of the event
+            event_time = parse_timestamp(record["eventTime"]) + datetime.timedelta(milliseconds=500)
+            record["eventTime"] = timestamp_millis(event_time)
 
         return {"Records": [record]}
 
@@ -359,7 +450,9 @@ class SqsNotifier(BaseNotifier):
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         arn_data = parse_arn(target_arn)
-        sqs_client = connect_to(region_name=arn_data["region"]).sqs
+        sqs_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).sqs
         try:
             queue_url = sqs_client.get_queue_url(
                 QueueName=arn_data["resource"], QueueOwnerAWSAccountId=arn_data["account"]
@@ -373,7 +466,7 @@ class SqsNotifier(BaseNotifier):
             )
         # send test event
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
-        sqs_client = sqs_client.request_metadata(
+        sqs_client = connect_to().sqs.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -398,8 +491,9 @@ class SqsNotifier(BaseNotifier):
         queue_arn = config["QueueArn"]
 
         parsed_arn = parse_arn(queue_arn)
-        region = parsed_arn["region"]
-        sqs_client = connect_to(region_name=region).sqs.request_metadata(
+        sqs_client = connect_to(
+            aws_access_key_id=parsed_arn["account"], region_name=parsed_arn["region"]
+        ).sqs.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         try:
@@ -432,7 +526,9 @@ class SnsNotifier(BaseNotifier):
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         arn_data = parse_arn(target_arn)
-        sns_client = connect_to(region_name=arn_data["region"]).sns
+        sns_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).sns
         try:
             sns_client.get_topic_attributes(TopicArn=target_arn)
         except ClientError:
@@ -442,7 +538,7 @@ class SnsNotifier(BaseNotifier):
                 value="The destination topic does not exist",
             )
 
-        sns_client = sns_client.request_metadata(
+        sns_client = connect_to().sns.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -477,8 +573,10 @@ class SnsNotifier(BaseNotifier):
         message = json.dumps(event_payload)
         topic_arn = config["TopicArn"]
 
-        region_name = arns.extract_region_from_arn(topic_arn)
-        sns_client = connect_to(region_name=region_name).sns.request_metadata(
+        arn_data = parse_arn(topic_arn)
+        sns_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).sns.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         try:
@@ -506,7 +604,9 @@ class LambdaNotifier(BaseNotifier):
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         arn_data = parse_arn(arn=target_arn)
-        lambda_client = connect_to(region_name=arn_data["region"]).awslambda
+        lambda_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).lambda_
         try:
             lambda_client.get_function(FunctionName=target_arn)
         except ClientError:
@@ -515,7 +615,7 @@ class LambdaNotifier(BaseNotifier):
                 name=target_arn,
                 value="The destination Lambda does not exist",
             )
-        lambda_client = lambda_client.request_metadata(
+        lambda_client = connect_to().lambda_.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -533,8 +633,11 @@ class LambdaNotifier(BaseNotifier):
         payload = json.dumps(event_payload)
         lambda_arn = config["LambdaFunctionArn"]
 
-        region_name = arns.extract_region_from_arn(lambda_arn)
-        lambda_client = connect_to(region_name=region_name).awslambda.request_metadata(
+        arn_data = parse_arn(lambda_arn)
+
+        lambda_client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).lambda_.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         lambda_function_config = arns.lambda_function_name(lambda_arn)
@@ -562,6 +665,7 @@ class EventBridgeNotifier(BaseNotifier):
         entry: PutEventsRequestEntry = {
             "Source": "aws.s3",
             "Resources": [f"arn:aws:s3:::{ctx.bucket_name}"],
+            "Time": ctx.event_time,
         }
 
         if ctx.xray:
@@ -610,6 +714,22 @@ class EventBridgeNotifier(BaseNotifier):
             event_details["object"].pop("size")
             event_details["object"].pop("sequencer")
 
+        elif "ObjectRestore" in ctx.event_type:
+            entry["DetailType"] = (
+                "Object Restore Initiated"
+                if "Post" in ctx.event_type
+                else "Object Restore Completed"
+            )
+            event_details["source-storage-class"] = ctx.key_storage_class
+            event_details["object"].pop("sequencer", None)
+            if ctx.event_type.endswith("Completed"):
+                event_details["restore-expiry-time"] = timestamp_millis(ctx.key_expiry)
+                event_details.pop("source-ip-address", None)
+                # a bit hacky, it is to ensure the eventTime is a bit after the `Post` event, as its instant in LS
+                # the best would be to delay the publishing of the event. We need at least 1s as it's the precision
+                # of the event
+                entry["Time"] = entry["Time"] + datetime.timedelta(seconds=1)
+
         entry["Detail"] = json.dumps(event_details)
         return entry
 
@@ -634,10 +754,9 @@ class EventBridgeNotifier(BaseNotifier):
         return
 
     def notify(self, ctx: S3EventNotificationContext, config: EventBridgeConfiguration):
-        region = ctx.bucket_location or DEFAULT_REGION
         # does not require permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-permissions.html
-        events_client = connect_to(region_name=region).events
+        events_client = connect_to(aws_access_key_id=ctx.account_id, region_name=ctx.region).events
         entry = self._get_event_payload(ctx)
         try:
             events_client.put_events(Entries=[entry])

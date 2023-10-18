@@ -14,7 +14,6 @@ from localstack.utils.common import (
     to_str,
     wait_for_port_open,
 )
-from localstack.utils.server.proxy_server import start_ssl_proxy
 
 LOG = logging.getLogger(__name__)
 
@@ -42,39 +41,6 @@ class TestProxyServer:
             server.join(timeout=15)
 
         assert not is_port_open(proxy_port)
-
-    def test_ssl_proxy_server(self):
-        class MyListener(ProxyListener):
-            def forward_request(self, *args, **kwargs):
-                invocations.append((args, kwargs))
-                return {"foo": "bar"}
-
-        invocations = []
-
-        # start SSL proxy
-        listener = MyListener()
-        port = get_free_tcp_port()
-        server = start_proxy_server(port, update_listener=listener, use_ssl=True)
-        wait_for_port_open(port)
-
-        # start SSL proxy
-        proxy_port = get_free_tcp_port()
-        proxy = start_ssl_proxy(proxy_port, port, asynchronous=True)
-        wait_for_port_open(proxy_port)
-
-        # invoke SSL proxy server
-        url = f"https://{LOCALHOST_HOSTNAME}:{proxy_port}"
-        num_requests = 3
-        for i in range(num_requests):
-            response = requests.get(url, verify=False)
-            assert response.status_code == 200
-
-        # assert backend server has been invoked
-        assert len(invocations) == num_requests
-
-        # clean up
-        proxy.stop()
-        server.stop()
 
     def test_static_route(self):
         class MyListener(ProxyListener):

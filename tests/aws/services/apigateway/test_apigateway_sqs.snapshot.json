@@ -1,0 +1,19 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration": {
+    "recorded-date": "12-08-2023, 17:44:13",
+    "recorded-content": {
+      "sqs-aws-integration": {
+        "message": "great success!"
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_request_and_response_xml_templates_integration": {
+    "recorded-date": "10-09-2023, 10:13:06",
+    "recorded-content": {
+      "sqs-json-response": {
+        "messageId": "<uuid:1>",
+        "requestId": "<uuid:2>"
+      }
+    }
+  }
+}

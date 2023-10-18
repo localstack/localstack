@@ -38,10 +38,33 @@ on:
       - master
       - 'v[0-9]+'
       - release/*
+  schedule:
+    - cron: '0 4 * * *'  # run once a day at 4 AM UTC
+  push:
+    paths:
+      - ".github/workflows/tests-pro-integration.yml"
+      - "localstack/**/packages.py"
+      - "localstack/packages/*.py"
+      - "setup.py"
+      - "pyproject.toml"
+      - "setup.cfg"
+    branches:
+      - master
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
+
+env:
+  # Set non-job-specific environment variables for pytest-tinybird
+  TINYBIRD_URL: https://api.tinybird.co
+  TINYBIRD_DATASOURCE: ${{ github.event.repository.name }}-tests-pro-integration
+  TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_SHA: ${{ github.sha }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  # report to tinybird if executed on master
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
 
 jobs:
   test-pro:
@@ -52,9 +75,13 @@ jobs:
       matrix:
         group: [ 1, 2 ]
       fail-fast: false
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}
+      CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout Community
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: localstack
 
@@ -116,18 +143,18 @@ jobs:
             return DEFAULT_REF
 
       - name: Checkout Pro
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: localstack/localstack-ext
           ref: ${{steps.determine-companion-ref.outputs.result}}
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           path: localstack-ext
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Set up Node 18.x
         uses: actions/setup-node@v3
@@ -148,7 +175,7 @@ jobs:
       - name: Install OS packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --allow-downgrades libsasl2-dev jq postgresql-14=14.8* postgresql-client postgresql-plpython3
+          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.9-0ubuntu0* postgresql-client postgresql-plpython3
 
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
@@ -156,9 +183,22 @@ jobs:
         with:
           path: |
             localstack-ext/.venv
+          # include the matrix group (to re-use the var-libs used in the specific test group)
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg') }}-${{steps.determine-companion-ref.outputs.result}}
+          restore-keys: |
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg') }}-refs/heads/master
+
+      - name: Cache Ext Dependencies (libs)
+        if: inputs.disableCaching != true
+        uses: actions/cache@v3
+        with:
+          path: |
             localstack/.filesystem/var/lib/localstack
           # include the matrix group (to re-use the var-libs used in the specific test group)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg', '**/packages.py', '**/packages/*') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('localstack-ext/**/packages.py','localstack-ext/packages/*.py', 'localstack/**/packages.py',  'localstack/packages/*.py') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
+          restore-keys: |
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('localstack-ext/**/packages.py','localstack-ext/packages/*.py','localstack/**/packages.py',  'localstack/packages/*.py') }}-refs/heads/master-group-${{ matrix.group }}
+
 
       - name: Restore Lambda common runtime packages
         id: cached-lambda-common-restore
@@ -166,19 +206,19 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: |
-            localstack/tests/integration/awslambda/functions/common
-          key: community-it-${{ runner.os }}-lambda-common-${{ hashFiles('localstack/tests/integration/awslambda/functions/common/**/src/*') }}
+            localstack/tests/aws/services/lambda_/functions/common
+          key: community-it-${{ runner.os }}-lambda-common-${{ hashFiles('localstack/tests/aws/services/lambda_/functions/common/**/src/*') }}
 
       - name: Prebuild lambda common packages
         working-directory: localstack
-        run: ./scripts/build_common_test_functions.sh `pwd`/tests/integration/awslambda/functions/common
+        run: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
 
       - name: Save Lambda common runtime packages
         if: inputs.disableCaching != true
         uses: actions/cache/save@v3
         with:
           path: |
-            localstack/tests/integration/awslambda/functions/common
+            localstack/tests/aws/services/lambda_/functions/common
           key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
 
       - name: Install Python Dependencies for Pro
@@ -220,6 +260,7 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
+          DISABLE_BOTO_RETRIES: 1
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "local"
           LOCALSTACK_API_KEY: "test"
@@ -227,8 +268,8 @@ jobs:
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
           PYTEST_LOGLEVEL: debug
-          TEST_PATH: "../localstack/tests/integration/"
-          PYTEST_ARGS: "--splits 2 --group ${{ matrix.group }} --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
+          TEST_PATH: "../localstack/tests/aws/"  # TODO: also include tests/integration/
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}--splits 2 --group ${{ matrix.group }} --durations-path ../localstack/.test_durations --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
         working-directory: localstack-ext
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)

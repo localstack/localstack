@@ -1,5 +1,7 @@
+import base64
+import hashlib
 import json
-from unittest import mock
+from urllib.parse import urlencode
 
 import pytest
 from werkzeug.wrappers import Request as WerkzeugRequest
@@ -93,6 +95,60 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
     )
 
 
+def test_arn_partition_rewriting_urlencoded_body():
+    rewrite_handler = ArnPartitionRewriteHandler()
+    data = {"some-data-with-arn": "arn:aws-us-gov:iam::000000000000:role/test-role"}
+
+    # if this test is parameterized to be an internal call, set the internal auth
+    # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
+    headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
+
+    request = Request(
+        method="POST",
+        path="/",
+        query_string="",
+        body=urlencode(data),
+        headers=headers,
+    )
+    result = rewrite_handler.modify_request(request)
+    assert result.method == "POST"
+    assert get_full_raw_path(result) == "/"
+    assert result.form.to_dict() == {
+        "some-data-with-arn": "arn:aws:iam::000000000000:role/test-role"
+    }
+
+
+def test_arn_partition_rewriting_contentmd5():
+    rewrite_handler = ArnPartitionRewriteHandler()
+    data = {"some-data-with-arn": "arn:aws-us-gov:iam::000000000000:role/test-role"}
+    body = urlencode(data)
+    original_md5 = base64.b64encode(hashlib.md5(body.encode("utf-8")).digest()).decode("utf-8")
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+        "Content-MD5": original_md5,
+    }
+
+    request = Request(
+        method="POST",
+        path="/",
+        query_string="",
+        body=body,
+        headers=headers,
+    )
+    result = rewrite_handler.modify_request(request)
+    data = result.get_data()
+    assert result.method == "POST"
+    assert get_full_raw_path(result) == "/"
+    assert result.form.to_dict() == {
+        "some-data-with-arn": "arn:aws:iam::000000000000:role/test-role"
+    }
+    assert "Content-MD5" in result.headers
+    assert result.headers["Content-MD5"] != original_md5
+    assert result.headers["Content-MD5"] == base64.b64encode(hashlib.md5(data).digest()).decode(
+        "utf-8"
+    )
+
+
 def test_arn_partition_rewriting_url_encoding(httpserver, monkeypatch):
     path = "/query%3Aencoded%2Fpath/"
 
@@ -179,7 +235,7 @@ def test_arn_partition_rewriting_in_response(encoding):
         },
     )
 
-    rewrite_handler.modify_response(response, request_region="us-gov-west-1")
+    rewrite_handler.modify_response_revert(response, request_region="us-gov-west-1")
 
     assert response.status_code == response.status_code
     assert (
@@ -195,34 +251,6 @@ def test_arn_partition_rewriting_in_response(encoding):
     )
 
 
-def test_no_arn_partition_rewriting_in_internal_request():
-    """Partitions should not be rewritten for _internal_ requests."""
-    rewrite_handler = ArnPartitionRewriteHandler()
-    request = Request(
-        method="POST",
-        path="/",
-        body=b"",
-        headers={},
-    )
-    handler2 = mock.MagicMock()
-    # mimic an internal request
-    request.headers.update(
-        mock_aws_request_headers(
-            region_name="us-gov-west-1",
-            access_key=INTERNAL_AWS_ACCESS_KEY_ID,
-            internal=True,
-        )
-    )
-    chain = HandlerChain()
-    chain.request_handlers.append(rewrite_handler)
-    chain.request_handlers.append(handler2)
-    context = RequestContext()
-    context.request = request
-    chain.handle(context, Response())
-    assert not chain.terminated
-    handler2.assert_called_once()
-
-
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 def test_arn_partition_rewriting_in_response_with_request_region(encoding):
     rewrite_handler = ArnPartitionRewriteHandler()
@@ -233,7 +261,7 @@ def test_arn_partition_rewriting_in_response_with_request_region(encoding):
         status=200,
         headers={"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"},
     )
-    rewrite_handler.modify_response(response=response, request_region="us-gov-west-1")
+    rewrite_handler.modify_response_revert(response=response, request_region="us-gov-west-1")
 
     assert response.status_code == 200
     assert (
@@ -257,7 +285,7 @@ def test_arn_partition_rewriting_in_response_without_region_and_without_default_
             status=200,
             headers={"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"},
         )
-        rewrite_handler.modify_response(response=response, request_region=None)
+        rewrite_handler.modify_response_revert(response=response, request_region=None)
 
         assert response.status_code == 200
         assert response.headers["some-header-with-arn"] == "arn:aws:iam::123456789012:ArnInHeader"
@@ -279,7 +307,7 @@ def test_arn_partition_rewriting_in_response_without_region_and_with_default_reg
             status=200,
             headers={"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"},
         )
-        rewrite_handler.modify_response(response, request_region=None)
+        rewrite_handler.modify_response_revert(response, request_region=None)
 
         assert response.status_code == response.status_code
         assert (

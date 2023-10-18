@@ -1,17 +1,13 @@
-import sys
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 AccessPolicy = str
 AccountId = str
+AccountPolicyDocument = str
 AmazonResourceName = str
 Arn = str
+ClientToken = str
 DataProtectionPolicyDocument = str
 Days = int
 DefaultValue = float
@@ -22,6 +18,7 @@ DestinationArn = str
 DestinationName = str
 DimensionsKey = str
 DimensionsValue = str
+EncryptionKey = str
 EventId = str
 EventMessage = str
 EventsLimit = int
@@ -59,6 +56,7 @@ QueryDefinitionString = str
 QueryId = str
 QueryListMaxResults = int
 QueryString = str
+ResourceIdentifier = str
 RoleArn = str
 SequenceToken = str
 StartFromHead = bool
@@ -93,9 +91,17 @@ class ExportTaskStatusCode(str):
     RUNNING = "RUNNING"
 
 
+class InheritedProperty(str):
+    ACCOUNT_DATA_PROTECTION = "ACCOUNT_DATA_PROTECTION"
+
+
 class OrderBy(str):
     LogStreamName = "LogStreamName"
     LastEventTime = "LastEventTime"
+
+
+class PolicyType(str):
+    DATA_PROTECTION_POLICY = "DATA_PROTECTION_POLICY"
 
 
 class QueryStatus(str):
@@ -106,6 +112,10 @@ class QueryStatus(str):
     Cancelled = "Cancelled"
     Timeout = "Timeout"
     Unknown = "Unknown"
+
+
+class Scope(str):
+    ALL = "ALL"
 
 
 class StandardUnit(str):
@@ -225,18 +235,31 @@ class UnrecognizedClientException(ServiceException):
 
 
 AccountIds = List[AccountId]
+Timestamp = int
+
+
+class AccountPolicy(TypedDict, total=False):
+    policyName: Optional[PolicyName]
+    policyDocument: Optional[AccountPolicyDocument]
+    lastUpdatedTime: Optional[Timestamp]
+    policyType: Optional[PolicyType]
+    scope: Optional[Scope]
+    accountId: Optional[AccountId]
+
+
+AccountPolicies = List[AccountPolicy]
 
 
 class AssociateKmsKeyRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
     kmsKeyId: KmsKeyId
+    resourceIdentifier: Optional[ResourceIdentifier]
 
 
 class CancelExportTaskRequest(ServiceRequest):
     taskId: ExportTaskId
 
 
-Timestamp = int
 CreateExportTaskRequest = TypedDict(
     "CreateExportTaskRequest",
     {
@@ -268,6 +291,11 @@ class CreateLogGroupRequest(ServiceRequest):
 class CreateLogStreamRequest(ServiceRequest):
     logGroupName: LogGroupName
     logStreamName: LogStreamName
+
+
+class DeleteAccountPolicyRequest(ServiceRequest):
+    policyName: PolicyName
+    policyType: PolicyType
 
 
 class DeleteDataProtectionPolicyRequest(ServiceRequest):
@@ -311,6 +339,16 @@ class DeleteRetentionPolicyRequest(ServiceRequest):
 class DeleteSubscriptionFilterRequest(ServiceRequest):
     logGroupName: LogGroupName
     filterName: FilterName
+
+
+class DescribeAccountPoliciesRequest(ServiceRequest):
+    policyType: PolicyType
+    policyName: Optional[PolicyName]
+    accountIdentifiers: Optional[AccountIds]
+
+
+class DescribeAccountPoliciesResponse(TypedDict, total=False):
+    accountPolicies: Optional[AccountPolicies]
 
 
 class DescribeDestinationsRequest(ServiceRequest):
@@ -385,6 +423,7 @@ class DescribeLogGroupsRequest(ServiceRequest):
     includeLinkedAccounts: Optional[IncludeLinkedAccounts]
 
 
+InheritedProperties = List[InheritedProperty]
 StoredBytes = int
 
 
@@ -397,6 +436,7 @@ class LogGroup(TypedDict, total=False):
     storedBytes: Optional[StoredBytes]
     kmsKeyId: Optional[KmsKeyId]
     dataProtectionStatus: Optional[DataProtectionStatus]
+    inheritedProperties: Optional[InheritedProperties]
 
 
 LogGroups = List[LogGroup]
@@ -569,7 +609,8 @@ class DescribeSubscriptionFiltersResponse(TypedDict, total=False):
 
 
 class DisassociateKmsKeyRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
+    resourceIdentifier: Optional[ResourceIdentifier]
 
 
 EventNumber = int
@@ -706,6 +747,7 @@ class GetQueryResultsResponse(TypedDict, total=False):
     results: Optional[QueryResults]
     statistics: Optional[QueryStatistics]
     status: Optional[QueryStatus]
+    encryptionKey: Optional[EncryptionKey]
 
 
 class InputLogEvent(TypedDict, total=False):
@@ -742,6 +784,17 @@ class MetricFilterMatchRecord(TypedDict, total=False):
 
 
 MetricFilterMatches = List[MetricFilterMatchRecord]
+
+
+class PutAccountPolicyRequest(ServiceRequest):
+    policyName: PolicyName
+    policyDocument: AccountPolicyDocument
+    policyType: PolicyType
+    scope: Optional[Scope]
+
+
+class PutAccountPolicyResponse(TypedDict, total=False):
+    accountPolicy: Optional[AccountPolicy]
 
 
 class PutDataProtectionPolicyRequest(ServiceRequest):
@@ -802,6 +855,7 @@ class PutQueryDefinitionRequest(ServiceRequest):
     queryDefinitionId: Optional[QueryId]
     logGroupNames: Optional[LogGroupNames]
     queryString: QueryDefinitionString
+    clientToken: Optional[ClientToken]
 
 
 class PutQueryDefinitionResponse(TypedDict, total=False):
@@ -896,7 +950,11 @@ class LogsApi:
 
     @handler("AssociateKmsKey")
     def associate_kms_key(
-        self, context: RequestContext, log_group_name: LogGroupName, kms_key_id: KmsKeyId
+        self,
+        context: RequestContext,
+        kms_key_id: KmsKeyId,
+        log_group_name: LogGroupName = None,
+        resource_identifier: ResourceIdentifier = None,
     ) -> None:
         raise NotImplementedError
 
@@ -923,6 +981,12 @@ class LogsApi:
     @handler("CreateLogStream")
     def create_log_stream(
         self, context: RequestContext, log_group_name: LogGroupName, log_stream_name: LogStreamName
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteAccountPolicy")
+    def delete_account_policy(
+        self, context: RequestContext, policy_name: PolicyName, policy_type: PolicyType
     ) -> None:
         raise NotImplementedError
 
@@ -976,6 +1040,16 @@ class LogsApi:
     def delete_subscription_filter(
         self, context: RequestContext, log_group_name: LogGroupName, filter_name: FilterName
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DescribeAccountPolicies")
+    def describe_account_policies(
+        self,
+        context: RequestContext,
+        policy_type: PolicyType,
+        policy_name: PolicyName = None,
+        account_identifiers: AccountIds = None,
+    ) -> DescribeAccountPoliciesResponse:
         raise NotImplementedError
 
     @handler("DescribeDestinations")
@@ -1078,7 +1152,12 @@ class LogsApi:
         raise NotImplementedError
 
     @handler("DisassociateKmsKey")
-    def disassociate_kms_key(self, context: RequestContext, log_group_name: LogGroupName) -> None:
+    def disassociate_kms_key(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName = None,
+        resource_identifier: ResourceIdentifier = None,
+    ) -> None:
         raise NotImplementedError
 
     @handler("FilterLogEvents")
@@ -1155,6 +1234,17 @@ class LogsApi:
     ) -> ListTagsLogGroupResponse:
         raise NotImplementedError
 
+    @handler("PutAccountPolicy")
+    def put_account_policy(
+        self,
+        context: RequestContext,
+        policy_name: PolicyName,
+        policy_document: AccountPolicyDocument,
+        policy_type: PolicyType,
+        scope: Scope = None,
+    ) -> PutAccountPolicyResponse:
+        raise NotImplementedError
+
     @handler("PutDataProtectionPolicy")
     def put_data_protection_policy(
         self,
@@ -1215,6 +1305,7 @@ class LogsApi:
         query_string: QueryDefinitionString,
         query_definition_id: QueryId = None,
         log_group_names: LogGroupNames = None,
+        client_token: ClientToken = None,
     ) -> PutQueryDefinitionResponse:
         raise NotImplementedError
 

@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -395,6 +389,11 @@ class ScheduledAutoTuneSeverityType(str):
 class ScheduledBy(str):
     CUSTOMER = "CUSTOMER"
     SYSTEM = "SYSTEM"
+
+
+class SkipUnavailableStatus(str):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
 
 
 class TLSSecurityPolicy(str):
@@ -889,8 +888,13 @@ class CompatibleVersionsMap(TypedDict, total=False):
 CompatibleVersionsList = List[CompatibleVersionsMap]
 
 
+class CrossClusterSearchConnectionProperties(TypedDict, total=False):
+    SkipUnavailable: Optional[SkipUnavailableStatus]
+
+
 class ConnectionProperties(TypedDict, total=False):
     Endpoint: Optional[Endpoint]
+    CrossClusterSearch: Optional[CrossClusterSearchConnectionProperties]
 
 
 class SoftwareUpdateOptions(TypedDict, total=False):
@@ -1027,6 +1031,7 @@ class CreateOutboundConnectionRequest(ServiceRequest):
     RemoteDomainInfo: DomainInformationContainer
     ConnectionAlias: ConnectionAlias
     ConnectionMode: Optional[ConnectionMode]
+    ConnectionProperties: Optional[ConnectionProperties]
 
 
 class OutboundConnectionStatus(TypedDict, total=False):
@@ -1961,6 +1966,7 @@ class OpensearchApi:
         remote_domain_info: DomainInformationContainer,
         connection_alias: ConnectionAlias,
         connection_mode: ConnectionMode = None,
+        connection_properties: ConnectionProperties = None,
     ) -> CreateOutboundConnectionResponse:
         raise NotImplementedError
 

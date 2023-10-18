@@ -1,13 +1,5 @@
-# builder: Stage to build a custom JRE (with jlink)
-FROM python:3.10.11-slim-bullseye@sha256:12af6fa557c55d85754107e59d0e21530d7a253757e128b3682d138e58712e54 as java-builder
-ARG TARGETARCH
-
-# install OpenJDK 11
-RUN apt-get update && \
-        apt-get install -y openjdk-11-jdk-headless && \
-        apt-get clean && rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${TARGETARCH}
+# java-builder: Stage to build a custom JRE (with jlink)
+FROM eclipse-temurin:11@sha256:f05c8dfa25aa75d994e48c54eef6be4c05326627c066f67497fb4a86f545ec4a as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -37,23 +29,59 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.10.11-slim-bullseye@sha256:12af6fa557c55d85754107e59d0e21530d7a253757e128b3682d138e58712e54 as base
+FROM python:3.11.6-slim-bookworm@sha256:fda05d00fc47a4133a1b65bdd89007facf4ec0fa5fb737a35652699b18029830 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
         # Install dependencies to add additional repos
-        apt-get install -y --no-install-recommends ca-certificates curl && \
-        # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
-        curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
-        apt-get update && \
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-            git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps \
-            # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
-            nodejs
+            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2 xz-utils
 
+# FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
+# Install nodejs package from the dist release server. Note: we're installing from dist binaries, and not via
+#  `apt-get`, to avoid installing `python3.9` into the image (which otherwise comes as a dependency of nodejs).
+# See https://github.com/nodejs/docker-node/blob/main/18/bullseye/Dockerfile
+RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
+  && case "${dpkgArch##*-}" in \
+    amd64) ARCH='x64';; \
+    arm64) ARCH='arm64';; \
+    *) echo "unsupported architecture"; exit 1 ;; \
+  esac \
+  # gpg keys listed at https://github.com/nodejs/node#release-keys
+  && set -ex \
+  && for key in \
+    4ED778F539E3634C779C87C6D7062848A1AB005C \
+    141F07595B7B3FFE74309A937405533BE57C7D57 \
+    74F12602B6F1C4E913FAA37AD3A89613643B6201 \
+    DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7 \
+    61FC681DFB92A079F1685E77973F295594EC4689 \
+    8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600 \
+    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
+    890C08DB8579162FEE0DF9DB8BEAB4DFCF555EF4 \
+    C82FA3AE1CBEDC6BE46B9360C43CEC45C17AB93C \
+    108F52B48DB57BB0CC439B2997B01419BD92F80A \
+    A363A499291CBBC940DD62E41F10027AF002F8B0 \
+  ; do \
+      gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$key" || \
+      gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key" ; \
+  done \
+  && curl -O https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt \
+  && LATEST_VERSION_FILENAME=$(cat SHASUMS256.txt | grep -o "node-v.*-linux-$ARCH" | sort | uniq) \
+  && rm SHASUMS256.txt \
+  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/$LATEST_VERSION_FILENAME.tar.xz" \
+  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt.asc" \
+  && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
+  && grep " $LATEST_VERSION_FILENAME.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
+  && tar -xJf "$LATEST_VERSION_FILENAME.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
+  && rm "$LATEST_VERSION_FILENAME.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
+  && ln -s /usr/local/bin/node /usr/local/bin/nodejs \
+  # smoke tests
+  && node --version \
+  && npm --version \
+  && test ! $(which python3.9)
 
 SHELL [ "/bin/bash", "-c" ]
 
@@ -64,11 +92,9 @@ RUN { \
         echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
     } > /usr/local/bin/docker-java-home \
     && chmod +x /usr/local/bin/docker-java-home
-COPY --from=java-builder /usr/lib/jvm/java-11 /usr/lib/jvm/java-11
-COPY --from=java-builder /etc/ssl/certs/java /etc/ssl/certs/java
-COPY --from=java-builder /etc/java-11-openjdk/security /etc/java-11-openjdk/security
-RUN ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
 ENV JAVA_HOME /usr/lib/jvm/java-11
+COPY --from=java-builder /usr/lib/jvm/java-11 $JAVA_HOME
+RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
 ENV PATH "${PATH}:${JAVA_HOME}/bin"
 
 # set workdir
@@ -101,7 +127,7 @@ ADD bin/hosts /etc/hosts
 # expose default environment
 # Set edge bind host so localstack can be reached by other containers
 # set library path and default LocalStack hostname
-ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
+ENV LD_LIBRARY_PATH=$JAVA_HOME/lib:$JAVA_HOME/lib/server
 ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
 
@@ -119,7 +145,7 @@ ARG TARGETARCH
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
         # Install dependencies to add additional repos
-        apt-get install -y gcc python-dev
+        apt-get install -y gcc
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
@@ -159,13 +185,16 @@ RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/var/lib/localstack/cache \
     source .venv/bin/activate && \
     python -m localstack.cli.lpm install \
+      lambda-runtime \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
 
-# link the extensions virtual environment into the localstack venv
-RUN echo /var/lib/localstack/lib/extensions/python_venv/lib/python3.10/site-packages > localstack-extensions-venv.pth && \
-    mv localstack-extensions-venv.pth .venv/lib/python*/site-packages/
+# link the python package installer virtual environments into the localstack venv
+RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \
+    mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
+RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
+    mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
 
 # Install the latest version of the LocalStack Persistence Plugin
 RUN --mount=type=cache,target=/root/.cache \

@@ -82,11 +82,22 @@ SECONDS: '"Seconds"';
 TIMESTAMPPATH: '"TimestampPath"';
 TIMESTAMP: '"Timestamp"';
 
+TIMEOUTSECONDS: '"TimeoutSeconds"';
+TIMEOUTSECONDSPATH: '"TimeoutSecondsPath"';
+
+HEARTBEATSECONDS: '"HeartbeatSeconds"';
+HEARTBEATSECONDSPATH: '"HeartbeatSecondsPath"';
+
 PROCESSORCONFIG: '"ProcessorConfig"';
 MODE: '"Mode"';
 INLINE: '"INLINE"';
+DISTRIBUTED: '"DISTRIBUTED"';
+EXECUTIONTYPE: '"ExecutionType"';
+STANDARD: '"STANDARD"';
 
 ITEMPROCESSOR: '"ItemProcessor"';
+ITERATOR: '"Iterator"';
+ITEMSELECTOR: '"ItemSelector"';
 MAXCONCURRENCY: '"MaxConcurrency"';
 
 RESOURCE: '"Resource"';
@@ -97,6 +108,14 @@ RESULTPATH: '"ResultPath"';
 RESULT: '"Result"';
 PARAMETERS: '"Parameters"';
 RESULTSELECTOR: '"ResultSelector"';
+
+ITEMREADER: '"ItemReader"';
+READERCONFIG: '"ReaderConfig"';
+INPUTTYPE: '"InputType"';
+CSVHEADERLOCATION: '"CSVHeaderLocation"';
+CSVHEADERS: '"CSVHeaders"';
+MAXITEMS: '"MaxItems"';
+MAXITEMSPATH: '"MaxItemsPath"';
 
 NEXT: '"Next"';
 END: '"End"';
@@ -138,7 +157,7 @@ STRINGDOLLAR
     ;
 
 STRINGPATHCONTEXTOBJ
-    : '"$$.' (ESC | SAFECODEPOINT)* '"'
+    : '"$$' (ESC | SAFECODEPOINT)* '"'
     ;
 
 STRINGPATH

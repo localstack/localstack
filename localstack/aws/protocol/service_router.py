@@ -10,7 +10,7 @@ from localstack import config
 from localstack.aws.spec import ServiceCatalog, build_service_index_cache, load_service_index_cache
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
-from localstack.services.s3.s3_utils import uses_host_addressing
+from localstack.services.s3.utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_bytes
@@ -181,7 +181,12 @@ def legacy_rules(request: Request) -> Optional[str]:
 
     # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
     # necessary for correct handling of cors for internal endpoints
-    if path == "/health" or path.startswith("/_localstack") or path.startswith("/_pods"):
+    if (
+        path == "/health"
+        or path.startswith("/_localstack")
+        or path.startswith("/_pods")
+        or path.startswith("/_aws")
+    ):
         return None
 
     # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
@@ -353,6 +358,11 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
         custom_host_match = custom_host_addressing_rules(host)
         if custom_host_match:
             return custom_host_match
+
+    if request.shallow:
+        # from here on we would need access to the request body, which doesn't exist for shallow requests like
+        # WebsocketRequests.
+        return None
 
     # 5. check the query / form-data
     values = request.values
