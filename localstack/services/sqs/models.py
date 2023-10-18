@@ -74,6 +74,7 @@ class SqsMessage:
         self.delay_seconds = None
         self.last_received = None
         self.first_received = None
+        self.visibility_deadline = None
         self.deleted = False
         self.priority = priority
         self.sequence_number = sequence_number
