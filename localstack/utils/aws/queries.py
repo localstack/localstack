@@ -1,12 +1,12 @@
 from localstack.aws.connect import connect_to
-from localstack.utils.aws.arns import extract_region_from_arn, get_sqs_queue_url
+from localstack.utils.aws.arns import extract_region_from_arn, sqs_queue_url_for_arn
 from localstack.utils.strings import to_str
 
 
 def sqs_receive_message(queue_arn):
     region_name = extract_region_from_arn(queue_arn)
     client = connect_to(region_name=region_name).sqs
-    queue_url = get_sqs_queue_url(queue_arn)
+    queue_url = sqs_queue_url_for_arn(queue_arn)
     response = client.receive_message(QueueUrl=queue_url)
     return response
 
