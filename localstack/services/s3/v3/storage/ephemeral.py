@@ -91,6 +91,16 @@ class EphemeralS3StoredObject(S3StoredObject):
 
         return self._pos
 
+    def truncate(self, size: int = None) -> int:
+        """
+        Resize the stream to the given size in bytes (or the current position if size is not specified).
+        The current stream position isn’t changed. This resizing can extend or reduce the current file size.
+        :param size: size to resize the stream to, or position if not given
+        :return: the new file size
+        """
+        with self.file.position_lock:
+            return self.file.truncate(size)
+
     def write(self, stream: IO[bytes] | "EphemeralS3StoredObject" | LimitedStream) -> int:
         """
         Read from the `stream` parameter into the underlying fileobject. This will truncate the fileobject before
@@ -258,8 +268,8 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         """
         s3_stored_object = self._s3_store.open(self.bucket, self.s3_multipart.object)
         # reset the file to overwrite
-        s3_stored_object.file.seek(0)
-        s3_stored_object.file.truncate()
+        s3_stored_object.seek(0)
+        s3_stored_object.truncate()
         for s3_part in parts:
             stored_part = self.parts.get(s3_part.part_number)
             s3_stored_object.append(stored_part)
