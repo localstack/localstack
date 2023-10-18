@@ -107,8 +107,10 @@ class ApiGatewayModelProvider(ResourceProvider[ApiGatewayModelProperties]):
         """
         model = request.desired_state
         apigw = request.aws_client_factory.apigateway
-
-        apigw.delete_model(modelName=model["Name"], restApiId=model["RestApiId"])
+        try:
+            apigw.delete_model(modelName=model["Name"], restApiId=model["RestApiId"])
+        except apigw.exceptions.NotFoundException:
+            pass
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,

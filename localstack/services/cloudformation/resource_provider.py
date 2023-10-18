@@ -88,6 +88,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::DomainName": "ResourceProvider",
     "AWS::ApiGateway::BasePathMapping": "ResourceProvider",
     "AWS::ApiGateway::Model": "ResourceProvider",
+    "AWS::ApiGateway::Account": "ResourceProvider",
 }
 
 
