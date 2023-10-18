@@ -61,7 +61,7 @@ The easiest way to install LocalStack is via `pip`:
 pip install localstack
 ```
 
-This installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime. The `awslocal` cli for interacting with the LocalStack services is installed separately. See the [awslocal-local](https://github.com/localstack/awscli-local#installation) repository for installation instructions.
+This installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime. The `awslocal` CLI for interacting with the local AWS services is installed separately. See the [`awslocal` documentation](https://docs.localstack.cloud/user-guide/integrations/aws-cli/#localstack-aws-cli-awslocal) for installation instructions.
 
 > **Important**: Do not use `sudo` or run as `root` user. LocalStack must be installed and started entirely under a local non-root user. If you have problems with permissions in macOS High Sierra, install with `pip install --user localstack`
 
