@@ -171,7 +171,7 @@ class ApiGatewayUsagePlanProvider(ResourceProvider[ApiGatewayUsagePlanProperties
                 tags_dict.update({tag["Key"]: tag["Value"]})
             update_config_props["Tags"] = tags_dict
 
-        usage_plan_id = model["Id"]
+        usage_plan_id = request.previous_state["Id"]
 
         patch_operations = []
 
