@@ -74,6 +74,7 @@ from localstack.utils.container_utils.container_client import (
 from localstack.utils.docker_utils import DOCKER_CLIENT, get_host_path_for_path_in_docker
 from localstack.utils.run import CaptureOutputProcess, FuncThread
 from localstack.utils.time import timestamp_millis
+from localstack.utils.urls import localstack_host
 
 # constants
 LAMBDA_EXECUTOR_CLASS = "cloud.localstack.LambdaExecutor"
@@ -300,7 +301,7 @@ class LambdaInvocationForwarderPlugin(LambdaExecutorPlugin):
         url = "%s%s/functions/%s/invocations" % (forward_url, API_PATH_ROOT, func_name)
 
         copied_env_vars = lambda_function.envvars.copy()
-        copied_env_vars["LOCALSTACK_HOSTNAME"] = config.HOSTNAME_EXTERNAL
+        copied_env_vars["LOCALSTACK_HOSTNAME"] = localstack_host().host
         copied_env_vars["LOCALSTACK_EDGE_PORT"] = str(config.EDGE_PORT)
 
         headers = aws_stack.mock_aws_request_headers(

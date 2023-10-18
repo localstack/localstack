@@ -59,7 +59,11 @@ def test_dynamic_allowed_cors_origins_different_domains(monkeypatch):
     # test dynamic allowed origins for default config (edge port 4566)
     monkeypatch.setattr(config, "EDGE_PORT", 4566)
     monkeypatch.setattr(config, "EDGE_PORT_HTTP", 0)
-    monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", "my-custom-domain.com")
+    monkeypatch.setattr(
+        config,
+        "LOCALSTACK_HOST",
+        config.HostAndPort(host="my-custom-domain.com", port=config.EDGE_PORT),
+    )
 
     monkeypatch.setattr(
         cors, "_ALLOWED_INTERNAL_DOMAINS", cors._get_allowed_cors_internal_domains()

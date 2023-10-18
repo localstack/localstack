@@ -540,6 +540,9 @@ class HostAndPort:
     def is_unprivileged(self) -> bool:
         return self.port >= self._get_unprivileged_port_range_start()
 
+    def host_and_port(self):
+        return f"{self.host}:{self.port}" if self.port is not None else self.host
+
     def __hash__(self) -> int:
         return hash((self.host, self.port))
 
@@ -553,7 +556,7 @@ class HostAndPort:
             raise TypeError(f"cannot compare {self.__class__} to {other.__class__}")
 
     def __str__(self) -> str:
-        return f"{self.host}:{self.port}" if self.port is not None else self.host
+        return self.host_and_port()
 
     def __repr__(self) -> str:
         return f"HostAndPort(host={self.host}, port={self.port})"
@@ -609,6 +612,7 @@ def populate_legacy_edge_configuration(
     # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
     localstack_host = localstack_host_raw
     if localstack_host is None:
+        # TODO use actual gateway port?
         localstack_host = HostAndPort(
             host=constants.LOCALHOST_HOSTNAME, port=constants.DEFAULT_PORT_EDGE
         )
@@ -1362,7 +1366,7 @@ def service_url(service_key, host=None, port=None):
 
 
 def external_service_url(service_key, host=None, port=None):
-    host = host or HOSTNAME_EXTERNAL
+    host = host or LOCALSTACK_HOST.host
     port = port or service_port(service_key, external=True)
     return service_url(service_key, host=host, port=port)
 
@@ -1376,7 +1380,7 @@ def get_edge_port_http():
 def get_edge_url(localstack_hostname=None, protocol=None):
     port = get_edge_port_http()
     protocol = protocol or get_protocol()
-    localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
+    localstack_hostname = localstack_hostname or LOCALSTACK_HOST.host
     return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
 

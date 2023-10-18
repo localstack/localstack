@@ -1059,13 +1059,15 @@ class TestSqsProvider:
         assert bodies == {"0", "1", "2", "3", "4", "5", "6", "7", "8"}
 
     @markers.aws.only_localstack
-    def test_external_hostname(self, monkeypatch, sqs_create_queue, aws_client):
+    def test_external_endpoint(self, monkeypatch, sqs_create_queue, aws_client):
         external_host = "external-host"
         external_port = "12345"
 
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
         monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
-        monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
+        monkeypatch.setattr(
+            config, "LOCALSTACK_HOST", config.HostAndPort(host=external_host, port=config.EDGE_PORT)
+        )
 
         queue_url = sqs_create_queue()
 

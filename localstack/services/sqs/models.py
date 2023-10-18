@@ -281,16 +281,14 @@ class SqsQueue:
             region = "" if self.region == "us-east-1" else self.region + "."
             scheme = context.request.scheme
 
-            host_definition = localstack_host(use_localhost_cloud=True)
+            host_definition = localstack_host()
             host_url = f"{scheme}://{region}queue.{host_definition.host_and_port()}"
         elif config.SQS_ENDPOINT_STRATEGY == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
             host_url = f"{context.request.host_url}queue/{self.region}"
         else:
             if config.SQS_PORT_EXTERNAL:
-                host_definition = localstack_host(
-                    use_hostname_external=True, custom_port=config.SQS_PORT_EXTERNAL
-                )
+                host_definition = localstack_host(custom_port=config.SQS_PORT_EXTERNAL)
                 host_url = f"{get_protocol()}://{host_definition.host_and_port()}"
 
         return "{host}/{account_id}/{name}".format(

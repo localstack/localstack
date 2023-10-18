@@ -1918,7 +1918,7 @@ def assert_host_customisation(monkeypatch):
     # running LocalStack, so use that here.
     #
     # Note: We cannot use `localhost` since we explicitly check that the URL
-    # passed in does not contain `localhost`, unless it is requried to.
+    # passed in does not contain `localhost`, unless it is required to.
     localstack_hostname = socket.gethostname()
     monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname_external)
     monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)

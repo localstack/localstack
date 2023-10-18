@@ -200,14 +200,8 @@ S3_MAX_FILE_SIZE_BYTES = 512 * 1024
 
 
 def get_full_default_bucket_location(bucket_name):
-    if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
-        host_definition = localstack_host(
-            use_hostname_external=True, custom_port=config.get_edge_port_http()
-        )
-        return f"{config.get_protocol()}://{host_definition.host_and_port()}/{bucket_name}/"
-    else:
-        host_definition = localstack_host(use_localhost_cloud=True)
-        return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
+    host_definition = localstack_host()
+    return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):
