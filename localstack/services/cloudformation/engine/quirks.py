@@ -16,6 +16,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::ApiGateway::Deployment": "/properties/DeploymentId",
     "AWS::ApiGateway::Resource": "/properties/ResourceId",
     "AWS::ApiGateway::Stage": "/properties/StageName",
+    "AWS::ApiGateway::BasePathMapping": "/properties/RestApiId",
 }
 
 # You can usually find the available GetAtt targets in the official resource documentation:
