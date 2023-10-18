@@ -67,6 +67,7 @@ from localstack.utils.strings import (
 )
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+from localstack.utils.urls import localstack_host
 from localstack.utils.urls import localstack_host as get_localstack_host
 
 if TYPE_CHECKING:
@@ -4388,7 +4389,7 @@ class TestS3:
             ACL="public-read-write",
         )
 
-        url = f"{_bucket_url(s3_bucket, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
+        url = f"{_bucket_url(s3_bucket, localstack_host=localstack_host().host)}?delete"
 
         data = f"""
         <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -4445,7 +4446,7 @@ class TestS3:
         )
 
         # TODO delete does currently not work with S3_VIRTUAL_HOSTNAME
-        url = f"{_bucket_url(s3_bucket, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
+        url = f"{_bucket_url(s3_bucket, localstack_host=localstack_host().host)}?delete"
 
         data = f"""
             <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">

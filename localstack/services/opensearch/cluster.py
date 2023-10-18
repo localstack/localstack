@@ -32,6 +32,7 @@ from localstack.utils.common import (
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 INTERNAL_USER_AUTH = ("localstack-internal", "localstack-internal")
@@ -239,7 +240,7 @@ def register_cluster(
     if custom_endpoint and custom_endpoint.enabled:
         LOG.debug(f"Registering route from {host}{path} to {endpoint.proxy.forward_base_url}")
         assert not (
-            host == config.LOCALSTACK_HOSTNAME and (not path or path == "/")
+            host == localstack_host().host and (not path or path == "/")
         ), "trying to register an illegal catch all route"
         rules.append(
             ROUTER.add(
@@ -257,9 +258,7 @@ def register_cluster(
         )
     elif strategy == "domain":
         LOG.debug(f"Registering route from {host} to {endpoint.proxy.forward_base_url}")
-        assert (
-            not host == config.LOCALSTACK_HOSTNAME
-        ), "trying to register an illegal catch all route"
+        assert not host == localstack_host().host, "trying to register an illegal catch all route"
         rules.append(
             ROUTER.add(
                 "/",
