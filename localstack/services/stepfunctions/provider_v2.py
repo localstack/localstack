@@ -83,7 +83,10 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackOutcomeFailure,
     CallbackOutcomeSuccess,
 )
-from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
+from localstack.services.stepfunctions.asl.parse.asl_parser import (
+    AmazonStateLanguageParser,
+    ASLParserException,
+)
 from localstack.services.stepfunctions.backend.execution import Execution
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
@@ -163,9 +166,18 @@ class StepFunctionsProvider(StepfunctionsApi):
         # TODO: pass through static analyser.
         try:
             AmazonStateLanguageParser.parse(definition)
-        except Exception as ex:
-            # TODO: add message from static analyser, this just helps the user debug issues in the derivation.
-            raise InvalidDefinition(f"Error '{str(ex)}' in definition '{definition}'.")
+        except ASLParserException as asl_parser_exception:
+            invalid_definition = InvalidDefinition()
+            invalid_definition.message = repr(asl_parser_exception)
+            raise invalid_definition
+        except Exception as exception:
+            exception_name = exception.__class__.__name__
+            exception_args = list(exception.args)
+            invalid_definition = InvalidDefinition()
+            invalid_definition.message = (
+                f"Error={exception_name} Args={exception_args} in definition '{definition}'."
+            )
+            raise invalid_definition
 
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput
