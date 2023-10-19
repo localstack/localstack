@@ -46,7 +46,7 @@ class TestS3VirtualHostProxyHandler:
         )
         request, server = collector.requests.get()
         assert request.url == "http://s3.localhost.localstack.cloud:4566/abucket/my/key"
-        assert server == "http://localhost:4566"
+        assert server == "http://localhost.localstack.cloud:4566"
 
         # test root key
         router.dispatch(
@@ -78,7 +78,7 @@ class TestS3VirtualHostProxyHandler:
         )
         request, server = collector.requests.get()
         assert request.url == "http://s3.localhost.localstack.cloud:4566/abucket/my/key"
-        assert server == "http://localhost:4566"
+        assert server == "http://localhost.localstack.cloud:4566"
 
         # test key with path (gov cloud
         router.dispatch(
@@ -89,7 +89,7 @@ class TestS3VirtualHostProxyHandler:
         )
         request, server = collector.requests.get()
         assert request.url == "http://s3.localhost.localstack.cloud:4566/abucket/my/key"
-        assert server == "http://localhost:4566"
+        assert server == "http://localhost.localstack.cloud:4566"
 
         # test root key
         router.dispatch(
@@ -143,7 +143,7 @@ class TestS3VirtualHostProxyHandler:
         )
         request, server = collector.requests.get()
         assert request.url == "http://s3.localhost.localstack.cloud:4566/abucket/my/key"
-        assert server == "http://localhost:4566"
+        assert server == "http://localhost.localstack.cloud:4566"
 
         # test root key
         router.dispatch(

@@ -639,7 +639,7 @@ class TestOpensearchProvider:
         assert "Endpoint" in status
         endpoint = status["Endpoint"]
         parts = endpoint.split(":")
-        assert parts[0] in ("localhost", "127.0.0.1")
+        assert parts[0] in (localstack_host().host, "127.0.0.1")
         assert int(parts[1]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )

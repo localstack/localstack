@@ -58,7 +58,8 @@ class S3VirtualHostProxyHandler:
         :return: a proxy instance
         """
         return Proxy(
-            forward_base_url=config.get_edge_url(),
+            # Just use localhost for proxying, do not rely on external - potentially dangerous - configuration
+            forward_base_url=config.get_edge_url(localstack_hostname="localhost"),
             # do not preserve the Host when forwarding (to avoid an endless loop)
             preserve_host=False,
         )

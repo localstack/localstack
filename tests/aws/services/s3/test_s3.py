@@ -3823,10 +3823,7 @@ class TestS3:
         response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, acl=acl)
         snapshot.match("multipart-upload", response)
 
-        if is_aws_cloud():  # TODO: default addressing is vhost for AWS
-            expected_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
-        else:  # LS default is path addressing
-            expected_url = f"{_bucket_url(bucket_name=s3_bucket, localstack_host=get_localstack_host().host)}/{key}"
+        expected_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
         assert response["Location"] == expected_url
 
         # download object via API
