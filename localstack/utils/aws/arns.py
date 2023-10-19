@@ -42,11 +42,6 @@ def sqs_queue_url_for_arn(queue_arn: str) -> str:
     return result
 
 
-# TODO: remove and merge with sqs_queue_url_for_arn(..) above!!
-def get_sqs_queue_url(queue_arn: str) -> str:
-    return sqs_queue_url_for_arn(queue_arn)
-
-
 class ArnData(TypedDict):
     partition: str
     service: str

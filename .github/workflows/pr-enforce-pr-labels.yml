@@ -1,7 +1,7 @@
 name: Enforce PR Labels
 
 on:
-  pull_request:
+  pull_request_target:
     types: [labeled, unlabeled, opened, edited, synchronize]
 
 jobs:

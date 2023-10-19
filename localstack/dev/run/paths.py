@@ -25,6 +25,7 @@ class HostPaths:
         self.localstack_project_dir = self.workspace_dir / "localstack"
         self.localstack_ext_project_dir = self.workspace_dir / "localstack-ext"
         self.moto_project_dir = self.workspace_dir / "moto"
+        self.postgresql_proxy = self.workspace_dir / "postgresql-proxy"
         self.volume_dir = Path(volume_dir or "/tmp/localstack")
         self.venv_dir = Path(
             venv_dir

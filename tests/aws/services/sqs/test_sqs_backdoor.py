@@ -21,6 +21,10 @@ def _parse_message_attributes(xml) -> list[dict]:
     ]
 
 
+def _parse_attribute_map(json_message: dict) -> dict[str, str]:
+    return {attr["Name"]: attr["Value"] for attr in json_message["Attribute"]}
+
+
 class TestSqsDeveloperEdpoints:
     @markers.aws.only_localstack
     def test_list_messages_has_no_side_effects(self, sqs_create_queue, aws_client):
@@ -41,7 +45,6 @@ class TestSqsDeveloperEdpoints:
         response = aws_client.sqs.receive_message(
             QueueUrl=queue_url, VisibilityTimeout=0, MaxNumberOfMessages=1, AttributeNames=["All"]
         )
-        print(response)
         assert response["Messages"][0]["Body"] == "message-1"
         assert response["Messages"][0]["Attributes"]["ApproximateReceiveCount"] == "1"
 
@@ -155,6 +158,78 @@ class TestSqsDeveloperEdpoints:
         assert "SentTimestamp" in attributes
 
     @markers.aws.only_localstack
+    def test_list_messages_with_invisible_messages(self, sqs_create_queue, aws_client):
+        queue_url = sqs_create_queue()
+
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-3")
+
+        # check out a messages
+        aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
+
+        response = requests.get(
+            "http://localhost:4566/_aws/sqs/messages",
+            params={"QueueUrl": queue_url, "ShowInvisible": False},
+            headers={"Accept": "application/json"},
+        )
+        doc = response.json()
+        messages = doc["ReceiveMessageResponse"]["ReceiveMessageResult"]["Message"]
+        assert len(messages) == 2
+        assert messages[0]["Body"] == "message-2"
+        assert messages[1]["Body"] == "message-3"
+
+        response = requests.get(
+            "http://localhost:4566/_aws/sqs/messages",
+            params={"QueueUrl": queue_url, "ShowInvisible": True},
+            headers={"Accept": "application/json"},
+        )
+        doc = response.json()
+        messages = doc["ReceiveMessageResponse"]["ReceiveMessageResult"]["Message"]
+        assert len(messages) == 3
+        assert messages[0]["Body"] == "message-1"
+        assert messages[1]["Body"] == "message-2"
+        assert messages[2]["Body"] == "message-3"
+
+        assert _parse_attribute_map(messages[0])["IsVisible"] == "false"
+        assert _parse_attribute_map(messages[1])["IsVisible"] == "true"
+        assert _parse_attribute_map(messages[2])["IsVisible"] == "true"
+
+    @markers.aws.only_localstack
+    def test_list_messages_with_delayed_messages(self, sqs_create_queue, aws_client):
+        queue_url = sqs_create_queue()
+
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2", DelaySeconds=10)
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-3", DelaySeconds=10)
+
+        response = requests.get(
+            "http://localhost:4566/_aws/sqs/messages",
+            params={"QueueUrl": queue_url, "ShowDelayed": False},
+            headers={"Accept": "application/json"},
+        )
+        doc = response.json()
+        messages = doc["ReceiveMessageResponse"]["ReceiveMessageResult"]["Message"]
+        assert messages["Body"] == "message-1"
+
+        response = requests.get(
+            "http://localhost:4566/_aws/sqs/messages",
+            params={"QueueUrl": queue_url, "ShowDelayed": True},
+            headers={"Accept": "application/json"},
+        )
+        doc = response.json()
+        messages = doc["ReceiveMessageResponse"]["ReceiveMessageResult"]["Message"]
+        assert len(messages) == 3
+        messages.sort(key=lambda k: k["Body"])
+        assert messages[0]["Body"] == "message-1"
+        assert messages[1]["Body"] == "message-2"
+        assert messages[2]["Body"] == "message-3"
+
+        assert _parse_attribute_map(messages[0])["IsDelayed"] == "false"
+        assert _parse_attribute_map(messages[1])["IsDelayed"] == "true"
+        assert _parse_attribute_map(messages[2])["IsDelayed"] == "true"
+
+    @markers.aws.only_localstack
     def test_list_messages_without_queue_url(self, aws_client):
         # makes sure the service is loaded when running the test individually
         aws_client.sqs.list_queues()
@@ -214,7 +289,8 @@ class TestSqsDeveloperEdpoints:
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
 
         account, region, name = parse_queue_url(queue_url)
-        # sometimes the region cannot be determined from the queue url, we make no assumptions about this in this test
+        # sometimes the region cannot be determined from the queue url, we make no assumptions about this
+        # in this test
         region = region or aws_client.sqs.meta.region_name
 
         response = requests.get(
