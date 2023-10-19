@@ -20,7 +20,6 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
-    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
@@ -33,7 +32,6 @@ from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import parse_arn, sqs_queue_arn
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
@@ -3811,13 +3809,7 @@ class TestSNSSubscriptionHttp:
             snapshot.match("http-message", payload)
             snapshot.match("http-message-headers", _clean_headers(notification_request.headers))
 
-        auth_header = aws_stack.mock_aws_request_headers(
-            "sns", region_name=TEST_AWS_REGION_NAME, access_key=TEST_AWS_ACCESS_KEY_ID
-        )["Authorization"]
-
-        unsub_request = requests.get(
-            url=expected_unsubscribe_url, headers={"Authorization": auth_header}
-        )
+        unsub_request = requests.get(expected_unsubscribe_url)
 
         unsubscribe_confirmation = xmltodict.parse(unsub_request.content)
         assert "UnsubscribeResponse" in unsubscribe_confirmation
