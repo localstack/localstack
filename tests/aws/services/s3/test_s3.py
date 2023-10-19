@@ -3382,6 +3382,30 @@ class TestS3:
         assert downloaded_data == data
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
+    def test_multipart_overwrite_key(self, s3_bucket, s3_multipart_upload, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("Bucket"),
+            ]
+        )
+        key = "test.file"
+        content = b"test content 123"
+        put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=content)
+        snapshot.match("put-object", put_object)
+
+        # create a multipart upload on an existing key, overwrite it
+        response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content)
+        snapshot.match("multipart-upload", response)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+        assert get_object["Body"].read() == content
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not is_native_provider(),
