@@ -32,7 +32,6 @@ def test_resolve_hostname():
 
 @pytest.mark.parametrize("protocol", ["tcp", "udp"])
 def test_port_open(protocol):
-
     if protocol == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     else:

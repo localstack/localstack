@@ -348,7 +348,6 @@ def modify_context_region(context: RequestContext, region: str):
 
 
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
-
     server: DynamodbServer
     """The instance of the server managing the instance of DynamoDB local"""
 

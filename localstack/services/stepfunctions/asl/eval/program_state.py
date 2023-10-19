@@ -45,7 +45,6 @@ class ProgramRunning(ProgramState):
 
 
 class ProgramError(ProgramState):
-
     error: Final[Optional[ExecutionFailedEventDetails]]
 
     def __init__(self, error: Optional[ExecutionFailedEventDetails]):

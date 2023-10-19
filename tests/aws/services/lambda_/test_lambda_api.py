@@ -1794,7 +1794,6 @@ class TestLambdaTag:
 
     @markers.aws.validated
     def test_tag_lifecycle(self, create_lambda_function, snapshot, fn_arn, aws_client):
-
         # 1. add tag
         tag_single_response = aws_client.lambda_.tag_resource(Resource=fn_arn, Tags={"A": "tag-a"})
         snapshot.match("tag_single_response", tag_single_response)
@@ -2498,7 +2497,6 @@ class TestLambdaReservedConcurrency:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaProvisionedConcurrency:
-
     # TODO: test ARN
     # TODO: test shorthand ARN
     @markers.aws.validated
@@ -4124,7 +4122,6 @@ class TestLambdaEventSourceMappings:
     @pytest.mark.skipif(condition=is_old_provider(), reason="new provider only")
     @markers.aws.validated
     def test_event_source_mapping_exceptions(self, snapshot, aws_client):
-
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             aws_client.lambda_.get_event_source_mapping(UUID=long_uid())
         snapshot.match("get_unknown_uuid", e.value.response)

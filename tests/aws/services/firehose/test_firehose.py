@@ -348,7 +348,6 @@ class TestFirehoseIntegration:
     def test_delivery_stream_with_kinesis_as_source(
         self, s3_bucket, kinesis_create_stream, cleanups, aws_client
     ):
-
         bucket_arn = arns.s3_bucket_arn(s3_bucket)
         stream_name = f"test-stream-{short_uid()}"
         log_group_name = f"group{short_uid()}"

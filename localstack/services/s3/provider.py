@@ -847,7 +847,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: ListMultipartUploadsRequest,
     ) -> ListMultipartUploadsOutput:
-
         # TODO: implement KeyMarker and UploadIdMarker (using sort)
         # implement Delimiter and MaxUploads
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html

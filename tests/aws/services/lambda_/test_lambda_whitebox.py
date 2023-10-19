@@ -99,7 +99,6 @@ class TestLambdaFallbackUrl:
 
         # using pytest HTTPServer instead of the fixture because this test is still based on unittest
         with HTTPServer() as server:
-
             server.expect_request("").respond_with_handler(_handler)
             http_endpoint = server.url_for("/")
 

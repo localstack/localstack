@@ -217,7 +217,6 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_multiple_dimensions(self, aws_client):
-
         namespaces = [
             f"ns1-{short_uid()}",
             f"ns2-{short_uid()}",

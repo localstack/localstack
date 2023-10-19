@@ -485,7 +485,7 @@ class LambdaEventManager:
             self.poller,
             id(self),
         )
-        with (self.lifecycle_lock):
+        with self.lifecycle_lock:
             if self.stopped.is_set():
                 LOG.debug("Event manager already stopped!")
                 return

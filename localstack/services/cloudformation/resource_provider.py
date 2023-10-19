@@ -660,7 +660,6 @@ class ResourceProviderExecutor:
                     return event
 
                 if event.status == OperationStatus.SUCCESS:
-
                     if not isinstance(resource_provider, LegacyResourceProvider):
                         # branch for non-legacy providers
                         # TODO: move out of if? (physical res id can be set earlier possibly)

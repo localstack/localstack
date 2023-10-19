@@ -352,7 +352,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutMetricAlarmInput,
     ) -> None:
-
         # missing will be the default, when not set (but it will not explicitly be set)
         if request.get("TreatMissingData", "missing") not in [
             "breaching",
