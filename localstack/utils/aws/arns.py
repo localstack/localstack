@@ -7,7 +7,7 @@ from botocore.utils import ArnParser, InvalidArnException
 
 from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID, get_aws_account_id
 from localstack.aws.connect import connect_to
-from localstack.utils.aws.aws_stack import get_region, get_valid_regions
+from localstack.utils.aws.aws_stack import get_region
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -234,9 +234,12 @@ def fix_arn(arn):
     """Function that attempts to "canonicalize" the given ARN. This includes converting
     resource names to ARNs, replacing incorrect regions, account IDs, etc."""
     if arn.startswith("arn:aws:lambda"):
-        parts = arn.split(":")
-        region = parts[3] if parts[3] in get_valid_regions() else get_region()
-        return lambda_function_arn(lambda_function_name(arn), region_name=region)
+        arn_data = parse_arn(arn)
+        return lambda_function_arn(
+            lambda_function_name(arn),
+            account_id=arn_data["account"],
+            region_name=arn_data["region"],
+        )
     LOG.warning("Unable to fix/canonicalize ARN: %s", arn)
     return arn
 
