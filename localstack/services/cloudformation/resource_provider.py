@@ -75,6 +75,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::EKS::Nodegroup": "ResourceProvider",
+    "AWS::EC2::DHCPOptions": "ResourceProvider",
 }
 
 

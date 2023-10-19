@@ -20,5 +20,74 @@
         "StackName": "<stack-name:1>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_dhcp_options": {
+    "recorded-date": "19-10-2023, 14:51:28",
+    "recorded-content": {
+      "description": {
+        "DhcpConfigurations": [
+          {
+            "Key": "domain-name",
+            "Values": [
+              {
+                "Value": "example.com"
+              }
+            ]
+          },
+          {
+            "Key": "domain-name-servers",
+            "Values": [
+              {
+                "Value": "AmazonProvidedDNS"
+              }
+            ]
+          },
+          {
+            "Key": "netbios-name-servers",
+            "Values": [
+              {
+                "Value": "10.2.5.1"
+              }
+            ]
+          },
+          {
+            "Key": "netbios-node-type",
+            "Values": [
+              {
+                "Value": "2"
+              }
+            ]
+          },
+          {
+            "Key": "ntp-servers",
+            "Values": [
+              {
+                "Value": "10.2.5.1"
+              }
+            ]
+          }
+        ],
+        "DhcpOptionsId": "<dhcp-options-id:1>",
+        "OwnerId": "111111111111",
+        "Tags": [
+          {
+            "Key": "project",
+            "Value": "123"
+          },
+          {
+            "Key": "aws:cloudformation:logical-id",
+            "Value": "myDhcpOptions"
+          },
+          {
+            "Key": "aws:cloudformation:stack-name",
+            "Value": "stack-698b113f"
+          },
+          {
+            "Key": "aws:cloudformation:stack-id",
+            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-698b113f/d892a0f0-6eb8-11ee-ab19-0a5372e03565"
+          }
+        ]
+      }
+    }
   }
 }
