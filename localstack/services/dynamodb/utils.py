@@ -134,7 +134,7 @@ class ItemFinder:
         if "Key" in put_item:
             search_key = put_item["Key"]
         else:
-            schema = SchemaExtractor.get_table_schema(table_name)
+            schema = SchemaExtractor.get_table_schema(table_name, account_id, region_name)
             schemas = [schema["Table"]["KeySchema"]]
             for index in schema["Table"].get("GlobalSecondaryIndexes", []):
                 # TODO
