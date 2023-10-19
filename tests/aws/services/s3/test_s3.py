@@ -3832,7 +3832,9 @@ class TestS3:
         assert content == to_str(downloaded_object["Body"].read())
 
         # download object directly from download link
-        download_url = response["Location"].replace(f"{get_localstack_host().host}:", "localhost:")
+        download_url = response["Location"].replace(
+            f"{get_localstack_host().host}:", "localhost.localstack.cloud:"
+        )
         response = requests.get(download_url)
         assert response.status_code == 200
         assert to_str(response.content) == content
