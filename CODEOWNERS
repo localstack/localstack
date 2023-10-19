@@ -13,13 +13,13 @@
 /LICENSE.txt @HarshCasper @alexrashed
 
 # Docker
-/bin/docker-entrypoint.sh
-/.dockerignore
+/bin/docker-entrypoint.sh @thrau @alexrashed
+/.dockerignore @alexrashed
 /Dockerfile @alexrashed
 
 # Git, Pipelines, GitHub config
-/.circleci @alexrashed @dfangl @thrau
-/.github @alexrashed @dfangl @thrau
+/.circleci @alexrashed @dfangl @dominikschubert
+/.github @alexrashed @dfangl @dominikschubert
 /.test_durations @alexrashed
 /.git-blame-ignore-revs @alexrashed @thrau
 /bin/release-dev.sh @thrau @alexrashed
@@ -68,7 +68,7 @@
 /localstack/runtime/ @thrau
 
 # Logging
-/localstack/logging/ @thrau @alexrashed @dominikschubert
+/localstack/logging/ @dfangl @alexrashed @dominikschubert
 
 # Stores
 /localstack/services/stores.py @viren-nadkarni
