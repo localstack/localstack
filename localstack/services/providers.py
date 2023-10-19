@@ -44,7 +44,6 @@ def cloudwatch():
     provider = CloudwatchProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
-
 @aws_provider(api="cloudwatch", name="v2")
 def cloudwatch_v2():
     from localstack.services.cloudwatch.provider_v2 import CloudwatchProvider
