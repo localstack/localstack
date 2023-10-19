@@ -1,7 +1,7 @@
 import datetime
-from zoneinfo import ZoneInfo
 
 from botocore.utils import InvalidArnException
+from zoneinfo import ZoneInfo
 
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.s3 import (
@@ -23,9 +23,9 @@ from localstack.aws.api.s3 import (
     InventoryId,
     ObjectCannedACL,
     Permission,
+    WebsiteConfiguration,
 )
 from localstack.aws.api.s3 import Type as GranteeType
-from localstack.aws.api.s3 import WebsiteConfiguration
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.exceptions import InvalidRequest, MalformedACLError, MalformedXML
 from localstack.services.s3.utils import (

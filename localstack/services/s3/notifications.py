@@ -349,7 +349,7 @@ class BaseNotifier:
         if filter_rules := configuration.get("Filter", {}).get("Key", {}).get("FilterRules"):
             for rule in filter_rules:
                 rule["Name"] = rule["Name"].capitalize()
-                if not rule["Name"] in ["Suffix", "Prefix"]:
+                if rule["Name"] not in ["Suffix", "Prefix"]:
                     raise _create_invalid_argument_exc(
                         "filter rule name must be either prefix or suffix",
                         rule["Name"],

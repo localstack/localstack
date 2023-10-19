@@ -723,8 +723,8 @@ def put_resource_policy_response(self):
 
 def apply_patches():
     secretsmanager_utils.secret_arn = get_arn_binding_for
-    setattr(SecretsManagerBackend, "get_resource_policy", get_resource_policy_model)
-    setattr(SecretsManagerResponse, "get_resource_policy", get_resource_policy_response)
+    SecretsManagerBackend.get_resource_policy = get_resource_policy_model
+    SecretsManagerResponse.get_resource_policy = get_resource_policy_response
 
     if not hasattr(SecretsManagerBackend, "delete_resource_policy"):
         SecretsManagerBackend.delete_resource_policy = delete_resource_policy_model

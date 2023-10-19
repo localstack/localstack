@@ -14,7 +14,6 @@ from io import BytesIO
 from operator import itemgetter
 from typing import TYPE_CHECKING
 from urllib.parse import SplitResult, parse_qs, quote, urlencode, urlparse, urlunsplit
-from zoneinfo import ZoneInfo
 
 import boto3 as boto3
 import pytest
@@ -25,6 +24,7 @@ from botocore import UNSIGNED
 from botocore.auth import SigV4Auth
 from botocore.client import Config
 from botocore.exceptions import ClientError
+from zoneinfo import ZoneInfo
 
 from localstack import config, constants
 from localstack.aws.api.s3 import StorageClass

@@ -47,9 +47,6 @@ from localstack.aws.api.lambda_ import (
     FunctionName,
     FunctionUrlAuthType,
     FunctionUrlQualifier,
-)
-from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
-from localstack.aws.api.lambda_ import (
     GetAccountSettingsResponse,
     GetCodeSigningConfigResponse,
     GetFunctionCodeSigningConfigResponse,
@@ -116,9 +113,6 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     Runtime,
     RuntimeVersionConfig,
-)
-from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
-from localstack.aws.api.lambda_ import (
     SnapStart,
     SnapStartApplyOn,
     SnapStartOptimizationStatus,
@@ -137,6 +131,8 @@ from localstack.aws.api.lambda_ import (
     UpdateFunctionUrlConfigResponse,
     Version,
 )
+from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
+from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
 from localstack.aws.connect import connect_to
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils

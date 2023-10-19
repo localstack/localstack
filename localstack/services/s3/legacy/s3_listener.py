@@ -24,9 +24,8 @@ from localstack.aws.api import CommonServiceException
 from localstack.aws.connect import connect_to
 from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.config import get_protocol as get_service_protocol
-from localstack.services.generic_proxy import ProxyListener
+from localstack.services.generic_proxy import ProxyListener, is_cors_origin_allowed
 from localstack.services.generic_proxy import append_cors_headers as _append_default_cors_headers
-from localstack.services.generic_proxy import is_cors_origin_allowed
 from localstack.services.s3.legacy import multipart_content
 from localstack.services.s3.legacy.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
