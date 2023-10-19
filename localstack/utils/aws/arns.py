@@ -279,10 +279,7 @@ def s3_bucket_arn(bucket_name_or_arn: str, account_id: str = None) -> str:
     return f"arn:aws:s3:::{bucket_name}"
 
 
-# TODO make account ID and region mandatory
-def sqs_queue_arn(queue_name: str, account_id: str = None, region_name: str = None) -> str:
-    account_id = account_id or get_aws_account_id()
-    region_name = region_name or get_region()
+def sqs_queue_arn(queue_name: str, account_id: str, region_name: str) -> str:
     queue_name = queue_name.split("/")[-1]
     return "arn:aws:sqs:%s:%s:%s" % (region_name, account_id, queue_name)
 

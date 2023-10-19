@@ -1993,7 +1993,9 @@ class TestIntegrations:
         # create event source for sqs lambda processor
         event_source_data = {
             "FunctionName": integration_lambda,
-            "EventSourceArn": arns.sqs_queue_arn(sqs_queue),
+            "EventSourceArn": arns.sqs_queue_arn(
+                sqs_queue, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+            ),
             "Enabled": True,
         }
         add_event_source(event_source_data)
