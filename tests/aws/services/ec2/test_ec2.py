@@ -6,7 +6,6 @@ from moto.ec2 import ec2_backends
 
 from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
-from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 
 # public amazon image used for ec2 launch templates
@@ -287,12 +286,11 @@ class TestEc2Integrations:
             ],
         )
 
-        region = aws_stack.get_region()
         assert 200 == vpc_endpoint_gateway_services["ResponseMetadata"]["HTTPStatusCode"]
         services = vpc_endpoint_gateway_services["ServiceNames"]
         assert 2 == len(services)
-        assert f"com.amazonaws.{region}.dynamodb" in services
-        assert f"com.amazonaws.{region}.s3" in services
+        assert f"com.amazonaws.{TEST_AWS_REGION_NAME}.dynamodb" in services
+        assert f"com.amazonaws.{TEST_AWS_REGION_NAME}.s3" in services
 
         # test filter of Interface endpoint services
         vpc_endpoint_interface_services = aws_client.ec2.describe_vpc_endpoint_services(
@@ -304,8 +302,10 @@ class TestEc2Integrations:
         assert 200 == vpc_endpoint_interface_services["ResponseMetadata"]["HTTPStatusCode"]
         services = vpc_endpoint_interface_services["ServiceNames"]
         assert len(services) > 0
-        assert f"com.amazonaws.{region}.s3" in services  # S3 is both gateway and interface service
-        assert f"com.amazonaws.{region}.kinesis-firehose" in services
+        assert (
+            f"com.amazonaws.{TEST_AWS_REGION_NAME}.s3" in services
+        )  # S3 is both gateway and interface service
+        assert f"com.amazonaws.{TEST_AWS_REGION_NAME}.kinesis-firehose" in services
 
         # test filter that does not exist
         vpc_endpoint_interface_services = aws_client.ec2.describe_vpc_endpoint_services(

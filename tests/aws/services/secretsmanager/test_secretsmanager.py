@@ -19,6 +19,7 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     ListSecretsResponse,
 )
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
@@ -1204,7 +1205,9 @@ class TestSecretsManager:
 
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> dict:
-        headers = aws_stack.mock_aws_request_headers("secretsmanager")
+        headers = aws_stack.mock_aws_request_headers(
+            "secretsmanager", access_key=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         headers["X-Amz-Target"] = amz_target
         return headers
 
