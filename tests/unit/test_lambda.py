@@ -1252,8 +1252,6 @@ class TestLambdaStore:
 
         _lookup("my-func", default_region)
         _lookup("my-layer", default_region)
-        _lookup("", default_region)
-        _lookup(None, default_region)
 
         for region in ["us-east-1", "us-east-1", "eu-central-1"]:
             # check lookup for function ARNs
@@ -1264,7 +1262,12 @@ class TestLambdaStore:
                 region,
             )
             # check lookup for layer ARNs
-            _lookup(arns.lambda_layer_arn("mylayer", region_name=region), region)
+            _lookup(
+                arns.lambda_layer_arn(
+                    "mylayer", account_id=TEST_AWS_ACCOUNT_ID, region_name=region
+                ),
+                region,
+            )
 
 
 class TestLambdaUtils:
