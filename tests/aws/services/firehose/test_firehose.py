@@ -6,6 +6,7 @@ import requests
 from pytest_httpserver import HTTPServer
 
 from localstack import config
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import lambda_function_arn
@@ -70,7 +71,9 @@ def test_firehose_http(
                     "Parameters": [
                         {
                             "ParameterName": "LambdaArn",
-                            "ParameterValue": lambda_function_arn(func_name),
+                            "ParameterValue": lambda_function_arn(
+                                func_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+                            ),
                         }
                     ],
                 }

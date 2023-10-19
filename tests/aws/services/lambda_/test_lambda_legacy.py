@@ -6,6 +6,7 @@ import pytest
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.lambda_ import lambda_api
 from localstack.services.lambda_.lambda_api import (
     LAMBDA_TEST_ROLE,
@@ -129,7 +130,10 @@ class TestLambdaLegacyProvider:
         statements = versions[0]["Document"]["Statement"]
         for i in range(len(statement_ids)):
             assert action == statements[i]["Action"]
-            assert lambda_api.func_arn(function_name) == statements[i]["Resource"]
+            assert (
+                lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, function_name)
+                == statements[i]["Resource"]
+            )
             assert principal == statements[i]["Principal"]["Service"]
             assert (
                 arns.s3_bucket_arn("test-bucket")
