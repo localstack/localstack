@@ -89,7 +89,8 @@ def extract_resource_from_arn(arn: str) -> Optional[str]:
         return None
 
 
-def role_arn(role_name, account_id=None, env=None):
+# TODO: make account_id required arg
+def role_arn(role_name: str, account_id: str = None, env=None) -> str:
     if not role_name:
         return role_name
     if role_name.startswith("arn:aws:iam::"):
@@ -98,19 +99,21 @@ def role_arn(role_name, account_id=None, env=None):
     return "arn:aws:iam::%s:role/%s" % (account_id, role_name)
 
 
-def policy_arn(policy_name, account_id):
+def policy_arn(policy_name: str, account_id: str) -> str:
     if ":policy/" in policy_name:
         return policy_name
     return "arn:aws:iam::{}:policy/{}".format(account_id, policy_name)
 
 
-def iam_resource_arn(resource, role=None):
+def iam_resource_arn(resource: str, account_id: str, role: str = None) -> str:
     if not role:
         role = f"role-{resource}"
-    return role_arn(role_name=role, account_id=get_aws_account_id())
+    return role_arn(role_name=role, account_id=account_id)
 
 
-def secretsmanager_secret_arn(secret_id, account_id, region_name, random_suffix=None):
+def secretsmanager_secret_arn(
+    secret_id: str, account_id: str, region_name: str, random_suffix: str = None
+) -> str:
     if ":" in (secret_id or ""):
         return secret_id
     pattern = "arn:aws:secretsmanager:%s:%s:secret:%s"
@@ -120,24 +123,32 @@ def secretsmanager_secret_arn(secret_id, account_id, region_name, random_suffix=
     return arn
 
 
-def cloudformation_stack_arn(stack_name, stack_id=None, account_id=None, region_name=None):
+# TODO: make account_id required arg
+def cloudformation_stack_arn(
+    stack_name: str, stack_id: str = None, account_id: str = None, region_name: str = None
+) -> str:
     stack_id = stack_id or "id-123"
     pattern = "arn:aws:cloudformation:%s:%s:stack/%s/{stack_id}".format(stack_id=stack_id)
     return _resource_arn(stack_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def cf_change_set_arn(change_set_name, change_set_id, account_id, region_name):
+def cf_change_set_arn(
+    change_set_name: str, change_set_id: str, account_id: str, region_name: str
+) -> str:
     pattern = "arn:aws:cloudformation:%s:%s:changeSet/%s/{cs_id}".format(cs_id=change_set_id)
     return _resource_arn(change_set_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def dynamodb_table_arn(table_name, account_id=None, region_name=None):
+# TODO: make account_id required arg
+def dynamodb_table_arn(table_name: str, account_id: str = None, region_name: str = None) -> str:
     table_name = table_name.split(":table/")[-1]
     pattern = "arn:aws:dynamodb:%s:%s:table/%s"
     return _resource_arn(table_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def dynamodb_stream_arn(table_name, latest_stream_label, account_id, region_name):
+def dynamodb_stream_arn(
+    table_name: str, latest_stream_label: str, account_id: str, region_name: str
+) -> str:
     return "arn:aws:dynamodb:%s:%s:table/%s/stream/%s" % (
         region_name,
         account_id,
@@ -146,41 +157,47 @@ def dynamodb_stream_arn(table_name, latest_stream_label, account_id, region_name
     )
 
 
-def cloudwatch_alarm_arn(alarm_name, account_id, region_name):
+def cloudwatch_alarm_arn(alarm_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:cloudwatch:%s:%s:alarm:%s"
     return _resource_arn(alarm_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def log_group_arn(group_name, account_id, region_name):
+def log_group_arn(group_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:logs:%s:%s:log-group:%s"
     return _resource_arn(group_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def events_rule_arn(rule_name, account_id, region_name):
+def events_rule_arn(rule_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:events:%s:%s:rule/%s"
     return _resource_arn(rule_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def event_bus_arn(bus_name, account_id, region_name):
+def event_bus_arn(bus_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:events:%s:%s:event-bus/%s"
     return _resource_arn(bus_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def lambda_function_arn(function_name, account_id=None, region_name=None):
+# TODO: make account_id required arg
+def lambda_function_arn(function_name: str, account_id: str = None, region_name: str = None) -> str:
     return lambda_function_or_layer_arn(
         "function", function_name, account_id=account_id, region_name=region_name
     )
 
 
-def lambda_layer_arn(layer_name, account_id, region_name):
+def lambda_layer_arn(layer_name: str, account_id: str, region_name: str) -> str:
     return lambda_function_or_layer_arn(
         "layer", layer_name, version=None, account_id=account_id, region_name=region_name
     )
 
 
+# TODO: make account_id required arg
 def lambda_function_or_layer_arn(
-    type, entity_name, version=None, account_id=None, region_name=None
-):
+    type: str,
+    entity_name: str,
+    version: str = None,
+    account_id: str = None,
+    region_name: str = None,
+) -> str:
     pattern = "arn:([a-z-]+):lambda:.*:.*:(function|layer):.*"
     if re.match(pattern, entity_name):
         return entity_name
@@ -204,7 +221,7 @@ def lambda_function_or_layer_arn(
     return result
 
 
-def lambda_function_name(name_or_arn):
+def lambda_function_name(name_or_arn: str) -> str:
     if ":" in name_or_arn:
         arn = parse_arn(name_or_arn)
         if arn["service"] != "lambda":
@@ -215,17 +232,17 @@ def lambda_function_name(name_or_arn):
         return name_or_arn
 
 
-def state_machine_arn(name, account_id, region_name):
+def state_machine_arn(name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:states:%s:%s:stateMachine:%s"
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
 
 
-def stepfunctions_activity_arn(name, account_id, region_name):
+def stepfunctions_activity_arn(name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:states:%s:%s:activity:%s"
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
 
 
-def fix_arn(arn):
+def fix_arn(arn: str):
     """Function that attempts to "canonicalize" the given ARN. This includes converting
     resource names to ARNs, replacing incorrect regions, account IDs, etc."""
     if arn.startswith("arn:aws:lambda"):
@@ -236,28 +253,28 @@ def fix_arn(arn):
     return arn
 
 
-def cognito_user_pool_arn(user_pool_id, account_id, region_name):
+def cognito_user_pool_arn(user_pool_id: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:cognito-idp:%s:%s:userpool/%s"
     return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
 # TODO: Make account_id and region_name mandatory
-def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
+def kinesis_stream_arn(stream_name: str, account_id: str = None, region_name: str = None) -> str:
     pattern = "arn:aws:kinesis:%s:%s:stream/%s"
     return _resource_arn(stream_name, pattern, account_id, region_name)
 
 
-def elasticsearch_domain_arn(domain_name, account_id, region_name):
+def elasticsearch_domain_arn(domain_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:es:%s:%s:domain/%s"
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def firehose_stream_arn(stream_name, account_id, region_name):
+def firehose_stream_arn(stream_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:firehose:%s:%s:deliverystream/%s"
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def es_domain_arn(domain_name, account_id, region_name):
+def es_domain_arn(domain_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:es:%s:%s:domain/%s"
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
@@ -285,7 +302,8 @@ def ssm_parameter_arn(param_name: str, account_id: str, region_name: str) -> str
     return _resource_arn(param_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def s3_bucket_arn(bucket_name_or_arn: str, account_id=None):
+# TODO: remove account_id arg
+def s3_bucket_arn(bucket_name_or_arn: str, account_id: str = None) -> str:
     bucket_name = s3_bucket_name(bucket_name_or_arn)
     return f"arn:aws:s3:::{bucket_name}"
 
@@ -294,6 +312,7 @@ def s3_bucket_name(bucket_name_or_arn: str) -> str:
     return bucket_name_or_arn.split(":::")[-1]
 
 
+# TODO make account_id and region required
 def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: str = None) -> str:
     if ":" in name:
         return name
@@ -305,31 +324,31 @@ def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: 
 
 
 # TODO make account ID and region mandatory
-def sqs_queue_arn(queue_name, account_id=None, region_name=None):
+def sqs_queue_arn(queue_name: str, account_id: str = None, region_name: str = None) -> str:
     account_id = account_id or get_aws_account_id()
     region_name = region_name or get_region()
     queue_name = queue_name.split("/")[-1]
     return "arn:aws:sqs:%s:%s:%s" % (region_name, account_id, queue_name)
 
 
-def apigateway_restapi_arn(api_id, account_id, region_name):
+def apigateway_restapi_arn(api_id: str, account_id: str, region_name: str) -> str:
     account_id = account_id or get_aws_account_id()
     region_name = region_name or get_region()
     return "arn:aws:apigateway:%s:%s:/restapis/%s" % (region_name, account_id, api_id)
 
 
-def sqs_queue_name(queue_arn):
+def sqs_queue_name(queue_arn: str) -> str:
     if ":" in queue_arn:
         return parse_arn(queue_arn)["resource"]
     else:
         return queue_arn
 
 
-def sns_topic_arn(topic_name, account_id, region_name):
+def sns_topic_arn(topic_name: str, account_id: str, region_name: str) -> str:
     return f"arn:aws:sns:{region_name}:{account_id}:{topic_name}"
 
 
-def firehose_name(firehose_arn):
+def firehose_name(firehose_arn: str) -> str:
     return firehose_arn.split("/")[-1]
 
 
@@ -337,39 +356,42 @@ def opensearch_domain_name(domain_arn: str) -> str:
     return domain_arn.rpartition("/")[2]
 
 
-def kinesis_stream_name(kinesis_arn):
+def kinesis_stream_name(kinesis_arn: str) -> str:
     return kinesis_arn.split(":stream/")[-1]
 
 
-def apigateway_invocations_arn(lambda_uri, region_name: str = None):
+# TODO make account_id and region required
+def apigateway_invocations_arn(lambda_uri: str, region_name: str = None) -> str:
     return "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations" % (
         region_name or get_region(),
         lambda_uri,
     )
 
 
-def get_ecr_repository_arn(name, account_id, region_name):
+def get_ecr_repository_arn(name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:ecr:%s:%s:repository/%s"
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
 
 
-def get_route53_resolver_firewall_rule_group_arn(id: str, account_id: str, region_name: str):
+def get_route53_resolver_firewall_rule_group_arn(id: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:route53resolver:%s:%s:firewall-rule-group/%s"
     return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
 
 
-def get_route53_resolver_firewall_domain_list_arn(id: str, account_id: str, region_name: str):
+def get_route53_resolver_firewall_domain_list_arn(
+    id: str, account_id: str, region_name: str
+) -> str:
     pattern = "arn:aws:route53resolver:%s:%s:firewall-domain-list/%s"
     return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
 
 
 def get_route53_resolver_firewall_rule_group_associations_arn(
     id: str, account_id: str, region_name: str
-):
+) -> str:
     pattern = "arn:aws:route53resolver:%s:%s:firewall-rule-group-association/%s"
     return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
 
 
-def get_resolver_query_log_config_arn(id: str, account_id: str, region_name: str):
+def get_resolver_query_log_config_arn(id: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:route53resolver:%s:%s:resolver-query-log-config/%s"
     return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)

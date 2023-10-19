@@ -90,7 +90,7 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "BucketARN": arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
@@ -129,7 +129,7 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             ExtendedS3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "BucketARN": arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
@@ -166,14 +166,14 @@ class TestIntegration:
         stream = aws_client.firehose.create_delivery_stream(
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "KinesisStreamARN": arns.kinesis_stream_arn(
                     kinesis_stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
                 ),
             },
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "BucketARN": arns.s3_bucket_arn(TEST_BUCKET_NAME),
                 "Prefix": s3_prefix,
             },

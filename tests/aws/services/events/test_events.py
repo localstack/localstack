@@ -946,7 +946,7 @@ class TestEvents:
         stream = aws_client.firehose.create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "BucketARN": arns.s3_bucket_arn(s3_bucket),
                 "Prefix": s3_prefix,
             },
