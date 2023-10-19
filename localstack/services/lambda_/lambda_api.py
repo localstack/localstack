@@ -58,7 +58,7 @@ from localstack.services.lambda_.lambda_utils import (
 from localstack.services.lambda_.packages import lambda_go_runtime_package
 from localstack.utils.archives import unzip
 from localstack.utils.aws import arns, aws_stack, resources
-from localstack.utils.aws.arns import extract_region_from_arn
+from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvVars, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
 from localstack.utils.common import get_unzipped_size, is_zip_file
@@ -601,8 +601,10 @@ def set_archive_code(
     code: Dict, lambda_name_or_arn: str, zip_file_content: bytes = None
 ) -> Optional[str]:
     store = get_lambda_store_v1_for_arn(lambda_name_or_arn)
+    account_id = extract_account_id_from_arn(lambda_name_or_arn) or DEFAULT_AWS_ACCOUNT_ID
+    region_name = extract_region_from_arn(lambda_name_or_arn) or AWS_REGION_US_EAST_1
     # get metadata
-    lambda_arn = func_arn(DEFAULT_AWS_ACCOUNT_ID, AWS_REGION_US_EAST_1, lambda_name_or_arn)
+    lambda_arn = func_arn(account_id, region_name, lambda_name_or_arn)
     lambda_details = store.lambdas[lambda_arn]
     is_local_mount = is_hot_reloading(code)
 
