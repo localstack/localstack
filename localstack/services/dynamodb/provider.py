@@ -1597,7 +1597,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if records and "eventName" in records[0]:
             if table_name:
                 for record in records:
-                    record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
+                    record["eventSourceARN"] = arns.dynamodb_table_arn(
+                        table_name, account_id=account_id, region_name=region_name
+                    )
             EventForwarder.forward_to_targets(account_id, region_name, records, background=True)
 
     def get_record_template(self) -> Dict:

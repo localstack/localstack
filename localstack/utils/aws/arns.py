@@ -9,37 +9,12 @@ from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID, get_aws_account_id
 from localstack.aws.connect import connect_to
 from localstack.utils.aws.aws_stack import get_region, get_valid_regions
 
-# set up logger
 LOG = logging.getLogger(__name__)
 
-# TODO: extract ARN utils into separate file!
 
-_arn_parser = ArnParser()
-
-
-@cache
-def sqs_queue_url_for_arn(queue_arn: str) -> str:
-    """
-    Return the SQS queue URL for the given queue ARN.
-    """
-    if "://" in queue_arn:
-        return queue_arn
-
-    try:
-        arn = parse_arn(queue_arn)
-        account_id = arn["account"]
-        region_name = arn["region"]
-        queue_name = arn["resource"]
-    except InvalidArnException:
-        account_id = DEFAULT_AWS_ACCOUNT_ID
-        region_name = None
-        queue_name = queue_arn
-
-    sqs_client = connect_to(region_name=region_name).sqs
-    result = sqs_client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
-        "QueueUrl"
-    ]
-    return result
+#
+# ARN parsing utilities
+#
 
 
 class ArnData(TypedDict):
@@ -48,6 +23,9 @@ class ArnData(TypedDict):
     region: str
     account: str
     resource: str
+
+
+_arn_parser = ArnParser()
 
 
 def parse_arn(arn: str) -> ArnData:
@@ -89,13 +67,31 @@ def extract_resource_from_arn(arn: str) -> Optional[str]:
         return None
 
 
-# TODO: make account_id required arg
-def role_arn(role_name: str, account_id: str = None, env=None) -> str:
+#
+# Generic ARN builder
+#
+
+# TODO make account_id and region required
+def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: str = None) -> str:
+    if ":" in name:
+        return name
+    account_id = account_id or get_aws_account_id()
+    region_name = region_name or get_region()
+    if len(pattern.split("%s")) == 3:
+        return pattern % (account_id, name)
+    return pattern % (region_name, account_id, name)
+
+
+#
+# ARN builders for specific resource types
+#
+
+
+def role_arn(role_name: str, account_id: str) -> str:
     if not role_name:
         return role_name
     if role_name.startswith("arn:aws:iam::"):
         return role_name
-    account_id = account_id or get_aws_account_id()
     return "arn:aws:iam::%s:role/%s" % (account_id, role_name)
 
 
@@ -123,11 +119,9 @@ def secretsmanager_secret_arn(
     return arn
 
 
-# TODO: make account_id required arg
 def cloudformation_stack_arn(
-    stack_name: str, stack_id: str = None, account_id: str = None, region_name: str = None
+    stack_name: str, stack_id: str, account_id: str, region_name: str
 ) -> str:
-    stack_id = stack_id or "id-123"
     pattern = "arn:aws:cloudformation:%s:%s:stack/%s/{stack_id}".format(stack_id=stack_id)
     return _resource_arn(stack_name, pattern, account_id=account_id, region_name=region_name)
 
@@ -221,17 +215,6 @@ def lambda_function_or_layer_arn(
     return result
 
 
-def lambda_function_name(name_or_arn: str) -> str:
-    if ":" in name_or_arn:
-        arn = parse_arn(name_or_arn)
-        if arn["service"] != "lambda":
-            raise ValueError("arn is not a lambda arn %s" % name_or_arn)
-
-        return parse_arn(name_or_arn)["resource"].split(":")[1]
-    else:
-        return name_or_arn
-
-
 def state_machine_arn(name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:states:%s:%s:stateMachine:%s"
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
@@ -242,24 +225,12 @@ def stepfunctions_activity_arn(name: str, account_id: str, region_name: str) -> 
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
 
 
-def fix_arn(arn: str):
-    """Function that attempts to "canonicalize" the given ARN. This includes converting
-    resource names to ARNs, replacing incorrect regions, account IDs, etc."""
-    if arn.startswith("arn:aws:lambda"):
-        parts = arn.split(":")
-        region = parts[3] if parts[3] in get_valid_regions() else get_region()
-        return lambda_function_arn(lambda_function_name(arn), region_name=region)
-    LOG.warning("Unable to fix/canonicalize ARN: %s", arn)
-    return arn
-
-
 def cognito_user_pool_arn(user_pool_id: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:cognito-idp:%s:%s:userpool/%s"
     return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
-# TODO: Make account_id and region_name mandatory
-def kinesis_stream_arn(stream_name: str, account_id: str = None, region_name: str = None) -> str:
+def kinesis_stream_arn(stream_name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:kinesis:%s:%s:stream/%s"
     return _resource_arn(stream_name, pattern, account_id, region_name)
 
@@ -308,21 +279,6 @@ def s3_bucket_arn(bucket_name_or_arn: str, account_id: str = None) -> str:
     return f"arn:aws:s3:::{bucket_name}"
 
 
-def s3_bucket_name(bucket_name_or_arn: str) -> str:
-    return bucket_name_or_arn.split(":::")[-1]
-
-
-# TODO make account_id and region required
-def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: str = None) -> str:
-    if ":" in name:
-        return name
-    account_id = account_id or get_aws_account_id()
-    region_name = region_name or get_region()
-    if len(pattern.split("%s")) == 3:
-        return pattern % (account_id, name)
-    return pattern % (region_name, account_id, name)
-
-
 # TODO make account ID and region mandatory
 def sqs_queue_arn(queue_name: str, account_id: str = None, region_name: str = None) -> str:
     account_id = account_id or get_aws_account_id()
@@ -337,13 +293,6 @@ def apigateway_restapi_arn(api_id: str, account_id: str, region_name: str) -> st
     return "arn:aws:apigateway:%s:%s:/restapis/%s" % (region_name, account_id, api_id)
 
 
-def sqs_queue_name(queue_arn: str) -> str:
-    if ":" in queue_arn:
-        return parse_arn(queue_arn)["resource"]
-    else:
-        return queue_arn
-
-
 def sns_topic_arn(topic_name: str, account_id: str, region_name: str) -> str:
     return f"arn:aws:sns:{region_name}:{account_id}:{topic_name}"
 
@@ -354,10 +303,6 @@ def firehose_name(firehose_arn: str) -> str:
 
 def opensearch_domain_name(domain_arn: str) -> str:
     return domain_arn.rpartition("/")[2]
-
-
-def kinesis_stream_name(kinesis_arn: str) -> str:
-    return kinesis_arn.split(":stream/")[-1]
 
 
 # TODO make account_id and region required
@@ -395,3 +340,70 @@ def get_route53_resolver_firewall_rule_group_associations_arn(
 def get_resolver_query_log_config_arn(id: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:route53resolver:%s:%s:resolver-query-log-config/%s"
     return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
+
+
+#
+# Other ARN related helpers
+#
+
+
+def fix_arn(arn: str):
+    """Function that attempts to "canonicalize" the given ARN. This includes converting
+    resource names to ARNs, replacing incorrect regions, account IDs, etc."""
+    if arn.startswith("arn:aws:lambda"):
+        parts = arn.split(":")
+        region = parts[3] if parts[3] in get_valid_regions() else get_region()
+        return lambda_function_arn(lambda_function_name(arn), region_name=region)
+    LOG.warning("Unable to fix/canonicalize ARN: %s", arn)
+    return arn
+
+
+def kinesis_stream_name(kinesis_arn: str) -> str:
+    return kinesis_arn.split(":stream/")[-1]
+
+
+def lambda_function_name(name_or_arn: str) -> str:
+    if ":" in name_or_arn:
+        arn = parse_arn(name_or_arn)
+        if arn["service"] != "lambda":
+            raise ValueError("arn is not a lambda arn %s" % name_or_arn)
+
+        return parse_arn(name_or_arn)["resource"].split(":")[1]
+    else:
+        return name_or_arn
+
+
+@cache
+def sqs_queue_url_for_arn(queue_arn: str) -> str:
+    """
+    Return the SQS queue URL for the given queue ARN.
+    """
+    if "://" in queue_arn:
+        return queue_arn
+
+    try:
+        arn = parse_arn(queue_arn)
+        account_id = arn["account"]
+        region_name = arn["region"]
+        queue_name = arn["resource"]
+    except InvalidArnException:
+        account_id = DEFAULT_AWS_ACCOUNT_ID
+        region_name = None
+        queue_name = queue_arn
+
+    sqs_client = connect_to(region_name=region_name).sqs
+    result = sqs_client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
+        "QueueUrl"
+    ]
+    return result
+
+
+def sqs_queue_name(queue_arn: str) -> str:
+    if ":" in queue_arn:
+        return parse_arn(queue_arn)["resource"]
+    else:
+        return queue_arn
+
+
+def s3_bucket_name(bucket_name_or_arn: str) -> str:
+    return bucket_name_or_arn.split(":::")[-1]

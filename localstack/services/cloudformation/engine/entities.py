@@ -2,6 +2,7 @@ import logging
 from typing import Optional, TypedDict
 
 from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
+from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
     convert_stack_parameters_to_list,
@@ -85,7 +86,10 @@ class Stack:
             ] = (resource.get("LogicalResourceId") or resource_id)
         # initialize stack template attributes
         stack_id = self.metadata.get("StackId") or arns.cloudformation_stack_arn(
-            self.stack_name, short_uid()
+            self.stack_name,
+            stack_id=short_uid(),
+            account_id=DEFAULT_AWS_ACCOUNT_ID,
+            region_name=AWS_REGION_US_EAST_1,  # FIXME: use proper account id/region
         )
         self.template["StackId"] = self.metadata["StackId"] = stack_id
         self.template["Parameters"] = self.template.get("Parameters") or {}

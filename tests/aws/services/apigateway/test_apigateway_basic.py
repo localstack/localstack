@@ -2028,7 +2028,7 @@ class TestIntegrations:
         )
 
         test_role = "test-s3-role"
-        role_arn = arns.role_arn(role_name=test_role)
+        role_arn = arns.role_arn(role_name=test_role, account_id=TEST_AWS_ACCOUNT_ID)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]
