@@ -711,8 +711,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_name = put_item_input["TableName"]
 
         existing_item = None
-        event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name)
-        if event_sources_or_streams_enabled:
+        if streams_enabled := has_streams_enabled(table_name):
+            # TODO: we could manually override ReturnValues to return the old value?
             existing_item = ItemFinder.find_existing_item(
                 put_item_input,
                 table_name,
@@ -728,7 +728,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # region, eg. when getting the stream spec
 
         # Get stream specifications details for the table
-        if event_sources_or_streams_enabled:
+        if streams_enabled:
             stream_spec = dynamodb_get_table_stream_specification(
                 account_id=context.account_id,
                 region_name=global_table_region,
@@ -771,7 +771,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         existing_item = None
-        if has_event_sources_or_streams_enabled(table_name):
+        if has_streams_enabled(table_name):
             existing_item = ItemFinder.find_existing_item(
                 delete_item_input, table_name, context.account_id, context.region
             )
@@ -780,7 +780,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         # determine and forward stream record
         if existing_item:
-            event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name)
+            event_sources_or_streams_enabled = has_streams_enabled(table_name)
             if event_sources_or_streams_enabled:
                 # create record
                 record = self.get_record_template(context.region)
@@ -814,8 +814,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         existing_item = None
-        event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name)
+        event_sources_or_streams_enabled = has_streams_enabled(table_name)
         if event_sources_or_streams_enabled:
+            # TODO: we could manually override ReturnValues to return the old value?
             existing_item = ItemFinder.find_existing_item(
                 update_item_input, table_name, context.account_id, context.region
             )
@@ -928,14 +929,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             unprocessed_delete_items=unprocessed_delete_items,
             existing_items=existing_items,
         )
-        streams_enabled_cache = {}
+
         event_sources_or_streams_enabled = False
         for record in records:
             event_sources_or_streams_enabled = (
-                event_sources_or_streams_enabled
-                or has_event_sources_or_streams_enabled(
-                    record["eventSourceARN"], cache=streams_enabled_cache
-                )
+                event_sources_or_streams_enabled or has_streams_enabled(record["eventSourceARN"])
             )
         if event_sources_or_streams_enabled:
             self.forward_stream_records(context.account_id, context.region, records)
@@ -1007,7 +1005,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         for record in records:
             event_sources_or_streams_enabled = (
                 event_sources_or_streams_enabled
-                or has_event_sources_or_streams_enabled(
+                or has_streams_enabled(
                     record["eventSourceARN"],
                     streams_enabled_cache,
                 )
@@ -1042,7 +1040,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         statement = execute_statement_input["Statement"]
         table_name = extract_table_name_from_partiql_update(statement)
         existing_items = None
-        if table_name and has_event_sources_or_streams_enabled(table_name):
+        if table_name and has_streams_enabled(table_name):
             # Note: fetching the entire list of items is hugely inefficient, especially for larger tables
             # TODO: find a mechanism to hook into the PartiQL update mechanism of DynamoDB Local directly!
             existing_items = ItemFinder.list_existing_items_for_statement(
@@ -1052,9 +1050,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self.forward_request(context)
 
         # construct and forward stream record
-        event_sources_or_streams_enabled = table_name and has_event_sources_or_streams_enabled(
-            table_name
-        )
+        event_sources_or_streams_enabled = table_name and has_streams_enabled(table_name)
         if event_sources_or_streams_enabled:
             records = get_updated_records(
                 context.account_id, context.region, table_name, existing_items
@@ -1739,37 +1735,24 @@ def is_index_query_valid(account_id: str, region_name: str, query_data: dict) ->
     return True
 
 
-def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
-    if cache is None:
-        cache = {}
+def has_streams_enabled(table_name: str):
     if not table_name:
         return
     table_arn = arns.dynamodb_table_arn(table_name)
+    # TODO: change this, it's using `_resource_arn` which calls get_aws_account_id() and get_region() which we
+    #  are extracting from the ARN after?
     account_id = extract_account_id_from_arn(table_arn)
     region_name = extract_region_from_arn(table_arn)
-    cached = cache.get(table_arn)
-    if isinstance(cached, bool):
-        return cached
-    lambda_client = connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_
-    sources = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)[
-        "EventSourceMappings"
-    ]
-    result = False
-    if sources:
-        result = True
-    if not result and dynamodbstreams_api.get_stream_for_table(account_id, region_name, table_arn):
-        result = True
+
+    if dynamodbstreams_api.get_stream_for_table(account_id, region_name, table_arn):
+        return True
 
     # if kinesis streaming destination is enabled
-    # get table name from table_arn
-    # since batch_write and transact write operations passing table_arn instead of table_name
-    table_name = table_arn.split("/", 1)[-1]
-    table_definitions: Dict = get_store(account_id, region_name).table_definitions
-    if not result and table_definitions.get(table_name):
-        if table_definitions[table_name].get("KinesisDataStreamDestinationStatus") == "ACTIVE":
-            result = True
-    cache[table_arn] = result
-    return result
+    if table_definition := get_store(account_id, region_name).table_definitions.get(table_name):
+        if table_definition.get("KinesisDataStreamDestinationStatus") == "ACTIVE":
+            return True
+
+    return False
 
 
 def get_updated_records(
