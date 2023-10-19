@@ -5,6 +5,26 @@
 # CODEOWNERS
 /CODEOWNERS @thrau @dominikschubert @alexrashed
 
+# README / Docs
+/doc/ @HarshCasper
+/README.md @HarshCasper
+/CODE_OF_CONDUCT.md @HarshCasper
+/CONTRIBUTING.md @HarshCasper
+/LICENSE.txt @HarshCasper @alexrashed
+
+# Docker
+/bin/docker-entrypoint.sh @thrau @alexrashed
+/.dockerignore @alexrashed
+/Dockerfile @alexrashed
+
+# Git, Pipelines, GitHub config
+/.circleci @alexrashed @dfangl @dominikschubert
+/.github @alexrashed @dfangl @dominikschubert
+/.test_durations @alexrashed
+/.git-blame-ignore-revs @alexrashed @thrau
+/bin/release-dev.sh @thrau @alexrashed
+/bin/release-helper.sh @thrau @alexrashed
+
 # ASF
 /localstack/aws/ @thrau
 /tests/unit/aws/ @thrau
@@ -33,6 +53,10 @@
 /tests/unit/test_docker_utils.py @dfangl @dominikschubert
 /tests/unit/test_dockerclient.py @dfangl @dominikschubert
 
+# Package Installers
+/localstack/packages/ @alexrashed
+/localstack/services/kinesis/packages.py @alexrashed
+
 # DNS server
 /localstack/dns @simonrw @dfangl
 
@@ -40,19 +64,15 @@
 /localstack/http/ @thrau
 /tests/unit/http_/ @thrau
 
+# Runtime
+/localstack/runtime/ @thrau
+
+# Logging
+/localstack/logging/ @dfangl @alexrashed @dominikschubert
+
 # Stores
 /localstack/services/stores.py @viren-nadkarni
 /tests/unit/test_stores.py @viren-nadkarni
-
-# Dockerfile
-/Dockerfile @alexrashed
-
-# Pipelines
-/.circleci/config.yml @thrau @alexrashed @dfangl
-/.github/workflows/ @thrau @alexrashed @dfangl
-
-# Dependabot
-/.github/dependabot.yml @alexrashed
 
 # Analytics client
 /localstack/utils/analytics/ @thrau
@@ -63,6 +83,9 @@
 /localstack/testing/pytest/ @dominikschubert
 /localstack/testing/pytest/snapshot.py @dominikschubert @steffyP
 /tests/unit/utils/testing/ @dominikschubert @steffyP
+
+# Scenario testing
+/localstack/testing/scenario/ @dominikschubert @steffyP
 
 # Bootstrap tests
 /tests/bootstrap @simonrw
