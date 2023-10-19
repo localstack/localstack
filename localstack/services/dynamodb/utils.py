@@ -44,7 +44,7 @@ class ItemSet:
 class SchemaExtractor:
     @classmethod
     def extract_keys(
-        cls, item: Dict, table_name: str, account_id: str = None, region_name: str = None
+        cls, item: Dict, table_name: str, account_id: str, region_name: str
     ) -> Optional[Dict]:
         key_schema = cls.get_key_schema(table_name, account_id, region_name)
         return cls.extract_keys_for_schema(item, key_schema)

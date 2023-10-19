@@ -919,6 +919,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # determine and forward stream records
         request_items = batch_write_item_input["RequestItems"]
         records, unprocessed_items = self.prepare_batch_write_item_records(
+            account_id=context.account_id,
             region_name=context.region,
             request_items=request_items,
             unprocessed_put_items=unprocessed_put_items,
@@ -1478,7 +1479,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             if put_request:
                 existing_item = existing_items[i]
                 table_name = put_request["TableName"]
-                keys = SchemaExtractor.extract_keys(item=put_request["Item"], table_name=table_name)
+                keys = SchemaExtractor.extract_keys(
+                    item=put_request["Item"],
+                    table_name=table_name,
+                    account_id=account_id,
+                    region_name=region_name,
+                )
                 # Add stream view type to record if ddb stream is enabled
                 stream_spec = dynamodb_get_table_stream_specification(
                     account_id=account_id,
@@ -1584,7 +1590,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     if existing_items and len(existing_items) > i:
                         existing_item = existing_items[i]
                         keys = SchemaExtractor.extract_keys(
-                            item=put_request["Item"], table_name=table_name
+                            item=put_request["Item"],
+                            table_name=table_name,
+                            account_id=account_id,
+                            region_name=region_name,
                         )
                         new_record = copy.deepcopy(record)
                         new_record["eventID"] = short_uid()
