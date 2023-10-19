@@ -363,12 +363,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         moto_sns_backend = self.get_moto_backend(account_id, region_name)
         moto_sns_backend.unsubscribe(subscription_arn)
 
-        response = {
-            "UnsubscribeResponse": {
-                "ResponseMetadata": {"RequestId": context.request_id},
-            }
-        }
-
         store = self.get_store(account_id=account_id, region_name=region_name)
 
         # pop the subscription at the end, to avoid race condition by iterating over the topic subscriptions
@@ -399,8 +393,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store.topic_subscriptions[subscription["TopicArn"]].remove(subscription_arn)
         store.subscription_filter_policy.pop(subscription_arn, None)
         store.subscriptions.pop(subscription_arn, None)
-
-        return response
 
     def get_subscription_attributes(
         self, context: RequestContext, subscription_arn: subscriptionARN
