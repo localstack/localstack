@@ -3,12 +3,10 @@ import os.path
 from pathlib import Path
 from typing import Any, TypedDict
 
-import pytest
-
 from localstack.aws.api.stepfunctions import ExecutionStatus
 from localstack.testing.pytest import markers
 from localstack.utils.sync import wait_until
-from tests.aws.services.stepfunctions.utils import is_old_provider
+from tests.aws.services.stepfunctions.utils import is_new_provider, is_old_provider
 
 THIS_FOLDER = Path(os.path.dirname(__file__))
 
@@ -19,11 +17,16 @@ class RunConfig(TypedDict):
     terminal_state: ExecutionStatus | None
 
 
-@pytest.mark.skipif(
-    condition=not is_old_provider() and os.environ.get("TEST_TARGET") != "AWS_CLOUD",
-    reason="Not supported yet.",
-)
 @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_new_provider,
+    paths=[
+        "$..loggingConfiguration",
+        "$..tracingConfiguration",
+        "$..SdkHttpMetadata",
+        "$..SdkResponseMetadata",
+    ],
+)
 class TestFundamental:
     @staticmethod
     def _record_execution(
@@ -120,6 +123,7 @@ class TestFundamental:
             "$..previousEventId",
         ],
     )
+    @markers.snapshot.skip_snapshot_verify(condition=is_new_provider, paths=["$..MessageId"])
     @markers.aws.validated
     def test_wait_for_callback(self, deploy_cfn_template, sfn_snapshot, aws_client):
         """
@@ -171,6 +175,10 @@ class TestFundamental:
 
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Headers", "$..StatusText"]
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_new_provider,
+        paths=["$..content-type"],  # FIXME: v2 includes extra content-type fields in Header fields.
     )
     @markers.aws.validated
     def test_step_functions_calling_api_gateway(
