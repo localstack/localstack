@@ -360,7 +360,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         account_id = parsed_arn["account"]
         region_name = parsed_arn["region"]
 
-        moto_sns_backend = self.get_moto_backend(parsed_arn["account"], parsed_arn["region"])
+        moto_sns_backend = self.get_moto_backend(account_id, region_name)
         moto_sns_backend.unsubscribe(subscription_arn)
 
         response = {

@@ -3810,7 +3810,6 @@ class TestSNSSubscriptionHttp:
             snapshot.match("http-message-headers", _clean_headers(notification_request.headers))
 
         unsub_request = requests.get(expected_unsubscribe_url)
-
         unsubscribe_confirmation = xmltodict.parse(unsub_request.content)
         assert "UnsubscribeResponse" in unsubscribe_confirmation
         snapshot.match("unsubscribe-response", _get_snapshot_requests_response(unsub_request))
