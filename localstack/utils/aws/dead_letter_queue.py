@@ -55,7 +55,7 @@ def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error
     else:
         clients = connect_to(region_name=region)
     if ":sqs:" in dlq_arn:
-        queue_url = arns.get_sqs_queue_url(dlq_arn)
+        queue_url = arns.sqs_queue_url_for_arn(dlq_arn)
         sqs_client = clients.sqs.request_metadata(
             source_arn=source_arn, service_principal=source_service
         )

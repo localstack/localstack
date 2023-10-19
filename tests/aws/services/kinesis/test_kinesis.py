@@ -9,6 +9,7 @@ from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from localstack import config, constants
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.services.kinesis import provider as kinesis_provider
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack, resources
@@ -250,7 +251,9 @@ class TestKinesis:
         # get records with CBOR encoding
         iterator = get_shard_iterator(stream_name, aws_client.kinesis)
         url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers("kinesis")
+        headers = aws_stack.mock_aws_request_headers(
+            "kinesis", region_name=TEST_AWS_REGION_NAME, access_key=TEST_AWS_ACCESS_KEY_ID
+        )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
         data = cbor2.dumps({"ShardIterator": iterator})
@@ -282,7 +285,9 @@ class TestKinesis:
 
         # empty get records with CBOR encoding
         url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers("kinesis")
+        headers = aws_stack.mock_aws_request_headers(
+            "kinesis", region_name=TEST_AWS_REGION_NAME, access_key=TEST_AWS_ACCESS_KEY_ID
+        )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
         data = cbor2.dumps({"ShardIterator": iterator})
@@ -441,6 +446,7 @@ class TestKinesisPythonClient:
             listener_func=process_records,
             kcl_log_level=logging.INFO,
             wait_until_started=True,
+            region_name=TEST_AWS_REGION_NAME,
         )
 
         try:
