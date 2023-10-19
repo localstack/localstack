@@ -43,8 +43,8 @@ class StepFunctionsServer(Server):
 
     def generate_env_vars(self) -> Dict[str, Any]:
         return {
-            "EDGE_PORT": config.EDGE_PORT_HTTP or config.EDGE_PORT,
-            "EDGE_PORT_HTTP": config.EDGE_PORT_HTTP or config.EDGE_PORT,
+            "EDGE_PORT": config.GATEWAY_LISTEN[0].port,
+            "EDGE_PORT_HTTP": config.GATEWAY_LISTEN[0].port,
             "DATA_DIR": config.dirs.data,
             "PORT": self._port,
         }

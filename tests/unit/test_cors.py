@@ -2,22 +2,31 @@ from werkzeug.datastructures import Headers
 
 from localstack import config
 from localstack.aws.handlers import cors
+from localstack.config import HostAndPort
+
+# The default host depends on whether running in Docker (see config.py::default_ip) but that's good enough for testing:
+default_gateway_listen = [HostAndPort(host="0.0.0.0", port=4566)]
+default_gateway_listen_ext = [
+    HostAndPort(host="0.0.0.0", port=4566),
+    HostAndPort(host="0.0.0.0", port=443),
+]
 
 
 def test_allowed_cors_origins_different_ports_and_protocols(monkeypatch):
-    # test allowed origins for default config (edge port 4566)
-    monkeypatch.setattr(config, "EDGE_PORT", 4566)
-    monkeypatch.setattr(config, "EDGE_PORT_HTTP", 0)
+    # test allowed origins for default config (:4566)
+    # GATEWAY_LISTEN binds each host-port configuration to both protocols (http and https)
+    monkeypatch.setattr(config, "GATEWAY_LISTEN", default_gateway_listen)
     origins = cors._get_allowed_cors_origins()
     assert "http://localhost:4566" in origins
     assert "http://localhost.localstack.cloud:4566" in origins
+    assert "http://localhost:433" not in origins
     assert "https://localhost.localstack.cloud:443" not in origins
 
-    # test allowed origins for extended config (HTTPS edge port 443, HTTP edge port 4566)
-    monkeypatch.setattr(config, "EDGE_PORT", 443)
-    monkeypatch.setattr(config, "EDGE_PORT_HTTP", 4566)
+    # test allowed origins for extended config (:4566,:443)
+    monkeypatch.setattr(config, "GATEWAY_LISTEN", default_gateway_listen_ext)
     origins = cors._get_allowed_cors_origins()
     assert "http://localhost:4566" in origins
+    assert "http://localhost:443" in origins
     assert "http://localhost.localstack.cloud:4566" in origins
     assert "https://localhost.localstack.cloud:443" in origins
 
@@ -33,9 +42,8 @@ def test_dynamic_allowed_cors_origins(monkeypatch):
 
 
 def test_dynamic_allowed_cors_origins_different_ports(monkeypatch):
-    # test dynamic allowed origins for default config (edge port 4566)
-    monkeypatch.setattr(config, "EDGE_PORT", 4566)
-    monkeypatch.setattr(config, "EDGE_PORT_HTTP", 0)
+    # test dynamic allowed origins for default config (:4566)
+    monkeypatch.setattr(config, "GATEWAY_LISTEN", default_gateway_listen)
     monkeypatch.setattr(cors, "_ALLOWED_INTERNAL_PORTS", cors._get_allowed_cors_ports())
 
     assert _origin_allowed("http://test.s3-website.localhost.localstack.cloud:4566")
@@ -47,9 +55,8 @@ def test_dynamic_allowed_cors_origins_different_ports(monkeypatch):
     assert not _origin_allowed("https://test.cloudfront.localhost.localstack.cloud:443")
     assert not _origin_allowed("http://test.cloudfront.localhost.localstack.cloud:123")
 
-    # test allowed origins for extended config (HTTPS edge port 443, HTTP edge port 4566)
-    monkeypatch.setattr(config, "EDGE_PORT", 443)
-    monkeypatch.setattr(config, "EDGE_PORT_HTTP", 4566)
+    # test allowed origins for extended config (:4566,:443)
+    monkeypatch.setattr(config, "GATEWAY_LISTEN", default_gateway_listen_ext)
     monkeypatch.setattr(cors, "_ALLOWED_INTERNAL_PORTS", cors._get_allowed_cors_ports())
 
     assert _origin_allowed("https://test.cloudfront.localhost.localstack.cloud:443")
@@ -57,8 +64,7 @@ def test_dynamic_allowed_cors_origins_different_ports(monkeypatch):
 
 def test_dynamic_allowed_cors_origins_different_domains(monkeypatch):
     # test dynamic allowed origins for default config (edge port 4566)
-    monkeypatch.setattr(config, "EDGE_PORT", 4566)
-    monkeypatch.setattr(config, "EDGE_PORT_HTTP", 0)
+    monkeypatch.setattr(config, "GATEWAY_LISTEN", default_gateway_listen)
     monkeypatch.setattr(
         config,
         "LOCALSTACK_HOST",

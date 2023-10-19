@@ -596,9 +596,13 @@ class UniqueHostAndPortList(List[HostAndPort]):
         super().append(value)
 
 
+def default_gateway_listen() -> List[HostAndPort]:
+    return [HostAndPort(host=default_ip, port=constants.DEFAULT_PORT_EDGE)]
+
+
 def populate_legacy_edge_configuration(
     environment: Mapping[str, str]
-) -> Tuple[HostAndPort, UniqueHostAndPortList, str, int, int]:
+) -> Tuple[HostAndPort, UniqueHostAndPortList, int]:
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
@@ -632,11 +636,8 @@ def populate_legacy_edge_configuration(
                 )
             )
     else:
-        edge_port = int(environment.get("EDGE_PORT", localstack_host_port))
-        edge_port_http = int(environment.get("EDGE_PORT_HTTP", 0))
-        gateway_listen = [HostAndPort(host=default_ip, port=edge_port)]
-        if edge_port_http:
-            gateway_listen.append(HostAndPort(host=default_ip, port=edge_port_http))
+        # use default if gateway listen is not defined
+        gateway_listen = default_gateway_listen()
 
     # the actual value of the LOCALSTACK_HOST port now depends on what gateway listen actually listens to.
     if localstack_host_raw is None:
@@ -654,20 +655,13 @@ def populate_legacy_edge_configuration(
     assert gateway_listen is not None
     assert localstack_host is not None
 
-    # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
-    # legacy variables are
-    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", gateway_listen[0].host)
+    # derive legacy variables from GATEWAY_LISTEN
     edge_port = int(legacy_fallback("EDGE_PORT", gateway_listen[0].port))
-    edge_port_http = int(
-        legacy_fallback("EDGE_PORT_HTTP", 0),
-    )
 
     return (
         localstack_host,
         UniqueHostAndPortList(gateway_listen),
-        edge_bind_host,
         edge_port,
-        edge_port_http,
     )
 
 
@@ -681,9 +675,7 @@ GATEWAY_LISTEN: List[HostAndPort]
     # <ip_address>:<port>(,<ip_address>:port>)*
     GATEWAY_LISTEN,
     # -- Legacy variables
-    EDGE_BIND_HOST,
     EDGE_PORT,
-    EDGE_PORT_HTTP,
 ) = populate_legacy_edge_configuration(os.environ)
 
 # IP of the docker bridge used to enable access between containers
@@ -1130,10 +1122,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
-    "EDGE_BIND_HOST",
     "EDGE_FORWARD_URL",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
-    "EDGE_PORT",
-    "EDGE_PORT_HTTP",
     "ENABLE_CONFIG_UPDATES",
     "ES_CUSTOM_BACKEND",
     "ES_ENDPOINT_STRATEGY",
@@ -1321,7 +1310,7 @@ def external_service_url(service_key, host=None, port=None):
 # FIXME: we don't separate http and non-http ports any more,
 #        so this function should be removed
 def get_edge_port_http():
-    return EDGE_PORT_HTTP or EDGE_PORT
+    return GATEWAY_LISTEN[0].port
 
 
 def get_edge_url(localstack_hostname=None, protocol=None):
@@ -1332,12 +1321,7 @@ def get_edge_url(localstack_hostname=None, protocol=None):
 
 
 def edge_ports_info():
-    if EDGE_PORT_HTTP:
-        result = "ports %s/%s" % (EDGE_PORT, EDGE_PORT_HTTP)
-    else:
-        result = "port %s" % EDGE_PORT
-    result = "%s %s" % (get_protocol(), result)
-    return result
+    return f"{get_protocol()} port {GATEWAY_LISTEN[0].port}"
 
 
 class ServiceProviderConfig(Mapping[str, str]):
