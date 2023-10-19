@@ -273,8 +273,7 @@ def ssm_parameter_arn(param_name: str, account_id: str, region_name: str) -> str
     return _resource_arn(param_name, pattern, account_id=account_id, region_name=region_name)
 
 
-# TODO: remove account_id arg
-def s3_bucket_arn(bucket_name_or_arn: str, account_id: str = None) -> str:
+def s3_bucket_arn(bucket_name_or_arn: str) -> str:
     bucket_name = s3_bucket_name(bucket_name_or_arn)
     return f"arn:aws:s3:::{bucket_name}"
 
