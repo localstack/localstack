@@ -335,7 +335,7 @@ class StackChangeSet(Stack):
             template = {}
         if params is None:
             params = {}
-        super(StackChangeSet, self).__init__(params, template)
+        super(StackChangeSet, self).__init__(account_id, region_name, params, template)
 
         name = self.metadata["ChangeSetName"]
         if not self.metadata.get("ChangeSetId"):
