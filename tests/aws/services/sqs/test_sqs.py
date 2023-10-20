@@ -1743,7 +1743,6 @@ class TestSqsProvider:
 
     @markers.aws.validated
     def test_publish_get_delete_message(self, sqs_create_queue, aws_client):
-
         # visibility part handled by test_receive_terminate_visibility_timeout
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -2387,7 +2386,6 @@ class TestSqsProvider:
 
     @markers.aws.validated
     def test_dead_letter_queue_config(self, sqs_create_queue):
-
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
 

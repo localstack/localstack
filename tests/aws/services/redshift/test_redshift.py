@@ -7,7 +7,6 @@ from localstack.utils.common import short_uid
 class TestRedshift:
     @markers.aws.unknown
     def test_create_clusters(self, aws_client):
-
         # create
         cluster_id = f"c={short_uid()}"
         response = aws_client.redshift.create_cluster(

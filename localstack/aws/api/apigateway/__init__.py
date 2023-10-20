@@ -1602,7 +1602,6 @@ class VpcLinks(TypedDict, total=False):
 
 
 class ApigatewayApi:
-
     service = "apigateway"
     version = "2015-07-09"
 

@@ -23,7 +23,6 @@ LOG = logging.getLogger(__name__)
 
 
 class FunctionUrlRouter:
-
     router: Router[Handler]
     lambda_service: LambdaService
 

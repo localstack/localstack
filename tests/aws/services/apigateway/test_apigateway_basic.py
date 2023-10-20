@@ -124,7 +124,6 @@ def integration_lambda(create_lambda_function):
 
 
 class TestAPIGateway:
-
     # endpoint paths
     API_PATH_LAMBDA_PROXY_BACKEND = "/lambda/foo1"
     API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = "/lambda/{test_param1}"
@@ -691,7 +690,6 @@ class TestAPIGateway:
         apigw_client.delete_domain_name(domainName=domain_name)
 
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
-
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = arns.lambda_function_arn(fn_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         target_uri = arns.apigateway_invocations_arn(lambda_uri, TEST_AWS_REGION_NAME)
@@ -723,7 +721,6 @@ class TestAPIGateway:
     def test_apigateway_with_custom_authorization_method(
         self, create_rest_apigw, aws_client, integration_lambda
     ):
-
         # create Lambda function
         lambda_uri = arns.lambda_function_arn(
             integration_lambda, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
@@ -1006,7 +1003,6 @@ class TestAPIGateway:
         aws_client,
         snapshot,
     ):
-
         snapshot.add_transformer(snapshot.transform.key_value("executionArn", "executionArn"))
         snapshot.add_transformer(
             snapshot.transform.jsonpath(
@@ -1287,7 +1283,6 @@ class TestAPIGateway:
     def test_response_headers_invocation_with_apigw(
         self, aws_client, create_rest_apigw, create_lambda_function, create_role_with_policy
     ):
-
         _, role_arn = create_role_with_policy(
             "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
         )
@@ -1979,7 +1974,6 @@ class TestIntegrations:
     def test_api_gateway_sqs_integration_with_event_source(
         self, aws_client, integration_lambda, sqs_queue
     ):
-
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
             "test_gateway4",

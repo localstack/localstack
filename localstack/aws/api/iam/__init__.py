@@ -2279,7 +2279,6 @@ class UploadSigningCertificateResponse(TypedDict, total=False):
 
 
 class IamApi:
-
     service = "iam"
     version = "2010-05-08"
 

@@ -15,7 +15,6 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Response
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
@@ -123,7 +122,6 @@ class TestSNSTopicCrud:
 
     @markers.aws.validated
     def test_tags(self, sns_create_topic, snapshot, aws_client):
-
         topic_arn = sns_create_topic()["TopicArn"]
         with pytest.raises(ClientError) as exc:
             aws_client.sns.tag_resource(
@@ -178,7 +176,7 @@ class TestSNSTopicCrud:
         assert topic_arn_params[5] == topic_name
 
         if not is_aws_cloud():
-            assert topic_arn_params[4] == get_aws_account_id()
+            assert topic_arn_params[4] == TEST_AWS_ACCOUNT_ID
 
         topic_attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
         snapshot.match("get-topic-attrs", topic_attrs)
@@ -228,6 +226,23 @@ class TestSNSTopicCrud:
 
         topic1 = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "abc"}])
         snapshot.match("topic-1", topic1)
+
+    @markers.aws.validated
+    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
+
+        snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
+
+        snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
+
+        snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
 
 
 class TestSNSPublishCrud:
@@ -2030,7 +2045,6 @@ class TestSNSSubscriptionSQSFifo:
         raw_message_delivery,
         aws_client,
     ):
-
         # the hash isn't the same because of the Binary attributes (maybe decoding order?)
         snapshot.add_transformer(
             snapshot.transform.key_value(
@@ -2522,7 +2536,6 @@ class TestSNSFilter:
     def test_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -2621,7 +2634,6 @@ class TestSNSFilter:
     def test_exists_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -2903,7 +2915,6 @@ class TestSNSFilter:
         raw_message_delivery,
         aws_client,
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -3004,7 +3015,6 @@ class TestSNSFilter:
     def test_filter_policy_for_batch(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url_with_filter = sqs_create_queue()
         subscription_with_filter = sns_create_sqs_subscription(
@@ -3235,7 +3245,6 @@ class TestSNSPlatformEndpoint:
     def test_subscribe_platform_endpoint(
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
-
         sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         topic_arn = sns_create_topic()["TopicArn"]
 

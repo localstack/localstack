@@ -352,9 +352,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutMetricAlarmInput,
     ) -> None:
-
         # missing will be the default, when not set (but it will not explicitly be set)
-        if not request.get("TreatMissingData", "missing") in [
+        if request.get("TreatMissingData", "missing") not in [
             "breaching",
             "notBreaching",
             "ignore",
@@ -371,7 +370,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 if value % 60 != 0:
                     raise ValidationError("Period must be 10, 30 or a multiple of 60")
         if request.get("Statistic"):
-            if not request.get("Statistic") in [
+            if request.get("Statistic") not in [
                 "SampleCount",
                 "Average",
                 "Sum",

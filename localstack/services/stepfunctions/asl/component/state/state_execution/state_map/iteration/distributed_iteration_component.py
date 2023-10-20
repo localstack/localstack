@@ -127,6 +127,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         env.map_run_record_pool_manager.add(self._map_run_record)
 
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.MapRunStarted,
             event_detail=EventDetails(
                 mapRunStartedEventDetails=MapRunStartedEventDetails(
@@ -141,7 +142,6 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             # TODO: investigate if this is truly propagated also to eventual sub programs in map run states.
             env.event_history = EventHistory()
             self._map_run(env=env)
-            self._map_run_record.set_stop(status=MapRunStatus.SUCCEEDED)
 
         except FailureEventException as failure_event_ex:
             map_run_fail_event_detail = MapRunFailedEventDetails()
@@ -156,6 +156,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
 
             env.event_history = execution_event_history
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.MapRunFailed,
                 event_detail=EventDetails(mapRunFailedEventDetails=map_run_fail_event_detail),
             )
@@ -165,6 +166,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         except Exception as ex:
             env.event_history = execution_event_history
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.MapRunFailed,
                 event_detail=EventDetails(mapRunFailedEventDetails=MapRunFailedEventDetails()),
             )
@@ -177,5 +179,6 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         # program_state = env.program_state()
         # if isinstance(program_state, ProgramSucceeded)
         env.event_history.add_event(
-            hist_type_event=HistoryEventType.MapRunSucceeded,
+            context=env.event_history_context, hist_type_event=HistoryEventType.MapRunSucceeded
         )
+        self._map_run_record.set_stop(status=MapRunStatus.SUCCEEDED)

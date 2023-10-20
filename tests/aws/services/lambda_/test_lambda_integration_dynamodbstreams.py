@@ -98,7 +98,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot,
         aws_client,
     ):
-
         function_name = f"lambda_func-{short_uid()}"
         role = f"test-lambda-role-{short_uid()}"
         policy_name = f"test-lambda-policy-{short_uid()}"
@@ -170,7 +169,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot,
         aws_client,
     ):
-
         function_name = f"lambda_func-{short_uid()}"
         ddb_table = f"ddb_table-{short_uid()}"
         items = [
@@ -432,7 +430,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot,
         aws_client,
     ):
-
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         max_retries = 50
@@ -531,7 +528,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot,
         aws_client,
     ):
-
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
 

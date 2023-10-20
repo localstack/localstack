@@ -45,7 +45,6 @@ class BucketCorsIndex(Protocol):
 
 
 class S3CorsHandler(Handler):
-
     bucket_cors_index: BucketCorsIndex
 
     def __init__(self, bucket_cors_index: BucketCorsIndex):

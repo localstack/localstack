@@ -729,7 +729,6 @@ class TestApiGatewayImportRestApi:
 
     @markers.aws.validated
     def test_import_with_stage_variables(self, import_apigw, aws_client, echo_http_server_post):
-
         spec_file = load_file(OAS_30_STAGE_VARIABLES)
         import_resp, root_id = import_apigw(body=spec_file, failOnWarnings=True)
         rest_api_id = import_resp["id"]

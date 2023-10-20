@@ -87,7 +87,6 @@ class StepFunctionsLocalPackageInstaller(ExecutableInstaller):
         install_dir = self._get_install_dir(target)
         install_destination = self._get_install_marker_path(install_dir)
         if not os.path.exists(install_destination):
-
             # Download layer that contains the necessary jars
             def download_stepfunctions_jar(image, image_digest, target_path):
                 registry_base = "https://registry-1.docker.io"

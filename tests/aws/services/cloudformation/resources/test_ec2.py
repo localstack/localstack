@@ -30,7 +30,6 @@ def test_vpc_creates_default_sg(deploy_cfn_template, aws_client):
 
 @markers.aws.validated
 def test_cfn_with_multiple_route_tables(deploy_cfn_template, aws_client):
-
     result = deploy_cfn_template(
         template_path=os.path.join(THIS_FOLDER, "../../../templates/template36.yaml"),
         max_wait=180,

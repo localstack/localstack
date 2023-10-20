@@ -349,7 +349,7 @@ class BaseNotifier:
         if filter_rules := configuration.get("Filter", {}).get("Key", {}).get("FilterRules"):
             for rule in filter_rules:
                 rule["Name"] = rule["Name"].capitalize()
-                if not rule["Name"] in ["Suffix", "Prefix"]:
+                if rule["Name"] not in ["Suffix", "Prefix"]:
                     raise _create_invalid_argument_exc(
                         "filter rule name must be either prefix or suffix",
                         rule["Name"],
@@ -381,7 +381,7 @@ class BaseNotifier:
         record = EventRecord(
             eventVersion="2.1",
             eventSource="aws:s3",
-            awsRegion=ctx.region,
+            awsRegion=ctx.bucket_location,
             eventTime=timestamp_millis(ctx.event_time),
             eventName=ctx.event_type.removeprefix("s3:"),
             userIdentity={"principalId": "AIDAJDPLRKLG7UEXAMPLE"},  # TODO: use the real one?
@@ -453,6 +453,7 @@ class SqsNotifier(BaseNotifier):
         sqs_client = connect_to(
             aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
         ).sqs
+        # test if the destination exists (done on AWS side, no permission required)
         try:
             queue_url = sqs_client.get_queue_url(
                 QueueName=arn_data["resource"], QueueOwnerAWSAccountId=arn_data["account"]
@@ -464,9 +465,9 @@ class SqsNotifier(BaseNotifier):
                 name=target_arn,
                 value="The destination queue does not exist",
             )
-        # send test event
+        # send test event with the request metadata for permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
-        sqs_client = connect_to().sqs.request_metadata(
+        sqs_client = connect_to(region_name=arn_data["region"]).sqs.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -491,9 +492,7 @@ class SqsNotifier(BaseNotifier):
         queue_arn = config["QueueArn"]
 
         parsed_arn = parse_arn(queue_arn)
-        sqs_client = connect_to(
-            aws_access_key_id=parsed_arn["account"], region_name=parsed_arn["region"]
-        ).sqs.request_metadata(
+        sqs_client = connect_to(region_name=parsed_arn["region"]).sqs.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         try:
@@ -538,7 +537,7 @@ class SnsNotifier(BaseNotifier):
                 value="The destination topic does not exist",
             )
 
-        sns_client = connect_to().sns.request_metadata(
+        sns_client = connect_to(region_name=arn_data["region"]).sns.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -574,9 +573,7 @@ class SnsNotifier(BaseNotifier):
         topic_arn = config["TopicArn"]
 
         arn_data = parse_arn(topic_arn)
-        sns_client = connect_to(
-            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
-        ).sns.request_metadata(
+        sns_client = connect_to(region_name=arn_data["region"]).sns.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         try:
@@ -615,7 +612,7 @@ class LambdaNotifier(BaseNotifier):
                 name=target_arn,
                 value="The destination Lambda does not exist",
             )
-        lambda_client = connect_to().lambda_.request_metadata(
+        lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -635,9 +632,7 @@ class LambdaNotifier(BaseNotifier):
 
         arn_data = parse_arn(lambda_arn)
 
-        lambda_client = connect_to(
-            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
-        ).lambda_.request_metadata(
+        lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         lambda_function_config = arns.lambda_function_name(lambda_arn)
@@ -756,7 +751,11 @@ class EventBridgeNotifier(BaseNotifier):
     def notify(self, ctx: S3EventNotificationContext, config: EventBridgeConfiguration):
         # does not require permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-permissions.html
-        events_client = connect_to(aws_access_key_id=ctx.account_id, region_name=ctx.region).events
+        # the account_id should be the bucket owner
+        # - account — The 12-digit AWS account ID of the bucket owner.
+        events_client = connect_to(
+            aws_access_key_id=ctx.bucket_account_id, region_name=ctx.bucket_location
+        ).events
         entry = self._get_event_payload(ctx)
         try:
             events_client.put_events(Entries=[entry])
