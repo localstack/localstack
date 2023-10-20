@@ -89,5 +89,55 @@
         ]
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_transit_gateway_attachment": {
+    "recorded-date": "20-10-2023, 08:55:07",
+    "recorded-content": {
+      "attachment": {
+        "Association": {
+          "State": "associated",
+          "TransitGatewayRouteTableId": "<transit-gateway-route-table-id:1>"
+        },
+        "CreationTime": "datetime",
+        "ResourceId": "<resource-id:1>",
+        "ResourceOwnerId": "111111111111",
+        "ResourceType": "vpc",
+        "State": "available",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "example-tag"
+          }
+        ],
+        "TransitGatewayAttachmentId": "<transit-gateway-attachment-id:1>",
+        "TransitGatewayId": "<transit-gateway-id:1>",
+        "TransitGatewayOwnerId": "111111111111"
+      },
+      "gateway": {
+        "CreationTime": "datetime",
+        "Description": "TGW Route Integration Test",
+        "Options": {
+          "AmazonSideAsn": 65000,
+          "AssociationDefaultRouteTableId": "<transit-gateway-route-table-id:1>",
+          "AutoAcceptSharedAttachments": "disable",
+          "DefaultRouteTableAssociation": "enable",
+          "DefaultRouteTablePropagation": "enable",
+          "DnsSupport": "enable",
+          "MulticastSupport": "disable",
+          "PropagationDefaultRouteTableId": "<transit-gateway-route-table-id:1>",
+          "VpnEcmpSupport": "enable"
+        },
+        "OwnerId": "111111111111",
+        "State": "available",
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-d2a69315/f9376240-6f4f-11ee-87a2-0a5f03ecaf83"
+          }
+        ],
+        "TransitGatewayArn": "arn:aws:ec2:<region>:111111111111:transit-gateway/<transit-gateway-id:1>",
+        "TransitGatewayId": "<transit-gateway-id:1>"
+      }
+    }
   }
 }

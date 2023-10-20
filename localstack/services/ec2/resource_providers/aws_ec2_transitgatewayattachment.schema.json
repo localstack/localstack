@@ -1,0 +1,128 @@
+{
+  "typeName": "AWS::EC2::TransitGatewayAttachment",
+  "description": "Resource Type definition for AWS::EC2::TransitGatewayAttachment",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-transitgateway",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "type": "string"
+    },
+    "TransitGatewayId": {
+      "type": "string"
+    },
+    "VpcId": {
+      "type": "string"
+    },
+    "SubnetIds": {
+      "type": "array",
+      "insertionOrder": false,
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Tags": {
+      "type": "array",
+      "insertionOrder": false,
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "Options": {
+      "description": "The options for the transit gateway vpc attachment.",
+      "type": "object",
+      "properties": {
+        "DnsSupport": {
+          "description": "Indicates whether to enable DNS Support for Vpc Attachment. Valid Values: enable | disable",
+          "type": "string"
+        },
+        "Ipv6Support": {
+          "description": "Indicates whether to enable Ipv6 Support for Vpc Attachment. Valid Values: enable | disable",
+          "type": "string"
+        },
+        "ApplianceModeSupport": {
+          "description": "Indicates whether to enable Ipv6 Support for Vpc Attachment. Valid Values: enable | disable",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string"
+        },
+        "Value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "required": [
+    "VpcId",
+    "SubnetIds",
+    "TransitGatewayId"
+  ],
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": false,
+    "tagProperty": "/properties/Tags"
+  },
+  "createOnlyProperties": [
+    "/properties/TransitGatewayId",
+    "/properties/VpcId"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:CreateTransitGatewayVpcAttachment",
+        "ec2:CreateTags"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeTransitGatewayAttachments",
+        "ec2:DescribeTransitGatewayVpcAttachments",
+        "ec2:DescribeTags"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DeleteTransitGatewayVpcAttachment",
+        "ec2:DeleteTags"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeTransitGatewayAttachments",
+        "ec2:DescribeTransitGatewayVpcAttachments",
+        "ec2:DescribeTags"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ec2:ModifyTransitGatewayVpcAttachment",
+        "ec2:DescribeTransitGatewayVpcAttachments",
+        "ec2:DeleteTags",
+        "ec2:CreateTags"
+      ]
+    }
+  }
+}
