@@ -76,6 +76,7 @@ PROVIDER_DEFAULTS = {
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::EKS::Nodegroup": "ResourceProvider",
     "AWS::S3::BucketPolicy": "ResourceProvider",
+    "AWS::S3::Bucket": "ResourceProvider",
 }
 
 
