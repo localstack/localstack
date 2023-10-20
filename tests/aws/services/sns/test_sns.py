@@ -228,6 +228,23 @@ class TestSNSTopicCrud:
         topic1 = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "abc"}])
         snapshot.match("topic-1", topic1)
 
+    @markers.aws.validated
+    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
+
+        snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
+
+        snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
+
+        snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
+
 
 class TestSNSPublishCrud:
     """
