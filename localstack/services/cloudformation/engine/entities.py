@@ -330,7 +330,12 @@ class StackChangeSet(Stack):
 
         name = self.metadata["ChangeSetName"]
         if not self.metadata.get("ChangeSetId"):
-            self.metadata["ChangeSetId"] = arns.cf_change_set_arn(name, change_set_id=short_uid())
+            self.metadata["ChangeSetId"] = arns.cf_change_set_arn(
+                name,
+                change_set_id=short_uid(),
+                account_id=DEFAULT_AWS_ACCOUNT_ID,
+                region_name=AWS_REGION_US_EAST_1,
+            )  # FIXME: Use proper account ID and region name
 
         self.stack = stack
         self.metadata["StackId"] = stack.stack_id
