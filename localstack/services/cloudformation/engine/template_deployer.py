@@ -8,7 +8,7 @@ from typing import Literal, Optional, Type, TypedDict
 
 from localstack import config
 from localstack.aws.connect import connect_to
-from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID, INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     get_action_name_for_resource_change,
@@ -1400,7 +1400,7 @@ class TemplateDeployer:
     ) -> ResourceProviderPayload:
         # FIXME: use proper credentials
         creds: Credentials = {
-            "accessKeyId": INTERNAL_AWS_ACCESS_KEY_ID,
+            "accessKeyId": self.account_id,
             "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
             "sessionToken": "",
         }
