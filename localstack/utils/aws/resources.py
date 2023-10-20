@@ -7,12 +7,6 @@ from localstack.utils.functions import run_safe
 from localstack.utils.sync import poll_condition
 
 
-def create_sqs_queue(queue_name, region_name: str = None, account_id: str = None):
-    return connect_to(aws_access_key_id=account_id, region_name=region_name).sqs.create_queue(
-        QueueName=queue_name
-    )
-
-
 # TODO: make s3_client mandatory
 def get_or_create_bucket(bucket_name: str, s3_client=None):
     s3_client = s3_client or connect_to().s3
