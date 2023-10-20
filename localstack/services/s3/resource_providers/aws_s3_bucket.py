@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
-from localstack.config import get_edge_port_http, LEGACY_S3_PROVIDER
+from localstack.config import LEGACY_S3_PROVIDER, get_edge_port_http
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
@@ -14,10 +14,10 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProvider,
     ResourceRequest,
 )
-from localstack.services.s3.utils import normalize_bucket_name
 from localstack.services.s3.legacy.s3_listener import (
     remove_bucket_notification as legacy_remove_bucket_notification,
 )
+from localstack.services.s3.utils import normalize_bucket_name
 from localstack.utils.aws import arns
 from localstack.utils.testutil import delete_all_s3_objects
 
