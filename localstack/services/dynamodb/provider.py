@@ -8,6 +8,7 @@ import time
 import traceback
 from binascii import crc32
 from contextlib import contextmanager
+from operator import itemgetter
 from typing import Dict, List
 
 import requests
@@ -28,6 +29,7 @@ from localstack.aws.api.dynamodb import (
     BatchGetRequestMap,
     BatchWriteItemInput,
     BatchWriteItemOutput,
+    BatchWriteItemRequestMap,
     BillingMode,
     ContinuousBackupsDescription,
     ContinuousBackupsStatus,
@@ -897,59 +899,60 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         batch_write_item_input: BatchWriteItemInput,
     ) -> BatchWriteItemOutput:
         # TODO: add global table support
-        existing_items = []
-        unprocessed_put_items = []
-        unprocessed_delete_items = []
+        existing_items = {}
+        # UnprocessedItems should have the same format as RequestItems
+        unprocessed_items = {}
         request_items = batch_write_item_input["RequestItems"]
-        for table_name in sorted(request_items.keys()):
-            for request in request_items[table_name]:
-                for key in ["PutRequest", "DeleteRequest"]:
-                    inner_request = request.get(key)
-                    if inner_request:
-                        if self.should_throttle("BatchWriteItem"):
-                            if key == "PutRequest":
-                                unprocessed_put_items.append(inner_request)
-                            elif key == "DeleteRequest":
-                                unprocessed_delete_items.append(inner_request)
-                        else:
-                            item = ItemFinder.find_existing_item(
-                                inner_request, table_name, context.account_id, context.region
-                            )
-                            existing_items.append(item)
+
+        tables_with_stream = []
+
+        for table_name, items in sorted(request_items.items(), key=itemgetter(0)):
+            if stream_enabled := has_streams_enabled(table_name):
+                tables_with_stream.append(table_name)
+
+            for request in items:
+                for key, inner_request in request.items():
+                    if self.should_throttle("BatchWriteItem"):
+                        unprocessed_items_for_table = unprocessed_items.setdefault(table_name, [])
+                        unprocessed_items_for_table.append(request)
+
+                    elif stream_enabled:
+                        # TODO: we should at minimum BatchRead those values instead of individually checking them
+                        #  also, BatchWrite does not update but overwrite, so verify if we should check the existence
+                        item = ItemFinder.find_existing_item(
+                            inner_request, table_name, context.account_id, context.region
+                        )
+                        existing_items_for_table = existing_items.setdefault(table_name, [])
+                        existing_items_for_table.append(item)
 
         result = self.forward_request(context)
 
         # determine and forward stream records
-        request_items = batch_write_item_input["RequestItems"]
-        records, unprocessed_items = self.prepare_batch_write_item_records(
-            account_id=context.account_id,
-            region_name=context.region,
-            request_items=request_items,
-            unprocessed_put_items=unprocessed_put_items,
-            unprocessed_delete_items=unprocessed_delete_items,
-            existing_items=existing_items,
-        )
-
-        event_sources_or_streams_enabled = False
-        for record in records:
-            event_sources_or_streams_enabled = (
-                event_sources_or_streams_enabled or has_streams_enabled(record["eventSourceARN"])
+        if tables_with_stream:
+            records = self.prepare_batch_write_item_records(
+                account_id=context.account_id,
+                region_name=context.region,
+                streamed_tables=tables_with_stream,
+                request_items=request_items,
+                existing_items=existing_items,
             )
-        if event_sources_or_streams_enabled:
             self.forward_stream_records(context.account_id, context.region, records)
 
+        # TODO: should unprocessed item which have mutated by `prepare_batch_write_item_records` be returned in the
+        # response??
         # update response
-        if any(unprocessed_items):
-            table_name = list(request_items.keys())[0]
-            unprocessed = result["UnprocessedItems"]
-            if table_name not in unprocessed:
-                unprocessed[table_name] = []
-            for key in ["PutRequest", "DeleteRequest"]:
-                if any(unprocessed_items[key]):
-                    unprocessed[table_name].append({key: unprocessed_items[key]})
-            for key in list(unprocessed.keys()):
-                if not unprocessed.get(key):
-                    del unprocessed[key]
+        for table_name, unprocessed_items_in_table in unprocessed_items.items():
+            unprocessed: dict = result["UnprocessedItems"]
+            result_unprocessed_table = unprocessed.setdefault(table_name, [])
+
+            # add the Unprocessed items to the response
+            # TODO: check before if the same request has not been Unprocessed by DDB local already?
+            # those might actually have been processed? shouldn't we remove them from the proxied request?
+            for request in unprocessed_items_in_table:
+                result_unprocessed_table.append(request)
+
+            # remove any table entry if it's empty
+            result["UnprocessedItems"] = {k: v for k, v in unprocessed.items() if v}
 
         return result
 
@@ -1564,16 +1567,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self,
         account_id: str,
         region_name: str,
-        request_items,
+        streamed_tables: list[str],
+        request_items: BatchWriteItemRequestMap,
         existing_items,
-        unprocessed_put_items: List,
-        unprocessed_delete_items: List,
-    ):
+    ) -> list:
         records = []
         record = self.get_record_template(region_name)
-        unprocessed_items = {"PutRequest": {}, "DeleteRequest": {}}
-        i = 0
-        for table_name in sorted(request_items.keys()):
+
+        # only iterate over tables with streams
+        for table_name in streamed_tables:
             # Add stream view type to record if ddb stream is enabled
             stream_spec = dynamodb_get_table_stream_specification(
                 account_id=account_id,
@@ -1582,53 +1584,44 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
             if stream_spec:
                 record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
-            for request in request_items[table_name]:
-                put_request = request.get("PutRequest")
-                if put_request:
-                    if existing_items and len(existing_items) > i:
-                        existing_item = existing_items[i]
+
+            existing_items_for_table = existing_items.get(table_name, [])
+            for index, write_request in enumerate(request_items[table_name]):
+                if len(existing_items_for_table) > index:
+                    existing_item = existing_items_for_table[index]
+                else:
+                    existing_item = None
+                for key, request in write_request.items():
+                    if key == "PutRequest":
                         keys = SchemaExtractor.extract_keys(
-                            item=put_request["Item"],
+                            item=request["Item"],
                             table_name=table_name,
                             account_id=account_id,
                             region_name=region_name,
                         )
                         new_record = copy.deepcopy(record)
                         new_record["eventID"] = short_uid()
-                        new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(put_request["Item"])
+                        new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(request["Item"])
                         new_record["eventName"] = "INSERT" if not existing_item else "MODIFY"
                         new_record["dynamodb"]["Keys"] = keys
-                        new_record["dynamodb"]["NewImage"] = put_request["Item"]
+                        new_record["dynamodb"]["NewImage"] = request["Item"]
                         if existing_item:
                             new_record["dynamodb"]["OldImage"] = existing_item
                         new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
                         records.append(new_record)
-                    if unprocessed_put_items and len(unprocessed_put_items) > i:
-                        unprocessed_item = unprocessed_put_items[i]
-                        if unprocessed_item:
-                            unprocessed_items["PutRequest"].update(
-                                json.loads(json.dumps(unprocessed_item, cls=BytesEncoder))
-                            )
-                delete_request = request.get("DeleteRequest")
-                if delete_request:
-                    if existing_items and len(existing_items) > i:
-                        keys = delete_request["Key"]
+
+                    elif key == "DeleteRequest" and existing_item:
+                        keys = request["Key"]
                         new_record = copy.deepcopy(record)
                         new_record["eventID"] = short_uid()
                         new_record["eventName"] = "REMOVE"
                         new_record["dynamodb"]["Keys"] = keys
-                        new_record["dynamodb"]["OldImage"] = existing_items[i]
-                        new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_items[i])
+                        new_record["dynamodb"]["OldImage"] = existing_item
+                        new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_item)
                         new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
                         records.append(new_record)
-                    if unprocessed_delete_items and len(unprocessed_delete_items) > i:
-                        unprocessed_item = unprocessed_delete_items[i]
-                        if unprocessed_item:
-                            unprocessed_items["DeleteRequest"].update(
-                                json.loads(json.dumps(unprocessed_item, cls=BytesEncoder))
-                            )
-                i += 1
-        return records, unprocessed_items
+
+        return records
 
     def forward_stream_records(
         self, account_id: str, region_name: str, records: List[Dict], table_name: str = None
