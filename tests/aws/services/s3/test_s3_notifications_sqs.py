@@ -9,6 +9,7 @@ from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
 from localstack.config import LEGACY_S3_PROVIDER
+from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
@@ -94,16 +95,16 @@ def create_sqs_bucket_notification(
 def s3_create_sqs_bucket_notification(aws_client) -> NotificationFactory:
     """
     A factory fixture for creating sqs bucket notifications.
-
-    :param s3_client:
-    :param sqs_client:
-    :return:
     """
 
-    def factory(bucket_name: str, queue_url: str, events: List["EventType"]):
-        return create_sqs_bucket_notification(
-            aws_client.s3, aws_client.sqs, bucket_name, queue_url, events
-        )
+    def factory(
+        bucket_name: str,
+        queue_url: str,
+        events: List["EventType"],
+        s3_client=aws_client.s3,
+        sqs_client=aws_client.sqs,
+    ):
+        return create_sqs_bucket_notification(s3_client, sqs_client, bucket_name, queue_url, events)
 
     return factory
 
@@ -148,6 +149,29 @@ def sqs_collect_s3_events(
     retry(collect_events, retries=timeout, sleep=0.01)
 
     return events
+
+
+@pytest.fixture
+def sqs_create_queue_with_client():
+    queue_urls = []
+
+    def factory(sqs_client, **kwargs):
+        if "QueueName" not in kwargs:
+            kwargs["QueueName"] = "test-queue-%s" % short_uid()
+
+        response = sqs_client.create_queue(**kwargs)
+        url = response["QueueUrl"]
+        queue_urls.append((sqs_client, url))
+        return url
+
+    yield factory
+
+    # cleanup
+    for client, queue_url in queue_urls:
+        try:
+            client.delete_queue(QueueUrl=queue_url)
+        except Exception as e:
+            LOG.debug("error cleaning up queue %s: %s", queue_url, e)
 
 
 class TestS3NotificationsToSQS:
@@ -427,12 +451,17 @@ class TestS3NotificationsToSQS:
         self,
         s3_create_bucket,
         sqs_create_queue,
+        sqs_create_queue_with_client,
         s3_create_sqs_bucket_notification,
         snapshot,
         aws_client,
+        aws_client_factory,
     ):
+        """This test validates that pre-signed URL works with notification, and that the awsRegion field is the
+        bucket's region"""
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("awsRegion"), priority=-1)
 
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
@@ -449,6 +478,28 @@ class TestS3NotificationsToSQS:
 
         assert events[0]["eventName"] == "ObjectCreated:Put"
         assert events[0]["s3"]["object"]["key"] == key
+
+        # test with the bucket in a different region than the client
+        bucket_name_region_2 = s3_create_bucket(
+            CreateBucketConfiguration={"LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME},
+        )
+        # the SQS queue needs to be in the same region as the S3 bucket
+        sqs_client_region_2 = aws_client_factory(region_name=SECONDARY_TEST_AWS_REGION_NAME).sqs
+        queue_url_region_2 = sqs_create_queue_with_client(sqs_client_region_2)
+        s3_create_sqs_bucket_notification(
+            bucket_name=bucket_name_region_2,
+            queue_url=queue_url_region_2,
+            events=["s3:ObjectCreated:*"],
+            sqs_client=sqs_client_region_2,
+        )
+        # still generate the presign URL with the default client, with the default region
+        url_bucket_region_2 = aws_client.s3.generate_presigned_url(
+            "put_object", Params={"Bucket": bucket_name_region_2, "Key": key}
+        )
+        requests.put(url_bucket_region_2, data="something", verify=False)
+
+        events = sqs_collect_s3_events(sqs_client_region_2, queue_url_region_2, 1)
+        snapshot.match("receive_messages_region_2", {"messages": events})
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
