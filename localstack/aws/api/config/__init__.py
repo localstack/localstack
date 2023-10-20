@@ -2895,7 +2895,6 @@ class UntagResourceRequest(ServiceRequest):
 
 
 class ConfigApi:
-
     service = "config"
     version = "2014-11-12"
 

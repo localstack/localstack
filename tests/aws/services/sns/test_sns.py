@@ -122,7 +122,6 @@ class TestSNSTopicCrud:
 
     @markers.aws.validated
     def test_tags(self, sns_create_topic, snapshot, aws_client):
-
         topic_arn = sns_create_topic()["TopicArn"]
         with pytest.raises(ClientError) as exc:
             aws_client.sns.tag_resource(
@@ -2046,7 +2045,6 @@ class TestSNSSubscriptionSQSFifo:
         raw_message_delivery,
         aws_client,
     ):
-
         # the hash isn't the same because of the Binary attributes (maybe decoding order?)
         snapshot.add_transformer(
             snapshot.transform.key_value(
@@ -2538,7 +2536,6 @@ class TestSNSFilter:
     def test_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -2637,7 +2634,6 @@ class TestSNSFilter:
     def test_exists_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -2919,7 +2915,6 @@ class TestSNSFilter:
         raw_message_delivery,
         aws_client,
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -3020,7 +3015,6 @@ class TestSNSFilter:
     def test_filter_policy_for_batch(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url_with_filter = sqs_create_queue()
         subscription_with_filter = sns_create_sqs_subscription(
@@ -3251,7 +3245,6 @@ class TestSNSPlatformEndpoint:
     def test_subscribe_platform_endpoint(
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
-
         sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         topic_arn = sns_create_topic()["TopicArn"]
 

@@ -7,7 +7,6 @@ import re
 import zlib
 from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
-from zoneinfo import ZoneInfo
 
 import moto.s3.models as moto_s3_models
 import xmltodict
@@ -15,6 +14,7 @@ from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
 from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
+from zoneinfo import ZoneInfo
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext

@@ -734,7 +734,6 @@ class VerifySMSSandboxPhoneNumberResult(TypedDict, total=False):
 
 
 class SnsApi:
-
     service = "sns"
     version = "2010-03-31"
 

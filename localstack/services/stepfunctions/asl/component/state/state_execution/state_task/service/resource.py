@@ -126,7 +126,6 @@ class ActivityResource(Resource):
 
 
 class LambdaResource(Resource):
-
     function_name: Final[str]
 
     def __init__(self, resource_arn: ResourceARN):
