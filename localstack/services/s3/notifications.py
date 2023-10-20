@@ -467,9 +467,7 @@ class SqsNotifier(BaseNotifier):
             )
         # send test event with the request metadata for permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
-        sqs_client = connect_to(
-            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
-        ).sqs.request_metadata(
+        sqs_client = connect_to(region_name=arn_data["region"]).sqs.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -541,9 +539,7 @@ class SnsNotifier(BaseNotifier):
                 value="The destination topic does not exist",
             )
 
-        sns_client = connect_to(
-            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
-        ).sns.request_metadata(
+        sns_client = connect_to(region_name=arn_data["region"]).sns.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -620,9 +616,7 @@ class LambdaNotifier(BaseNotifier):
                 name=target_arn,
                 value="The destination Lambda does not exist",
             )
-        lambda_client = connect_to(
-            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
-        ).lambda_.request_metadata(
+        lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
