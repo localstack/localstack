@@ -7,7 +7,7 @@ import requests
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs, path_based_url
 from localstack.testing.pytest import markers
-from localstack.utils.aws import queries
+from localstack.utils.aws import arns, queries
 from localstack.utils.aws import resources as resource_util
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
@@ -19,15 +19,20 @@ from tests.aws.services.apigateway.test_apigateway_basic import TEST_STAGE_NAME
 
 @markers.aws.unknown
 def test_api_gateway_sqs_integration(aws_client):
-    # create target SQS stream
+    # create target SQS stream'
     queue_name = f"queue-{short_uid()}"
-    resource_util.create_sqs_queue(queue_name)
+    queue_arn = arns.sqs_queue_arn(
+        queue_name, region_name=TEST_AWS_REGION_NAME, account_id=TEST_AWS_ACCOUNT_ID
+    )
+    resource_util.create_sqs_queue(
+        queue_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+    )
 
     # create API Gateway and connect it to the target queue
     result = connect_api_gateway_to_sqs(
         "test_gateway4",
         stage_name=TEST_STAGE_NAME,
-        queue_arn=queue_name,
+        queue_arn=queue_arn,
         path="/data",
         account_id=TEST_AWS_ACCOUNT_ID,
         region_name=TEST_AWS_REGION_NAME,
@@ -44,7 +49,7 @@ def test_api_gateway_sqs_integration(aws_client):
     result = requests.post(url, data=json.dumps(test_data))
     assert 200 == result.status_code
 
-    messages = queries.sqs_receive_message(queue_name)["Messages"]
+    messages = queries.sqs_receive_message(queue_arn)["Messages"]
     assert 1 == len(messages)
     assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
 
