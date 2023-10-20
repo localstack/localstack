@@ -925,7 +925,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         existing_items_for_table = existing_items.setdefault(table_name, [])
                         existing_items_for_table.append(item)
 
-        result = self.forward_request(context)
+        try:
+            result = self.forward_request(context)
+        except CommonServiceException as e:
+            # TODO: validate if DynamoDB still raises `One of the required keys was not given a value`
+            # for now, replace with the schema error validation
+            if e.message == "One of the required keys was not given a value":
+                raise ValidationException("The provided key element does not match the schema")
+            raise e
 
         # determine and forward stream records
         if tables_with_stream:
