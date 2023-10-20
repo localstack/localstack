@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
-from localstack.config import get_edge_port_http
+from localstack.config import get_edge_port_http, LEGACY_S3_PROVIDER
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
@@ -15,7 +15,11 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceRequest,
 )
 from localstack.services.s3.utils import normalize_bucket_name
+from localstack.services.s3.legacy.s3_listener import (
+    remove_bucket_notification as legacy_remove_bucket_notification,
+)
 from localstack.utils.aws import arns
+from localstack.utils.testutil import delete_all_s3_objects
 
 
 class S3BucketProperties(TypedDict):
@@ -654,7 +658,30 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
         IAM permissions required:
           - s3:DeleteBucket
         """
-        raise NotImplementedError
+        model = request.desired_state
+        s3_client = request.aws_client_factory.s3
+
+        try:
+            s3_client.delete_bucket_policy(Bucket=model["BucketName"])
+        except s3_client.exceptions.ClientError:
+            pass
+        if LEGACY_S3_PROVIDER:
+            legacy_remove_bucket_notification(model["BucketName"])
+
+        # TODO: divergence from how AWS deals with bucket deletes (should throw an error)
+        try:
+            delete_all_s3_objects(s3_client, model["BucketName"])
+        except s3_client.exceptions.ClientError as e:
+            if "NoSuchBucket" not in str(e):
+                raise
+
+        s3_client.delete_bucket(Bucket=model["BucketName"])
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def update(
         self,
