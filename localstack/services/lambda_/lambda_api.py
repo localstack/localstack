@@ -601,8 +601,10 @@ def set_archive_code(
     code: Dict, lambda_name_or_arn: str, zip_file_content: bytes = None
 ) -> Optional[str]:
     store = get_lambda_store_v1_for_arn(lambda_name_or_arn)
-    account_id = extract_account_id_from_arn(lambda_name_or_arn) or DEFAULT_AWS_ACCOUNT_ID
-    region_name = extract_region_from_arn(lambda_name_or_arn) or AWS_REGION_US_EAST_1
+    # There is no way around not using `get_region()` or `get_aws_account_id()` without a large overhaul for this
+    # deprecated provider. Making this as an exceptional use. These utilities can be removed when the provider is.
+    account_id = extract_account_id_from_arn(lambda_name_or_arn) or get_aws_account_id()
+    region_name = extract_region_from_arn(lambda_name_or_arn) or aws_stack.get_region()
     # get metadata
     lambda_arn = func_arn(account_id, region_name, lambda_name_or_arn)
     lambda_details = store.lambdas[lambda_arn]
