@@ -39,6 +39,9 @@ class TestOpenSearch:
         assert_host_customisation(endpoint)
 
     @markers.aws.only_localstack
+    @pytest.mark.skipif(
+        not config.in_docker(), reason="Replacement does not work in host mode, currently"
+    )
     def test_port_strategy(
         self,
         monkeypatch,
