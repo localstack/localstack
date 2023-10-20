@@ -879,6 +879,14 @@
       "created_at": "2023-10-10T17:58:42Z",
       "repoId": 71948498,
       "pullRequestNo": 9328
+    },
+    {
+      "name": "yamadayutaka",
+      "id": 77612853,
+      "comment_id": 1772453914,
+      "created_at": "2023-10-20T10:11:34Z",
+      "repoId": 71948498,
+      "pullRequestNo": 9420
     }
   ]
 }
