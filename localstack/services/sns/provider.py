@@ -356,9 +356,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         try:
             parsed_arn = parse_arn(subscription_arn)
         except InvalidArnException:
-            # TODO: check for invalid SubscriptionId and SubscriptionGUID
+            # TODO: check for invalid SubscriptionGUID
             if count < 6:
-                raise InvalidParameterException(f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}")
+                raise InvalidParameterException(
+                    f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}"
+                )
 
         account_id = parsed_arn["account"]
         region_name = parsed_arn["region"]
