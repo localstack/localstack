@@ -69,7 +69,6 @@ class TestKMS:
 
     @markers.aws.validated
     def test_create_alias(self, kms_create_alias, kms_create_key, snapshot):
-
         alias_name = f"{short_uid()}"
         alias_key_id = kms_create_key()["KeyId"]
         with pytest.raises(Exception) as e:
@@ -236,7 +235,6 @@ class TestKMS:
     # Not sure how useful this test is, as it just fails during key validation, before grant-specific logic kicks in.
     @markers.aws.validated
     def test_create_grant_with_invalid_key(self, user_arn, aws_client):
-
         with pytest.raises(ClientError) as e:
             aws_client.kms.create_grant(
                 KeyId="invalid",

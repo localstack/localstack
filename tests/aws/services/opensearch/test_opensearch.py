@@ -28,9 +28,8 @@ from localstack.services.opensearch.cluster_manager import (
 )
 from localstack.services.opensearch.packages import opensearch_package
 from localstack.testing.pytest import markers
-from localstack.utils.common import call_safe, poll_condition, retry
+from localstack.utils.common import call_safe, poll_condition, retry, short_uid, start_worker_thread
 from localstack.utils.common import safe_requests as requests
-from localstack.utils.common import short_uid, start_worker_thread
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)

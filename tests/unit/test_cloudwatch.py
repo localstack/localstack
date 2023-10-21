@@ -21,7 +21,6 @@ class TestAlarmScheduler:
     TEST_5_M_OF_N = "'- - - X -'"
 
     def test_comparison_operation_mapping(self):
-
         a = 3
         b = 4
 

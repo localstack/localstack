@@ -156,7 +156,6 @@ class InternalFailure(CommonServiceException):
 class CloudformationProvider(CloudformationApi):
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
-
         # TODO: test what happens when both TemplateUrl and Body are specified
         state = get_cloudformation_store(context.account_id, context.region)
         template_body = request.get("TemplateBody") or ""
@@ -644,7 +643,6 @@ class CloudformationProvider(CloudformationApi):
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
     ) -> DescribeChangeSetOutput:
-
         # only relevant if change_set_name isn't an ARN
         if not ARN_CHANGESET_REGEX.match(change_set_name):
             if not stack_name:
@@ -682,7 +680,6 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
     ) -> DeleteChangeSetOutput:
-
         # only relevant if change_set_name isn't an ARN
         if not ARN_CHANGESET_REGEX.match(change_set_name):
             if not stack_name:
@@ -808,7 +805,6 @@ class CloudformationProvider(CloudformationApi):
         logical_resource_id: LogicalResourceId = None,
         physical_resource_id: PhysicalResourceId = None,
     ) -> DescribeStackResourcesOutput:
-
         if physical_resource_id and stack_name:
             raise ValidationError("Cannot specify both StackName and PhysicalResourceId")
         # TODO: filter stack by PhysicalResourceId!

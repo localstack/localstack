@@ -203,19 +203,19 @@ test-docker-mount-code:
 		DOCKER_FLAGS="$(DOCKER_FLAGS) --entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/aws:/opt/code/localstack/localstack/aws -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$PACKAGES_DIR/moto:/opt/code/localstack/.venv/lib/python3.11/site-packages/moto/ -e TEST_PATH=\\'$(TEST_PATH)\\' -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
 
 lint:              		  ## Run code linter to check code style
-	($(VENV_RUN); python -m pflake8 --show-source)
+	($(VENV_RUN); python -m ruff check --show-source .)
 
 lint-modified:     		  ## Run code linter on modified files
-	($(VENV_RUN); python -m pflake8 --show-source `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
+	($(VENV_RUN); python -m ruff check --show-source `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
 
 check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibilty markers set
 	($(VENV_RUN); python -m pytest --co tests/aws/)
 
-format:            		  ## Run black and isort code formatter
-	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
+format:            		  ## Run black and ruff code formatter
+	($(VENV_RUN); python -m ruff check --show-source --fix .; python -m black .)
 
-format-modified:   		  ## Run black and isort code formatter on modified files
-	($(VENV_RUN); python -m isort `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
+format-modified:   		  ## Run black and ruff code formatter on modified files
+	($(VENV_RUN); python -m ruff check --show-source --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)

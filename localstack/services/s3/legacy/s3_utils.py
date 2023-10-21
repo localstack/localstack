@@ -205,7 +205,6 @@ def is_expired(expiry_datetime):
 
 
 def authenticate_presign_url(method, path, headers, data=None):
-
     url = "{}{}".format(config.get_edge_url(), path)
     parsed = urlparse.urlparse(url)
     query_params = parse_qs(parsed.query)
@@ -346,7 +345,6 @@ def authenticate_presign_url(method, path, headers, data=None):
 
 
 def authenticate_presign_url_signv2(method, path, headers, data, url, query_params, request_dict):
-
     # Calculating Signature
     aws_request = create_request_object(request_dict)
     credentials = Credentials(
@@ -371,7 +369,6 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
         signature = query_sig
 
     if query_sig != signature:
-
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string="SignatureDoesNotMatch",

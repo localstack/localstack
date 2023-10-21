@@ -206,7 +206,6 @@ class TestKinesisSource:
         snapshot,
         aws_client,
     ):
-
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-foobar-{short_uid()}"
         num_records_per_batch = 10

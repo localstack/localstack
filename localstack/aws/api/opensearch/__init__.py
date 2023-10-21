@@ -1901,7 +1901,6 @@ class UpgradeDomainResponse(TypedDict, total=False):
 
 
 class OpensearchApi:
-
     service = "opensearch"
     version = "2021-01-01"
 

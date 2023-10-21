@@ -966,7 +966,6 @@ class TestLambdaURL:
 class TestLambdaPermissions:
     @markers.aws.validated
     def test_lambda_permission_url_invocation(self, create_lambda_function, snapshot, aws_client):
-
         function_name = f"test-function-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
