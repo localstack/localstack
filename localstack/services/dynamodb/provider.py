@@ -44,6 +44,7 @@ from localstack.aws.api.dynamodb import (
     DescribeKinesisStreamingDestinationOutput,
     DescribeTableOutput,
     DescribeTimeToLiveOutput,
+    DestinationStatus,
     DynamodbApi,
     ExecuteStatementInput,
     ExecuteStatementOutput,
@@ -917,8 +918,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         unprocessed_items_for_table.append(request)
 
                     elif stream_enabled:
-                        # TODO: we should at minimum BatchRead those values instead of individually checking them
-                        #  also, BatchWrite does not update but overwrite, so verify if we should check the existence
+                        # TODO: we should BatchRead those values instead of individually checking them
                         item = ItemFinder.find_existing_item(
                             inner_request, table_name, context.account_id, context.region
                         )
@@ -945,9 +945,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
             self.forward_stream_records(context.account_id, context.region, records)
 
-        # TODO: should unprocessed item which have mutated by `prepare_batch_write_item_records` be returned in the
-        # response??
-        # update response
+        # TODO: should unprocessed item which have mutated by `prepare_batch_write_item_records` be returned
         for table_name, unprocessed_items_in_table in unprocessed_items.items():
             unprocessed: dict = result["UnprocessedItems"]
             result_unprocessed_table = unprocessed.setdefault(table_name, [])
@@ -983,6 +981,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         transact_write_items_input: TransactWriteItemsInput,
     ) -> TransactWriteItemsOutput:
+        # TODO: refactor to apply the same logic as in `BatchWriteItem`: don't prep records if not stream enabled
         existing_items = []
         for item in transact_write_items_input["TransactItems"]:
             for key in ["Put", "Update", "Delete"]:
@@ -1250,14 +1249,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # append the active stream destination at the end of the list
         table_def["KinesisDataStreamDestinations"].append(
             {
-                "DestinationStatus": "ACTIVE",
+                "DestinationStatus": DestinationStatus.ACTIVE,
                 "DestinationStatusDescription": "Stream is active",
                 "StreamArn": stream_arn,
             }
         )
-        table_def["KinesisDataStreamDestinationStatus"] = "ACTIVE"
+        table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.ACTIVE
         return KinesisStreamingDestinationOutput(
-            DestinationStatus="ACTIVE", StreamArn=stream_arn, TableName=table_name
+            DestinationStatus=DestinationStatus.ACTIVE, StreamArn=stream_arn, TableName=table_name
         )
 
     def disable_kinesis_streaming_destination(
@@ -1277,14 +1276,17 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations")
         if stream_destinations:
-            if table_def["KinesisDataStreamDestinationStatus"] == "ACTIVE":
+            if table_def["KinesisDataStreamDestinationStatus"] == DestinationStatus.ACTIVE:
                 for dest in stream_destinations:
-                    if dest["StreamArn"] == stream_arn and dest["DestinationStatus"] == "ACTIVE":
-                        dest["DestinationStatus"] = "DISABLED"
+                    if (
+                        dest["StreamArn"] == stream_arn
+                        and dest["DestinationStatus"] == DestinationStatus.ACTIVE
+                    ):
+                        dest["DestinationStatus"] = DestinationStatus.DISABLED
                         dest["DestinationStatusDescription"] = ("Stream is disabled",)
-                        table_def["KinesisDataStreamDestinationStatus"] = "DISABLED"
+                        table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.DISABLED
                         return KinesisStreamingDestinationOutput(
-                            DestinationStatus="DISABLED",
+                            DestinationStatus=DestinationStatus.DISABLED,
                             StreamArn=stream_arn,
                             TableName=table_name,
                         )
@@ -1595,6 +1597,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     existing_item = None
                 for key, request in write_request.items():
                     if key == "PutRequest":
+                        if existing_item == request["Item"]:
+                            # if the item is the same as the previous version, AWS does not send an event
+                            continue
                         keys = SchemaExtractor.extract_keys(
                             item=request["Item"],
                             table_name=table_name,
@@ -1790,6 +1795,7 @@ def get_updated_records(
 
         # prepare record
         keys = SchemaExtractor.extract_keys_for_schema(item=item, key_schema=key_schema)
+        # TODO: use `DynamoDBProvider.get_record_template()`
         record = {
             "eventName": event_name,
             "eventID": short_uid(),
@@ -1797,7 +1803,11 @@ def get_updated_records(
                 "Keys": keys,
                 "NewImage": new_image,
                 "SizeBytes": _get_size_bytes(item),
+                "ApproximateCreationDateTime": int(time.time()),
             },
+            "awsRegion": region_name,
+            "eventSource": "aws:dynamodb",
+            "eventVersion": "1.1",
         }
         if stream_spec:
             record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
