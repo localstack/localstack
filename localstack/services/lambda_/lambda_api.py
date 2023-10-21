@@ -1423,7 +1423,6 @@ def update_function_configuration(function):
 
 
 def generate_policy_statement(sid, action, arn, sourcearn, principal, url_auth_type):
-
     statement = {
         "Sid": sid,
         "Effect": "Allow",

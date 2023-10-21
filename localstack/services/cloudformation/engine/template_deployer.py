@@ -830,9 +830,9 @@ class TemplateDeployer:
                 action="CREATE",
             )
         except Exception as e:
-            log_method = getattr(LOG, "info")
+            log_method = LOG.info
             if config.CFN_VERBOSE_ERRORS:
-                log_method = getattr(LOG, "exception")
+                log_method = LOG.exception
             log_method("Unable to create stack %s: %s", self.stack.stack_name, e)
             self.stack.set_stack_status("CREATE_FAILED")
             raise
@@ -924,9 +924,9 @@ class TemplateDeployer:
                             e,
                         )
                     else:
-                        log_method = getattr(LOG, "warning")
+                        log_method = LOG.warning
                         if config.CFN_VERBOSE_ERRORS:
-                            log_method = getattr(LOG, "exception")
+                            log_method = LOG.exception
                         log_method(
                             "Failed delete of resource with id %s in iteration cycle %d. Retrying in next cycle.",
                             resource_id,
@@ -1172,9 +1172,9 @@ class TemplateDeployer:
                 self.do_apply_changes_in_loop(changes, stack)
                 status = f"{action}_COMPLETE"
             except Exception as e:
-                log_method = getattr(LOG, "debug")
+                log_method = LOG.debug
                 if config.CFN_VERBOSE_ERRORS:
-                    log_method = getattr(LOG, "exception")
+                    log_method = LOG.exception
                 log_method(
                     'Error applying changes for CloudFormation stack "%s": %s %s',
                     stack.stack_name,
@@ -1248,9 +1248,9 @@ class TemplateDeployer:
                     del changes[j]
                     updated = True
                 except DependencyNotYetSatisfied as e:
-                    log_method = getattr(LOG, "debug")
+                    log_method = LOG.debug
                     if config.CFN_VERBOSE_ERRORS:
-                        log_method = getattr(LOG, "exception")
+                        log_method = LOG.exception
                     log_method(
                         'Dependencies for "%s" not yet satisfied, retrying in next loop: %s',
                         resource_id,
@@ -1449,7 +1449,7 @@ def resolve_outputs(account_id: str, region_name: str, stack) -> list[dict]:
             )
             value = details["Value"]
         except Exception as e:
-            log_method = getattr(LOG, "debug")
+            log_method = LOG.debug
             if config.CFN_VERBOSE_ERRORS:
                 raise  # unresolvable outputs cause a stack failure
                 # log_method = getattr(LOG, "exception")

@@ -99,7 +99,6 @@ class SfnGatewayException(Exception):
 
 
 class StateTaskServiceApiGateway(StateTaskServiceCallback):
-
     _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
         SupportedApiCalls.invoke: set(TaskParameters.__required_keys__)  # noqa
     }

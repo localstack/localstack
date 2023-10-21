@@ -5,10 +5,14 @@ from localstack.aws.api import (
     ServiceRequest,
     ServiceResponse,
 )
-from localstack.aws.chain import CompositeHandler, CompositeResponseHandler, ExceptionHandler
+from localstack.aws.chain import (
+    CompositeHandler,
+    CompositeResponseHandler,
+    ExceptionHandler,
+    HandlerChain,
+)
 from localstack.aws.chain import Handler as RequestHandler
 from localstack.aws.chain import Handler as ResponseHandler
-from localstack.aws.chain import HandlerChain
 
 __all__ = [
     "RequestContext",

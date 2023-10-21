@@ -4673,5 +4673,43 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_unsubscribe_wrong_arn_format": {
+    "recorded-date": "20-10-2023, 12:52:36",
+    "recorded-content": {
+      "invalid-unsubscribe-arn-1": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-unsubscribe-arn-2": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 5",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-unsubscribe-arn-3": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionId",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

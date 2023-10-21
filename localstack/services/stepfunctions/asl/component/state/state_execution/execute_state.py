@@ -164,7 +164,9 @@ class ExecutionState(CommonStateField, abc.ABC):
         failure_event: FailureEvent = self._from_error(env=env, ex=ex)
 
         env.event_history.add_event(
-            hist_type_event=failure_event.event_type, event_detail=failure_event.event_details
+            context=env.event_history_context,
+            hist_type_event=failure_event.event_type,
+            event_detail=failure_event.event_details,
         )
 
         env.stack.append(failure_event)
@@ -179,6 +181,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         # Log state failure.
         state_failure_event = self._from_error(env=env, ex=ex)
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=state_failure_event.event_type,
             event_detail=state_failure_event.event_details,
         )
@@ -211,6 +214,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         thread.start()
         finished_on_time: bool = terminated_event.wait(timeout_seconds)
         frame.set_ended()
+        env.close_frame(frame)
 
         execution_exception = execution_exceptions.pop()
         if execution_exception:

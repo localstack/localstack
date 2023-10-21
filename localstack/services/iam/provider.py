@@ -4,9 +4,16 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from urllib.parse import quote
 
-from moto.iam.models import AccessKey, AWSManagedPolicy, IAMBackend, InlinePolicy, Policy
+from moto.iam.models import (
+    AccessKey,
+    AWSManagedPolicy,
+    IAMBackend,
+    InlinePolicy,
+    Policy,
+    filter_items_with_path_prefix,
+    iam_backends,
+)
 from moto.iam.models import Role as MotoRole
-from moto.iam.models import filter_items_with_path_prefix, iam_backends
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
 
 from localstack import config

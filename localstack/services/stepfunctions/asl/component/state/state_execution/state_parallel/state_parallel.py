@@ -31,7 +31,12 @@ class StateParallel(ExecutionState):
 
     def _eval_execution(self, env: Environment) -> None:
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.ParallelStateStarted,
         )
         self.branches.eval(env)
-        env.event_history.add_event(hist_type_event=HistoryEventType.ParallelStateSucceeded)
+        env.event_history.add_event(
+            context=env.event_history_context,
+            hist_type_event=HistoryEventType.ParallelStateSucceeded,
+            update_source_event_id=False,
+        )

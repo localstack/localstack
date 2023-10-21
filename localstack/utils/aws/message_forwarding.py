@@ -14,7 +14,7 @@ from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
     extract_region_from_arn,
     firehose_name,
-    get_sqs_queue_url,
+    sqs_queue_url_for_arn,
 )
 from localstack.utils.http import add_path_parameters_to_url, add_query_params_to_url
 from localstack.utils.http import safe_requests as requests
@@ -69,7 +69,7 @@ def send_event_to_target(
         sqs_client = clients.sqs.request_metadata(
             service_principal=source_service, source_arn=source_arn
         )
-        queue_url = get_sqs_queue_url(target_arn)
+        queue_url = sqs_queue_url_for_arn(target_arn)
         msg_group_id = collections.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         sqs_client.send_message(

@@ -1372,7 +1372,6 @@ class VerifyEmailIdentityResponse(TypedDict, total=False):
 
 
 class SesApi:
-
     service = "ses"
     version = "2010-12-01"
 

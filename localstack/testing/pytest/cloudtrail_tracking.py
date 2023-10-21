@@ -34,7 +34,9 @@ def cfn_store_events_role_arn(request, create_iam_role_with_policy, aws_client):
     # check that the user has run the bootstrap stack
 
     try:
-        step_function_arn = aws_client.ssm.get_parameter(Name="cloudtrail-stepfunction-arn",)[
+        step_function_arn = aws_client.ssm.get_parameter(
+            Name="cloudtrail-stepfunction-arn",
+        )[
             "Parameter"
         ]["Value"]
     except aws_client.ssm.exceptions.ParameterNotFound:

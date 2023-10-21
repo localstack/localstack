@@ -11,9 +11,6 @@ from localstack.aws.api.es import (
     AdvancedOptions,
     AdvancedSecurityOptionsInput,
     AutoTuneOptionsInput,
-)
-from localstack.aws.api.es import BaseException as EsBaseException
-from localstack.aws.api.es import (
     CognitoOptions,
     CompatibleElasticsearchVersionsList,
     CompatibleVersionsMap,
@@ -62,6 +59,7 @@ from localstack.aws.api.es import (
     ValidationException,
     VPCOptions,
 )
+from localstack.aws.api.es import BaseException as EsBaseException
 from localstack.aws.api.opensearch import (
     ClusterConfig,
     CompatibleVersionsList,

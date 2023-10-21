@@ -136,8 +136,8 @@ class ExecutionEnvironment:
             "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
             # 3) Public LocalStack endpoint
             "LOCALSTACK_HOSTNAME": self.runtime_executor.get_endpoint_from_executor(),
-            "EDGE_PORT": str(config.EDGE_PORT),
-            "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.EDGE_PORT}",
+            "EDGE_PORT": str(config.GATEWAY_LISTEN[0].port),
+            "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}",
             # 4) Internal LocalStack runtime API
             "LOCALSTACK_RUNTIME_ID": self.id,
             "LOCALSTACK_RUNTIME_ENDPOINT": self.runtime_executor.get_runtime_endpoint(),

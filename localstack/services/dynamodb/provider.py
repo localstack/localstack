@@ -348,12 +348,11 @@ def modify_context_region(context: RequestContext, region: str):
 
 
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
-
     server: DynamodbServer
     """The instance of the server managing the instance of DynamoDB local"""
 
     def __init__(self):
-        self.server = DynamodbServer()
+        self.server = self._new_dynamodb_server()
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
 
     def on_before_start(self):
@@ -369,11 +368,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def on_before_state_load(self):
         self.server.stop_dynamodb()
-        self.server = DynamodbServer()
+        self.server = self._new_dynamodb_server()
 
     def on_after_state_reset(self):
-        self.server = DynamodbServer()
+        self.server = self._new_dynamodb_server()
         self.server.start_dynamodb()
+
+    def _new_dynamodb_server(self) -> DynamodbServer:
+        return DynamodbServer(config.DYNAMODB_LOCAL_PORT)
 
     def on_after_state_load(self):
         self.server.start_dynamodb()
@@ -1630,6 +1632,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return (action in throttled) or (action in actions)
 
     def should_throttle(self, action):
+        if (
+            not config.DYNAMODB_READ_ERROR_PROBABILITY
+            and not config.DYNAMODB_ERROR_PROBABILITY
+            and not config.DYNAMODB_WRITE_ERROR_PROBABILITY
+        ):
+            # early exit so we don't need to call random()
+            return False
+
         rand = random.random()
         if rand < config.DYNAMODB_READ_ERROR_PROBABILITY and self.action_should_throttle(
             action, READ_THROTTLED_ACTIONS

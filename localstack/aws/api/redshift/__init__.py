@@ -3119,7 +3119,6 @@ class UsageLimitList(TypedDict, total=False):
 
 
 class RedshiftApi:
-
     service = "redshift"
     version = "2012-12-01"
 

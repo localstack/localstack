@@ -1,4 +1,4 @@
-# flake8: noqa
+# ruff: noqa
 # LocalStack Resource Provider Scaffolding v1
 import os
 

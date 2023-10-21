@@ -5477,7 +5477,6 @@ class UpdateServiceSettingResult(TypedDict, total=False):
 
 
 class SsmApi:
-
     service = "ssm"
     version = "2014-11-06"
 
