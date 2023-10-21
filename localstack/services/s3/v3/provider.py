@@ -1296,8 +1296,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         is_truncated = False
         next_key_marker = None
         max_keys = max_keys or 1000
-        prefix = urlparse.quote(prefix or "")
-        delimiter = urlparse.quote(delimiter or "")
+        if encoding_type:
+            prefix = urlparse.quote(prefix or "")
+            delimiter = urlparse.quote(delimiter or "")
 
         s3_objects: list[Object] = []
 
@@ -1311,7 +1312,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     next_key_marker = s3_objects[-1]["Key"]
                 break
 
-            key = urlparse.quote(s3_object.key)
+            key = urlparse.quote(s3_object.key) if encoding_type else s3_object.key
             # skip all keys that alphabetically come before key_marker
             if marker:
                 if key <= marker:
@@ -1354,12 +1355,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             IsTruncated=is_truncated,
             Name=bucket,
             MaxKeys=max_keys,
-            EncodingType=EncodingType.url,
             Prefix=prefix or "",
             Marker=marker or "",
         )
         if s3_objects:
             response["Contents"] = s3_objects
+        if encoding_type:
+            response["EncodingType"] = EncodingType.url
         if delimiter:
             response["Delimiter"] = delimiter
         if common_prefixes:
@@ -1397,8 +1399,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         is_truncated = False
         next_continuation_token = None
         max_keys = max_keys or 1000
-        prefix = urlparse.quote(prefix or "")
-        delimiter = urlparse.quote(delimiter or "")
+        if encoding_type:
+            prefix = urlparse.quote(prefix or "")
+            delimiter = urlparse.quote(delimiter or "")
         decoded_continuation_token = (
             to_str(base64.urlsafe_b64decode(continuation_token.encode()))
             if continuation_token
@@ -1412,7 +1415,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         all_objects.sort(key=lambda r: r.key)
 
         for s3_object in all_objects:
-            key = urlparse.quote(s3_object.key)
+            key = urlparse.quote(s3_object.key) if encoding_type else s3_object.key
             # skip all keys that alphabetically come before key_marker
             # TODO: what if there's StartAfter AND ContinuationToken
             if continuation_token:
@@ -1466,12 +1469,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             IsTruncated=is_truncated,
             Name=bucket,
             MaxKeys=max_keys,
-            EncodingType=EncodingType.url,
             Prefix=prefix or "",
             KeyCount=count,
         )
         if s3_objects:
             response["Contents"] = s3_objects
+        if encoding_type:
+            response["EncodingType"] = EncodingType.url
         if delimiter:
             response["Delimiter"] = delimiter
         if common_prefixes:
@@ -1510,8 +1514,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         next_key_marker = None
         next_version_id_marker = None
         max_keys = max_keys or 1000
-        prefix = urlparse.quote(prefix or "")
-        delimiter = urlparse.quote(delimiter or "")
+        if encoding_type:
+            prefix = urlparse.quote(prefix or "")
+            delimiter = urlparse.quote(delimiter or "")
 
         object_versions: list[ObjectVersion] = []
         delete_markers: list[DeleteMarkerEntry] = []
@@ -1521,7 +1526,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         all_versions.sort(key=lambda r: (r.key, -r.last_modified.timestamp()))
 
         for version in all_versions:
-            key = urlparse.quote(version.key)
+            key = urlparse.quote(version.key) if encoding_type else version.key
             # skip all keys that alphabetically come before key_marker
             if key_marker:
                 if key < key_marker:
@@ -1588,13 +1593,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             IsTruncated=is_truncated,
             Name=bucket,
             MaxKeys=max_keys,
-            EncodingType=EncodingType.url,
             Prefix=prefix,
             KeyMarker=key_marker or "",
             VersionIdMarker=version_id_marker or "",
         )
         if object_versions:
             response["Versions"] = object_versions
+        if encoding_type:
+            response["EncodingType"] = EncodingType.url
         if delete_markers:
             response["DeleteMarkers"] = delete_markers
         if delimiter:
