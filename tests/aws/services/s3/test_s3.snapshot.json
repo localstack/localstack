@@ -11205,5 +11205,36 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_delete_objects_encoding": {
+    "recorded-date": "22-10-2023, 01:19:54",
+    "recorded-content": {
+      "deleted-resp": {
+        "Deleted": [
+          {
+            "Key": "a%2Fb"
+          },
+          {
+            "Key": "a/%F0%9F%98%80"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 0,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
