@@ -100,12 +100,9 @@ from localstack.aws.api.dynamodb import (
     UpdateTimeToLiveOutput,
 )
 from localstack.aws.connect import connect_to
-from localstack.aws.forwarder import get_request_forwarder_http
+from localstack.constants import AUTH_CREDENTIAL_REGEX, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.constants import (
-    AUTH_CREDENTIAL_REGEX,
     AWS_REGION_US_EAST_1,
-    LOCALHOST,
-    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.http import Response
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
@@ -360,7 +357,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def __init__(self):
         self.server = self._new_dynamodb_server()
-        self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
 
     def on_before_start(self):
         self.server.start_dynamodb()
@@ -442,11 +438,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self.prepare_request_headers(
             context.request.headers, account_id=context.account_id, region_name=context.region
         )
-        return self.request_forwarder(context, service_request)
+        return self.server.proxy(context, service_request)
 
     def get_forward_url(self) -> str:
         """Return the URL of the backend DynamoDBLocal server to forward requests to"""
-        return f"http://{LOCALHOST}:{self.server.port}"
+        return self.server.url
 
     def handle_shell_ui_redirect(self, request: werkzeug.Request) -> Response:
         headers = {"Refresh": f"0; url={config.service_url('dynamodb')}/shell/index.html"}
