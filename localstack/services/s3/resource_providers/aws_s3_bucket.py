@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Optional, TypedDict
 
+from botocore.exceptions import ClientError
+
 import localstack.services.cloudformation.provider_utils as util
 from localstack.config import LEGACY_S3_PROVIDER, get_edge_port_http
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
@@ -598,7 +600,7 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
     def _create_bucket_if_does_not_exist(self, model, region_name, s3_client):
         try:
             s3_client.head_bucket(Bucket=model["BucketName"])
-        except s3_client.exceptions.ClientError as e:
+        except ClientError as e:
             if e.response["Error"]["Message"] != "Not Found":
                 return
 
@@ -661,10 +663,6 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
         model = request.desired_state
         s3_client = request.aws_client_factory.s3
 
-        try:
-            s3_client.delete_bucket_policy(Bucket=model["BucketName"])
-        except s3_client.exceptions.ClientError:
-            pass
         if LEGACY_S3_PROVIDER:
             legacy_remove_bucket_notification(model["BucketName"])
 
