@@ -2514,7 +2514,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketPolicy::test_bucket_policy_crud": {
-    "recorded-date": "10-08-2023, 17:27:26",
+    "recorded-date": "20-10-2023, 17:31:38",
     "recorded-content": {
       "get-bucket-default-policy": {
         "Error": {
@@ -2567,6 +2567,12 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "delete-bucket-policy-after-delete": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
         }
       }
     }
