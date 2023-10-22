@@ -3276,6 +3276,9 @@ class TestS3:
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key_1, Body="percent encoding")
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key_2, Body="percent encoded emoji")
 
+        list_objects = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects-before-delete", list_objects)
+
         response = aws_client.s3.delete_objects(
             Bucket=s3_bucket,
             Delete={
