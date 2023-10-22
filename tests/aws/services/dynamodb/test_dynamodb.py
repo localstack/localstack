@@ -42,7 +42,7 @@ def dynamodbstreams_snapshot_transformers(snapshot):
             snapshot.transform.key_value("TableName"),
             snapshot.transform.key_value("TableStatus"),
             snapshot.transform.key_value("LatestStreamLabel"),
-            snapshot.transform.key_value("StartingSequenceNumber"),
+            snapshot.transform.key_value("StartingSequenceNumber", reference_replacement=False),
             snapshot.transform.key_value("ShardId"),
             snapshot.transform.key_value("StreamLabel"),
             snapshot.transform.key_value("SequenceNumber"),

@@ -435,7 +435,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_items_streaming": {
-    "recorded-date": "22-10-2023, 22:10:31",
+    "recorded-date": "22-10-2023, 23:23:09",
     "recorded-content": {
       "create-table": {
         "TableDescription": {
@@ -488,7 +488,7 @@
           "Shards": [
             {
               "SequenceNumberRange": {
-                "StartingSequenceNumber": "<starting-sequence-number:1>"
+                "StartingSequenceNumber": "starting-sequence-number"
               },
               "ShardId": "<shard-id:1>"
             }
@@ -635,7 +635,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_stream_view_type": {
-    "recorded-date": "22-10-2023, 22:41:05",
+    "recorded-date": "22-10-2023, 23:22:27",
     "recorded-content": {
       "create-table": {
         "TableDescription": {
@@ -688,7 +688,7 @@
           "Shards": [
             {
               "SequenceNumberRange": {
-                "StartingSequenceNumber": "<starting-sequence-number:1>"
+                "StartingSequenceNumber": "starting-sequence-number"
               },
               "ShardId": "<shard-id:1>"
             }
