@@ -784,6 +784,39 @@ class TestS3:
         )
         snapshot.match("list-objects-both-markers", response)
 
+        response = aws_client.s3.list_object_versions(Bucket=s3_bucket, MaxKeys=1, KeyMarker="")
+        snapshot.match("list-objects-next-key-empty", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=[
+            "$..Prefix",
+            "$..NextMarker",
+        ],
+    )
+    def test_list_objects_next_marker(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("NextMarker"))
+        snapshot.add_transformer(snapshot.transform.key_value("Key"), priority=-1)
+        keys = [f"test_{i}" for i in range(3)]
+        for key in keys:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
+
+        response = aws_client.s3.list_objects(Bucket=s3_bucket)
+        snapshot.match("list-objects-all", response)
+
+        response = aws_client.s3.list_objects(Bucket=s3_bucket, MaxKeys=1, Delimiter="/")
+        snapshot.match("list-objects-max-1", response)
+        # next marker is not there by default, you need a delimiter or you need to use the last key
+        next_marker = response["NextMarker"]
+
+        response = aws_client.s3.list_objects(Bucket=s3_bucket, Marker=next_marker, MaxKeys=1)
+        snapshot.match("list-objects-rest", response)
+
+        resp = aws_client.s3.list_objects(Bucket=s3_bucket, Marker="", MaxKeys=1)
+        snapshot.match("list-objects-marker-empty", resp)
+
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_object_no_such_bucket(self, snapshot, aws_client):
