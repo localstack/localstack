@@ -677,6 +677,114 @@ class TestS3:
         snapshot.match("list-objects-v2-no-encoding", resp_dict)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=[
+            "$..Error.ArgumentName",
+            "$..ContinuationToken",
+            "list-objects-v2-max-5.Contents[4].Key",  # this is because moto returns a Cont.Token equal to Key
+        ],
+    )
+    def test_list_objects_v2_continuation_start_after(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("NextContinuationToken"))
+        keys = [f"test_{i}" for i in range(12)]
+        for key in keys:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket, MaxKeys=5)
+        snapshot.match("list-objects-v2-max-5", response)
+
+        continuation_token = response["NextContinuationToken"]
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket, ContinuationToken=continuation_token
+        )
+        snapshot.match("list-objects-v2-rest", response)
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket, StartAfter="test_7")
+        snapshot.match("list-objects-start-after", response)
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket,
+            StartAfter="test_7",
+            ContinuationToken=continuation_token,
+        )
+        snapshot.match("list-objects-start-after-token", response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.list_objects_v2(Bucket=s3_bucket, ContinuationToken="")
+        snapshot.match("exc-continuation-token", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    def test_list_objects_versions_markers(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # snapshot.add_transformer(snapshot.transform.key_value("NextContinuationToken"))
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        keys = [f"test_{i}" for i in range(3)]
+        # we need to snapshot the version ids in order of creation to understand better the ordering in snapshots
+        versions_ids = []
+        for key in keys:
+            resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"version 1")
+            versions_ids.append(resp["VersionId"])
+
+        # add versions on top
+        resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=keys[2], Body=b"version 2")
+        versions_ids.append(resp["VersionId"])
+
+        # put DeleteMarkers to change a bit the ordering
+        for key in keys:
+            resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+            versions_ids.append(resp["VersionId"])
+        # re-add versions for some
+        for key in keys[:2]:
+            resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"version 2")
+            versions_ids.append(resp["VersionId"])
+
+        snapshot.match(
+            "version-order",
+            {"Versions": [{"VersionId": version_id} for version_id in versions_ids]},
+        )
+        # get everything to check default order
+        response = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-objects-versions-all", response)
+
+        response = aws_client.s3.list_object_versions(Bucket=s3_bucket, MaxKeys=5)
+        snapshot.match("list-objects-versions-5", response)
+
+        next_key_marker = response["NextKeyMarker"]
+        next_version_id_marker = response["NextVersionIdMarker"]
+
+        # try to see what's next when specifying only one
+        response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket, MaxKeys=1, KeyMarker=next_key_marker
+        )
+        snapshot.match("list-objects-next-key-only", response)
+
+        # try with last key
+        response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket, MaxKeys=1, KeyMarker=keys[-1]
+        )
+        snapshot.match("list-objects-next-key-last", response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.list_object_versions(
+                Bucket=s3_bucket, MaxKeys=1, VersionIdMarker=next_version_id_marker
+            )
+        snapshot.match("list-objects-next-version-only", e.value.response)
+
+        response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket,
+            MaxKeys=1,
+            KeyMarker=next_key_marker,
+            VersionIdMarker=next_version_id_marker,
+        )
+        snapshot.match("list-objects-both-markers", response)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_object_no_such_bucket(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))

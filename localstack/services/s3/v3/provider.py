@@ -1393,8 +1393,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> ListObjectsV2Output:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        if continuation_token and continuation_token == "":
-            raise InvalidArgument("The continuation token provided is incorrect")
+        if continuation_token == "":
+            raise InvalidArgument(
+                "The continuation token provided is incorrect",
+                ArgumentName="continuation-token",
+            )
 
         common_prefixes = set()
         count = 0
@@ -1426,8 +1429,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 if key < decoded_continuation_token:
                     continue
 
-            if start_after:
-                if key < start_after:
+            elif start_after:
+                if key <= start_after:
                     continue
 
             # Filter for keys that start with prefix
@@ -1444,8 +1447,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     common_prefixes.add(prefix_including_delimiter)
                 continue
 
-            count += 1
-            if count > max_keys:
+            if count + 1 > max_keys:
                 is_truncated = True
                 next_continuation_token = to_str(base64.urlsafe_b64encode(s3_object.key.encode()))
                 break
@@ -1466,6 +1468,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
 
             s3_objects.append(object_data)
+            count += 1
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 
@@ -1486,10 +1489,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["CommonPrefixes"] = common_prefixes
         if next_continuation_token:
             response["NextContinuationToken"] = next_continuation_token
+
         if continuation_token:
             response["ContinuationToken"] = continuation_token
-        if start_after:
+        elif start_after:
             response["StartAfter"] = start_after
+
         if s3_bucket.bucket_region != "us-east-1":
             response["BucketRegion"] = s3_bucket.bucket_region
 
@@ -1510,8 +1515,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectVersionsOutput:
-        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        if version_id_marker and not key_marker:
+            raise InvalidArgument(
+                "A version-id marker cannot be specified without a key marker.",
+                ArgumentName="version-id-marker",
+                ArgumentValue=version_id_marker,
+            )
 
+        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         common_prefixes = set()
         count = 0
         is_truncated = False
@@ -1523,6 +1534,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if encoding_type:
             prefix = urlparse.quote(prefix)
             delimiter = urlparse.quote(delimiter)
+        version_key_marker_found = False
 
         object_versions: list[ObjectVersion] = []
         delete_markers: list[DeleteMarkerEntry] = []
@@ -1538,8 +1550,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 if key < key_marker:
                     continue
                 elif key == key_marker:
-                    # if we're at the key_marker, skip versions that are before version_id_marker
-                    if version_id_marker and version.version_id < version_id_marker:
+                    if not version_id_marker:
+                        continue
+                    # as the keys are ordered by time, once we found the key marker, we can return the next one
+                    if version.version_id == version_id_marker:
+                        version_key_marker_found = True
+                        continue
+                    elif not version_key_marker_found:
+                        # as long as we have not passed the version_key_marker, skip the versions
                         continue
 
             # Filter for keys that start with prefix
@@ -1556,13 +1574,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     common_prefixes.add(prefix_including_delimiter)
                 continue
 
-            count += 1
-            if count > max_keys:
-                is_truncated = True
-                next_key_marker = version.key
-                next_version_id_marker = version.version_id
-                break
-
             if isinstance(version, S3DeleteMarker):
                 delete_marker = DeleteMarkerEntry(
                     Key=key,
@@ -1572,26 +1583,32 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     LastModified=version.last_modified,
                 )
                 delete_markers.append(delete_marker)
-                continue
+            else:
+                # TODO: add RestoreStatus if present
+                object_version = ObjectVersion(
+                    Key=key,
+                    ETag=version.quoted_etag,
+                    Owner=s3_bucket.owner,  # TODO: verify reality
+                    Size=version.size,
+                    VersionId=version.version_id or "null",
+                    LastModified=version.last_modified,
+                    IsLatest=version.is_current,
+                    # TODO: verify this, are other class possible?
+                    # StorageClass=version.storage_class,
+                    StorageClass=ObjectVersionStorageClass.STANDARD,
+                )
 
-            # TODO: add RestoreStatus if present
-            object_version = ObjectVersion(
-                Key=key,
-                ETag=version.quoted_etag,
-                Owner=s3_bucket.owner,  # TODO: verify reality
-                Size=version.size,
-                VersionId=version.version_id or "null",
-                LastModified=version.last_modified,
-                IsLatest=version.is_current,
-                # TODO: verify this, are other class possible?
-                # StorageClass=version.storage_class,
-                StorageClass=ObjectVersionStorageClass.STANDARD,
-            )
+                if version.checksum_algorithm:
+                    object_version["ChecksumAlgorithm"] = [version.checksum_algorithm]
 
-            if version.checksum_algorithm:
-                object_version["ChecksumAlgorithm"] = [version.checksum_algorithm]
+                object_versions.append(object_version)
 
-            object_versions.append(object_version)
+            count += 1
+            if count >= max_keys:
+                is_truncated = True
+                next_key_marker = version.key
+                next_version_id_marker = version.version_id
+                break
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 
