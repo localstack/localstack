@@ -3288,6 +3288,7 @@ class TestS3:
                 ],
             },
         )
+        response["Deleted"].sort(key=itemgetter("Key"))
         snapshot.match("deleted-resp", response)
 
         list_objects = aws_client.s3.list_objects_v2(Bucket=s3_bucket)

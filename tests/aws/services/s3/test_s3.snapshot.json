@@ -11240,10 +11240,10 @@
       "deleted-resp": {
         "Deleted": [
           {
-            "Key": "a/%F0%9F%98%80"
+            "Key": "a%2Fb"
           },
           {
-            "Key": "a%2Fb"
+            "Key": "a/%F0%9F%98%80"
           }
         ],
         "ResponseMetadata": {
