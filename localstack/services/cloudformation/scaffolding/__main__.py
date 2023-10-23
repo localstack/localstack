@@ -36,7 +36,7 @@ SCAFFOLDING_VERSION = 2
 # Some services require their names to be re-written as we know them by different names
 SERVICE_NAME_MAP = {
     "OpenSearchService": "OpenSearch",
-    "Lambda": "AWSLambda",
+    "Lambda": "lambda_",
 }
 
 

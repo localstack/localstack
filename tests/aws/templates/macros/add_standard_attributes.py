@@ -5,7 +5,6 @@ def handler(event, context):
 
 
 def add_standard_attributes(fragment):
-
     fragment["FifoTopic"] = True
     fragment["ContentBasedDeduplication"] = True
 

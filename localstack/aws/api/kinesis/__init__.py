@@ -646,7 +646,6 @@ class UpdateStreamModeInput(ServiceRequest):
 
 
 class KinesisApi:
-
     service = "kinesis"
     version = "2013-12-02"
 

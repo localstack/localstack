@@ -376,6 +376,7 @@ class ResourceAttribute(str):
     CreationPolicy = "CreationPolicy"
     UpdatePolicy = "UpdatePolicy"
     DeletionPolicy = "DeletionPolicy"
+    UpdateReplacePolicy = "UpdateReplacePolicy"
     Tags = "Tags"
 
 
@@ -2279,7 +2280,6 @@ class ValidateTemplateOutput(TypedDict, total=False):
 
 
 class CloudformationApi:
-
     service = "cloudformation"
     version = "2010-05-15"
 

@@ -6,8 +6,10 @@ from typing import Dict
 
 import pytest
 from boto3.dynamodb.types import STRING
+from botocore.exceptions import ClientError
 
 from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
+from localstack.constants import AWS_REGION_US_EAST_1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
@@ -15,6 +17,7 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries, resources
+from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.sync import poll_condition, wait_until
 from tests.aws.services.kinesis.test_kinesis import get_shard_iterator
@@ -28,8 +31,26 @@ TEST_DDB_TAGS = [
 
 
 @pytest.fixture(autouse=True)
-def transcribe_snapshot_transformer(snapshot):
+def dynamodb_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.dynamodb_api())
+
+
+@pytest.fixture
+def dynamodbstreams_snapshot_transformers(snapshot):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("TableName"),
+            snapshot.transform.key_value("TableStatus"),
+            snapshot.transform.key_value("LatestStreamLabel"),
+            snapshot.transform.key_value("StartingSequenceNumber", reference_replacement=False),
+            snapshot.transform.key_value("ShardId"),
+            snapshot.transform.key_value("StreamLabel"),
+            snapshot.transform.key_value("SequenceNumber"),
+            snapshot.transform.key_value("eventID"),
+        ]
+    )
+    snapshot.add_transformer(snapshot.transform.key_value("NextShardIterator"), priority=-1)
+    snapshot.add_transformer(snapshot.transform.key_value("ShardIterator"), priority=-1)
 
 
 class TestDynamoDB:
@@ -191,6 +212,7 @@ class TestDynamoDB:
             table_name,
             partition_key=PARTITION_KEY,
             stream_view_type="NEW_AND_OLD_IMAGES",
+            client=aws_client.dynamodb,
         )
 
         table = aws_client.dynamodb.describe_table(TableName=table_name)["Table"]
@@ -721,14 +743,29 @@ class TestDynamoDB:
         assert len(items) == 0
         aws_client.dynamodb.delete_table(TableName=table_name)
 
-    @markers.aws.only_localstack
-    def test_dynamodb_stream_stream_view_type(self, aws_client):
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..SizeBytes",
+            "$..DeletionProtectionEnabled",
+            "$..ProvisionedThroughput.NumberOfDecreasesToday",
+            "$..StreamDescription.CreationRequestDateTime",
+        ]
+    )
+    def test_dynamodb_stream_stream_view_type(
+        self,
+        aws_client,
+        dynamodb_create_table_with_parameters,
+        wait_for_dynamodb_stream_ready,
+        snapshot,
+        dynamodbstreams_snapshot_transformers,
+    ):
         dynamodb = aws_client.dynamodb
         ddbstreams = aws_client.dynamodbstreams
-        table_name = "table_with_stream_%s" % short_uid()
+        table_name = f"table_with_stream_{short_uid()}"
 
         # create table
-        table = dynamodb.create_table(
+        table = dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
@@ -739,8 +776,8 @@ class TestDynamoDB:
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
         stream_arn = table["TableDescription"]["LatestStreamArn"]
-        # wait for stream to be created
-        sleep(1)
+        snapshot.match("create-table", table)
+        wait_for_dynamodb_stream_ready(stream_arn=stream_arn)
 
         # put item in table - INSERT event
         dynamodb.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
@@ -754,7 +791,10 @@ class TestDynamoDB:
         )
         # delete item in table - REMOVE event
         dynamodb.delete_item(TableName=table_name, Key={"Username": {"S": "Fred"}})
+
         result = ddbstreams.describe_stream(StreamArn=stream_arn)
+        snapshot.match("describe-stream", result)
+
         # assert stream_view_type of the table
         assert result["StreamDescription"]["StreamViewType"] == "KEYS_ONLY"
 
@@ -778,26 +818,24 @@ class TestDynamoDB:
             .get("SequenceNumberRange")
             .get("StartingSequenceNumber"),
         )
+        snapshot.match("get-shard-iterator", response)
 
+        shard_iterator = response["ShardIterator"]
         # get stream records
-        records = ddbstreams.get_records(ShardIterator=response["ShardIterator"])["Records"]
-        assert len(records) == 6
-        events = [rec["eventName"] for rec in records]
-        assert events == ["INSERT", "MODIFY", "REMOVE"] * 2
-        # assert that all records contain proper event IDs
-        event_ids = [rec.get("eventID") for rec in records]
-        assert all(event_ids)
+        records = []
 
-        # assert that updates have been received from regular table operations and PartiQL query operations
-        for idx, record in enumerate(records):
-            assert "SequenceNumber" in record["dynamodb"]
-            assert record["dynamodb"]["StreamViewType"] == "KEYS_ONLY"
-            assert record["dynamodb"]["Keys"] == {"Username": {"S": "Fred" if idx < 3 else "Alice"}}
-            assert "OldImage" not in record["dynamodb"]
-            assert "NewImage" not in record["dynamodb"]
+        def _get_records_amount(record_amount: int):
+            nonlocal shard_iterator
+            if len(records) < record_amount:
+                _resp = aws_client.dynamodbstreams.get_records(ShardIterator=shard_iterator)
+                records.extend(_resp["Records"])
+                if next_shard_iterator := _resp.get("NextShardIterator"):
+                    shard_iterator = next_shard_iterator
 
-        # clean up
-        dynamodb.delete_table(TableName=table_name)
+            assert len(records) >= record_amount
+
+        retry(lambda: _get_records_amount(6), sleep=1, retries=3)
+        snapshot.match("get-records", {"Records": records})
 
     @markers.aws.only_localstack
     def test_dynamodb_with_kinesis_stream(self, aws_client, secondary_aws_client):
@@ -1257,6 +1295,91 @@ class TestDynamoDB:
         )
         snapshot.match("BatchWriteResponse", response)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..SizeBytes",
+            "$..DeletionProtectionEnabled",
+            "$..ProvisionedThroughput.NumberOfDecreasesToday",
+            "$..StreamDescription.CreationRequestDateTime",
+        ]
+    )
+    def test_batch_write_items_streaming(
+        self,
+        dynamodb_create_table_with_parameters,
+        wait_for_dynamodb_stream_ready,
+        snapshot,
+        aws_client,
+        dynamodbstreams_snapshot_transformers,
+    ):
+        # TODO: add a test with both Kinesis and DDBStreams destinations
+        table_name = f"test-ddb-table-{short_uid()}"
+        create_table = dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )
+        snapshot.match("create-table", create_table)
+        stream_arn = create_table["TableDescription"]["LatestStreamArn"]
+        wait_for_dynamodb_stream_ready(stream_arn=stream_arn)
+
+        describe_stream_result = aws_client.dynamodbstreams.describe_stream(StreamArn=stream_arn)
+        snapshot.match("describe-stream", describe_stream_result)
+
+        shard_id = describe_stream_result["StreamDescription"]["Shards"][0]["ShardId"]
+        shard_iterator = aws_client.dynamodbstreams.get_shard_iterator(
+            StreamArn=stream_arn, ShardId=shard_id, ShardIteratorType="TRIM_HORIZON"
+        )["ShardIterator"]
+
+        resp = aws_client.dynamodb.put_item(TableName=table_name, Item={"id": {"S": "Fred"}})
+        snapshot.match("put-item-1", resp)
+
+        # Overwrite the key, show that no event are sent for this one
+        response = aws_client.dynamodb.batch_write_item(
+            RequestItems={
+                table_name: [
+                    {"PutRequest": {"Item": {"id": {"S": "Fred"}}}},
+                    {"PutRequest": {"Item": {"id": {"S": "NewKey"}}}},
+                ]
+            }
+        )
+        snapshot.match("batch-write-response-overwrite-item-1", response)
+
+        # delete the key
+        response = aws_client.dynamodb.batch_write_item(
+            RequestItems={
+                table_name: [
+                    {"DeleteRequest": {"Key": {"id": {"S": "NewKey"}}}},
+                    {"PutRequest": {"Item": {"id": {"S": "Fred"}, "name": {"S": "Fred"}}}},
+                ]
+            }
+        )
+        snapshot.match("batch-write-response-delete", response)
+
+        # Total amount of records should be 4:
+        # - PutItem
+        # - BatchWriteItem on NewKey insert
+        # - BatchWriteItem on NewKey delete
+        # - BatchWriteItem on Fred modify
+        # don't send an event when Fred is overwritten with the same value
+        # get all records:
+        records = []
+
+        def _get_records_amount(record_amount: int):
+            nonlocal shard_iterator
+            if len(records) < record_amount:
+                _resp = aws_client.dynamodbstreams.get_records(ShardIterator=shard_iterator)
+                records.extend(_resp["Records"])
+                if next_shard_iterator := _resp.get("NextShardIterator"):
+                    shard_iterator = next_shard_iterator
+
+            assert len(records) >= record_amount
+
+        retry(lambda: _get_records_amount(4), sleep=1, retries=3)
+        snapshot.match("get-records", {"Records": records})
+
     @pytest.mark.xfail(reason="this test flakes regularly in CI")
     @markers.aws.unknown
     def test_dynamodb_stream_records_with_update_item(
@@ -1382,7 +1505,9 @@ class TestDynamoDB:
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
-        kms_master_key_arn = arns.kms_key_arn(kms_master_key_id)
+        kms_master_key_arn = arns.kms_key_arn(
+            kms_master_key_id, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+        )
 
         result = dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -1437,31 +1562,43 @@ class TestDynamoDB:
         )
         snapshot.match("Response", result)
 
-    @markers.aws.only_localstack
+    @markers.aws.validated
     def test_dynamodb_streams_describe_with_exclusive_start_shard_id(
-        self, aws_client, dynamodb_create_table
+        self,
+        aws_client,
+        dynamodb_create_table_with_parameters,
+        wait_for_dynamodb_stream_ready,
     ):
+        # not using snapshots here as AWS will often return 4 Shards where we return only one
         table_name = f"test-ddb-table-{short_uid()}"
         ddbstreams = aws_client.dynamodbstreams
 
-        dynamodb_create_table(
-            table_name=table_name,
-            partition_key=PARTITION_KEY,
-            stream_view_type="NEW_AND_OLD_IMAGES",
+        create_table = dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
+            BillingMode="PAY_PER_REQUEST",
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
+        stream_arn = create_table["TableDescription"]["LatestStreamArn"]
+        wait_for_dynamodb_stream_ready(stream_arn=stream_arn)
 
         table = aws_client.dynamodb.describe_table(TableName=table_name)
 
         response = ddbstreams.describe_stream(StreamArn=table["Table"]["LatestStreamArn"])
+
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert len(response["StreamDescription"]["Shards"]) == 1
+        assert len(response["StreamDescription"]["Shards"]) >= 1
         shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
 
+        # assert that the excluded shard it not in the response
         response = ddbstreams.describe_stream(
             StreamArn=table["Table"]["LatestStreamArn"], ExclusiveStartShardId=shard_id
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert len(response["StreamDescription"]["Shards"]) == 0
+        assert not any(
+            shard_id == shard["ShardId"] for shard in response["StreamDescription"]["Shards"]
+        )
 
     @markers.aws.validated
     def test_dynamodb_streams_shard_iterator_format(
@@ -1569,26 +1706,32 @@ class TestDynamoDB:
             )
         snapshot.match("ValidationException", ctx.value)
 
-    @markers.aws.unknown
-    def test_batch_write_not_existing_table(self, aws_client):
-        with pytest.raises(Exception) as ctx:
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Error.Message", "$..message"],  # error message is not right
+    )
+    def test_batch_write_not_existing_table(self, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
             aws_client.dynamodb.transact_write_items(
                 TransactItems=[{"Put": {"TableName": "non-existing-table", "Item": {}}}]
             )
-        ctx.match("ResourceNotFoundException")
-        assert "retries" not in str(ctx)
+        snapshot.match("exc-not-found-transact-write-items", e.value.response)
 
     @markers.aws.only_localstack
-    def test_nosql_workbench_localhost_region(
-        self, dynamodb_create_table, aws_client, aws_client_factory
-    ):
-        """Test for AWS NoSQL Workbench, which sends "localhost" as region in header"""
+    def test_nosql_workbench_localhost_region(self, dynamodb_create_table, aws_client_factory):
+        """
+        Test for AWS NoSQL Workbench, which sends "localhost" as region in header.
+        LocalStack must assume "us-east-1" region in such cases.
+        """
         table_name = f"t-{short_uid()}"
-        dynamodb_create_table(table_name=table_name, partition_key=PARTITION_KEY)
-        # describe table for default region
-        table = aws_client.dynamodb.describe_table(TableName=table_name)
+
+        # Create a table in the `us-east-1` region
+        client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).dynamodb
+        create_dynamodb_table(table_name, PARTITION_KEY, client=client)
+        table = client.describe_table(TableName=table_name)
         assert table.get("Table")
-        # describe table for "localhost" region
+
+        # Ensure the `localhost` region points to `us-east-1`
         client = aws_client_factory(region_name="localhost").dynamodb
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")

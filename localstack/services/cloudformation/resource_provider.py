@@ -75,6 +75,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::EKS::Nodegroup": "ResourceProvider",
+    "AWS::Redshift::Cluster": "ResourceProvider",
 }
 
 
@@ -266,9 +267,9 @@ def invoke_function(
     except Exception as e:
         if action_name == "Remove" and check_not_found_exception(e, resource_type, resource):
             return
-        log_method = getattr(LOG, "warning")
+        log_method = LOG.warning
         if config.CFN_VERBOSE_ERRORS:
-            log_method = getattr(LOG, "exception")
+            log_method = LOG.exception
         log_method("Error calling %s with params: %s for resource: %s", function, params, resource)
         raise e
 
@@ -660,7 +661,6 @@ class ResourceProviderExecutor:
                     return event
 
                 if event.status == OperationStatus.SUCCESS:
-
                     if not isinstance(resource_provider, LegacyResourceProvider):
                         # branch for non-legacy providers
                         # TODO: move out of if? (physical res id can be set earlier possibly)

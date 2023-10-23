@@ -120,11 +120,16 @@ class StateMap(ExecutionState):
             case RetryOutcome.CanRetry:
                 self._eval_state(env)
             case _:
-                env.event_history.add_event(hist_type_event=HistoryEventType.MapStateFailed)
+                env.event_history.add_event(
+                    context=env.event_history_context,
+                    hist_type_event=HistoryEventType.MapStateFailed,
+                )
                 self._terminate_with_event(failure_event=failure_event, env=env)
 
     def _handle_catch(self, ex: Exception, env: Environment) -> None:
-        env.event_history.add_event(hist_type_event=HistoryEventType.MapStateFailed)
+        env.event_history.add_event(
+            context=env.event_history_context, hist_type_event=HistoryEventType.MapStateFailed
+        )
 
         failure_event: FailureEvent = self._from_error(env=env, ex=ex)
 
@@ -137,7 +142,9 @@ class StateMap(ExecutionState):
             self._terminate_with_event(failure_event=failure_event, env=env)
 
     def _handle_uncaught(self, ex: Exception, env: Environment):
-        env.event_history.add_event(hist_type_event=HistoryEventType.MapStateFailed)
+        env.event_history.add_event(
+            context=env.event_history_context, hist_type_event=HistoryEventType.MapStateFailed
+        )
 
         event_details = None
         if isinstance(ex, FailureEventException):
@@ -157,6 +164,7 @@ class StateMap(ExecutionState):
         self.items_path.eval(env)
         if self.item_reader:
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.MapStateStarted,
                 event_detail=EventDetails(
                     mapStateStartedEventDetails=MapStateStartedEventDetails(length=0)
@@ -166,6 +174,7 @@ class StateMap(ExecutionState):
         else:
             input_items = env.stack.pop()
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.MapStateStarted,
                 event_detail=EventDetails(
                     mapStateStartedEventDetails=MapStateStartedEventDetails(length=len(input_items))
@@ -202,5 +211,7 @@ class StateMap(ExecutionState):
         self.iteration_component.eval(env)
 
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.MapStateSucceeded,
+            update_source_event_id=False,
         )

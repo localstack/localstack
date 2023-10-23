@@ -16,7 +16,10 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
     ContextObjectInitData,
     ContextObjectManager,
 )
-from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory
+from localstack.services.stepfunctions.asl.eval.event.event_history import (
+    EventHistory,
+    EventHistoryContext,
+)
 from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramEnded,
     ProgramError,
@@ -35,6 +38,7 @@ class Environment:
     program_state_event: Final[threading.Event()]
 
     event_history: EventHistory
+    event_history_context: Final[EventHistoryContext]
     aws_execution_details: Final[AWSExecutionDetails]
     callback_pool_manager: CallbackPoolManager
     map_run_record_pool_manager: MapRunRecordPoolManager
@@ -48,7 +52,10 @@ class Environment:
     inp: Optional[Any] = None
 
     def __init__(
-        self, aws_execution_details: AWSExecutionDetails, context_object_init: ContextObjectInitData
+        self,
+        aws_execution_details: AWSExecutionDetails,
+        context_object_init: ContextObjectInitData,
+        event_history_context: EventHistoryContext,
     ):
         super(Environment, self).__init__()
         self._state_mutex = threading.RLock()
@@ -56,6 +63,7 @@ class Environment:
         self.program_state_event = threading.Event()
 
         self.event_history = EventHistory()
+        self.event_history_context = event_history_context
         self.aws_execution_details = aws_execution_details
         self.callback_pool_manager = CallbackPoolManager()
         self.map_run_record_pool_manager = MapRunRecordPoolManager()
@@ -74,7 +82,7 @@ class Environment:
         self.inp = None
 
     @classmethod
-    def as_frame_of(cls, env: Environment):
+    def as_frame_of(cls, env: Environment, event_history_frame_cache: EventHistoryContext):
         context_object_init = ContextObjectInitData(
             Execution=env.context_object_manager.context_object["Execution"],
             StateMachine=env.context_object_manager.context_object["StateMachine"],
@@ -82,6 +90,7 @@ class Environment:
         frame = cls(
             aws_execution_details=env.aws_execution_details,
             context_object_init=context_object_init,
+            event_history_context=event_history_frame_cache,
         )
         frame._is_frame = True
         frame.event_history = env.event_history
@@ -152,15 +161,30 @@ class Environment:
             else:
                 raise RuntimeError("Cannot stop non running ProgramState.")
 
-    def open_frame(self) -> Environment:
+    def open_frame(
+        self, event_history_context: Optional[EventHistoryContext] = None
+    ) -> Environment:
         with self._state_mutex:
-            frame = Environment.as_frame_of(self)
+            # The default logic provisions for child frame to extend the source frame event id.
+            if event_history_context is None:
+                event_history_context = EventHistoryContext(
+                    previous_event_id=self.event_history_context.source_event_id
+                )
+
+            frame = Environment.as_frame_of(self, event_history_context)
             self._frames.append(frame)
             return frame
 
     def close_frame(self, frame: Environment) -> None:
         with self._state_mutex:
-            self._frames.remove(frame)
+            if frame in self._frames:
+                self._frames.remove(frame)
+                self.event_history_context.integrate(frame.event_history_context)
+
+    def delete_frame(self, frame: Environment) -> None:
+        with self._state_mutex:
+            if frame in self._frames:
+                self._frames.remove(frame)
 
     def is_frame(self) -> bool:
         return self._is_frame

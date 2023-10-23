@@ -26,6 +26,7 @@ DomainNameFqdn = str
 Double = float
 DryRun = bool
 Endpoint = str
+EngineVersion = str
 ErrorMessage = str
 ErrorType = str
 GUID = str
@@ -39,6 +40,7 @@ Issue = str
 KmsKeyId = str
 LimitName = str
 LimitValue = str
+MaintenanceStatusMessage = str
 MaxResults = int
 MaximumInstanceCount = int
 Message = str
@@ -55,9 +57,14 @@ PackageID = str
 PackageName = str
 PackageVersion = str
 Password = str
+PluginClassName = str
+PluginDescription = str
+PluginName = str
+PluginVersion = str
 PolicyDocument = str
 ReferencePath = str
 Region = str
+RequestId = str
 ReservationToken = str
 RoleArn = str
 S3BucketName = str
@@ -140,6 +147,8 @@ class DescribePackagesFilterName(str):
     PackageID = "PackageID"
     PackageName = "PackageName"
     PackageStatus = "PackageStatus"
+    PackageType = "PackageType"
+    EngineVersion = "EngineVersion"
 
 
 class DomainHealth(str):
@@ -189,6 +198,20 @@ class LogType(str):
     SEARCH_SLOW_LOGS = "SEARCH_SLOW_LOGS"
     ES_APPLICATION_LOGS = "ES_APPLICATION_LOGS"
     AUDIT_LOGS = "AUDIT_LOGS"
+
+
+class MaintenanceStatus(str):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    TIMED_OUT = "TIMED_OUT"
+
+
+class MaintenanceType(str):
+    REBOOT_NODE = "REBOOT_NODE"
+    RESTART_SEARCH_PROCESS = "RESTART_SEARCH_PROCESS"
+    RESTART_DASHBOARD = "RESTART_DASHBOARD"
 
 
 class MasterNodeStatus(str):
@@ -351,6 +374,7 @@ class PackageStatus(str):
 
 class PackageType(str):
     TXT_DICTIONARY = "TXT-DICTIONARY"
+    ZIP_PLUGIN = "ZIP-PLUGIN"
 
 
 class PrincipalType(str):
@@ -1061,6 +1085,17 @@ class CreatePackageRequest(ServiceRequest):
     PackageSource: PackageSource
 
 
+UncompressedPluginSizeInBytes = int
+
+
+class PluginProperties(TypedDict, total=False):
+    Name: Optional[PluginName]
+    Description: Optional[PluginDescription]
+    Version: Optional[PluginVersion]
+    ClassName: Optional[PluginClassName]
+    UncompressedSizeInBytes: Optional[UncompressedPluginSizeInBytes]
+
+
 CreatedAt = datetime
 
 
@@ -1074,6 +1109,8 @@ class PackageDetails(TypedDict, total=False):
     LastUpdatedAt: Optional[LastUpdated]
     AvailablePackageVersion: Optional[PackageVersion]
     ErrorDetails: Optional[ErrorDetails]
+    EngineVersion: Optional[EngineVersion]
+    AvailablePluginProperties: Optional[PluginProperties]
 
 
 class CreatePackageResponse(TypedDict, total=False):
@@ -1568,6 +1605,20 @@ class DomainInfo(TypedDict, total=False):
 
 
 DomainInfoList = List[DomainInfo]
+
+
+class DomainMaintenanceDetails(TypedDict, total=False):
+    MaintenanceId: Optional[RequestId]
+    DomainName: Optional[DomainName]
+    Action: Optional[MaintenanceType]
+    NodeId: Optional[NodeId]
+    Status: Optional[MaintenanceStatus]
+    StatusMessage: Optional[MaintenanceStatusMessage]
+    CreatedAt: Optional[UpdateTimestamp]
+    UpdatedAt: Optional[UpdateTimestamp]
+
+
+DomainMaintenanceList = List[DomainMaintenanceDetails]
 DomainPackageDetailsList = List[DomainPackageDetails]
 
 
@@ -1577,6 +1628,20 @@ class GetCompatibleVersionsRequest(ServiceRequest):
 
 class GetCompatibleVersionsResponse(TypedDict, total=False):
     CompatibleVersions: Optional[CompatibleVersionsList]
+
+
+class GetDomainMaintenanceStatusRequest(ServiceRequest):
+    DomainName: DomainName
+    MaintenanceId: RequestId
+
+
+class GetDomainMaintenanceStatusResponse(TypedDict, total=False):
+    Status: Optional[MaintenanceStatus]
+    StatusMessage: Optional[MaintenanceStatusMessage]
+    NodeId: Optional[NodeId]
+    Action: Optional[MaintenanceType]
+    CreatedAt: Optional[UpdateTimestamp]
+    UpdatedAt: Optional[UpdateTimestamp]
 
 
 class GetPackageVersionHistoryRequest(ServiceRequest):
@@ -1589,6 +1654,7 @@ class PackageVersionHistory(TypedDict, total=False):
     PackageVersion: Optional[PackageVersion]
     CommitMessage: Optional[CommitMessage]
     CreatedAt: Optional[CreatedAt]
+    PluginProperties: Optional[PluginProperties]
 
 
 PackageVersionHistoryList = List[PackageVersionHistory]
@@ -1660,6 +1726,19 @@ class InstanceTypeDetails(TypedDict, total=False):
 
 
 InstanceTypeDetailsList = List[InstanceTypeDetails]
+
+
+class ListDomainMaintenancesRequest(ServiceRequest):
+    DomainName: DomainName
+    Action: Optional[MaintenanceType]
+    Status: Optional[MaintenanceStatus]
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+
+
+class ListDomainMaintenancesResponse(TypedDict, total=False):
+    DomainMaintenances: Optional[DomainMaintenanceList]
+    NextToken: Optional[NextToken]
 
 
 class ListDomainNamesRequest(ServiceRequest):
@@ -1815,6 +1894,16 @@ class RevokeVpcEndpointAccessResponse(TypedDict, total=False):
     pass
 
 
+class StartDomainMaintenanceRequest(ServiceRequest):
+    DomainName: DomainName
+    Action: MaintenanceType
+    NodeId: Optional[NodeId]
+
+
+class StartDomainMaintenanceResponse(TypedDict, total=False):
+    MaintenanceId: Optional[RequestId]
+
+
 class StartServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
     ScheduleAt: Optional[ScheduleAt]
@@ -1901,7 +1990,6 @@ class UpgradeDomainResponse(TypedDict, total=False):
 
 
 class OpensearchApi:
-
     service = "opensearch"
     version = "2021-01-01"
 
@@ -2155,6 +2243,12 @@ class OpensearchApi:
     ) -> GetCompatibleVersionsResponse:
         raise NotImplementedError
 
+    @handler("GetDomainMaintenanceStatus")
+    def get_domain_maintenance_status(
+        self, context: RequestContext, domain_name: DomainName, maintenance_id: RequestId
+    ) -> GetDomainMaintenanceStatusResponse:
+        raise NotImplementedError
+
     @handler("GetPackageVersionHistory")
     def get_package_version_history(
         self,
@@ -2179,6 +2273,18 @@ class OpensearchApi:
     def get_upgrade_status(
         self, context: RequestContext, domain_name: DomainName
     ) -> GetUpgradeStatusResponse:
+        raise NotImplementedError
+
+    @handler("ListDomainMaintenances")
+    def list_domain_maintenances(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        action: MaintenanceType = None,
+        status: MaintenanceStatus = None,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+    ) -> ListDomainMaintenancesResponse:
         raise NotImplementedError
 
     @handler("ListDomainNames")
@@ -2282,6 +2388,16 @@ class OpensearchApi:
     def revoke_vpc_endpoint_access(
         self, context: RequestContext, domain_name: DomainName, account: AWSAccount
     ) -> RevokeVpcEndpointAccessResponse:
+        raise NotImplementedError
+
+    @handler("StartDomainMaintenance")
+    def start_domain_maintenance(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        action: MaintenanceType,
+        node_id: NodeId = None,
+    ) -> StartDomainMaintenanceResponse:
         raise NotImplementedError
 
     @handler("StartServiceSoftwareUpdate")

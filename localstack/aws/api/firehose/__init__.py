@@ -1111,7 +1111,6 @@ class UpdateDestinationOutput(TypedDict, total=False):
 
 
 class FirehoseApi:
-
     service = "firehose"
     version = "2015-08-04"
 

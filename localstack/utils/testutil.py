@@ -25,7 +25,12 @@ import requests
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import LOCALHOST_HOSTNAME, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
+from localstack.constants import (
+    LOCALHOST_HOSTNAME,
+    LOCALSTACK_ROOT_FOLDER,
+    LOCALSTACK_VENV_FOLDER,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.lambda_.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.lambda_.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
@@ -196,7 +201,8 @@ def create_lambda_function(
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API
-    CAVEAT: Does NOT wait until the function is ready/active. The fixture create_lambda_function waits until ready."""
+    CAVEAT: Does NOT wait until the function is ready/active. The fixture create_lambda_function waits until ready.
+    """
     if envvars is None:
         envvars = {}
     if tags is None:
@@ -338,7 +344,7 @@ def create_lambda_api_gateway_integration(
         func_name=func_name, zip_file=zip_file, runtime=runtime, client=lambda_client
     )
     func_arn = arns.lambda_function_arn(func_name)
-    target_arn = arns.apigateway_invocations_arn(func_arn)
+    target_arn = arns.apigateway_invocations_arn(func_arn, TEST_AWS_REGION_NAME)
 
     # connect API GW to Lambda
     result = connect_api_gateway_to_http_with_lambda_proxy(

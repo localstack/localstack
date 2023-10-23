@@ -1,6 +1,7 @@
 import re
 
 from localstack import config
+from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
 from localstack.testing.pytest import markers
 
@@ -31,7 +32,7 @@ from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
@@ -1793,7 +1794,6 @@ class TestLambdaTag:
 
     @markers.aws.validated
     def test_tag_lifecycle(self, create_lambda_function, snapshot, fn_arn, aws_client):
-
         # 1. add tag
         tag_single_response = aws_client.lambda_.tag_resource(Resource=fn_arn, Tags={"A": "tag-a"})
         snapshot.match("tag_single_response", tag_single_response)
@@ -2497,7 +2497,6 @@ class TestLambdaReservedConcurrency:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaProvisionedConcurrency:
-
     # TODO: test ARN
     # TODO: test shorthand ARN
     @markers.aws.validated
@@ -4123,7 +4122,6 @@ class TestLambdaEventSourceMappings:
     @pytest.mark.skipif(condition=is_old_provider(), reason="new provider only")
     @markers.aws.validated
     def test_event_source_mapping_exceptions(self, snapshot, aws_client):
-
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             aws_client.lambda_.get_event_source_mapping(UUID=long_uid())
         snapshot.match("get_unknown_uuid", e.value.response)
@@ -4728,9 +4726,9 @@ class TestLambdaLayer:
             )
         snapshot.match("add_layer_arn_without_version_exc", e.value.response)
 
-        other_region = "us-west-2"
-        assert other_region != aws_stack.get_region()
-        other_region_lambda_client = aws_client_factory(region_name=other_region).lambda_
+        other_region_lambda_client = aws_client_factory(
+            region_name=SECONDARY_TEST_AWS_REGION_NAME
+        ).lambda_
         other_region_layer_result = other_region_lambda_client.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[],

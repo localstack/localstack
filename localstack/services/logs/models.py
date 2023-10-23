@@ -11,7 +11,6 @@ def get_moto_logs_backend(account_id: str, region_name: str) -> MotoLogsBackend:
 
 
 class LogsStore(BaseStore):
-
     # maps resource ARN to tags
     TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
 

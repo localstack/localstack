@@ -1230,7 +1230,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
     ) -> DocumentationPartIds:
-
         body_data = body.read()
         openapi_spec = parse_json_or_yaml(to_str(body_data))
 
@@ -1690,7 +1689,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
     ) -> RestApi:
-
         body_data = body.read()
 
         # create rest api

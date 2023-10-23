@@ -42,11 +42,6 @@ def sqs_queue_url_for_arn(queue_arn: str) -> str:
     return result
 
 
-# TODO: remove and merge with sqs_queue_url_for_arn(..) above!!
-def get_sqs_queue_url(queue_arn: str) -> str:
-    return sqs_queue_url_for_arn(queue_arn)
-
-
 class ArnData(TypedDict):
     partition: str
     service: str
@@ -351,9 +346,9 @@ def kinesis_stream_name(kinesis_arn):
     return kinesis_arn.split(":stream/")[-1]
 
 
-def apigateway_invocations_arn(lambda_uri, region_name: str = None):
+def apigateway_invocations_arn(lambda_uri: str, region_name: str) -> str:
     return "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations" % (
-        region_name or get_region(),
+        region_name,
         lambda_uri,
     )
 

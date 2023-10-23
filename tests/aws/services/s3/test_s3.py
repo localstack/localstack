@@ -14,7 +14,6 @@ from io import BytesIO
 from operator import itemgetter
 from typing import TYPE_CHECKING
 from urllib.parse import SplitResult, parse_qs, quote, urlencode, urlparse, urlunsplit
-from zoneinfo import ZoneInfo
 
 import boto3 as boto3
 import pytest
@@ -25,6 +24,7 @@ from botocore import UNSIGNED
 from botocore.auth import SigV4Auth
 from botocore.client import Config
 from botocore.exceptions import ClientError
+from zoneinfo import ZoneInfo
 
 from localstack import config, constants
 from localstack.aws.api.s3 import StorageClass
@@ -362,7 +362,6 @@ class TestS3:
     # TODO list-buckets contains other buckets when running in CI
     @markers.snapshot.skip_snapshot_verify(paths=["$..Prefix", "$..list-buckets.Buckets"])
     def test_delete_bucket_with_content(self, s3_bucket, s3_empty_bucket, snapshot, aws_client):
-
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_bucket
 
@@ -3253,7 +3252,6 @@ class TestS3:
     def test_s3_download_object_with_lambda(
         self, s3_create_bucket, create_lambda_function, lambda_su_role, aws_client
     ):
-
         bucket_name = f"bucket-{short_uid()}"
         function_name = f"func-{short_uid()}"
         key = f"key-{short_uid()}"
@@ -3380,6 +3378,30 @@ class TestS3:
             downloaded_data = filestream.read().decode("utf-8")
 
         assert downloaded_data == data
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
+    def test_multipart_overwrite_key(self, s3_bucket, s3_multipart_upload, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("Bucket"),
+            ]
+        )
+        key = "test.file"
+        content = b"test content 123"
+        put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=content)
+        snapshot.match("put-object", put_object)
+
+        # create a multipart upload on an existing key, overwrite it
+        response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content)
+        snapshot.match("multipart-upload", response)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+        assert get_object["Body"].read() == content
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
@@ -5683,7 +5705,6 @@ class TestS3MultiAccounts:
 class TestS3TerraformRawRequests:
     @markers.aws.only_localstack
     def test_terraform_request_sequence(self, aws_client):
-
         reqs = load_file(
             os.path.join(
                 os.path.dirname(__file__),
@@ -5933,7 +5954,6 @@ class TestS3PresignedUrl:
         aws_client,
         presigned_snapshot_transformers,
     ):
-
         snapshotted = False
         if verify_signature:
             monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
@@ -7612,7 +7632,6 @@ class TestS3StaticWebsiteHosting:
         paths=["$.invalid-website-conf-1.Error.ArgumentValue"]
     )
     def test_validate_website_configuration(self, s3_bucket, snapshot, aws_client):
-
         website_configurations = [
             # can't have slash in the suffix
             {

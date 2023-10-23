@@ -130,7 +130,7 @@ class TestServerless:
 
         assert event_source_arn == arns.sqs_queue_arn(queue_name)
         result = sqs_client.get_queue_attributes(
-            QueueUrl=arns.get_sqs_queue_url(queue_name),
+            QueueUrl=arns.sqs_queue_url_for_arn(queue_name),
             AttributeNames=[
                 "RedrivePolicy",
             ],
