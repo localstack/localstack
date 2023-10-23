@@ -79,6 +79,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Events::Connection": "ResourceProvider",
     "AWS::Events::EventBus": "ResourceProvider",
     "AWS::Events::Rule": "ResourceProvider",
+    "AWS::Events::EventBusPolicy": "ResourceProvider",
 }
 
 
