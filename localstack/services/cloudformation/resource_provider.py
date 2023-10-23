@@ -78,6 +78,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Redshift::Cluster": "ResourceProvider",
     "AWS::Logs::LogGroup": "ResourceProvider",
     "AWS::Logs::LogStream": "ResourceProvider",
+    "AWS::Logs::SubscriptionFilter": "ResourceProvider",
 }
 
 

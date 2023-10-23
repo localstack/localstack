@@ -14,6 +14,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     # Example
     # "AWS::ApiGateway::Resource": "/properties/ResourceId",
     "AWS::Logs::LogStream": "/properties/LogStreamName",
+    "AWS::Logs::SubscriptionFilter": "/properties/LogGroupName",
 }
 
 # You can usually find the available GetAtt targets in the official resource documentation:
