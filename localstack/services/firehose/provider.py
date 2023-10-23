@@ -530,7 +530,6 @@ class FirehoseProvider(FirehoseApi):
         self._add_missing_record_attributes(unprocessed_records)
 
         for destination in delivery_stream_description.get("Destinations", []):
-
             # apply processing steps to incoming items
             proc_config = {}
             for child in destination.values():

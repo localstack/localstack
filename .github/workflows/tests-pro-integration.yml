@@ -69,6 +69,8 @@ env:
 jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
+    # This job needs secrets and cannot be executed on forks, skip it in this case
+    if: github.event.repository.fork == false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:

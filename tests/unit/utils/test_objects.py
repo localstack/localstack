@@ -62,7 +62,6 @@ class TestSingletonFactory:
         mock.assert_has_calls([(), ()])
 
     def test_exception_does_not_set_a_value(self):
-
         mock = MagicMock()
 
         @singleton_factory

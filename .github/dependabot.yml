@@ -15,7 +15,7 @@ updates:
       - "area: dependencies"
       - "semver: patch"
     groups:
-      github-actions:
+      docker-base-images:
         patterns:
           - "*"
   - package-ecosystem: github-actions

@@ -414,26 +414,8 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[python3.9]": {
-    "recorded-date": "17-02-2023, 14:01:27",
-    "recorded-content": {
-      "invoke": {
-        "ExecutedVersion": "$LATEST",
-        "LogResult": "log-result",
-        "Payload": {},
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "logs": {
-        "logs": "START RequestId: <request-id> Version: $LATEST\n{}\nEND RequestId: <request-id>\nREPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\tInit Duration: <duration> ms\t\n"
-      }
-    }
-  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[python3.10]": {
-    "recorded-date": "02-05-2023, 16:52:42",
+    "recorded-date": "17-10-2023, 15:46:02",
     "recorded-content": {
       "invoke": {
         "ExecutedVersion": "$LATEST",
@@ -446,12 +428,17 @@
         }
       },
       "logs": {
-        "logs": "START RequestId: <request-id> Version: $LATEST\n{}\nEND RequestId: <request-id>\nREPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\tInit Duration: <duration> ms\t\n"
+        "logs": [
+          "START RequestId: <request-id> Version: $LATEST\n",
+          "{}\n",
+          "END RequestId: <request-id>\n",
+          "REPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\tInit Duration: <duration> ms\t\n"
+        ]
       }
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[nodejs16.x]": {
-    "recorded-date": "02-05-2023, 16:52:40",
+    "recorded-date": "17-10-2023, 15:45:59",
     "recorded-content": {
       "invoke": {
         "ExecutedVersion": "$LATEST",
@@ -464,7 +451,12 @@
         }
       },
       "logs": {
-        "logs": "START RequestId: <request-id> Version: $LATEST\ndate\t<request-id>\tINFO\t{}\nEND RequestId: <request-id>\nREPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\tInit Duration: <duration> ms\t\n"
+        "logs": [
+          "START RequestId: <request-id> Version: $LATEST\n",
+          "date\t<request-id>\tINFO\t{}\n",
+          "END RequestId: <request-id>\n",
+          "REPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\tInit Duration: <duration> ms\t\n"
+        ]
       }
     }
   },
@@ -2702,7 +2694,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_arm": {
-    "recorded-date": "02-05-2023, 16:51:41",
+    "recorded-date": "04-10-2023, 18:13:34",
     "recorded-content": {
       "invoke_runtime_arm_introspection": {
         "ExecutedVersion": "$LATEST",
@@ -2741,7 +2733,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_x86": {
-    "recorded-date": "02-05-2023, 16:51:39",
+    "recorded-date": "04-10-2023, 18:09:12",
     "recorded-content": {
       "invoke_runtime_x86_introspection": {
         "ExecutedVersion": "$LATEST",
@@ -3191,22 +3183,25 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_invoke": {
-    "recorded-date": "02-05-2023, 17:01:20",
+    "recorded-date": "17-10-2023, 16:13:59",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
-        "Payload": {
-          "hello": "world"
-        },
+        "Payload": "\"<request-id>\"",
         "StatusCode": 200,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
-      "end_log_entries": [
-        "END RequestId: <request-id>"
-      ]
+      "log_entries": {
+        "logs": [
+          "START RequestId: <request-id> Version: $LATEST",
+          "[INFO]\tdate\t<request-id>\tRequestId log message",
+          "END RequestId: <request-id>",
+          "REPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\tInit Duration: <duration> ms"
+        ]
+      }
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_async_invoke_with_retry": {

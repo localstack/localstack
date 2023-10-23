@@ -1,0 +1,797 @@
+{
+  "Resources": {
+    "MysfitsTable54ADD99F": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "MysfitId",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "LawChaos",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "GoodEvil",
+            "AttributeType": "S"
+          }
+        ],
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "LawChaosIndex",
+            "KeySchema": [
+              {
+                "AttributeName": "LawChaos",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "MysfitId",
+                "KeyType": "RANGE"
+              }
+            ],
+            "Projection": {
+              "ProjectionType": "ALL"
+            },
+            "ProvisionedThroughput": {
+              "ReadCapacityUnits": 5,
+              "WriteCapacityUnits": 5
+            }
+          },
+          {
+            "IndexName": "GoodEvilIndex",
+            "KeySchema": [
+              {
+                "AttributeName": "GoodEvil",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "MysfitId",
+                "KeyType": "RANGE"
+              }
+            ],
+            "Projection": {
+              "ProjectionType": "ALL"
+            },
+            "ProvisionedThroughput": {
+              "ReadCapacityUnits": 5,
+              "WriteCapacityUnits": 5
+            }
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "MysfitId",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5
+        },
+        "TableName": "MysfitsTable"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "UserClicksServiceClicksBucketDestinationDF882499": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "test-mythical-mysfits-b79e2d99"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "UserClicksServiceStreamProcessorFunctionServiceRole4E9C7918": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "UserClicksServiceStreamProcessorFunctionServiceRoleDefaultPolicy558EF0E6": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "MysfitsTable54ADD99F",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "UserClicksServiceStreamProcessorFunctionServiceRoleDefaultPolicy558EF0E6",
+        "Roles": [
+          {
+            "Ref": "UserClicksServiceStreamProcessorFunctionServiceRole4E9C7918"
+          }
+        ]
+      }
+    },
+    "UserClicksServiceStreamProcessorFunctionDC65B364": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "# Source adapted from: https://github.com/aws-samples/aws-modern-application-workshop/blob/python-cdk\n# The code to be used as an AWS Lambda function for processing real-time\n# user click records from Kinesis Firehose and adding additional attributes\n# to them before they are stored in Amazon S3.\nfrom __future__ import print_function\n\nimport base64\nimport json\n\n# TODO: when properly integrating Fargate into the sample, re-add this code fetching the data through the microservices\n# beware, it will need packaging then because of `requests`\n# import requests\nimport os\n\nimport boto3\n\n# Send a request to the Mysfits Service API that we have created in previous\n# modules to retrieve all of the attributes for the included MysfitId.\n# def retrieveMysfit(mysfitId):\n#     apiEndpoint = os.environ['MYSFITS_API_URL'] + '/mysfits/' + str(mysfitId) # eg: 'https://ljqomqjzbf.execute-api.us-east-1.amazonaws.com/prod/'\n#     mysfit = requests.get(apiEndpoint).json()\n#     return mysfit\n\n\nclient = boto3.client(\"dynamodb\")\n\n\n# Directly fetch the data from the DynamoDB table as we don't have the Mysfits microservice yet\n# source adapted from https://github.com/aws-samples/aws-modern-application-workshop/blob/python-cdk/module-5/app/service/mysfitsTableClient.py\ndef retrieveMysfit(mysfitId):\n    # use the DynamoDB API GetItem, which gives you the ability to retrieve\n    # a single item from a DynamoDB table using its unique key with super low latency.\n    response = client.get_item(\n        TableName=os.environ[\"MYSFITS_TABLE_NAME\"], Key={\"MysfitId\": {\"S\": mysfitId}}\n    )\n\n    item = response[\"Item\"]\n\n    mysfit = {\n        \"mysfitId\": item[\"MysfitId\"][\"S\"],\n        \"name\": item[\"Name\"][\"S\"],\n        \"age\": int(item[\"Age\"][\"N\"]),\n        \"goodevil\": item[\"GoodEvil\"][\"S\"],\n        \"lawchaos\": item[\"LawChaos\"][\"S\"],\n        \"species\": item[\"Species\"][\"S\"],\n        \"thumbImageUri\": item[\"ThumbImageUri\"][\"S\"],\n        \"profileImageUri\": item[\"ProfileImageUri\"][\"S\"],\n        \"likes\": item[\"Likes\"][\"N\"],\n        \"adopted\": item[\"Adopted\"][\"BOOL\"],\n    }\n\n    return mysfit\n\n\n# The below method will serve as the \"handler\" for the Lambda function. The\n# handler is the method that AWS Lambda will invoke with events, which in this\n# case will include records from the Kinesis Firehose Delivery Stream.\ndef processRecord(event, context):\n    output = []\n\n    # retrieve the list of records included with the event and loop through\n    # them to retrieve the full list of mysfit attributes and add the additional\n    # attributes that a hypothetical BI/Analyitcs team would like to analyze.\n    for record in event[\"records\"]:\n        print(\"Processing record: \" + record[\"recordId\"])\n        # kinesis firehose expects record payloads to be sent as encoded strings,\n        # so we must decode the data first to retrieve the click record.\n        click = json.loads(base64.b64decode(record[\"data\"]))\n\n        mysfitId = click[\"mysfitId\"]\n        mysfit = retrieveMysfit(mysfitId)\n\n        enrichedClick = {\n            \"userId\": click[\"userId\"],\n            \"mysfitId\": mysfitId,\n            \"goodevil\": mysfit[\"goodevil\"],\n            \"lawchaos\": mysfit[\"lawchaos\"],\n            \"species\": mysfit[\"species\"],\n        }\n\n        # create the output record that Kinesis Firehose will store in S3.\n        output_record = {\n            \"recordId\": record[\"recordId\"],\n            \"result\": \"Ok\",\n            \"data\": base64.b64encode(json.dumps(enrichedClick).encode(\"utf-8\") + b\"\\n\").decode(\n                \"utf-8\"\n            ),\n        }\n        output.append(output_record)\n\n    print(\"Successfully processed {} records.\".format(len(event[\"records\"])))\n\n    # return the enriched records to Kiesis Firehose.\n    return {\"records\": output}\n"
+        },
+        "Description": "An Amazon Kinesis Firehose stream processor that enriches click records to not just include a mysfitId, but also other attributes that can be analyzed later.",
+        "Environment": {
+          "Variables": {
+            "MYSFITS_TABLE_NAME": {
+              "Ref": "MysfitsTable54ADD99F"
+            }
+          }
+        },
+        "Handler": "index.processRecord",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "UserClicksServiceStreamProcessorFunctionServiceRole4E9C7918",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.10",
+        "Timeout": 30
+      },
+      "DependsOn": [
+        "UserClicksServiceStreamProcessorFunctionServiceRoleDefaultPolicy558EF0E6",
+        "UserClicksServiceStreamProcessorFunctionServiceRole4E9C7918"
+      ]
+    },
+    "UserClicksServiceStreamProcessorFunctionLambdaPermission332D5CE1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "UserClicksServiceStreamProcessorFunctionDC65B364",
+            "Arn"
+          ]
+        },
+        "Principal": "firehose.amazonaws.com",
+        "SourceAccount": {
+          "Ref": "AWS::AccountId"
+        },
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "UserClicksServiceDeliveryStream80EEBD2E",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "UserClicksServiceFirehoseDeliveryRole29B27061": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Condition": {
+                "StringEquals": {
+                  "sts:ExternalId": {
+                    "Ref": "AWS::AccountId"
+                  }
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "firehose.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "RoleName": "FirehoseDeliveryRole"
+      }
+    },
+    "UserClicksServiceFirehoseDeliveryRoleDefaultPolicy7FD18B56": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:AbortMultipartUpload",
+                "s3:GetBucketLocation",
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads",
+                "s3:PutObject"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "UserClicksServiceClicksBucketDestinationDF882499",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "UserClicksServiceClicksBucketDestinationDF882499",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "UserClicksServiceStreamProcessorFunctionDC65B364",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "UserClicksServiceFirehoseDeliveryRoleDefaultPolicy7FD18B56",
+        "Roles": [
+          {
+            "Ref": "UserClicksServiceFirehoseDeliveryRole29B27061"
+          }
+        ]
+      }
+    },
+    "UserClicksServiceDeliveryStream80EEBD2E": {
+      "Type": "AWS::KinesisFirehose::DeliveryStream",
+      "Properties": {
+        "ExtendedS3DestinationConfiguration": {
+          "BucketARN": {
+            "Fn::GetAtt": [
+              "UserClicksServiceClicksBucketDestinationDF882499",
+              "Arn"
+            ]
+          },
+          "BufferingHints": {
+            "IntervalInSeconds": 60,
+            "SizeInMBs": 50
+          },
+          "CompressionFormat": "UNCOMPRESSED",
+          "Prefix": "firehose/",
+          "ProcessingConfiguration": {
+            "Enabled": true,
+            "Processors": [
+              {
+                "Parameters": [
+                  {
+                    "ParameterName": "LambdaArn",
+                    "ParameterValue": {
+                      "Fn::GetAtt": [
+                        "UserClicksServiceStreamProcessorFunctionDC65B364",
+                        "Arn"
+                      ]
+                    }
+                  }
+                ],
+                "Type": "Lambda"
+              }
+            ]
+          },
+          "RoleARN": {
+            "Fn::GetAtt": [
+              "UserClicksServiceFirehoseDeliveryRole29B27061",
+              "Arn"
+            ]
+          }
+        }
+      }
+    },
+    "UserClicksServiceClickProcessingApiRole2A07FAA0": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "UserClicksServiceClickProcessingApiPolicy57123348": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "firehose:PutRecord",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "UserClicksServiceDeliveryStream80EEBD2E",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "api_gateway_firehose_proxy_role",
+        "Roles": [
+          {
+            "Ref": "UserClicksServiceClickProcessingApiRole2A07FAA0"
+          }
+        ]
+      }
+    },
+    "UserClicksServiceAPIEndpointD3A13D1A": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "EndpointConfiguration": {
+          "Types": [
+            "REGIONAL"
+          ]
+        },
+        "Name": "ClickProcessing API Service"
+      }
+    },
+    "UserClicksServiceAPIEndpointCloudWatchRoleFD30C647": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+              ]
+            ]
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "UserClicksServiceAPIEndpointAccount4686F39F": {
+      "Type": "AWS::ApiGateway::Account",
+      "Properties": {
+        "CloudWatchRoleArn": {
+          "Fn::GetAtt": [
+            "UserClicksServiceAPIEndpointCloudWatchRoleFD30C647",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "UserClicksServiceAPIEndpointD3A13D1A"
+      ],
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "UserClicksServiceAPIEndpointDeployment618310CCa3df9648bfddb878e364218850fa6d41": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "Description": "Automatically created by the RestApi construct",
+        "RestApiId": {
+          "Ref": "UserClicksServiceAPIEndpointD3A13D1A"
+        }
+      },
+      "DependsOn": [
+        "UserClicksServiceAPIEndpointclicksOPTIONSDA545868",
+        "UserClicksServiceAPIEndpointclicksPUT2F36C684",
+        "UserClicksServiceAPIEndpointclicks4E4FCA5C"
+      ]
+    },
+    "UserClicksServiceAPIEndpointDeploymentStageprod45DCCB13": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "DeploymentId": {
+          "Ref": "UserClicksServiceAPIEndpointDeployment618310CCa3df9648bfddb878e364218850fa6d41"
+        },
+        "RestApiId": {
+          "Ref": "UserClicksServiceAPIEndpointD3A13D1A"
+        },
+        "StageName": "prod"
+      },
+      "DependsOn": [
+        "UserClicksServiceAPIEndpointAccount4686F39F"
+      ]
+    },
+    "UserClicksServiceAPIEndpointclicks4E4FCA5C": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "UserClicksServiceAPIEndpointD3A13D1A",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "clicks",
+        "RestApiId": {
+          "Ref": "UserClicksServiceAPIEndpointD3A13D1A"
+        }
+      }
+    },
+    "UserClicksServiceAPIEndpointclicksPUT2F36C684": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "PUT",
+        "Integration": {
+          "ConnectionType": "INTERNET",
+          "Credentials": {
+            "Fn::GetAtt": [
+              "UserClicksServiceClickProcessingApiRole2A07FAA0",
+              "Arn"
+            ]
+          },
+          "IntegrationHttpMethod": "POST",
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,PUT'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "ResponseTemplates": {
+                "application/json": "{\"status\":\"OK\"}"
+              },
+              "StatusCode": "200"
+            }
+          ],
+          "RequestParameters": {
+            "integration.request.header.Content-Type": "'application/x-amz-json-1.1'"
+          },
+          "RequestTemplates": {
+            "application/json": {
+              "Fn::Join": [
+                "",
+                [
+                  "{\"DeliveryStreamName\": \"",
+                  {
+                    "Ref": "UserClicksServiceDeliveryStream80EEBD2E"
+                  },
+                  "\", \"Record\": {\"Data\": \"$util.base64Encode($input.json('$'))\"}}"
+                ]
+              ]
+            }
+          },
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":firehose:action/PutRecord"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true
+            },
+            "StatusCode": "200"
+          }
+        ],
+        "ResourceId": {
+          "Ref": "UserClicksServiceAPIEndpointclicks4E4FCA5C"
+        },
+        "RestApiId": {
+          "Ref": "UserClicksServiceAPIEndpointD3A13D1A"
+        }
+      }
+    },
+    "UserClicksServiceAPIEndpointclicksOPTIONSDA545868": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Credentials": "'false'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE'"
+              },
+              "StatusCode": "200"
+            }
+          ],
+          "PassthroughBehavior": "NEVER",
+          "RequestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
+          },
+          "Type": "MOCK"
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Credentials": true,
+              "method.response.header.Access-Control-Allow-Origin": true
+            },
+            "StatusCode": "200"
+          }
+        ],
+        "ResourceId": {
+          "Ref": "UserClicksServiceAPIEndpointclicks4E4FCA5C"
+        },
+        "RestApiId": {
+          "Ref": "UserClicksServiceAPIEndpointD3A13D1A"
+        }
+      }
+    },
+    "PopulateDbFnServiceRoleB4CF4518": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "PopulateDbFnServiceRoleDefaultPolicy8B14EE23": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "MysfitsTable54ADD99F",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "MysfitsTable54ADD99F",
+                          "Arn"
+                        ]
+                      },
+                      "/index/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "PopulateDbFnServiceRoleDefaultPolicy8B14EE23",
+        "Roles": [
+          {
+            "Ref": "PopulateDbFnServiceRoleB4CF4518"
+          }
+        ]
+      }
+    },
+    "PopulateDbFnECBC3588": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "# Source adapted from: https://github.com/aws-samples/aws-modern-application-workshop/blob/python-cdk\nfrom __future__ import print_function\n\nimport os\n\nimport boto3\n\nclient = boto3.client(\"dynamodb\")\n\ninit_data = [\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"4e53920c-505a-4a90-a694-b9300791f0ae\"},\n                \"Name\": {\"S\": \"Evangeline\"},\n                \"Species\": {\"S\": \"Chimera\"},\n                \"Description\": {\n                    \"S\": \"Evangeline is the global sophisticate of the mythical world. You\u2019d be hard pressed to find a more seductive, charming, and mysterious companion with a love for neoclassical architecture, and a degree in medieval studies. Don\u2019t let her beauty and brains distract you. While her mane may always be perfectly coifed, her tail is ever-coiled and ready to strike. Careful not to let your guard down, or you may just find yourself spiraling into a dazzling downfall of dizzying dimensions.\"\n                },\n                \"Age\": {\"N\": \"43\"},\n                \"GoodEvil\": {\"S\": \"Evil\"},\n                \"LawChaos\": {\"S\": \"Lawful\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/chimera_thumb.png\"},\n                \"ProfileImageUri\": {\n                    \"S\": \"https://www.mythicalmysfits.com/images/chimera_hover.png\"\n                },\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"2b473002-36f8-4b87-954e-9a377e0ccbec\"},\n                \"Name\": {\"S\": \"Pauly\"},\n                \"Species\": {\"S\": \"Cyclops\"},\n                \"Description\": {\n                    \"S\": \"Naturally needy and tyrannically temperamental, Pauly the infant cyclops is searching for a parental figure to call friend. Like raising any precocious tot, there may be occasional tantrums of thunder, lightning, and 100 decibel shrieking. Sooth him with some Mandrake root and you\u2019ll soon wonder why people even bother having human children. Gaze into his precious eye and fall in love with this adorable tyke.\"\n                },\n                \"Age\": {\"N\": \"2\"},\n                \"GoodEvil\": {\"S\": \"Neutral\"},\n                \"LawChaos\": {\"S\": \"Lawful\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/cyclops_thumb.png\"},\n                \"ProfileImageUri\": {\n                    \"S\": \"https://www.mythicalmysfits.com/images/cyclops_hover.png\"\n                },\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"0e37d916-f960-4772-a25a-01b762b5c1bd\"},\n                \"Name\": {\"S\": \"CoCo\"},\n                \"Species\": {\"S\": \"Dragon\"},\n                \"Description\": {\n                    \"S\": \"CoCo wears sunglasses at night. His hobbies include dressing up for casual nights out, accumulating debt, and taking his friends on his back for a terrifying ride through the mesosphere after a long night of revelry, where you pick up the bill, of course. For all his swagger, CoCo has a heart of gold. His loyalty knows no bounds, and once bonded, you\u2019ve got a wingman (literally) for life.\"\n                },\n                \"Age\": {\"N\": \"501\"},\n                \"GoodEvil\": {\"S\": \"Good\"},\n                \"LawChaos\": {\"S\": \"Chaotic\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/dragon_thumb.png\"},\n                \"ProfileImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/dragon_hover.png\"},\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"da5303ae-5aba-495c-b5d6-eb5c4a66b941\"},\n                \"Name\": {\"S\": \"Gretta\"},\n                \"Species\": {\"S\": \"Gorgon\"},\n                \"Description\": {\n                    \"S\": \"Young, fun, and perfectly mischievous, Gorgon is mostly tail. She's currently growing her horns and hoping for wings like those of her high-flying counterparts. In the meantime, she dons an umbrella and waits for gusts of wind to transport her across space-time. She likes to tell jokes in fluent Parseltongue, read the evening news, and shoot fireworks across celestial lines. If you like high-risk, high-reward challenges, Gorgon will be the best pet you never knew you wanted.\"\n                },\n                \"Age\": {\"N\": \"31\"},\n                \"GoodEvil\": {\"S\": \"Evil\"},\n                \"LawChaos\": {\"S\": \"Neutral\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/gorgon_thumb.png\"},\n                \"ProfileImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/gorgon_hover.png\"},\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"a901bb08-1985-42f5-bb77-27439ac14300\"},\n                \"Name\": {\"S\": \"Hasla\"},\n                \"Species\": {\"S\": \"Haetae\"},\n                \"Description\": {\n                    \"S\": \"Hasla's presence warms every room. For the last 2 billion years, she's made visitors from far-away lands and the galaxy next door feel immediately at ease. Usually it's because of her big heart, but sometimes it's because of the fire she breathes\u2014especially after eating garlic and starlight. Hasla loves togetherness, board games, and asking philosophical questions that leave people pondering the meaning of life as they fall asleep at night.\"\n                },\n                \"Age\": {\"N\": \"2000000000\"},\n                \"GoodEvil\": {\"S\": \"Good\"},\n                \"LawChaos\": {\"S\": \"Neutral\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/haetae_thumb.png\"},\n                \"ProfileImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/haetae_hover.png\"},\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"b41ff031-141e-4a8d-bb56-158a22bea0b3\"},\n                \"Name\": {\"S\": \"Snowflake\"},\n                \"Species\": {\"S\": \"Yeti\"},\n                \"Description\": {\n                    \"S\": \"While Snowflake is a snowman, the only abomination is that he hasn\u2019t been adopted yet. Snowflake is curious, playful, and loves to bound around in the snow. He likes winter hikes, hide and go seek, and all things Christmas. He can get a bit agitated when being scolded or having his picture taken and can occasionally cause devastating avalanches, so we don\u2019t recommend him for beginning pet owners. However, with love, care, and a lot of ice, Snowflake will make a wonderful companion.\"\n                },\n                \"Age\": {\"N\": \"13\"},\n                \"GoodEvil\": {\"S\": \"Evil\"},\n                \"LawChaos\": {\"S\": \"Neutral\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/yeti_thumb.png\"},\n                \"ProfileImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/yeti_hover.png\"},\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"3f0f196c-4a7b-43af-9e29-6522a715342d\"},\n                \"Name\": {\"S\": \"Gary\"},\n                \"Species\": {\"S\": \"Kraken\"},\n                \"Description\": {\n                    \"S\": \"Gary loves to have a good time. His motto? \u201cI just want to dance.\u201d Give Gary a disco ball, a DJ, and a hat that slightly obscures the vision from his top eye, and Gary will dance the year away which, at his age, is like one night in humanoid time. If you're looking for a low-maintenance, high-energy creature companion that never sheds and always shreds, Gary is just the kraken for you.\"\n                },\n                \"Age\": {\"N\": \"2709\"},\n                \"GoodEvil\": {\"S\": \"Neutral\"},\n                \"LawChaos\": {\"S\": \"Chaotic\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/kraken_thumb.png\"},\n                \"ProfileImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/kraken_hover.png\"},\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"a68db521-c031-44c7-b5ef-bfa4c0850e2a\"},\n                \"Name\": {\"S\": \"Nessi\"},\n                \"Species\": {\"S\": \"Plesiosaurus\"},\n                \"Description\": {\n                    \"S\": \"Nessi is a fun-loving and playful girl who will quickly lock on to your love and nestle into your heart. While shy at first, Nessi is energetic and loves to play with toys such as fishing boats, large sharks, frisbees, errant swimmers, and wand toys. As an aquatic animal, Nessi will need deep water to swim in; at least 15 feet though she prefers 750. Nessi would be a wonderful companion for anyone seeking a loving, 1 ton ball of joy.\"\n                },\n                \"Age\": {\"N\": \"75000000\"},\n                \"GoodEvil\": {\"S\": \"Neutral\"},\n                \"LawChaos\": {\"S\": \"Neutral\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/nessie_thumb.png\"},\n                \"ProfileImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/nessie_hover.png\"},\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"c0684344-1eb7-40e7-b334-06d25ac9268c\"},\n                \"Name\": {\"S\": \"Atlantis\"},\n                \"Species\": {\"S\": \"Mandrake\"},\n                \"Description\": {\n                    \"S\": \"Do you like long naps in the dirt, vegetable-like appendages, mind-distorting screaming, and a unmatched humanoid-like root system? Look no further, Atlantis is the perfect companion to accompany you down the rabbit hole! Atlantis is rooted in habitual power napping and can unleash a terse warning when awakened. Like all of us, at the end of a long nap, all Atlantis needs is a soothing milk or blood bath to take the edge off. If you're looking to take a trip, this mandrake is your ideal travel companion.\"\n                },\n                \"Age\": {\"N\": \"100\"},\n                \"GoodEvil\": {\"S\": \"Neutral\"},\n                \"LawChaos\": {\"S\": \"Neutral\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/mandrake_thumb.png\"},\n                \"ProfileImageUri\": {\n                    \"S\": \"https://www.mythicalmysfits.com/images/mandrake_hover.png\"\n                },\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"ac3e95f3-eb40-4e4e-a605-9fdd0224877c\"},\n                \"Name\": {\"S\": \"Twilight Glitter\"},\n                \"Species\": {\"S\": \"Pegasus\"},\n                \"Description\": {\n                    \"S\": \"Twilight\u2019s personality sparkles like the night sky and is looking for a forever home with a Greek hero or God. While on the smaller side at 14 hands, he is quite adept at accepting riders and can fly to 15,000 feet. Twilight needs a large area to run around in and will need to be registered with the FAA if you plan to fly him above 500 feet. His favorite activities include playing with chimeras, going on epic adventures into battle, and playing with a large inflatable ball around the paddock. If you bring him home, he\u2019ll quickly become your favorite little Pegasus.\"\n                },\n                \"Age\": {\"N\": \"6\"},\n                \"GoodEvil\": {\"S\": \"Good\"},\n                \"LawChaos\": {\"S\": \"Lawful\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/pegasus_thumb.png\"},\n                \"ProfileImageUri\": {\n                    \"S\": \"https://www.mythicalmysfits.com/images/pegasus_hover.png\"\n                },\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"33e1fbd4-2fd8-45fb-a42f-f92551694506\"},\n                \"Name\": {\"S\": \"Cole\"},\n                \"Species\": {\"S\": \"Phoenix\"},\n                \"Description\": {\n                    \"S\": \"Cole is a loving companion and the perfect starter pet for kids. Cole\u2019s tears can fix almost any boo-boo your children may receive (up to partial limb amputation). You never have to worry about your kids accidentally killing him as he\u2019ll just be reborn in a fun burst of flame if they do. Even better, Cole has the uncanny ability to force all those around him to tell the truth, so say goodbye to fibs about not eating a cookie before dinner or where your teenager actually went that night. Adopt him today and find out how he will be the perfect family member for you, your children, their children, their children\u2019s children, and so on.\"\n                },\n                \"Age\": {\"N\": \"1393\"},\n                \"GoodEvil\": {\"S\": \"Good\"},\n                \"LawChaos\": {\"S\": \"Chaotic\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/phoenix_thumb.png\"},\n                \"ProfileImageUri\": {\n                    \"S\": \"https://www.mythicalmysfits.com/images/phoenix_hover.png\"\n                },\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n    {\n        \"PutRequest\": {\n            \"Item\": {\n                \"MysfitId\": {\"S\": \"b6d16e02-6aeb-413c-b457-321151bb403d\"},\n                \"Name\": {\"S\": \"Rujin\"},\n                \"Species\": {\"S\": \"Troll\"},\n                \"Description\": {\n                    \"S\": \"Are you looking for a strong companion for raids, someone to throw lightning during a pillage, or just a cuddly buddy who can light a campfire from 200 meters? Look no further than Rujin, a troll mage just coming into his teenage years. Rujin is a loyal companion who loves adventure, camping, and long walks through burning villages. He is great with kids and makes a wonderful guard-troll, especially if you have a couple bridges on your property. Rujin has a bit of a soft spot for gold, so you\u2019ll need to keep yours well hidden from him. Since he does keep a hoard on our property, we\u2019re waiving the adoption fee!\"\n                },\n                \"Age\": {\"N\": \"221\"},\n                \"GoodEvil\": {\"S\": \"Evil\"},\n                \"LawChaos\": {\"S\": \"Chaotic\"},\n                \"ThumbImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/troll_thumb.png\"},\n                \"ProfileImageUri\": {\"S\": \"https://www.mythicalmysfits.com/images/troll_hover.png\"},\n                \"Likes\": {\"N\": \"0\"},\n                \"Adopted\": {\"BOOL\": False},\n            }\n        }\n    },\n]\ntable_name = os.environ[\"mysfitsTable\"]\n\n\n# source adapted from https://github.com/aws-samples/aws-modern-application-workshop/blob/python-cdk/module-3/data/populate-dynamodb.json\ndef insertMysfits(event, context):\n    response = client.batch_write_item(\n        RequestItems={\n            table_name: init_data,\n        }\n    )\n    print(response)\n"
+        },
+        "Environment": {
+          "Variables": {
+            "mysfitsTable": {
+              "Ref": "MysfitsTable54ADD99F"
+            }
+          }
+        },
+        "Handler": "index.insertMysfits",
+        "Role": {
+          "Fn::GetAtt": [
+            "PopulateDbFnServiceRoleB4CF4518",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.10"
+      },
+      "DependsOn": [
+        "PopulateDbFnServiceRoleDefaultPolicy8B14EE23",
+        "PopulateDbFnServiceRoleB4CF4518"
+      ]
+    }
+  },
+  "Outputs": {
+    "UserClicksServiceAPIEndpoint1DA4E100": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "UserClicksServiceAPIEndpointD3A13D1A"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/",
+            {
+              "Ref": "UserClicksServiceAPIEndpointDeploymentStageprod45DCCB13"
+            },
+            "/"
+          ]
+        ]
+      }
+    },
+    "ClicksBucketDestinationName": {
+      "Value": {
+        "Ref": "UserClicksServiceClicksBucketDestinationDF882499"
+      }
+    },
+    "DeliveryStreamArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "UserClicksServiceDeliveryStream80EEBD2E",
+          "Arn"
+        ]
+      }
+    },
+    "DeliveryStreamName": {
+      "Value": {
+        "Ref": "UserClicksServiceDeliveryStream80EEBD2E"
+      }
+    },
+    "StreamProcessorFunctionName": {
+      "Value": {
+        "Ref": "UserClicksServiceStreamProcessorFunctionDC65B364"
+      }
+    },
+    "PopulateDbFunctionName": {
+      "Value": {
+        "Ref": "PopulateDbFnECBC3588"
+      }
+    },
+    "MysfitsTableName": {
+      "Value": {
+        "Ref": "MysfitsTable54ADD99F"
+      }
+    },
+    "UserClicksServiceAPIEndpoint": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "UserClicksServiceAPIEndpointD3A13D1A"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/",
+            {
+              "Ref": "UserClicksServiceAPIEndpointDeploymentStageprod45DCCB13"
+            },
+            "/"
+          ]
+        ]
+      }
+    },
+    "UserClicksServiceAPIId": {
+      "Value": {
+        "Ref": "UserClicksServiceAPIEndpointD3A13D1A"
+      }
+    }
+  }
+}

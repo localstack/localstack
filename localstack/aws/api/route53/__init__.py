@@ -1878,7 +1878,6 @@ class UpdateTrafficPolicyInstanceResponse(TypedDict, total=False):
 
 
 class Route53Api:
-
     service = "route53"
     version = "2013-04-01"
 

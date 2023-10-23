@@ -153,7 +153,6 @@ class TestMisc(unittest.TestCase):
 # This test is not enabled in CI, it is just used for manual
 # testing to debug https://github.com/localstack/localstack/issues/213
 def run_parallel_download():
-
     file_length = 10000000
 
     class DownloadListener(ProxyListener):

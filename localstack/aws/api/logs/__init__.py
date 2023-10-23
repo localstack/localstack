@@ -944,7 +944,6 @@ class UntagResourceRequest(ServiceRequest):
 
 
 class LogsApi:
-
     service = "logs"
     version = "2014-03-28"
 

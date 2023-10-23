@@ -326,7 +326,6 @@ def parse_and_apply_numeric_filter(
         return False
 
     for idx in range(0, len(numeric_filter), 2):
-
         try:
             if numeric_filter[idx] == ">" and not (record_value > float(numeric_filter[idx + 1])):
                 return False

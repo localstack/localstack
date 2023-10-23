@@ -1177,6 +1177,8 @@ class Snapshot(TypedDict, total=False):
     ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
     ManualSnapshotRemainingDays: Optional[IntegerOptional]
     SnapshotRetentionStartTime: Optional[TStamp]
+    MasterPasswordSecretArn: Optional[String]
+    MasterPasswordSecretKmsKeyId: Optional[String]
 
 
 class AuthorizeSnapshotAccessResult(TypedDict, total=False):
@@ -1328,7 +1330,7 @@ class RestoreStatus(TypedDict, total=False):
 
 
 class PendingModifiedValues(TypedDict, total=False):
-    MasterUserPassword: Optional[String]
+    MasterUserPassword: Optional[SensitiveString]
     NodeType: Optional[String]
     NumberOfNodes: Optional[IntegerOptional]
     ClusterType: Optional[String]
@@ -1456,6 +1458,8 @@ class Cluster(TypedDict, total=False):
     CustomDomainName: Optional[String]
     CustomDomainCertificateArn: Optional[String]
     CustomDomainCertificateExpiryDate: Optional[TStamp]
+    MasterPasswordSecretArn: Optional[String]
+    MasterPasswordSecretKmsKeyId: Optional[String]
 
 
 class ClusterCredentials(TypedDict, total=False):
@@ -1625,7 +1629,7 @@ class CreateClusterMessage(ServiceRequest):
     ClusterType: Optional[String]
     NodeType: String
     MasterUsername: String
-    MasterUserPassword: String
+    MasterUserPassword: Optional[SensitiveString]
     ClusterSecurityGroups: Optional[ClusterSecurityGroupNameList]
     VpcSecurityGroupIds: Optional[VpcSecurityGroupIdList]
     ClusterSubnetGroupName: Optional[String]
@@ -1654,6 +1658,8 @@ class CreateClusterMessage(ServiceRequest):
     AquaConfigurationStatus: Optional[AquaConfigurationStatus]
     DefaultIamRoleArn: Optional[String]
     LoadSampleData: Optional[String]
+    ManageMasterPassword: Optional[BooleanOptional]
+    MasterPasswordSecretKmsKeyId: Optional[String]
 
 
 class CreateClusterParameterGroupMessage(ServiceRequest):
@@ -2678,7 +2684,7 @@ class ModifyClusterMessage(ServiceRequest):
     NumberOfNodes: Optional[IntegerOptional]
     ClusterSecurityGroups: Optional[ClusterSecurityGroupNameList]
     VpcSecurityGroupIds: Optional[VpcSecurityGroupIdList]
-    MasterUserPassword: Optional[String]
+    MasterUserPassword: Optional[SensitiveString]
     ClusterParameterGroupName: Optional[String]
     AutomatedSnapshotRetentionPeriod: Optional[IntegerOptional]
     ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
@@ -2697,6 +2703,8 @@ class ModifyClusterMessage(ServiceRequest):
     AvailabilityZoneRelocation: Optional[BooleanOptional]
     AvailabilityZone: Optional[String]
     Port: Optional[IntegerOptional]
+    ManageMasterPassword: Optional[BooleanOptional]
+    MasterPasswordSecretKmsKeyId: Optional[String]
 
 
 class ModifyClusterParameterGroupMessage(ServiceRequest):
@@ -2941,6 +2949,8 @@ class RestoreFromClusterSnapshotMessage(ServiceRequest):
     ReservedNodeId: Optional[String]
     TargetReservedNodeOfferingId: Optional[String]
     Encrypted: Optional[BooleanOptional]
+    ManageMasterPassword: Optional[BooleanOptional]
+    MasterPasswordSecretKmsKeyId: Optional[String]
 
 
 class RestoreFromClusterSnapshotResult(TypedDict, total=False):
@@ -3119,7 +3129,6 @@ class UsageLimitList(TypedDict, total=False):
 
 
 class RedshiftApi:
-
     service = "redshift"
     version = "2012-12-01"
 
@@ -3241,9 +3250,9 @@ class RedshiftApi:
         cluster_identifier: String,
         node_type: String,
         master_username: String,
-        master_user_password: String,
         db_name: String = None,
         cluster_type: String = None,
+        master_user_password: SensitiveString = None,
         cluster_security_groups: ClusterSecurityGroupNameList = None,
         vpc_security_group_ids: VpcSecurityGroupIdList = None,
         cluster_subnet_group_name: String = None,
@@ -3272,6 +3281,8 @@ class RedshiftApi:
         aqua_configuration_status: AquaConfigurationStatus = None,
         default_iam_role_arn: String = None,
         load_sample_data: String = None,
+        manage_master_password: BooleanOptional = None,
+        master_password_secret_kms_key_id: String = None,
     ) -> CreateClusterResult:
         raise NotImplementedError
 
@@ -4094,7 +4105,7 @@ class RedshiftApi:
         number_of_nodes: IntegerOptional = None,
         cluster_security_groups: ClusterSecurityGroupNameList = None,
         vpc_security_group_ids: VpcSecurityGroupIdList = None,
-        master_user_password: String = None,
+        master_user_password: SensitiveString = None,
         cluster_parameter_group_name: String = None,
         automated_snapshot_retention_period: IntegerOptional = None,
         manual_snapshot_retention_period: IntegerOptional = None,
@@ -4113,6 +4124,8 @@ class RedshiftApi:
         availability_zone_relocation: BooleanOptional = None,
         availability_zone: String = None,
         port: IntegerOptional = None,
+        manage_master_password: BooleanOptional = None,
+        master_password_secret_kms_key_id: String = None,
     ) -> ModifyClusterResult:
         raise NotImplementedError
 
@@ -4345,6 +4358,8 @@ class RedshiftApi:
         reserved_node_id: String = None,
         target_reserved_node_offering_id: String = None,
         encrypted: BooleanOptional = None,
+        manage_master_password: BooleanOptional = None,
+        master_password_secret_kms_key_id: String = None,
     ) -> RestoreFromClusterSnapshotResult:
         raise NotImplementedError
 

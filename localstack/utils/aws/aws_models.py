@@ -181,7 +181,6 @@ class CodeSigningConfig:
 
 
 class LambdaFunction(Component):
-
     QUALIFIER_LATEST: str = "$LATEST"
 
     def __init__(self, arn):

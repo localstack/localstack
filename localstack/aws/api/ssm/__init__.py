@@ -1516,6 +1516,12 @@ class OpsItemAlreadyExistsException(ServiceException):
     OpsItemId: Optional[String]
 
 
+class OpsItemConflictException(ServiceException):
+    code: str = "OpsItemConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 OpsItemParameterNamesList = List[String]
 
 
@@ -2884,6 +2890,14 @@ class DeleteMaintenanceWindowRequest(ServiceRequest):
 
 class DeleteMaintenanceWindowResult(TypedDict, total=False):
     WindowId: Optional[MaintenanceWindowId]
+
+
+class DeleteOpsItemRequest(ServiceRequest):
+    OpsItemId: OpsItemId
+
+
+class DeleteOpsItemResponse(TypedDict, total=False):
+    pass
 
 
 class DeleteOpsMetadataRequest(ServiceRequest):
@@ -5477,7 +5491,6 @@ class UpdateServiceSettingResult(TypedDict, total=False):
 
 
 class SsmApi:
-
     service = "ssm"
     version = "2014-11-06"
 
@@ -5703,6 +5716,12 @@ class SsmApi:
     def delete_maintenance_window(
         self, context: RequestContext, window_id: MaintenanceWindowId
     ) -> DeleteMaintenanceWindowResult:
+        raise NotImplementedError
+
+    @handler("DeleteOpsItem")
+    def delete_ops_item(
+        self, context: RequestContext, ops_item_id: OpsItemId
+    ) -> DeleteOpsItemResponse:
         raise NotImplementedError
 
     @handler("DeleteOpsMetadata")

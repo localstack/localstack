@@ -352,8 +352,26 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return result
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
-        call_moto(context)
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
+        count = len(subscription_arn.split(":"))
+        try:
+            parsed_arn = parse_arn(subscription_arn)
+        except InvalidArnException:
+            # TODO: check for invalid SubscriptionGUID
+            if count < 6:
+                raise InvalidParameterException(
+                    f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}"
+                )
+
+        account_id = parsed_arn["account"]
+        region_name = parsed_arn["region"]
+
+        store = self.get_store(account_id=account_id, region_name=region_name)
+
+        if count == 6 and subscription_arn not in store.topic_subscriptions:
+            raise InvalidParameterException("Invalid parameter: SubscriptionId")
+
+        moto_sns_backend = self.get_moto_backend(account_id, region_name)
+        moto_sns_backend.unsubscribe(subscription_arn)
 
         # pop the subscription at the end, to avoid race condition by iterating over the topic subscriptions
         subscription = store.subscriptions.get(subscription_arn)
