@@ -76,6 +76,7 @@ PROVIDER_DEFAULTS = {
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::EKS::Nodegroup": "ResourceProvider",
     "AWS::Redshift::Cluster": "ResourceProvider",
+    "AWS::Logs::LogGroup": "ResourceProvider",
 }
 
 
