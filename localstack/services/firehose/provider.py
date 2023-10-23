@@ -13,7 +13,6 @@ from urllib.parse import urlparse
 
 import requests
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.firehose import (
     AmazonOpenSearchServerlessDestinationConfiguration,
@@ -542,7 +541,7 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = store.delivery_streams.get(delivery_stream_name)
         if not delivery_stream_description:
             raise ResourceNotFoundException(
-                f"Firehose {delivery_stream_name} under account {get_aws_account_id()} not found."
+                f"Firehose {delivery_stream_name} under account {account_id} not found."
             )
 
         # preprocess records, add any missing attributes
