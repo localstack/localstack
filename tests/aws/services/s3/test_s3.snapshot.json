@@ -9669,7 +9669,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_preconditions[get_object]": {
-    "recorded-date": "10-08-2023, 01:14:32",
+    "recorded-date": "23-10-2023, 18:17:15",
     "recorded-content": {
       "precondition-if-match": {
         "Error": {
@@ -9737,6 +9737,30 @@
           "HTTPStatusCode": 304
         }
       },
+      "precondition-if-unmodified-since-is-object": {
+        "AcceptRanges": "bytes",
+        "Body": "data",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "precondition-if-modified-since-is-object": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
       "obj-success": {
         "AcceptRanges": "bytes",
         "Body": "data",
@@ -9754,7 +9778,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_preconditions[head_object]": {
-    "recorded-date": "10-08-2023, 01:14:38",
+    "recorded-date": "23-10-2023, 18:17:21",
     "recorded-content": {
       "precondition-if-match": {
         "Error": {
@@ -9810,6 +9834,29 @@
         }
       },
       "etag-missing-quotes": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "precondition-if-unmodified-since-is-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "precondition-if-modified-since-is-object": {
         "Error": {
           "Code": "304",
           "Message": "Not Modified"
