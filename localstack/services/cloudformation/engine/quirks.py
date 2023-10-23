@@ -13,6 +13,7 @@ Since this is therefore rather part of the cloudformation layer and *not* the re
 PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     # Example
     # "AWS::ApiGateway::Resource": "/properties/ResourceId",
+    "AWS::Events::EventBus": "/properties/Name",
 }
 
 # You can usually find the available GetAtt targets in the official resource documentation:
