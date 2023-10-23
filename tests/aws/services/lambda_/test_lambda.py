@@ -18,7 +18,6 @@ from botocore.response import StreamingBody
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.services.lambda_.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     RUNTIMES_AGGREGATED,
@@ -314,7 +313,7 @@ class TestLambdaBaseFeatures:
     )
     @markers.aws.validated
     def test_lambda_different_iam_keys_environment(
-        self, lambda_su_role, create_lambda_function, snapshot, aws_client
+        self, lambda_su_role, create_lambda_function, snapshot, aws_client, region
     ):
         """
         In this test we want to check if multiple lambda environments (= instances of hot functions) have
@@ -364,12 +363,8 @@ class TestLambdaBaseFeatures:
             # since a lot of asserts are based on the structure of the arns, snapshots are not too nice here, so manual
             keys_1 = _transform_to_key_dict(results[0])
             keys_2 = _transform_to_key_dict(results[1])
-            sts_client_1 = create_client_with_keys(
-                "sts", keys=keys_1, region_name=TEST_AWS_REGION_NAME
-            )
-            sts_client_2 = create_client_with_keys(
-                "sts", keys=keys_2, region_name=TEST_AWS_REGION_NAME
-            )
+            sts_client_1 = create_client_with_keys("sts", keys=keys_1, region_name=region)
+            sts_client_2 = create_client_with_keys("sts", keys=keys_2, region_name=region)
             identity_1 = sts_client_1.get_caller_identity()
             identity_2 = sts_client_2.get_caller_identity()
             assert identity_1["Arn"] == identity_2["Arn"]
