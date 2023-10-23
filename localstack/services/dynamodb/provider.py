@@ -100,9 +100,10 @@ from localstack.aws.api.dynamodb import (
     UpdateTimeToLiveOutput,
 )
 from localstack.aws.connect import connect_to
-from localstack.constants import AUTH_CREDENTIAL_REGEX, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.constants import (
+    AUTH_CREDENTIAL_REGEX,
     AWS_REGION_US_EAST_1,
+    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.http import Response
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
