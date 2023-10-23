@@ -11205,5 +11205,64 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_delete_objects_encoding": {
+    "recorded-date": "22-10-2023, 04:25:14",
+    "recorded-content": {
+      "list-objects-before-delete": {
+        "Contents": [
+          {
+            "ETag": "\"1ac438708eff428b768f07249b3e2bb2\"",
+            "Key": "a%2Fb",
+            "LastModified": "datetime",
+            "Size": 16,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"ec53baa61c0c0b736a567bdef59250f3\"",
+            "Key": "a/%F0%9F%98%80",
+            "LastModified": "datetime",
+            "Size": 21,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 2,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deleted-resp": {
+        "Deleted": [
+          {
+            "Key": "a%2Fb"
+          },
+          {
+            "Key": "a/%F0%9F%98%80"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 0,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

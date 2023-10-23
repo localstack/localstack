@@ -3269,6 +3269,36 @@ class TestS3:
         snapshot.match("error-non-existent-bucket", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Issue in moto, see https://github.com/getmoto/moto/pull/6933",
+    )
+    def test_delete_objects_encoding(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        object_key_1 = "a%2Fb"
+        object_key_2 = "a/%F0%9F%98%80"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key_1, Body="percent encoding")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key_2, Body="percent encoded emoji")
+
+        list_objects = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects-before-delete", list_objects)
+
+        response = aws_client.s3.delete_objects(
+            Bucket=s3_bucket,
+            Delete={
+                "Objects": [
+                    {"Key": object_key_1},
+                    {"Key": object_key_2},
+                ],
+            },
+        )
+        response["Deleted"].sort(key=itemgetter("Key"))
+        snapshot.match("deleted-resp", response)
+
+        list_objects = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects", list_objects)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not is_native_provider(),
         paths=[
