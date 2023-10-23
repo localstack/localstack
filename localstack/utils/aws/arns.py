@@ -71,6 +71,7 @@ def extract_resource_from_arn(arn: str) -> Optional[str]:
 # Generic ARN builder
 #
 
+
 # TODO make account_id and region required
 def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: str = None) -> str:
     if ":" in name:
