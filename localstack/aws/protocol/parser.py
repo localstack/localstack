@@ -983,14 +983,14 @@ class S3RequestParser(RestXMLRequestParser):
 
         def __enter__(self):
             # only modify the request if it uses the virtual host addressing
-            if self._is_vhost_address(self.request):
+            if bucket_name := self._is_vhost_address_get_bucket(self.request):
                 # save the original path and host for restoring on context exit
                 self.old_path = self.request.path
                 self.old_host = self.request.host
                 self.old_raw_uri = self.request.environ.get("RAW_URI")
 
-                # extract the bucket name from the host part of the request
-                bucket_name, new_host = self.old_host.split(".", maxsplit=1)
+                # remove the bucket name from the host part of the request
+                new_host = self.old_host.removeprefix(f"{bucket_name}.")
 
                 # split the url and put the bucket name at the front
                 path_parts = self.old_path.split("/")
@@ -1049,10 +1049,10 @@ class S3RequestParser(RestXMLRequestParser):
                 pass
 
         @staticmethod
-        def _is_vhost_address(request: HttpRequest) -> bool:
+        def _is_vhost_address_get_bucket(request: HttpRequest) -> bool:
             from localstack.services.s3.utils import uses_host_addressing
 
-            return uses_host_addressing(request.headers)
+            return uses_host_addressing(request.headers, return_bucket=True)
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:

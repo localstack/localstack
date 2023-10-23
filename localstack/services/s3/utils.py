@@ -441,18 +441,27 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return False
 
 
-def uses_host_addressing(headers: Dict[str, str]) -> bool:
+def uses_host_addressing(headers: Dict[str, str], return_bucket: bool = False) -> bool | str:
     """
     Determines if the request is targeting S3 with virtual host addressing
     :param headers: the request headers
-    :return: whether the request targets S3 with virtual host addressing
+    :param return_bucket: whether to return the Bucket from the request
+    :return: whether the request targets S3 with virtual host addressing, and the bucket name if return_bucket is True
     """
     host = headers.get("host", "")
 
     # try to extract the bucket from the hostname (the "in" check is a minor optimization, as the regex is very greedy)
-    return ".s3" in host and (
-        (match := _s3_virtual_host_regex.match(host)) and match.group("bucket") is not None
-    )
+    if return_bucket:
+        if ".s3." in host and (
+            (match := _s3_virtual_host_regex.match(host)) and (bucket_name := match.group("bucket"))
+        ):
+            return bucket_name
+        else:
+            return False
+    else:
+        return ".s3" in host and (
+            (match := _s3_virtual_host_regex.match(host)) and match.group("bucket") is not None
+        )
 
 
 def get_class_attrs_from_spec_class(spec_class: Type[str]) -> set[str]:
