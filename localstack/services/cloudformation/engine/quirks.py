@@ -14,6 +14,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     # Example
     # "AWS::ApiGateway::Resource": "/properties/ResourceId",
     "AWS::Events::EventBus": "/properties/Name",
+    "AWS::Events::Rule": "/properties/Name",
 }
 
 # You can usually find the available GetAtt targets in the official resource documentation:

@@ -77,6 +77,8 @@ PROVIDER_DEFAULTS = {
     "AWS::EKS::Nodegroup": "ResourceProvider",
     "AWS::Redshift::Cluster": "ResourceProvider",
     "AWS::Events::Connection": "ResourceProvider",
+    "AWS::Events::EventBus": "ResourceProvider",
+    "AWS::Events::Rule": "ResourceProvider",
 }
 
 
