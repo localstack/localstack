@@ -376,6 +376,7 @@ class ResourceAttribute(str):
     CreationPolicy = "CreationPolicy"
     UpdatePolicy = "UpdatePolicy"
     DeletionPolicy = "DeletionPolicy"
+    UpdateReplacePolicy = "UpdateReplacePolicy"
     Tags = "Tags"
 
 
