@@ -571,7 +571,7 @@ class TestS3:
         snapshot.match("list-object-encoded-char", resp)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("delimiter", ["/", "%2F"])
+    @pytest.mark.parametrize("delimiter", ["", "/", "%2F"])
     def test_list_objects_with_prefix(
         self, s3_bucket, delimiter, snapshot, aws_client, aws_http_client_factory
     ):
