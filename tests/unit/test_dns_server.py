@@ -1,11 +1,12 @@
 import threading
+from pathlib import Path
 
 import dns
 import pytest
 
 from localstack import config
 from localstack.dns.models import AliasTarget, RecordType, SOARecord, TargetRecord
-from localstack.dns.server import DnsServer, get_fallback_dns_server
+from localstack.dns.server import DnsServer, add_resolv_entry, get_fallback_dns_server
 from localstack.utils.net import get_free_udp_port
 from localstack.utils.sync import retry
 
@@ -387,3 +388,38 @@ class TestDNSServer:
                 record_type=RecordType.A,
                 target=AliasTarget(target=""),
             )
+
+
+class TestDnsUtils:
+    def test_resolv_conf_overwriting(self, tmp_path: Path, monkeypatch):
+        from localstack.dns import server
+
+        monkeypatch.setattr(server, "in_docker", lambda: True)
+
+        file = tmp_path.joinpath("resolv.conf")
+        with file.open("w") as outfile:
+            print("nameserver 127.0.0.11", file=outfile)
+
+        add_resolv_entry(file)
+
+        with file.open() as infile:
+            new_contents = infile.read()
+
+        assert "nameserver 127.0.0.1" in new_contents.splitlines()
+
+    def test_no_resolv_conf_overwriting_on_host(self, tmp_path: Path, monkeypatch):
+        from localstack.dns import server
+
+        monkeypatch.setattr(server, "in_docker", lambda: False)
+
+        file = tmp_path.joinpath("resolv.conf")
+        with file.open("w") as outfile:
+            print("nameserver 127.0.0.11", file=outfile)
+
+        add_resolv_entry(file)
+
+        with file.open() as infile:
+            new_contents = infile.read()
+
+        assert "nameserver 127.0.0.1" not in new_contents.splitlines()
+        assert "nameserver 127.0.0.11" in new_contents.splitlines()
