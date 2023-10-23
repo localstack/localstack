@@ -322,5 +322,5 @@ class OpenApiExporter:
     ) -> str:
         exporter = self.exporters.get(export_type)()
         return exporter.export(
-            api_id, stage, export_format, with_extension, region_name, account_id
+            api_id, stage, export_format, with_extension, account_id, region_name
         )
