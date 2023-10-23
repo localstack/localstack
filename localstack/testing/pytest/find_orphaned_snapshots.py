@@ -21,7 +21,6 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 
 @pytest.hookimpl
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]):
-
     # for each file load the corresponding snapshot file
 
     ff = config.getoption("--filter-fixtures")

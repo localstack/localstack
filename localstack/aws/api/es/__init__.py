@@ -1536,7 +1536,6 @@ class UpgradeElasticsearchDomainResponse(TypedDict, total=False):
 
 
 class EsApi:
-
     service = "es"
     version = "2015-01-01"
 

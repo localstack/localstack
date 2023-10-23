@@ -852,6 +852,9 @@ DYNAMODB_HEAP_SIZE = os.environ.get("DYNAMODB_HEAP_SIZE", "").strip() or "256m"
 # single DB instance across multiple credentials are regions
 DYNAMODB_SHARE_DB = int(os.environ.get("DYNAMODB_SHARE_DB") or 0)
 
+# the port on which to expose dynamodblocal
+DYNAMODB_LOCAL_PORT = int(os.environ.get("DYNAMODB_LOCAL_PORT") or 0)
+
 # Used to toggle PurgeInProgress exceptions when calling purge within 60 seconds
 SQS_DELAY_PURGE_RETRY = is_env_true("SQS_DELAY_PURGE_RETRY")
 
@@ -1186,6 +1189,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_ERROR_PROBABILITY",
     "DYNAMODB_HEAP_SIZE",
     "DYNAMODB_IN_MEMORY",
+    "DYNAMODB_LOCAL_PORT",
     "DYNAMODB_SHARE_DB",
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",

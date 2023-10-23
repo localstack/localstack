@@ -227,7 +227,8 @@ class LambdaExecutorPlugin:
 
     def initialize(self):
         """Called once, for any active plugin to run initialization logic (e.g., downloading dependencies).
-        Uses lazy initialization - i.e., runs only after the first should_apply() call returns True"""
+        Uses lazy initialization - i.e., runs only after the first should_apply() call returns True
+        """
         pass
 
     def should_apply(self, context: InvocationContext) -> bool:
@@ -238,7 +239,8 @@ class LambdaExecutorPlugin:
         self, context: InvocationContext
     ) -> Optional[Union[AdditionalInvocationOptions, InvocationResult]]:
         """Return additional invocation options for given Lambda invocation context. Optionally, an
-        InvocationResult can be returned, in which case the result is returned to the client right away."""
+        InvocationResult can be returned, in which case the result is returned to the client right away.
+        """
         return None
 
     def process_result(
@@ -505,7 +507,8 @@ class LambdaExecutor:
 
     def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
         """Make the given file available to the Lambda process (e.g., by copying into the container) for the
-        given invocation context; Returns the path to the file that will be available to the Lambda handler."""
+        given invocation context; Returns the path to the file that will be available to the Lambda handler.
+        """
         raise NotImplementedError
 
     def apply_plugin_patches(self, inv_context: InvocationContext) -> Optional[InvocationResult]:
@@ -910,7 +913,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         check_port: bool = False,
     ) -> bool:
         """Return whether to use stay-open execution mode - if we're running in Docker, the given IP
-        is defined, and if the target API endpoint is available (optionally, if check_port is True)."""
+        is defined, and if the target API endpoint is available (optionally, if check_port is True).
+        """
         if not lambda_docker_ip:
             func_arn = lambda_function.arn()
             container_name = self.get_container_name(func_arn)
@@ -1382,7 +1386,6 @@ class LambdaExecutorLocal(LambdaExecutor):
     def _execute(
         self, lambda_function: LambdaFunction, inv_context: InvocationContext
     ) -> InvocationResult:
-
         # apply plugin patches to prepare invocation context
         result = self.apply_plugin_patches(inv_context)
         if isinstance(result, InvocationResult):
@@ -1592,7 +1595,6 @@ class LambdaExecutorLocal(LambdaExecutor):
         return result
 
     def execute_go_lambda(self, event, context, main_file, lambda_function: LambdaFunction = None):
-
         if lambda_function:
             lambda_function.envvars["AWS_LAMBDA_FUNCTION_HANDLER"] = main_file
             lambda_function.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))

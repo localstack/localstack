@@ -22,7 +22,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import Item, Map
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory
 from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramError,
     ProgramState,
@@ -49,27 +48,26 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
         self._item_reader = item_reader
         self._map_run_record = map_run_record
 
-    def _eval_job(self, job: Job) -> None:
+    def _eval_job(self, env: Environment, job: Job) -> None:
         self._map_run_record.item_counter.total.count()
         self._map_run_record.item_counter.running.count()
 
+        self._map_run_record.execution_counter.total.count()
+        self._map_run_record.execution_counter.running.count()
+
         job_output = None
-        env_frame: Environment = self._env.open_frame()
         try:
-            env_frame.context_object_manager.context_object["Map"] = Map(
+            env.context_object_manager.context_object["Map"] = Map(
                 Item=Item(Index=job.job_index, Value=job.job_input)
             )
-            env_frame.event_history = (
-                EventHistory()
-            )  # Prevent dumping events on the program's event history.
 
-            env_frame.inp = job.job_input
-            self._eval_input(env_frame=env_frame)
+            env.inp = job.job_input
+            self._eval_input(env_frame=env)
 
-            job.job_program.eval(env_frame)
+            job.job_program.eval(env)
 
             # TODO: verify behaviour with all of these scenarios.
-            end_program_state: ProgramState = env_frame.program_state()
+            end_program_state: ProgramState = env.program_state()
             if isinstance(end_program_state, ProgramError):
                 self._map_run_record.execution_counter.failed.count()
                 self._map_run_record.item_counter.failed.count()
@@ -80,7 +78,12 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
             else:
                 self._map_run_record.item_counter.succeeded.count()
                 self._map_run_record.item_counter.results_written.count()
-                job_output = env_frame.inp
+
+                self._map_run_record.execution_counter.succeeded.count()
+                self._map_run_record.execution_counter.results_written.count()
+                self._map_run_record.execution_counter.running.offset(-1)
+
+                job_output = env.inp
 
         except EvalTimeoutError:
             self._map_run_record.item_counter.timed_out.count()
@@ -94,18 +97,40 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
         finally:
             self._map_run_record.item_counter.running.offset(-1)
             job.job_output = job_output
+
+    def _eval_pool(self, job: Optional[Job], worker_frame: Environment) -> None:
+        # Note: the frame has to be closed before the job, to ensure the owner environment is correctly updated
+        #  before the evaluation continues; map states await for job termination not workers termination.
+        if job is None:
+            self._env.delete_frame(worker_frame)
+            return
+
+        # Evaluate the job.
+        job_frame = worker_frame.open_frame()
+        self._eval_job(env=job_frame, job=job)
+        worker_frame.delete_frame(job_frame)
+
+        # Evaluation terminates here due to exception in job.
+        if isinstance(job.job_output, Exception):
+            self._env.delete_frame(worker_frame)
             self._job_pool.close_job(job)
-            self._env.close_frame(env_frame)
+            return
+
+        # Worker was stopped.
+        if self.stopped():
+            self._env.delete_frame(worker_frame)
+            self._job_pool.close_job(job)
+            return
+
+        next_job: Job = self._job_pool.next_job()
+        # Iteration will terminate after this job.
+        if next_job is None:
+            self._env.delete_frame(worker_frame)
+            self._job_pool.close_job(job)
+            return
+
+        self._job_pool.close_job(job)
+        self._eval_pool(job=next_job, worker_frame=worker_frame)
 
     def eval(self) -> None:
-        job: Optional[Job] = self._job_pool.next_job()
-        while job is not None:
-            self._map_run_record.execution_counter.total.count()
-            self._map_run_record.execution_counter.running.count()
-            self._eval_job(job=job)
-            if self.stopped():
-                break
-            job = self._job_pool.next_job()
-            self._map_run_record.execution_counter.succeeded.count()
-            self._map_run_record.execution_counter.results_written.count()
-            self._map_run_record.execution_counter.running.offset(-1)
+        self._eval_pool(job=self._job_pool.next_job(), worker_frame=self._env)

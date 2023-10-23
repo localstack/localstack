@@ -138,6 +138,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         if self._is_condition():
             output = env.stack[-1]
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.TaskSubmitted,
                 event_detail=EventDetails(
                     taskSubmittedEventDetails=TaskSubmittedEventDetails(

@@ -10459,5 +10459,29 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_overwrite_key": {
+    "recorded-date": "18-10-2023, 17:40:12",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"eee506dd7ada7ded524c77e359a0e7c6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "multipart-upload": {
+        "Bucket": "<bucket:1>",
+        "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
+        "Key": "test.file",
+        "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

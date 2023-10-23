@@ -202,7 +202,8 @@ def create_lambda_function(
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API
-    CAVEAT: Does NOT wait until the function is ready/active. The fixture create_lambda_function waits until ready."""
+    CAVEAT: Does NOT wait until the function is ready/active. The fixture create_lambda_function waits until ready.
+    """
     if envvars is None:
         envvars = {}
     if tags is None:
@@ -346,7 +347,7 @@ def create_lambda_api_gateway_integration(
     func_arn = arns.lambda_function_arn(
         func_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
     )
-    target_arn = arns.apigateway_invocations_arn(func_arn)
+    target_arn = arns.apigateway_invocations_arn(func_arn, TEST_AWS_REGION_NAME)
 
     # connect API GW to Lambda
     result = connect_api_gateway_to_http_with_lambda_proxy(

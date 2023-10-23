@@ -51,7 +51,6 @@ def register(cls: Type = None, subclasses: bool = False):
     """
 
     def _wrapper(fn: Any | Callable[[PythonPickler, Any], None]):
-
         if inspect.isclass(fn) and issubclass(fn, ObjectStateReducer):
             if cls is not None:
                 raise ValueError("superfluous cls attribute for registering classes")

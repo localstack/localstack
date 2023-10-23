@@ -6,6 +6,7 @@ import requests
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
@@ -271,7 +272,7 @@ def test_lambda_aws_integration(
         "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
     )
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-    target_uri = arns.apigateway_invocations_arn(lambda_arn)
+    target_uri = arns.apigateway_invocations_arn(lambda_arn, TEST_AWS_REGION_NAME)
 
     api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
     resource_id, _ = create_rest_resource(
@@ -354,7 +355,7 @@ def test_lambda_aws_integration_with_request_template(
     )
 
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-    target_uri = arns.apigateway_invocations_arn(lambda_arn)
+    target_uri = arns.apigateway_invocations_arn(lambda_arn, TEST_AWS_REGION_NAME)
 
     api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
     resource_id, _ = create_rest_resource(

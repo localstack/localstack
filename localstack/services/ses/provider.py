@@ -186,7 +186,6 @@ def register_ses_api_resource():
 
 
 class SesProvider(SesApi, ServiceLifecycleHook):
-
     #
     # Lifecycle Hooks
     #

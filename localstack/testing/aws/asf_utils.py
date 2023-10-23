@@ -119,7 +119,7 @@ def check_provider_signature(sub_class: type, base_class: type, method_name: str
     try:
         base_function = getattr(base_class, method_name)
         # unwrap from the handler decorator
-        base_function = getattr(base_function, "__wrapped__")
+        base_function = base_function.__wrapped__
 
         sub_spec = inspect.getfullargspec(sub_function)
         base_spec = inspect.getfullargspec(base_function)
