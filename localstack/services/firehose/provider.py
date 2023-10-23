@@ -1,4 +1,5 @@
 import base64
+import functools
 import json
 import logging
 import os
@@ -307,8 +308,11 @@ class FirehoseProvider(FirehoseApi):
                 try:
                     process = kinesis_connector.listen_to_kinesis(
                         stream_name=kinesis_stream_name,
+                        region_name=context.region,
                         fh_d_stream=delivery_stream_name,
-                        listener_func=self._process_records,
+                        listener_func=functools.partial(
+                            self._process_records, context.account_id, context.region
+                        ),
                         wait_until_started=True,
                         ddb_lease_table_suffix="-firehose",
                     )
