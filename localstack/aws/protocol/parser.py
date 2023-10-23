@@ -88,7 +88,7 @@ from werkzeug.exceptions import BadRequest, NotFound
 
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
-from localstack.config import LEGACY_S3_PROVIDER
+from localstack.config import LEGACY_S3_PROVIDER, NATIVE_S3_PROVIDER
 
 
 def _text_content(func):
@@ -972,6 +972,8 @@ class S3RequestParser(RestXMLRequestParser):
         """
         Context Manager which rewrites the request object parameters such that - within the context - it looks like a
         normal S3 request.
+        FIXME: this is not optimal because it mutates the Request object. Once we have better utility to create/copy
+        a request instead of EnvironBuilder, we should copy it before parsing (except the stream).
         """
 
         def __init__(self, request: HttpRequest):
@@ -1054,7 +1056,7 @@ class S3RequestParser(RestXMLRequestParser):
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        if LEGACY_S3_PROVIDER:
+        if LEGACY_S3_PROVIDER or NATIVE_S3_PROVIDER:
             """Handle virtual-host-addressing for S3."""
             with self.VirtualHostRewriter(request):
                 return super().parse(request)

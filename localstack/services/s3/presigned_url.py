@@ -42,6 +42,7 @@ from localstack.services.s3.utils import (
     forwarded_from_virtual_host_addressed_request,
     is_bucket_name_valid,
     is_presigned_url_request,
+    uses_host_addressing,
 )
 from localstack.utils.strings import to_bytes
 
@@ -453,7 +454,6 @@ class S3SigV4SignatureContext:
             context.request.headers, get_raw_path(context.request)
         )
         self._bucket = urlparse.unquote(self._bucket)
-        print(self._bucket)
         self._request_method = context.request.method
 
         credentials = ReadOnlyCredentials(
@@ -470,7 +470,7 @@ class S3SigV4SignatureContext:
         self.signed_headers = sig_headers
         self.request_query_string = qs
 
-        if forwarded_from_virtual_host_addressed_request(self._headers):
+        if self._is_virtual_host_request(self._headers):
             # FIXME: maybe move this so it happens earlier in the chain when using virtual host?
             if not is_bucket_name_valid(self._bucket):
                 raise InvalidBucketName(BucketName=self._bucket)
@@ -601,6 +601,13 @@ class S3SigV4SignatureContext:
             },
         }
         return create_request_object(request_dict)
+
+    @staticmethod
+    def _is_virtual_host_request(headers):
+        if config.NATIVE_S3_PROVIDER:
+            return uses_host_addressing(headers)
+        else:
+            return forwarded_from_virtual_host_addressed_request(headers)
 
 
 def add_headers_to_original_request(context: RequestContext, headers: Mapping[str, str]):
