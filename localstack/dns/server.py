@@ -793,8 +793,13 @@ def add_resolv_entry(file_path: Path | str = Path("/etc/resolv.conf")):
     """
     )
     file_path = Path(file_path)
-    with file_path.open("w") as outfile:
-        print(content, file=outfile)
+    try:
+        with file_path.open("w") as outfile:
+            print(content, file=outfile)
+    except Exception:
+        LOG.warning(
+            "Could not update container DNS settings", exc_info=LOG.isEnabledFor(logging.DEBUG)
+        )
 
 
 def setup_network_configuration():
