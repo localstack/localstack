@@ -765,5 +765,40 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_describe_minimal_metric_alarm": {
+    "recorded-date": "25-10-2023, 17:17:06",
+    "recorded-content": {
+      "describe_minimal_metric_alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "<metric-name:1>",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 10,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
