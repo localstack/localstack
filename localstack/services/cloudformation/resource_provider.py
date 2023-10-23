@@ -77,6 +77,7 @@ PROVIDER_DEFAULTS = {
     "AWS::EKS::Nodegroup": "ResourceProvider",
     "AWS::Redshift::Cluster": "ResourceProvider",
     "AWS::Logs::LogGroup": "ResourceProvider",
+    "AWS::Logs::LogStream": "ResourceProvider",
 }
 
 
