@@ -85,19 +85,13 @@ BUCKET_NAME_REGEX = (
     + r"(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)"
 )
 
-REGION_REGEX = r"[a-z]{2}-[a-z]+-[0-9]{1,}"
-PORT_REGEX = r"(:[\d]{0,6})?"
-
 TAG_REGEX = re.compile(r"^[\w\s.:/=+\-@]*$")
 
-S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expression (separated by .) followed by .s3
-    r"^(http(s)?://)?((?!s3\.)[^\./]+)\."  # the negative lookahead part is for considering buckets
-    r"(((s3(-website)?\.({}\.)?)localhost(\.localstack\.cloud)?)|(localhost\.localstack\.cloud)|"
-    r"(s3((-website)|(-external-1))?[\.-](dualstack\.)?"
-    r"({}\.)?amazonaws\.com(.cn)?)){}(/[\w\-. ]*)*$"
-).format(
-    REGION_REGEX, REGION_REGEX, PORT_REGEX
+
+S3_VIRTUAL_HOSTNAME_REGEX = (
+    r"(?P<bucket>.*).s3.(?P<region>(?:us-gov|us|ap|ca|cn|eu|sa)-[a-z]+-\d)?.*"
 )
+
 _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
 
@@ -456,10 +450,8 @@ def uses_host_addressing(headers: Dict[str, str]) -> bool:
     host = headers.get("host", "")
 
     # try to extract the bucket from the hostname (the "in" check is a minor optimization, as the regex is very greedy)
-    return (
-        True
-        if ".s3" in host and ((match := _s3_virtual_host_regex.match(host)) and match.group(3))
-        else False
+    return ".s3" in host and (
+        (match := _s3_virtual_host_regex.match(host)) and match.group("bucket") is not None
     )
 
 
@@ -501,8 +493,8 @@ def extract_bucket_name_and_key_from_headers_and_path(
     host = headers.get("host", "")
     if ".s3" in host:
         vhost_match = _s3_virtual_host_regex.match(host)
-        if vhost_match and vhost_match.group(3):
-            bucket_name = vhost_match.group(3)
+        if vhost_match and vhost_match.group("bucket"):
+            bucket_name = vhost_match.group("bucket")
             split = path.split("/", maxsplit=1)
             if len(split) > 1:
                 object_key = split[1]
