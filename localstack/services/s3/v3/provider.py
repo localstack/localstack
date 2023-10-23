@@ -1296,9 +1296,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         is_truncated = False
         next_key_marker = None
         max_keys = max_keys or 1000
+        prefix = prefix or ""
+        delimiter = delimiter or ""
         if encoding_type:
-            prefix = urlparse.quote(prefix or "")
-            delimiter = urlparse.quote(delimiter or "")
+            prefix = urlparse.quote(prefix)
+            delimiter = urlparse.quote(delimiter)
 
         s3_objects: list[Object] = []
 
@@ -1399,9 +1401,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         is_truncated = False
         next_continuation_token = None
         max_keys = max_keys or 1000
+        prefix = prefix or ""
+        delimiter = delimiter or ""
         if encoding_type:
-            prefix = urlparse.quote(prefix or "")
-            delimiter = urlparse.quote(delimiter or "")
+            prefix = urlparse.quote(prefix)
+            delimiter = urlparse.quote(delimiter)
         decoded_continuation_token = (
             to_str(base64.urlsafe_b64decode(continuation_token.encode()))
             if continuation_token
@@ -1514,9 +1518,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         next_key_marker = None
         next_version_id_marker = None
         max_keys = max_keys or 1000
+        prefix = prefix or ""
+        delimiter = delimiter or ""
         if encoding_type:
-            prefix = urlparse.quote(prefix or "")
-            delimiter = urlparse.quote(delimiter or "")
+            prefix = urlparse.quote(prefix)
+            delimiter = urlparse.quote(delimiter)
 
         object_versions: list[ObjectVersion] = []
         delete_markers: list[DeleteMarkerEntry] = []
