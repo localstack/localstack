@@ -64,8 +64,8 @@ class _BaseOpenApiExporter(abc.ABC):
         stage: str,
         export_format: str,
         with_extension: bool,
-        region_name: str = None,
         account_id: str = None,
+        region_name: str = None,
     ) -> str | dict:
         ...
 
@@ -160,8 +160,8 @@ class _OpenApiSwaggerExporter(_BaseOpenApiExporter):
         stage: str,
         export_format: str,
         with_extension: bool,
-        region_name: str = None,
         account_id: str = None,
+        region_name: str = None,
     ) -> str:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md
@@ -267,8 +267,8 @@ class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
         stage: str,
         export_format: str,
         with_extension: bool,
-        region_name: str = None,
         account_id: str = None,
+        region_name: str = None,
     ) -> str:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
@@ -317,8 +317,8 @@ class OpenApiExporter:
         export_type: str,
         export_format: str = "application/json",
         with_extension=False,
-        region_name: str = None,
         account_id: str = None,
+        region_name: str = None,
     ) -> str:
         exporter = self.exporters.get(export_type)()
         return exporter.export(
