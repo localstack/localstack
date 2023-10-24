@@ -864,8 +864,8 @@ SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 # expose SQS on a specific port externally
 SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
 
-# Strategy used when creating SQS queue urls. can be "off", "domain", or "path"
-SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
+# Strategy used when creating SQS queue urls. can be "off", "domain" (default), or "path"
+SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "domain"
 
 # Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
 SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT = is_env_true("SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT")
