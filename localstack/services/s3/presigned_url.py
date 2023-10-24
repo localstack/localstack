@@ -344,7 +344,7 @@ def _reverse_inject_signature_hmac_v1_query(
     # rebuild the query string
     new_query_string = percent_encode_sequence(new_query_string_dict)
 
-    if bucket_name := uses_host_addressing(request.headers, return_bucket=True):
+    if bucket_name := uses_host_addressing(request.headers):
         # if the request is host addressed, we need to remove the bucket from the host and set it in the path
         path = f"/{bucket_name}{request.path}"
         host = request.host.removeprefix(f"{bucket_name}.")
