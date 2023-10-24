@@ -470,7 +470,7 @@ class S3SigV4SignatureContext:
         self.signed_headers = sig_headers
         self.request_query_string = qs
 
-        if self._is_virtual_host_request(self._headers):
+        if forwarded_from_virtual_host_addressed_request(self._headers):
             # FIXME: maybe move this so it happens earlier in the chain when using virtual host?
             if not is_bucket_name_valid(self._bucket):
                 raise InvalidBucketName(BucketName=self._bucket)
@@ -486,9 +486,14 @@ class S3SigV4SignatureContext:
             netloc = urlparse.urlparse(self.request.url).netloc
             self.host = netloc
             self._original_host = netloc
-            # check that the path starts with the bucket
-            # our path has been sanitized, we should use the un-sanitized one
-            if not self.request.path.startswith(f"/{self._bucket}"):
+            if (host_addressed := uses_host_addressing(self._headers)) and not is_bucket_name_valid(
+                self._bucket
+            ):
+                raise InvalidBucketName(BucketName=self._bucket)
+
+            if not host_addressed and not self.request.path.startswith(f"/{self._bucket}"):
+                # if in path style, check that the path starts with the bucket
+                # our path has been sanitized, we should use the un-sanitized one
                 splitted_path = self.request.path.split("/", maxsplit=2)
                 self.path = f"/{self._bucket}/{splitted_path[-1]}"
             else:
@@ -601,13 +606,6 @@ class S3SigV4SignatureContext:
             },
         }
         return create_request_object(request_dict)
-
-    @staticmethod
-    def _is_virtual_host_request(headers):
-        if config.NATIVE_S3_PROVIDER:
-            return uses_host_addressing(headers)
-        else:
-            return forwarded_from_virtual_host_addressed_request(headers)
 
 
 def add_headers_to_original_request(context: RequestContext, headers: Mapping[str, str]):
