@@ -1626,6 +1626,9 @@ class TestS3BucketPolicy:
             aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
         snapshot.match("get-bucket-policy-after-delete", e.value.response)
 
+        response = aws_client.s3.delete_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-policy-after-delete", response)
+
     @markers.aws.validated
     @pytest.mark.xfail(
         condition=not config.NATIVE_S3_PROVIDER,

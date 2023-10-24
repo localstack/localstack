@@ -288,10 +288,6 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
     snapshot.match("method", method)
     # TODO: snapshot the authorizer too? it's not attached to the REST API
 
-    usage_plans = aws_client.apigateway.get_usage_plans()["items"]
-    for plan in usage_plans:
-        aws_client.apigateway.delete_usage_plan(usagePlanId=plan["id"])
-
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
@@ -407,10 +403,6 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
 
     usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
     assert 7000 == usage_plan["quota"]["limit"]
-
-    usage_plans = aws_client.apigateway.get_usage_plans()["items"]
-    for plan in usage_plans:
-        aws_client.apigateway.delete_usage_plan(usagePlanId=plan["id"])
 
 
 @markers.aws.validated

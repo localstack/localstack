@@ -1836,6 +1836,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             export_type=export_type,
             export_format=accepts,
             with_extension=has_extension,
+            account_id=context.account_id,
+            region_name=context.region,
         )
 
         accepts = accepts or APPLICATION_JSON
