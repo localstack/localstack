@@ -78,6 +78,10 @@ PROVIDER_DEFAULTS = {
     "AWS::Redshift::Cluster": "ResourceProvider",
     "AWS::S3::BucketPolicy": "ResourceProvider",
     "AWS::S3::Bucket": "ResourceProvider",
+    "AWS::Events::Connection": "ResourceProvider",
+    "AWS::Events::EventBus": "ResourceProvider",
+    "AWS::Events::Rule": "ResourceProvider",
+    "AWS::Events::EventBusPolicy": "ResourceProvider",
 }
 
 
