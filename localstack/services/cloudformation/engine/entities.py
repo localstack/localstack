@@ -2,7 +2,6 @@ import logging
 from typing import Optional, TypedDict
 
 from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
-from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
     convert_stack_parameters_to_list,
@@ -63,10 +62,15 @@ class StackTemplate(TypedDict):
 class Stack:
     def __init__(
         self,
+        account_id: str,
+        region_name: str,
         metadata: Optional[StackMetadata] = None,
         template: Optional[StackTemplate] = None,
         template_body: Optional[str] = None,
     ):
+        self.account_id = account_id
+        self.region_name = region_name
+
         if template is None:
             template = {}
 
@@ -88,8 +92,8 @@ class Stack:
         stack_id = self.metadata.get("StackId") or arns.cloudformation_stack_arn(
             self.stack_name,
             stack_id=short_uid(),
-            account_id=DEFAULT_AWS_ACCOUNT_ID,
-            region_name=AWS_REGION_US_EAST_1,  # FIXME: use proper account id/region
+            account_id=account_id,
+            region_name=region_name,
         )
         self.template["StackId"] = self.metadata["StackId"] = stack_id
         self.template["Parameters"] = self.template.get("Parameters") or {}
@@ -316,27 +320,31 @@ class Stack:
         return resource
 
     def copy(self):
-        return Stack(metadata=dict(self.metadata), template=dict(self.template))
+        return Stack(
+            account_id=self.account_id,
+            region_name=self.region_name,
+            metadata=dict(self.metadata),
+            template=dict(self.template),
+        )
 
 
 # FIXME: remove inheritance
 class StackChangeSet(Stack):
-    def __init__(self, stack: Stack, params=None, template=None):
+    def __init__(self, account_id: str, region_name: str, stack: Stack, params=None, template=None):
         if template is None:
             template = {}
         if params is None:
             params = {}
-        super(StackChangeSet, self).__init__(params, template)
+        super(StackChangeSet, self).__init__(account_id, region_name, params, template)
 
         name = self.metadata["ChangeSetName"]
         if not self.metadata.get("ChangeSetId"):
             self.metadata["ChangeSetId"] = arns.cf_change_set_arn(
-                name,
-                change_set_id=short_uid(),
-                account_id=DEFAULT_AWS_ACCOUNT_ID,
-                region_name=AWS_REGION_US_EAST_1,
-            )  # FIXME: Use proper account ID and region name
+                name, change_set_id=short_uid(), account_id=account_id, region_name=region_name
+            )
 
+        self.account_id = account_id
+        self.region_name = region_name
         self.stack = stack
         self.metadata["StackId"] = stack.stack_id
         self.metadata["Status"] = "CREATE_PENDING"
