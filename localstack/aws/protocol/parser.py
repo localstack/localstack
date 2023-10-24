@@ -88,7 +88,7 @@ from werkzeug.exceptions import BadRequest, NotFound
 
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
-from localstack.config import LEGACY_S3_PROVIDER, NATIVE_S3_PROVIDER
+from localstack.config import NATIVE_S3_PROVIDER
 
 
 def _text_content(func):
@@ -1050,22 +1050,13 @@ class S3RequestParser(RestXMLRequestParser):
 
         @staticmethod
         def _is_vhost_address_get_bucket(request: HttpRequest) -> str | None:
-            if LEGACY_S3_PROVIDER:
-                from localstack.services.s3.legacy.s3_utils import (
-                    extract_bucket_name,
-                    uses_host_addressing,
-                )
+            from localstack.services.s3.utils import uses_host_addressing
 
-                if uses_host_addressing(request.headers):
-                    return extract_bucket_name(request.headers, request.path)
-            else:
-                from localstack.services.s3.utils import uses_host_addressing
-
-                return uses_host_addressing(request.headers)
+            return uses_host_addressing(request.headers)
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        if LEGACY_S3_PROVIDER or NATIVE_S3_PROVIDER:
+        if NATIVE_S3_PROVIDER:
             """Handle virtual-host-addressing for S3."""
             with self.VirtualHostRewriter(request):
                 return super().parse(request)
