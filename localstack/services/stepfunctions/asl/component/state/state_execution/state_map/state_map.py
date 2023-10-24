@@ -159,6 +159,10 @@ class StateMap(ExecutionState):
         )
 
     def _eval_state(self, env: Environment) -> None:
+        # Initialise the retry counter for execution states.
+        env.context_object_manager.context_object["State"]["RetryCount"] = 0
+
+        # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
         while True:
             try:
                 self._evaluate_with_timeout(env)

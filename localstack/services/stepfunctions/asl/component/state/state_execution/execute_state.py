@@ -145,7 +145,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.retry.eval(env)
         res: RetryOutcome = env.stack.pop()
         if res == RetryOutcome.CanRetry:
-            retry_count = env.context_object_manager.context_object["State"].get("RetryCount", 0)
+            retry_count = env.context_object_manager.context_object["State"]["RetryCount"]
             env.context_object_manager.context_object["State"]["RetryCount"] = retry_count + 1
         return res
 
@@ -207,6 +207,10 @@ class ExecutionState(CommonStateField, abc.ABC):
             env.inp = res
 
     def _eval_state(self, env: Environment) -> None:
+        # Initialise the retry counter for execution states.
+        env.context_object_manager.context_object["State"]["RetryCount"] = 0
+
+        # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
         while True:
             try:
                 self._evaluate_with_timeout(env)
