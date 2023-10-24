@@ -2108,6 +2108,7 @@ class TestS3:
             Key=object_key,
             Body=b"data",
         )
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
 
         client_method = getattr(aws_client.s3, method)
 
@@ -2174,6 +2175,23 @@ class TestS3:
                 IfNoneMatch=put_object["ETag"].strip('"'),
             )
         snapshot.match("etag-missing-quotes", e.value.response)
+
+        # test If*ModifiedSince precision
+        response = client_method(
+            Bucket=s3_bucket,
+            Key=object_key,
+            IfUnmodifiedSince=head_object["LastModified"],
+        )
+        snapshot.match("precondition-if-unmodified-since-is-object", response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=head_object["LastModified"],
+            )
+        snapshot.match("precondition-if-modified-since-is-object", e.value.response)
+
         # Positive tests with all conditions checked
         get_obj_all_positive = client_method(
             Bucket=s3_bucket,

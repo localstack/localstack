@@ -936,6 +936,8 @@ def validate_failed_precondition(
     :raises NotModified, 304 with an empty body
     """
     precondition_failed = None
+    # last_modified needs to be rounded to a second so that strict equality can be enforced from a RFC1123 header
+    last_modified = last_modified.replace(microsecond=0)
     if (if_match := request.get("IfMatch")) and etag != if_match.strip('"'):
         precondition_failed = "If-Match"
 
@@ -952,7 +954,7 @@ def validate_failed_precondition(
 
     if ((if_none_match := request.get("IfNoneMatch")) and etag == if_none_match.strip('"')) or (
         (if_modified_since := request.get("IfModifiedSince"))
-        and last_modified < if_modified_since < datetime.datetime.now(tz=_gmt_zone_info)
+        and last_modified <= if_modified_since < datetime.datetime.now(tz=_gmt_zone_info)
     ):
         raise CommonServiceException(
             message="Not Modified",
