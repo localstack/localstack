@@ -17,7 +17,6 @@ from localstack.aws.protocol.parser import (
 )
 from localstack.aws.spec import load_service
 from localstack.http import Request as HttpRequest
-from localstack.services.s3.legacy import s3_utils
 from localstack.utils.common import to_bytes, to_str
 
 
@@ -1146,9 +1145,7 @@ def test_restxml_header_date_parsing():
 )
 def test_s3_virtual_host_addressing():
     """Test the parsing of an S3 bucket request using the bucket encoded in the domain."""
-    request = HttpRequest(
-        method="PUT", headers={"host": s3_utils.get_bucket_hostname("test-bucket")}
-    )
+    request = HttpRequest(method="PUT", headers={"host": "test-bucket.s3.example.com"})
     parser = create_parser(load_service("s3"))
     parsed_operation_model, parsed_request = parser.parse(request)
     assert parsed_operation_model.name == "CreateBucket"
