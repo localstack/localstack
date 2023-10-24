@@ -40,7 +40,8 @@ class Directories:
         static_libs: container only; binaries and libraries statically packaged with the image
         var_libs:    shared; binaries and libraries+data computed at runtime: lazy-loaded binaries, ssl cert, ...
         cache:       shared; ephemeral data that has to persist across localstack runs and reboots
-        tmp:         shared; ephemeral data that has to persist across localstack runs but not reboots
+        tmp:         container only; ephemeral data that has to persist across localstack runs but not reboots
+        mounted_tmp: shared; same as above, but shared for persistence across different containers, tests, ...
         functions:   shared; volume to communicate between host<->lambda containers
         data:        shared; holds localstack state, pods, ...
         config:      host only; pre-defined configuration values, cached credentials, machine id, ...
@@ -52,6 +53,7 @@ class Directories:
     var_libs: str
     cache: str
     tmp: str
+    mounted_tmp: str
     functions: str
     data: str
     config: str
@@ -64,6 +66,7 @@ class Directories:
         var_libs: str,
         cache: str,
         tmp: str,
+        mounted_tmp: str,
         functions: str,
         data: str,
         config: str,
@@ -75,6 +78,7 @@ class Directories:
         self.var_libs = var_libs
         self.cache = cache
         self.tmp = tmp
+        self.mounted_tmp = mounted_tmp
         self.functions = functions
         self.data = data
         self.config = config
@@ -88,7 +92,8 @@ class Directories:
             static_libs="/usr/lib/localstack",
             var_libs=f"{DEFAULT_VOLUME_DIR}/lib",
             cache=f"{DEFAULT_VOLUME_DIR}/cache",
-            tmp=f"{DEFAULT_VOLUME_DIR}/tmp",
+            tmp=os.path.join(tempfile.gettempdir(), "localstack"),
+            mounted_tmp=f"{DEFAULT_VOLUME_DIR}/tmp",
             functions=f"{DEFAULT_VOLUME_DIR}/tmp",  # FIXME: remove - this was misconceived
             data=f"{DEFAULT_VOLUME_DIR}/state",
             logs=f"{DEFAULT_VOLUME_DIR}/logs",
@@ -112,6 +117,7 @@ class Directories:
             var_libs=defaults.var_libs,
             cache=defaults.cache,
             tmp=tmp_dir,
+            mounted_tmp=defaults.mounted_tmp,
             functions=defaults.functions,
             data=defaults.data if PERSISTENCE else os.path.join(tmp_dir, "state"),
             config=defaults.config,
@@ -138,6 +144,7 @@ class Directories:
             var_libs=os.path.join(root, defaults.var_libs.lstrip("/")),
             cache=os.path.join(root, defaults.cache.lstrip("/")),
             tmp=tmp,
+            mounted_tmp=os.path.join(root, defaults.mounted_tmp.lstrip("/")),
             functions=os.path.join(root, defaults.functions.lstrip("/")),
             data=data if PERSISTENCE else os.path.join(tmp, "state"),
             config=os.path.join(root, defaults.config.lstrip("/")),
@@ -166,6 +173,7 @@ class Directories:
             var_libs=None,
             cache=str(cache_dir),  # used by analytics metadata
             tmp=tmp_dir,
+            mounted_tmp=None,
             functions=None,
             data=os.path.join(tmp_dir, "state"),  # used by localstack_ext config TODO: remove
             logs=os.path.join(tmp_dir, "logs"),  # used for container logs
@@ -179,6 +187,7 @@ class Directories:
             self.var_libs,
             self.cache,
             self.tmp,
+            self.mounted_tmp,
             self.functions,
             self.data,
             self.config,
