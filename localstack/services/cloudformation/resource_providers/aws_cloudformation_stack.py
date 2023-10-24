@@ -101,31 +101,31 @@ class CloudFormationStackProvider(ResourceProvider[CloudFormationStackProperties
                 custom_context=request.custom_context,
             )
 
-        descriptions = request.aws_client_factory.cloudformation.describe_stacks(
-            StackName=model["Id"]
-        )
-        if not descriptions.get("Stacks"):
-            raise Exception("Stack not found")
-
-        stack = descriptions["Stacks"][0]
-        if stack["StackStatus"] == "CREATE_COMPLETE":
-            model["Outputs"] = {o["OutputKey"]: o["OutputValue"] for o in stack.get("Outputs", [])}
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
-        if stack["StackStatus"] == "CREATE_FAILED":
-            return ProgressEvent(
-                status=OperationStatus.FAILED,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
-        return ProgressEvent(
-            status=OperationStatus.IN_PROGRESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        stack = request.aws_client_factory.cloudformation.describe_stacks(StackName=model["Id"])[
+            "Stacks"
+        ][0]
+        model["Outputs"] = {o["OutputKey"]: o["OutputValue"] for o in stack.get("Outputs", [])}
+        match stack["StackStatus"]:
+            case "CREATE_COMPLETE":
+                return ProgressEvent(
+                    status=OperationStatus.SUCCESS,
+                    resource_model=model,
+                    custom_context=request.custom_context,
+                )
+            case "CREATE_IN_PROGRESS":
+                return ProgressEvent(
+                    status=OperationStatus.IN_PROGRESS,
+                    resource_model=model,
+                    custom_context=request.custom_context,
+                )
+            case "CREATE_FAILED":
+                return ProgressEvent(
+                    status=OperationStatus.FAILED,
+                    resource_model=model,
+                    custom_context=request.custom_context,
+                )
+            case _:
+                raise Exception(f"Unexpected status: {stack['StackStatus']}")
 
     def read(
         self,
@@ -144,8 +144,6 @@ class CloudFormationStackProvider(ResourceProvider[CloudFormationStackProperties
     ) -> ProgressEvent[CloudFormationStackProperties]:
         """
         Delete a resource
-
-
         """
 
         model = request.desired_state
@@ -159,31 +157,40 @@ class CloudFormationStackProvider(ResourceProvider[CloudFormationStackProperties
                 custom_context=request.custom_context,
             )
 
-        descriptions = request.aws_client_factory.cloudformation.describe_stacks(
-            StackName=model["Id"]
-        )
+        try:
+            stack = request.aws_client_factory.cloudformation.describe_stacks(
+                StackName=model["Id"]
+            )["Stacks"][0]
+        except Exception as e:
+            if "does not exist" in str(e):
+                return ProgressEvent(
+                    status=OperationStatus.SUCCESS,
+                    resource_model=model,
+                    custom_context=request.custom_context,
+                )
+            raise e
 
-        if not descriptions.get("Stacks"):
-            raise Exception("Stack not found")
-
-        stack = descriptions["Stacks"][0]
-        if stack["StackStatus"] == "DELETE_COMPLETE":
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
-        if stack["StackStatus"] == "DELETE_FAILED":
-            return ProgressEvent(
-                status=OperationStatus.FAILED,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
-        return ProgressEvent(
-            status=OperationStatus.IN_PROGRESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        match stack["StackStatus"]:
+            case "DELETE_COMPLETE":
+                return ProgressEvent(
+                    status=OperationStatus.SUCCESS,
+                    resource_model=model,
+                    custom_context=request.custom_context,
+                )
+            case "DELETE_IN_PROGRESS":
+                return ProgressEvent(
+                    status=OperationStatus.IN_PROGRESS,
+                    resource_model=model,
+                    custom_context=request.custom_context,
+                )
+            case "DELETE_FAILED":
+                return ProgressEvent(
+                    status=OperationStatus.FAILED,
+                    resource_model=model,
+                    custom_context=request.custom_context,
+                )
+            case _:
+                raise Exception(f"Unexpected status: {stack['StackStatus']}")
 
     def update(
         self,
