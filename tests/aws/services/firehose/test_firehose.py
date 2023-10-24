@@ -6,10 +6,8 @@ import requests
 from pytest_httpserver import HTTPServer
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import lambda_function_arn
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 
@@ -43,7 +41,9 @@ def test_firehose_http(
     if lambda_processor_enabled:
         # create processor func
         func_name = f"proc-{short_uid()}"
-        create_lambda_function(handler_file=PROCESSOR_LAMBDA, func_name=func_name)
+        func_arn = create_lambda_function(handler_file=PROCESSOR_LAMBDA, func_name=func_name)[
+            "CreateFunctionResponse"
+        ]["FunctionArn"]
 
     # define firehose configs
     # records = []
@@ -71,9 +71,7 @@ def test_firehose_http(
                     "Parameters": [
                         {
                             "ParameterName": "LambdaArn",
-                            "ParameterValue": lambda_function_arn(
-                                func_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-                            ),
+                            "ParameterValue": func_arn,
                         }
                     ],
                 }
