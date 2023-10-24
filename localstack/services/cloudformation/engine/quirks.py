@@ -12,6 +12,9 @@ Since this is therefore rather part of the cloudformation layer and *not* the re
 # note: format here is subject to change (e.g. it might not be a pure str -> str mapping, it could also involve more sophisticated handlers
 PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     # Example
+    # "AWS::ApiGateway::Resource": "/properties/ResourceId",
+    "AWS::Events::EventBus": "/properties/Name",
+    "AWS::Events::Rule": "/properties/Name",
     "AWS::ApiGateway::RequestValidator": "/properties/RequestValidatorId",
     "AWS::ApiGateway::Deployment": "/properties/DeploymentId",
     "AWS::ApiGateway::Resource": "/properties/ResourceId",
