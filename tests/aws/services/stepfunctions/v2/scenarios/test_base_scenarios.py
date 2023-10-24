@@ -823,3 +823,47 @@ class TestBaseScenarios:
             definition,
             exec_input,
         )
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Cause"])
+    @markers.aws.validated
+    def test_lambda_service_invoke_with_retry_extended_input(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..StartTime", replacement="<start-time>", replace_reference=False
+            )
+        )
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..EnteredTime", replacement="<entered-time>", replace_reference=False
+            )
+        )
+
+        function_1_name = f"lambda_1_func_{short_uid()}"
+        create_lambda_function(
+            func_name=function_1_name,
+            handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
+            runtime="python3.9",
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
+
+        template = ST.load_sfn_template(ST.LAMBDA_SERVICE_INVOKE_WITH_RETRY_BASE_EXTENDED_INPUT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {"FunctionName": function_1_name, "Value1": "HelloWorld!", "Value2": None}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
