@@ -1,8 +1,8 @@
 name: Rebase Release PRs
 on:
-  push:
-    branches:
-    - master
+  workflow_dispatch:
+  schedule:
+    - cron: 0 5 * * MON-FRI
 jobs:
   find-release-branches:
     runs-on: ubuntu-latest

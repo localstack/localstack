@@ -410,39 +410,36 @@ class OpensearchProvider(OpensearchApi):
 
     def on_after_state_load(self):
         """Starts clusters whose metadata has been restored."""
-        for account_id, region_bundle in opensearch_stores.items():
-            for region, store in region_bundle.items():
-                for domain_name, domain_status in store.opensearch_domains.items():
-                    domain_key = DomainKey(domain_name, region, account_id)
-                    if cluster_manager().get(domain_key.arn):
-                        # cluster already restored in previous call to on_after_state_load
-                        continue
+        for account_id, region, store in opensearch_stores.iter_stores():
+            for domain_name, domain_status in store.opensearch_domains.items():
+                domain_key = DomainKey(domain_name, region, account_id)
+                if cluster_manager().get(domain_key.arn):
+                    # cluster already restored in previous call to on_after_state_load
+                    continue
 
-                    LOG.info(f"Restoring domain {domain_name} in region {region}.")
-                    try:
-                        preferred_port = None
-                        if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
-                            # try to parse the previous port to re-use it for the re-created cluster
-                            if "Endpoint" in domain_status:
-                                preferred_port = urlparse(
-                                    f"http://{domain_status['Endpoint']}"
-                                ).port
+                LOG.info(f"Restoring domain {domain_name} in region {region}.")
+                try:
+                    preferred_port = None
+                    if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
+                        # try to parse the previous port to re-use it for the re-created cluster
+                        if "Endpoint" in domain_status:
+                            preferred_port = urlparse(f"http://{domain_status['Endpoint']}").port
 
-                        engine_version = domain_status.get("EngineVersion")
-                        domain_endpoint_options = domain_status.get("DomainEndpointOptions", {})
-                        security_options = SecurityOptions.from_input(
-                            domain_status.get("AdvancedSecurityOptions")
-                        )
+                    engine_version = domain_status.get("EngineVersion")
+                    domain_endpoint_options = domain_status.get("DomainEndpointOptions", {})
+                    security_options = SecurityOptions.from_input(
+                        domain_status.get("AdvancedSecurityOptions")
+                    )
 
-                        create_cluster(
-                            domain_key=domain_key,
-                            engine_version=engine_version,
-                            domain_endpoint_options=domain_endpoint_options,
-                            security_options=security_options,
-                            preferred_port=preferred_port,
-                        )
-                    except Exception:
-                        LOG.exception(f"Could not restore domain {domain_name} in region {region}.")
+                    create_cluster(
+                        domain_key=domain_key,
+                        engine_version=engine_version,
+                        domain_endpoint_options=domain_endpoint_options,
+                        security_options=security_options,
+                        preferred_port=preferred_port,
+                    )
+                except Exception:
+                    LOG.exception(f"Could not restore domain {domain_name} in region {region}.")
 
     def on_before_state_reset(self):
         self._stop_clusters()
@@ -451,10 +448,9 @@ class OpensearchProvider(OpensearchApi):
         self._stop_clusters()
 
     def _stop_clusters(self):
-        for account_id, region_bundle in opensearch_stores.items():
-            for region, store in region_bundle.items():
-                for domain_name in store.opensearch_domains.keys():
-                    cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
+        for account_id, region, store in opensearch_stores.iter_stores():
+            for domain_name in store.opensearch_domains.keys():
+                cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
 
     def create_domain(
         self,
