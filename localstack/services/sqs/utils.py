@@ -55,6 +55,9 @@ def parse_queue_url(queue_url: str) -> Tuple[str, Optional[str], str]:
             raise ValueError(f"Not a valid queue URL: {queue_url}")
         # SQS_ENDPOINT_STRATEGY == "path"
         region = path_parts[1]
+    elif url.netloc.startswith("sqs."):
+        # SQS_ENDPOINT_STRATEGY == "standard"
+        region = domain_parts[1]
     elif ".queue." in url.netloc:
         if domain_parts[1] != "queue":
             # .queue. should be on second position after the region
