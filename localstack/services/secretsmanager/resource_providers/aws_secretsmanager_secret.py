@@ -1,6 +1,10 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
+import logging
+import random
+import string
 from pathlib import Path
 from typing import Optional, TypedDict
 
@@ -11,6 +15,8 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProvider,
     ResourceRequest,
 )
+
+LOG = logging.getLogger(__name__)
 
 
 class SecretsManagerSecretProperties(TypedDict):
@@ -76,28 +82,97 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
 
         """
         model = request.desired_state
+        secrets_manager = request.aws_client_factory.secretsmanager
 
-        # TODO: validations
-
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
+        if not model.get("Name"):
+            # not actually correct. Given the LogicalResourceId "MySecret",
+            # an example for the generated name would be "MySecret-krxoxgcznYdq-sQNsqO"
+            model["Name"] = util.generate_default_name(
+                stack_name=request.stack_name, logical_resource_id=request.logical_resource_id
             )
 
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+        attributes = ["Name", "Description", "KmsKeyId", "SecretString", "Tags"]
+        params = util.select_attributes(model, attributes)
 
-        raise NotImplementedError
+        gen_secret = model.get("GenerateSecretString")
+        if gen_secret:
+            secret_value = self._get_secret_value(gen_secret)
+            template = gen_secret.get("SecretStringTemplate")
+            if template:
+                secret_value = self._modify_secret_template(template, secret_value, gen_secret)
+            params["SecretString"] = secret_value
+
+        response = secrets_manager.create_secret(**params)
+        model["Id"] = response["ARN"]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
+
+    def _get_secret_value(self, gen_secret):
+        excl_lower = gen_secret.get("ExcludeLowercase")
+        excl_upper = gen_secret.get("ExcludeUppercase")
+        excl_chars = gen_secret.get("ExcludeCharacters") or ""
+        excl_numbers = gen_secret.get("ExcludeNumbers")
+        excl_punct = gen_secret.get("ExcludePunctuation")
+        incl_spaces = gen_secret.get("IncludeSpace")
+        length = gen_secret.get("PasswordLength") or 32
+        req_each = gen_secret.get("RequireEachIncludedType")
+        return self.generate_secret_value(
+            length=length,
+            excl_lower=excl_lower,
+            excl_upper=excl_upper,
+            excl_punct=excl_punct,
+            incl_spaces=incl_spaces,
+            excl_chars=excl_chars,
+            excl_numbers=excl_numbers,
+            req_each=req_each,
+        )
+
+    def _modify_secret_template(self, template, secret_value, gen_secret):
+        gen_key = gen_secret.get("GenerateStringKey") or "secret"
+        template = json.loads(template)
+        template[gen_key] = secret_value
+        return json.dumps(template)
+
+    def generate_secret_value(
+        self,
+        length: int,
+        excl_lower: bool,
+        excl_upper: bool,
+        excl_chars: str,
+        excl_numbers: bool,
+        excl_punct: bool,
+        incl_spaces: bool,
+        req_each: bool,
+    ) -> str:
+        """WARN: This is NOT a secure way to generate secrets - use only for testing and not in production use cases!"""
+
+        # TODO: add a couple of unit tests for this function ...
+
+        punctuation = r"!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"
+        alphabet = ""
+        if not excl_punct:
+            alphabet += punctuation
+        if not excl_upper:
+            alphabet += string.ascii_uppercase
+        if not excl_lower:
+            alphabet += string.ascii_lowercase
+        if not excl_numbers:
+            alphabet += "".join([str(i) for i in list(range(10))])
+        if incl_spaces:
+            alphabet += " "
+        if req_each:
+            LOG.info("Secret generation option 'RequireEachIncludedType' not yet supported")
+
+        for char in excl_chars:
+            alphabet = alphabet.replace(char, "")
+
+        result = [alphabet[random.randrange(len(alphabet))] for _ in range(length)]
+        result = "".join(result)
+        return result
 
     def read(
         self,
@@ -119,7 +194,16 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
 
 
         """
-        raise NotImplementedError
+        model = request.desired_state
+        secrets_manager = request.aws_client_factory.secretsmanager
+
+        secrets_manager.delete_secret(SecretId=model["Name"])
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def update(
         self,

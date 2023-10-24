@@ -319,7 +319,6 @@ class OpenApiExporter:
         region_name: str,
         export_format: str = "application/json",
         with_extension=False,
-
     ) -> str:
         exporter = self.exporters.get(export_type)()
         return exporter.export(
