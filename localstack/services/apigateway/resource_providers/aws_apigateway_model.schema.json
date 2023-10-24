@@ -1,0 +1,83 @@
+{
+  "typeName": "AWS::ApiGateway::Model",
+  "description": "Resource Type definition for AWS::ApiGateway::Model",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-apigateway",
+  "additionalProperties": false,
+  "properties": {
+    "ContentType": {
+      "type": "string",
+      "description": "The content type for the model."
+    },
+    "Description": {
+      "type": "string",
+      "description": "A description that identifies this model."
+    },
+    "Name": {
+      "type": "string",
+      "description": "A name for the model. If you don't specify a name, AWS CloudFormation generates a unique physical ID and uses that ID for the model name."
+    },
+    "RestApiId": {
+      "type": "string",
+      "description": "The ID of a REST API with which to associate this model."
+    },
+    "Schema": {
+      "description": "The schema to use to transform data to one or more output formats. Specify null ({}) if you don't want to specify a schema.",
+      "type": [
+        "object",
+        "string"
+      ]
+    }
+  },
+  "required": [
+    "RestApiId"
+  ],
+  "createOnlyProperties": [
+    "/properties/ContentType",
+    "/properties/Name",
+    "/properties/RestApiId"
+  ],
+  "primaryIdentifier": [
+    "/properties/RestApiId",
+    "/properties/Name"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "apigateway:POST",
+        "apigateway:GET"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "apigateway:GET"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "apigateway:PATCH",
+        "apigateway:GET"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "apigateway:GET",
+        "apigateway:DELETE"
+      ]
+    },
+    "list": {
+      "handlerSchema": {
+        "properties": {
+          "RestApiId": {
+            "$ref": "resource-schema.json#/properties/RestApiId"
+          }
+        },
+        "required": [
+          "RestApiId"
+        ]
+      },
+      "permissions": [
+        "apigateway:GET"
+      ]
+    }
+  }
+}
