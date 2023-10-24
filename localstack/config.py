@@ -173,7 +173,7 @@ class Directories:
             var_libs=None,
             cache=str(cache_dir),  # used by analytics metadata
             tmp=tmp_dir,
-            mounted_tmp=None,
+            mounted_tmp=tmp_dir,
             functions=None,
             data=os.path.join(tmp_dir, "state"),  # used by localstack_ext config TODO: remove
             logs=os.path.join(tmp_dir, "logs"),  # used for container logs
