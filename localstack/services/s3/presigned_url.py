@@ -344,10 +344,18 @@ def _reverse_inject_signature_hmac_v1_query(
     # rebuild the query string
     new_query_string = percent_encode_sequence(new_query_string_dict)
 
-    # we need to URL encode the path, as the key needs to be urlencoded for the signature to match
-    encoded_path = urlparse.quote(request.path)
+    if bucket_name := uses_host_addressing(request.headers, return_bucket=True):
+        # if the request is host addressed, we need to remove the bucket from the host and set it in the path
+        path = f"/{bucket_name}{request.path}"
+        host = request.host.removeprefix(f"{bucket_name}.")
+    else:
+        path = request.path
+        host = request.host
 
-    reversed_url = f"{request.scheme}://{request.host}{encoded_path}?{new_query_string}"
+    # we need to URL encode the path, as the key needs to be urlencoded for the signature to match
+    encoded_path = urlparse.quote(path)
+
+    reversed_url = f"{request.scheme}://{host}{encoded_path}?{new_query_string}"
 
     reversed_headers = HTTPHeaders()
     for key, value in new_headers.items():
