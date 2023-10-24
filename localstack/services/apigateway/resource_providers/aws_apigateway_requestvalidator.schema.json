@@ -1,0 +1,80 @@
+{
+  "typeName": "AWS::ApiGateway::RequestValidator",
+  "description": "Resource Type definition for AWS::ApiGateway::RequestValidator",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-apigateway",
+  "additionalProperties": false,
+  "properties": {
+    "RequestValidatorId": {
+      "description": "ID of the request validator.",
+      "type": "string"
+    },
+    "Name": {
+      "description": "Name of the request validator.",
+      "type": "string"
+    },
+    "RestApiId": {
+      "description": "The identifier of the targeted API entity.",
+      "type": "string"
+    },
+    "ValidateRequestBody": {
+      "description": "Indicates whether to validate the request body according to the configured schema for the targeted API and method. ",
+      "type": "boolean"
+    },
+    "ValidateRequestParameters": {
+      "description": "Indicates whether to validate request parameters.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "RestApiId"
+  ],
+  "createOnlyProperties": [
+    "/properties/Name",
+    "/properties/RestApiId"
+  ],
+  "readOnlyProperties": [
+    "/properties/RequestValidatorId"
+  ],
+  "primaryIdentifier": [
+    "/properties/RestApiId",
+    "/properties/RequestValidatorId"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "apigateway:POST",
+        "apigateway:GET"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "apigateway:PATCH"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "apigateway:DELETE"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "apigateway:GET"
+      ]
+    },
+    "list": {
+      "handlerSchema": {
+        "properties": {
+          "RestApiId": {
+            "$ref": "resource-schema.json#/properties/RestApiId"
+          }
+        },
+        "required": [
+          "RestApiId"
+        ]
+      },
+      "permissions": [
+        "apigateway:GET"
+      ]
+    }
+  }
+}
