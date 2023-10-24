@@ -1398,7 +1398,8 @@ class TemplateDeployer:
     def create_resource_provider_payload(
         self, action: str, logical_resource_id: str
     ) -> ResourceProviderPayload:
-        # FIXME: use proper credentials
+        # FIXME: this isn't the right solution and will not work with identity-based IAM enforcement.
+        #  replace this with proper new session credentials
         creds: Credentials = {
             "accessKeyId": self.account_id,
             "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
