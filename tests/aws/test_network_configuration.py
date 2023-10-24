@@ -79,9 +79,6 @@ class TestOpenSearch:
 
 
 class TestS3:
-    @pytest.mark.skipif(
-        condition=config.LEGACY_S3_PROVIDER, reason="Not implemented for legacy provider"
-    )
     @markers.aws.only_localstack
     def test_non_us_east_1_location(
         self, s3_empty_bucket, cleanups, assert_host_customisation, aws_client

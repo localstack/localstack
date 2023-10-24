@@ -1142,7 +1142,7 @@ def test_restxml_header_date_parsing():
 
 
 @pytest.mark.skipif(
-    not config.LEGACY_S3_PROVIDER, reason="ASF provider does not rely on virtual host parser"
+    not config.NATIVE_S3_PROVIDER, reason="v2 provider does not rely on virtual host parser"
 )
 def test_s3_virtual_host_addressing():
     """Test the parsing of an S3 bucket request using the bucket encoded in the domain."""

@@ -68,8 +68,7 @@ import functools
 import re
 from abc import ABC
 from email.utils import parsedate_to_datetime
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
-from typing.io import IO
+from typing import IO, Any, Dict, List, Mapping, Optional, Tuple, Union
 from urllib.parse import unquote
 from xml.etree import ElementTree as ETree
 
