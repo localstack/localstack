@@ -110,6 +110,9 @@ class ApiGatewayModelProvider(ResourceProvider[ApiGatewayModelProperties]):
         try:
             apigw.delete_model(modelName=model["Name"], restApiId=model["RestApiId"])
         except apigw.exceptions.NotFoundException:
+            # We are using try/except since at the moment
+            # CFN doesn't properly resolve dependency between resources
+            # so this resource could be deleted if parent resource was deleted first
             pass
 
         return ProgressEvent(
