@@ -6,11 +6,9 @@ from typing import Dict, List, Mapping, Optional
 from cachetools import TTLCache
 from moto.core.exceptions import JsonRESTError
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodb import ResourceNotFoundException
 from localstack.aws.connect import connect_to
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import dynamodb_table_arn
 from localstack.utils.json import canonical_json
 from localstack.utils.testutil import list_all_resources
@@ -46,7 +44,7 @@ class ItemSet:
 class SchemaExtractor:
     @classmethod
     def extract_keys(
-        cls, item: Dict, table_name: str, account_id: str = None, region_name: str = None
+        cls, item: Dict, table_name: str, account_id: str, region_name: str
     ) -> Optional[Dict]:
         key_schema = cls.get_key_schema(table_name, account_id, region_name)
         return cls.extract_keys_for_schema(item, key_schema)
@@ -66,12 +64,9 @@ class SchemaExtractor:
 
     @classmethod
     def get_key_schema(
-        cls, table_name: str, account_id: str = None, region_name: str = None
+        cls, table_name: str, account_id: str, region_name: str
     ) -> Optional[List[Dict]]:
         from localstack.services.dynamodb.provider import get_store
-
-        account_id = account_id or get_aws_account_id()
-        region_name = region_name or aws_stack.get_region()
 
         table_definitions: Dict = get_store(
             account_id=account_id,
@@ -91,9 +86,7 @@ class SchemaExtractor:
         return table_def["KeySchema"]
 
     @classmethod
-    def get_table_schema(cls, table_name: str, account_id: str = None, region_name: str = None):
-        account_id = account_id or get_aws_account_id()
-        region_name = region_name or aws_stack.get_region()
+    def get_table_schema(cls, table_name: str, account_id: str, region_name: str):
         key = dynamodb_table_arn(
             table_name=table_name, account_id=account_id, region_name=region_name
         )
@@ -128,22 +121,20 @@ class SchemaExtractor:
 class ItemFinder:
     @staticmethod
     def find_existing_item(
-        put_item: Dict, table_name: str = None, account_id: str = None, region_name: str = None
+        put_item: Dict, table_name: str, account_id: str, region_name: str
     ) -> Optional[Dict]:
         from localstack.services.dynamodb.provider import ValidationException
 
-        table_name = table_name or put_item["TableName"]
         ddb_client = connect_to(
-            aws_access_key_id=account_id or get_aws_account_id(),
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=region_name or aws_stack.get_region(),
+            aws_access_key_id=account_id,
+            region_name=region_name,
         ).dynamodb
 
         search_key = {}
         if "Key" in put_item:
             search_key = put_item["Key"]
         else:
-            schema = SchemaExtractor.get_table_schema(table_name)
+            schema = SchemaExtractor.get_table_schema(table_name, account_id, region_name)
             schemas = [schema["Table"]["KeySchema"]]
             for index in schema["Table"].get("GlobalSecondaryIndexes", []):
                 # TODO
@@ -180,19 +171,20 @@ class ItemFinder:
         return existing_item.get("Item")
 
     @classmethod
-    def list_existing_items_for_statement(cls, partiql_statement: str) -> List:
+    def list_existing_items_for_statement(
+        cls, account_id: str, region_name: str, partiql_statement: str
+    ) -> List:
         table_name = extract_table_name_from_partiql_update(partiql_statement)
         if not table_name:
             return []
-        all_items = cls.get_all_table_items(table_name)
+        all_items = cls.get_all_table_items(account_id, region_name, table_name)
         return all_items
 
     @staticmethod
-    def get_all_table_items(table_name: str) -> List:
+    def get_all_table_items(account_id: str, region_name: str, table_name: str) -> List:
         ddb_client = connect_to(
-            aws_access_key_id=get_aws_account_id(),
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=aws_stack.get_region(),
+            aws_access_key_id=account_id,
+            region_name=region_name,
         ).dynamodb
         dynamodb_kwargs = {"TableName": table_name}
         all_items = list_all_resources(
