@@ -125,6 +125,10 @@ class EventsEventBusPolicyProvider(ResourceProvider[EventsEventBusPolicyProperti
         if event_bus_name:
             params["EventBusName"] = event_bus_name
 
+        # We are using try/except since at the moment
+        # CFN doesn't properly resolve dependency between resources
+        # so this resource could be deleted if parent resource was deleted first
+
         try:
             events.remove_permission(**params)
         except ClientError as err:
