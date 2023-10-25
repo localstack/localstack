@@ -1,6 +1,7 @@
 import copy
 import gzip
 import json
+import time
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 
@@ -963,6 +964,88 @@ class TestCloudwatch:
             dashboard["DashboardName"] for dashboard in dashboards_list["DashboardEntries"]
         ]
         assert dashboard_name not in dashboards
+
+    @markers.aws.validated
+    def test_create_metric_stream(self, aws_client, firehose_create_delivery_stream, s3_create_bucket, create_role_with_policy, snapshot):
+
+        bucket_name = f"test-bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name)
+
+        _, subscription_role_arn = create_role_with_policy(
+            "Allow", "s3:*", json.dumps(
+                {
+                    "Statement": {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {"Service": "firehose.amazonaws.com"},
+                        "Action": "sts:AssumeRole"}
+                }), "*")
+
+        if is_aws_cloud():
+            time.sleep(15)
+
+        stream_name = f"MyStream-{short_uid()}"
+        stream_arn = firehose_create_delivery_stream(
+            DeliveryStreamName=stream_name,
+            DeliveryStreamType="DirectPut",
+            S3DestinationConfiguration={
+                "RoleARN": subscription_role_arn,
+                "BucketARN": f"arn:aws:s3:::{bucket_name}",
+                "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 60},
+            },
+        )["DeliveryStreamARN"]
+
+        _, role_arn = create_role_with_policy(
+            "Allow", "firehose:*", json.dumps(
+                {
+                    "Statement": {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {"Service": "cloudwatch.amazonaws.com"},
+                        "Action": "sts:AssumeRole"}
+                }), stream_arn)
+
+        if is_aws_cloud():
+            time.sleep(15)
+
+        metric_stream_name = f"MyMetricStream-{short_uid()}"
+
+        response_create = aws_client.cloudwatch.put_metric_stream(
+            Name=metric_stream_name,
+            FirehoseArn=stream_arn,
+            RoleArn=role_arn,
+            OutputFormat="json",
+        )
+        snapshot.match("create_metric_stream", response_create)
+
+        get_response = aws_client.cloudwatch.get_metric_stream(
+            Name=metric_stream_name
+        )
+        snapshot.match("get_metric_stream", get_response)
+
+        response_list = aws_client.cloudwatch.list_metric_streams()
+        metric_streams = response_list.get('Entries', [])
+        metric_streams_names = [metric_stream['Name'] for metric_stream in metric_streams]
+        assert metric_stream_name in metric_streams_names
+
+        start_response = aws_client.cloudwatch.start_metric_streams(
+            Names=[metric_stream_name]
+        )
+        snapshot.match("start_metric_stream", start_response)
+
+        stop_response = aws_client.cloudwatch.stop_metric_streams(
+            Names=[metric_stream_name]
+        )
+        snapshot.match("stop_metric_stream", stop_response)
+
+        response_delete = aws_client.cloudwatch.delete_metric_stream(
+            Name=metric_stream_name
+        )
+        snapshot.match("delete_metric_stream", response_delete)
+        response_list = aws_client.cloudwatch.list_metric_streams()
+        metric_streams = response_list.get('Entries', [])
+        metric_streams_names = [metric_stream['Name'] for metric_stream in metric_streams]
+        assert metric_stream_name not in metric_streams_names
 
 
 def _check_alarm_triggered(

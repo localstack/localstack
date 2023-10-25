@@ -802,5 +802,50 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_create_metric_stream": {
+    "recorded-date": "25-10-2023, 14:52:47",
+    "recorded-content": {
+      "create_metric_stream": {
+        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/MyMetricStream-530f1757",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_metric_stream": {
+        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/MyMetricStream-530f1757",
+        "CreationDate": "datetime",
+        "FirehoseArn": "arn:aws:firehose:<region>:111111111111:deliverystream/MyStream-4af68047",
+        "IncludeLinkedAccountsMetrics": false,
+        "LastUpdateDate": "datetime",
+        "Name": "MyMetricStream-530f1757",
+        "OutputFormat": "json",
+        "RoleArn": "arn:aws:iam::111111111111:role/role-fa5ff66a",
+        "State": "running",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_metric_stream": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stop_metric_stream": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_metric_stream": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
