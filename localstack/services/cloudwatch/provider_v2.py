@@ -1,7 +1,18 @@
 import logging
 
 from localstack.aws.api import RequestContext
-from localstack.aws.api.cloudwatch import AlarmNames, CloudwatchApi
+from localstack.aws.api.cloudwatch import (
+    ActionPrefix,
+    AlarmName,
+    AlarmNamePrefix,
+    AlarmNames,
+    AlarmTypes,
+    CloudwatchApi,
+    DescribeAlarmsOutput,
+    MaxRecords,
+    NextToken,
+    StateValue,
+)
 from localstack.deprecations import deprecated_endpoint
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
@@ -83,3 +94,18 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         for alarm_name in alarm_names.alarm_names:
             alarm_arn = ""  # obtain alarm ARN from alarm name
             self.alarm_scheduler.delete_alarm(alarm_arn)
+
+    def describe_alarms(
+        self,
+        context: RequestContext,
+        alarm_names: AlarmNames = None,
+        alarm_name_prefix: AlarmNamePrefix = None,
+        alarm_types: AlarmTypes = None,
+        children_of_alarm_name: AlarmName = None,
+        parents_of_alarm_name: AlarmName = None,
+        state_value: StateValue = None,
+        action_prefix: ActionPrefix = None,
+        max_records: MaxRecords = None,
+        next_token: NextToken = None,
+    ) -> DescribeAlarmsOutput:
+        pass
