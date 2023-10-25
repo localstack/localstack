@@ -297,8 +297,7 @@ def opensearch_domain_name(domain_arn: str) -> str:
     return domain_arn.rpartition("/")[2]
 
 
-# TODO make account_id and region required
-def apigateway_invocations_arn(lambda_uri: str, region_name: str = None) -> str:
+def apigateway_invocations_arn(lambda_uri: str, region_name: str) -> str:
     return "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations" % (
         region_name or get_region(),
         lambda_uri,
