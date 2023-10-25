@@ -134,8 +134,7 @@ def cf_change_set_arn(
     return _resource_arn(change_set_name, pattern, account_id=account_id, region_name=region_name)
 
 
-# TODO: make account_id required arg
-def dynamodb_table_arn(table_name: str, account_id: str = None, region_name: str = None) -> str:
+def dynamodb_table_arn(table_name: str, account_id: str, region_name: str) -> str:
     table_name = table_name.split(":table/")[-1]
     pattern = "arn:aws:dynamodb:%s:%s:table/%s"
     return _resource_arn(table_name, pattern, account_id=account_id, region_name=region_name)
