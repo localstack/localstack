@@ -29,7 +29,7 @@ class TestDockerClient:
         mock_container = {
             "ID": "00000000a1",
             "Image": "localstack/localstack",
-            "Names": "localstack_main",
+            "Names": "localstack-main",
             "Labels": "authors=LocalStack Contributors",
             "State": "running",
         }
@@ -52,16 +52,16 @@ class TestDockerClient:
 
     @patch("localstack.utils.container_utils.docker_cmd_client.run")
     def test_container_status(self, run_mock):
-        test_output = "Up 2 minutes - localstack_main"
+        test_output = "Up 2 minutes - localstack-main"
         run_mock.return_value = test_output
         docker_client = CmdDockerClient()
-        status = docker_client.get_container_status("localstack_main")
+        status = docker_client.get_container_status("localstack-main")
         assert status == DockerContainerStatus.UP
-        run_mock.return_value = "Exited (0) 1 minute ago - localstack_main"
-        status = docker_client.get_container_status("localstack_main")
+        run_mock.return_value = "Exited (0) 1 minute ago - localstack-main"
+        status = docker_client.get_container_status("localstack-main")
         assert status == DockerContainerStatus.DOWN
         run_mock.return_value = "STATUS    NAME"
-        status = docker_client.get_container_status("localstack_main")
+        status = docker_client.get_container_status("localstack-main")
         assert status == DockerContainerStatus.NON_EXISTENT
 
 

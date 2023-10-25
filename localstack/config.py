@@ -730,7 +730,7 @@ if ALLOW_NONSTANDARD_REGIONS:
     os.environ["MOTO_ALLOW_NONEXISTENT_REGION"] = "true"
 
 # name of the main Docker container
-MAIN_CONTAINER_NAME = os.environ.get("MAIN_CONTAINER_NAME", "").strip() or "localstack_main"
+MAIN_CONTAINER_NAME = os.environ.get("MAIN_CONTAINER_NAME", "").strip() or "localstack-main"
 
 # the latest commit id of the repository when the docker image was created
 LOCALSTACK_BUILD_GIT_HASH = os.environ.get("LOCALSTACK_BUILD_GIT_HASH", "").strip() or None
