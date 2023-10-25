@@ -363,8 +363,3 @@ class S3Bucket(GenericBaseModel):
             return None
 
         return response
-
-
-# test_multipart_and_list_parts
-# test_put_object_checksum
-#
