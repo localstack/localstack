@@ -924,6 +924,44 @@ class TestCloudwatch:
 
         snapshot.match("get_metric_data_2", response)
 
+    @markers.aws.validated
+    def test_dashboard_lifecycle(self, aws_client, snapshot):
+        dashboard_name = f"test-{short_uid()}"
+        dashboard_body = {
+            "widgets": [
+                {
+                    "type": "metric",
+                    "x": 0,
+                    "y": 0,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "i-12345678"]],
+                        "view": "timeSeries",
+                        "stacked": False,
+                    },
+                }
+            ]
+        }
+        aws_client.cloudwatch.put_dashboard(
+            DashboardName=dashboard_name, DashboardBody=json.dumps(dashboard_body)
+        )
+        response = aws_client.cloudwatch.get_dashboard(DashboardName=dashboard_name)
+        snapshot.match("get_dashboard", response)
+
+        dashboards_list = aws_client.cloudwatch.list_dashboards()
+        dashboards_names = [
+            dashboard["DashboardName"] for dashboard in dashboards_list["DashboardEntries"]
+        ]
+        assert dashboard_name in dashboards_names
+
+        aws_client.cloudwatch.delete_dashboards(DashboardNames=[dashboard_name])
+        dashboards_list = aws_client.cloudwatch.list_dashboards()
+        dashboards = [
+            dashboard["DashboardName"] for dashboard in dashboards_list["DashboardEntries"]
+        ]
+        assert dashboard_name not in dashboards
+
 
 def _check_alarm_triggered(
     expected_state,
