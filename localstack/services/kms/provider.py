@@ -1011,11 +1011,14 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             enabled_key_allowed=True,
             disabled_key_allowed=True,
         )
-        if key_to_import_material_to.metadata.get("Origin") != "EXTERNAL":
+        key_arn = key_to_import_material_to.metadata["Arn"]
+        key_origin = key_to_import_material_to.metadata.get("Origin")
+
+        if key_origin != "EXTERNAL":
             raise UnsupportedOperationException(
-                "Key material can only be imported into keys with Origin of EXTERNAL"
+                f"{key_arn} origin is {key_origin} which is not valid for this operation."
             )
-        self._validate_key_for_encryption_decryption(context, key_to_import_material_to)
+
         key_id = key_to_import_material_to.metadata["KeyId"]
 
         key = KmsKey(CreateKeyRequest(KeySpec=wrapping_key_spec))

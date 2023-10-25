@@ -7,10 +7,7 @@ from typing import Any, Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
-from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
-    CatchOutcome,
-    CatchOutcomeNotCaught,
-)
+from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import CatchOutcome
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
     FailureEventException,
@@ -143,52 +140,26 @@ class ExecutionState(CommonStateField, abc.ABC):
     def _eval_execution(self, env: Environment) -> None:
         ...
 
-    def _handle_retry(self, ex: Exception, env: Environment) -> None:
-        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+    def _handle_retry(self, env: Environment, failure_event: FailureEvent) -> RetryOutcome:
         env.stack.append(failure_event.error_name)
-
         self.retry.eval(env)
         res: RetryOutcome = env.stack.pop()
+        if res == RetryOutcome.CanRetry:
+            retry_count = env.context_object_manager.context_object["State"]["RetryCount"]
+            env.context_object_manager.context_object["State"]["RetryCount"] = retry_count + 1
+        return res
 
-        match res:
-            case RetryOutcome.CanRetry:
-                retry_count = env.context_object_manager.context_object["State"].get(
-                    "RetryCount", 0
-                )
-                env.context_object_manager.context_object["State"]["RetryCount"] = retry_count + 1
-                self._eval_state(env)
-            case _:
-                self._terminate_with_event(failure_event=failure_event, env=env)
-
-    def _handle_catch(self, ex: Exception, env: Environment) -> None:
-        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
-
-        env.event_history.add_event(
-            context=env.event_history_context,
-            hist_type_event=failure_event.event_type,
-            event_detail=failure_event.event_details,
-        )
-
+    def _handle_catch(self, env: Environment, failure_event: FailureEvent) -> CatchOutcome:
         env.stack.append(failure_event)
-
         self.catch.eval(env)
         res: CatchOutcome = env.stack.pop()
+        return res
 
-        if isinstance(res, CatchOutcomeNotCaught):
-            self._terminate_with_event(failure_event=failure_event, env=env)
-
-    def _handle_uncaught(self, ex: Exception, env: Environment):
-        # Log state failure.
-        state_failure_event = self._from_error(env=env, ex=ex)
-        env.event_history.add_event(
-            context=env.event_history_context,
-            hist_type_event=state_failure_event.event_type,
-            event_detail=state_failure_event.event_details,
-        )
-        self._terminate_with_event(state_failure_event, env)
+    def _handle_uncaught(self, env: Environment, failure_event: FailureEvent) -> None:
+        self._terminate_with_event(env=env, failure_event=failure_event)
 
     @staticmethod
-    def _terminate_with_event(failure_event: FailureEvent, env: Environment) -> None:
+    def _terminate_with_event(env: Environment, failure_event: FailureEvent) -> None:
         raise FailureEventException(failure_event=failure_event)
 
     def _evaluate_with_timeout(self, env: Environment) -> None:
@@ -226,22 +197,44 @@ class ExecutionState(CommonStateField, abc.ABC):
         execution_output = execution_outputs.pop()
         env.stack.append(execution_output)
 
+        if self.result_selector:
+            self.result_selector.eval(env=env)
+
+        if self.result_path:
+            self.result_path.eval(env)
+        else:
+            res = env.stack.pop()
+            env.inp = res
+
     def _eval_state(self, env: Environment) -> None:
-        try:
-            self._evaluate_with_timeout(env)
+        # Initialise the retry counter for execution states.
+        env.context_object_manager.context_object["State"]["RetryCount"] = 0
 
-            if self.result_selector:
-                self.result_selector.eval(env=env)
+        # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
+        while True:
+            try:
+                self._evaluate_with_timeout(env)
+                break
+            except Exception as ex:
+                failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+                env.event_history.add_event(
+                    context=env.event_history_context,
+                    hist_type_event=failure_event.event_type,
+                    event_detail=failure_event.event_details,
+                )
 
-            if self.result_path:
-                self.result_path.eval(env)
-            else:
-                res = env.stack.pop()
-                env.inp = res
-        except Exception as ex:
-            if self.retry:
-                self._handle_retry(ex, env)
-            elif self.catch:
-                self._handle_catch(ex, env)
-            else:
-                self._handle_uncaught(ex, env)
+                if self.retry:
+                    retry_outcome: RetryOutcome = self._handle_retry(
+                        env=env, failure_event=failure_event
+                    )
+                    if retry_outcome == RetryOutcome.CanRetry:
+                        continue
+
+                if self.catch:
+                    catch_outcome: CatchOutcome = self._handle_catch(
+                        env=env, failure_event=failure_event
+                    )
+                    if catch_outcome == CatchOutcome.Caught:
+                        break
+
+                self._handle_uncaught(env=env, failure_event=failure_event)

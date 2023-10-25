@@ -184,7 +184,7 @@ class TestServerless:
             assert method in proxy_resource["resourceMethods"]
             resource_method = proxy_resource["resourceMethods"][method]
             assert (
-                arns.lambda_function_arn(function_name)
+                arns.lambda_function_arn(function_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
                 in resource_method["methodIntegration"]["uri"]
             )
 
