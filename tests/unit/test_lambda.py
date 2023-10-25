@@ -9,16 +9,17 @@ from unittest import mock
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-from localstack.services.lambda_ import lambda_api, lambda_executors, lambda_utils
+from localstack.services.lambda_ import lambda_utils
 from localstack.services.lambda_.api_utils import RUNTIMES
 from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING
-from localstack.services.lambda_.lambda_api import get_lambda_policy_name
-from localstack.services.lambda_.lambda_executors import OutputLog
 from localstack.services.lambda_.lambda_utils import (
     API_PATH_ROOT,
     get_lambda_store_v1,
     get_lambda_store_v1_for_arn,
 )
+from localstack.services.lambda_.legacy import lambda_api, lambda_executors
+from localstack.services.lambda_.legacy.lambda_api import get_lambda_policy_name
+from localstack.services.lambda_.legacy.lambda_executors import OutputLog
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file

@@ -8,7 +8,7 @@ import pytest
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, MAVEN_REPO_URL
 from localstack.packages import DownloadInstaller, Package, PackageInstaller
-from localstack.services.lambda_.lambda_api import use_docker
+from localstack.services.lambda_.legacy.lambda_api import use_docker
 from localstack.services.lambda_.packages import lambda_java_libs_package
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.pytest import markers

@@ -15,10 +15,10 @@ from localstack.services.lambda_.api_utils import function_locators_from_arn, qu
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
 from localstack.services.lambda_.invocation.lambda_service import LambdaService
 from localstack.services.lambda_.invocation.models import lambda_stores
-from localstack.services.lambda_.lambda_executors import (
+from localstack.services.lambda_.lambda_utils import event_source_arn_matches
+from localstack.services.lambda_.legacy.lambda_executors import (
     InvocationResult as LegacyInvocationResult,  # TODO: extract
 )
-from localstack.services.lambda_.lambda_utils import event_source_arn_matches
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import to_bytes, to_str
@@ -71,7 +71,7 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
         pass
 
     def invoke(self, function_arn, context, payload, invocation_type, callback=None):
-        from localstack.services.lambda_.lambda_api import run_lambda
+        from localstack.services.lambda_.legacy.lambda_api import run_lambda
 
         try:
             json.dumps(payload)
@@ -97,8 +97,8 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
         lock_discriminator,
         parallelization_factor
     ) -> int:
-        from localstack.services.lambda_ import lambda_executors
-        from localstack.services.lambda_.lambda_api import run_lambda
+        from localstack.services.lambda_.legacy import lambda_executors
+        from localstack.services.lambda_.legacy.lambda_api import run_lambda
 
         if not config.SYNCHRONOUS_KINESIS_EVENTS:
             lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
@@ -124,7 +124,7 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
         return status_code
 
     def get_event_sources(self, source_arn: str) -> list:
-        from localstack.services.lambda_.lambda_api import get_event_sources
+        from localstack.services.lambda_.legacy.lambda_api import get_event_sources
 
         return get_event_sources(source_arn=source_arn)
 

@@ -31,13 +31,13 @@ from localstack.constants import (
     LOCALSTACK_VENV_FOLDER,
     TEST_AWS_REGION_NAME,
 )
-from localstack.services.lambda_.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.lambda_.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
+from localstack.services.lambda_.legacy.lambda_api import LAMBDA_TEST_ROLE
 from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import ensure_list

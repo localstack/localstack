@@ -30,8 +30,8 @@ from localstack.services.apigateway.helpers import (
     host_based_url,
     path_based_url,
 )
-from localstack.services.lambda_.lambda_api import add_event_source, use_docker
 from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.legacy.lambda_api import add_event_source, use_docker
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack

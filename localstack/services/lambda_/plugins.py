@@ -7,6 +7,7 @@ from localstack.runtime import hooks
 LOG = logging.getLogger(__name__)
 
 
+# TODO[LambdaV1]: Remove deprecated go runtime plugin
 @package(name="lambda-go-runtime")
 def lambda_go_runtime_package() -> Package:
     from localstack.services.lambda_.packages import lambda_go_runtime_package

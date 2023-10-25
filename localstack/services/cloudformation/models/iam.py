@@ -16,7 +16,7 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
-from localstack.services.lambda_.lambda_api import IAM_POLICY_VERSION
+from localstack.services.lambda_.legacy.lambda_api import IAM_POLICY_VERSION
 from localstack.utils.aws import arns
 from localstack.utils.common import ensure_list
 from localstack.utils.functions import call_safe

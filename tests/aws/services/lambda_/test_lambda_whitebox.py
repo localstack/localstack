@@ -10,12 +10,12 @@ from botocore.exceptions import ClientError
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
-import localstack.services.lambda_.lambda_api
+import localstack.services.lambda_.legacy.lambda_api
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-from localstack.services.lambda_ import lambda_api, lambda_executors
-from localstack.services.lambda_.lambda_api import do_set_function_code, use_docker
 from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.legacy import lambda_api, lambda_executors
+from localstack.services.lambda_.legacy.lambda_api import do_set_function_code, use_docker
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
@@ -453,7 +453,9 @@ class TestFunctionStates:
             return result
 
         monkeypatch.setattr(
-            localstack.services.lambda_.lambda_api, "do_set_function_code", _do_set_function_code
+            localstack.services.lambda_.legacy.lambda_api,
+            "do_set_function_code",
+            _do_set_function_code,
         )
         try:
             response = aws_client.lambda_.create_function(

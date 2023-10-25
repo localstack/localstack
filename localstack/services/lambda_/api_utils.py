@@ -1,4 +1,4 @@
-""" Utilities for the new Lambda ASF provider. Do not use in the current provider, as ASF specific exceptions might be thrown """
+""" Utilities for Lambda ARN handling, validations, and API output formatting."""
 import datetime
 import random
 import re

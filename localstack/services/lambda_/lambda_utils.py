@@ -15,7 +15,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import FilterCriteria, Runtime
 from localstack.aws.connect import connect_to
-from localstack.services.lambda_.lambda_models import LambdaStoreV1, lambda_stores_v1
+from localstack.services.lambda_.legacy.lambda_models import LambdaStoreV1, lambda_stores_v1
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_models import LambdaFunction

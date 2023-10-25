@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Mapping, Optional, Sequence, overload
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.lambda_.lambda_api import use_docker
+from localstack.services.lambda_.legacy.lambda_api import use_docker
 from localstack.utils.common import to_str
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
