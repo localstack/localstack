@@ -237,32 +237,6 @@ def route53resolver():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider(api="s3", name="legacy")
-def s3_legacy():
-    from localstack.services.s3.legacy import s3_listener, s3_starter
-
-    return Service(
-        "s3",
-        listener=s3_listener.UPDATE_S3,
-        start=s3_starter.start_s3,
-        check=s3_starter.check_s3,
-        lifecycle_hook=s3_starter.S3LifecycleHook(),
-    )
-
-
-@aws_provider(api="s3", name="v1")
-def s3_v1():
-    from localstack.services.s3.legacy import s3_listener, s3_starter
-
-    return Service(
-        "s3",
-        listener=s3_listener.UPDATE_S3,
-        start=s3_starter.start_s3,
-        check=s3_starter.check_s3,
-        lifecycle_hook=s3_starter.S3LifecycleHook(),
-    )
-
-
 @aws_provider(api="s3", name="asf")
 def s3_asf():
     from localstack.services.s3.provider import S3Provider
