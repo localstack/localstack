@@ -6,7 +6,6 @@ import pytest
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.lambda_.legacy.lambda_api import INVALID_PARAMETER_VALUE_EXCEPTION
-from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
@@ -114,7 +113,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=role_arn,
         )
         create_table_result = dynamodb_create_table(
@@ -238,7 +237,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         create_dynamodb_table_response = dynamodb_create_table(
@@ -312,7 +311,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=role_arn,
         )
         dynamodb_create_table(table_name=table_name, partition_key=partition_key)

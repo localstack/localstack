@@ -4,7 +4,7 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
-from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import parse_arn
@@ -53,7 +53,7 @@ class TestApiGatewayCommon:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_AWS_PROXY,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
         lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"

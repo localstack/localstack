@@ -31,7 +31,6 @@ from localstack.services.apigateway.helpers import (
     path_based_url,
 )
 from localstack.services.lambda_.legacy.lambda_api import add_event_source, use_docker
-from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack
@@ -1452,7 +1451,7 @@ class TestAPIGateway:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
         lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"

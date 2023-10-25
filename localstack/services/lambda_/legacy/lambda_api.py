@@ -32,28 +32,31 @@ from localstack.http import Response as HttpResponse
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
+from localstack.services.lambda_.event_source_listeners.utils import validate_filters
+from localstack.services.lambda_.lambda_utils import (
+    get_handler_file_from_name,
+)
 from localstack.services.lambda_.legacy import lambda_executors
 from localstack.services.lambda_.legacy.lambda_executors import InvocationResult, LambdaContext
-from localstack.services.lambda_.legacy.lambda_models import lambda_stores_v1
+from localstack.services.lambda_.legacy.lambda_models import (
+    lambda_stores_v1,
+)
 from localstack.services.lambda_.legacy.lambda_utils import (
     API_PATH_ROOT,
     API_PATH_ROOT_2,
     DOTNET_LAMBDA_RUNTIMES,
-    LAMBDA_DEFAULT_HANDLER,
-    LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_RUNTIME_NODEJS14X,
+    LAMBDA_RUNTIME_PYTHON39,
     ClientError,
     error_response,
     event_source_arn_matches,
     function_name_from_arn,
     get_executor_mode,
-    get_handler_file_from_name,
     get_lambda_extraction_dir,
     get_lambda_runtime,
     get_lambda_store_v1,
     get_lambda_store_v1_for_arn,
     get_zip_bytes,
-    validate_filters,
 )
 from localstack.services.lambda_.packages import lambda_go_runtime_package
 from localstack.utils.archives import unzip
@@ -572,7 +575,7 @@ def exec_lambda_code(script, handler_function="handler", lambda_cwd=None, lambda
 
 
 def get_handler_function_from_name(handler_name, runtime=None):
-    runtime = runtime or LAMBDA_DEFAULT_RUNTIME
+    runtime = runtime or LAMBDA_RUNTIME_PYTHON39
     if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
         return handler_name.split(":")[-1]
     return handler_name.split(".")[-1]
@@ -732,7 +735,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
     arn = lambda_function.arn()
     runtime = get_lambda_runtime(lambda_function)
     lambda_environment = lambda_function.envvars
-    handler_name = lambda_function.handler = lambda_function.handler or LAMBDA_DEFAULT_HANDLER
+    handler_name = lambda_function.handler = lambda_function.handler or "handler.handler"
     code_passed = lambda_function.code
     is_local_mount = is_hot_reloading(code_passed)
 

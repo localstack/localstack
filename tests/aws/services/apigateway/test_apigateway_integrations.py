@@ -13,7 +13,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, LOCALHOST
 from localstack.services.apigateway.helpers import path_based_url
-from localstack.services.lambda_.legacy.lambda_utils import get_main_endpoint_from_container
+from localstack.services.lambda_.networking import get_main_endpoint_from_container
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -588,7 +588,8 @@ def test_create_execute_api_vpc_endpoint(
     # create Lambda function that invokes the API GW (private VPC endpoint not accessible from outside of AWS)
     if not is_aws_cloud():
         if config.LAMBDA_EXECUTOR == "local" and is_old_provider():
-            # special case: return localhost for local Lambda executor (TODO remove after full switch to v2 provider)
+            # TODO[LambdaV1]: Remove this special case when removing the old Lambda provider
+            # special case: return localhost for local Lambda executor
             api_host = LOCALHOST
         else:
             api_host = get_main_endpoint_from_container()

@@ -8,7 +8,6 @@ import pytest
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
@@ -81,7 +80,7 @@ class TestKinesisSource:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
 
@@ -151,7 +150,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PARALLEL_FILE,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
@@ -214,7 +213,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PARALLEL_FILE,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
@@ -275,7 +274,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)

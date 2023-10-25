@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_externally_to, connect_to
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
@@ -31,13 +32,10 @@ from localstack.constants import (
     LOCALSTACK_VENV_FOLDER,
     TEST_AWS_REGION_NAME,
 )
-from localstack.services.lambda_.legacy.lambda_api import LAMBDA_TEST_ROLE
-from localstack.services.lambda_.legacy.lambda_utils import (
-    LAMBDA_DEFAULT_HANDLER,
-    LAMBDA_DEFAULT_RUNTIME,
-    LAMBDA_DEFAULT_STARTING_POSITION,
+from localstack.services.lambda_.lambda_utils import (
     get_handler_file_from_name,
 )
+from localstack.services.lambda_.legacy.lambda_api import LAMBDA_TEST_ROLE
 from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import ensure_list
@@ -59,6 +57,9 @@ from localstack.utils.threads import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
+LAMBDA_DEFAULT_HANDLER = "handler.handler"
+LAMBDA_DEFAULT_RUNTIME = Runtime.python3_9
+LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 LAMBDA_TIMEOUT_SEC = 30
 LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"
 MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000

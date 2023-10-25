@@ -27,6 +27,7 @@ from botocore.exceptions import ClientError
 from zoneinfo import ZoneInfo
 
 from localstack import config, constants
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.s3 import StorageClass
 from localstack.config import LEGACY_S3_PROVIDER, NATIVE_S3_PROVIDER
 from localstack.constants import (
@@ -38,10 +39,6 @@ from localstack.constants import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
-)
-from localstack.services.lambda_.legacy.lambda_utils import (
-    LAMBDA_RUNTIME_NODEJS14X,
-    LAMBDA_RUNTIME_PYTHON39,
 )
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.utils import (
@@ -3474,7 +3471,7 @@ class TestS3:
             ),
             func_name=function_name,
             role=lambda_su_role,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             envvars=dict(
                 {
                     "BUCKET_NAME": bucket_name,
@@ -3785,7 +3782,7 @@ class TestS3:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            runtime=Runtime.nodejs14_x,
             handler="lambda_s3_integration.handler",
             role=lambda_su_role,
         )
@@ -6939,7 +6936,7 @@ class TestS3PresignedUrl:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            runtime=Runtime.nodejs14_x,
             handler="lambda_s3_integration_presign.handler",
             role=lambda_su_role,
         )
@@ -7003,7 +7000,7 @@ class TestS3PresignedUrl:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            runtime=Runtime.nodejs14_x,
             handler="lambda_s3_integration_sdk_v2.handler",
             role=lambda_su_role,
         )

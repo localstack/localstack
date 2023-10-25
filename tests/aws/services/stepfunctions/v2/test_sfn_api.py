@@ -2,8 +2,8 @@ import json
 
 import pytest
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.stepfunctions import StateMachineType
-from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
@@ -38,7 +38,7 @@ class TestSnfApi:
         create_lambda_1 = create_lambda_function(
             handler_file=lambda_functions.BASE_ID_FUNCTION,
             func_name="id_function",
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
         lambda_arn_1 = create_lambda_1["CreateFunctionResponse"]["FunctionArn"]
 

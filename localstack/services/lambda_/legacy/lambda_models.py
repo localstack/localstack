@@ -1,3 +1,4 @@
+"""Store for the old Lambda provider v1"""
 from typing import Dict, List
 
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute

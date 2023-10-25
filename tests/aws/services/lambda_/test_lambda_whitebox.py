@@ -12,10 +12,10 @@ from werkzeug import Request, Response
 
 import localstack.services.lambda_.legacy.lambda_api
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.lambda_.legacy import lambda_api, lambda_executors
 from localstack.services.lambda_.legacy.lambda_api import do_set_function_code, use_docker
-from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
@@ -403,7 +403,7 @@ class TestLocalExecutors:
             testutil.create_lambda_function(
                 func_name=lambda_name1,
                 zip_file=python3_with_settings1,
-                runtime=LAMBDA_RUNTIME_PYTHON39,
+                runtime=Runtime.python3_9,
                 handler="handler1.handler",
                 client=aws_client.lambda_,
             )
@@ -413,7 +413,7 @@ class TestLocalExecutors:
             testutil.create_lambda_function(
                 func_name=lambda_name2,
                 zip_file=python3_with_settings2,
-                runtime=LAMBDA_RUNTIME_PYTHON39,
+                runtime=Runtime.python3_9,
                 handler="handler2.handler",
                 client=aws_client.lambda_,
             )

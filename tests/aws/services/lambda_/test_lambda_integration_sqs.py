@@ -10,10 +10,6 @@ from localstack.services.lambda_.legacy.lambda_api import (
     BATCH_SIZE_RANGES,
     INVALID_PARAMETER_VALUE_EXCEPTION,
 )
-from localstack.services.lambda_.legacy.lambda_utils import (
-    LAMBDA_RUNTIME_PYTHON38,
-    LAMBDA_RUNTIME_PYTHON39,
-)
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled, is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -101,7 +97,7 @@ def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_INTEGRATION_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
     )
@@ -194,7 +190,7 @@ def test_message_body_and_attributes_passed_correctly(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_INTEGRATION_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
     )
@@ -291,7 +287,7 @@ def test_redrive_policy_with_failing_lambda(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_INTEGRATION_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
     )
@@ -477,7 +473,7 @@ def test_report_batch_item_failures(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
         envvars={"DESTINATION_QUEUE_URL": destination_url},
@@ -618,7 +614,7 @@ def test_report_batch_item_failures_on_lambda_error(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_INTEGRATION_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
     )
@@ -714,7 +710,7 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
         envvars={
@@ -807,7 +803,7 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
         envvars={"DESTINATION_QUEUE_URL": destination_url, "OVERWRITE_RESULT": "{}"},
@@ -908,7 +904,7 @@ class TestSQSEventSourceMapping:
             create_lambda_function(
                 func_name=function_name,
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                runtime=LAMBDA_RUNTIME_PYTHON39,
+                runtime=Runtime.python3_9,
                 role=lambda_su_role,
             )
 

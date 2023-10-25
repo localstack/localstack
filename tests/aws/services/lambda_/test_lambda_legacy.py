@@ -13,7 +13,6 @@ from localstack.services.lambda_.legacy.lambda_api import (
     get_lambda_policy_name,
     use_docker,
 )
-from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_DEFAULT_HANDLER
 from localstack.services.lambda_.packages import lambda_go_runtime_package
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.pytest import markers
@@ -23,7 +22,7 @@ from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.platform import get_arch, get_os
 from localstack.utils.strings import short_uid, to_bytes, to_str
-from localstack.utils.testutil import create_lambda_archive
+from localstack.utils.testutil import LAMBDA_DEFAULT_HANDLER, create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_RUBY,

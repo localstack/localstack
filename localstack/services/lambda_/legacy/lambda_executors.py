@@ -25,12 +25,14 @@ from localstack.runtime.hooks import hook_spec
 from localstack.services.lambda_.legacy.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
-    get_main_container_network_for_lambda,
-    get_main_endpoint_from_container,
     is_java_lambda,
     is_nodejs_runtime,
     rm_docker_container,
     store_lambda_logs,
+)
+from localstack.services.lambda_.networking import (
+    get_main_container_network_for_lambda,
+    get_main_endpoint_from_container,
 )
 from localstack.services.lambda_.packages import lambda_go_runtime_package, lambda_java_libs_package
 from localstack.utils.aws import aws_stack

@@ -3,8 +3,8 @@ import json
 import pytest
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_REGION_NAME
-from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer
@@ -99,7 +99,7 @@ class TestTaskApiGateway:
         create_function_response = create_lambda_function(
             func_name=function_name,
             handler_file=lambda_function_filename,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
 
         _, role_arn = create_role_with_policy(

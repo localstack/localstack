@@ -11,7 +11,7 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.packages import cloudformation_package
 from localstack.services.cloudformation.service_models import LOG, GenericBaseModel
-from localstack.services.lambda_.legacy.lambda_utils import get_handler_file_from_name
+from localstack.services.lambda_.lambda_utils import get_handler_file_from_name
 from localstack.utils.aws import arns
 from localstack.utils.common import (
     cp_r,
