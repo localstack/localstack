@@ -937,6 +937,7 @@ class TestCloudwatch:
                     "height": 6,
                     "properties": {
                         "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "i-12345678"]],
+                        "region": "us-east-1",
                         "view": "timeSeries",
                         "stacked": False,
                     },
@@ -947,6 +948,7 @@ class TestCloudwatch:
             DashboardName=dashboard_name, DashboardBody=json.dumps(dashboard_body)
         )
         response = aws_client.cloudwatch.get_dashboard(DashboardName=dashboard_name)
+        snapshot.add_transformer(snapshot.transform.key_value("DashboardName"))
         snapshot.match("get_dashboard", response)
 
         dashboards_list = aws_client.cloudwatch.list_dashboards()

@@ -765,5 +765,42 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_dashboard_lifecycle": {
+    "recorded-date": "25-10-2023, 13:16:20",
+    "recorded-content": {
+      "get_dashboard": {
+        "DashboardArn": "arn:aws:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
+        "DashboardBody": {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [
+                    "AWS/EC2",
+                    "CPUUtilization",
+                    "InstanceId",
+                    "i-12345678"
+                  ]
+                ],
+                "region": "<region>",
+                "view": "timeSeries",
+                "stacked": false
+              }
+            }
+          ]
+        },
+        "DashboardName": "<dashboard-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
