@@ -18,13 +18,12 @@ from localstack.aws.api.s3 import (
 )
 from localstack.aws.connect import connect_to
 from localstack.aws.protocol.serializer import gen_amzn_requestid
-from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
 
 LOG = logging.getLogger(__name__)
 
-STATIC_WEBSITE_HOST_REGEX = f'<regex(".*"):bucket_name>.{S3_STATIC_WEBSITE_HOSTNAME}<port:port>'
+STATIC_WEBSITE_HOST_REGEX = '<regex(".*"):bucket_name>.s3-website.<regex(".*"):domain>'
 
 _leading_whitespace_re = re.compile("(^[ \t]*)(?:[ \t\n])", re.MULTILINE)
 
@@ -43,15 +42,19 @@ class S3WebsiteHostingHandler:
         self.s3_client = connect_to().s3
 
     def __call__(
-        self, request: Request, bucket_name: str, path: str = None, port: str = None
+        self,
+        request: Request,
+        bucket_name: str,
+        domain: str = None,
+        path: str = None,
     ) -> Response:
         """
         Tries to serve the key, and if an Exception is encountered, returns a generic response
         This will allow to easily extend it to 403 exceptions
         :param request: router Request object
         :param bucket_name: str, bucket name
+        :param domain: str, domain name
         :param path: the path of the request
-        :param port: /
         :return: Response object
         """
         if request.method != "GET":
