@@ -8,6 +8,7 @@ from unittest import mock
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.lambda_ import lambda_api, lambda_executors, lambda_utils
 from localstack.services.lambda_.api_utils import RUNTIMES
 from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING
@@ -64,7 +65,10 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.get_function("non_existent_function_name").get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result["__type"])
             self.assertEqual(
-                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn("non_existent_function_name"),
+                self.RESOURCENOTFOUND_MESSAGE
+                % lambda_api.func_arn(
+                    TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, "non_existent_function_name"
+                ),
                 result["message"],
             )
 
@@ -74,7 +78,7 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.get_function("myFunction").get_data())
             self.assertEqual(
                 result["Configuration"]["FunctionArn"],
-                arns.lambda_function_arn("myFunction"),
+                arns.lambda_function_arn("myFunction", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME),
             )
 
     def test_get_function_two_functions_with_similar_names_match_by_name(self):
@@ -84,12 +88,12 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.get_function("myFunction").get_data())
             self.assertEqual(
                 result["Configuration"]["FunctionArn"],
-                arns.lambda_function_arn("myFunction"),
+                arns.lambda_function_arn("myFunction", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME),
             )
             result = json.loads(lambda_api.get_function("myFunctions").get_data())
             self.assertEqual(
                 result["Configuration"]["FunctionArn"],
-                arns.lambda_function_arn("myFunctions"),
+                arns.lambda_function_arn("myFunctions", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME),
             )
 
     def test_get_function_two_functions_with_similar_names_match_by_arn(self):
@@ -97,18 +101,26 @@ class TestLambdaAPI(unittest.TestCase):
             self._create_function("myFunctions")
             self._create_function("myFunction")
             result = json.loads(
-                lambda_api.get_function(arns.lambda_function_arn("myFunction")).get_data()
+                lambda_api.get_function(
+                    arns.lambda_function_arn(
+                        "myFunction", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+                    )
+                ).get_data()
             )
             self.assertEqual(
                 result["Configuration"]["FunctionArn"],
-                arns.lambda_function_arn("myFunction"),
+                arns.lambda_function_arn("myFunction", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME),
             )
             result = json.loads(
-                lambda_api.get_function(arns.lambda_function_arn("myFunctions")).get_data()
+                lambda_api.get_function(
+                    arns.lambda_function_arn(
+                        "myFunctions", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+                    )
+                ).get_data()
             )
             self.assertEqual(
                 result["Configuration"]["FunctionArn"],
-                arns.lambda_function_arn("myFunctions"),
+                arns.lambda_function_arn("myFunctions", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME),
             )
 
     def test_get_function_two_functions_with_similar_names_match_by_partial_arn(self):
@@ -122,7 +134,7 @@ class TestLambdaAPI(unittest.TestCase):
             )
             self.assertEqual(
                 result["Configuration"]["FunctionArn"],
-                arns.lambda_function_arn("myFunction"),
+                arns.lambda_function_arn("myFunction", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME),
             )
             result = json.loads(
                 lambda_api.get_function(
@@ -131,7 +143,7 @@ class TestLambdaAPI(unittest.TestCase):
             )
             self.assertEqual(
                 result["Configuration"]["FunctionArn"],
-                arns.lambda_function_arn("myFunctions"),
+                arns.lambda_function_arn("myFunctions", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME),
             )
 
     def test_get_event_source_mapping(self):
@@ -450,7 +462,14 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result = {}
             expected_result["CodeSize"] = self.CODE_SIZE
             expected_result["CodeSha256"] = self.CODE_SHA_256
-            expected_result["FunctionArn"] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ":1"
+            expected_result["FunctionArn"] = (
+                str(
+                    lambda_api.func_arn(
+                        TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                    )
+                )
+                + ":1"
+            )
             expected_result["FunctionName"] = str(self.FUNCTION_NAME)
             expected_result["Handler"] = str(self.HANDLER)
             expected_result["Runtime"] = str(self.RUNTIME)
@@ -485,7 +504,14 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result = {}
             expected_result["CodeSize"] = self.CODE_SIZE
             expected_result["CodeSha256"] = self.UPDATED_CODE_SHA_256
-            expected_result["FunctionArn"] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ":2"
+            expected_result["FunctionArn"] = (
+                str(
+                    lambda_api.func_arn(
+                        TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                    )
+                )
+                + ":2"
+            )
             expected_result["FunctionName"] = str(self.FUNCTION_NAME)
             expected_result["Handler"] = str(self.HANDLER)
             expected_result["Runtime"] = str(self.RUNTIME)
@@ -511,7 +537,10 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result["__type"])
             self.assertEqual(
-                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                self.RESOURCENOTFOUND_MESSAGE
+                % lambda_api.func_arn(
+                    TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                ),
                 result["message"],
             )
 
@@ -530,7 +559,12 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version["CodeSize"] = self.CODE_SIZE
             latest_version["CodeSha256"] = self.CODE_SHA_256
             latest_version["FunctionArn"] = (
-                str(lambda_api.func_arn(self.FUNCTION_NAME)) + ":$LATEST"
+                str(
+                    lambda_api.func_arn(
+                        TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                    )
+                )
+                + ":$LATEST"
             )
             latest_version["FunctionName"] = str(self.FUNCTION_NAME)
             latest_version["Handler"] = str(self.HANDLER)
@@ -550,7 +584,14 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version["ImageConfig"] = {}
             latest_version["Architectures"] = ["x86_64"]
             version1 = dict(latest_version)
-            version1["FunctionArn"] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ":1"
+            version1["FunctionArn"] = (
+                str(
+                    lambda_api.func_arn(
+                        TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                    )
+                )
+                + ":1"
+            )
             version1["Version"] = "1"
             expected_versions = sorted(
                 [latest_version, version], key=lambda k: str(k.get("Version"))
@@ -569,7 +610,10 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.list_versions(self.FUNCTION_NAME).get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result["__type"])
             self.assertEqual(
-                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                self.RESOURCENOTFOUND_MESSAGE
+                % lambda_api.func_arn(
+                    TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                ),
                 result["message"],
             )
 
@@ -587,7 +631,11 @@ class TestLambdaAPI(unittest.TestCase):
         )  # we need to remove this, since this is random, so we cannot know its value
 
         expected_result = {
-            "AliasArn": lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS_NAME,
+            "AliasArn": lambda_api.func_arn(
+                TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+            )
+            + ":"
+            + self.ALIAS_NAME,
             "FunctionVersion": "1",
             "Description": "",
             "Name": self.ALIAS_NAME,
@@ -599,7 +647,10 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.create_alias(self.FUNCTION_NAME).get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result["__type"])
             self.assertEqual(
-                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                self.RESOURCENOTFOUND_MESSAGE
+                % lambda_api.func_arn(
+                    TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                ),
                 result["message"],
             )
 
@@ -618,7 +669,11 @@ class TestLambdaAPI(unittest.TestCase):
         )
         result = json.loads(response.get_data())
 
-        alias_arn = lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS_NAME
+        alias_arn = (
+            lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME)
+            + ":"
+            + self.ALIAS_NAME
+        )
         self.assertEqual(self.ALIASEXISTS_EXCEPTION, result["__type"])
         self.assertEqual(self.ALIASEXISTS_MESSAGE % alias_arn, result["message"])
 
@@ -642,7 +697,11 @@ class TestLambdaAPI(unittest.TestCase):
         )  # we need to remove this, since this is random, so we cannot know its value
 
         expected_result = {
-            "AliasArn": lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS_NAME,
+            "AliasArn": lambda_api.func_arn(
+                TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+            )
+            + ":"
+            + self.ALIAS_NAME,
             "FunctionVersion": "$LATEST",
             "Description": "Test-Description",
             "Name": self.ALIAS_NAME,
@@ -656,7 +715,10 @@ class TestLambdaAPI(unittest.TestCase):
             )
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result["__type"])
             self.assertEqual(
-                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                self.RESOURCENOTFOUND_MESSAGE
+                % lambda_api.func_arn(
+                    TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                ),
                 result["message"],
             )
 
@@ -666,7 +728,11 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(
                 lambda_api.update_alias(self.FUNCTION_NAME, self.ALIAS_NAME).get_data()
             )
-            alias_arn = lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS_NAME
+            alias_arn = (
+                lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME)
+                + ":"
+                + self.ALIAS_NAME
+            )
             self.assertEqual(self.ALIASNOTFOUND_EXCEPTION, result["__type"])
             self.assertEqual(self.ALIASNOTFOUND_MESSAGE % alias_arn, result["message"])
 
@@ -689,7 +755,11 @@ class TestLambdaAPI(unittest.TestCase):
         )  # we need to remove this, since this is random, so we cannot know its value
 
         expected_result = {
-            "AliasArn": lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS_NAME,
+            "AliasArn": lambda_api.func_arn(
+                TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+            )
+            + ":"
+            + self.ALIAS_NAME,
             "FunctionVersion": "1",
             "Description": "",
             "Name": self.ALIAS_NAME,
@@ -703,7 +773,10 @@ class TestLambdaAPI(unittest.TestCase):
             )
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result["__type"])
             self.assertEqual(
-                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                self.RESOURCENOTFOUND_MESSAGE
+                % lambda_api.func_arn(
+                    TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                ),
                 result["message"],
             )
 
@@ -713,7 +786,11 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(
                 lambda_api.get_alias(self.FUNCTION_NAME, self.ALIAS_NAME).get_data()
             )
-            alias_arn = lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS_NAME
+            alias_arn = (
+                lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME)
+                + ":"
+                + self.ALIAS_NAME
+            )
             self.assertEqual(self.ALIASNOTFOUND_EXCEPTION, result["__type"])
             self.assertEqual(self.ALIASNOTFOUND_MESSAGE % alias_arn, result["message"])
 
@@ -747,13 +824,21 @@ class TestLambdaAPI(unittest.TestCase):
         expected_result = {
             "Aliases": [
                 {
-                    "AliasArn": lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS_NAME,
+                    "AliasArn": lambda_api.func_arn(
+                        TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                    )
+                    + ":"
+                    + self.ALIAS_NAME,
                     "FunctionVersion": "1",
                     "Name": self.ALIAS_NAME,
                     "Description": self.ALIAS_NAME,
                 },
                 {
-                    "AliasArn": lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS2_NAME,
+                    "AliasArn": lambda_api.func_arn(
+                        TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                    )
+                    + ":"
+                    + self.ALIAS2_NAME,
                     "FunctionVersion": "$LATEST",
                     "Name": self.ALIAS2_NAME,
                     "Description": "",
@@ -767,13 +852,18 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.list_aliases(self.FUNCTION_NAME).get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result["__type"])
             self.assertEqual(
-                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                self.RESOURCENOTFOUND_MESSAGE
+                % lambda_api.func_arn(
+                    TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME
+                ),
                 result["message"],
             )
 
     def test_get_container_name(self):
         executor = lambda_executors.EXECUTOR_CONTAINERS_REUSE
-        name = executor.get_container_name(arns.lambda_function_arn("my_function_name"))
+        name = executor.get_container_name(
+            arns.lambda_function_arn("my_function_name", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        )
         self.assertIn(
             f"_lambda_arn_aws_lambda_{aws_stack.get_region()}_{get_aws_account_id()}_function_my_function_name",
             name,
@@ -827,7 +917,7 @@ class TestLambdaAPI(unittest.TestCase):
     def test_list_tags(self):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME, self.TAGS)
-            arn = lambda_api.func_arn(self.FUNCTION_NAME)
+            arn = lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME)
             response = self.client.get("{0}/tags/{1}".format(API_PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue("Tags" in result)
@@ -836,7 +926,7 @@ class TestLambdaAPI(unittest.TestCase):
     def test_tag_resource(self):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME)
-            arn = lambda_api.func_arn(self.FUNCTION_NAME)
+            arn = lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME)
             response = self.client.get("{0}/tags/{1}".format(API_PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue("Tags" in result)
@@ -853,7 +943,9 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_tag_non_existent_function_returns_error(self):
         with self.app.test_request_context():
-            arn = lambda_api.func_arn("non-existent-function")
+            arn = lambda_api.func_arn(
+                TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, "non-existent-function"
+            )
             response = self.client.post(
                 "{0}/tags/{1}".format(API_PATH_ROOT, arn),
                 data=json.dumps({"Tags": self.TAGS}),
@@ -865,7 +957,7 @@ class TestLambdaAPI(unittest.TestCase):
     def test_untag_resource(self):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME, tags=self.TAGS)
-            arn = lambda_api.func_arn(self.FUNCTION_NAME)
+            arn = lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.FUNCTION_NAME)
             response = self.client.get("{0}/tags/{1}".format(API_PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue("Tags" in result)
@@ -1023,7 +1115,7 @@ class TestLambdaAPI(unittest.TestCase):
         if tags is None:
             tags = {}
         region = get_lambda_store_v1()
-        arn = lambda_api.func_arn(function_name)
+        arn = lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, function_name)
         region.lambdas[arn] = LambdaFunction(arn)
         region.lambdas[arn].versions = {
             "$LATEST": {
@@ -1046,7 +1138,7 @@ class TestLambdaAPI(unittest.TestCase):
         if tags is None:
             tags = {}
         region = get_lambda_store_v1()
-        arn = lambda_api.func_arn(function_name)
+        arn = lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, function_name)
         region.lambdas[arn].versions.update(
             {
                 "$LATEST": {
@@ -1101,7 +1193,9 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
     RETRY_ATTEMPTS = 5
     EVENT_AGE = 360
     DL_QUEUE = "arn:aws:sqs:us-east-1:000000000000:dlQueue"
-    LAMBDA_OBJ = LambdaFunction(lambda_api.func_arn("test1"))
+    LAMBDA_OBJ = LambdaFunction(
+        lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, "test1")
+    )
 
     def _create_function(self, function_name, tags=None):
         if tags is None:
@@ -1158,21 +1252,31 @@ class TestLambdaStore:
 
         _lookup("my-func", default_region)
         _lookup("my-layer", default_region)
-        _lookup("", default_region)
-        _lookup(None, default_region)
 
         for region in ["us-east-1", "us-east-1", "eu-central-1"]:
             # check lookup for function ARNs
-            _lookup(arns.lambda_function_arn("myfunc", region_name=region), region)
+            _lookup(
+                arns.lambda_function_arn(
+                    "myfunc", account_id=TEST_AWS_ACCOUNT_ID, region_name=region
+                ),
+                region,
+            )
             # check lookup for layer ARNs
-            _lookup(arns.lambda_layer_arn("mylayer", region_name=region), region)
+            _lookup(
+                arns.lambda_layer_arn(
+                    "mylayer", account_id=TEST_AWS_ACCOUNT_ID, region_name=region
+                ),
+                region,
+            )
 
 
 class TestLambdaUtils:
     def test_lambda_policy_name(self):
         func_name = "lambda1"
         policy_name1 = get_lambda_policy_name(func_name)
-        policy_name2 = get_lambda_policy_name(lambda_api.func_arn(func_name))
+        policy_name2 = get_lambda_policy_name(
+            lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, func_name)
+        )
         assert func_name in policy_name1
         assert policy_name1 == policy_name2
 
