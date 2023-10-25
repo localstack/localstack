@@ -18,7 +18,7 @@ from localstack.services.lambda_.invocation.runtime_executor import (
     LambdaRuntimeException,
     RuntimeExecutor,
 )
-from localstack.services.lambda_.lambda_utils import (
+from localstack.services.lambda_.legacy.lambda_utils import (
     HINT_LOG,
     get_all_container_networks_for_lambda,
     get_main_endpoint_from_container,

@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_REGION_NAME
-from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file

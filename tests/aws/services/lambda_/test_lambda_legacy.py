@@ -7,13 +7,13 @@ import pytest
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-from localstack.services.lambda_.lambda_utils import LAMBDA_DEFAULT_HANDLER
 from localstack.services.lambda_.legacy import lambda_api
 from localstack.services.lambda_.legacy.lambda_api import (
     LAMBDA_TEST_ROLE,
     get_lambda_policy_name,
     use_docker,
 )
+from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_DEFAULT_HANDLER
 from localstack.services.lambda_.packages import lambda_go_runtime_package
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.pytest import markers

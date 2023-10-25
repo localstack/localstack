@@ -39,7 +39,7 @@ from localstack.constants import (
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.services.lambda_.lambda_utils import (
+from localstack.services.lambda_.legacy.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS14X,
     LAMBDA_RUNTIME_PYTHON39,
 )

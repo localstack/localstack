@@ -48,7 +48,7 @@ from localstack.services.lambda_.invocation.lambda_models import (
 )
 from localstack.services.lambda_.invocation.models import lambda_stores
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
-from localstack.services.lambda_.lambda_utils import HINT_LOG
+from localstack.services.lambda_.legacy.lambda_utils import HINT_LOG
 from localstack.utils.archives import get_unzipped_size, is_zip_file
 from localstack.utils.container_utils.container_client import ContainerException
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT

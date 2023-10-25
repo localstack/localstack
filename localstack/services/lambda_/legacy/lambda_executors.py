@@ -22,7 +22,7 @@ from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.runtime.hooks import hook_spec
-from localstack.services.lambda_.lambda_utils import (
+from localstack.services.lambda_.legacy.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
     get_main_container_network_for_lambda,

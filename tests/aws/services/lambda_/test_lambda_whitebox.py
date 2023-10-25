@@ -13,9 +13,9 @@ from werkzeug import Request, Response
 import localstack.services.lambda_.legacy.lambda_api
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.services.lambda_.legacy import lambda_api, lambda_executors
 from localstack.services.lambda_.legacy.lambda_api import do_set_function_code, use_docker
+from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil

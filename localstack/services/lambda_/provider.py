@@ -182,8 +182,8 @@ from localstack.services.lambda_.invocation.lambda_service import (
 )
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.services.lambda_.lambda_utils import validate_filters
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
+from localstack.services.lambda_.legacy.lambda_utils import validate_filters
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor

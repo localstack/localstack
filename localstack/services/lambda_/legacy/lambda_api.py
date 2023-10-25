@@ -32,7 +32,10 @@ from localstack.http import Response as HttpResponse
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.lambda_.lambda_utils import (
+from localstack.services.lambda_.legacy import lambda_executors
+from localstack.services.lambda_.legacy.lambda_executors import InvocationResult, LambdaContext
+from localstack.services.lambda_.legacy.lambda_models import lambda_stores_v1
+from localstack.services.lambda_.legacy.lambda_utils import (
     API_PATH_ROOT,
     API_PATH_ROOT_2,
     DOTNET_LAMBDA_RUNTIMES,
@@ -52,9 +55,6 @@ from localstack.services.lambda_.lambda_utils import (
     get_zip_bytes,
     validate_filters,
 )
-from localstack.services.lambda_.legacy import lambda_executors
-from localstack.services.lambda_.legacy.lambda_executors import InvocationResult, LambdaContext
-from localstack.services.lambda_.legacy.lambda_models import lambda_stores_v1
 from localstack.services.lambda_.packages import lambda_go_runtime_package
 from localstack.utils.archives import unzip
 from localstack.utils.aws import arns, aws_stack, resources

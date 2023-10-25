@@ -1,5 +1,8 @@
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.lambda_.lambda_utils import format_name_to_path, get_handler_file_from_name
+from localstack.services.lambda_.legacy.lambda_utils import (
+    format_name_to_path,
+    get_handler_file_from_name,
+)
 
 
 class TestLambdaUtils:

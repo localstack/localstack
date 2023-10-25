@@ -15,10 +15,10 @@ from localstack.services.lambda_.api_utils import function_locators_from_arn, qu
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
 from localstack.services.lambda_.invocation.lambda_service import LambdaService
 from localstack.services.lambda_.invocation.models import lambda_stores
-from localstack.services.lambda_.lambda_utils import event_source_arn_matches
 from localstack.services.lambda_.legacy.lambda_executors import (
     InvocationResult as LegacyInvocationResult,  # TODO: extract
 )
+from localstack.services.lambda_.legacy.lambda_utils import event_source_arn_matches
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import to_bytes, to_str

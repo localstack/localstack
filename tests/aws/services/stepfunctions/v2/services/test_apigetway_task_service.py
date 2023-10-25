@@ -4,7 +4,7 @@ import pytest
 
 from localstack import config
 from localstack.constants import TEST_AWS_REGION_NAME
-from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.legacy.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer

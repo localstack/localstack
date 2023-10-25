@@ -5,8 +5,8 @@ from moto.awslambda import models as moto_awslambda_models
 from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.services.edge import ROUTER
-from localstack.services.lambda_.lambda_utils import get_default_executor_mode
 from localstack.services.lambda_.legacy.lambda_api import handle_lambda_url_invocation
+from localstack.services.lambda_.legacy.lambda_utils import get_default_executor_mode
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import log
 from localstack.utils.aws import arns
@@ -44,8 +44,7 @@ class LambdaLifecycleHook(ServiceLifecycleHook):
 
 def start_lambda(port=None, asynchronous=False):
     from localstack.services.infra import start_local_api
-    from localstack.services.lambda_ import lambda_utils
-    from localstack.services.lambda_.legacy import lambda_api
+    from localstack.services.lambda_.legacy import lambda_api, lambda_utils
 
     log.event(
         "lambda:config",

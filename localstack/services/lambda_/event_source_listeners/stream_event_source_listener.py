@@ -13,7 +13,7 @@ from localstack.services.lambda_.event_source_listeners.adapters import (
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.lambda_.lambda_utils import filter_stream_records
+from localstack.services.lambda_.legacy.lambda_utils import filter_stream_records
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import long_uid, timestamp_millis

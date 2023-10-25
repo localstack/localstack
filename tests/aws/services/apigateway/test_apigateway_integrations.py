@@ -13,7 +13,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, LOCALHOST
 from localstack.services.apigateway.helpers import path_based_url
-from localstack.services.lambda_.lambda_utils import get_main_endpoint_from_container
+from localstack.services.lambda_.legacy.lambda_utils import get_main_endpoint_from_container
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
