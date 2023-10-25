@@ -169,6 +169,31 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-cloudwatch-v2-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Test CloudWatch v2 provider
+          environment:
+            PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
+            TEST_PATH: "tests/aws/services/cloudwatch/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   docker-build:
     parameters:
       platform:
@@ -486,6 +511,9 @@ workflows:
       - itest-s3-v2-legacy-provider:
           requires:
             - preflight
+      - itest-cloudwatch-v2-provider:
+          requires:
+            - preflight
       - unit-tests:
           requires:
             - preflight
@@ -530,6 +558,7 @@ workflows:
           requires:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
+            - itest-cloudwatch-v2-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
@@ -542,6 +571,7 @@ workflows:
           requires:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
+            - itest-cloudwatch-v2-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
