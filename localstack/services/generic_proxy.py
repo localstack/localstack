@@ -496,14 +496,7 @@ def modify_and_forward(
         if isinstance(updated_response, Response):
             response = updated_response
 
-    # allow pre-flight CORS headers by default
-    from localstack.services.s3.legacy.s3_listener import ProxyListenerS3
-
-    is_s3_listener = any(
-        isinstance(service_listener, ProxyListenerS3) for service_listener in listeners
-    )
-    if not is_s3_listener:
-        append_cors_headers(request_headers=headers, response=response)
+    append_cors_headers(request_headers=headers, response=response)
 
     return response
 
