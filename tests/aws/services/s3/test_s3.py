@@ -54,7 +54,6 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.collections import is_sub_dict
 from localstack.utils.files import load_file
 from localstack.utils.run import run
 from localstack.utils.server import http2_server
@@ -572,41 +571,41 @@ class TestS3:
         snapshot.match("list-object-encoded-char", resp)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("delimiter", ["/", "%2F"])
-    def test_list_objects_with_prefix(self, s3_create_bucket, delimiter, snapshot, aws_client):
+    @pytest.mark.parametrize("delimiter", ["", "/", "%2F"])
+    def test_list_objects_with_prefix(
+        self, s3_bucket, delimiter, snapshot, aws_client, aws_http_client_factory
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = s3_create_bucket()
         key = "test/foo/bar/123"
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=b"content 123")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
 
         response = aws_client.s3.list_objects(
-            Bucket=bucket_name, Prefix="test/", Delimiter=delimiter, MaxKeys=1, EncodingType="url"
+            Bucket=s3_bucket, Prefix="test/", Delimiter=delimiter, MaxKeys=1, EncodingType="url"
         )
         snapshot.match("list-objects", response)
-        sub_dict = {
-            "Delimiter": delimiter,
-            "EncodingType": "url",
-            "IsTruncated": False,
-            "Marker": "",
-            "MaxKeys": 1,
-            "Name": bucket_name,
-            "Prefix": "test/",
-        }
 
-        if delimiter == "/":
-            # if delimiter is "/", then common prefixes are returned
-            sub_dict["CommonPrefixes"] = [{"Prefix": "test/foo/"}]
-        else:
-            # if delimiter is "%2F" (or other non-contained character), then the actual keys are returned in Contents
-            assert len(response["Contents"]) == 1
-            assert response["Contents"][0]["Key"] == key
-            sub_dict["Delimiter"] = "%252F"
-
-        assert is_sub_dict(sub_dict, response)
+        # Boto always add `EncodingType=url` in the request, so we need to bypass it to see the proper result, but only
+        # if %2F is already encoded
+        # change the prefix to `test` because it has a `/` in it which wouldn't work in the URL
+        # see https://github.com/boto/boto3/issues/816
+        if delimiter == "%2F":
+            bucket_url = f"{_bucket_url(s3_bucket)}?prefix=test&delimiter={delimiter}"
+            s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+            resp = s3_http_client.get(
+                bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
+            )
+            resp_dict = xmltodict.parse(resp.content)
+            resp_dict["ListBucketResult"].pop("@xmlns", None)
+            snapshot.match("list-objects-no-encoding", resp_dict)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..EncodingType", "$..VersionIdMarker"])
-    def test_list_objects_versions_with_prefix(self, s3_bucket, snapshot, aws_client):
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..EncodingType", "$..VersionIdMarker"],
+    )
+    def test_list_objects_versions_with_prefix(
+        self, s3_bucket, snapshot, aws_client, aws_http_client_factory
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         objects = [
             {"Key": "dir/test", "Content": b"content key1-v1"},
@@ -637,8 +636,18 @@ class TestS3:
             )
             snapshot.match(f"list-object-version-{param['Id']}", response)
 
+        # test without EncodingUrl, manually encode parameters
+        bucket_url = f"{_bucket_url(s3_bucket)}?versions&prefix=dir%2Fsubdir&delimiter=%2F"
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
+        resp_dict = xmltodict.parse(resp.content)
+        resp_dict["ListVersionsResult"].pop("@xmlns", None)
+        snapshot.match("list-objects-versions-no-encoding", resp_dict)
+
     @markers.aws.validated
-    def test_list_objects_v2_with_prefix(self, s3_bucket, snapshot, aws_client):
+    def test_list_objects_v2_with_prefix(
+        self, s3_bucket, snapshot, aws_client, aws_http_client_factory
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         keys = ["test/foo/bar/123" "test/foo/bar/456", "test/bar/foo/123"]
         for key in keys:
@@ -658,6 +667,155 @@ class TestS3:
             Bucket=s3_bucket, Prefix="test/foo/bar", EncodingType="url"
         )
         snapshot.match("list-objects-v2-3", response)
+
+        # test without EncodingUrl, manually encode parameters
+        bucket_url = f"{_bucket_url(s3_bucket)}?list-type=2&prefix=test%2Ffoo"
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
+        resp_dict = xmltodict.parse(resp.content)
+        resp_dict["ListBucketResult"].pop("@xmlns", None)
+        snapshot.match("list-objects-v2-no-encoding", resp_dict)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=[
+            "$..Error.ArgumentName",
+            "$..ContinuationToken",
+            "list-objects-v2-max-5.Contents[4].Key",  # this is because moto returns a Cont.Token equal to Key
+        ],
+    )
+    def test_list_objects_v2_continuation_start_after(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("NextContinuationToken"))
+        keys = [f"test_{i}" for i in range(12)]
+        for key in keys:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket, MaxKeys=5)
+        snapshot.match("list-objects-v2-max-5", response)
+
+        continuation_token = response["NextContinuationToken"]
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket, ContinuationToken=continuation_token
+        )
+        snapshot.match("list-objects-v2-rest", response)
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket, StartAfter="test_7")
+        snapshot.match("list-objects-start-after", response)
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket,
+            StartAfter="test_7",
+            ContinuationToken=continuation_token,
+        )
+        snapshot.match("list-objects-start-after-token", response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.list_objects_v2(Bucket=s3_bucket, ContinuationToken="")
+        snapshot.match("exc-continuation-token", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    def test_list_objects_versions_markers(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # snapshot.add_transformer(snapshot.transform.key_value("NextContinuationToken"))
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        keys = [f"test_{i}" for i in range(3)]
+        # we need to snapshot the version ids in order of creation to understand better the ordering in snapshots
+        versions_ids = []
+        for key in keys:
+            resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"version 1")
+            versions_ids.append(resp["VersionId"])
+
+        # add versions on top
+        resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=keys[2], Body=b"version 2")
+        versions_ids.append(resp["VersionId"])
+
+        # put DeleteMarkers to change a bit the ordering
+        for key in keys:
+            resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+            versions_ids.append(resp["VersionId"])
+        # re-add versions for some
+        for key in keys[:2]:
+            resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"version 2")
+            versions_ids.append(resp["VersionId"])
+
+        snapshot.match(
+            "version-order",
+            {"Versions": [{"VersionId": version_id} for version_id in versions_ids]},
+        )
+        # get everything to check default order
+        response = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-objects-versions-all", response)
+
+        response = aws_client.s3.list_object_versions(Bucket=s3_bucket, MaxKeys=5)
+        snapshot.match("list-objects-versions-5", response)
+
+        next_key_marker = response["NextKeyMarker"]
+        next_version_id_marker = response["NextVersionIdMarker"]
+
+        # try to see what's next when specifying only one
+        response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket, MaxKeys=1, KeyMarker=next_key_marker
+        )
+        snapshot.match("list-objects-next-key-only", response)
+
+        # try with last key
+        response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket, MaxKeys=1, KeyMarker=keys[-1]
+        )
+        snapshot.match("list-objects-next-key-last", response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.list_object_versions(
+                Bucket=s3_bucket, MaxKeys=1, VersionIdMarker=next_version_id_marker
+            )
+        snapshot.match("list-objects-next-version-only", e.value.response)
+
+        response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket,
+            MaxKeys=1,
+            KeyMarker=next_key_marker,
+            VersionIdMarker=next_version_id_marker,
+        )
+        snapshot.match("list-objects-both-markers", response)
+
+        response = aws_client.s3.list_object_versions(Bucket=s3_bucket, MaxKeys=1, KeyMarker="")
+        snapshot.match("list-objects-next-key-empty", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=[
+            "$..Prefix",
+            "$..NextMarker",
+        ],
+    )
+    def test_list_objects_next_marker(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("NextMarker"))
+        snapshot.add_transformer(snapshot.transform.key_value("Key"), priority=-1)
+        keys = [f"test_{i}" for i in range(3)]
+        for key in keys:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
+
+        response = aws_client.s3.list_objects(Bucket=s3_bucket)
+        snapshot.match("list-objects-all", response)
+
+        response = aws_client.s3.list_objects(Bucket=s3_bucket, MaxKeys=1, Delimiter="/")
+        snapshot.match("list-objects-max-1", response)
+        # next marker is not there by default, you need a delimiter or you need to use the last key
+        next_marker = response["NextMarker"]
+
+        response = aws_client.s3.list_objects(Bucket=s3_bucket, Marker=next_marker, MaxKeys=1)
+        snapshot.match("list-objects-rest", response)
+
+        resp = aws_client.s3.list_objects(Bucket=s3_bucket, Marker="", MaxKeys=1)
+        snapshot.match("list-objects-marker-empty", resp)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
@@ -1950,6 +2108,7 @@ class TestS3:
             Key=object_key,
             Body=b"data",
         )
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
 
         client_method = getattr(aws_client.s3, method)
 
@@ -2016,6 +2175,23 @@ class TestS3:
                 IfNoneMatch=put_object["ETag"].strip('"'),
             )
         snapshot.match("etag-missing-quotes", e.value.response)
+
+        # test If*ModifiedSince precision
+        response = client_method(
+            Bucket=s3_bucket,
+            Key=object_key,
+            IfUnmodifiedSince=head_object["LastModified"],
+        )
+        snapshot.match("precondition-if-unmodified-since-is-object", response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=head_object["LastModified"],
+            )
+        snapshot.match("precondition-if-modified-since-is-object", e.value.response)
+
         # Positive tests with all conditions checked
         get_obj_all_positive = client_method(
             Bucket=s3_bucket,
@@ -3109,6 +3285,36 @@ class TestS3:
             )
         assert "NoSuchBucket" == e.value.response["Error"]["Code"]
         snapshot.match("error-non-existent-bucket", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Issue in moto, see https://github.com/getmoto/moto/pull/6933",
+    )
+    def test_delete_objects_encoding(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        object_key_1 = "a%2Fb"
+        object_key_2 = "a/%F0%9F%98%80"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key_1, Body="percent encoding")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key_2, Body="percent encoded emoji")
+
+        list_objects = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects-before-delete", list_objects)
+
+        response = aws_client.s3.delete_objects(
+            Bucket=s3_bucket,
+            Delete={
+                "Objects": [
+                    {"Key": object_key_1},
+                    {"Key": object_key_2},
+                ],
+            },
+        )
+        response["Deleted"].sort(key=itemgetter("Key"))
+        snapshot.match("deleted-resp", response)
+
+        list_objects = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects", list_objects)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
