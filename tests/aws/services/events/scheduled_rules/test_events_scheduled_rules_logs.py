@@ -107,6 +107,10 @@ def test_scheduled_rule_logs(
             .build_full_result()
         )
         assert len(result["logStreams"]) >= 2
+        # FIXME: this is a check against a flake in LocalStack
+        # sometimes the logStreams are created but not yet populated with events, so the snapshot fails
+        # assert that the stream has the events before returning
+        assert result["logStreams"][0]["firstEventTimestamp"]
         return result["logStreams"]
 
     log_streams = retry(_get_log_stream, 60)

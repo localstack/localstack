@@ -1,0 +1,197 @@
+{
+  "typeName": "AWS::ApiGateway::RestApi",
+  "description": "Resource Type definition for AWS::ApiGateway::RestApi.",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
+  "additionalProperties": false,
+  "definitions": {
+    "EndpointConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Types": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "VpcEndpointIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string"
+        },
+        "Value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key",
+        "Value"
+      ]
+    },
+    "S3Location": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Bucket": {
+          "type": "string"
+        },
+        "ETag": {
+          "type": "string"
+        },
+        "Version": {
+          "type": "string"
+        },
+        "Key": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "RestApiId": {
+      "type": "string"
+    },
+    "RootResourceId": {
+      "type": "string"
+    },
+    "ApiKeySourceType": {
+      "type": "string"
+    },
+    "BinaryMediaTypes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Body": {
+      "type": [
+        "object",
+        "string"
+      ]
+    },
+    "BodyS3Location": {
+      "$ref": "#/definitions/S3Location"
+    },
+    "CloneFrom": {
+      "type": "string"
+    },
+    "EndpointConfiguration": {
+      "$ref": "#/definitions/EndpointConfiguration"
+    },
+    "Description": {
+      "type": "string"
+    },
+    "DisableExecuteApiEndpoint": {
+      "type": "boolean"
+    },
+    "FailOnWarnings": {
+      "type": "boolean"
+    },
+    "Name": {
+      "type": "string"
+    },
+    "MinimumCompressionSize": {
+      "type": "integer"
+    },
+    "Mode": {
+      "type": "string"
+    },
+    "Policy": {
+      "type": [
+        "object",
+        "string"
+      ]
+    },
+    "Parameters": {
+      "type": [
+        "object",
+        "string"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "[a-zA-Z0-9]+": {
+          "type": "string"
+        }
+      }
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    }
+  },
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": true,
+    "tagProperty": "/properties/Tags"
+  },
+  "primaryIdentifier": [
+    "/properties/RestApiId"
+  ],
+  "readOnlyProperties": [
+    "/properties/RestApiId",
+    "/properties/RootResourceId"
+  ],
+  "writeOnlyProperties": [
+    "/properties/Body",
+    "/properties/BodyS3Location",
+    "/properties/CloneFrom",
+    "/properties/FailOnWarnings",
+    "/properties/Mode",
+    "/properties/Parameters"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "apigateway:GET",
+        "apigateway:POST",
+        "apigateway:UpdateRestApiPolicy",
+        "s3:GetObject",
+        "iam:PassRole"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "apigateway:GET"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "apigateway:GET",
+        "apigateway:DELETE",
+        "apigateway:PATCH",
+        "apigateway:PUT",
+        "apigateway:UpdateRestApiPolicy",
+        "s3:GetObject",
+        "iam:PassRole"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "apigateway:DELETE"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "apigateway:GET"
+      ]
+    }
+  }
+}

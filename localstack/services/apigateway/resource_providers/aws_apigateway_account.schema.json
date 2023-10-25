@@ -1,0 +1,46 @@
+{
+  "typeName": "AWS::ApiGateway::Account",
+  "description": "Resource Type definition for AWS::ApiGateway::Account",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-apigateway",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "description": "Primary identifier which is manually generated.",
+      "type": "string"
+    },
+    "CloudWatchRoleArn": {
+      "description": "The Amazon Resource Name (ARN) of an IAM role that has write access to CloudWatch Logs in your account.",
+      "type": "string"
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "apigateway:PATCH",
+        "iam:GetRole",
+        "iam:PassRole"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "apigateway:GET"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "apigateway:PATCH",
+        "iam:GetRole",
+        "iam:PassRole"
+      ]
+    },
+    "delete": {
+      "permissions": []
+    }
+  }
+}
