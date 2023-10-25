@@ -1,8 +1,8 @@
 """Store for the old Lambda provider v1"""
 from typing import Dict, List
 
+from localstack.services.lambda_.legacy.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 
 
 class LambdaStoreV1(BaseStore):

@@ -12,6 +12,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.lambda_.legacy import lambda_api, lambda_executors, lambda_utils
+from localstack.services.lambda_.legacy.aws_models import LambdaFunction
 from localstack.services.lambda_.legacy.lambda_api import get_lambda_policy_name
 from localstack.services.lambda_.legacy.lambda_executors import OutputLog
 from localstack.services.lambda_.legacy.lambda_utils import (
@@ -20,7 +21,6 @@ from localstack.services.lambda_.legacy.lambda_utils import (
     get_lambda_store_v1_for_arn,
 )
 from localstack.utils.aws import arns, aws_stack
-from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file
 
 TEST_EVENT_SOURCE_ARN = "arn:aws:sqs:eu-west-1:000000000000:testq"

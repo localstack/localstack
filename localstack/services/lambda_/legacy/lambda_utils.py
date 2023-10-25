@@ -14,13 +14,13 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_to
+from localstack.services.lambda_.legacy.aws_models import LambdaFunction
 from localstack.services.lambda_.legacy.lambda_models import (
     LambdaStoreV1,
     lambda_stores_v1,
 )
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
-from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_responses import flask_error_response_json
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.strings import short_uid

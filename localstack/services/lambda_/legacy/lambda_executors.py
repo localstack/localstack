@@ -22,6 +22,8 @@ from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.runtime.hooks import hook_spec
+from localstack.services.lambda_.legacy.aws_models import LambdaFunction
+from localstack.services.lambda_.legacy.dead_letter_queue import lambda_error_to_dead_letter_queue
 from localstack.services.lambda_.legacy.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
@@ -36,8 +38,6 @@ from localstack.services.lambda_.networking import (
 )
 from localstack.services.lambda_.packages import lambda_go_runtime_package, lambda_java_libs_package
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 from localstack.utils.collections import select_attributes

@@ -37,6 +37,11 @@ from localstack.services.lambda_.lambda_utils import (
     get_handler_file_from_name,
 )
 from localstack.services.lambda_.legacy import lambda_executors
+from localstack.services.lambda_.legacy.aws_models import (
+    CodeSigningConfig,
+    InvalidEnvVars,
+    LambdaFunction,
+)
 from localstack.services.lambda_.legacy.lambda_executors import InvocationResult, LambdaContext
 from localstack.services.lambda_.legacy.lambda_models import (
     lambda_stores_v1,
@@ -62,7 +67,6 @@ from localstack.services.lambda_.packages import lambda_go_runtime_package
 from localstack.utils.archives import unzip
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.aws.arns import extract_region_from_arn
-from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvVars, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
 from localstack.utils.common import get_unzipped_size, is_zip_file
 from localstack.utils.container_networking import get_main_container_name
