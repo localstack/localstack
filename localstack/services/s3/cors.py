@@ -97,7 +97,7 @@ class S3CorsHandler(Handler):
 
         # this is used with the new ASF S3 provider
         # although, we could use it to pre-parse the request and set the context to move the service name parser
-        if config.LEGACY_S3_PROVIDER or config.DISABLE_CUSTOM_CORS_S3:
+        if config.DISABLE_CUSTOM_CORS_S3:
             return
 
         request = context.request
@@ -275,7 +275,7 @@ def s3_cors_request_handler(chain: HandlerChain, context: RequestContext, respon
     Handler to add default CORS headers to S3 operations not concerned with CORS configuration
     """
     # if DISABLE_CUSTOM_CORS_S3 is true, the default CORS handling will take place, so we won't need to do it here
-    if config.LEGACY_S3_PROVIDER or config.DISABLE_CUSTOM_CORS_S3:
+    if config.DISABLE_CUSTOM_CORS_S3:
         return
 
     if not context.service or context.service.service_name != "s3":

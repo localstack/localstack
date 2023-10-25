@@ -7,18 +7,15 @@ import os
 import pytest
 import requests
 import xmltodict
-from requests.models import Request as RequestsRequest
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
+from localstack.constants import APPLICATION_JSON
 from localstack.services.generic_proxy import (
-    MessageModifyingProxyListener,
     ProxyListener,
     start_proxy_server,
     update_path_in_url,
 )
-from localstack.services.messages import Request, Response
 from localstack.utils.aws import aws_stack, resources
 from localstack.utils.common import get_free_tcp_port, short_uid, to_str
 from localstack.utils.xml import strip_xmlns
@@ -50,9 +47,6 @@ class TestEdgeAPI:
         client = aws_client_factory(endpoint_url=edge_url).stepfunctions
         self._invoke_stepfunctions_via_edge(client)
 
-    @pytest.mark.skipif(
-        condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not have POST yet"
-    )
     def test_invoke_s3(self, aws_client_factory):
         edge_url = config.get_edge_url()
         client = aws_client_factory(endpoint_url=edge_url).s3
@@ -237,68 +231,6 @@ class TestEdgeAPI:
         os.environ.pop("DEFAULT_REGION")
         if region_original is not None:
             os.environ["DEFAULT_REGION"] = region_original
-
-    @pytest.mark.skipif(
-        condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not use ProxyListener"
-    )
-    def test_message_modifying_handler(self, monkeypatch, aws_client):
-        class MessageModifier(MessageModifyingProxyListener):
-            def forward_request(self, method, path: str, data, headers):
-                if method != "HEAD":
-                    return Request(path=path.replace(bucket_name, f"{bucket_name}-patched"))
-
-            def return_response(self, method, path, data, headers, response):
-                if method == "HEAD":
-                    return Response(status_code=201)
-                content = to_str(response.content or "")
-                if "test content" in content:
-                    return Response(content=content + " patched")
-
-        updated_handlers = list(ProxyListener.DEFAULT_LISTENERS) + [MessageModifier()]
-        monkeypatch.setattr(ProxyListener, "DEFAULT_LISTENERS", updated_handlers)
-
-        # create S3 bucket, assert that patched bucket name is used
-        bucket_name = f"b-{short_uid()}"
-        aws_client.s3.create_bucket(Bucket=bucket_name)
-        buckets = [b["Name"] for b in aws_client.s3.list_buckets()["Buckets"]]
-        assert f"{bucket_name}-patched" in buckets
-        assert f"{bucket_name}" not in buckets
-        result = aws_client.s3.head_bucket(Bucket=f"{bucket_name}-patched")
-        assert result["ResponseMetadata"]["HTTPStatusCode"] == 201
-
-        # put content, assert that patched content is returned
-        key = "test/1/2/3"
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
-        result = aws_client.s3.get_object(Bucket=bucket_name, Key=key)
-        content = to_str(result["Body"].read())
-        assert " patched" in content
-
-    @pytest.mark.skipif(
-        condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not use ProxyListener"
-    )
-    def test_handler_returning_none_method(self, monkeypatch, aws_client):
-        class MessageModifier(ProxyListener):
-            def forward_request(self, method, path: str, data, headers):
-                # simple heuristic to determine whether we are in the context of an edge call, or service request
-                is_edge_request = not headers.get(HEADER_LOCALSTACK_EDGE_URL)
-                if not is_edge_request and method == "PUT" and len(path.split("/")) > 3:
-                    # simple test that asserts we can forward a Request object with only URL and empty/None method
-                    return RequestsRequest(method=None, data=to_str(data) + " patched")
-                return True
-
-        updated_handlers = list(ProxyListener.DEFAULT_LISTENERS) + [MessageModifier()]
-        monkeypatch.setattr(ProxyListener, "DEFAULT_LISTENERS", updated_handlers)
-
-        # prepare bucket and test object
-        bucket_name = f"b-{short_uid()}"
-        key = "test/1/2/3"
-        aws_client.s3.create_bucket(Bucket=bucket_name)
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
-
-        # get content, assert that content has been patched
-        result = aws_client.s3.get_object(Bucket=bucket_name, Key=key)
-        content = to_str(result["Body"].read())
-        assert " patched" in content
 
     def test_update_path_in_url(self):
         assert update_path_in_url("http://foo:123", "/bar/1/2/3") == "http://foo:123/bar/1/2/3"

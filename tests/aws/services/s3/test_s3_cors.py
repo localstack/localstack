@@ -7,7 +7,6 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.handlers.cors import ALLOWED_CORS_ORIGINS
-from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import LOCALHOST_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
@@ -80,7 +79,6 @@ def allow_bucket_acl(s3_bucket, aws_client):
     aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
 
 
-@pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Tests are for new ASF provider")
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..x-amz-id-2"]  # we're currently using a static value in LocalStack
 )

@@ -424,9 +424,6 @@ USE_SSL = is_env_true("USE_SSL")
 # whether to use the legacy edge proxy or the newer Gateway/HandlerChain framework
 LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
-# whether legacy s3 is enabled
-LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
-
 # whether the S3 native provider is enabled
 NATIVE_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v3", "stream")
 
