@@ -2,8 +2,6 @@ import json
 import logging
 import time
 
-from localstack.services.lambda_.legacy.aws_models import LambdaFunction
-
 LOG = logging.getLogger(__name__)
 
 
@@ -232,49 +230,3 @@ class S3Notification(Component):
         super(S3Notification, self).__init__(id)
         self.target = None
         self.trigger = None
-
-
-class EventSource(Component):
-    def __init__(self, id):
-        super(EventSource, self).__init__(id)
-
-    @staticmethod
-    def get(obj, pool=None, type=None):
-        pool = pool or {}
-        if not obj:
-            return None
-        if isinstance(obj, Component):
-            obj = obj.id
-        if obj in pool:
-            return pool[obj]
-        inst = None
-        if obj.startswith("arn:aws:kinesis:"):
-            inst = KinesisStream(obj)
-        elif obj.startswith("arn:aws:lambda:"):
-            inst = LambdaFunction(obj)
-        elif obj.startswith("arn:aws:dynamodb:"):
-            if "/stream/" in obj:
-                table_id = obj.split("/stream/")[0]
-                table = DynamoDB(table_id)
-                inst = DynamoDBStream(obj)
-                inst.table = table
-            else:
-                inst = DynamoDB(obj)
-        elif obj.startswith("arn:aws:sqs:"):
-            inst = SqsQueue(obj)
-        elif obj.startswith("arn:aws:sns:"):
-            inst = SnsTopic(obj)
-        elif type:
-            for o in EventSource.filter_type(pool, type):
-                if o.name() == obj:
-                    return o
-                if type == ElasticSearch:
-                    if o.endpoint == obj:
-                        return o
-        else:
-            print("Unexpected object name: '%s'" % obj)
-        return inst
-
-    @staticmethod
-    def filter_type(pool, type):
-        return [obj for obj in pool.values() if isinstance(obj, type)]
