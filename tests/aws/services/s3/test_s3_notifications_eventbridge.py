@@ -2,7 +2,6 @@ import json
 
 import pytest
 
-from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -89,9 +88,6 @@ def s3_event_bridge_notification(snapshot):
 
 class TestS3NotificationsToEventBridge:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..detail.object.etag"]
-    )
     def test_object_created_put(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
         bucket_name, queue_url = basic_event_bridge_rule_to_sqs_queue
 
@@ -124,7 +120,6 @@ class TestS3NotificationsToEventBridge:
         )
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
     def test_object_put_acl(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
         # setup fixture
         bucket_name, queue_url = basic_event_bridge_rule_to_sqs_queue
@@ -181,7 +176,6 @@ class TestS3NotificationsToEventBridge:
         snapshot.match("messages", {"messages": messages})
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
     def test_restore_object(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
         # setup fixture
         bucket_name, queue_url = basic_event_bridge_rule_to_sqs_queue
@@ -238,9 +232,6 @@ class TestS3NotificationsToEventBridge:
         snapshot.match("messages", {"messages": messages})
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..detail.object.etag"]
-    )
     def test_object_created_put_in_different_region(
         self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client_factory, aws_client
     ):
