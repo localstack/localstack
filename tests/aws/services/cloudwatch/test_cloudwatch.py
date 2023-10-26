@@ -1050,6 +1050,74 @@ class TestCloudwatch:
         metric_streams_names = [metric_stream['Name'] for metric_stream in metric_streams]
         assert metric_stream_name not in metric_streams_names
 
+    @markers.aws.validated
+    def test_insight_rule(self,aws_client,snapshot):
+        insight_rule_name = f"MyInsightRule-{short_uid()}"
+        response_create = aws_client.cloudwatch.put_insight_rule(
+            RuleName=insight_rule_name,
+            RuleState="ENABLED",
+            RuleDefinition=json.dumps({
+                "Schema": {
+                    "Name": "CloudWatchLogRule",
+                    "Version": 1
+                },
+                "LogGroupNames": [
+                    "API-Gateway-Access-Logs*"
+                ],
+                "LogFormat": "CLF",
+                "Fields": {
+                    "4": "IpAddress",
+                    "7": "StatusCode"
+                },
+                "Contribution": {
+                    "Keys": [
+                        "IpAddress"
+                    ],
+                    "Filters": [
+                        {
+                            "Match": "StatusCode",
+                            "EqualTo": 200
+                        }
+                    ]
+                },
+                "AggregateOn": "Count"
+            })
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        snapshot.match("create_insight_rule", response_create)
+
+        response_describe = aws_client.cloudwatch.describe_insight_rules()
+        snapshot.match("describe_insight_rule", response_describe)
+
+        response_disable = aws_client.cloudwatch.disable_insight_rules(
+            RuleNames=[insight_rule_name]
+        )
+        snapshot.match("disable_insight_rule", response_disable)
+
+        response_enable = aws_client.cloudwatch.enable_insight_rules(
+            RuleNames=[insight_rule_name]
+        )
+        snapshot.match("enable_insight_rule", response_enable)
+
+        insight_rule_report = aws_client.cloudwatch.get_insight_rule_report(
+            RuleName=insight_rule_name,
+            StartTime=datetime.utcnow() - timedelta(hours=1),
+            EndTime=datetime.utcnow(),
+            Period=300,
+            MaxContributorCount=10,
+            Metrics=["UniqueContributors"]
+        )
+        snapshot.match("get_insight_rule_report", insight_rule_report)
+
+        response_list = aws_client.cloudwatch.describe_insight_rules()
+        insight_rules_names = [insight_rule['Name'] for insight_rule in response_list['InsightRules']]
+        assert insight_rule_name in insight_rules_names
+
+        response_delete = aws_client.cloudwatch.delete_insight_rules(
+            RuleNames=[insight_rule_name]
+        )
+        snapshot.match("delete_insight_rule", response_delete)
+
 
 def _check_alarm_triggered(
     expected_state,

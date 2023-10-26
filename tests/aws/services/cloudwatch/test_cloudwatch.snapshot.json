@@ -847,5 +847,208 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_insight_rule": {
+    "recorded-date": "26-10-2023, 10:07:59",
+    "recorded-content": {
+      "create_insight_rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_insight_rule": {
+        "InsightRules": [
+          {
+            "Definition": {
+              "Schema": {
+                "Name": "<name:1>",
+                "Version": 1
+              },
+              "LogGroupNames": [
+                "API-Gateway-Access-Logs*"
+              ],
+              "LogFormat": "CLF",
+              "Fields": {
+                "4": "IpAddress",
+                "7": "StatusCode"
+              },
+              "Contribution": {
+                "Keys": [
+                  "IpAddress"
+                ],
+                "Filters": [
+                  {
+                    "Match": "StatusCode",
+                    "EqualTo": 200
+                  }
+                ]
+              },
+              "AggregateOn": "Count"
+            },
+            "ManagedRule": false,
+            "Name": "<name:2>",
+            "Schema": "<name:1>/1",
+            "State": "ENABLED"
+          },
+          {
+            "Definition": {
+              "Schema": {
+                "Name": "<name:1>",
+                "Version": 1
+              },
+              "LogGroupNames": [
+                "API-Gateway-Access-Logs*"
+              ],
+              "LogFormat": "CLF",
+              "Fields": {
+                "4": "IpAddress",
+                "7": "StatusCode"
+              },
+              "Contribution": {
+                "Keys": [
+                  "IpAddress"
+                ],
+                "Filters": [
+                  {
+                    "Match": "StatusCode",
+                    "EqualTo": 200
+                  }
+                ]
+              },
+              "AggregateOn": "Count"
+            },
+            "ManagedRule": false,
+            "Name": "<name:3>",
+            "Schema": "<name:1>/1",
+            "State": "ENABLED"
+          },
+          {
+            "Definition": {
+              "Schema": {
+                "Name": "<name:1>",
+                "Version": 1
+              },
+              "LogGroupNames": [
+                "API-Gateway-Access-Logs*"
+              ],
+              "LogFormat": "CLF",
+              "Fields": {
+                "4": "IpAddress",
+                "7": "StatusCode"
+              },
+              "Contribution": {
+                "Keys": [
+                  "IpAddress"
+                ],
+                "Filters": [
+                  {
+                    "Match": "StatusCode",
+                    "EqualTo": 200
+                  }
+                ]
+              },
+              "AggregateOn": "Count"
+            },
+            "ManagedRule": false,
+            "Name": "<name:4>",
+            "Schema": "<name:1>/1",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "disable_insight_rule": {
+        "Failures": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "enable_insight_rule": {
+        "Failures": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_insight_rule_report": {
+        "AggregateValue": 0.0,
+        "AggregationStatistic": "SampleCount",
+        "ApproximateUniqueCount": 0,
+        "Contributors": [],
+        "KeyLabels": [
+          "IpAddress"
+        ],
+        "MetricDatapoints": [
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_insight_rule": {
+        "Failures": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
