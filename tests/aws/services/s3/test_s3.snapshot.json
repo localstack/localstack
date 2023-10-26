@@ -10592,7 +10592,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_v2_continuation_start_after": {
-    "recorded-date": "22-10-2023, 02:21:09",
+    "recorded-date": "26-10-2023, 19:49:18",
     "recorded-content": {
       "list-objects-v2-max-5": {
         "Contents": [
@@ -10728,7 +10728,7 @@
         "EncodingType": "url",
         "IsTruncated": false,
         "KeyCount": 2,
-        "MaxKeys": 1000,
+        "MaxKeys": 2,
         "Name": "<bucket-name:1>",
         "Prefix": "",
         "StartAfter": "test_7",
@@ -10815,7 +10815,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_versions_markers": {
-    "recorded-date": "22-10-2023, 04:04:58",
+    "recorded-date": "26-10-2023, 19:41:47",
     "recorded-content": {
       "version-order": {
         "Versions": [
@@ -11126,6 +11126,34 @@
             "Size": 9,
             "StorageClass": "STANDARD",
             "VersionId": "<version-id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-last-key-last-version": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "test_2",
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "<version-id:4>",
+        "Versions": [
+          {
+            "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
+            "IsLatest": false,
+            "Key": "test_2",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
           }
         ],
         "ResponseMetadata": {
@@ -12081,6 +12109,87 @@
         "PartNumberMarker": 10,
         "StorageClass": "STANDARD",
         "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix_and_delimiter": {
+    "recorded-date": "26-10-2023, 20:12:20",
+    "recorded-content": {
+      "list-objects-v2-1": {
+        "CommonPrefixes": [
+          {
+            "Prefix": "test/bar/"
+          },
+          {
+            "Prefix": "test/foo/"
+          }
+        ],
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 2,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-v2-1-with-max-keys": {
+        "CommonPrefixes": [
+          {
+            "Prefix": "test/bar/"
+          }
+        ],
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyCount": 1,
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "NextContinuationToken": "<next-continuation-token:1>",
+        "Prefix": "test/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-v2-2": {
+        "CommonPrefixes": [
+          {
+            "Prefix": "test/foo/"
+          }
+        ],
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test/foo",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-v2-3": {
+        "CommonPrefixes": [
+          {
+            "Prefix": "test/foo/bar/"
+          }
+        ],
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test/foo/bar",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

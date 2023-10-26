@@ -1300,9 +1300,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_objects: list[Object] = []
 
-        all_objects = s3_bucket.objects.values()
         # sort by key
-        all_objects.sort(key=lambda r: r.key)
+        all_objects = sorted(s3_bucket.objects.values(), key=lambda r: r.key)
         for s3_object in all_objects:
             if count >= max_keys:
                 is_truncated = True
@@ -1413,11 +1412,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_objects: list[Object] = []
 
-        all_objects = s3_bucket.objects.values()
         # sort by key
-        all_objects.sort(key=lambda r: r.key)
+        for s3_object in sorted(s3_bucket.objects.values(), key=lambda r: r.key):
+            if count >= max_keys:
+                is_truncated = True
+                next_continuation_token = to_str(base64.urlsafe_b64encode(s3_object.key.encode()))
+                break
 
-        for s3_object in all_objects:
             key = urlparse.quote(s3_object.key) if encoding_type else s3_object.key
             # skip all keys that alphabetically come before key_marker
             if continuation_token:
@@ -1438,14 +1439,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
 
                 if prefix_including_delimiter not in common_prefixes:
+                    # TODO: check going over MaxKeys from CommonPrefix
                     count += 1
                     common_prefixes.add(prefix_including_delimiter)
                 continue
-
-            if count + 1 > max_keys:
-                is_truncated = True
-                next_continuation_token = to_str(base64.urlsafe_b64encode(s3_object.key.encode()))
-                break
 
             # TODO: add RestoreStatus if present
             object_data = Object(
@@ -1537,6 +1534,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         all_versions = s3_bucket.objects.values(with_versions=True)
         # sort by key, and last-modified-date, to get the last version first
         all_versions.sort(key=lambda r: (r.key, -r.last_modified.timestamp()))
+        last_version = all_versions[-1] if all_versions else None
 
         for version in all_versions:
             key = urlparse.quote(version.key) if encoding_type else version.key
@@ -1599,7 +1597,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 object_versions.append(object_version)
 
             count += 1
-            if count >= max_keys:
+            if count >= max_keys and last_version.version_id != version.version_id:
                 is_truncated = True
                 next_key_marker = version.key
                 next_version_id_marker = version.version_id
@@ -2218,15 +2216,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     ArgumentValue=upload_id_marker,
                 )
 
-        all_multiparts = sorted(
-            s3_bucket.multiparts.values(), key=lambda r: (r.object.key, r.initiated.timestamp())
-        )
-        last_multipart = all_multiparts[-1] if all_multiparts else None
         uploads = []
         # sort by key and initiated
-        for index, multipart in enumerate(
-            sorted(all_multiparts, key=lambda r: (r.object.key, r.initiated.timestamp()))
+        for multipart in sorted(
+            s3_bucket.multiparts.values(), key=lambda r: (r.object.key, r.initiated.timestamp())
         ):
+            if count >= max_uploads:
+                is_truncated = True
+                break
+
             key = urlparse.quote(multipart.object.key) if encoding_type else multipart.object.key
             # skip all keys that are different than key_marker
             if key_marker:
@@ -2268,9 +2266,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             uploads.append(multipart_upload)
 
             count += 1
-            if count >= max_uploads and multipart.id != last_multipart.id:
-                is_truncated = True
-                break
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 

@@ -675,6 +675,42 @@ class TestS3:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not NATIVE_S3_PROVIDER,
+        paths=["$..Prefix"],
+    )
+    def test_list_objects_v2_with_prefix_and_delimiter(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("NextContinuationToken"))
+        keys = ["test/foo/bar/123", "test/foo/bar/456", "test/bar/foo/123"]
+        for key in keys:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket, Prefix="test/", EncodingType="url", Delimiter="/"
+        )
+        snapshot.match("list-objects-v2-1", response)
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket,
+            Prefix="test/",
+            EncodingType="url",
+            Delimiter="/",
+            MaxKeys=1,
+        )
+        snapshot.match("list-objects-v2-1-with-max-keys", response)
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket, Prefix="test/foo", EncodingType="url", Delimiter="/"
+        )
+        snapshot.match("list-objects-v2-2", response)
+
+        response = aws_client.s3.list_objects_v2(
+            Bucket=s3_bucket, Prefix="test/foo/bar", EncodingType="url", Delimiter="/"
+        )
+        snapshot.match("list-objects-v2-3", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not is_native_provider(),
         paths=[
             "$..Error.ArgumentName",
@@ -699,7 +735,8 @@ class TestS3:
         )
         snapshot.match("list-objects-v2-rest", response)
 
-        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket, StartAfter="test_7")
+        # verify isTruncated behaviour
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket, StartAfter="test_7", MaxKeys=2)
         snapshot.match("list-objects-start-after", response)
 
         response = aws_client.s3.list_objects_v2(
@@ -780,6 +817,14 @@ class TestS3:
             VersionIdMarker=next_version_id_marker,
         )
         snapshot.match("list-objects-both-markers", response)
+
+        response = aws_client.s3.list_object_versions(
+            Bucket=s3_bucket,
+            MaxKeys=1,
+            KeyMarker=keys[-1],
+            VersionIdMarker=versions_ids[3],
+        )
+        snapshot.match("list-objects-last-key-last-version", response)
 
         response = aws_client.s3.list_object_versions(Bucket=s3_bucket, MaxKeys=1, KeyMarker="")
         snapshot.match("list-objects-next-key-empty", response)
