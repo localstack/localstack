@@ -180,8 +180,11 @@ class TestSQS:
         assert f":{external_port}" in queue_url
 
     @markers.aws.only_localstack
-    def test_domain_strategy(self, monkeypatch, sqs_create_queue, assert_host_customisation):
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
+    @pytest.mark.parametrize("strategy", ["standard", "domain"])
+    def test_domain_based_strategies(
+        self, strategy, monkeypatch, sqs_create_queue, assert_host_customisation
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)

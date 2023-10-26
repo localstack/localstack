@@ -3200,6 +3200,38 @@ class TestSqsProvider:
         assert queue2_url in region2_client.list_queues().get("QueueUrls", [])
 
     @markers.aws.validated
+    def test_list_queues_multi_region_with_endpoint_strategy_standard(
+        self, aws_client_factory, cleanups, monkeypatch
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "standard")
+
+        region1 = "us-east-1"
+        region2 = "eu-central-1"
+
+        region1_client = aws_client_factory(region_name=region1).sqs
+        region2_client = aws_client_factory(region_name=region2).sqs
+
+        queue_name = f"queue-{short_uid()}"
+
+        queue1_url = region1_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        cleanups.append(lambda: region1_client.delete_queue(QueueUrl=queue1_url))
+        queue2_url = region2_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        cleanups.append(lambda: region2_client.delete_queue(QueueUrl=queue2_url))
+
+        assert (
+            f"sqs.{region1}." in queue1_url
+        )  # region is always included irrespective of whether it is us-east-1
+        assert f"sqs.{region2}." in queue2_url
+        assert region1 not in queue2_url
+        assert region2 not in queue1_url
+
+        assert queue1_url in region1_client.list_queues().get("QueueUrls", [])
+        assert queue2_url not in region1_client.list_queues().get("QueueUrls", [])
+
+        assert queue1_url not in region2_client.list_queues().get("QueueUrls", [])
+        assert queue2_url in region2_client.list_queues().get("QueueUrls", [])
+
+    @markers.aws.validated
     def test_list_queues_multi_region_with_endpoint_strategy_domain(
         self, aws_client_factory, cleanups, monkeypatch
     ):
@@ -3229,8 +3261,9 @@ class TestSqsProvider:
         assert queue2_url in region2_client.list_queues().get("QueueUrls", [])
 
     @markers.aws.validated
-    def test_get_queue_url_multi_region(self, aws_client_factory, cleanups, monkeypatch):
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
+    def test_get_queue_url_multi_region(self, strategy, aws_client_factory, cleanups, monkeypatch):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
         region1_client = aws_client_factory(region_name="us-east-1").sqs
         region2_client = aws_client_factory(region_name="eu-central-1").sqs
@@ -3755,7 +3788,7 @@ class TestSqsQueryApi:
         assert "<Message>Unknown Attribute Foobar.</Message>" in response.text
 
     @markers.aws.validated
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_get_delete_queue(
         self, monkeypatch, sqs_create_queue, sqs_http_client, sqs_queue_exists, strategy
     ):
@@ -3879,7 +3912,7 @@ class TestSqsQueryApi:
         assert response.status_code == 400
 
     @markers.aws.validated
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_get_queue_url_works_for_same_queue(
         self,
         monkeypatch,
@@ -3902,7 +3935,7 @@ class TestSqsQueryApi:
         assert response.status_code == 200
 
     @markers.aws.validated
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_get_queue_url_work_for_different_queue(
         self, monkeypatch, sqs_create_queue, sqs_http_client, strategy
     ):
@@ -3924,7 +3957,7 @@ class TestSqsQueryApi:
         assert response.status_code == 200
 
     @markers.aws.validated
-    @pytest.mark.parametrize("strategy", ["domain", "path", "off"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path", "off"])
     def test_endpoint_strategy_with_multi_region(
         self,
         strategy,
@@ -4065,7 +4098,7 @@ class TestSqsQueryApi:
 
 
 class TestSQSMultiAccounts:
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     @markers.aws.only_localstack
     def test_cross_account_access(
         self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
@@ -4099,7 +4132,7 @@ class TestSQSMultiAccounts:
         # - TagQueue
         # - UntagQueue
 
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     @markers.aws.only_localstack
     def test_cross_account_get_queue_url(
         self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
