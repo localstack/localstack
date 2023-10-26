@@ -30,8 +30,9 @@ from localstack.services.apigateway.helpers import (
     host_based_url,
     path_based_url,
 )
-from localstack.services.lambda_.legacy.lambda_api import add_event_source
-from localstack.testing.aws.lambda_utils import is_old_local_executor
+from localstack.testing.aws.lambda_utils import (
+    is_old_local_executor,
+)
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack
@@ -1978,12 +1979,13 @@ class TestIntegrations:
         )
 
         # create event source for sqs lambda processor
-        event_source_data = {
-            "FunctionName": integration_lambda,
-            "EventSourceArn": arns.sqs_queue_arn(sqs_queue),
-            "Enabled": True,
-        }
-        add_event_source(event_source_data)
+        # TODO: add meaningful test assertions because the test passes even without creating the even source mapping
+        # Create event source mapping: migrated from the legacy helper `add_event_source(event_source_data)`
+        # es_mapping_result = aws_client.lambda_.create_event_source_mapping(
+        #     EventSourceArn=arns.sqs_queue_arn(sqs_queue), FunctionName=integration_lambda
+        # )
+        # uuid = es_mapping_result["UUID"]
+        # _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
         # generate test data
         test_data = {"spam": "eggs & beans"}
