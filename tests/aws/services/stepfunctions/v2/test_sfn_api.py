@@ -112,6 +112,30 @@ class TestSnfApi:
         sfn_snapshot.match("deletion_resp_1", deletion_resp_1)
 
     @markers.aws.validated
+    def test_describe_nonexistent_sm(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp_1 = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        state_machine_arn: str = creation_resp_1["stateMachineArn"]
+
+        sm_nonexistent_name = f"statemachine_{short_uid()}"
+        sm_nonexistent_arn = state_machine_arn.replace(sm_name, sm_nonexistent_name)
+        sfn_snapshot.add_transformer(RegexTransformer(sm_nonexistent_arn, "sm_nonexistent_arn"))
+
+        with pytest.raises(Exception) as exc:
+            aws_client.stepfunctions.describe_state_machine(stateMachineArn=sm_nonexistent_arn)
+        sfn_snapshot.match("describe_nonexistent_sm", exc.value)
+
+    @markers.aws.validated
     def test_create_exact_duplicate_sm(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
