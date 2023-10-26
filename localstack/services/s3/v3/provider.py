@@ -1161,15 +1161,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             dest_s3_bucket.encryption_rule is DEFAULT_BUCKET_ENCRYPTION
             and src_s3_object.encryption == "AES256"
         )
-        if src_key == dest_key and not any(
-            (
-                storage_class,
-                server_side_encryption,
-                metadata_directive == "REPLACE",
-                website_redirect_location,
-                dest_s3_bucket.encryption_rule
-                and not is_default_encryption,  # S3 will allow copy in place if the bucket has encryption configured
-                src_s3_object.restore,
+        if (
+            src_bucket == dest_bucket
+            and src_key == dest_key
+            and not any(
+                (
+                    storage_class,
+                    server_side_encryption,
+                    metadata_directive == "REPLACE",
+                    website_redirect_location,
+                    dest_s3_bucket.encryption_rule
+                    and not is_default_encryption,  # S3 will allow copy in place if the bucket has encryption configured
+                    src_s3_object.restore,
+                )
             )
         ):
             raise InvalidRequest(

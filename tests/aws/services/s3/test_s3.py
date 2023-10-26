@@ -1575,7 +1575,9 @@ class TestS3:
         condition=lambda: not is_native_provider(),
         paths=["$..ServerSideEncryption"],
     )
-    def test_s3_copy_object_in_place(self, s3_bucket, allow_bucket_acl, snapshot, aws_client):
+    def test_s3_copy_object_in_place(
+        self, s3_bucket, s3_create_bucket, allow_bucket_acl, snapshot, aws_client
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(
             [
@@ -1609,6 +1611,12 @@ class TestS3:
                 Bucket=s3_bucket, CopySource=f"{s3_bucket}/{object_key}", Key=object_key
             )
         snapshot.match("copy-object-in-place-no-change", e.value.response)
+
+        s3_bucket_2 = s3_create_bucket()
+        copy_obj_diff_bucket = aws_client.s3.copy_object(
+            Bucket=s3_bucket_2, CopySource=f"{s3_bucket}/{object_key}", Key=object_key
+        )
+        snapshot.match("copy-object-same-key-diff-bucket", copy_obj_diff_bucket)
 
         # it seems as long as you specify the field necessary, it does not check if the previous value was the same
         # and allows the copy

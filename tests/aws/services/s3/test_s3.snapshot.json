@@ -5989,7 +5989,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_in_place": {
-    "recorded-date": "03-08-2023, 16:51:58",
+    "recorded-date": "26-10-2023, 14:34:19",
     "recorded-content": {
       "put_object": {
         "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
@@ -6030,6 +6030,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      },
+      "copy-object-same-key-diff-bucket": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "copy-object-in-place-with-storage-class": {
