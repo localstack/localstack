@@ -1426,5 +1426,110 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_update": {
+    "recorded-date": "23-10-2023, 15:24:12",
+    "recorded-content": {
+      "create-event-source-mapping-response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "events": [
+        {
+          "function_version": "1",
+          "CUSTOM_VAR": "a",
+          "event": {
+            "Records": [
+              {
+                "messageId": "<uuid:2>",
+                "receiptHandle": "<receipt-handle:1>",
+                "body": {
+                  "foo": "bar"
+                },
+                "attributes": {
+                  "ApproximateReceiveCount": "1",
+                  "SentTimestamp": "timestamp",
+                  "SenderId": "sender-id",
+                  "ApproximateFirstReceiveTimestamp": "timestamp"
+                },
+                "messageAttributes": {},
+                "md5OfBody": "<md5-of-body:1>",
+                "md5OfMessageAttributes": null,
+                "eventSource": "aws:sqs",
+                "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                "awsRegion": "<region>"
+              }
+            ]
+          }
+        }
+      ],
+      "events_postupdate": [
+        {
+          "function_version": "1",
+          "CUSTOM_VAR": "a",
+          "event": {
+            "Records": [
+              {
+                "messageId": "<uuid:2>",
+                "receiptHandle": "<receipt-handle:1>",
+                "body": {
+                  "foo": "bar"
+                },
+                "attributes": {
+                  "ApproximateReceiveCount": "1",
+                  "SentTimestamp": "timestamp",
+                  "SenderId": "sender-id",
+                  "ApproximateFirstReceiveTimestamp": "timestamp"
+                },
+                "messageAttributes": {},
+                "md5OfBody": "<md5-of-body:1>",
+                "md5OfMessageAttributes": null,
+                "eventSource": "aws:sqs",
+                "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                "awsRegion": "<region>"
+              }
+            ]
+          }
+        },
+        {
+          "function_version": "2",
+          "CUSTOM_VAR": "b",
+          "event": {
+            "Records": [
+              {
+                "messageId": "<uuid:3>",
+                "receiptHandle": "<receipt-handle:2>",
+                "body": {
+                  "foo": "bar2"
+                },
+                "attributes": {
+                  "ApproximateReceiveCount": "1",
+                  "SentTimestamp": "timestamp",
+                  "SenderId": "sender-id",
+                  "ApproximateFirstReceiveTimestamp": "timestamp"
+                },
+                "messageAttributes": {},
+                "md5OfMessageAttributes": null,
+                "md5OfBody": "<md5-of-body:2>",
+                "eventSource": "aws:sqs",
+                "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                "awsRegion": "<region>"
+              }
+            ]
+          }
+        }
+      ]
+    }
   }
 }
