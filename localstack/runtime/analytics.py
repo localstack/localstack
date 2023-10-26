@@ -9,7 +9,7 @@ LOG = logging.getLogger(__name__)
 
 TRACKED_ENV_VAR = [
     "DEBUG",
-    "DEFAULT_REGION",
+    "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "DISABLE_CORS_CHECK",
     "DISABLE_CORS_HEADERS",
     "DNS_ADDRESS",
