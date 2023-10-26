@@ -96,6 +96,10 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::BasePathMapping": "ResourceProvider",
     "AWS::ApiGateway::Model": "ResourceProvider",
     "AWS::ApiGateway::Account": "ResourceProvider",
+    "AWS::SecretsManager::Secret": "ResourceProvider",
+    "AWS::SecretsManager::ResourcePolicy": "ResourceProvider",
+    "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",
+    "AWS::SecretsManager::RotationSchedule": "ResourceProvider",
 }
 
 
