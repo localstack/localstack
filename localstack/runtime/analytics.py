@@ -37,6 +37,7 @@ TRACKED_ENV_VAR = [
     "REQUIRE_PRO",
     "SKIP_INFRA_DOWNLOADS",
     "SQS_ENDPOINT_STRATEGY",
+    "USE_SINGLE_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "USE_SSL",
 ]
 
