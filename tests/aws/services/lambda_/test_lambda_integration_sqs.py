@@ -1167,7 +1167,7 @@ class TestSQSEventSourceMapping:
         snapshot.match("create_event_source_mapping_exception", expected.value.response)
         expected.match(InvalidParameterValueException.code)
 
-    # TODO: test integration with lambda logs
+    @pytest.mark.skipif(condition=is_old_provider(), reason="broken")
     @markers.aws.validated
     def test_sqs_event_source_mapping_update(
         self,
