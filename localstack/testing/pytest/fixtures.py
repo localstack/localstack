@@ -1905,8 +1905,7 @@ def appsync_create_api(aws_client):
 
 @pytest.fixture
 def assert_host_customisation(monkeypatch):
-    # subdomain localhost.localstack.cloud to make sure it resolves
-    localstack_host = f"external-host-{short_uid()}.localhost.localstack.cloud"
+    localstack_host = "foo.bar"
     monkeypatch.setattr(
         config, "LOCALSTACK_HOST", config.HostAndPort(host=localstack_host, port=config.EDGE_PORT)
     )
