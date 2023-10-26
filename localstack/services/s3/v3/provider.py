@@ -2113,7 +2113,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: implements PartNumberMarker
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+        if (
+            not (s3_multipart := s3_bucket.multiparts.get(upload_id))
+            or s3_multipart.object.key != key
+        ):
             raise NoSuchUpload(
                 "The specified upload does not exist. "
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",

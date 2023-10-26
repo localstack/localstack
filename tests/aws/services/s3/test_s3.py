@@ -4883,8 +4883,16 @@ class TestS3:
             )
         snapshot.match("complete-multipart-wrong-key-name", e.value.response)
 
-        # ASF provider completely defers this to moto, and moto does not properly handle it
+        # ASF provider completely defers those to moto, and moto does not properly handle it
         if is_aws_cloud() or config.NATIVE_S3_PROVIDER:
+            with pytest.raises(ClientError) as e:
+                aws_client.s3.list_parts(
+                    Bucket=s3_bucket,
+                    Key="fake-fake-name",
+                    UploadId=upload_id,
+                )
+            snapshot.match("list-parts-wrong-key-name", e.value.response)
+
             with pytest.raises(ClientError) as e:
                 aws_client.s3.abort_multipart_upload(
                     Bucket=s3_bucket,

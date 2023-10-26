@@ -11402,7 +11402,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_key_validation": {
-    "recorded-date": "26-10-2023, 15:45:28",
+    "recorded-date": "26-10-2023, 16:04:23",
     "recorded-content": {
       "upload-part-wrong-key-name": {
         "Error": {
@@ -11416,6 +11416,17 @@
         }
       },
       "complete-multipart-wrong-key-name": {
+        "Error": {
+          "Code": "NoSuchUpload",
+          "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list-parts-wrong-key-name": {
         "Error": {
           "Code": "NoSuchUpload",
           "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
