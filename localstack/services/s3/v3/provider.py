@@ -1301,8 +1301,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_objects: list[Object] = []
 
         # sort by key
-        all_objects = sorted(s3_bucket.objects.values(), key=lambda r: r.key)
-        for s3_object in all_objects:
+        for s3_object in sorted(s3_bucket.objects.values(), key=lambda r: r.key):
             if count >= max_keys:
                 is_truncated = True
                 if s3_objects:
@@ -1439,7 +1438,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
 
                 if prefix_including_delimiter not in common_prefixes:
-                    # TODO: check going over MaxKeys from CommonPrefix
                     count += 1
                     common_prefixes.add(prefix_including_delimiter)
                 continue
