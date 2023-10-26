@@ -2172,23 +2172,56 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> ListMultipartUploadsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        s3_multiparts = s3_bucket.multiparts
-        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
-        # TODO implement Prefix/Delimiter/CommonPrefixes/EncodingType and truncating results
-        # should be common from ListObjects?ListVersions
+        common_prefixes = set()
+        count = 0
+        is_truncated = False
+        max_uploads = max_uploads or 1000
+        prefix = prefix or ""
+        delimiter = delimiter or ""
+        if encoding_type:
+            prefix = urlparse.quote(prefix)
+            delimiter = urlparse.quote(delimiter)
+        upload_id_marker_found = False
 
-        response = ListMultipartUploadsOutput(
-            Bucket=bucket,
-            IsTruncated=False,
-            KeyMarker=key_marker or "",
-            MaxUploads=max_uploads or 1000,
-            UploadIdMarker=upload_id_marker or "",
-        )
-        if delimiter:
-            response["Delimiter"] = delimiter
+        all_multiparts = s3_bucket.multiparts.values()
 
-        uploads = [
-            MultipartUpload(
+        uploads = []
+
+        # sort by key, and initiated, to get the last version first
+        for multipart in sorted(
+            all_multiparts, key=lambda r: (r.object.key, r.initiated.timestamp())
+        ):
+            key = urlparse.quote(multipart.object.key) if encoding_type else multipart.object.key
+            # skip all keys that alphabetically come before key_marker
+            if key_marker:
+                if key < key_marker:
+                    continue
+                elif key == key_marker:
+                    if not upload_id_marker:
+                        continue
+                    # as the keys are ordered by time, once we found the key marker, we can return the next one
+                    if multipart.id == upload_id_marker:
+                        upload_id_marker_found = True
+                        continue
+                    elif not upload_id_marker_found:
+                        # as long as we have not passed the version_key_marker, skip the versions
+                        continue
+
+            # Filter for keys that start with prefix
+            if prefix and not key.startswith(prefix):
+                continue
+
+            # separate keys that contain the same string between the prefix and the first occurrence of the delimiter
+            if delimiter and delimiter in (key_no_prefix := key.removeprefix(prefix)):
+                pre_delimiter, _, _ = key_no_prefix.partition(delimiter)
+                prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
+
+                if prefix_including_delimiter not in common_prefixes:
+                    count += 1
+                    common_prefixes.add(prefix_including_delimiter)
+                continue
+
+            multipart_upload = MultipartUpload(
                 UploadId=multipart.id,
                 Key=multipart.object.key,
                 Initiated=multipart.initiated,
@@ -2196,13 +2229,37 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 Owner=multipart.initiator,  # TODO: check the difference
                 Initiator=multipart.initiator,
             )
-            for multipart in s3_multiparts.values()
-        ]
-        response["Uploads"] = uploads
+            uploads.append(multipart_upload)
+
+            count += 1
+            if count >= max_uploads:
+                is_truncated = True
+                break
+
+        common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
+
+        response = ListMultipartUploadsOutput(
+            Bucket=bucket,
+            IsTruncated=is_truncated,
+            MaxUploads=max_uploads or 1000,
+            KeyMarker=key_marker or "",
+            UploadIdMarker=upload_id_marker or "" if key_marker else "",
+            NextKeyMarker="",
+            NextUploadIdMarker="",
+        )
         if uploads:
+            response["Uploads"] = uploads
             last_upload = uploads[-1]
-            response["NextUploadIdMarker"] = last_upload["UploadId"]
             response["NextKeyMarker"] = last_upload["Key"]
+            response["NextUploadIdMarker"] = last_upload["UploadId"]
+        if delimiter:
+            response["Delimiter"] = delimiter
+        if prefix:
+            response["Prefix"] = prefix
+        if encoding_type:
+            response["EncodingType"] = EncodingType.url
+        if common_prefixes:
+            response["CommonPrefixes"] = common_prefixes
 
         return response
 

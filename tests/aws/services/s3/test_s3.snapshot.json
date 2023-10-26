@@ -5540,7 +5540,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix": {
-    "recorded-date": "22-10-2023, 00:35:27",
+    "recorded-date": "26-10-2023, 18:10:52",
     "recorded-content": {
       "list-objects-v2-1": {
         "Contents": [
@@ -5553,7 +5553,14 @@
           },
           {
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
-            "Key": "test/foo/bar/123test/foo/bar/456",
+            "Key": "test/foo/bar/123",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/foo/bar/456",
             "LastModified": "datetime",
             "Size": 11,
             "StorageClass": "STANDARD"
@@ -5561,7 +5568,7 @@
         ],
         "EncodingType": "url",
         "IsTruncated": false,
-        "KeyCount": 2,
+        "KeyCount": 3,
         "MaxKeys": 1000,
         "Name": "<bucket-name:1>",
         "Prefix": "test/",
@@ -5574,7 +5581,14 @@
         "Contents": [
           {
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
-            "Key": "test/foo/bar/123test/foo/bar/456",
+            "Key": "test/foo/bar/123",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/foo/bar/456",
             "LastModified": "datetime",
             "Size": 11,
             "StorageClass": "STANDARD"
@@ -5582,7 +5596,7 @@
         ],
         "EncodingType": "url",
         "IsTruncated": false,
-        "KeyCount": 1,
+        "KeyCount": 2,
         "MaxKeys": 1000,
         "Name": "<bucket-name:1>",
         "Prefix": "test/foo",
@@ -5595,7 +5609,14 @@
         "Contents": [
           {
             "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
-            "Key": "test/foo/bar/123test/foo/bar/456",
+            "Key": "test/foo/bar/123",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/foo/bar/456",
             "LastModified": "datetime",
             "Size": 11,
             "StorageClass": "STANDARD"
@@ -5603,7 +5624,7 @@
         ],
         "EncodingType": "url",
         "IsTruncated": false,
-        "KeyCount": 1,
+        "KeyCount": 2,
         "MaxKeys": 1000,
         "Name": "<bucket-name:1>",
         "Prefix": "test/foo/bar",
@@ -5614,15 +5635,24 @@
       },
       "list-objects-v2-no-encoding": {
         "ListBucketResult": {
-          "Contents": {
-            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
-            "Key": "test/foo/bar/123test/foo/bar/456",
-            "LastModified": "date",
-            "Size": "11",
-            "StorageClass": "STANDARD"
-          },
+          "Contents": [
+            {
+              "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+              "Key": "test/foo/bar/123",
+              "LastModified": "date",
+              "Size": "11",
+              "StorageClass": "STANDARD"
+            },
+            {
+              "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+              "Key": "test/foo/bar/456",
+              "LastModified": "date",
+              "Size": "11",
+              "StorageClass": "STANDARD"
+            }
+          ],
           "IsTruncated": "false",
-          "KeyCount": "1",
+          "KeyCount": "2",
           "MaxKeys": "1000",
           "Name": "<bucket-name:1>",
           "Prefix": "test/foo"
@@ -11446,6 +11476,428 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_list_multiparts_next_marker": {
+    "recorded-date": "26-10-2023, 17:56:45",
+    "recorded-content": {
+      "list-multiparts-empty": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "",
+        "NextUploadIdMarker": "",
+        "UploadIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-ids-order": {
+        "UploadIds": [
+          {
+            "UploadId": "<upload-id:1>"
+          },
+          {
+            "UploadId": "<upload-id:2>"
+          },
+          {
+            "UploadId": "<upload-id:3>"
+          },
+          {
+            "UploadId": "<upload-id:4>"
+          },
+          {
+            "UploadId": "<upload-id:5>"
+          }
+        ]
+      },
+      "list-multiparts-all": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "<key:3>",
+        "NextUploadIdMarker": "<upload-id:1>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:1>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:3>"
+          },
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:1>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:4>"
+          },
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:1>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:5>"
+          },
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:2>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:2>"
+          },
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:3>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-max-1": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": true,
+        "KeyMarker": "",
+        "MaxUploads": 1,
+        "NextKeyMarker": "<key:1>",
+        "NextUploadIdMarker": "<upload-id:3>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:1>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-next-key-only": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": true,
+        "KeyMarker": "<key:1>",
+        "MaxUploads": 1,
+        "NextKeyMarker": "<key:2>",
+        "NextUploadIdMarker": "<upload-id:2>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:2>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-next-key-last": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": false,
+        "KeyMarker": "<key:3>",
+        "MaxUploads": 1,
+        "NextKeyMarker": "",
+        "NextUploadIdMarker": "",
+        "UploadIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-next-upload-only": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": true,
+        "KeyMarker": "",
+        "MaxUploads": 1,
+        "NextKeyMarker": "<key:1>",
+        "NextUploadIdMarker": "<upload-id:3>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:1>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-both-markers": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": true,
+        "KeyMarker": "<key:1>",
+        "MaxUploads": 1,
+        "NextKeyMarker": "<key:1>",
+        "NextUploadIdMarker": "<upload-id:4>",
+        "UploadIdMarker": "<upload-id:3>",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:1>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-both-markers-2": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": true,
+        "KeyMarker": "<key:1>",
+        "MaxUploads": 1,
+        "NextKeyMarker": "<key:2>",
+        "NextUploadIdMarker": "<upload-id:2>",
+        "UploadIdMarker": "<upload-id:5>",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:2>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-next-key-empty": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": true,
+        "KeyMarker": "",
+        "MaxUploads": 1,
+        "NextKeyMarker": "<key:1>",
+        "NextUploadIdMarker": "<upload-id:3>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:1>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_list_multiparts_with_prefix_and_delimiter": {
+    "recorded-date": "26-10-2023, 18:17:18",
+    "recorded-content": {
+      "list-multiparts-1": {
+        "Bucket": "<bucket:1>",
+        "CommonPrefixes": [
+          {
+            "Prefix": "test/bar/"
+          },
+          {
+            "Prefix": "test/foo/"
+          }
+        ],
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "",
+        "NextUploadIdMarker": "",
+        "Prefix": "test/",
+        "UploadIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-2": {
+        "Bucket": "<bucket:1>",
+        "CommonPrefixes": [
+          {
+            "Prefix": "test/foo/bar/"
+          }
+        ],
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "",
+        "NextUploadIdMarker": "",
+        "Prefix": "test/foo/",
+        "UploadIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-3": {
+        "Bucket": "<bucket:1>",
+        "CommonPrefixes": [
+          {
+            "Prefix": "test/foo/bar/"
+          }
+        ],
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "",
+        "NextUploadIdMarker": "",
+        "Prefix": "test/foo/bar",
+        "UploadIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-no-encoding": {
+        "ListMultipartUploadsResult": {
+          "Bucket": "<bucket:1>",
+          "IsTruncated": "false",
+          "KeyMarker": null,
+          "MaxUploads": "1000",
+          "NextKeyMarker": "<key:2>",
+          "NextUploadIdMarker": "<upload-id:2>",
+          "Prefix": "test/foo",
+          "Upload": [
+            {
+              "Initiated": "date",
+              "Initiator": {
+                "DisplayName": "display-name",
+                "ID": "owner-id"
+              },
+              "Key": "<key:1>",
+              "Owner": {
+                "DisplayName": "display-name",
+                "ID": "owner-id"
+              },
+              "StorageClass": "STANDARD",
+              "UploadId": "<upload-id:1>"
+            },
+            {
+              "Initiated": "date",
+              "Initiator": {
+                "DisplayName": "display-name",
+                "ID": "owner-id"
+              },
+              "Key": "<key:2>",
+              "Owner": {
+                "DisplayName": "display-name",
+                "ID": "owner-id"
+              },
+              "StorageClass": "STANDARD",
+              "UploadId": "<upload-id:2>"
+            }
+          ],
+          "UploadIdMarker": null
         }
       }
     }
