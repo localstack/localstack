@@ -35,7 +35,6 @@ from localstack.constants import (
 from localstack.services.lambda_.lambda_utils import (
     get_handler_file_from_name,
 )
-from localstack.services.lambda_.legacy.lambda_api import LAMBDA_TEST_ROLE
 from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import ensure_list
@@ -62,6 +61,7 @@ LAMBDA_DEFAULT_RUNTIME = Runtime.python3_9
 LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 LAMBDA_TIMEOUT_SEC = 30
 LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"
+LAMBDA_TEST_ROLE = "arn:aws:iam::{account_id}:role/lambda-test-role"
 MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 
