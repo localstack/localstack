@@ -1009,13 +1009,16 @@ class TestCloudwatch:
             time.sleep(15)
 
         metric_stream_name = f"MyMetricStream-{short_uid()}"
-
         response_create = aws_client.cloudwatch.put_metric_stream(
             Name=metric_stream_name,
             FirehoseArn=stream_arn,
             RoleArn=role_arn,
             OutputFormat="json",
         )
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        snapshot.add_transformer(snapshot.transform.key_value("FirehoseArn"))
+        snapshot.add_transformer(snapshot.transform.key_value("RoleArn"))
+
         snapshot.match("create_metric_stream", response_create)
 
         get_response = aws_client.cloudwatch.get_metric_stream(

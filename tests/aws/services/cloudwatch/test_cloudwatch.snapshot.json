@@ -804,24 +804,24 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_create_metric_stream": {
-    "recorded-date": "25-10-2023, 14:52:47",
+    "recorded-date": "26-10-2023, 09:12:10",
     "recorded-content": {
       "create_metric_stream": {
-        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/MyMetricStream-530f1757",
+        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/<name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "get_metric_stream": {
-        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/MyMetricStream-530f1757",
+        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/<name:1>",
         "CreationDate": "datetime",
-        "FirehoseArn": "arn:aws:firehose:<region>:111111111111:deliverystream/MyStream-4af68047",
+        "FirehoseArn": "<firehose-arn:1>",
         "IncludeLinkedAccountsMetrics": false,
         "LastUpdateDate": "datetime",
-        "Name": "MyMetricStream-530f1757",
+        "Name": "<name:1>",
         "OutputFormat": "json",
-        "RoleArn": "arn:aws:iam::111111111111:role/role-fa5ff66a",
+        "RoleArn": "<role-arn:1>",
         "State": "running",
         "ResponseMetadata": {
           "HTTPHeaders": {},
