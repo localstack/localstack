@@ -1,11 +1,21 @@
 from localstack.services.lambda_.api_utils import (
+    RUNTIMES,
     is_qualifier_expression,
     qualifier_is_alias,
     qualifier_is_version,
 )
+from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING
 
 
 class TestApiUtils:
+    def test_check_runtime(self):
+        """
+        Make sure that the list of runtimes to test at least contains all mapped runtime images.
+        This is a test which ensures that runtimes considered for validation do not diverge from the supported runtimes.
+        See #9020 for more details.
+        """
+        assert set(RUNTIMES) == set(IMAGE_MAPPING.keys())
+
     def test_is_qualifier_expression(self):
         assert is_qualifier_expression("abczABCZ")
         assert is_qualifier_expression("a01239")
