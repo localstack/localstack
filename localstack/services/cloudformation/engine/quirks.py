@@ -21,6 +21,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::ApiGateway::Stage": "/properties/StageName",
     "AWS::ApiGateway::BasePathMapping": "/properties/RestApiId",
     "AWS::ApiGateway::Model": "/properties/Name",
+    "AWS::SSM::Parameter": "/properties/Name",
 }
 
 # You can usually find the available GetAtt targets in the official resource documentation:

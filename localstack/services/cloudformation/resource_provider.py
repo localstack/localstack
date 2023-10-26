@@ -100,6 +100,7 @@ PROVIDER_DEFAULTS = {
     "AWS::SecretsManager::ResourcePolicy": "ResourceProvider",
     "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",
     "AWS::SecretsManager::RotationSchedule": "ResourceProvider",
+    "AWS::SSM::Parameter": "ResourceProvider",
 }
 
 
