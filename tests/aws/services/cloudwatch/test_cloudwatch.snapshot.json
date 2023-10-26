@@ -1050,5 +1050,56 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_anomaly_detector_lifecycle": {
+    "recorded-date": "26-10-2023, 10:42:43",
+    "recorded-content": {
+      "create_anomaly_detector": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_anomaly_detector": {
+        "AnomalyDetectors": [
+          {
+            "Configuration": {
+              "ExcludedTimeRanges": []
+            },
+            "Dimensions": [
+              {
+                "Name": "DimensionName",
+                "Value": "DimensionValue"
+              }
+            ],
+            "MetricName": "MyMetric",
+            "Namespace": "MyNamespace",
+            "SingleMetricAnomalyDetector": {
+              "Dimensions": [
+                {
+                  "Name": "DimensionName",
+                  "Value": "DimensionValue"
+                }
+              ],
+              "MetricName": "MyMetric",
+              "Namespace": "MyNamespace",
+              "Stat": "Sum"
+            },
+            "Stat": "Sum",
+            "StateValue": "PENDING_TRAINING"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_anomaly_detector": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

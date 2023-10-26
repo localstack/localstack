@@ -19,7 +19,6 @@ from localstack.utils.sync import poll_condition
 
 PUBLICATION_RETRIES = 5
 
-
 class TestCloudwatch:
     @markers.aws.validated
     def test_put_metric_data_values_list(self, snapshot, aws_client):
@@ -1117,6 +1116,41 @@ class TestCloudwatch:
             RuleNames=[insight_rule_name]
         )
         snapshot.match("delete_insight_rule", response_delete)
+
+    @markers.aws.validated
+    def test_anomaly_detector_lifecycle(self, aws_client, snapshot):
+        namespace = "MyNamespace"
+        metric_name = "MyMetric"
+
+        response_create = aws_client.cloudwatch.put_anomaly_detector(
+            MetricName=metric_name,
+            Namespace=namespace,
+            Stat="Sum",
+            Configuration={},
+            Dimensions=[
+                {
+                    "Name": "DimensionName",
+                    "Value": "DimensionValue"
+                }
+            ]
+        )
+        snapshot.match("create_anomaly_detector", response_create)
+
+        response_list = aws_client.cloudwatch.describe_anomaly_detectors()
+        snapshot.match("describe_anomaly_detector", response_list)
+
+        response_delete = aws_client.cloudwatch.delete_anomaly_detector(
+            MetricName=metric_name,
+            Namespace=namespace,
+            Stat="Sum",
+            Dimensions=[
+                {
+                    "Name": "DimensionName",
+                    "Value": "DimensionValue"
+                }
+            ]
+        )
+        snapshot.match("delete_anomaly_detector", response_delete)
 
 
 def _check_alarm_triggered(
