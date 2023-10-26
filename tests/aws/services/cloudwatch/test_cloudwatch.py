@@ -1166,6 +1166,48 @@ class TestCloudwatch:
         )
         snapshot.match("delete_anomaly_detector", response_delete)
 
+    @markers.aws.validated
+    def test_metric_widget(self, aws_client):
+        metric_name = f"test-metric-{short_uid()}"
+        namespace = f"ns-{short_uid()}"
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                    "Values": [1.0, 10.0],
+                    "Counts": [2, 4],
+                    "Unit": "Count",
+                }
+            ],
+        )
+
+        response = aws_client.cloudwatch.get_metric_widget_image(
+            MetricWidget=json.dumps(
+                {
+                    "metrics": [
+                        [
+                            namespace,
+                            metric_name,
+                            {"stat": "Sum", "id": "m1"},
+                        ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": False,
+                    "region": "us-east-1",
+                    "title": "test",
+                    "width": 600,
+                    "height": 400,
+                    "start": "-PT3H",
+                    "end": "P0D",
+                }
+            )
+        )
+
+        assert isinstance(response["MetricWidgetImage"], bytes)
+
 
 def _check_alarm_triggered(
     expected_state,
