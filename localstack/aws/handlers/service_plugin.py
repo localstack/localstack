@@ -7,6 +7,7 @@ from localstack.http import Response
 from localstack.services.plugins import Service, ServiceManager
 from localstack.utils.sync import SynchronizedDefaultDict
 
+from ...utils.bootstrap import is_api_enabled
 from ..api import RequestContext
 from ..api.core import ServiceOperation
 from ..chain import Handler, HandlerChain
@@ -40,7 +41,7 @@ class ServiceLoader(Handler):
             return
 
         service_name: str = context.service.service_name
-        if not self.service_manager.exists(service_name):
+        if not self.service_manager.exists(service_name) or not is_api_enabled(service_name):
             raise NotImplementedError
 
         service_operation: Optional[ServiceOperation] = context.service_operation

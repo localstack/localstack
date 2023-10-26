@@ -23,7 +23,12 @@ from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_f
 from localstack.utils import config_listener, files, objects
 from localstack.utils.analytics import usage
 from localstack.utils.aws.request_context import patch_moto_request_handling
-from localstack.utils.bootstrap import is_api_enabled, log_duration, setup_logging
+from localstack.utils.bootstrap import (
+    get_enabled_apis,
+    log_duration,
+    setup_logging,
+    should_eager_load_api,
+)
 from localstack.utils.container_networking import get_main_container_id
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import get_free_tcp_port, is_port_open
@@ -445,7 +450,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         """
 
         # listing the available service plugins will cause resolution of the entry points
-        available_services = SERVICE_PLUGINS.list_available()
+        available_services = get_enabled_apis()
 
         # lazy is the default beginning with version 0.13.0
         if not config.EAGER_SERVICE_LOADING:
@@ -453,7 +458,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
         for api in available_services:
             # this should be the only call to is_api_enabled left
-            if is_api_enabled(api):
+            if should_eager_load_api(api):
                 try:
                     SERVICE_PLUGINS.require(api)
                 except ServiceDisabled as e:

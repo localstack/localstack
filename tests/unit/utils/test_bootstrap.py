@@ -10,6 +10,7 @@ from localstack.utils.bootstrap import (
     ContainerConfigurators,
     get_enabled_apis,
     get_gateway_port,
+    get_preloaded_services,
 )
 from localstack.utils.container_utils.container_client import ContainerConfiguration, VolumeBind
 
@@ -25,7 +26,64 @@ def temporary_env(env: Dict[str, Any]):
         os.environ.update(old)
 
 
-class TestGetEnabledServices:
+class TestGetPreloadedServices:
+    @pytest.fixture(autouse=True)
+    def reset_get_preloaded_services(self):
+        """
+        Ensures that the cache is reset on get_preloaded_services.
+        :return: get_preloaded_services method with reset fixture
+        """
+        get_preloaded_services.cache_clear()
+        yield
+        get_preloaded_services.cache_clear()
+
+    def test_returns_default_service_ports(self):
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        with temporary_env({"EAGER_SERVICE_LOADING": "1"}):
+            result = get_preloaded_services()
+
+        assert result == set(SERVICE_PLUGINS.list_available())
+
+    def test_with_service_subset(self):
+        with temporary_env({"SERVICES": "s3,sqs", "EAGER_SERVICE_LOADING": "1"}):
+            result = get_preloaded_services()
+
+        assert len(result) == 2
+        assert "s3" in result
+        assert "sqs" in result
+
+    def test_custom_service_without_port(self):
+        with temporary_env({"SERVICES": "foobar", "EAGER_SERVICE_LOADING": "1"}):
+            result = get_preloaded_services()
+
+        assert len(result) == 1
+        assert "foobar" in result
+
+    def test_custom_port_mapping_in_services_env(self):
+        with temporary_env({"SERVICES": "foobar:1235", "EAGER_SERVICE_LOADING": "1"}):
+            result = get_preloaded_services()
+
+        assert len(result) == 1
+        assert "foobar" in result
+
+    def test_resolve_meta(self):
+        with temporary_env({"SERVICES": "es,cognito:1337", "EAGER_SERVICE_LOADING": "1"}):
+            result = get_preloaded_services()
+
+        assert len(result) == 4
+        assert result == {
+            # directly given
+            "es",
+            # a dependency of es
+            "opensearch",
+            # "cognito" is a composite for "cognito-idp" and "cognito-identity"
+            "cognito-idp",
+            "cognito-identity",
+        }
+
+
+class TestGetEnabledApis:
     @pytest.fixture(autouse=True)
     def reset_get_enabled_apis(self):
         """
@@ -39,44 +97,58 @@ class TestGetEnabledServices:
     def test_returns_default_service_ports(self):
         from localstack.services.plugins import SERVICE_PLUGINS
 
-        result = get_enabled_apis()
+        with temporary_env({"STRICT_SERVICE_LOADING": "1"}):
+            result = get_enabled_apis()
+
         assert result == set(SERVICE_PLUGINS.list_available())
 
     def test_with_service_subset(self):
-        with temporary_env({"SERVICES": "s3,sqs", "EAGER_SERVICE_LOADING": "1"}):
+        with temporary_env({"SERVICES": "s3,sqs", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
         assert len(result) == 2
         assert "s3" in result
         assert "sqs" in result
 
-    def test_custom_service_without_port(self):
-        with temporary_env({"SERVICES": "foobar", "EAGER_SERVICE_LOADING": "1"}):
+    def test_custom_service_not_supported(self):
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        with temporary_env({"SERVICES": "foobar", "STRICT_SERVICE_LOADING": "1"}):
+            result = get_enabled_apis()
+
+        assert result == set(SERVICE_PLUGINS.list_available())
+
+    def test_custom_service_and_supported_service(self):
+        with temporary_env({"SERVICES": "foobar,s3", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
         assert len(result) == 1
-        assert "foobar" in result
+        assert "s3" in result
 
-    def test_custom_port_mapping_in_services_env(self):
-        with temporary_env({"SERVICES": "foobar:1235", "EAGER_SERVICE_LOADING": "1"}):
+    def test_custom_port_mapping_in_services_env_not_supported(self):
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        with temporary_env({"SERVICES": "foobar:1235", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
-        assert len(result) == 1
-        assert "foobar" in result
+        assert result == set(SERVICE_PLUGINS.list_available())
 
     def test_resolve_meta(self):
-        with temporary_env({"SERVICES": "es,cognito:1337", "EAGER_SERVICE_LOADING": "1"}):
+        with temporary_env({"SERVICES": "es,lambda", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
-        assert len(result) == 4
+        assert len(result) == 7
         assert result == {
             # directly given
+            "lambda",
             "es",
             # a dependency of es
             "opensearch",
-            # "cognito" is a composite for "cognito-idp" and "cognito-identity"
-            "cognito-idp",
-            "cognito-identity",
+            # lambda has internal dependencies on s3, sqs, logs and cloudwatch
+            "s3",
+            "sqs",
+            "logs",
+            "cloudwatch",
         }
 
 
