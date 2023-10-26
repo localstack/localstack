@@ -19,6 +19,7 @@ from localstack.utils.sync import poll_condition
 
 PUBLICATION_RETRIES = 5
 
+
 class TestCloudwatch:
     @markers.aws.validated
     def test_put_metric_data_values_list(self, snapshot, aws_client):
@@ -63,9 +64,9 @@ class TestCloudwatch:
         metric_name = "test-metric"
         namespace = "namespace"
         data = (
-            "Action=PutMetricData&MetricData.member.1."
-            "MetricName=%s&MetricData.member.1.Value=1&"
-            "Namespace=%s&Version=2010-08-01" % (metric_name, namespace)
+                "Action=PutMetricData&MetricData.member.1."
+                "MetricName=%s&MetricData.member.1.Value=1&"
+                "Namespace=%s&Version=2010-08-01" % (metric_name, namespace)
         )
         bytes_data = bytes(data, encoding="utf-8")
         encoded_data = gzip.compress(bytes_data)
@@ -273,7 +274,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_put_composite_alarm_describe_alarms_converts_date_format_correctly(
-        self, aws_client, cleanups
+            self, aws_client, cleanups
     ):
         composite_alarm_name = f"composite-a-{short_uid()}"
         alarm_name = f"a-{short_uid()}"
@@ -550,7 +551,7 @@ class TestCloudwatch:
         condition=not is_aws_cloud(), reason="SQS messages do not work reliably, test is flaky"
     )
     def test_put_metric_alarm(
-        self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
+            self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
     ):
         sns_topic_alarm = sns_create_topic()
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
@@ -669,7 +670,7 @@ class TestCloudwatch:
         paths=["$..evaluatedDatapoints", "$..StateTransitionedTimestamp"]
     )
     def test_breaching_alarm_actions(
-        self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
+            self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
     ):
         sns_topic_alarm = sns_create_topic()
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
@@ -737,7 +738,7 @@ class TestCloudwatch:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..MetricAlarms..StateTransitionedTimestamp"])
     def test_enable_disable_alarm_actions(
-        self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
+            self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
     ):
         sns_topic_alarm = sns_create_topic()
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
@@ -873,8 +874,8 @@ class TestCloudwatch:
             res = aws_client.cloudwatch.list_metrics(Dimensions=dimensions)
             metrics = [metric["MetricName"] for metric in res["Metrics"]]
             if all(
-                m in metrics
-                for m in ["NumberOfMessagesSent", "SentMessageSize", "NumberOfEmptyReceives"]
+                    m in metrics
+                    for m in ["NumberOfMessagesSent", "SentMessageSize", "NumberOfEmptyReceives"]
             ):
                 res = aws_client.cloudwatch.get_metric_data(
                     MetricDataQueries=[sent, sent_size, empty],
@@ -883,9 +884,9 @@ class TestCloudwatch:
                 )
                 # add check for values, because AWS is sometimes a bit slower to fill those values up...
                 if (
-                    res["MetricDataResults"][0]["Values"]
-                    and res["MetricDataResults"][1]["Values"]
-                    and res["MetricDataResults"][2]["Values"]
+                        res["MetricDataResults"][0]["Values"]
+                        and res["MetricDataResults"][1]["Values"]
+                        and res["MetricDataResults"][2]["Values"]
                 ):
                     return True
             return False
@@ -939,6 +940,9 @@ class TestCloudwatch:
         snapshot.match("get_metric_data_2", response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..DashboardArn"]  # ARN has a typo
+    )
     def test_dashboard_lifecycle(self, aws_client, snapshot):
         dashboard_name = f"test-{short_uid()}"
         dashboard_body = {
@@ -979,8 +983,11 @@ class TestCloudwatch:
         assert dashboard_name not in dashboards
 
     @markers.aws.validated
-    def test_create_metric_stream(self, aws_client, firehose_create_delivery_stream, s3_create_bucket, create_role_with_policy, snapshot):
-
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Operations not supported"
+    )
+    def test_create_metric_stream(self, aws_client, firehose_create_delivery_stream, s3_create_bucket,
+                                  create_role_with_policy, snapshot):
         bucket_name = f"test-bucket-{short_uid()}"
         s3_create_bucket(Bucket=bucket_name)
 
@@ -1064,7 +1071,10 @@ class TestCloudwatch:
         assert metric_stream_name not in metric_streams_names
 
     @markers.aws.validated
-    def test_insight_rule(self,aws_client,snapshot):
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Operations not supported"
+    )
+    def test_insight_rule(self, aws_client, snapshot):
         insight_rule_name = f"MyInsightRule-{short_uid()}"
         response_create = aws_client.cloudwatch.put_insight_rule(
             RuleName=insight_rule_name,
@@ -1132,6 +1142,9 @@ class TestCloudwatch:
         snapshot.match("delete_insight_rule", response_delete)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Operations not supported"
+    )
     def test_anomaly_detector_lifecycle(self, aws_client, snapshot):
         namespace = "MyNamespace"
         metric_name = "MyMetric"
@@ -1167,6 +1180,9 @@ class TestCloudwatch:
         snapshot.match("delete_anomaly_detector", response_delete)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Operations not supported"
+    )
     def test_metric_widget(self, aws_client):
         metric_name = f"test-metric-{short_uid()}"
         namespace = f"ns-{short_uid()}"
@@ -1210,13 +1226,13 @@ class TestCloudwatch:
 
 
 def _check_alarm_triggered(
-    expected_state,
-    alarm_name,
-    cloudwatch_client,
-    sqs_client=None,
-    sqs_queue=None,
-    snapshot=None,
-    identifier=None,
+        expected_state,
+        alarm_name,
+        cloudwatch_client,
+        sqs_client=None,
+        sqs_queue=None,
+        snapshot=None,
+        identifier=None,
 ):
     response = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
     assert response["MetricAlarms"][0]["StateValue"] == expected_state
@@ -1239,14 +1255,14 @@ def _check_alarm_triggered(
 
 
 def check_message(
-    sqs_client,
-    expected_queue_url,
-    expected_topic_arn,
-    expected_new,
-    expected_reason,
-    alarm_name,
-    alarm_description,
-    expected_trigger,
+        sqs_client,
+        expected_queue_url,
+        expected_topic_arn,
+        expected_new,
+        expected_reason,
+        alarm_name,
+        alarm_description,
+        expected_trigger,
 ):
     receive_result = sqs_client.receive_message(QueueUrl=expected_queue_url)
     message = None
