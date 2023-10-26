@@ -2127,6 +2127,30 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #     AbortRuleId: Optional[AbortRuleId] TODO: lifecycle
         #     RequestCharged: Optional[RequestCharged]
 
+        count = 0
+        is_truncated = False
+        part_number_marker = part_number_marker or 0
+        max_parts = max_parts or 1000
+
+        parts = []
+        all_parts = sorted(s3_multipart.parts.items())
+        last_part_number = all_parts[-1][0] if all_parts else None
+        for part_number, part in all_parts:
+            if part_number <= part_number_marker:
+                continue
+            part_item = Part(
+                ETag=part.quoted_etag,
+                LastModified=part.last_modified,
+                PartNumber=part_number,
+                Size=part.size,
+            )
+            parts.append(part_item)
+            count += 1
+
+            if count >= max_parts and part.part_number != last_part_number:
+                is_truncated = True
+                break
+
         response = ListPartsOutput(
             Bucket=bucket,
             Key=key,
@@ -2134,24 +2158,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             Initiator=s3_multipart.initiator,
             Owner=s3_multipart.initiator,
             StorageClass=s3_multipart.object.storage_class,
-            IsTruncated=False,
-            MaxParts=max_parts or 1000,
+            IsTruncated=is_truncated,
+            MaxParts=max_parts,
+            PartNumberMarker=0,
+            NextPartNumberMarker=0,
         )
+        if parts:
+            response["Parts"] = parts
+            last_part = parts[-1]["PartNumber"]
+            response["NextPartNumberMarker"] = last_part
 
-        parts = [
-            Part(
-                ETag=part.quoted_etag,
-                LastModified=part.last_modified,
-                PartNumber=part_number,
-                Size=part.size,
-            )
-            for part_number, part in sorted(s3_multipart.parts.items())
-        ]
-        response["Parts"] = parts
-        last_part = parts[-1]["PartNumber"] if parts else 0
-        response["PartNumberMarker"] = last_part - 1 if parts else 0
-        response["NextPartNumberMarker"] = last_part
-
+        if part_number_marker:
+            response["PartNumberMarker"] = part_number_marker
         if s3_multipart.object.checksum_algorithm:
             response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
 
@@ -2183,16 +2201,34 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             delimiter = urlparse.quote(delimiter)
         upload_id_marker_found = False
 
-        all_multiparts = s3_bucket.multiparts.values()
+        if key_marker and upload_id_marker:
+            multipart = s3_bucket.multiparts.get(upload_id_marker)
+            if multipart:
+                key = (
+                    urlparse.quote(multipart.object.key) if encoding_type else multipart.object.key
+                )
+            else:
+                # set key to None so it fails if the multipart is not Found
+                key = None
 
+            if key_marker != key:
+                raise InvalidArgument(
+                    "Invalid uploadId marker",
+                    ArgumentName="upload-id-marker",
+                    ArgumentValue=upload_id_marker,
+                )
+
+        all_multiparts = sorted(
+            s3_bucket.multiparts.values(), key=lambda r: (r.object.key, r.initiated.timestamp())
+        )
+        last_multipart = all_multiparts[-1] if all_multiparts else None
         uploads = []
-
-        # sort by key, and initiated, to get the last version first
-        for multipart in sorted(
-            all_multiparts, key=lambda r: (r.object.key, r.initiated.timestamp())
+        # sort by key and initiated
+        for index, multipart in enumerate(
+            sorted(all_multiparts, key=lambda r: (r.object.key, r.initiated.timestamp()))
         ):
             key = urlparse.quote(multipart.object.key) if encoding_type else multipart.object.key
-            # skip all keys that alphabetically come before key_marker
+            # skip all keys that are different than key_marker
             if key_marker:
                 if key < key_marker:
                     continue
@@ -2232,7 +2268,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             uploads.append(multipart_upload)
 
             count += 1
-            if count >= max_uploads:
+            if count >= max_uploads and multipart.id != last_multipart.id:
                 is_truncated = True
                 break
 

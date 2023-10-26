@@ -11481,7 +11481,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_list_multiparts_next_marker": {
-    "recorded-date": "26-10-2023, 17:56:45",
+    "recorded-date": "26-10-2023, 18:58:41",
     "recorded-content": {
       "list-multiparts-empty": {
         "Bucket": "<bucket:1>",
@@ -11758,6 +11758,47 @@
           "HTTPStatusCode": 200
         }
       },
+      "list-multiparts-get-last-upload-no-truncate": {
+        "Bucket": "<bucket:1>",
+        "IsTruncated": false,
+        "KeyMarker": "<key:2>",
+        "MaxUploads": 1,
+        "NextKeyMarker": "<key:3>",
+        "NextUploadIdMarker": "<upload-id:1>",
+        "UploadIdMarker": "<upload-id:2>",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "<key:3>",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-multiparts-wrong-id-for-key": {
+        "Error": {
+          "ArgumentName": "upload-id-marker",
+          "ArgumentValue": "<upload-id:2>",
+          "Code": "InvalidArgument",
+          "Message": "Invalid uploadId marker"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "list-multiparts-next-key-empty": {
         "Bucket": "<bucket:1>",
         "IsTruncated": true,
@@ -11898,6 +11939,151 @@
             }
           ],
           "UploadIdMarker": null
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_list_parts_pagination": {
+    "recorded-date": "26-10-2023, 18:31:09",
+    "recorded-content": {
+      "list-parts-empty": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-list-part-pagination",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 0,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts-all": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-list-part-pagination",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 2,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 4
+          },
+          {
+            "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+            "LastModified": "datetime",
+            "PartNumber": 2,
+            "Size": 4
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts-1": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": true,
+        "Key": "test-list-part-pagination",
+        "MaxParts": 1,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 4
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts-next": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-list-part-pagination",
+        "MaxParts": 1,
+        "NextPartNumberMarker": 2,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 1,
+        "Parts": [
+          {
+            "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+            "LastModified": "datetime",
+            "PartNumber": 2,
+            "Size": 4
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts-wrong-part": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-list-part-pagination",
+        "MaxParts": 1,
+        "NextPartNumberMarker": 0,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 10,
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
