@@ -3110,7 +3110,6 @@ class TestS3:
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
         # Test for https://github.com/localstack/localstack/issues/8703
-        object_key = "data"
         body = "Hello Blob"
         precalculated_etag = hashlib.md5(body.encode()).hexdigest()
         headers = {
@@ -3136,7 +3135,9 @@ class TestS3:
         upload_id = response["UploadId"]
 
         # # upload the part 1
-        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}?partNumber={1}&uploadId={upload_id}"
+        url = (
+            f"{config.service_url('s3')}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
+        )
         response = requests.put(url, data, headers=headers, verify=False)
         assert response.ok
         part_etag = response.headers.get("ETag")
