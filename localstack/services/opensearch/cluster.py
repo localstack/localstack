@@ -48,13 +48,18 @@ class Directories(NamedTuple):
     backup: str
 
 
-def get_cluster_health_status(url: str, auth: Tuple[str, str] | None) -> Optional[str]:
+def get_cluster_health_status(
+    url: str, auth: Tuple[str, str] | None, host: str | None = None
+) -> Optional[str]:
     """
     Queries the health endpoint of OpenSearch/Elasticsearch and returns either the status ('green', 'yellow',
     ...) or None if the response returned a non-200 response.
     Authentication needs to be set in case the security plugin is enabled.
     """
-    resp = requests.get(url + "/_cluster/health", verify=False, auth=auth)
+    headers = {}
+    if host:
+        headers["Host"] = host
+    resp = requests.get(url + "/_cluster/health", headers=headers, verify=False, auth=auth)
 
     if resp and resp.ok:
         opensearch_status = resp.json()
@@ -593,7 +598,15 @@ class EdgeProxiedOpensearchCluster(Server):
 
     def health(self):
         """calls the health endpoint of cluster through the proxy, making sure implicitly that both are running"""
-        return get_cluster_health_status(self.url, self.auth)
+
+        # The user may have customised `LOCALSTACK_HOST`, so we need to rewrite the health
+        # check endpoint to always make a request against localhost.localstack.cloud (since we
+        # are always running in the same container), but in order to match the registered HTTP
+        # route, we must set the host header to the original URL used by this cluster.
+        url = self.url.replace(config.LOCALSTACK_HOST.host, constants.LOCALHOST_HOSTNAME)
+        url = url.replace(str(config.LOCALSTACK_HOST.port), str(config.GATEWAY_LISTEN[0].port))
+        host = self._url.hostname
+        return get_cluster_health_status(url, self.auth, host=host)
 
     def _backend_cluster(self) -> OpensearchCluster:
         return OpensearchCluster(
