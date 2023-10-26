@@ -6,9 +6,6 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
-from localstack.services.lambda_.legacy.lambda_api import (
-    BATCH_SIZE_RANGES,
-)
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled, is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -23,6 +20,10 @@ LAMBDA_SQS_INTEGRATION_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_sqs
 LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE = os.path.join(
     THIS_FOLDER, "functions/lambda_sqs_batch_item_failure.py"
 )
+# AWS API reference:
+# https://docs.aws.amazon.com/lambda/latest/dg/API_CreateEventSourceMapping.html#SSS-CreateEventSourceMapping-request-BatchSize
+DEFAULT_SQS_BATCH_SIZE = 10
+MAX_SQS_BATCH_SIZE_FIFO = 10
 
 
 def _await_queue_size(sqs_client, queue_url: str, qsize: int, retries=10, sleep=1):
@@ -877,8 +878,7 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     ],
 )
 class TestSQSEventSourceMapping:
-    # FIXME refactor and move to test_lambda_sqs_integration
-
+    # TODO refactor
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Error.Message", "$..message"]
@@ -913,7 +913,7 @@ class TestSQSEventSourceMapping:
             snapshot.match("create-event-source-mapping", rs)
 
             uuid = rs["UUID"]
-            assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
+            assert DEFAULT_SQS_BATCH_SIZE == rs["BatchSize"]
             _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
             with pytest.raises(ClientError) as e:
@@ -921,7 +921,7 @@ class TestSQSEventSourceMapping:
                 rs = aws_client.lambda_.update_event_source_mapping(
                     UUID=uuid,
                     FunctionName=function_name,
-                    BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
+                    BatchSize=MAX_SQS_BATCH_SIZE_FIFO + 1,
                 )
             snapshot.match("invalid-update-event-source-mapping", e.value.response)
             e.match(InvalidParameterValueException.code)
@@ -934,7 +934,7 @@ class TestSQSEventSourceMapping:
                 rs = aws_client.lambda_.create_event_source_mapping(
                     EventSourceArn=queue_arn_2,
                     FunctionName=function_name,
-                    BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
+                    BatchSize=MAX_SQS_BATCH_SIZE_FIFO + 1,
                 )
             snapshot.match("invalid-create-event-source-mapping", e.value.response)
             e.match(InvalidParameterValueException.code)
