@@ -345,6 +345,7 @@ def _get_lambda_invocation_events(logs_client, function_name, expected_num_event
     return retry(get_events, retries=retries, sleep_before=2)
 
 
+# TODO[LambdaV1] Remove with 3.0 including all usages
 def is_old_local_executor() -> bool:
     """Returns True if running in local executor mode and False otherwise.
     The new provider ignores the LAMBDA_EXECUTOR flag and `not use_docker()` covers the fallback case if
@@ -353,12 +354,14 @@ def is_old_local_executor() -> bool:
     return is_old_provider() and not use_docker()
 
 
+# TODO[LambdaV1] Remove with 3.0 including all usages
 def is_old_provider():
     return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
         "PROVIDER_OVERRIDE_LAMBDA"
     ) in ["legacy", "v1"]
 
 
+# TODO[LambdaV1] Remove with 3.0 including all usages
 def is_new_provider():
     return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
         "PROVIDER_OVERRIDE_LAMBDA"

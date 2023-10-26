@@ -1,3 +1,5 @@
+"""Tests for Lambda behavior and implicit functionality.
+Everything related to API operations goes into test_lambda_api.py instead."""
 import base64
 import json
 import logging
@@ -18,7 +20,6 @@ from botocore.response import StreamingBody
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
-from localstack.services.lambda_.legacy.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     RUNTIMES_AGGREGATED,
     concurrency_update_done,
@@ -112,17 +113,17 @@ TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.
 # TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
 PYTHON_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["python"]
-    if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
+    if (not is_old_local_executor()) and get_arch() != Arch.arm64
     else [Runtime.python3_11]
 )
 NODE_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["nodejs"]
-    if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
+    if (not is_old_local_executor()) and get_arch() != Arch.arm64
     else [Runtime.nodejs16_x]
 )
 JAVA_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["java"]
-    if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
+    if (not is_old_local_executor()) and get_arch() != Arch.arm64
     else [Runtime.java11]
 )
 
@@ -1232,7 +1233,7 @@ class TestLambdaFeatures:
         snapshot.match("invocation-response", result)
 
     @pytest.mark.skipif(
-        is_old_provider() and not use_docker(),
+        is_old_local_executor(),
         reason="Test for docker nodejs runtimes not applicable if run locally",
     )
     @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")

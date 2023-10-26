@@ -5,10 +5,9 @@ import time
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.aws.api.lambda_ import Runtime
+from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.services.lambda_.legacy.lambda_api import (
     BATCH_SIZE_RANGES,
-    INVALID_PARAMETER_VALUE_EXCEPTION,
 )
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled, is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
@@ -925,7 +924,7 @@ class TestSQSEventSourceMapping:
                     BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
                 )
             snapshot.match("invalid-update-event-source-mapping", e.value.response)
-            e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+            e.match(InvalidParameterValueException.code)
 
             queue_url_2 = sqs_create_queue(QueueName=queue_name_2)
             queue_arn_2 = sqs_get_queue_arn(queue_url_2)
@@ -938,7 +937,7 @@ class TestSQSEventSourceMapping:
                     BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
                 )
             snapshot.match("invalid-create-event-source-mapping", e.value.response)
-            e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+            e.match(InvalidParameterValueException.code)
         finally:
             aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
 
@@ -1162,7 +1161,7 @@ class TestSQSEventSourceMapping:
                 },
             )
         snapshot.match("create_event_source_mapping_exception", expected.value.response)
-        expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+        expected.match(InvalidParameterValueException.code)
 
 
 # TODO: test integration with lambda logs

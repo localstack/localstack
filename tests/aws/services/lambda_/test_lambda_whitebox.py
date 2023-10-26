@@ -44,6 +44,7 @@ TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2 = os.path.join(
 
 LOG = logging.getLogger(__name__)
 
+# TODO[LambdaV1] Remove this test file upon 3.0
 pytestmark = pytest.mark.skipif(
     condition=is_new_provider(), reason="only relevant for old provider"
 )

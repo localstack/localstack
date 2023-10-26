@@ -4,8 +4,7 @@ import time
 
 import pytest
 
-from localstack.aws.api.lambda_ import Runtime
-from localstack.services.lambda_.legacy.lambda_api import INVALID_PARAMETER_VALUE_EXCEPTION
+from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
@@ -560,4 +559,4 @@ class TestDynamoDBEventSourceMapping:
         with pytest.raises(Exception) as expected:
             aws_client.lambda_.create_event_source_mapping(**event_source_mapping_kwargs)
         snapshot.match("exception_event_source_creation", expected.value.response)
-        expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+        expected.match(InvalidParameterValueException.code)

@@ -79,7 +79,6 @@ from localstack.utils.patch import patch
 from localstack.utils.run import run, run_for_max_seconds
 from localstack.utils.ssl import create_ssl_cert
 from localstack.utils.strings import long_uid, md5, short_uid, to_bytes, to_str
-from localstack.utils.sync import synchronized
 from localstack.utils.threads import start_thread
 from localstack.utils.time import (
     TIMESTAMP_FORMAT_MICROS,
@@ -348,7 +347,9 @@ def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Di
     return event_filter_criterias
 
 
-@synchronized(lock=EXEC_MUTEX)
+# TODO[LambdaV1] Remove all usages of this docker detection because it was mainly used for skipping/selecting the local
+#   executor in the old Lambda provider.
+#  @synchronized(lock=EXEC_MUTEX)
 def use_docker():
     global DO_USE_DOCKER
     if DO_USE_DOCKER is None:

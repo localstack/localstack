@@ -8,9 +8,8 @@ import pytest
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, MAVEN_REPO_URL
 from localstack.packages import DownloadInstaller, Package, PackageInstaller
-from localstack.services.lambda_.legacy.lambda_api import use_docker
 from localstack.services.lambda_.packages import lambda_java_libs_package
-from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.aws.lambda_utils import is_old_local_executor, is_old_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.archives import unzip
@@ -97,7 +96,7 @@ pytestmark = markers.snapshot.skip_snapshot_verify(
 class TestNodeJSRuntimes:
     @parametrize_node_runtimes
     @pytest.mark.skipif(
-        is_old_provider() and not use_docker(),
+        is_old_local_executor(),
         reason="ES6 support is only guaranteed when using the docker executor",
     )
     @markers.aws.validated
@@ -448,7 +447,8 @@ class TestPythonRuntimes:
         assert json.loads("{}") == result_data["event"]
 
     @pytest.mark.skipif(
-        not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
+        is_old_local_executor(),
+        reason="Test for docker python runtimes not applicable if run locally",
     )
     @parametrize_python_runtimes
     @markers.aws.validated
@@ -467,9 +467,11 @@ class TestPythonRuntimes:
         result = json.loads(to_str(result["Payload"].read()))
         assert result["version"] == runtime
 
+    # TODO[LambdaV1] Remove with old Lambda provider
     # TODO: remove once old provider is gone. Errors tests: tests.aws.services.lambda_.test_lambda.TestLambdaErrors
     @pytest.mark.skipif(
-        not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
+        is_old_local_executor(),
+        reason="Test for docker python runtimes not applicable if run locally",
     )
     @parametrize_python_runtimes
     @markers.snapshot.skip_snapshot_verify(

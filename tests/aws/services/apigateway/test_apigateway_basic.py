@@ -30,7 +30,8 @@ from localstack.services.apigateway.helpers import (
     host_based_url,
     path_based_url,
 )
-from localstack.services.lambda_.legacy.lambda_api import add_event_source, use_docker
+from localstack.services.lambda_.legacy.lambda_api import add_event_source
+from localstack.testing.aws.lambda_utils import is_old_local_executor
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack
@@ -1606,7 +1607,9 @@ class TestTagging:
         assert tags == tags_saved
 
 
-@pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")
+@pytest.mark.skipif(
+    is_old_local_executor(), reason="Rust lambdas cannot be executed in local executor"
+)
 @pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
 @markers.aws.unknown
 def test_apigateway_rust_lambda(
