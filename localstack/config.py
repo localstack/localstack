@@ -1163,6 +1163,7 @@ CONFIG_ENV_VARS = [
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
+    "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "DEVELOP",
     "DEVELOP_PORT",
     "DISABLE_BOTO_RETRIES",
