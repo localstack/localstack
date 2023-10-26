@@ -635,6 +635,20 @@ class TestCloudwatch:
             identifier="alarm-triggered",
         )
 
+        # describe alarm history
+        history = aws_client.cloudwatch.describe_alarm_history(
+            AlarmName=alarm_name, HistoryItemType="StateUpdate"
+        )
+        snapshot.match("describe-alarm-history", history)
+
+        # describe alarms for metric
+        alarms = aws_client.cloudwatch.describe_alarms_for_metric(
+            MetricName=metric_name, Namespace=namespace,
+            Dimensions=dimension,
+            Statistic="Average",
+        )
+        snapshot.match("describe-alarms-for-metric", alarms)
+
         # missing are treated as not breaching, so we should reach OK state again
         retry(
             _check_alarm_triggered,

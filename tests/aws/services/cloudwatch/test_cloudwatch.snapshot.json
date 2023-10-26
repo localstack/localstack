@@ -369,7 +369,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm": {
-    "recorded-date": "12-09-2023, 12:05:17",
+    "recorded-date": "26-10-2023, 11:44:13",
     "recorded-content": {
       "describe-alarm": {
         "CompositeAlarms": [],
@@ -440,7 +440,7 @@
               "arn:aws:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 30,
-            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (12/09/23 10:03:00)] was greater than the threshold (2.0).",
+            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (26/10/23 16:42:00)] was greater than the threshold (2.0).",
             "StateReasonData": {
               "version": "1.0",
               "queryDate": "date",
@@ -484,7 +484,7 @@
         "AlarmDescription": "testing cloudwatch alarms",
         "AlarmName": "<alarm-name:1>",
         "InsufficientDataActions": [],
-        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (12/09/23 10:03:00)] was greater than the threshold (2.0).",
+        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (26/10/23 16:42:00)] was greater than the threshold (2.0).",
         "NewStateValue": "ALARM",
         "OKActions": [
           "arn:aws:sns:<region>:111111111111:<topic_arn>"
@@ -510,6 +510,111 @@
           "Threshold": 2.0,
           "TreatMissingData": "notBreaching",
           "Unit": "Seconds"
+        }
+      },
+      "describe-alarm-history": {
+        "AlarmHistoryItems": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmType": "MetricAlarm",
+            "HistoryData": {
+              "version": "1.0",
+              "oldState": {
+                "stateValue": "INSUFFICIENT_DATA",
+                "stateReason": "Unchecked: Initial alarm creation"
+              },
+              "newState": {
+                "stateValue": "ALARM",
+                "stateReason": "Threshold Crossed: 1 datapoint [21.5 (26/10/23 16:42:00)] was greater than the threshold (2.0).",
+                "stateReasonData": {
+                  "version": "1.0",
+                  "queryDate": "date",
+                  "startDate": "date",
+                  "unit": "Seconds",
+                  "statistic": "Average",
+                  "period": 30,
+                  "recentDatapoints": [
+                    21.5
+                  ],
+                  "threshold": 2.0,
+                  "evaluatedDatapoints": [
+                    {
+                      "timestamp": "date",
+                      "sampleCount": 2.0,
+                      "value": 21.5
+                    }
+                  ]
+                }
+              }
+            },
+            "HistoryItemType": "StateUpdate",
+            "HistorySummary": "Alarm updated from INSUFFICIENT_DATA to ALARM",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-alarms-for-metric": {
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 30,
+            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (26/10/23 16:42:00)] was greater than the threshold (2.0).",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "startDate": "date",
+              "unit": "Seconds",
+              "statistic": "Average",
+              "period": 30,
+              "recentDatapoints": [
+                21.5
+              ],
+              "threshold": 2.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date",
+                  "sampleCount": 2.0,
+                  "value": 21.5
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 2.0,
+            "TreatMissingData": "notBreaching",
+            "Unit": "Seconds"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "ok-triggered-describe": {
