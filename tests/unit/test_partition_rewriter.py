@@ -273,50 +273,49 @@ def test_arn_partition_rewriting_in_response_with_request_region(encoding):
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_arn_partition_rewriting_in_response_without_region_and_without_default_region(
-    encoding, switch_region
+def test_arn_partition_rewriting_in_response_without_region_without_fallback_partition_override(
+    encoding, switch_region, monkeypatch
 ):
-    with switch_region(None):
-        rewrite_handler = ArnPartitionRewriteHandler()
-        response = Response(
-            response=encoding(
-                json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
-            ),
-            status=200,
-            headers={"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"},
-        )
-        rewrite_handler.modify_response_revert(response=response, request_region=None)
+    rewrite_handler = ArnPartitionRewriteHandler()
+    response = Response(
+        response=encoding(
+            json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
+        ),
+        status=200,
+        headers={"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"},
+    )
+    rewrite_handler.modify_response_revert(response=response, request_region=None)
 
-        assert response.status_code == 200
-        assert response.headers["some-header-with-arn"] == "arn:aws:iam::123456789012:ArnInHeader"
-        assert response.data == to_bytes(
-            json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
-        )
+    assert response.status_code == 200
+    assert response.headers["some-header-with-arn"] == "arn:aws:iam::123456789012:ArnInHeader"
+    assert response.data == to_bytes(
+        json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
+    )
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_arn_partition_rewriting_in_response_without_region_and_with_default_region(
-    encoding, switch_region
+def test_arn_partition_rewriting_in_response_without_region_with_fallback_partition_override(
+    encoding, switch_region, monkeypatch
 ):
-    with switch_region("us-gov-east-1"):
-        rewrite_handler = ArnPartitionRewriteHandler()
-        response = Response(
-            response=encoding(
-                json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
-            ),
-            status=200,
-            headers={"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"},
-        )
-        rewrite_handler.modify_response_revert(response, request_region=None)
+    monkeypatch.setattr(config, "ARN_PARTITION_FALLBACK", "aws-us-gov")
 
-        assert response.status_code == response.status_code
-        assert (
-            response.headers["some-header-with-arn"]
-            == "arn:aws-us-gov:iam::123456789012:ArnInHeader"
-        )
-        assert response.data == to_bytes(
-            json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
-        )
+    rewrite_handler = ArnPartitionRewriteHandler()
+    response = Response(
+        response=encoding(
+            json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
+        ),
+        status=200,
+        headers={"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"},
+    )
+    rewrite_handler.modify_response_revert(response, request_region=None)
+
+    assert response.status_code == response.status_code
+    assert (
+        response.headers["some-header-with-arn"] == "arn:aws-us-gov:iam::123456789012:ArnInHeader"
+    )
+    assert response.data == to_bytes(
+        json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
+    )
 
 
 @pytest.mark.parametrize("internal_call", [True, False])
