@@ -325,7 +325,7 @@ class TestCloudFormationConditions:
     @pytest.mark.parametrize("create_parameter", ("true", "false"), ids=("create", "no-create"))
     def test_conditional_att_to_conditional_resources(self, deploy_cfn_template, create_parameter):
         template_path = os.path.join(
-            os.path.dirname(__file__), "../templates/cfn_if_attribute_none.yml"
+            os.path.dirname(__file__), "../../../templates/cfn_if_attribute_none.yml"
         )
 
         deployed = deploy_cfn_template(
