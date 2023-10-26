@@ -119,6 +119,14 @@ DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+00:00"
 
 app = Flask(APP_NAME)
 
+#
+# A note on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+#
+# These utilities are being deprecated and must not be used. However, an exception is being made in this file.
+# This Lambda provider is deprecated. Refactoring it to accomodate for the deprecation of above utilities is not an option.
+# When this provider is eventually removed, the above deprecated utitiles can also be safely removed.
+#
+
 
 @patch(app.route)
 def app_route(self, fn, *args, **kwargs):
@@ -167,16 +175,16 @@ def cleanup():
     LAMBDA_EXECUTOR.cleanup()
 
 
-def func_arn(function_name, remove_qualifier=True):
+def func_arn(account_id: str, region_name: str, function_name, remove_qualifier=True):
     parts = function_name.split(":function:")
     if remove_qualifier and len(parts) > 1:
         function_name = "%s:function:%s" % (parts[0], parts[1].split(":")[0])
-    return arns.lambda_function_arn(function_name)
+    return arns.lambda_function_arn(function_name, account_id=account_id, region_name=region_name)
 
 
-def func_qualifier(function_name, qualifier=None):
+def func_qualifier(account_id: str, region_name: str, function_name, qualifier=None):
     store = get_lambda_store_v1_for_arn(function_name)
-    arn = arns.lambda_function_arn(function_name)
+    arn = arns.lambda_function_arn(function_name, account_id=account_id, region_name=region_name)
     details = store.lambdas.get(arn)
     if not details:
         return details
@@ -208,7 +216,8 @@ def build_mapping_obj(data) -> Dict:
     enabled = data.get("Enabled", True)
     batch_size = data.get("BatchSize")
     mapping["UUID"] = str(uuid.uuid4())
-    mapping["FunctionArn"] = func_arn(function_name)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    mapping["FunctionArn"] = func_arn(get_aws_account_id(), aws_stack.get_region(), function_name)
     mapping["LastProcessingResult"] = "OK"
     mapping["StateTransitionReason"] = "User action"
     mapping["LastModified"] = format_timestamp_for_event_source_mapping()
@@ -286,7 +295,10 @@ def update_event_source(uuid_value, data):
     for mapping in store.event_source_mappings:
         if uuid_value == mapping["UUID"]:
             if function_name:
-                mapping["FunctionArn"] = func_arn(function_name)
+                # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+                mapping["FunctionArn"] = func_arn(
+                    get_aws_account_id(), aws_stack.get_region(), function_name
+                )
             batch_size = data.get("BatchSize")
             if "SelfManagedEventSource" in mapping:
                 batch_size = check_batch_size_range(
@@ -360,9 +372,14 @@ def process_lambda_url_invocation(lambda_url_config: dict, event: dict):
 
 def get_event_sources(func_name=None, source_arn=None) -> list:
     result = []
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
     for store in lambda_stores_v1[get_aws_account_id()].values():
         for m in store.event_source_mappings:
-            if not func_name or (m["FunctionArn"] in [func_name, func_arn(func_name)]):
+            # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+            if not func_name or (
+                m["FunctionArn"]
+                in [func_name, func_arn(get_aws_account_id(), aws_stack.get_region(), func_name)]
+            ):
                 if event_source_arn_matches(mapped=m.get("EventSourceArn"), searched=source_arn):
                     result.append(m)
     return result
@@ -597,7 +614,8 @@ def set_archive_code(
 ) -> Optional[str]:
     store = get_lambda_store_v1_for_arn(lambda_name_or_arn)
     # get metadata
-    lambda_arn = func_arn(lambda_name_or_arn)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    lambda_arn = func_arn(get_aws_account_id(), aws_stack.get_region(), lambda_name_or_arn)
     lambda_details = store.lambdas[lambda_arn]
     is_local_mount = is_hot_reloading(code)
 
@@ -849,7 +867,8 @@ def do_list_functions():
             continue
 
         func_name = f_arn.split(":function:")[-1]
-        arn = func_arn(func_name)
+        # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+        arn = func_arn(get_aws_account_id(), aws_stack.get_region(), func_name)
         lambda_function = store.lambdas.get(arn)
         if not lambda_function:
             # this can happen if we're accessing Lambdas from a different region (ARN mismatch)
@@ -952,6 +971,7 @@ def get_lambda_policy(function, qualifier=None):
         if not isinstance(doc["Statement"], list):
             doc["Statement"] = [doc["Statement"]]
         for stmt in doc["Statement"]:
+            # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
             stmt["Principal"] = stmt.get("Principal") or {"AWS": get_aws_account_id()}
         doc["PolicyArn"] = p["Arn"]
         doc["PolicyName"] = p["PolicyName"]
@@ -964,7 +984,10 @@ def get_lambda_policy(function, qualifier=None):
     if policy:
         return policy[0]
     # find policy by target Resource in statement (TODO: check if this heuristic holds in the general case)
-    res_qualifier = func_qualifier(function, qualifier)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    res_qualifier = func_qualifier(
+        get_aws_account_id(), aws_stack.get_region(), function, qualifier
+    )
     policy = [d for d in docs if d["Statement"][0]["Resource"] == res_qualifier]
     return (policy or [None])[0]
 
@@ -1010,15 +1033,17 @@ def not_found_error(ref=None, msg=None):
 
 def delete_lambda_function(function_name: str) -> Dict[None, None]:
     store = get_lambda_store_v1_for_arn(function_name)
-    arn = func_arn(function_name)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function_name)
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
 
     try:
         store.lambdas.pop(arn)
     except KeyError:
+        # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
         raise ResourceNotFoundException(
-            f"Unable to delete non-existing Lambda function {func_arn(function_name)}"
+            f"Unable to delete non-existing Lambda function {func_arn(get_aws_account_id(), aws_stack.get_region(), function_name)}"
         )
 
     i = 0
@@ -1215,7 +1240,8 @@ def create_function():
             )
         data = json.loads(to_str(request.data))
         lambda_name = data["FunctionName"]
-        arn = func_arn(lambda_name)
+        # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+        arn = func_arn(get_aws_account_id(), aws_stack.get_region(), lambda_name)
         if arn in store.lambdas:
             return error_response(
                 "Function already exist: %s" % lambda_name,
@@ -1292,7 +1318,8 @@ def get_function(function):
             is_arn and re.match(arn_regex, func["FunctionArn"])
         ):
             return lookup_function(func, store, request.url)
-    return not_found_error(func_arn(function))
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    return not_found_error(func_arn(get_aws_account_id(), aws_stack.get_region(), function))
 
 
 @app.route("%s/functions/" % API_PATH_ROOT, methods=["GET"])
@@ -1333,7 +1360,8 @@ def update_function_code(function):
           in: body
     """
     store = get_lambda_store_v1()
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     lambda_function = store.lambdas.get(arn)
     if not lambda_function:
         return not_found_error("Function not found: %s" % arn)
@@ -1359,7 +1387,8 @@ def get_function_configuration(function):
     parameters:
     """
     store = get_lambda_store_v1()
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     lambda_details = store.lambdas.get(arn)
     if not lambda_details:
         return not_found_error(arn)
@@ -1378,7 +1407,8 @@ def update_function_configuration(function):
     """
     store = get_lambda_store_v1()
     data = json.loads(to_str(request.data))
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
@@ -1472,9 +1502,11 @@ def cors_config_from_dict(cors: Dict):
 
 @app.route("%s/functions/<function>/policy" % API_PATH_ROOT, methods=["POST"])
 def add_permission(function):
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     qualifier = request.args.get("Qualifier")
-    q_arn = func_qualifier(function, qualifier)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    q_arn = func_qualifier(get_aws_account_id(), aws_stack.get_region(), function, qualifier)
     result = add_permission_policy_statement(function, arn, q_arn, qualifier=qualifier)
     return result, 201
 
@@ -1488,9 +1520,11 @@ def correct_error_response_for_url_config(response):
 
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["POST"])
 def create_url_config(function):
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     qualifier = request.args.get("Qualifier")
-    q_arn = func_qualifier(function, qualifier)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    q_arn = func_qualifier(get_aws_account_id(), aws_stack.get_region(), function, qualifier)
 
     store = get_lambda_store_v1()
     function = store.lambdas.get(arn)
@@ -1543,7 +1577,8 @@ def get_url_config(function):
     # if there's a qualifier it *must* be an alias
     qualifier = request.args.get("Qualifier")
 
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     store = get_lambda_store_v1()
 
     # function doesn't exist
@@ -1584,9 +1619,11 @@ def get_url_config(function):
 
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["PUT"])
 def update_url_config(function):
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     qualifier = request.args.get("Qualifier")
-    q_arn = func_qualifier(function, qualifier)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    q_arn = func_qualifier(get_aws_account_id(), aws_stack.get_region(), function, qualifier)
     arn = q_arn or arn
 
     store = get_lambda_store_v1()
@@ -1612,9 +1649,11 @@ def update_url_config(function):
 
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["DELETE"])
 def delete_url_config(function):
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     qualifier = request.args.get("Qualifier")
-    q_arn = func_qualifier(function, qualifier)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    q_arn = func_qualifier(get_aws_account_id(), aws_stack.get_region(), function, qualifier)
     arn = q_arn or arn
 
     store = get_lambda_store_v1()
@@ -1743,7 +1782,8 @@ def invoke_function(function):
           in: body
     """
     # function here can either be an arn or a function name
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
 
     # ARN can also contain a qualifier, extract it from there if so
     m = re.match("(arn:aws:lambda:.*:.*:function:[a-zA-Z0-9-_]+)(:.*)?", arn)
@@ -1848,6 +1888,7 @@ def invoke_function(function):
             Runtime=LAMBDA_RUNTIME_NODEJS14X,
             Handler="index.handler",
             Code={"ZipFile": code},
+            # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
             Role=LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
             Timeout=30,
         )
@@ -1911,7 +1952,8 @@ def get_event_source_mappings():
     if event_source_arn:
         mappings = [m for m in mappings if event_source_arn == m.get("EventSourceArn")]
     if function_name:
-        function_arn = func_arn(function_name)
+        # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+        function_arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function_name)
         mappings = [m for m in mappings if function_arn == m.get("FunctionArn")]
 
     response = {"EventSourceMappings": mappings}
@@ -1991,7 +2033,8 @@ def delete_event_source_mapping(mapping_uuid):
 @app.route("%s/functions/<function>/versions" % API_PATH_ROOT, methods=["POST"])
 def publish_version(function):
     store = get_lambda_store_v1()
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if arn not in store.lambdas:
         return not_found_error(arn)
     return jsonify(publish_new_function_version(arn))
@@ -2000,7 +2043,8 @@ def publish_version(function):
 @app.route("%s/functions/<function>/versions" % API_PATH_ROOT, methods=["GET"])
 def list_versions(function):
     store = get_lambda_store_v1()
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if arn not in store.lambdas:
         return not_found_error(arn)
     return jsonify({"Versions": do_list_versions(arn)})
@@ -2009,7 +2053,8 @@ def list_versions(function):
 @app.route("%s/functions/<function>/aliases" % API_PATH_ROOT, methods=["POST"])
 def create_alias(function):
     store = get_lambda_store_v1()
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if arn not in store.lambdas:
         return not_found_error(arn)
     data = json.loads(request.data)
@@ -2028,7 +2073,8 @@ def create_alias(function):
 @app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["PUT"])
 def update_alias(function, name):
     store = get_lambda_store_v1()
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if arn not in store.lambdas:
         return not_found_error(arn)
     if name not in store.lambdas.get(arn).aliases:
@@ -2043,7 +2089,8 @@ def update_alias(function, name):
 @app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["GET"])
 def get_alias(function, name):
     store = get_lambda_store_v1()
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if arn not in store.lambdas:
         return not_found_error(arn)
     if name not in store.lambdas.get(arn).aliases:
@@ -2054,7 +2101,8 @@ def get_alias(function, name):
 @app.route("%s/functions/<function>/aliases" % API_PATH_ROOT, methods=["GET"])
 def list_aliases(function):
     store = get_lambda_store_v1()
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if arn not in store.lambdas:
         return not_found_error(arn)
     return jsonify(
@@ -2065,7 +2113,8 @@ def list_aliases(function):
 @app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["DELETE"])
 def delete_alias(function, name):
     store = get_lambda_store_v1()
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if arn not in store.lambdas:
         return not_found_error(arn)
     lambda_details = store.lambdas.get(arn)
@@ -2081,7 +2130,8 @@ def function_concurrency(version, function):
     # the version for put_concurrency != API_PATH_ROOT, at the time of this
     # writing it's: /2017-10-31 for this endpoint
     # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
-    arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     lambda_details = store.lambdas.get(arn)
     if not lambda_details:
         return not_found_error(arn)
@@ -2148,7 +2198,8 @@ def put_function_event_invoke_config(function):
     """
     store = get_lambda_store_v1()
     data = json.loads(to_str(request.data))
-    function_arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    function_arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     lambda_obj = store.lambdas.get(function_arn)
     if not lambda_obj:
         return not_found_error("Unable to find Lambda ARN: %s" % function_arn)
@@ -2186,7 +2237,8 @@ def get_function_event_invoke_config(function):
     """
     store = get_lambda_store_v1()
     try:
-        function_arn = func_arn(function)
+        # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+        function_arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
         lambda_obj = store.lambdas[function_arn]
     except Exception:
         return not_found_error("Unable to find Lambda function ARN %s" % function_arn)
@@ -2202,7 +2254,8 @@ def get_function_event_invoke_config(function):
 def delete_function_event_invoke_config(function):
     store = get_lambda_store_v1()
     try:
-        function_arn = func_arn(function)
+        # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+        function_arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
         if function_arn not in store.lambdas:
             msg = f"Function not found: {function_arn}"
             return not_found_error(msg)
@@ -2217,7 +2270,8 @@ def delete_function_event_invoke_config(function):
 @app.route("/2020-06-30/functions/<function>/code-signing-config", methods=["GET"])
 def get_function_code_signing_config(function):
     store = get_lambda_store_v1()
-    function_arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    function_arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if function_arn not in store.lambdas:
         msg = "Function not found: %s" % (function_arn)
         return not_found_error(msg)
@@ -2246,7 +2300,8 @@ def put_function_code_signing_config(function):
         )
         return error_response(msg, 404, error_type="CodeSigningConfigNotFoundException")
 
-    function_arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    function_arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if function_arn not in store.lambdas:
         msg = "Function not found: %s" % (function_arn)
         return not_found_error(msg)
@@ -2263,7 +2318,8 @@ def put_function_code_signing_config(function):
 @app.route("/2020-06-30/functions/<function>/code-signing-config", methods=["DELETE"])
 def delete_function_code_signing_config(function):
     store = get_lambda_store_v1()
-    function_arn = func_arn(function)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    function_arn = func_arn(get_aws_account_id(), aws_stack.get_region(), function)
     if function_arn not in store.lambdas:
         msg = "Function not found: %s" % (function_arn)
         return not_found_error(msg)

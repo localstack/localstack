@@ -113,6 +113,10 @@ def apply_patches():
     if not os.environ.get("MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"):
         os.environ["MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"] = str(S3_MAX_FILE_SIZE_BYTES)
 
+    os.environ[
+        "MOTO_S3_CUSTOM_ENDPOINTS"
+    ] = "s3.localhost.localstack.cloud:4566,s3.localhost.localstack.cloud"
+
     def s3_update_acls(self, request, query, bucket_name, key_name):
         # fix for - https://github.com/localstack/localstack/issues/1733
         #         - https://github.com/localstack/localstack/issues/1170

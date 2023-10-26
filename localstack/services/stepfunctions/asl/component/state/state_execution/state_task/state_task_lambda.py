@@ -1,5 +1,3 @@
-from typing import Optional
-
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import InvocationRequest, InvocationType
@@ -75,34 +73,24 @@ class StateTaskLambda(StateTask):
             ),
         )
 
-    def _get_supported_parameters(self) -> Optional[set[str]]:
-        # Filter parameters to set of lambda invoke api action.
-        return {
-            "FunctionName",
-            "InvocationType",
-            "LogType",
-            "ClientContext",
-            "Payload",
-            "Qualifier",
-        }
-
     def _eval_parameters(self, env: Environment) -> dict:
-        env_state_input = env.stack.pop()
+        if self.parameters:
+            self.parameters.eval(env=env)
+        payload = env.stack.pop()
         parameters = InvocationRequest(
             FunctionName=self.resource.resource_arn,
             InvocationType=InvocationType.RequestResponse,
-            Payload=env_state_input,
+            Payload=payload,
         )
-
-        explicit_parameters = super()._eval_parameters(env=env)
-        parameters.update(explicit_parameters)
-
         return parameters
 
     def _eval_execution(self, env: Environment) -> None:
+        parameters = self._eval_parameters(env=env)
+        payload = parameters["Payload"]
+
         scheduled_event_details = LambdaFunctionScheduledEventDetails(
             resource=self.resource.resource_arn,
-            input=to_json_str(env.inp),
+            input=to_json_str(payload),
             inputDetails=HistoryEventExecutionDataDetails(
                 truncated=False  # Always False for api calls.
             ),
@@ -122,13 +110,10 @@ class StateTaskLambda(StateTask):
             hist_type_event=HistoryEventType.LambdaFunctionStarted,
         )
 
-        parameters = self._eval_parameters(env=env)
-        if "Payload" in parameters:
-            parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
-
         self.resource.eval(env=env)
         resource_runtime_part: ResourceRuntimePart = env.stack.pop()
 
+        parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
         lambda_eval_utils.exec_lambda_function(
             env=env,
             parameters=parameters,

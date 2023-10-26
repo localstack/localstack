@@ -155,8 +155,9 @@ class ExecutionEnvironment:
             env_vars.update(self.function_version.config.environment)
         if config.LAMBDA_INIT_DEBUG:
             # Disable dropping privileges because it breaks debugging
-            env_vars["LOCALSTACK_USER"] = ""
-        if config.LAMBDA_INIT_USER:
+            env_vars["LOCALSTACK_USER"] = "root"
+        # Forcefully overwrite the user might break debugging!
+        if config.LAMBDA_INIT_USER is not None:
             env_vars["LOCALSTACK_USER"] = config.LAMBDA_INIT_USER
         if config.DEBUG:
             env_vars["LOCALSTACK_INIT_LOG_LEVEL"] = "debug"

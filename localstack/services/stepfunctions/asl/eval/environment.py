@@ -94,6 +94,10 @@ class Environment:
         )
         frame._is_frame = True
         frame.event_history = env.event_history
+        if "State" in env.context_object_manager.context_object:
+            frame.context_object_manager.context_object["State"] = copy.deepcopy(
+                env.context_object_manager.context_object["State"]
+            )
         frame.callback_pool_manager = env.callback_pool_manager
         frame.map_run_record_pool_manager = env.map_run_record_pool_manager
         frame.heap = env.heap

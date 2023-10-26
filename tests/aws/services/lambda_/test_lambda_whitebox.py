@@ -12,6 +12,7 @@ from werkzeug import Request, Response
 
 import localstack.services.lambda_.lambda_api
 from localstack import config
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.lambda_ import lambda_api, lambda_executors
 from localstack.services.lambda_.lambda_api import do_set_function_code, use_docker
 from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
@@ -247,7 +248,7 @@ class TestDockerExecutors:
     def test_prime_and_destroy_containers(self, aws_client):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = f"test_prime_and_destroy_containers_{short_uid()}"
-        func_arn = lambda_api.func_arn(func_name)
+        func_arn = lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, func_name)
 
         # make sure existing containers are gone
         executor.cleanup()
@@ -318,7 +319,7 @@ class TestDockerExecutors:
     def test_destroy_idle_containers(self, aws_client):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_destroy_idle_containers"
-        func_arn = lambda_api.func_arn(func_name)
+        func_arn = lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, func_name)
 
         # make sure existing containers are gone
         executor.destroy_existing_docker_containers()

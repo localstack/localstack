@@ -278,11 +278,11 @@ class TestCloudWatchLogs:
         )
 
         test_lambda_name = f"test-lambda-function-{short_uid()}"
-        create_lambda_function(
+        func_arn = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=test_lambda_name,
             runtime=Runtime.python3_9,
-        )
+        )["CreateFunctionResponse"]["FunctionArn"]
         aws_client.lambda_.invoke(FunctionName=test_lambda_name, Payload=b"{}")
         # get account-id to set the correct policy
         account_id = aws_client.sts.get_caller_identity()["Account"]
@@ -301,9 +301,7 @@ class TestCloudWatchLogs:
             logGroupName=logs_log_group,
             filterName="test",
             filterPattern="",
-            destinationArn=arns.lambda_function_arn(
-                test_lambda_name, account_id=account_id, region_name=config.AWS_REGION_US_EAST_1
-            ),
+            destinationArn=func_arn,
         )
         snapshot.match("put_subscription_filter", result)
 
