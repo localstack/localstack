@@ -5,9 +5,9 @@ import pytest
 from moto.core import DEFAULT_ACCOUNT_ID as DEFAULT_MOTO_ACCOUNT_ID
 
 import localstack.aws.accounts
-from localstack import config
 from localstack.aws.api import ServiceException, handler
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services import moto
 from localstack.services.moto import MotoFallbackDispatcher
 from localstack.testing.pytest import markers
@@ -72,9 +72,9 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
         moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname})
     )
     url = response["QueueUrl"]
-    assert qname in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][config.AWS_REGION_US_EAST_1].queues
+    assert qname in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][AWS_REGION_US_EAST_1].queues
     moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
-    assert qname not in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][config.AWS_REGION_US_EAST_1].queues
+    assert qname not in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][AWS_REGION_US_EAST_1].queues
 
 
 @pytest.mark.parametrize(
@@ -140,8 +140,8 @@ def test_call_with_modified_request():
     response = moto.call_moto_with_request(context, {"QueueName": qname2})  # overwrite old request
 
     url = response["QueueUrl"]
-    assert qname2 in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][config.AWS_REGION_US_EAST_1].queues
-    assert qname1 not in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][config.AWS_REGION_US_EAST_1].queues
+    assert qname2 in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][AWS_REGION_US_EAST_1].queues
+    assert qname1 not in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][AWS_REGION_US_EAST_1].queues
 
     moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
 

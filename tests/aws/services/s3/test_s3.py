@@ -31,6 +31,7 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.s3 import StorageClass
 from localstack.config import NATIVE_S3_PROVIDER
 from localstack.constants import (
+    AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
@@ -10145,7 +10146,7 @@ def _s3_client_custom_config(conf: Config, endpoint_url: str = None):
 
 def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = config.AWS_REGION_US_EAST_1
+        region = AWS_REGION_US_EAST_1
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
             return "https://s3.amazonaws.com"
@@ -10163,14 +10164,14 @@ def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None)
 def _website_bucket_url(bucket_name: str):
     # TODO depending on region the syntax of the website vary (dot vs dash before region)
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        region = config.AWS_REGION_US_EAST_1
+        region = AWS_REGION_US_EAST_1
         return f"http://{bucket_name}.s3-website-{region}.amazonaws.com"
     return _bucket_url_vhost(bucket_name, localstack_host=constants.S3_STATIC_WEBSITE_HOSTNAME)
 
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = config.AWS_REGION_US_EAST_1
+        region = AWS_REGION_US_EAST_1
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"
