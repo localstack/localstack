@@ -113,9 +113,6 @@ class RequestContextManager:
 def get_region_from_request_context():
     """look up region from request context"""
 
-    if config.USE_SINGLE_REGION:
-        return
-
     request_context = get_request_context()
     if not request_context:
         return
@@ -208,9 +205,6 @@ def patch_moto_request_handling():
                 LOG.info(msg)
             # TODO: publish analytics event ...
             return requests_to_flask_response(response)
-
-    if config.USE_SINGLE_REGION:
-        return
 
     # make sure that we inherit THREAD_LOCAL request contexts to spawned sub-threads
     @patch(FuncThread.__init__)
