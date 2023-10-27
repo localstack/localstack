@@ -201,24 +201,6 @@ def get_s3_hostname():
     return LOCALHOST
 
 
-def set_default_region_in_headers(headers, service=None, region=None):
-    # this should now be a no-op, as we support arbitrary regions and don't use a "default" region
-    # TODO: remove this function once the legacy USE_SINGLE_REGION config is removed
-    if not config.USE_SINGLE_REGION:
-        return
-
-    auth_header = headers.get("Authorization")
-    region = region or get_region()
-    if not auth_header:
-        if service:
-            headers["Authorization"] = mock_aws_request_headers(
-                service, aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID, region_name=region
-            )["Authorization"]
-        return
-    replaced = re.sub(r"(.*Credential=[^/]+/[^/]+/)([^/])+/", r"\1%s/" % region, auth_header)
-    headers["Authorization"] = replaced
-
-
 def fix_account_id_in_arns(response, colon_delimiter=":", existing=None, replace=None):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
     existing = existing or ["123456789", "1234567890", "123456789012", get_aws_account_id()]

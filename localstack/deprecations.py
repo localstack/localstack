@@ -47,11 +47,11 @@ DEPRECATIONS = [
         "0.12.8",
         "PORT_WEB_UI has been removed, and is not available anymore. Please remove this environment variable.",
     ),
-    # Since 0.12.7 - Full multi-region support
+    # Deprecated in 0.12.7, removed in 3.0.0
     EnvVarDeprecation(
         "USE_SINGLE_REGION",
         "0.12.7",
-        "LocalStack now has full multi-region support. Please remove this environment variable.",
+        "LocalStack now has full multi-region support. This option has no effect. Please remove it from your configuration.",  # noqa
     ),
     EnvVarDeprecation(
         "DEFAULT_REGION",
