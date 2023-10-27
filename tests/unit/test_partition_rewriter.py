@@ -275,7 +275,7 @@ def test_arn_partition_rewriting_in_response_with_request_region(encoding):
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 def test_arn_partition_rewriting_in_response_without_region_without_fallback_partition_override(
-    encoding, switch_region, monkeypatch
+    encoding, monkeypatch
 ):
     rewrite_handler = ArnPartitionRewriteHandler()
     response = Response(
@@ -296,7 +296,7 @@ def test_arn_partition_rewriting_in_response_without_region_without_fallback_par
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 def test_arn_partition_rewriting_in_response_without_region_with_fallback_partition_override(
-    encoding, switch_region, monkeypatch
+    encoding, monkeypatch
 ):
     monkeypatch.setattr(config, "ARN_PARTITION_FALLBACK", "aws-us-gov")
 
