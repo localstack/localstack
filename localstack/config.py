@@ -430,9 +430,6 @@ NATIVE_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v3", "strea
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 
-# whether to use the legacy single-region mode, defined via DEFAULT_REGION (DEPRECATED!)
-USE_SINGLE_REGION = is_env_true("USE_SINGLE_REGION")
-
 # whether to run in TF compatibility mode for TF integration tests
 # (e.g., returning verbatim ports for ELB resources, rather than edge port 4566, etc.)
 TF_COMPAT_MODE = is_env_true("TF_COMPAT_MODE")
@@ -1287,7 +1284,7 @@ CONFIG_ENV_VARS = [
     "SYNCHRONOUS_SNS_EVENTS",
     "TEST_AWS_ACCOUNT_ID",
     "TF_COMPAT_MODE",
-    "USE_SINGLE_REGION",
+    "USE_SINGLE_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",

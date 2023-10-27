@@ -42,7 +42,6 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (
     extract_access_key_id_from_auth_header,
     is_internal_call_context,
-    set_default_region_in_headers,
 )
 from localstack.utils.collections import split_list_by
 from localstack.utils.functions import empty_context_manager
@@ -125,8 +124,6 @@ class ProxyListenerEdge(ProxyListener):
         port = None
         if api:
             port = get_service_port_for_account(api, headers)
-
-        set_default_region_in_headers(headers)
 
         should_log_trace = is_trace_logging_enabled(headers)
         if api and should_log_trace:
