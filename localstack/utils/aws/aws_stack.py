@@ -14,7 +14,7 @@ from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
     APPLICATION_X_WWW_FORM_URLENCODED,
-    DEFAULT_AWS_ACCOUNT_ID,
+    AWS_REGION_US_EAST_1,
     ENV_DEV,
     HEADER_LOCALSTACK_ACCOUNT_ID,
     INTERNAL_AWS_ACCESS_KEY_ID,
@@ -150,11 +150,12 @@ def get_partition(region_name: str = None):
     return boto3.session.Session().get_partition_for_region(region_name)
 
 
+# TODO: Deprecate and remove this
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
         LOCAL_REGION = get_boto3_region() or ""
-    return config.DEFAULT_REGION or LOCAL_REGION
+    return AWS_REGION_US_EAST_1 or LOCAL_REGION
 
 
 def get_boto3_region() -> str:
