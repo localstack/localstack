@@ -9,7 +9,6 @@ from urllib.parse import urlparse
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
-from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Response
 from localstack.http.proxy import forward
 from localstack.http.request import Request, get_full_raw_path, get_raw_path, restore_payload
@@ -257,13 +256,9 @@ class ArnPartitionRewriteHandler(Handler):
             try:
                 partition = self._get_partition_for_region(request_region)
             except self.InvalidRegionException:
-                try:
-                    # If the region is not properly set (f.e. because it is set to a wildcard),
-                    # the partition is determined based on the default region.
-                    partition = self._get_partition_for_region(config.DEFAULT_REGION)
-                except self.InvalidRegionException:
-                    # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
-                    partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
+                # If the region is not properly set (f.e. because it is set to a wildcard),
+                # the fallback partition is used.
+                partition = config.ARN_PARTITION_FALLBACK
         return partition
 
     @staticmethod
