@@ -5,15 +5,7 @@ import time
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.aws.api.lambda_ import Runtime
-from localstack.services.lambda_.lambda_api import (
-    BATCH_SIZE_RANGES,
-    INVALID_PARAMETER_VALUE_EXCEPTION,
-)
-from localstack.services.lambda_.lambda_utils import (
-    LAMBDA_RUNTIME_PYTHON38,
-    LAMBDA_RUNTIME_PYTHON39,
-)
+from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled, is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -28,6 +20,10 @@ LAMBDA_SQS_INTEGRATION_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_sqs
 LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE = os.path.join(
     THIS_FOLDER, "functions/lambda_sqs_batch_item_failure.py"
 )
+# AWS API reference:
+# https://docs.aws.amazon.com/lambda/latest/dg/API_CreateEventSourceMapping.html#SSS-CreateEventSourceMapping-request-BatchSize
+DEFAULT_SQS_BATCH_SIZE = 10
+MAX_SQS_BATCH_SIZE_FIFO = 10
 
 
 def _await_queue_size(sqs_client, queue_url: str, qsize: int, retries=10, sleep=1):
@@ -101,7 +97,7 @@ def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_INTEGRATION_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
     )
@@ -194,7 +190,7 @@ def test_message_body_and_attributes_passed_correctly(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_INTEGRATION_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
     )
@@ -291,7 +287,7 @@ def test_redrive_policy_with_failing_lambda(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_INTEGRATION_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
     )
@@ -477,7 +473,7 @@ def test_report_batch_item_failures(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
         envvars={"DESTINATION_QUEUE_URL": destination_url},
@@ -618,7 +614,7 @@ def test_report_batch_item_failures_on_lambda_error(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_INTEGRATION_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
     )
@@ -714,7 +710,7 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
         envvars={
@@ -807,7 +803,7 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     create_lambda_function(
         func_name=function_name,
         handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
-        runtime=LAMBDA_RUNTIME_PYTHON38,
+        runtime=Runtime.python3_8,
         role=lambda_su_role,
         timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
         envvars={"DESTINATION_QUEUE_URL": destination_url, "OVERWRITE_RESULT": "{}"},
@@ -882,8 +878,7 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     ],
 )
 class TestSQSEventSourceMapping:
-    # FIXME refactor and move to test_lambda_sqs_integration
-
+    # TODO refactor
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Error.Message", "$..message"]
@@ -908,7 +903,7 @@ class TestSQSEventSourceMapping:
             create_lambda_function(
                 func_name=function_name,
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                runtime=LAMBDA_RUNTIME_PYTHON39,
+                runtime=Runtime.python3_9,
                 role=lambda_su_role,
             )
 
@@ -918,7 +913,7 @@ class TestSQSEventSourceMapping:
             snapshot.match("create-event-source-mapping", rs)
 
             uuid = rs["UUID"]
-            assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
+            assert DEFAULT_SQS_BATCH_SIZE == rs["BatchSize"]
             _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
             with pytest.raises(ClientError) as e:
@@ -926,10 +921,10 @@ class TestSQSEventSourceMapping:
                 rs = aws_client.lambda_.update_event_source_mapping(
                     UUID=uuid,
                     FunctionName=function_name,
-                    BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
+                    BatchSize=MAX_SQS_BATCH_SIZE_FIFO + 1,
                 )
             snapshot.match("invalid-update-event-source-mapping", e.value.response)
-            e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+            e.match(InvalidParameterValueException.code)
 
             queue_url_2 = sqs_create_queue(QueueName=queue_name_2)
             queue_arn_2 = sqs_get_queue_arn(queue_url_2)
@@ -939,10 +934,10 @@ class TestSQSEventSourceMapping:
                 rs = aws_client.lambda_.create_event_source_mapping(
                     EventSourceArn=queue_arn_2,
                     FunctionName=function_name,
-                    BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
+                    BatchSize=MAX_SQS_BATCH_SIZE_FIFO + 1,
                 )
             snapshot.match("invalid-create-event-source-mapping", e.value.response)
-            e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+            e.match(InvalidParameterValueException.code)
         finally:
             aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
 
@@ -1166,7 +1161,7 @@ class TestSQSEventSourceMapping:
                 },
             )
         snapshot.match("create_event_source_mapping_exception", expected.value.response)
-        expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+        expected.match(InvalidParameterValueException.code)
 
 
 # TODO: test integration with lambda logs

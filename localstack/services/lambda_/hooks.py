@@ -1,3 +1,4 @@
+"""Definition of Plux extension points (i.e., hooks) for Lambda."""
 from localstack.runtime.hooks import hook_spec
 
 HOOKS_LAMBDA_START_DOCKER_EXECUTOR = "localstack.hooks.lambda_start_docker_executor"

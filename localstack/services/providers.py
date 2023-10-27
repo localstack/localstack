@@ -141,7 +141,7 @@ def kms():
 
 @aws_provider(api="lambda", name="legacy")
 def lambda_legacy():
-    from localstack.services.lambda_ import lambda_starter
+    from localstack.services.lambda_.legacy import lambda_starter
 
     return Service(
         "lambda",
@@ -154,7 +154,7 @@ def lambda_legacy():
 
 @aws_provider(api="lambda", name="v1")
 def lambda_v1():
-    from localstack.services.lambda_ import lambda_starter
+    from localstack.services.lambda_.legacy import lambda_starter
 
     return Service(
         "lambda",
