@@ -110,16 +110,15 @@ class Directories:
         :returns: Directories object
         """
         defaults = Directories.defaults()
-        tmp_dir = os.path.join(tempfile.gettempdir(), "localstack")
 
         return Directories(
             static_libs=defaults.static_libs,
             var_libs=defaults.var_libs,
             cache=defaults.cache,
-            tmp=tmp_dir,
+            tmp=defaults.tmp,
             mounted_tmp=defaults.mounted_tmp,
             functions=defaults.functions,
-            data=defaults.data if PERSISTENCE else os.path.join(tmp_dir, "state"),
+            data=defaults.data if PERSISTENCE else os.path.join(defaults.tmp, "state"),
             config=defaults.config,
             logs=defaults.logs,
             init=defaults.init,
