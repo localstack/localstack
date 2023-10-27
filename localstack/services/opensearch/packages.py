@@ -27,7 +27,6 @@ from localstack.utils.sync import SynchronizedDefaultDict, retry
 
 LOG = logging.getLogger(__name__)
 
-
 _OPENSEARCH_INSTALL_LOCKS = SynchronizedDefaultDict(threading.RLock)
 
 
@@ -92,7 +91,7 @@ class OpensearchPackageInstaller(PackageInstaller):
                             LOG.info("Installing OpenSearch plugin %s", plugin)
 
                             def try_install():
-                                output = run([plugin_binary, "install", "-b", plugin])
+                                output = run([plugin_binary, "install", "-b", plugin, "--batch"])
                                 LOG.debug("Plugin installation output: %s", output)
 
                             # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
@@ -249,7 +248,7 @@ class ElasticsearchPackageInstaller(PackageInstaller):
                     LOG.info("Installing Elasticsearch plugin %s", plugin)
 
                     def try_install():
-                        output = run([plugin_binary, "install", "-b", plugin])
+                        output = run([plugin_binary, "install", "-b", plugin, "--batch"])
                         LOG.debug("Plugin installation output: %s", output)
 
                     # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries

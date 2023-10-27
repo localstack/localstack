@@ -1,5 +1,6 @@
 """ A set of common handlers to build an AWS server application."""
 
+from ...config import is_env_true
 from .. import chain
 from . import (
     analytics,
@@ -14,6 +15,7 @@ from . import (
     presigned_url,
     region,
     service,
+    testdebugging,
 )
 
 handle_runtime_shutdown = internal.RuntimeShutdownHandler()
@@ -43,3 +45,11 @@ serve_edge_router_rules = legacy.EdgeRouterHandler()
 set_close_connection_header = legacy.set_close_connection_header
 push_request_context = legacy.push_request_context
 pop_request_context = legacy.pop_request_context
+
+# for testing
+if is_env_true("TEST_CAPTURE_RESOURCE_OPERATIONS"):
+    capture_test_resource_lifetimes = testdebugging.TestResourceLifetimesCapture("db.db")
+else:
+    from unittest import mock
+
+    capture_test_resource_lifetimes = mock.MagicMock()

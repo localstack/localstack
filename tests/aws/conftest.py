@@ -1,13 +1,17 @@
+import logging
 import os
 from typing import Optional
 
 import pytest
 from _pytest.config import Config
+from _pytest.reports import TestReport
 
 from localstack import config as localstack_config
 from localstack import constants
 from localstack.testing.scenario.provisioning import InfraProvisioner
 from tests.aws.test_terraform import TestTerraform
+
+LOG = logging.getLogger(__name__)
 
 
 def pytest_configure(config: Config):
@@ -87,3 +91,22 @@ def infrastructure_setup(cdk_template_path, aws_client):
         )
 
     return _infrastructure_setup
+
+
+# capture test information
+def pytest_runtest_logstart(nodeid: str, location: tuple[str, int | None, str]):
+    from localstack.aws.handlers import capture_test_resource_lifetimes
+
+    capture_test_resource_lifetimes.set_test(nodeid)
+
+
+def pytest_runtest_logreport(report: TestReport):
+    from localstack.aws.handlers import capture_test_resource_lifetimes
+
+    capture_test_resource_lifetimes.last_report = report
+
+
+def pytest_runtest_logfinish(nodeid: str, location: tuple[str, int | None, str]):
+    from localstack.aws.handlers import capture_test_resource_lifetimes
+
+    capture_test_resource_lifetimes.end_test()
