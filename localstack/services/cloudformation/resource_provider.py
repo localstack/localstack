@@ -797,13 +797,13 @@ class ResourceProviderExecutor:
             try:
                 plugin = pro_plugin_manager.load(resource_type)
                 return plugin.factory()
+            except ValueError:
+                # could not load the plugin
+                pass
             except Exception:
-                LOG.debug(
-                    (
-                        "Failed to load resource type %s from pro as a ResourceProvider. "
-                        "Maybe this resource is implemented in community."
-                    ),
-                    resource_type,
+                LOG.warning(
+                    "error loading plugin from plugin manager",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
         try:
