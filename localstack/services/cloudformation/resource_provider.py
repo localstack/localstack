@@ -103,6 +103,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Logs::LogGroup": "ResourceProvider",
     "AWS::Logs::LogStream": "ResourceProvider",
     "AWS::Logs::SubscriptionFilter": "ResourceProvider",
+    "AWS::StepFunctions::Activity": "ResourceProvider",
 }
 
 
