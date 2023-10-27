@@ -367,14 +367,12 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             dimensions,
         )
 
-        metrics = []
-        for metric in result.get("metrics"):
-            metrics.append(
-                {
-                    "Namespace": metric.get("namespace"),
-                    "MetricName": metric.get("metric_name"),
-                    "Dimensions": metric.get("dimensions"),
-                }
-            )
-
+        metrics = [
+            {
+                "Namespace": metric.get("namespace"),
+                "MetricName": metric.get("metric_name"),
+                "Dimensions": metric.get("dimensions"),
+            }
+            for metric in result.get("metrics", [])
+        ]
         return ListMetricsOutput(Metrics=metrics, NextToken=None)
