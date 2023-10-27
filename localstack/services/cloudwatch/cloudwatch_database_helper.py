@@ -180,6 +180,33 @@ class CloudwatchDatabase:
             # TODO return datapoints, create results, join with aggregated data
             return {"id": query.get("Id"), "result": results}
 
+    def list_metrics(
+            self,
+            account_id,
+            region,
+            namespace,
+            metric_name,
+            dimensions) -> dict:
+        with sqlite3.connect(self.METRICS_DB) as conn:
+            cur = conn.cursor()
+
+            namespace_filter = f"AND namespace = '{namespace}'" if namespace else ""
+            metric_name_filter = f"AND metric_name = '{metric_name}'" if metric_name else ""
+            # TODO check how to filter dimmension correctly
+            # TODO add support for next token
+            data = (account_id, region)
+
+            cur.execute(
+                f"""SELECT DISTINCT metric_name, namespace ,dimensions FROM {self.TABLE_SINGLE_METRICS}
+                                    WHERE account_id = ? AND region = ?
+                                        {namespace_filter} {metric_name_filter}
+                                    ORDER BY timestamp DESC""",
+                data,
+            )
+
+            results = cur.fetchall()
+            return {"metrics": [{"metric_name": r[0], "namespace": r[1], "dimensions": self._restore_dimensions_from_string(r[2])} for r in results]}
+
     def clear_tables(self):
         # TODO clear tables for reset calls on cloudwatch
         pass
@@ -198,6 +225,18 @@ class CloudwatchDatabase:
             dimensions += f"{d['Name']}={d['Value']}\t"  # aws does not allow ascii control characters, we can use it a sa separator
 
         return dimensions
+
+    def _restore_dimensions_from_string(self, dimensions: str):
+        if not dimensions:
+            return None
+        dims = []
+        for d in dimensions.split("\t"):
+            if not d:
+                continue
+            name, value = d.split("=")
+            dims.append({"Name": name, "Value": value})
+
+        return dims
 
     def _convert_timestamp_to_unix(
         self, timestamp: datetime

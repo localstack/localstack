@@ -395,6 +395,7 @@ class TestCloudwatch:
         def _count_metrics():
             results = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
             assert len(results) == 2
+            print(results)
 
         # asserting only unique values are returned
         retry(_count_metrics, retries=retries, sleep_before=sleep_seconds)

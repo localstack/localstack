@@ -3,6 +3,7 @@ from typing import List
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
+    AccountId,
     ActionPrefix,
     AlarmName,
     AlarmNamePrefix,
@@ -16,43 +17,44 @@ from localstack.aws.api.cloudwatch import (
     DashboardNames,
     DeleteDashboardsOutput,
     DescribeAlarmsOutput,
+    DimensionFilters,
     GetDashboardOutput,
-    InvalidParameterValueException,
-    ListDashboardsOutput,
-    ListTagsForResourceOutput,
-    MaxRecords,
-    NextToken,
-    PutDashboardOutput,
-    PutMetricAlarmInput,
-    StateValue,
-    TagKeyList,
-    TagList,
-    TagResourceOutput,
-    UntagResourceOutput,
-    AlarmNames,
-    CloudwatchApi,
     GetMetricDataMaxDatapoints,
     GetMetricDataOutput,
+    IncludeLinkedAccounts,
+    InvalidParameterValueException,
     LabelOptions,
+    ListDashboardsOutput,
+    ListMetricsOutput,
+    ListTagsForResourceOutput,
+    MaxRecords,
     MetricData,
     MetricDataQueries,
     MetricDataResultMessages,
     MetricDataResults,
+    MetricName,
     Namespace,
     NextToken,
+    PutDashboardOutput,
+    PutMetricAlarmInput,
+    RecentlyActive,
     ScanBy,
+    StateValue,
+    TagKeyList,
+    TagList,
+    TagResourceOutput,
     Timestamp,
+    UntagResourceOutput,
 )
-from localstack.aws.api import RequestContext
 from localstack.http import Request
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
+from localstack.services.cloudwatch.cloudwatch_database_helper import CloudwatchDatabase
 from localstack.services.cloudwatch.models import (
     CloudWatchStore,
     LocalStackDashboard,
     LocalStackMetricAlarm,
     cloudwatch_stores,
 )
-from localstack.services.cloudwatch.cloudwatch_database_helper import CloudwatchDatabase
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import arns
@@ -345,3 +347,34 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         return ListDashboardsOutput(
             DashboardEntries=entries,
         )
+
+    def list_metrics(
+        self,
+        context: RequestContext,
+        namespace: Namespace = None,
+        metric_name: MetricName = None,
+        dimensions: DimensionFilters = None,
+        next_token: NextToken = None,
+        recently_active: RecentlyActive = None,
+        include_linked_accounts: IncludeLinkedAccounts = None,
+        owning_account: AccountId = None,
+    ) -> ListMetricsOutput:
+        result = self.cloudwatch_database.list_metrics(
+            context.account_id,
+            context.region,
+            namespace,
+            metric_name,
+            dimensions,
+        )
+
+        metrics = []
+        for metric in result.get("metrics"):
+            metrics.append(
+                {
+                    "Namespace": metric.get("namespace"),
+                    "MetricName": metric.get("metric_name"),
+                    "Dimensions": metric.get("dimensions"),
+                }
+            )
+
+        return ListMetricsOutput(Metrics=metrics, NextToken=None)
