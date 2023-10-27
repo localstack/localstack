@@ -80,13 +80,7 @@ def extract_region_from_headers(headers):
     if region:
         return region
 
-    region = extract_region_from_auth_header(headers)
-
-    if not region:
-        # fall back to local region
-        region = aws_stack.get_local_region()
-
-    return region
+    return extract_region_from_auth_header(headers) or AWS_REGION_US_EAST_1
 
 
 def get_request_context():
