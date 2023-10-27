@@ -756,6 +756,10 @@ OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 # Whether to enable the partition adjustment listener (in order to support other partitions that the default)
 ARN_PARTITION_REWRITING = is_env_true("ARN_PARTITION_REWRITING")
 
+# Fallback partition to use if not possible to determine from ARN region.
+# Applicable only when ARN partition rewriting is enabled.
+ARN_PARTITION_FALLBACK = os.environ.get("ARN_PARTITION_FALLBACK", "") or "aws"
+
 # whether to skip waiting for the infrastructure to shut down, or exit immediately
 FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 
