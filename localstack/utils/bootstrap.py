@@ -229,6 +229,7 @@ def get_enabled_apis() -> Set[str]:
     """
     services_env = os.environ.get("SERVICES", "").strip()
     services = None
+
     if services_env and is_env_true("STRICT_SERVICE_LOADING"):
         from localstack.services.plugins import SERVICE_PLUGINS
 
