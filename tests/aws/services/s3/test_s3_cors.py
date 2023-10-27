@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.handlers.cors import ALLOWED_CORS_ORIGINS
 from localstack.constants import (
+    AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
@@ -20,7 +21,7 @@ from localstack.utils.strings import short_uid
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = config.AWS_REGION_US_EAST_1
+        region = AWS_REGION_US_EAST_1
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"

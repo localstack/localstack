@@ -9,7 +9,6 @@ from botocore.awsrequest import AWSPreparedRequest, prepare_request_dict
 from botocore.config import Config as BotoConfig
 from werkzeug.datastructures import Headers
 
-from localstack import config
 from localstack.aws.api.core import (
     Request,
     RequestContext,
@@ -21,6 +20,7 @@ from localstack.aws.client import parse_response, raise_service_exception
 from localstack.aws.connect import connect_to
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
 from localstack.aws.spec import load_service
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Response
 from localstack.http.proxy import Proxy
 from localstack.utils.strings import to_str
@@ -215,7 +215,7 @@ def create_aws_request_context(
     if parameters is None:
         parameters = {}
     if region is None:
-        region = config.AWS_REGION_US_EAST_1
+        region = AWS_REGION_US_EAST_1
 
     service = load_service(service_name)
     operation = service.operation_model(action)
