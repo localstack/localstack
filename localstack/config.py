@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
 from localstack.constants import (
-    AWS_REGION_US_EAST_1,
     DEFAULT_BUCKET_MARKER_LOCAL,
     DEFAULT_DEVELOP_PORT,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
@@ -367,11 +366,6 @@ try:
 except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
     LOADED_PROFILE = None
-
-# default AWS region (DEPRECATED!)
-DEFAULT_REGION = (
-    os.environ.get("DEFAULT_REGION") or os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
-)
 
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
@@ -1166,7 +1160,7 @@ CONFIG_ENV_VARS = [
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
-    "DEFAULT_REGION",
+    "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "DEVELOP",
     "DEVELOP_PORT",
     "DISABLE_BOTO_RETRIES",
