@@ -296,7 +296,7 @@ class TemplateRenderer:
                     self.schema.get("handlers", {}).get("list", {}).get("permissions")
                 )
             case FileType.plugin:
-                kwargs["service"] = resource_name.service.lower()
+                kwargs["service"] = resource_name.python_compatible_service_name.lower()
                 kwargs["lower_resource"] = resource_name.resource.lower()
             case FileType.integration_test:
                 kwargs["black_box_template_path"] = str(
