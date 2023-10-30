@@ -211,7 +211,7 @@ def set_default_region_in_headers(headers, service=None, region=None):
     region = region or get_region()
     if not auth_header:
         if service:
-            headers["Authorization"] = generate_aws_request_headers(
+            headers["Authorization"] = mock_aws_request_headers(
                 service, aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID, region_name=region
             )["Authorization"]
         return
@@ -279,7 +279,7 @@ def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[
 
 
 # TODO remove the `internal` arg
-def generate_aws_request_headers(
+def mock_aws_request_headers(
     service, aws_access_key_id, region_name, internal=False
 ) -> Dict[str, str]:
     ctype = APPLICATION_AMZ_JSON_1_0

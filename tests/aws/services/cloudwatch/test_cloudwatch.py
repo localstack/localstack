@@ -71,13 +71,13 @@ class TestCloudwatch:
         encoded_data = gzip.compress(bytes_data)
 
         url = config.get_edge_url()
-        headers = aws_stack.generate_aws_request_headers(
+        headers = aws_stack.mock_aws_request_headers(
             "cloudwatch",
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=TEST_AWS_REGION_NAME,
             internal=True,
         )
-        authorization = aws_stack.generate_aws_request_headers(
+        authorization = aws_stack.mock_aws_request_headers(
             "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )["Authorization"]
 
@@ -201,7 +201,7 @@ class TestCloudwatch:
             Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=23)]
         )
         url = f"{config.get_edge_url()}{PATH_GET_RAW_METRICS}"
-        headers = aws_stack.generate_aws_request_headers(
+        headers = aws_stack.mock_aws_request_headers(
             "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         result = requests.get(url, headers=headers)

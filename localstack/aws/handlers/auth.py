@@ -31,7 +31,7 @@ class MissingAuthHeaderInjector(Handler):
         headers = context.request.headers
 
         if not headers.get("Authorization"):
-            headers["Authorization"] = aws_stack.generate_aws_request_headers(
+            headers["Authorization"] = aws_stack.mock_aws_request_headers(
                 api, aws_access_key_id="injectedaccesskey", region_name=AWS_REGION_US_EAST_1
             )["Authorization"]
 

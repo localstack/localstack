@@ -145,7 +145,7 @@ def configure_region_for_current_request(region_name: str, service_name: str):
     auth_header = headers.get("Authorization")
     auth_header = (
         auth_header
-        or aws_stack.generate_aws_request_headers(
+        or aws_stack.mock_aws_request_headers(
             service_name, aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID, region_name=AWS_REGION_US_EAST_1
         )["Authorization"]
     )
@@ -161,7 +161,7 @@ def configure_region_for_current_request(region_name: str, service_name: str):
 
 def mock_request_for_region(service_name: str, account_id: str, region_name: str) -> Request:
     result = Request()
-    result.headers["Authorization"] = aws_stack.generate_aws_request_headers(
+    result.headers["Authorization"] = aws_stack.mock_aws_request_headers(
         service_name, aws_access_key_id=account_id, region_name=region_name
     )["Authorization"]
     return result
