@@ -86,8 +86,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def get_raw_metrics(self, request: Request):
         # TODO this needs to be read from the database
         # FIXME this is just a placeholder for now
-        pass
- 
+        return {"metrics": []}
+
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName
     ) -> ListTagsForResourceOutput:
@@ -104,5 +104,5 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
     ) -> TagResourceOutput:
         self.tags.tag_resource(resource_arn, tags)
-        return TagResourceOutput()       return {"metrics": []}
+        return TagResourceOutput()
 
