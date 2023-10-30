@@ -1,7 +1,16 @@
 import logging
 
 from localstack.aws.api import RequestContext
-from localstack.aws.api.cloudwatch import AlarmNames, CloudwatchApi
+from localstack.aws.api.cloudwatch import (
+    AlarmNames,
+    AmazonResourceName,
+    CloudwatchApi,
+    ListTagsForResourceOutput,
+    TagKeyList,
+    TagList,
+    TagResourceOutput,
+    UntagResourceOutput,
+)
 from localstack.http import Request
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
@@ -78,3 +87,22 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         # TODO this needs to be read from the database
         # FIXME this is just a placeholder for now
         return {"metrics": []}
+
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName
+    ) -> ListTagsForResourceOutput:
+        tags = self.tags.list_tags_for_resource(resource_arn)
+        return ListTagsForResourceOutput(Tags=tags.get("Tags", []))
+
+    def untag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+    ) -> UntagResourceOutput:
+        self.tags.untag_resource(resource_arn, tag_keys)
+        return UntagResourceOutput()
+
+    def tag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
+    ) -> TagResourceOutput:
+        self.tags.tag_resource(resource_arn, tags)
+        return TagResourceOutput()
+
