@@ -1314,5 +1314,11 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_nonexistent_sm": {
+    "recorded-date": "26-10-2023, 17:10:22",
+    "recorded-content": {
+      "describe_nonexistent_sm": "An error occurred (StateMachineDoesNotExist) when calling the DescribeStateMachine operation: State Machine Does Not Exist: 'sm_nonexistent_arn'"
+    }
   }
 }

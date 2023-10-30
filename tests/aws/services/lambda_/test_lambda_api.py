@@ -1,12 +1,6 @@
-import re
-
-from localstack import config
-from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
-from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
-from localstack.testing.pytest import markers
-
-"""
-API-focused tests only. Don't add tests for asynchronous, blocking or implicit behavior here.
+"""API-focused tests only.
+Everything related to behavior and implicit functionality goes into test_lambda.py instead
+Don't add tests for asynchronous, blocking or implicit behavior here.
 
 # TODO: create a re-usable pattern for fairly reproducible scenarios with slower updates/creates to test intermediary states
 # TODO: code signing https://docs.aws.amazon.com/lambda/latest/dg/configuration-codesigning.html
@@ -18,6 +12,7 @@ import base64
 import io
 import json
 import logging
+import re
 from hashlib import sha256
 from io import BytesIO
 from typing import Callable
@@ -27,9 +22,13 @@ import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError, ParamValidationError
 
+from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
+from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
+from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns

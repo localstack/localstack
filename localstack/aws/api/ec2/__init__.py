@@ -129,6 +129,7 @@ GetCapacityReservationUsageRequestMaxResults = int
 GetGroupsForCapacityReservationRequestMaxResults = int
 GetIpamPoolAllocationsMaxResults = int
 GetManagedPrefixListAssociationsMaxResults = int
+GetSecurityGroupsForVpcRequestMaxResults = int
 GetSubnetCidrReservationsMaxResults = int
 GpuDeviceCount = int
 GpuDeviceManufacturerName = str
@@ -14964,6 +14965,31 @@ class GetReservedInstancesExchangeQuoteResult(TypedDict, total=False):
     ValidationFailureReason: Optional[String]
 
 
+class GetSecurityGroupsForVpcRequest(ServiceRequest):
+    VpcId: VpcId
+    NextToken: Optional[String]
+    MaxResults: Optional[GetSecurityGroupsForVpcRequestMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+class SecurityGroupForVpc(TypedDict, total=False):
+    Description: Optional[String]
+    GroupName: Optional[String]
+    OwnerId: Optional[String]
+    GroupId: Optional[String]
+    Tags: Optional[TagList]
+    PrimaryVpcId: Optional[String]
+
+
+SecurityGroupForVpcList = List[SecurityGroupForVpc]
+
+
+class GetSecurityGroupsForVpcResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    SecurityGroupForVpcs: Optional[SecurityGroupForVpcList]
+
+
 class GetSerialConsoleAccessStatusRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
@@ -22389,6 +22415,18 @@ class Ec2Api:
         dry_run: Boolean = None,
         target_configurations: TargetConfigurationRequestSet = None,
     ) -> GetReservedInstancesExchangeQuoteResult:
+        raise NotImplementedError
+
+    @handler("GetSecurityGroupsForVpc")
+    def get_security_groups_for_vpc(
+        self,
+        context: RequestContext,
+        vpc_id: VpcId,
+        next_token: String = None,
+        max_results: GetSecurityGroupsForVpcRequestMaxResults = None,
+        filters: FilterList = None,
+        dry_run: Boolean = None,
+    ) -> GetSecurityGroupsForVpcResult:
         raise NotImplementedError
 
     @handler("GetSerialConsoleAccessStatus")

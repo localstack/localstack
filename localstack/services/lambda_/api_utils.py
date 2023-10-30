@@ -1,4 +1,6 @@
-""" Utilities for the new Lambda ASF provider. Do not use in the current provider, as ASF specific exceptions might be thrown """
+""" Utilities related to Lambda API operations such as ARN handling, validations, and output formatting.
+Everything related to behavior or implicit functionality goes into `lambda_utils.py`.
+"""
 import datetime
 import random
 import re

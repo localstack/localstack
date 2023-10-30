@@ -1,3 +1,4 @@
+"""Package installers for external Lambda dependencies."""
 import os
 import platform
 import stat
@@ -8,18 +9,35 @@ from localstack.packages import DownloadInstaller, InstallTarget, Package, Packa
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller, SystemNotSupportedException
 from localstack.utils.platform import get_arch
 
-LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
-
+"""Customized LocalStack version of the AWS Lambda Runtime Interface Emulator (RIE).
+https://github.com/localstack/lambda-runtime-init/blob/localstack/README-LOCALSTACK.md
+"""
 LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.24-pre"
 LAMBDA_RUNTIME_VERSION = config.LAMBDA_INIT_RELEASE_VERSION or LAMBDA_RUNTIME_DEFAULT_VERSION
+LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
 
+# TODO[LambdaV1]: Remove deprecated Go runtime
+"""Deprecated custom LocalStack Docker image for the Golang runtime used in the old Lambda provider."""
 # GO Lambda runtime
 GO_RUNTIME_VERSION = "0.4.0"
 # NOTE: We have a typo in the repository name "awslamba"
 GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/awslamba-go-runtime-{version}-{os}-{arch}.tar.gz"
 
+"""Unmaintained Java utilities and JUnit integration for LocalStack released to Maven Central.
+https://github.com/localstack/localstack-java-utils
+We recommend the Testcontainers LocalStack Java module as an alternative:
+https://java.testcontainers.org/modules/localstack/
+"""
+LOCALSTACK_MAVEN_VERSION = "0.2.21"
+MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
+URL_LOCALSTACK_FAT_JAR = (
+    "{mvn_repo}/cloud/localstack/localstack-utils/{ver}/localstack-utils-{ver}-fat.jar"
+)
+
 
 class LambdaRuntimePackage(Package):
+    """Golang binary containing the lambda-runtime-init."""
+
     def __init__(self, default_version: str = LAMBDA_RUNTIME_VERSION):
         super().__init__(name="Lambda", default_version=default_version)
 
@@ -31,6 +49,10 @@ class LambdaRuntimePackage(Package):
 
 
 class LambdaRuntimePackageInstaller(DownloadInstaller):
+    """Installer for the lambda-runtime-init Golang binary."""
+
+    # TODO: Architecture should ideally be configurable in the installer for proper cross-architecture support.
+    # We currently hope the native binary works within emulated containers.
     def _get_arch(self):
         arch = get_arch()
         return "x86_64" if arch == "amd64" else arch
@@ -54,6 +76,7 @@ class LambdaRuntimePackageInstaller(DownloadInstaller):
         os.chmod(install_location, mode=st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
+# TODO[LambdaV1]: Remove
 class LambdaGoRuntimePackage(Package):
     def __init__(self, default_version: str = GO_RUNTIME_VERSION):
         super().__init__(name="LambdaGo", default_version=default_version)
@@ -65,6 +88,7 @@ class LambdaGoRuntimePackage(Package):
         return LambdaGoRuntimePackageInstaller(name="lambda-go-runtime", version=version)
 
 
+# TODO[LambdaV1]: Remove
 class LambdaGoRuntimePackageInstaller(ArchiveDownloadAndExtractInstaller):
     def _get_download_url(self) -> str:
         system = platform.system().lower()
@@ -97,14 +121,7 @@ class LambdaGoRuntimePackageInstaller(ArchiveDownloadAndExtractInstaller):
         os.chmod(go_lambda_mockserver, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-# version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = "0.2.21"
-MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
-URL_LOCALSTACK_FAT_JAR = (
-    "{mvn_repo}/cloud/localstack/localstack-utils/{ver}/localstack-utils-{ver}-fat.jar"
-)
-
-
+# TODO: replace usage in LocalStack tests with locally built Java jar and remove this unmaintained dependency.
 class LambdaJavaPackage(Package):
     def __init__(self):
         super().__init__("LambdaJavaLibs", "0.2.22")

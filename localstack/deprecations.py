@@ -307,6 +307,7 @@ def log_deprecation_warnings(deprecations: Optional[List[EnvVarDeprecation]] = N
     if provider_override_lambda and provider_override_lambda in ["v1", "legacy"]:
         env_var_value = f"PROVIDER_OVERRIDE_LAMBDA={provider_override_lambda}"
         deprecation_version = "2.0.0"
+        # TODO[LambdaV1] adjust message or convert into generic deprecation for PROVIDER_OVERRIDE_LAMBDA
         deprecation_path = (
             f"Remove {env_var_value} to use the new Lambda 'v2' provider (current default). "
             "For more details, refer to our Lambda migration guide "
