@@ -44,6 +44,9 @@ jobs:
           source .venv/bin/activate
           python3 -m localstack.aws.scaffold upgrade
 
+      - name: Format code
+        run: make format-modified
+
       - name: Check for changes
         id: check-for-changes
         run: |
@@ -58,12 +61,6 @@ jobs:
           echo "changed-services<<EOF" >> $GITHUB_OUTPUT
           echo "$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Format code
-        if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
-        run: |
-          # execute the format-modified target (only if we have changes, otherwise the black invocation fails)
-          make format-modified
 
       - name: Read PR markdown template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
