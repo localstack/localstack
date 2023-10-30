@@ -277,7 +277,7 @@ class TestSNSPublishCrud:
         )
 
         if is_aws_cloud():
-            endpoint_url = "https://sns.us-east-1.amazonaws.com"
+            endpoint_url = f"https://sns.{TEST_AWS_REGION_NAME}.amazonaws.com"
         else:
             endpoint_url = config.get_edge_url()
 
