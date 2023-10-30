@@ -159,9 +159,7 @@ def configure_region_for_current_request(region_name: str, service_name: str):
         _context_to_update.headers = CaseInsensitiveDict({**headers, "Authorization": auth_header})
 
 
-def mock_request_for_region(
-    account_id: str, region_name: str, service_name: str = "dummy"
-) -> Request:
+def mock_request_for_region(service_name: str, account_id: str, region_name: str) -> Request:
     result = Request()
     result.headers["Authorization"] = aws_stack.generate_aws_request_headers(
         service_name, aws_access_key_id=account_id, region_name=region_name
