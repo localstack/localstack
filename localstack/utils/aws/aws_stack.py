@@ -280,8 +280,11 @@ def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[
 
 # TODO remove the `internal` arg
 def mock_aws_request_headers(
-    service, aws_access_key_id, region_name, internal=False
+    service: str, aws_access_key_id: str, region_name: str, internal: bool = False
 ) -> Dict[str, str]:
+    """
+    Returns a mock set of headers that resemble SigV4 signing method.
+    """
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
