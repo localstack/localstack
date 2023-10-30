@@ -9,7 +9,7 @@ from typing import Dict, Optional, Union
 import boto3
 
 from localstack import config
-from localstack.aws.accounts import get_aws_access_key_id, get_aws_account_id
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
@@ -291,8 +291,6 @@ def mock_aws_request_headers(
     # For S3 presigned URLs, we require that the client and server use the same
     # access key ID to sign requests. So try to use the access key ID for the
     # current request if available
-    aws_access_key_id = aws_access_key_id or get_aws_access_key_id()
-    region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,
         "Accept-Encoding": "identity",
