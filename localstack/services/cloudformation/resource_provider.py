@@ -84,6 +84,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Kinesis::StreamConsumer": "ResourceProvider",
     "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
     "AWS::Lambda::Alias": "ResourceProvider",
+    "AWS::Lambda::Version": "ResourceProvider",
     "AWS::Logs::LogGroup": "ResourceProvider",
     "AWS::Logs::LogStream": "ResourceProvider",
     "AWS::Logs::SubscriptionFilter": "ResourceProvider",
