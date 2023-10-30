@@ -64,9 +64,9 @@ class TestCloudwatch:
         metric_name = "test-metric"
         namespace = "namespace"
         data = (
-                "Action=PutMetricData&MetricData.member.1."
-                "MetricName=%s&MetricData.member.1.Value=1&"
-                "Namespace=%s&Version=2010-08-01" % (metric_name, namespace)
+            "Action=PutMetricData&MetricData.member.1."
+            "MetricName=%s&MetricData.member.1.Value=1&"
+            "Namespace=%s&Version=2010-08-01" % (metric_name, namespace)
         )
         bytes_data = bytes(data, encoding="utf-8")
         encoded_data = gzip.compress(bytes_data)
@@ -274,7 +274,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_put_composite_alarm_describe_alarms_converts_date_format_correctly(
-            self, aws_client, cleanups
+        self, aws_client, cleanups
     ):
         composite_alarm_name = f"composite-a-{short_uid()}"
         alarm_name = f"a-{short_uid()}"
@@ -551,7 +551,7 @@ class TestCloudwatch:
         condition=not is_aws_cloud(), reason="SQS messages do not work reliably, test is flaky"
     )
     def test_put_metric_alarm(
-            self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
+        self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
     ):
         sns_topic_alarm = sns_create_topic()
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
@@ -644,7 +644,8 @@ class TestCloudwatch:
 
         # describe alarms for metric
         alarms = aws_client.cloudwatch.describe_alarms_for_metric(
-            MetricName=metric_name, Namespace=namespace,
+            MetricName=metric_name,
+            Namespace=namespace,
             Dimensions=dimension,
             Statistic="Average",
         )
@@ -670,7 +671,7 @@ class TestCloudwatch:
         paths=["$..evaluatedDatapoints", "$..StateTransitionedTimestamp"]
     )
     def test_breaching_alarm_actions(
-            self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
+        self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
     ):
         sns_topic_alarm = sns_create_topic()
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
@@ -738,7 +739,7 @@ class TestCloudwatch:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..MetricAlarms..StateTransitionedTimestamp"])
     def test_enable_disable_alarm_actions(
-            self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
+        self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
     ):
         sns_topic_alarm = sns_create_topic()
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
@@ -874,8 +875,8 @@ class TestCloudwatch:
             res = aws_client.cloudwatch.list_metrics(Dimensions=dimensions)
             metrics = [metric["MetricName"] for metric in res["Metrics"]]
             if all(
-                    m in metrics
-                    for m in ["NumberOfMessagesSent", "SentMessageSize", "NumberOfEmptyReceives"]
+                m in metrics
+                for m in ["NumberOfMessagesSent", "SentMessageSize", "NumberOfEmptyReceives"]
             ):
                 res = aws_client.cloudwatch.get_metric_data(
                     MetricDataQueries=[sent, sent_size, empty],
@@ -884,9 +885,9 @@ class TestCloudwatch:
                 )
                 # add check for values, because AWS is sometimes a bit slower to fill those values up...
                 if (
-                        res["MetricDataResults"][0]["Values"]
-                        and res["MetricDataResults"][1]["Values"]
-                        and res["MetricDataResults"][2]["Values"]
+                    res["MetricDataResults"][0]["Values"]
+                    and res["MetricDataResults"][1]["Values"]
+                    and res["MetricDataResults"][2]["Values"]
                 ):
                     return True
             return False
@@ -940,9 +941,7 @@ class TestCloudwatch:
         snapshot.match("get_metric_data_2", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..DashboardArn"]  # ARN has a typo
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..DashboardArn"])  # ARN has a typo
     def test_dashboard_lifecycle(self, aws_client, snapshot):
         dashboard_name = f"test-{short_uid()}"
         dashboard_body = {
@@ -983,23 +982,33 @@ class TestCloudwatch:
         assert dashboard_name not in dashboards
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=not is_aws_cloud(), reason="Operations not supported"
-    )
-    def test_create_metric_stream(self, aws_client, firehose_create_delivery_stream, s3_create_bucket,
-                                  create_role_with_policy, snapshot):
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
+    def test_create_metric_stream(
+        self,
+        aws_client,
+        firehose_create_delivery_stream,
+        s3_create_bucket,
+        create_role_with_policy,
+        snapshot,
+    ):
         bucket_name = f"test-bucket-{short_uid()}"
         s3_create_bucket(Bucket=bucket_name)
 
         _, subscription_role_arn = create_role_with_policy(
-            "Allow", "s3:*", json.dumps(
+            "Allow",
+            "s3:*",
+            json.dumps(
                 {
                     "Statement": {
                         "Sid": "",
                         "Effect": "Allow",
                         "Principal": {"Service": "firehose.amazonaws.com"},
-                        "Action": "sts:AssumeRole"}
-                }), "*")
+                        "Action": "sts:AssumeRole",
+                    }
+                }
+            ),
+            "*",
+        )
 
         if is_aws_cloud():
             time.sleep(15)
@@ -1016,14 +1025,20 @@ class TestCloudwatch:
         )["DeliveryStreamARN"]
 
         _, role_arn = create_role_with_policy(
-            "Allow", "firehose:*", json.dumps(
+            "Allow",
+            "firehose:*",
+            json.dumps(
                 {
                     "Statement": {
                         "Sid": "",
                         "Effect": "Allow",
                         "Principal": {"Service": "cloudwatch.amazonaws.com"},
-                        "Action": "sts:AssumeRole"}
-                }), stream_arn)
+                        "Action": "sts:AssumeRole",
+                    }
+                }
+            ),
+            stream_arn,
+        )
 
         if is_aws_cloud():
             time.sleep(15)
@@ -1041,70 +1056,47 @@ class TestCloudwatch:
 
         snapshot.match("create_metric_stream", response_create)
 
-        get_response = aws_client.cloudwatch.get_metric_stream(
-            Name=metric_stream_name
-        )
+        get_response = aws_client.cloudwatch.get_metric_stream(Name=metric_stream_name)
         snapshot.match("get_metric_stream", get_response)
 
         response_list = aws_client.cloudwatch.list_metric_streams()
-        metric_streams = response_list.get('Entries', [])
-        metric_streams_names = [metric_stream['Name'] for metric_stream in metric_streams]
+        metric_streams = response_list.get("Entries", [])
+        metric_streams_names = [metric_stream["Name"] for metric_stream in metric_streams]
         assert metric_stream_name in metric_streams_names
 
-        start_response = aws_client.cloudwatch.start_metric_streams(
-            Names=[metric_stream_name]
-        )
+        start_response = aws_client.cloudwatch.start_metric_streams(Names=[metric_stream_name])
         snapshot.match("start_metric_stream", start_response)
 
-        stop_response = aws_client.cloudwatch.stop_metric_streams(
-            Names=[metric_stream_name]
-        )
+        stop_response = aws_client.cloudwatch.stop_metric_streams(Names=[metric_stream_name])
         snapshot.match("stop_metric_stream", stop_response)
 
-        response_delete = aws_client.cloudwatch.delete_metric_stream(
-            Name=metric_stream_name
-        )
+        response_delete = aws_client.cloudwatch.delete_metric_stream(Name=metric_stream_name)
         snapshot.match("delete_metric_stream", response_delete)
         response_list = aws_client.cloudwatch.list_metric_streams()
-        metric_streams = response_list.get('Entries', [])
-        metric_streams_names = [metric_stream['Name'] for metric_stream in metric_streams]
+        metric_streams = response_list.get("Entries", [])
+        metric_streams_names = [metric_stream["Name"] for metric_stream in metric_streams]
         assert metric_stream_name not in metric_streams_names
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=not is_aws_cloud(), reason="Operations not supported"
-    )
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
     def test_insight_rule(self, aws_client, snapshot):
         insight_rule_name = f"MyInsightRule-{short_uid()}"
         response_create = aws_client.cloudwatch.put_insight_rule(
             RuleName=insight_rule_name,
             RuleState="ENABLED",
-            RuleDefinition=json.dumps({
-                "Schema": {
-                    "Name": "CloudWatchLogRule",
-                    "Version": 1
-                },
-                "LogGroupNames": [
-                    "API-Gateway-Access-Logs*"
-                ],
-                "LogFormat": "CLF",
-                "Fields": {
-                    "4": "IpAddress",
-                    "7": "StatusCode"
-                },
-                "Contribution": {
-                    "Keys": [
-                        "IpAddress"
-                    ],
-                    "Filters": [
-                        {
-                            "Match": "StatusCode",
-                            "EqualTo": 200
-                        }
-                    ]
-                },
-                "AggregateOn": "Count"
-            })
+            RuleDefinition=json.dumps(
+                {
+                    "Schema": {"Name": "CloudWatchLogRule", "Version": 1},
+                    "LogGroupNames": ["API-Gateway-Access-Logs*"],
+                    "LogFormat": "CLF",
+                    "Fields": {"4": "IpAddress", "7": "StatusCode"},
+                    "Contribution": {
+                        "Keys": ["IpAddress"],
+                        "Filters": [{"Match": "StatusCode", "EqualTo": 200}],
+                    },
+                    "AggregateOn": "Count",
+                }
+            ),
         )
         snapshot.add_transformer(snapshot.transform.key_value("Name"))
         snapshot.match("create_insight_rule", response_create)
@@ -1117,9 +1109,7 @@ class TestCloudwatch:
         )
         snapshot.match("disable_insight_rule", response_disable)
 
-        response_enable = aws_client.cloudwatch.enable_insight_rules(
-            RuleNames=[insight_rule_name]
-        )
+        response_enable = aws_client.cloudwatch.enable_insight_rules(RuleNames=[insight_rule_name])
         snapshot.match("enable_insight_rule", response_enable)
 
         insight_rule_report = aws_client.cloudwatch.get_insight_rule_report(
@@ -1128,23 +1118,21 @@ class TestCloudwatch:
             EndTime=datetime.utcnow(),
             Period=300,
             MaxContributorCount=10,
-            Metrics=["UniqueContributors"]
+            Metrics=["UniqueContributors"],
         )
         snapshot.match("get_insight_rule_report", insight_rule_report)
 
         response_list = aws_client.cloudwatch.describe_insight_rules()
-        insight_rules_names = [insight_rule['Name'] for insight_rule in response_list['InsightRules']]
+        insight_rules_names = [
+            insight_rule["Name"] for insight_rule in response_list["InsightRules"]
+        ]
         assert insight_rule_name in insight_rules_names
 
-        response_delete = aws_client.cloudwatch.delete_insight_rules(
-            RuleNames=[insight_rule_name]
-        )
+        response_delete = aws_client.cloudwatch.delete_insight_rules(RuleNames=[insight_rule_name])
         snapshot.match("delete_insight_rule", response_delete)
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=not is_aws_cloud(), reason="Operations not supported"
-    )
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
     def test_anomaly_detector_lifecycle(self, aws_client, snapshot):
         namespace = "MyNamespace"
         metric_name = "MyMetric"
@@ -1154,12 +1142,7 @@ class TestCloudwatch:
             Namespace=namespace,
             Stat="Sum",
             Configuration={},
-            Dimensions=[
-                {
-                    "Name": "DimensionName",
-                    "Value": "DimensionValue"
-                }
-            ]
+            Dimensions=[{"Name": "DimensionName", "Value": "DimensionValue"}],
         )
         snapshot.match("create_anomaly_detector", response_create)
 
@@ -1170,19 +1153,12 @@ class TestCloudwatch:
             MetricName=metric_name,
             Namespace=namespace,
             Stat="Sum",
-            Dimensions=[
-                {
-                    "Name": "DimensionName",
-                    "Value": "DimensionValue"
-                }
-            ]
+            Dimensions=[{"Name": "DimensionName", "Value": "DimensionValue"}],
         )
         snapshot.match("delete_anomaly_detector", response_delete)
 
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=not is_aws_cloud(), reason="Operations not supported"
-    )
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
     def test_metric_widget(self, aws_client):
         metric_name = f"test-metric-{short_uid()}"
         namespace = f"ns-{short_uid()}"
@@ -1226,13 +1202,13 @@ class TestCloudwatch:
 
 
 def _check_alarm_triggered(
-        expected_state,
-        alarm_name,
-        cloudwatch_client,
-        sqs_client=None,
-        sqs_queue=None,
-        snapshot=None,
-        identifier=None,
+    expected_state,
+    alarm_name,
+    cloudwatch_client,
+    sqs_client=None,
+    sqs_queue=None,
+    snapshot=None,
+    identifier=None,
 ):
     response = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
     assert response["MetricAlarms"][0]["StateValue"] == expected_state
@@ -1255,14 +1231,14 @@ def _check_alarm_triggered(
 
 
 def check_message(
-        sqs_client,
-        expected_queue_url,
-        expected_topic_arn,
-        expected_new,
-        expected_reason,
-        alarm_name,
-        alarm_description,
-        expected_trigger,
+    sqs_client,
+    expected_queue_url,
+    expected_topic_arn,
+    expected_new,
+    expected_reason,
+    alarm_name,
+    alarm_description,
+    expected_trigger,
 ):
     receive_result = sqs_client.receive_message(QueueUrl=expected_queue_url)
     message = None
