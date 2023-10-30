@@ -14,6 +14,7 @@ from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
     APPLICATION_X_WWW_FORM_URLENCODED,
+    DEFAULT_AWS_ACCOUNT_ID,
     ENV_DEV,
     HEADER_LOCALSTACK_ACCOUNT_ID,
     INTERNAL_AWS_ACCESS_KEY_ID,
@@ -210,9 +211,9 @@ def set_default_region_in_headers(headers, service=None, region=None):
     region = region or get_region()
     if not auth_header:
         if service:
-            headers["Authorization"] = mock_aws_request_headers(service, region_name=region)[
-                "Authorization"
-            ]
+            headers["Authorization"] = mock_aws_request_headers(
+                service, aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID, region_name=region
+            )["Authorization"]
         return
     replaced = re.sub(r"(.*Credential=[^/]+/[^/]+/)([^/])+/", r"\1%s/" % region, auth_header)
     headers["Authorization"] = replaced
@@ -279,7 +280,7 @@ def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[
 
 # TODO remove the `internal` arg
 def mock_aws_request_headers(
-    service="dynamodb", region_name=None, access_key=None, internal=False
+    service, aws_access_key_id, region_name, internal=False
 ) -> Dict[str, str]:
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
@@ -290,7 +291,7 @@ def mock_aws_request_headers(
     # For S3 presigned URLs, we require that the client and server use the same
     # access key ID to sign requests. So try to use the access key ID for the
     # current request if available
-    access_key = access_key or get_aws_access_key_id()
+    aws_access_key_id = aws_access_key_id or get_aws_access_key_id()
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,
@@ -298,10 +299,12 @@ def mock_aws_request_headers(
         "X-Amz-Date": "20160623T103251Z",
         "Authorization": (
             "AWS4-HMAC-SHA256 "
-            + f"Credential={access_key}/20160623/{region_name}/{service}/aws4_request, "
+            + f"Credential={aws_access_key_id}/20160623/{region_name}/{service}/aws4_request, "
             + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
         ),
     }
     if internal:
+        # TODO: This method of detecting internal calls is no longer valid
+        # We now use the `INTERNAL_REQUEST_PARAMS_HEADER` header which is set to the DTO
         headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_aws_account_id()
     return headers

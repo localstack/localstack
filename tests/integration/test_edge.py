@@ -11,7 +11,12 @@ from requests.models import Request as RequestsRequest
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
+from localstack.constants import (
+    APPLICATION_JSON,
+    HEADER_LOCALSTACK_EDGE_URL,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
@@ -319,7 +324,9 @@ class TestEdgeAPI:
         data = {"Action": "GetCallerIdentity", "Version": "2011-06-15"}
 
         # receive response as XML (default)
-        headers = aws_stack.mock_aws_request_headers("sts")
+        headers = aws_stack.mock_aws_request_headers(
+            "sts", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         response = requests.post(url, data=data, headers=headers)
         assert response
         content1 = to_str(response.content)
@@ -330,7 +337,9 @@ class TestEdgeAPI:
         assert content1_result["Account"] == get_aws_account_id()
 
         # receive response as JSON (via Accept header)
-        headers = aws_stack.mock_aws_request_headers("sts")
+        headers = aws_stack.mock_aws_request_headers(
+            "sts", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         headers["Accept"] = APPLICATION_JSON
         response = requests.post(url, data=data, headers=headers)
         assert response
@@ -344,7 +353,9 @@ class TestEdgeAPI:
     def test_request_with_custom_host_header(self):
         url = config.get_edge_url()
 
-        headers = aws_stack.mock_aws_request_headers("lambda")
+        headers = aws_stack.mock_aws_request_headers(
+            "lambda", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
 
         # using a simple for-loop here (instead of pytest parametrization), for simplicity
         for host in ["localhost", "example.com"]:

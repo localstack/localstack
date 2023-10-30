@@ -19,6 +19,7 @@ from localstack.config import get_edge_url
 from localstack.constants import (
     APPLICATION_JSON,
     LOCALHOST_HOSTNAME,
+    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
@@ -1669,7 +1670,9 @@ def test_apigateway_rust_lambda(
 
 @markers.aws.unknown
 def test_apigw_call_api_with_aws_endpoint_url(aws_client):
-    headers = aws_stack.mock_aws_request_headers("apigateway")
+    headers = aws_stack.mock_aws_request_headers(
+        "apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+    )
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
     url = f"{get_edge_url()}/apikeys?includeValues=true&name=test%40example.org"
     response = requests.get(url, headers=headers)

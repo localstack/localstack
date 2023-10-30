@@ -73,14 +73,12 @@ class TestCloudwatch:
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers(
             "cloudwatch",
-            internal=True,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=TEST_AWS_REGION_NAME,
-            access_key=TEST_AWS_ACCESS_KEY_ID,
+            internal=True,
         )
         authorization = aws_stack.mock_aws_request_headers(
-            "monitoring",
-            region_name=TEST_AWS_REGION_NAME,
-            access_key=TEST_AWS_ACCESS_KEY_ID,
+            "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )["Authorization"]
 
         headers.update(
@@ -204,9 +202,7 @@ class TestCloudwatch:
         )
         url = f"{config.get_edge_url()}{PATH_GET_RAW_METRICS}"
         headers = aws_stack.mock_aws_request_headers(
-            "cloudwatch",
-            region_name=TEST_AWS_REGION_NAME,
-            access_key=TEST_AWS_ACCESS_KEY_ID,
+            "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         result = requests.get(url, headers=headers)
         assert 200 == result.status_code

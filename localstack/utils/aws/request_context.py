@@ -9,7 +9,13 @@ from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, APPLICATION_XML, HEADER_CONTENT_TYPE
+from localstack.constants import (
+    APPLICATION_JSON,
+    APPLICATION_XML,
+    AWS_REGION_US_EAST_1,
+    DEFAULT_AWS_ACCOUNT_ID,
+    HEADER_CONTENT_TYPE,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     is_json_request,
@@ -117,6 +123,7 @@ def get_region_from_request_context():
     return extract_region_from_headers(request_context.headers)
 
 
+# TODO: Dead code, to be removed
 def configure_region_for_current_request(region_name: str, service_name: str):
     """Manually configure (potentially overwrite) the region in the current request context. This may be
     used by API endpoints that are invoked directly by the user (without specifying AWS Authorization
@@ -136,7 +143,12 @@ def configure_region_for_current_request(region_name: str, service_name: str):
 
     headers = request_context.headers
     auth_header = headers.get("Authorization")
-    auth_header = auth_header or aws_stack.mock_aws_request_headers(service_name)["Authorization"]
+    auth_header = (
+        auth_header
+        or aws_stack.mock_aws_request_headers(
+            service_name, aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID, region_name=AWS_REGION_US_EAST_1
+        )["Authorization"]
+    )
     auth_header = auth_header.replace("/%s/" % aws_stack.get_region(), "/%s/" % region_name)
     try:
         headers["Authorization"] = auth_header
@@ -147,10 +159,12 @@ def configure_region_for_current_request(region_name: str, service_name: str):
         _context_to_update.headers = CaseInsensitiveDict({**headers, "Authorization": auth_header})
 
 
-def mock_request_for_region(region_name: str, service_name: str = "dummy") -> Request:
+def mock_request_for_region(
+    account_id: str, region_name: str, service_name: str = "dummy"
+) -> Request:
     result = Request()
     result.headers["Authorization"] = aws_stack.mock_aws_request_headers(
-        service_name, region_name=region_name
+        service_name, aws_access_key_id=account_id, region_name=region_name
     )["Authorization"]
     return result
 

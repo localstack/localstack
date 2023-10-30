@@ -5,7 +5,11 @@ from localstack.aws.accounts import (
     set_aws_access_key_id,
     set_aws_account_id,
 )
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    DEFAULT_AWS_ACCOUNT_ID,
+    TEST_AWS_ACCESS_KEY_ID,
+)
 from localstack.http import Response
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 
@@ -26,10 +30,13 @@ class MissingAuthHeaderInjector(Handler):
 
         api = context.service.service_name
         headers = context.request.headers
+        # Account ID or region may not be available based on the ordering of the handlers, if so use defaults
+        account_id = context.account_id or DEFAULT_AWS_ACCOUNT_ID
+        region_name = context.region or AWS_REGION_US_EAST_1
 
         if not headers.get("Authorization"):
             headers["Authorization"] = aws_stack.mock_aws_request_headers(
-                api, access_key="injectedaccesskey"
+                api, aws_access_key_id=account_id, region_name=region_name
             )["Authorization"]
 
 

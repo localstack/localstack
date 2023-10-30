@@ -8,7 +8,12 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.handlers.cors import ALLOWED_CORS_ORIGINS
 from localstack.config import LEGACY_S3_PROVIDER
-from localstack.constants import LOCALHOST_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.constants import (
+    LOCALHOST_HOSTNAME,
+    S3_VIRTUAL_HOSTNAME,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
@@ -172,7 +177,9 @@ class TestS3Cors:
         origin = ALLOWED_CORS_ORIGINS[0]
         # we need to "sign" the request so that our service name parser recognize ListBuckets as an S3 operation
         # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
-        headers = aws_stack.mock_aws_request_headers("s3")
+        headers = aws_stack.mock_aws_request_headers(
+            "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         headers["Origin"] = origin
         response = requests.options(
             url, headers={**headers, "Access-Control-Request-Method": "GET"}

@@ -30,6 +30,7 @@ from localstack.constants import (
     LOCALHOST_HOSTNAME,
     LOCALSTACK_ROOT_FOLDER,
     LOCALSTACK_VENV_FOLDER,
+    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
 )
 from localstack.services.lambda_.lambda_utils import (
@@ -516,7 +517,9 @@ def send_dynamodb_request(path, action, request_body):
     headers = {
         "Host": "dynamodb.amazonaws.com",
         "x-amz-target": "DynamoDB_20120810.{}".format(action),
-        "Authorization": aws_stack.mock_aws_request_headers("dynamodb")["Authorization"],
+        "Authorization": aws_stack.mock_aws_request_headers(
+            "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )["Authorization"],
     }
     url = f"{config.service_url('dynamodb')}/{path}"
     return requests.put(url, data=request_body, headers=headers, verify=False)
