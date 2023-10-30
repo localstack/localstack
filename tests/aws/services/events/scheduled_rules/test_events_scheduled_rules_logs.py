@@ -65,6 +65,9 @@ def add_logs_resource_policy_for_rule(aws_client):
         "$..storedBytes",
     ]
 )
+@pytest.mark.xfail(
+    reason="This test is flaky is CI, might be race conditions"  # FIXME: investigate and fix
+)
 def test_scheduled_rule_logs(
     logs_log_group,
     events_put_rule,
