@@ -50,7 +50,7 @@ class TestCdkInit:
         change_set_name = "cdk-deploy-change-set-a4b98b18"
         stack_name = "CDKToolkit-a4b98b18"
         try:
-            headers = aws_stack.mock_aws_request_headers(
+            headers = aws_stack.generate_aws_request_headers(
                 "cloudformation", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
             )
             base_url = config.get_edge_url()

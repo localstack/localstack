@@ -171,7 +171,7 @@ class ProxyListenerEdge(ProxyListener):
             return response
 
         if api and not headers.get("Authorization"):
-            headers["Authorization"] = aws_stack.mock_aws_request_headers(
+            headers["Authorization"] = aws_stack.generate_aws_request_headers(
                 api, aws_access_key_id=access_key_id, region_name=AWS_REGION_US_EAST_1
             )["Authorization"]
         headers[HEADER_TARGET_API] = str(api)

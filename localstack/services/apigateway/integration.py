@@ -148,7 +148,7 @@ def get_internal_mocked_headers(
         )
     else:
         access_key_id = None
-    headers = aws_stack.mock_aws_request_headers(
+    headers = aws_stack.generate_aws_request_headers(
         service=service_name, aws_access_key_id=access_key_id, region_name=region_name
     )
 
@@ -586,7 +586,7 @@ class S3Integration(BackendIntegration):
             LOG.debug(msg)
             return make_error_response(msg, 404)
 
-        headers = aws_stack.mock_aws_request_headers(
+        headers = aws_stack.generate_aws_request_headers(
             service="s3",
             aws_access_key_id=invocation_context.account_id,
             region_name=invocation_context.region_name,
@@ -712,7 +712,7 @@ class SNSIntegration(BackendIntegration):
             LOG.warning("Failed to apply template for SNS integration", e)
             raise
         region_name = uri.split(":")[3]
-        headers = aws_stack.mock_aws_request_headers(
+        headers = aws_stack.generate_aws_request_headers(
             service="sns", aws_access_key_id=invocation_context.account_id, region_name=region_name
         )
         result = make_http_request(
@@ -777,7 +777,7 @@ class StepFunctionIntegration(BackendIntegration):
         result = json_safe(remove_attributes(result, ["ResponseMetadata"]))
         response = StepFunctionIntegration._create_response(
             HTTPStatus.OK.value,
-            aws_stack.mock_aws_request_headers(
+            aws_stack.generate_aws_request_headers(
                 "stepfunctions",
                 aws_access_key_id=invocation_context.account_id,
                 region_name=invocation_context.region_name,

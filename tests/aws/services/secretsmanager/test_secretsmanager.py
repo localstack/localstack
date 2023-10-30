@@ -1205,7 +1205,7 @@ class TestSecretsManager:
 
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> dict:
-        headers = aws_stack.mock_aws_request_headers(
+        headers = aws_stack.generate_aws_request_headers(
             "secretsmanager",
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=TEST_AWS_REGION_NAME,

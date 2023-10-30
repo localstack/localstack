@@ -19,7 +19,7 @@ def test_fix_region_in_headers():
     # TODO: this may need to be updated once we migrate DynamoDB to ASF
 
     for region_name in ["local", "localhost"]:
-        headers = aws_stack.mock_aws_request_headers(
+        headers = aws_stack.generate_aws_request_headers(
             "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
         )
         assert TEST_AWS_REGION_NAME not in headers.get("Authorization")

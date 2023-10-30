@@ -303,7 +303,7 @@ class LambdaInvocationForwarderPlugin(LambdaExecutorPlugin):
         copied_env_vars["LOCALSTACK_HOSTNAME"] = config.HOSTNAME_EXTERNAL
         copied_env_vars["LOCALSTACK_EDGE_PORT"] = str(config.EDGE_PORT)
 
-        headers = aws_stack.mock_aws_request_headers(
+        headers = aws_stack.generate_aws_request_headers(
             "lambda",
             aws_access_key_id=lambda_function.account_id(),
             region_name=lambda_function.region(),

@@ -1670,7 +1670,7 @@ def test_apigateway_rust_lambda(
 
 @markers.aws.unknown
 def test_apigw_call_api_with_aws_endpoint_url(aws_client):
-    headers = aws_stack.mock_aws_request_headers(
+    headers = aws_stack.generate_aws_request_headers(
         "apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
     )
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"

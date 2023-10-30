@@ -517,7 +517,7 @@ def send_dynamodb_request(path, action, request_body):
     headers = {
         "Host": "dynamodb.amazonaws.com",
         "x-amz-target": "DynamoDB_20120810.{}".format(action),
-        "Authorization": aws_stack.mock_aws_request_headers(
+        "Authorization": aws_stack.generate_aws_request_headers(
             "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )["Authorization"],
     }

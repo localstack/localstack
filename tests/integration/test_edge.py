@@ -324,7 +324,7 @@ class TestEdgeAPI:
         data = {"Action": "GetCallerIdentity", "Version": "2011-06-15"}
 
         # receive response as XML (default)
-        headers = aws_stack.mock_aws_request_headers(
+        headers = aws_stack.generate_aws_request_headers(
             "sts", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         response = requests.post(url, data=data, headers=headers)
@@ -337,7 +337,7 @@ class TestEdgeAPI:
         assert content1_result["Account"] == get_aws_account_id()
 
         # receive response as JSON (via Accept header)
-        headers = aws_stack.mock_aws_request_headers(
+        headers = aws_stack.generate_aws_request_headers(
             "sts", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["Accept"] = APPLICATION_JSON
@@ -353,7 +353,7 @@ class TestEdgeAPI:
     def test_request_with_custom_host_header(self):
         url = config.get_edge_url()
 
-        headers = aws_stack.mock_aws_request_headers(
+        headers = aws_stack.generate_aws_request_headers(
             "lambda", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
 

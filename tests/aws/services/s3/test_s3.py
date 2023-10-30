@@ -2959,7 +2959,7 @@ class TestS3:
         object_key = "data"
         body = "Hello\r\n\r\n\r\n\r\n"
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": aws_stack.generate_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2994,7 +2994,7 @@ class TestS3:
         body = "Hello Blob"
         valid_checksum = hash_sha256(body)
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": aws_stack.generate_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -3047,7 +3047,7 @@ class TestS3:
         body = "Hello Blob"
         precalculated_etag = hashlib.md5(body.encode()).hexdigest()
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": aws_stack.generate_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -8030,7 +8030,7 @@ class TestS3Routing:
 
         path = s3_key if use_virtual_address else f"{s3_bucket}/{s3_key}"
         url = f"{config.get_edge_url()}/{path}"
-        headers = aws_stack.mock_aws_request_headers(
+        headers = aws_stack.generate_aws_request_headers(
             "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["host"] = f"{s3_bucket}.{domain}" if use_virtual_address else domain
