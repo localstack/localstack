@@ -321,6 +321,23 @@ class TestCloudFormationConditions:
             )
         snapshot.match("unresolved_resource_reference_exception", e.value.response)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("create_parameter", ("true", "false"), ids=("create", "no-create"))
+    def test_conditional_att_to_conditional_resources(self, deploy_cfn_template, create_parameter):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_if_attribute_none.yml"
+        )
+
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+            parameters={"CreateParameter": create_parameter},
+        )
+
+        if create_parameter == "false":
+            assert deployed.outputs["Result"] == "Value1"
+        else:
+            assert deployed.outputs["Result"] == "Value2"
+
     # def test_updating_only_conditions_during_stack_update(self):
     #     ...
 

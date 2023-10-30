@@ -7,7 +7,6 @@ _THIS_FOLDER: Final[str] = os.path.dirname(os.path.realpath(__file__))
 
 
 class ErrorHandlingTemplate(TemplateLoader):
-
     # State Machines.
     AWS_SDK_TASK_FAILED_S3_LIST_OBJECTS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/aws_sdk_task_error_s3_list_objects.json5"

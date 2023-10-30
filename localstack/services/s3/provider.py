@@ -6,9 +6,9 @@ from collections import defaultdict
 from operator import itemgetter
 from typing import IO, Dict, List, Optional
 from urllib.parse import quote, urlparse
-from zoneinfo import ZoneInfo
 
 import moto.s3.responses as moto_s3_responses
+from zoneinfo import ZoneInfo
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException, handler
@@ -783,7 +783,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         bucket_name = request["Bucket"]
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket_name)
-        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+        if (upload_id := request.get("UploadId")) not in moto_bucket.multiparts:
             raise NoSuchUpload(
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
@@ -801,7 +801,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_name = request["Bucket"]
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
-        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+        if (upload_id := request.get("UploadId")) not in moto_bucket.multiparts:
             raise NoSuchUpload(
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
@@ -847,7 +847,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: ListMultipartUploadsRequest,
     ) -> ListMultipartUploadsOutput:
-
         # TODO: implement KeyMarker and UploadIdMarker (using sort)
         # implement Delimiter and MaxUploads
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
@@ -1926,4 +1925,4 @@ def apply_moto_patches():
 
         return False
 
-    setattr(moto_s3_models.FakeKey, "is_locked", property(key_is_locked))
+    moto_s3_models.FakeKey.is_locked = property(key_is_locked)

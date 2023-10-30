@@ -7,9 +7,8 @@ from gzip import GzipFile
 from typing import Callable, Dict
 
 from moto.core.utils import unix_time_millis
-from moto.logs.models import LogEvent
+from moto.logs.models import LogEvent, LogsBackend
 from moto.logs.models import LogGroup as MotoLogGroup
-from moto.logs.models import LogsBackend
 from moto.logs.models import LogStream as MotoLogStream
 
 from localstack.aws.accounts import get_aws_account_id

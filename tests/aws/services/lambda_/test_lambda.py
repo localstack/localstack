@@ -1,3 +1,5 @@
+"""Tests for Lambda behavior and implicit functionality.
+Everything related to API operations goes into test_lambda_api.py instead."""
 import base64
 import json
 import logging
@@ -18,7 +20,6 @@ from botocore.response import StreamingBody
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
-from localstack.services.lambda_.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     RUNTIMES_AGGREGATED,
     concurrency_update_done,
@@ -112,17 +113,17 @@ TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.
 # TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
 PYTHON_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["python"]
-    if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
+    if (not is_old_local_executor()) and get_arch() != Arch.arm64
     else [Runtime.python3_11]
 )
 NODE_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["nodejs"]
-    if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
+    if (not is_old_local_executor()) and get_arch() != Arch.arm64
     else [Runtime.nodejs16_x]
 )
 JAVA_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["java"]
-    if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
+    if (not is_old_local_executor()) and get_arch() != Arch.arm64
     else [Runtime.java11]
 )
 
@@ -313,7 +314,7 @@ class TestLambdaBaseFeatures:
     )
     @markers.aws.validated
     def test_lambda_different_iam_keys_environment(
-        self, lambda_su_role, create_lambda_function, snapshot, aws_client
+        self, lambda_su_role, create_lambda_function, snapshot, aws_client, region
     ):
         """
         In this test we want to check if multiple lambda environments (= instances of hot functions) have
@@ -363,8 +364,8 @@ class TestLambdaBaseFeatures:
             # since a lot of asserts are based on the structure of the arns, snapshots are not too nice here, so manual
             keys_1 = _transform_to_key_dict(results[0])
             keys_2 = _transform_to_key_dict(results[1])
-            sts_client_1 = create_client_with_keys("sts", keys=keys_1)
-            sts_client_2 = create_client_with_keys("sts", keys=keys_2)
+            sts_client_1 = create_client_with_keys("sts", keys=keys_1, region_name=region)
+            sts_client_2 = create_client_with_keys("sts", keys=keys_2, region_name=region)
             identity_1 = sts_client_1.get_caller_identity()
             identity_2 = sts_client_2.get_caller_identity()
             assert identity_1["Arn"] == identity_2["Arn"]
@@ -966,7 +967,6 @@ class TestLambdaURL:
 class TestLambdaPermissions:
     @markers.aws.validated
     def test_lambda_permission_url_invocation(self, create_lambda_function, snapshot, aws_client):
-
         function_name = f"test-function-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
@@ -1233,7 +1233,7 @@ class TestLambdaFeatures:
         snapshot.match("invocation-response", result)
 
     @pytest.mark.skipif(
-        is_old_provider() and not use_docker(),
+        is_old_local_executor(),
         reason="Test for docker nodejs runtimes not applicable if run locally",
     )
     @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")

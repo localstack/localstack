@@ -61,7 +61,7 @@ class IsPresent(Operator):
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
         variable = env.stack.pop()
-        res = not isinstance(variable, NoSuchVariable) is value
+        res = isinstance(variable, NoSuchVariable) is not value
         env.stack.append(res)
 
 

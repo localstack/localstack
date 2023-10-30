@@ -322,7 +322,7 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
 
-    @pytest.mark.skip(condition=is_new_provider(), reason="needs lambda usage rework")
+    @pytest.mark.skipif(condition=is_new_provider(), reason="needs lambda usage rework")
     @markers.aws.unknown
     def test_rotate_secret_with_lambda_1(
         self, secret_name, create_secret, create_lambda_function, aws_client

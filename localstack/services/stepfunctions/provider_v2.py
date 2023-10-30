@@ -253,7 +253,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         # TODO: add arn validation.
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
         if state_machine is None:
-            raise ExecutionDoesNotExist()
+            raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
         return state_machine.describe()
 
     def describe_state_machine_for_execution(

@@ -493,28 +493,7 @@ def generate_code(service_name: str, doc: bool = False) -> str:
     output = io.StringIO()
     generate_service_types(output, model, doc=doc)
     generate_service_api(output, model, doc=doc)
-
-    code = output.getvalue()
-
-    try:
-        import autoflake
-        import isort
-        from black import FileMode, format_str
-
-        # try to remove unused imports
-        code = autoflake.fix_code(code, remove_all_unused_imports=True)
-
-        # try to format with black
-        code = format_str(code, mode=FileMode(line_length=100))
-
-        # try to sort imports
-        code = isort.code(code, config=isort.Config(profile="black", line_length=100))
-    except ImportError:
-        click.echo(
-            "Skip code cleaning / formatting due to missing tools (autoflake, isort, black)..."
-        )
-
-    return code
+    return output.getvalue()
 
 
 def create_code_directory(service_name: str, code: str, base_path: str):

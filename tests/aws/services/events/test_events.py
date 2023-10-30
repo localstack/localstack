@@ -402,7 +402,7 @@ class TestEvents:
     # TODO: further unify/parameterize the tests for the different target types below
 
     @markers.aws.unknown
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_put_events_with_target_sns(
         self,
         monkeypatch,
@@ -470,7 +470,7 @@ class TestEvents:
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
     @markers.aws.unknown
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_put_events_into_event_bus(
         self, monkeypatch, sqs_get_queue_arn, aws_client, clean_up, strategy
     ):
@@ -1267,7 +1267,7 @@ class TestEvents:
         assert response.get("Entries")
 
     @markers.aws.unknown
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_trigger_event_on_ssm_change(self, monkeypatch, aws_client, clean_up, strategy):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 

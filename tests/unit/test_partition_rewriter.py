@@ -331,7 +331,7 @@ def test_arn_partition_rewriting_in_request_and_response(
         handler_data["received_request"] = _request
         response = Response()
         response.set_data(_request.data)
-        response.headers = request.headers
+        response.headers = _request.headers
         handler_data["sent_request"] = response
         return response
 

@@ -45,7 +45,6 @@ class BucketCorsIndex(Protocol):
 
 
 class S3CorsHandler(Handler):
-
     bucket_cors_index: BucketCorsIndex
 
     def __init__(self, bucket_cors_index: BucketCorsIndex):
@@ -77,7 +76,7 @@ class S3CorsHandler(Handler):
         # try to extract the bucket from the hostname (the "in" check is a minor optimization)
         elif ".s3" in host and (match := _s3_virtual_host_regex.match(host)):
             is_s3 = True
-            bucket_name = match.group(3)
+            bucket_name = match.group("bucket")
         # otherwise we're not sure, and whether it's s3 depends on whether the bucket exists. check later
         else:
             is_s3 = False

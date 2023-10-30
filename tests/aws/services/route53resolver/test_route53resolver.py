@@ -69,7 +69,6 @@ def delete_route53_resolver_endpoint(route53resolver_client, resolver_endpoint_i
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..ResolverEndpointType"])
 class TestRoute53Resolver:
-
     # TODO: make this class level?
     @pytest.fixture(scope="function")
     def setup_resources(self, aws_client, cleanups):

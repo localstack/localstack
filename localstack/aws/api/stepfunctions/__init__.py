@@ -1118,7 +1118,6 @@ class UpdateStateMachineOutput(TypedDict, total=False):
 
 
 class StepfunctionsApi:
-
     service = "stepfunctions"
     version = "2016-11-23"
 

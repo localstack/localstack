@@ -1467,7 +1467,6 @@ class UpdateEndpointResponse(TypedDict, total=False):
 
 
 class EventsApi:
-
     service = "events"
     version = "2015-10-07"
 

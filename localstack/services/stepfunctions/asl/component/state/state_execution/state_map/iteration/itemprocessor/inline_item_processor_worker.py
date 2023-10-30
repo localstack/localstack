@@ -17,7 +17,6 @@ LOG = logging.getLogger(__name__)
 
 
 class InlineItemProcessorWorker(IterationWorker):
-
     _item_selector: Final[Optional[ItemSelector]]
 
     def __init__(

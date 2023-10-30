@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_externally_to, connect_to
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
@@ -25,12 +26,13 @@ import requests
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import LOCALHOST_HOSTNAME, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
-from localstack.services.lambda_.lambda_api import LAMBDA_TEST_ROLE
+from localstack.constants import (
+    LOCALHOST_HOSTNAME,
+    LOCALSTACK_ROOT_FOLDER,
+    LOCALSTACK_VENV_FOLDER,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.lambda_.lambda_utils import (
-    LAMBDA_DEFAULT_HANDLER,
-    LAMBDA_DEFAULT_RUNTIME,
-    LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
 from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
@@ -54,8 +56,12 @@ from localstack.utils.threads import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
+LAMBDA_DEFAULT_HANDLER = "handler.handler"
+LAMBDA_DEFAULT_RUNTIME = Runtime.python3_9
+LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 LAMBDA_TIMEOUT_SEC = 30
 LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"
+LAMBDA_TEST_ROLE = "arn:aws:iam::{account_id}:role/lambda-test-role"
 MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 
@@ -196,7 +202,8 @@ def create_lambda_function(
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API
-    CAVEAT: Does NOT wait until the function is ready/active. The fixture create_lambda_function waits until ready."""
+    CAVEAT: Does NOT wait until the function is ready/active. The fixture create_lambda_function waits until ready.
+    """
     if envvars is None:
         envvars = {}
     if tags is None:
@@ -334,11 +341,10 @@ def create_lambda_api_gateway_integration(
 
     # create Lambda
     zip_file = create_lambda_archive(handler_file, get_content=True, runtime=runtime)
-    create_lambda_function(
+    func_arn = create_lambda_function(
         func_name=func_name, zip_file=zip_file, runtime=runtime, client=lambda_client
-    )
-    func_arn = arns.lambda_function_arn(func_name)
-    target_arn = arns.apigateway_invocations_arn(func_arn)
+    )["CreateFunctionResponse"]["FunctionArn"]
+    target_arn = arns.apigateway_invocations_arn(func_arn, TEST_AWS_REGION_NAME)
 
     # connect API GW to Lambda
     result = connect_api_gateway_to_http_with_lambda_proxy(

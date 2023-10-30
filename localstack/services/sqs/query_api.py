@@ -33,6 +33,21 @@ serializer = create_serializer(service)
 
 
 @route(
+    '/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
+    host='sqs.<regex("([a-z0-9-]+\\.)?"):region>localhost.localstack.cloud<regex("(:[0-9]{2,5})?"):port>',
+    methods=["POST", "GET"],
+)
+def standard_strategy_handler(
+    request: Request, account_id: str, queue_name: str, region: str = None, port: int = None
+):
+    """
+    Handler for modern-style endpoints which always have the region encoded.
+    See https://docs.aws.amazon.com/general/latest/gr/sqs-service.html
+    """
+    return handle_request(request, region.rstrip("."))
+
+
+@route(
     '/queue/<regex("[a-z0-9-]+"):region>/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
     methods=["POST", "GET"],
 )
@@ -80,10 +95,11 @@ def legacy_handler(request: Request, account_id: str, queue_name: str) -> Respon
 
 def register(router: Router[Handler]):
     """
-    Registers the query API handlers into the given router. There are three routes, one for each SQS_ENDPOINT_STRATEGY.
+    Registers the query API handlers into the given router. There are four routes, one for each SQS_ENDPOINT_STRATEGY.
 
     :param router: the router to add the handlers into.
     """
+    router.add(standard_strategy_handler)
     router.add(path_strategy_handler)
     router.add(domain_strategy_handler)
     router.add(legacy_handler)

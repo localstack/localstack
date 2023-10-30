@@ -25,7 +25,6 @@ class Error(NamedTuple):
 
 
 class ParameterValidationError(Exception):
-
     error: Error
 
     def __init__(self, error: Error) -> None:

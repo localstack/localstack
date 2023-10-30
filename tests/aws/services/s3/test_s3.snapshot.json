@@ -230,7 +230,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_with_prefix[/]": {
-    "recorded-date": "03-08-2023, 04:13:39",
+    "recorded-date": "23-10-2023, 18:32:23",
     "recorded-content": {
       "list-objects": {
         "CommonPrefixes": [
@@ -253,7 +253,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_with_prefix[%2F]": {
-    "recorded-date": "03-08-2023, 04:13:41",
+    "recorded-date": "23-10-2023, 18:32:25",
     "recorded-content": {
       "list-objects": {
         "Contents": [
@@ -279,6 +279,19 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-no-encoding": {
+        "ListBucketResult": {
+          "CommonPrefixes": {
+            "Prefix": "test/"
+          },
+          "Delimiter": "/",
+          "IsTruncated": "false",
+          "Marker": null,
+          "MaxKeys": "1000",
+          "Name": "<bucket-name:1>",
+          "Prefix": "test"
         }
       }
     }
@@ -4919,7 +4932,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_versions_with_prefix": {
-    "recorded-date": "04-08-2023, 23:47:58",
+    "recorded-date": "22-10-2023, 00:29:59",
     "recorded-content": {
       "list-object-version-1": {
         "CommonPrefixes": [
@@ -5130,6 +5143,20 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-versions-no-encoding": {
+        "ListVersionsResult": {
+          "CommonPrefixes": {
+            "Prefix": "dir/subdir/"
+          },
+          "Delimiter": "/",
+          "IsTruncated": "false",
+          "KeyMarker": null,
+          "MaxKeys": "1000",
+          "Name": "<bucket-name:1>",
+          "Prefix": "dir/subdir",
+          "VersionIdMarker": null
         }
       }
     }
@@ -5512,62 +5539,8 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[None]": {
-    "recorded-date": "28-03-2023, 12:25:25",
-    "recorded-content": {}
-  },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[/]": {
-    "recorded-date": "28-03-2023, 12:25:27",
-    "recorded-content": {
-      "list-objects-v2": {
-        "CommonPrefixes": [
-          {
-            "Prefix": "test/foo/"
-          }
-        ],
-        "Delimiter": "/",
-        "EncodingType": "url",
-        "IsTruncated": false,
-        "KeyCount": 1,
-        "MaxKeys": 1000,
-        "Name": "<bucket-name:1>",
-        "Prefix": "test/",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[%2F]": {
-    "recorded-date": "28-03-2023, 12:25:30",
-    "recorded-content": {
-      "list-objects-v2": {
-        "Contents": [
-          {
-            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
-            "Key": "test/foo/bar/123",
-            "LastModified": "datetime",
-            "Size": 11,
-            "StorageClass": "STANDARD"
-          }
-        ],
-        "Delimiter": "%252F",
-        "EncodingType": "url",
-        "IsTruncated": false,
-        "KeyCount": 1,
-        "MaxKeys": 1000,
-        "Name": "<bucket-name:1>",
-        "Prefix": "test/",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix": {
-    "recorded-date": "03-08-2023, 04:13:48",
+    "recorded-date": "22-10-2023, 00:35:27",
     "recorded-content": {
       "list-objects-v2-1": {
         "Contents": [
@@ -5637,6 +5610,22 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-v2-no-encoding": {
+        "ListBucketResult": {
+          "Contents": {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/foo/bar/123test/foo/bar/456",
+            "LastModified": "date",
+            "Size": "11",
+            "StorageClass": "STANDARD"
+          },
+          "IsTruncated": "false",
+          "KeyCount": "1",
+          "MaxKeys": "1000",
+          "Name": "<bucket-name:1>",
+          "Prefix": "test/foo"
         }
       }
     }
@@ -9669,7 +9658,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_preconditions[get_object]": {
-    "recorded-date": "10-08-2023, 01:14:32",
+    "recorded-date": "23-10-2023, 18:17:15",
     "recorded-content": {
       "precondition-if-match": {
         "Error": {
@@ -9737,6 +9726,30 @@
           "HTTPStatusCode": 304
         }
       },
+      "precondition-if-unmodified-since-is-object": {
+        "AcceptRanges": "bytes",
+        "Body": "data",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "precondition-if-modified-since-is-object": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
       "obj-success": {
         "AcceptRanges": "bytes",
         "Body": "data",
@@ -9754,7 +9767,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_preconditions[head_object]": {
-    "recorded-date": "10-08-2023, 01:14:38",
+    "recorded-date": "23-10-2023, 18:17:21",
     "recorded-content": {
       "precondition-if-match": {
         "Error": {
@@ -9810,6 +9823,29 @@
         }
       },
       "etag-missing-quotes": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "precondition-if-unmodified-since-is-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "precondition-if-modified-since-is-object": {
         "Error": {
           "Code": "304",
           "Message": "Not Modified"
@@ -10477,6 +10513,798 @@
         "Key": "test.file",
         "Location": "<location:1>",
         "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_with_prefix[]": {
+    "recorded-date": "23-10-2023, 18:32:21",
+    "recorded-content": {
+      "list-objects": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/foo/bar/123",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "Marker": "",
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_v2_continuation_start_after": {
+    "recorded-date": "22-10-2023, 02:21:09",
+    "recorded-content": {
+      "list-objects-v2-max-5": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_0",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_1",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_10",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_11",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_2",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyCount": 5,
+        "MaxKeys": 5,
+        "Name": "<bucket-name:1>",
+        "NextContinuationToken": "<next-continuation-token:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-v2-rest": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_3",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_4",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_5",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_6",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_7",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_8",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_9",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "ContinuationToken": "<next-continuation-token:1>",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 7,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-start-after": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_8",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_9",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 2,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "StartAfter": "test_7",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-start-after-token": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_3",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_4",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_5",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_6",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_7",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_8",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test_9",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "ContinuationToken": "<next-continuation-token:1>",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 7,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exc-continuation-token": {
+        "Error": {
+          "ArgumentName": "continuation-token",
+          "Code": "InvalidArgument",
+          "Message": "The continuation token provided is incorrect"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_versions_markers": {
+    "recorded-date": "22-10-2023, 04:04:58",
+    "recorded-content": {
+      "version-order": {
+        "Versions": [
+          {
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "VersionId": "<version-id:5>"
+          },
+          {
+            "VersionId": "<version-id:6>"
+          },
+          {
+            "VersionId": "<version-id:7>"
+          },
+          {
+            "VersionId": "<version-id:8>"
+          },
+          {
+            "VersionId": "<version-id:9>"
+          }
+        ]
+      },
+      "list-objects-versions-all": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": false,
+            "Key": "test_0",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:5>"
+          },
+          {
+            "IsLatest": false,
+            "Key": "test_1",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:6>"
+          },
+          {
+            "IsLatest": true,
+            "Key": "test_2",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:7>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
+            "IsLatest": true,
+            "Key": "test_0",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:8>"
+          },
+          {
+            "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
+            "IsLatest": false,
+            "Key": "test_0",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
+            "IsLatest": true,
+            "Key": "test_1",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:9>"
+          },
+          {
+            "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
+            "IsLatest": false,
+            "Key": "test_1",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
+            "IsLatest": false,
+            "Key": "test_2",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
+            "IsLatest": false,
+            "Key": "test_2",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-versions-5": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": false,
+            "Key": "test_0",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:5>"
+          },
+          {
+            "IsLatest": false,
+            "Key": "test_1",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:6>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyMarker": "",
+        "MaxKeys": 5,
+        "Name": "<bucket-name:1>",
+        "NextKeyMarker": "test_1",
+        "NextVersionIdMarker": "<version-id:6>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
+            "IsLatest": true,
+            "Key": "test_0",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:8>"
+          },
+          {
+            "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
+            "IsLatest": false,
+            "Key": "test_0",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
+            "IsLatest": true,
+            "Key": "test_1",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:9>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-next-key-only": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": true,
+            "Key": "test_2",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:7>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyMarker": "test_1",
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "NextKeyMarker": "test_2",
+        "NextVersionIdMarker": "<version-id:7>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-next-key-last": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "test_2",
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-next-version-only": {
+        "Error": {
+          "ArgumentName": "version-id-marker",
+          "ArgumentValue": "<version-id:6>",
+          "Code": "InvalidArgument",
+          "Message": "A version-id marker cannot be specified without a key marker."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list-objects-both-markers": {
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyMarker": "test_1",
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "NextKeyMarker": "test_1",
+        "NextVersionIdMarker": "<version-id:2>",
+        "Prefix": "",
+        "VersionIdMarker": "<version-id:6>",
+        "Versions": [
+          {
+            "ETag": "\"db3ec040e20dfc657dab510aeab74759\"",
+            "IsLatest": false,
+            "Key": "test_1",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-next-key-empty": {
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "KeyMarker": "",
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "NextKeyMarker": "test_0",
+        "NextVersionIdMarker": "<version-id:8>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
+            "IsLatest": true,
+            "Key": "test_0",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:8>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_list_objects_next_marker": {
+    "recorded-date": "22-10-2023, 04:13:47",
+    "recorded-content": {
+      "list-objects-all": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "<key:1>",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "<key:2>",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "<key:3>",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "Marker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-max-1": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "<key:1>",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "Marker": "",
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "NextMarker": "<key:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-rest": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "<key:2>",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "Marker": "<key:1>",
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-marker-empty": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "<key:1>",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "Marker": "",
+        "MaxKeys": 1,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_delete_objects_encoding": {
+    "recorded-date": "22-10-2023, 04:25:14",
+    "recorded-content": {
+      "list-objects-before-delete": {
+        "Contents": [
+          {
+            "ETag": "\"1ac438708eff428b768f07249b3e2bb2\"",
+            "Key": "a%2Fb",
+            "LastModified": "datetime",
+            "Size": 16,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"ec53baa61c0c0b736a567bdef59250f3\"",
+            "Key": "a/%F0%9F%98%80",
+            "LastModified": "datetime",
+            "Size": 21,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 2,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deleted-resp": {
+        "Deleted": [
+          {
+            "Key": "a%2Fb"
+          },
+          {
+            "Key": "a/%F0%9F%98%80"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 0,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

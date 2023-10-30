@@ -62,10 +62,15 @@ class StackTemplate(TypedDict):
 class Stack:
     def __init__(
         self,
+        account_id: str,
+        region_name: str,
         metadata: Optional[StackMetadata] = None,
         template: Optional[StackTemplate] = None,
         template_body: Optional[str] = None,
     ):
+        self.account_id = account_id
+        self.region_name = region_name
+
         if template is None:
             template = {}
 
@@ -85,7 +90,10 @@ class Stack:
             ] = (resource.get("LogicalResourceId") or resource_id)
         # initialize stack template attributes
         stack_id = self.metadata.get("StackId") or arns.cloudformation_stack_arn(
-            self.stack_name, short_uid()
+            self.stack_name,
+            short_uid(),
+            account_id=account_id,
+            region_name=region_name,
         )
         self.template["StackId"] = self.metadata["StackId"] = stack_id
         self.template["Parameters"] = self.template.get("Parameters") or {}
@@ -312,22 +320,31 @@ class Stack:
         return resource
 
     def copy(self):
-        return Stack(metadata=dict(self.metadata), template=dict(self.template))
+        return Stack(
+            account_id=self.account_id,
+            region_name=self.region_name,
+            metadata=dict(self.metadata),
+            template=dict(self.template),
+        )
 
 
 # FIXME: remove inheritance
 class StackChangeSet(Stack):
-    def __init__(self, stack: Stack, params=None, template=None):
+    def __init__(self, account_id: str, region_name: str, stack: Stack, params=None, template=None):
         if template is None:
             template = {}
         if params is None:
             params = {}
-        super(StackChangeSet, self).__init__(params, template)
+        super(StackChangeSet, self).__init__(account_id, region_name, params, template)
 
         name = self.metadata["ChangeSetName"]
         if not self.metadata.get("ChangeSetId"):
-            self.metadata["ChangeSetId"] = arns.cf_change_set_arn(name, change_set_id=short_uid())
+            self.metadata["ChangeSetId"] = arns.cf_change_set_arn(
+                name, change_set_id=short_uid(), account_id=account_id, region_name=region_name
+            )
 
+        self.account_id = account_id
+        self.region_name = region_name
         self.stack = stack
         self.metadata["StackId"] = stack.stack_id
         self.metadata["Status"] = "CREATE_PENDING"

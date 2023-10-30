@@ -8,17 +8,60 @@ line_length = 100
 include = '(localstack/.*\.py$|tests/.*\.py$)'
 extend_exclude = '(localstack/infra|localstack/node_modules|.filesystem|localstack/services/stepfunctions/asl/antlr/runtime)'
 
-[tool.isort]
-profile = 'black'
-extend_skip = ['localstack/infra/', 'localstack/node_modules', 'bin', '.filesystem', 'localstack/services/stepfunctions/asl/antlr/runtime']
-line_length = 100
-
-# call using pflake8
-[tool.flake8]
-max-line-length = 110
-ignore = 'E203,E266,E501,W503,F403'
-select = 'B,C,E,F,I,W,T4,B9'
-exclude = 'node_modules,.venv*,venv*,dist,build,target,*.egg-info,fixes,localstack/infra,localstack/node_modules,.filesystem,.git,localstack/services/stepfunctions/asl/antlr/runtime'
+[tool.ruff]
+# Always generate Python 3.8-compatible code.
+target-version = "py38"
+line-length = 110
+ignore = [
+    "B005", # TODO Using `.strip()` with multi-character strings is misleading
+    "B006", # TODO Do not use mutable data structures for argument defaults
+    "B007", # TODO Loop control variable x not used within loop body
+    "B008", # TODO Do not perform function call `Queue` in argument defaults
+    "B011", # TODO Do not `assert False` (`python -O` removes these calls), raise `AssertionError()`
+    "B016", # TODO Cannot raise a literal. Did you intend to return it or raise an Exception?
+    "B017", # TODO `pytest.raises(Exception)` should be considered evil
+    "B018", # TODO Found useless expression. Either assign it to a variable or remove it.
+    "B019", # TODO Use of `functools.lru_cache` or `functools.cache` on methods can lead to memory leaks
+    "B020", # TODO Loop control variable `invalid_values` overrides iterable it iterates
+    "B022", # TODO No arguments passed to `contextlib.suppress`. No exceptions will be suppressed and therefore this context manager is redundant
+    "B023", # TODO Function definition does not bind loop variable `server`
+    "B024", # TODO x is an abstract base class, but it has no abstract methods
+    "B026", # TODO Star-arg unpacking after a keyword argument is strongly discouraged
+    "B027", # TODO `Server.do_shutdown` is an empty method in an abstract base class, but has no abstract decorator
+    "B028", # TODO No explicit `stacklevel` keyword argument found
+    "B034", # TODO `re.sub` should pass `count` and `flags` as keyword arguments to avoid confusion due to unintuitive argument positions
+    "B904", # TODO Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    "C401", # TODO Unnecessary generator (rewrite as a `set` comprehension)
+    "C402", # TODO Unnecessary generator (rewrite as a `dict` comprehension)
+    "C403", # TODO Unnecessary `list` comprehension (rewrite as a `set` comprehension)
+    "C405", # TODO Unnecessary `list` literal (rewrite as a `set` literal)
+    "C408", # TODO Unnecessary `list` call (rewrite as a literal)
+    "C411", # TODO Unnecessary `list` call (remove the outer call to `list()`)
+    "C414", # TODO Unnecessary `list` call within `sorted()`
+    "C416", # TODO Unnecessary `set` comprehension
+    "C417", # TODO Replace `map` with a generator expression
+    "C418", # TODO Unnecessary `dict` literal passed to `dict()` (remove the outer call to `dict()`)
+    "C419", # TODO Unnecessary list comprehension.
+    "C901", # TODO function is too complex
+    "E402", # TODO Module level import not at top of file
+    "E501", # E501 Line too long - handled by black, see https://docs.astral.sh/ruff/faq/#is-ruff-compatible-with-black
+    "E721", # TODO Do not compare types, use `isinstance()`
+    "F403", # TODO `from localstack.services.cloudformation.models import *` used; unable to detect undefined names
+    "T201", # TODO `print` found
+    "T203", # TODO `pprint` found
+]
+select = ["B", "C", "E", "F", "I", "W", "T", "B9"]
+exclude = [
+    ".venv*",
+    "venv*",
+    "dist",
+    "build",
+    "target",
+    "*.egg-info",
+    ".filesystem",
+    ".git",
+    "localstack/services/stepfunctions/asl/antlr/runtime"
+    ]
 
 [tool.coverage.run]
 relative_files = true

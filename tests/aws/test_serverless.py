@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from localstack.constants import TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.common import retry, run
@@ -182,7 +182,7 @@ class TestServerless:
             assert method in proxy_resource["resourceMethods"]
             resource_method = proxy_resource["resourceMethods"][method]
             assert (
-                arns.lambda_function_arn(function_name)
+                arns.lambda_function_arn(function_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
                 in resource_method["methodIntegration"]["uri"]
             )
 

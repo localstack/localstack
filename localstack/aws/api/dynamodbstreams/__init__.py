@@ -221,7 +221,6 @@ class ListStreamsOutput(TypedDict, total=False):
 
 
 class DynamodbstreamsApi:
-
     service = "dynamodbstreams"
     version = "2012-08-10"
 

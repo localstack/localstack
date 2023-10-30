@@ -1325,7 +1325,6 @@ class UpdateResolverRuleResponse(TypedDict, total=False):
 
 
 class Route53ResolverApi:
-
     service = "route53resolver"
     version = "2018-04-01"
 

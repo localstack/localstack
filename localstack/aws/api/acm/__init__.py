@@ -515,7 +515,6 @@ class UpdateCertificateOptionsRequest(ServiceRequest):
 
 
 class AcmApi:
-
     service = "acm"
     version = "2015-12-08"
 

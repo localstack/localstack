@@ -66,7 +66,6 @@ def test_sns_subscription(deploy_cfn_template, aws_client):
 
 @markers.aws.validated
 def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
-
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/deploy_template_2.yaml"

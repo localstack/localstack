@@ -156,7 +156,6 @@ class InternalFailure(CommonServiceException):
 class CloudformationProvider(CloudformationApi):
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
-
         # TODO: test what happens when both TemplateUrl and Body are specified
         state = get_cloudformation_store(context.account_id, context.region)
         template_body = request.get("TemplateBody") or ""
@@ -204,7 +203,7 @@ class CloudformationProvider(CloudformationApi):
         )
 
         # handle conditions
-        stack = Stack(request, template)
+        stack = Stack(context.account_id, context.region, request, template)
 
         try:
             template = template_preparer.transform_template(
@@ -229,7 +228,7 @@ class CloudformationProvider(CloudformationApi):
             state.stacks[stack.stack_id] = stack
             return CreateStackOutput(StackId=stack.stack_id)
 
-        stack = Stack(request, template)
+        stack = Stack(context.account_id, context.region, request, template)
 
         # resolve conditions
         raw_conditions = template.get("Conditions", {})
@@ -342,7 +341,7 @@ class CloudformationProvider(CloudformationApi):
 
         deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         # TODO: there shouldn't be a "new" stack on update
-        new_stack = Stack(request, template)
+        new_stack = Stack(context.account_id, context.region, request, template)
         new_stack.set_resolved_parameters(resolved_parameters)
         stack.set_resolved_parameters(resolved_parameters)
         stack.set_resolved_stack_conditions(resolved_stack_conditions)
@@ -443,7 +442,7 @@ class CloudformationProvider(CloudformationApi):
             api_utils.prepare_template_body(request)
             template = template_preparer.parse_template(request["TemplateBody"])
             request["StackName"] = "tmp-stack"
-            stack = Stack(request, template)
+            stack = Stack(context.account_id, context.region, request, template)
 
         result: GetTemplateSummaryOutput = stack.describe_details()
 
@@ -541,6 +540,8 @@ class CloudformationProvider(CloudformationApi):
             empty_stack_template["Resources"] = {}
             req_params_copy = clone_stack_params(req_params)
             stack = Stack(
+                context.account_id,
+                context.region,
                 req_params_copy,
                 empty_stack_template,
                 template_body=template_body,
@@ -575,7 +576,7 @@ class CloudformationProvider(CloudformationApi):
         #   currently we need to create a stack with existing resources + parameters so that resolve refs recursively in here will work.
         #   The correct way to do it would be at a later stage anyway just like a normal intrinsic function
         req_params_copy = clone_stack_params(req_params)
-        temp_stack = Stack(req_params_copy, template)
+        temp_stack = Stack(context.account_id, context.region, req_params_copy, template)
         temp_stack.set_resolved_parameters(resolved_parameters)
 
         # TODO: everything below should be async
@@ -593,7 +594,9 @@ class CloudformationProvider(CloudformationApi):
         )
 
         # create change set for the stack and apply changes
-        change_set = StackChangeSet(stack, req_params, transformed_template)
+        change_set = StackChangeSet(
+            context.account_id, context.region, stack, req_params, transformed_template
+        )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.set_resolved_parameters(resolved_parameters)
 
@@ -644,7 +647,6 @@ class CloudformationProvider(CloudformationApi):
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
     ) -> DescribeChangeSetOutput:
-
         # only relevant if change_set_name isn't an ARN
         if not ARN_CHANGESET_REGEX.match(change_set_name):
             if not stack_name:
@@ -682,7 +684,6 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
     ) -> DeleteChangeSetOutput:
-
         # only relevant if change_set_name isn't an ARN
         if not ARN_CHANGESET_REGEX.match(change_set_name):
             if not stack_name:
@@ -808,7 +809,6 @@ class CloudformationProvider(CloudformationApi):
         logical_resource_id: LogicalResourceId = None,
         physical_resource_id: PhysicalResourceId = None,
     ) -> DescribeStackResourcesOutput:
-
         if physical_resource_id and stack_name:
             raise ValidationError("Cannot specify both StackName and PhysicalResourceId")
         # TODO: filter stack by PhysicalResourceId!

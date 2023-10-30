@@ -15,7 +15,6 @@ LOG = logging.getLogger(__name__)
 
 
 class IteratorWorker(IterationWorker):
-
     _parameters: Final[Optional[Parameters]]
 
     def __init__(

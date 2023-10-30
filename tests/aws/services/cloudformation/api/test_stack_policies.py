@@ -167,7 +167,6 @@ class TestStackPolicy:
     def test_set_policy_both_policy_and_url(
         self, deploy_cfn_template, s3_create_bucket, snapshot, aws_client
     ):
-
         """Test to validate the API behavior when trying to set a Stack policy using both the body and the URL"""
 
         stack = deploy_cfn_template(

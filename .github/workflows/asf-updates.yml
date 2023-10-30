@@ -59,6 +59,12 @@ jobs:
           echo "$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Format code
+        if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
+        run: |
+          # execute the format-modified target (only if we have changes, otherwise the black invocation fails)
+          make format-modified
+
       - name: Read PR markdown template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         id: template

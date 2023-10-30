@@ -13,10 +13,9 @@ from hypercorn.asyncio import serve, tcp_server
 from hypercorn.config import Config
 from hypercorn.events import Closed
 from hypercorn.protocol import http_stream
-from quart import Quart
+from quart import Quart, make_response, request
 from quart import app as quart_app
 from quart import asgi as quart_asgi
-from quart import make_response, request
 from quart import utils as quart_utils
 from quart.app import _cancel_all_tasks
 

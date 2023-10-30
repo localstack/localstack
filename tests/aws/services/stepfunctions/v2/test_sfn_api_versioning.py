@@ -19,9 +19,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestSnfApiVersioning:
     @markers.aws.validated
     def test_create_with_publish(

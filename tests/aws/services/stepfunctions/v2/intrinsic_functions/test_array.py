@@ -17,9 +17,7 @@ pytestmark = pytest.mark.skipif(
 # TODO: test for validation errors, and boundary testing.
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestArray:
     @markers.aws.validated
     def test_array_0(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):

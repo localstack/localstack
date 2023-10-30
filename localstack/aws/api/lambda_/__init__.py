@@ -1710,7 +1710,6 @@ class UpdateFunctionUrlConfigResponse(TypedDict, total=False):
 
 
 class LambdaApi:
-
     service = "lambda"
     version = "2015-03-31"
 

@@ -256,10 +256,9 @@ class CloudwatchPublishWorker:
         self.thread: Optional[FuncThread] = None
 
     def publish_approximate_cloudwatch_metrics(self):
-        for account_id, region_bundle in sqs_stores.items():
-            for region, store in region_bundle.items():
-                for queue in store.queues.values():
-                    self.publish_approximate_metrics_for_queue_to_cloudwatch(queue)
+        for account_id, region, store in sqs_stores.iter_stores():
+            for queue in store.queues.values():
+                self.publish_approximate_metrics_for_queue_to_cloudwatch(queue)
 
     def publish_approximate_metrics_for_queue_to_cloudwatch(self, queue):
         """Publishes the metrics for ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
@@ -324,18 +323,17 @@ class QueueUpdateWorker:
         self.mutex = threading.RLock()
 
     def do_update_all_queues(self):
-        for account_id, region_bundle in sqs_stores.items():
-            for region, store in region_bundle.items():
-                for queue in store.queues.values():
-                    try:
-                        queue.requeue_inflight_messages()
-                    except Exception:
-                        LOG.exception("error re-queueing inflight messages")
+        for account_id, region, store in sqs_stores.iter_stores():
+            for queue in store.queues.values():
+                try:
+                    queue.requeue_inflight_messages()
+                except Exception:
+                    LOG.exception("error re-queueing inflight messages")
 
-                    try:
-                        queue.enqueue_delayed_messages()
-                    except Exception:
-                        LOG.exception("error enqueueing delayed messages")
+                try:
+                    queue.enqueue_delayed_messages()
+                except Exception:
+                    LOG.exception("error enqueueing delayed messages")
 
     def start(self):
         with self.mutex:

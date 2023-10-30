@@ -1,12 +1,6 @@
-import re
-
-from localstack import config
-from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
-from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
-from localstack.testing.pytest import markers
-
-"""
-API-focused tests only. Don't add tests for asynchronous, blocking or implicit behavior here.
+"""API-focused tests only.
+Everything related to behavior and implicit functionality goes into test_lambda.py instead
+Don't add tests for asynchronous, blocking or implicit behavior here.
 
 # TODO: create a re-usable pattern for fairly reproducible scenarios with slower updates/creates to test intermediary states
 # TODO: code signing https://docs.aws.amazon.com/lambda/latest/dg/configuration-codesigning.html
@@ -18,6 +12,7 @@ import base64
 import io
 import json
 import logging
+import re
 from hashlib import sha256
 from io import BytesIO
 from typing import Callable
@@ -27,9 +22,13 @@ import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError, ParamValidationError
 
+from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
+from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
+from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
@@ -1794,7 +1793,6 @@ class TestLambdaTag:
 
     @markers.aws.validated
     def test_tag_lifecycle(self, create_lambda_function, snapshot, fn_arn, aws_client):
-
         # 1. add tag
         tag_single_response = aws_client.lambda_.tag_resource(Resource=fn_arn, Tags={"A": "tag-a"})
         snapshot.match("tag_single_response", tag_single_response)
@@ -2498,7 +2496,6 @@ class TestLambdaReservedConcurrency:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaProvisionedConcurrency:
-
     # TODO: test ARN
     # TODO: test shorthand ARN
     @markers.aws.validated
@@ -4124,7 +4121,6 @@ class TestLambdaEventSourceMappings:
     @pytest.mark.skipif(condition=is_old_provider(), reason="new provider only")
     @markers.aws.validated
     def test_event_source_mapping_exceptions(self, snapshot, aws_client):
-
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             aws_client.lambda_.get_event_source_mapping(UUID=long_uid())
         snapshot.match("get_unknown_uuid", e.value.response)

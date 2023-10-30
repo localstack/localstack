@@ -417,7 +417,6 @@ class UpdateGroupQueryOutput(TypedDict, total=False):
 
 
 class ResourceGroupsApi:
-
     service = "resource-groups"
     version = "2017-11-27"
 

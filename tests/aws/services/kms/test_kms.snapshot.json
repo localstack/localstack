@@ -1560,5 +1560,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import": {
+    "recorded-date": "25-10-2023, 12:29:27",
+    "recorded-content": {
+      "response-error": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": "<key-arn> origin is AWS_KMS which is not valid for this operation."
+        },
+        "message": "<key-arn> origin is AWS_KMS which is not valid for this operation.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

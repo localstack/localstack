@@ -1,7 +1,7 @@
 import datetime
-from zoneinfo import ZoneInfo
 
 from botocore.utils import InvalidArnException
+from zoneinfo import ZoneInfo
 
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.s3 import (
@@ -23,9 +23,9 @@ from localstack.aws.api.s3 import (
     InventoryId,
     ObjectCannedACL,
     Permission,
+    WebsiteConfiguration,
 )
 from localstack.aws.api.s3 import Type as GranteeType
-from localstack.aws.api.s3 import WebsiteConfiguration
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.exceptions import InvalidRequest, MalformedACLError, MalformedXML
 from localstack.services.s3.utils import (
@@ -390,7 +390,6 @@ def validate_cors_configuration(cors_configuration: CORSConfiguration):
     optional_rule_fields = {"AllowedHeaders", "ExposeHeaders", "MaxAgeSeconds", "ID"}
 
     for rule in rules:
-
         if not validate_dict_fields(rule, required_rule_fields, optional_rule_fields):
             raise MalformedXML()
 

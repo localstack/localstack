@@ -52,7 +52,7 @@ def expand_multipart_filename(data, headers):
 
     filename = None
 
-    for (disposition, _) in _iter_multipart_parts(data_bytes, boundary):
+    for disposition, _ in _iter_multipart_parts(data_bytes, boundary):
         if disposition.get("name") == "file" and "filename" in disposition:
             filename = disposition["filename"]
             break
@@ -61,7 +61,7 @@ def expand_multipart_filename(data, headers):
         # Found nothing, return unaltered
         return data
 
-    for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
+    for disposition, part in _iter_multipart_parts(data_bytes, boundary):
         if disposition.get("name") == "key" and b"${filename}" in part:
             search = boundary + part
             replace = boundary + part.replace(b"${filename}", filename.encode("utf8"))
@@ -89,13 +89,13 @@ def find_multipart_key_value(data, headers, field_name="success_action_redirect"
     boundary = params["boundary"].encode("ascii")
     data_bytes = to_bytes(data)
 
-    for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
+    for disposition, part in _iter_multipart_parts(data_bytes, boundary):
         if disposition.get("name") == "key":
             _, value = part.split(b"\r\n\r\n", 1)
             key = value.rstrip(b"\r\n--").decode("utf8")
 
     if key:
-        for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
+        for disposition, part in _iter_multipart_parts(data_bytes, boundary):
             if disposition.get("name") == field_name:
                 _, value = part.split(b"\r\n\r\n", 1)
                 field_value = value.rstrip(b"\r\n--").decode("utf8")

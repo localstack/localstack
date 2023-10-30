@@ -16,9 +16,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestTaskLambda:
     @markers.aws.validated
     def test_invoke_bytes_payload(

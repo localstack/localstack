@@ -54,7 +54,6 @@ def find_stream_for_consumer(consumer_arn):
 
 
 class KinesisProvider(KinesisApi, ServiceLifecycleHook):
-
     server_manager: KinesisServerManager
 
     def __init__(self):

@@ -16,9 +16,7 @@ pytestmark = pytest.mark.skipif(
 # TODO: test for validation errors, and boundary testing.
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestIsOperators:
     @markers.aws.validated
     def test_is_boolean(

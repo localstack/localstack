@@ -142,7 +142,6 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         if self.resource.api_action.lower() == "startexecution":
             optional_input = normalised_parameters.get("input")
             if not isinstance(optional_input, str):
-
                 # AWS Sfn's documentation states:
                 # If you don't include any JSON input data, you still must include the two braces.
                 if optional_input is None:

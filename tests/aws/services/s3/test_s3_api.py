@@ -800,7 +800,6 @@ class TestS3BucketEncryption:
         condition=is_not_native_provider, paths=["$..BucketKeyEnabled"]
     )
     def test_s3_bucket_encryption_sse_kms(self, s3_bucket, kms_key, aws_client, snapshot):
-
         put_bucket_enc = aws_client.s3.put_bucket_encryption(
             Bucket=s3_bucket,
             ServerSideEncryptionConfiguration={
@@ -1626,6 +1625,9 @@ class TestS3BucketPolicy:
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
         snapshot.match("get-bucket-policy-after-delete", e.value.response)
+
+        response = aws_client.s3.delete_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-policy-after-delete", response)
 
     @markers.aws.validated
     @pytest.mark.xfail(

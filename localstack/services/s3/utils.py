@@ -7,7 +7,6 @@ import re
 import zlib
 from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
-from zoneinfo import ZoneInfo
 
 import moto.s3.models as moto_s3_models
 import xmltodict
@@ -15,6 +14,7 @@ from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
 from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
+from zoneinfo import ZoneInfo
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
@@ -85,19 +85,13 @@ BUCKET_NAME_REGEX = (
     + r"(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)"
 )
 
-REGION_REGEX = r"[a-z]{2}-[a-z]+-[0-9]{1,}"
-PORT_REGEX = r"(:[\d]{0,6})?"
-
 TAG_REGEX = re.compile(r"^[\w\s.:/=+\-@]*$")
 
-S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expression (separated by .) followed by .s3
-    r"^(http(s)?://)?((?!s3\.)[^\./]+)\."  # the negative lookahead part is for considering buckets
-    r"(((s3(-website)?\.({}\.)?)localhost(\.localstack\.cloud)?)|(localhost\.localstack\.cloud)|"
-    r"(s3((-website)|(-external-1))?[\.-](dualstack\.)?"
-    r"({}\.)?amazonaws\.com(.cn)?)){}(/[\w\-. ]*)*$"
-).format(
-    REGION_REGEX, REGION_REGEX, PORT_REGEX
+
+S3_VIRTUAL_HOSTNAME_REGEX = (
+    r"(?P<bucket>.*).s3.(?P<region>(?:us-gov|us|ap|ca|cn|eu|sa)-[a-z]+-\d)?.*"
 )
+
 _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
 
@@ -447,20 +441,19 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return False
 
 
-def uses_host_addressing(headers: Dict[str, str]) -> bool:
+def uses_host_addressing(headers: Dict[str, str]) -> str | None:
     """
     Determines if the request is targeting S3 with virtual host addressing
     :param headers: the request headers
-    :return: whether the request targets S3 with virtual host addressing
+    :return: if the request targets S3 with virtual host addressing, returns the bucket name else None
     """
     host = headers.get("host", "")
 
     # try to extract the bucket from the hostname (the "in" check is a minor optimization, as the regex is very greedy)
-    return (
-        True
-        if ".s3" in host and ((match := _s3_virtual_host_regex.match(host)) and match.group(3))
-        else False
-    )
+    if ".s3." in host and (
+        (match := _s3_virtual_host_regex.match(host)) and (bucket_name := match.group("bucket"))
+    ):
+        return bucket_name
 
 
 def get_class_attrs_from_spec_class(spec_class: Type[str]) -> set[str]:
@@ -501,8 +494,8 @@ def extract_bucket_name_and_key_from_headers_and_path(
     host = headers.get("host", "")
     if ".s3" in host:
         vhost_match = _s3_virtual_host_regex.match(host)
-        if vhost_match and vhost_match.group(3):
-            bucket_name = vhost_match.group(3)
+        if vhost_match and vhost_match.group("bucket"):
+            bucket_name = vhost_match.group("bucket")
             split = path.split("/", maxsplit=1)
             if len(split) > 1:
                 object_key = split[1]
@@ -936,6 +929,8 @@ def validate_failed_precondition(
     :raises NotModified, 304 with an empty body
     """
     precondition_failed = None
+    # last_modified needs to be rounded to a second so that strict equality can be enforced from a RFC1123 header
+    last_modified = last_modified.replace(microsecond=0)
     if (if_match := request.get("IfMatch")) and etag != if_match.strip('"'):
         precondition_failed = "If-Match"
 
@@ -952,7 +947,7 @@ def validate_failed_precondition(
 
     if ((if_none_match := request.get("IfNoneMatch")) and etag == if_none_match.strip('"')) or (
         (if_modified_since := request.get("IfModifiedSince"))
-        and last_modified < if_modified_since < datetime.datetime.now(tz=_gmt_zone_info)
+        and last_modified <= if_modified_since < datetime.datetime.now(tz=_gmt_zone_info)
     ):
         raise CommonServiceException(
             message="Not Modified",

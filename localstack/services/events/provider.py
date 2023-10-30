@@ -108,7 +108,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def test_event_pattern(
         self, context: RequestContext, event_pattern: EventPattern, event: String
     ) -> TestEventPatternResponse:
-
         # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
         # Test event pattern uses event pattern to match against event.
         # So event pattern keys must be in the event keys and values must match.

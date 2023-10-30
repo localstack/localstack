@@ -223,6 +223,7 @@ def s3_empty_bucket(aws_client):
     """
     Returns a factory that given a bucket name, deletes all objects and deletes all object versions
     """
+
     # Boto resource would make this a straightforward task, but our internal client does not support Boto resource
     # FIXME: this won't work when bucket has more than 1000 objects
     def factory(bucket_name: str):
@@ -691,7 +692,6 @@ def kms_create_key(aws_client_factory):
 
     for region_name, key_id in key_ids:
         try:
-
             # shortest amount of time you can schedule the deletion
             aws_client_factory(region_name=region_name).kms.schedule_key_deletion(
                 KeyId=key_id, PendingWindowInDays=7

@@ -47,9 +47,6 @@ from localstack.aws.api.lambda_ import (
     FunctionName,
     FunctionUrlAuthType,
     FunctionUrlQualifier,
-)
-from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
-from localstack.aws.api.lambda_ import (
     GetAccountSettingsResponse,
     GetCodeSigningConfigResponse,
     GetFunctionCodeSigningConfigResponse,
@@ -116,9 +113,6 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     Runtime,
     RuntimeVersionConfig,
-)
-from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
-from localstack.aws.api.lambda_ import (
     SnapStart,
     SnapStartApplyOn,
     SnapStartOptimizationStatus,
@@ -137,6 +131,8 @@ from localstack.aws.api.lambda_ import (
     UpdateFunctionUrlConfigResponse,
     Version,
 )
+from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
+from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
 from localstack.aws.connect import connect_to
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
@@ -145,6 +141,7 @@ from localstack.services.lambda_.api_utils import ARCHITECTURES, STATEMENT_ID_RE
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
+from localstack.services.lambda_.event_source_listeners.utils import validate_filters
 from localstack.services.lambda_.invocation import AccessDeniedException
 from localstack.services.lambda_.invocation.execution_environment import (
     EnvironmentStartupTimeoutException,
@@ -186,7 +183,6 @@ from localstack.services.lambda_.invocation.lambda_service import (
 )
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.services.lambda_.lambda_utils import validate_filters
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
@@ -2212,7 +2208,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
     ) -> CreateCodeSigningConfigResponse:
-
         state = lambda_stores[context.account_id][context.region]
         # TODO: can there be duplicates?
         csc_id = f"csc-{get_random_hex(17)}"  # e.g. 'csc-077c33b4c19e26036'
@@ -2639,7 +2634,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         configs = []
         for qualifier, pc_config in fn.provisioned_concurrency_configs.items():
-
             if api_utils.qualifier_is_alias(qualifier):
                 alias = fn.aliases.get(qualifier)
                 fn_arn = api_utils.qualified_lambda_arn(

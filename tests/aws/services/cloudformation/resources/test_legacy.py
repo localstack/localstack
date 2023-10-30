@@ -370,7 +370,9 @@ class TestCloudFormation:
         resource = rs["items"][0]
 
         uri = resource["resourceMethods"]["GET"]["methodIntegration"]["uri"]
-        lambda_arn = arns.lambda_function_arn(lambda_func_names[0])  # TODO
+        lambda_arn = arns.lambda_function_arn(
+            lambda_func_names[0], account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+        )
         assert lambda_arn in uri
 
     # TODO: refactor

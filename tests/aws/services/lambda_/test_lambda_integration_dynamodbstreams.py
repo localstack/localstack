@@ -4,9 +4,7 @@ import time
 
 import pytest
 
-from localstack.aws.api.lambda_ import Runtime
-from localstack.services.lambda_.lambda_api import INVALID_PARAMETER_VALUE_EXCEPTION
-from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
@@ -98,7 +96,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot,
         aws_client,
     ):
-
         function_name = f"lambda_func-{short_uid()}"
         role = f"test-lambda-role-{short_uid()}"
         policy_name = f"test-lambda-policy-{short_uid()}"
@@ -115,7 +112,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=role_arn,
         )
         create_table_result = dynamodb_create_table(
@@ -170,7 +167,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot,
         aws_client,
     ):
-
         function_name = f"lambda_func-{short_uid()}"
         ddb_table = f"ddb_table-{short_uid()}"
         items = [
@@ -240,7 +236,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         create_dynamodb_table_response = dynamodb_create_table(
@@ -314,7 +310,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
             role=role_arn,
         )
         dynamodb_create_table(table_name=table_name, partition_key=partition_key)
@@ -432,7 +428,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot,
         aws_client,
     ):
-
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         max_retries = 50
@@ -531,7 +526,6 @@ class TestDynamoDBEventSourceMapping:
         snapshot,
         aws_client,
     ):
-
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
 
@@ -565,4 +559,4 @@ class TestDynamoDBEventSourceMapping:
         with pytest.raises(Exception) as expected:
             aws_client.lambda_.create_event_source_mapping(**event_source_mapping_kwargs)
         snapshot.match("exception_event_source_creation", expected.value.response)
-        expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+        expected.match(InvalidParameterValueException.code)

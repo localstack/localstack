@@ -129,6 +129,7 @@ GetCapacityReservationUsageRequestMaxResults = int
 GetGroupsForCapacityReservationRequestMaxResults = int
 GetIpamPoolAllocationsMaxResults = int
 GetManagedPrefixListAssociationsMaxResults = int
+GetSecurityGroupsForVpcRequestMaxResults = int
 GetSubnetCidrReservationsMaxResults = int
 GpuDeviceCount = int
 GpuDeviceManufacturerName = str
@@ -1916,6 +1917,28 @@ class InstanceType(str):
     r7iz_12xlarge = "r7iz.12xlarge"
     r7iz_16xlarge = "r7iz.16xlarge"
     r7iz_32xlarge = "r7iz.32xlarge"
+    c7a_medium = "c7a.medium"
+    c7a_large = "c7a.large"
+    c7a_xlarge = "c7a.xlarge"
+    c7a_2xlarge = "c7a.2xlarge"
+    c7a_4xlarge = "c7a.4xlarge"
+    c7a_8xlarge = "c7a.8xlarge"
+    c7a_12xlarge = "c7a.12xlarge"
+    c7a_16xlarge = "c7a.16xlarge"
+    c7a_24xlarge = "c7a.24xlarge"
+    c7a_32xlarge = "c7a.32xlarge"
+    c7a_48xlarge = "c7a.48xlarge"
+    c7a_metal_48xl = "c7a.metal-48xl"
+    r7a_metal_48xl = "r7a.metal-48xl"
+    r7i_large = "r7i.large"
+    r7i_xlarge = "r7i.xlarge"
+    r7i_2xlarge = "r7i.2xlarge"
+    r7i_4xlarge = "r7i.4xlarge"
+    r7i_8xlarge = "r7i.8xlarge"
+    r7i_12xlarge = "r7i.12xlarge"
+    r7i_16xlarge = "r7i.16xlarge"
+    r7i_24xlarge = "r7i.24xlarge"
+    r7i_48xlarge = "r7i.48xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -14942,6 +14965,31 @@ class GetReservedInstancesExchangeQuoteResult(TypedDict, total=False):
     ValidationFailureReason: Optional[String]
 
 
+class GetSecurityGroupsForVpcRequest(ServiceRequest):
+    VpcId: VpcId
+    NextToken: Optional[String]
+    MaxResults: Optional[GetSecurityGroupsForVpcRequestMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+class SecurityGroupForVpc(TypedDict, total=False):
+    Description: Optional[String]
+    GroupName: Optional[String]
+    OwnerId: Optional[String]
+    GroupId: Optional[String]
+    Tags: Optional[TagList]
+    PrimaryVpcId: Optional[String]
+
+
+SecurityGroupForVpcList = List[SecurityGroupForVpc]
+
+
+class GetSecurityGroupsForVpcResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    SecurityGroupForVpcs: Optional[SecurityGroupForVpcList]
+
+
 class GetSerialConsoleAccessStatusRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
@@ -17540,7 +17588,6 @@ class WithdrawByoipCidrResult(TypedDict, total=False):
 
 
 class Ec2Api:
-
     service = "ec2"
     version = "2016-11-15"
 
@@ -22368,6 +22415,18 @@ class Ec2Api:
         dry_run: Boolean = None,
         target_configurations: TargetConfigurationRequestSet = None,
     ) -> GetReservedInstancesExchangeQuoteResult:
+        raise NotImplementedError
+
+    @handler("GetSecurityGroupsForVpc")
+    def get_security_groups_for_vpc(
+        self,
+        context: RequestContext,
+        vpc_id: VpcId,
+        next_token: String = None,
+        max_results: GetSecurityGroupsForVpcRequestMaxResults = None,
+        filters: FilterList = None,
+        dry_run: Boolean = None,
+    ) -> GetSecurityGroupsForVpcResult:
         raise NotImplementedError
 
     @handler("GetSerialConsoleAccessStatus")
