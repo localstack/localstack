@@ -13,7 +13,7 @@ class LambdaEventSourceMappingProviderPlugin(CloudFormationResourceProviderPlugi
         self.factory: Optional[Type[ResourceProvider]] = None
 
     def load(self):
-        from localstack.services.lambda_.resource_providers.aws_lambda__eventsourcemapping import (
+        from localstack.services.lambda_.resource_providers.aws_lambda_eventsourcemapping import (
             LambdaEventSourceMappingProvider,
         )
 

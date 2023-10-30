@@ -13,7 +13,7 @@ class LambdaPermissionProviderPlugin(CloudFormationResourceProviderPlugin):
         self.factory: Optional[Type[ResourceProvider]] = None
 
     def load(self):
-        from localstack.services.lambda_.resource_providers.aws_lambda__permission import (
+        from localstack.services.lambda_.resource_providers.aws_lambda_permission import (
             LambdaPermissionProvider,
         )
 
