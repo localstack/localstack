@@ -3284,10 +3284,6 @@ class TestS3:
         snapshot.match("error-non-existent-bucket", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
-        reason="Issue in moto, see https://github.com/getmoto/moto/pull/6933",
-    )
     def test_delete_objects_encoding(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("Name"))
         object_key_1 = "a%2Fb"
