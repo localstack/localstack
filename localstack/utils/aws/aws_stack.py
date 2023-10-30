@@ -294,7 +294,7 @@ def generate_aws_request_headers(
     headers = {
         "Content-Type": ctype,
         "Accept-Encoding": "identity",
-        "X-Amz-Date": "20160623T103251Z",
+        "X-Amz-Date": "20160623T103251Z",  # TODO: Use current date
         "Authorization": (
             "AWS4-HMAC-SHA256 "
             + f"Credential={aws_access_key_id}/20160623/{region_name}/{service}/aws4_request, "
