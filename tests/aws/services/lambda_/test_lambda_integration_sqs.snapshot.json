@@ -1428,7 +1428,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_update": {
-    "recorded-date": "23-10-2023, 15:24:12",
+    "recorded-date": "31-10-2023, 15:18:45",
     "recorded-content": {
       "create-event-source-mapping-response": {
         "BatchSize": 10,
@@ -1464,8 +1464,8 @@
                   "ApproximateFirstReceiveTimestamp": "timestamp"
                 },
                 "messageAttributes": {},
-                "md5OfBody": "<md5-of-body:1>",
                 "md5OfMessageAttributes": null,
+                "md5OfBody": "<md5-of-body:1>",
                 "eventSource": "aws:sqs",
                 "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
                 "awsRegion": "<region>"
@@ -1474,6 +1474,21 @@
           }
         }
       ],
+      "updated_esm": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Updating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
       "events_postupdate": [
         {
           "function_version": "1",
@@ -1493,8 +1508,8 @@
                   "ApproximateFirstReceiveTimestamp": "timestamp"
                 },
                 "messageAttributes": {},
-                "md5OfBody": "<md5-of-body:1>",
                 "md5OfMessageAttributes": null,
+                "md5OfBody": "<md5-of-body:1>",
                 "eventSource": "aws:sqs",
                 "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
                 "awsRegion": "<region>"

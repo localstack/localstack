@@ -1259,7 +1259,7 @@ class TestSQSEventSourceMapping:
         )
         assert mapping_uuid == updated_esm["UUID"]
         assert publish_v2["FunctionArn"] == updated_esm["FunctionArn"]
-        # snapshot.match("updated_esm", updated_esm)
+        snapshot.match("updated_esm", updated_esm)
         _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
         # TODO: we actually would probably need to wait for an updating state here.

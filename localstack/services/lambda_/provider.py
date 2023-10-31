@@ -1678,12 +1678,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: UpdateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
-        account_id, region = api_utils.get_account_and_region(request["FunctionName"], context)
-        function_name, qualifier = api_utils.get_name_and_qualifier(
-            request["FunctionName"], None, context
-        )
-
-        state = lambda_stores[account_id][region]
+        state = lambda_stores[context.account_id][context.region]
         request_data = {**request}
         uuid = request_data.pop("UUID", None)
         if not uuid:
@@ -1696,15 +1691,24 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )  # TODO: test?
 
-        # normalize values to overwrite
+        # remove the FunctionName field
+        function_name_or_arn = request_data.pop("FunctionName", None)
 
+        # normalize values to overwrite
         event_source_mapping = {
             **old_event_source_mapping,
             **request_data,
-            "FunctionArn": api_utils.qualified_lambda_arn(
-                function_name, qualifier, account_id, region
-            ),
         }
+
+        if function_name_or_arn:
+            # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
+            account_id, region = api_utils.get_account_and_region(function_name_or_arn, context)
+            function_name, qualifier = api_utils.get_name_and_qualifier(
+                function_name_or_arn, None, context
+            )
+            event_source_mapping["FunctionArn"] = api_utils.qualified_lambda_arn(
+                function_name, qualifier, account_id, region
+            )
 
         temp_params = (
             {}
