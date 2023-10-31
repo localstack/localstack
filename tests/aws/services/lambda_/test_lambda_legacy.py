@@ -7,13 +7,12 @@ import pytest
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-from localstack.services.lambda_ import lambda_api
-from localstack.services.lambda_.lambda_api import (
+from localstack.services.lambda_.legacy import lambda_api
+from localstack.services.lambda_.legacy.lambda_api import (
     LAMBDA_TEST_ROLE,
     get_lambda_policy_name,
     use_docker,
 )
-from localstack.services.lambda_.lambda_utils import LAMBDA_DEFAULT_HANDLER
 from localstack.services.lambda_.packages import lambda_go_runtime_package
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.pytest import markers
@@ -23,14 +22,14 @@ from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.platform import get_arch, get_os
 from localstack.utils.strings import short_uid, to_bytes, to_str
-from localstack.utils.testutil import create_lambda_archive
+from localstack.utils.testutil import LAMBDA_DEFAULT_HANDLER, create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_RUBY,
     read_streams,
 )
 
-# TODO: remove these tests with 3.0 because they are only for the legacy provider and not aws-validated.
+# TODO[LambdaV1] remove these tests with 3.0 because they are only for the legacy provider and not aws-validated.
 #   not worth fixing the unknown markers.
 pytestmark = pytest.mark.skipif(
     condition=is_new_provider(), reason="only relevant for old provider"

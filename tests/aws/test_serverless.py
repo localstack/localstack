@@ -128,7 +128,9 @@ class TestServerless:
         assert 1 == len(events)
         event_source_arn = events[0]["EventSourceArn"]
 
-        assert event_source_arn == arns.sqs_queue_arn(queue_name)
+        assert event_source_arn == arns.sqs_queue_arn(
+            queue_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+        )
         result = sqs_client.get_queue_attributes(
             QueueUrl=arns.sqs_queue_url_for_arn(queue_name),
             AttributeNames=[

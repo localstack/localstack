@@ -60,7 +60,12 @@ from localstack.services.sns.publisher import (
     SnsBatchPublishContext,
     SnsPublishContext,
 )
-from localstack.utils.aws.arns import ArnData, parse_arn
+from localstack.utils.aws.arns import (
+    ArnData,
+    extract_account_id_from_arn,
+    extract_region_from_arn,
+    parse_arn,
+)
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -963,9 +968,17 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
-        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
-        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
+        account_id = (
+            request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+            if not filter_endpoint_arn
+            else extract_account_id_from_arn(filter_endpoint_arn)
+        )
+        region = (
+            request.args.get("region", AWS_REGION_US_EAST_1)
+            if not filter_endpoint_arn
+            else extract_region_from_arn(filter_endpoint_arn)
+        )
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             messages = store.platform_endpoint_messages.get(filter_endpoint_arn, [])
@@ -986,9 +999,17 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
     def on_delete(self, request: Request) -> Response:
-        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
-        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
+        account_id = (
+            request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+            if not filter_endpoint_arn
+            else extract_account_id_from_arn(filter_endpoint_arn)
+        )
+        region = (
+            request.args.get("region", AWS_REGION_US_EAST_1)
+            if not filter_endpoint_arn
+            else extract_region_from_arn(filter_endpoint_arn)
+        )
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             store.platform_endpoint_messages.pop(filter_endpoint_arn, None)

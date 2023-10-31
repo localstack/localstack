@@ -16,12 +16,13 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
-from localstack.services.lambda_.lambda_api import IAM_POLICY_VERSION
 from localstack.utils.aws import arns
 from localstack.utils.common import ensure_list
 from localstack.utils.functions import call_safe
 
 LOG = logging.getLogger(__name__)
+
+DEFAULT_IAM_POLICY_VERSION = "2012-10-17"
 
 
 class IAMManagedPolicy(GenericBaseModel):
@@ -363,7 +364,7 @@ class IAMRole(GenericBaseModel):
             doc = dict(policy["PolicyDocument"])
             doc = remove_none_values(doc)
 
-            doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
+            doc["Version"] = doc.get("Version") or DEFAULT_IAM_POLICY_VERSION
             statements = ensure_list(doc["Statement"])
             for statement in statements:
                 if isinstance(statement.get("Resource"), list):
@@ -573,7 +574,7 @@ class IAMPolicy(GenericBaseModel):
             resource: dict,
             stack_name: str,
         ) -> dict:
-            return {"PolicyArn": arns.policy_arn(properties["PolicyName"])}
+            return {"PolicyArn": arns.policy_arn(properties["PolicyName"], account_id=account_id)}
 
         return {
             "create": {
@@ -599,7 +600,9 @@ class IAMPolicy(GenericBaseModel):
         users = props.get("Users", [])
         groups = props.get("Groups", [])
         if managed_policy:
-            result["policy"] = iam.get_policy(PolicyArn=arns.policy_arn(policy_name))
+            result["policy"] = iam.get_policy(
+                PolicyArn=arns.policy_arn(policy_name, account_id=account_id)
+            )
         for role in roles:
             policies = (
                 _filter(iam.list_attached_role_policies(RoleName=role))

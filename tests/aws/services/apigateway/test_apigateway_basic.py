@@ -30,8 +30,9 @@ from localstack.services.apigateway.helpers import (
     host_based_url,
     path_based_url,
 )
-from localstack.services.lambda_.lambda_api import add_event_source, use_docker
-from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.testing.aws.lambda_utils import (
+    is_old_local_executor,
+)
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack
@@ -1452,7 +1453,7 @@ class TestAPIGateway:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
         lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
@@ -1599,7 +1600,7 @@ class TestTagging:
         api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
         assert api_id == "c0stIOm1d"
 
-        api_arn = arns.apigateway_restapi_arn(api_id=api_id)
+        api_arn = arns.apigateway_restapi_arn(api_id, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         aws_client.apigateway.tag_resource(resourceArn=api_arn, tags=tags)
 
         # receive and assert tags
@@ -1607,7 +1608,9 @@ class TestTagging:
         assert tags == tags_saved
 
 
-@pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")
+@pytest.mark.skipif(
+    is_old_local_executor(), reason="Rust lambdas cannot be executed in local executor"
+)
 @pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
 @markers.aws.unknown
 def test_apigateway_rust_lambda(
@@ -1976,12 +1979,13 @@ class TestIntegrations:
         )
 
         # create event source for sqs lambda processor
-        event_source_data = {
-            "FunctionName": integration_lambda,
-            "EventSourceArn": arns.sqs_queue_arn(sqs_queue),
-            "Enabled": True,
-        }
-        add_event_source(event_source_data)
+        # TODO: add meaningful test assertions because the test passes even without creating the even source mapping
+        # Create event source mapping: migrated from the legacy helper `add_event_source(event_source_data)`
+        # es_mapping_result = aws_client.lambda_.create_event_source_mapping(
+        #     EventSourceArn=arns.sqs_queue_arn(sqs_queue), FunctionName=integration_lambda
+        # )
+        # uuid = es_mapping_result["UUID"]
+        # _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
         # generate test data
         test_data = {"spam": "eggs & beans"}
@@ -2013,7 +2017,7 @@ class TestIntegrations:
         )
 
         test_role = "test-s3-role"
-        role_arn = arns.role_arn(role_name=test_role)
+        role_arn = arns.role_arn(role_name=test_role, account_id=TEST_AWS_ACCOUNT_ID)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]

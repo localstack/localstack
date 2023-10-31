@@ -2480,7 +2480,11 @@ class TestSqsProvider:
 
         # create arn
         url_parts = dl_queue_url.split("/")
-        dl_target_arn = arns.sqs_queue_arn(url_parts[-1], account_id=url_parts[len(url_parts) - 2])
+        dl_target_arn = arns.sqs_queue_arn(
+            url_parts[-1],
+            account_id=url_parts[len(url_parts) - 2],
+            region_name=TEST_AWS_REGION_NAME,
+        )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
         queue_url = sqs_create_queue(
