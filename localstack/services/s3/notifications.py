@@ -635,10 +635,10 @@ class LambdaNotifier(BaseNotifier):
         lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
-        lambda_function_config = arns.lambda_function_name(lambda_arn)
+
         try:
             lambda_client.invoke(
-                FunctionName=lambda_function_config,
+                FunctionName=lambda_arn,
                 InvocationType="Event",
                 Payload=payload,
             )
@@ -646,7 +646,7 @@ class LambdaNotifier(BaseNotifier):
             LOG.exception(
                 'Unable to send notification for S3 bucket "%s" to Lambda function "%s".',
                 ctx.bucket_name,
-                lambda_function_config,
+                lambda_arn,
             )
 
 
