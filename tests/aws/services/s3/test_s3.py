@@ -29,7 +29,7 @@ from zoneinfo import ZoneInfo
 from localstack import config, constants
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.s3 import StorageClass
-from localstack.config import NATIVE_S3_PROVIDER
+from localstack.config import LEGACY_V2_S3_PROVIDER
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
@@ -115,11 +115,11 @@ S3_POLICY = {
 
 
 def is_v3_provider():
-    return NATIVE_S3_PROVIDER
+    return not LEGACY_V2_S3_PROVIDER
 
 
 def is_v2_provider():
-    return not NATIVE_S3_PROVIDER
+    return LEGACY_V2_S3_PROVIDER
 
 
 @pytest.fixture
@@ -719,7 +719,7 @@ class TestS3:
         snapshot.match("exc-continuation-token", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     def test_list_objects_versions_markers(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         # snapshot.add_transformer(snapshot.transform.key_value("NextContinuationToken"))
@@ -1228,7 +1228,7 @@ class TestS3:
             )
         snapshot.match("abort-exc", e.value.response)
 
-    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     @markers.aws.validated
     def test_multipart_complete_multipart_too_small(self, s3_bucket, snapshot, aws_client):
@@ -1261,7 +1261,7 @@ class TestS3:
             )
         snapshot.match("complete-exc-too-small", e.value.response)
 
-    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     @markers.aws.validated
     def test_multipart_complete_multipart_wrong_part(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("UploadId"))
@@ -2265,7 +2265,7 @@ class TestS3:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
     @pytest.mark.parametrize("method", ("get_object", "head_object"))
@@ -2643,7 +2643,7 @@ class TestS3:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
     def test_s3_object_acl_exceptions(self, s3_bucket, snapshot, aws_client):
@@ -3106,7 +3106,7 @@ class TestS3:
     @markers.aws.only_localstack
     @pytest.mark.xfail(
         reason="Not implemented in other providers than stream",
-        condition=not NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
     )
     def test_put_object_chunked_newlines_with_checksum(self, s3_bucket, aws_client):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
@@ -3754,7 +3754,7 @@ class TestS3:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
     def test_get_object_part(self, s3_bucket, s3_multipart_upload, snapshot, aws_client):
@@ -7996,7 +7996,7 @@ class TestS3Routing:
 class TestS3BucketPolicies:
     @markers.aws.only_localstack
     @pytest.mark.skipif(
-        condition=NATIVE_S3_PROVIDER,
+        condition=not LEGACY_V2_S3_PROVIDER,
         reason="Test is validating moto fix, which is not needed in the native provider",
     )
     def test_access_to_bucket_not_denied(self, s3_bucket, monkeypatch, aws_client):
@@ -8717,7 +8717,7 @@ class TestS3BucketLifecycle:
 class TestS3ObjectLockRetention:
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
     def test_s3_object_retention_exc(self, aws_client, s3_create_bucket, snapshot):
@@ -8798,7 +8798,7 @@ class TestS3ObjectLockRetention:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
     def test_s3_object_retention(self, aws_client, s3_create_bucket, snapshot):
@@ -8978,7 +8978,7 @@ class TestS3ObjectLockRetention:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
     def test_object_lock_delete_markers(self, s3_create_bucket, snapshot, aws_client):
@@ -9025,7 +9025,7 @@ class TestS3ObjectLockRetention:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented",
     )
     def test_object_lock_extend_duration(self, s3_create_bucket, snapshot, aws_client):
@@ -9082,7 +9082,7 @@ class TestS3ObjectLockRetention:
 class TestS3ObjectLockLegalHold:
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented, does not validate",
     )
     def test_put_get_object_legal_hold(self, s3_create_bucket, snapshot, aws_client):
@@ -9154,7 +9154,7 @@ class TestS3ObjectLockLegalHold:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented, does not validate",
     )
     def test_put_object_legal_hold_exc(self, s3_create_bucket, snapshot, aws_client):
@@ -9206,7 +9206,7 @@ class TestS3ObjectLockLegalHold:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented, does not validate",
     )
     def test_delete_locked_object(self, s3_create_bucket, snapshot, aws_client):
@@ -9948,7 +9948,7 @@ class TestS3PresignedPost:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="not implemented in moto",
     )
     @pytest.mark.parametrize(
@@ -10049,7 +10049,7 @@ class TestS3PresignedPost:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not NATIVE_S3_PROVIDER,
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="not implemented in moto",
     )
     @markers.snapshot.skip_snapshot_verify(
