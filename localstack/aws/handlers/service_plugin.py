@@ -41,8 +41,12 @@ class ServiceLoader(Handler):
             return
 
         service_name: str = context.service.service_name
-        if not self.service_manager.exists(service_name) or not is_api_enabled(service_name):
+        if not self.service_manager.exists(service_name):
             raise NotImplementedError
+        elif not is_api_enabled(service_name):
+            raise NotImplementedError(
+                f"Service '{service_name}' is not enabled. Please check your 'SERVICES' configuration variable."
+            )
 
         service_operation: Optional[ServiceOperation] = context.service_operation
         request_router = self.service_request_router

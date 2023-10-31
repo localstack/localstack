@@ -457,7 +457,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
             return
 
         for api in available_services:
-            # this should be the only call to is_api_enabled left
             if should_eager_load_api(api):
                 try:
                     SERVICE_PLUGINS.require(api)

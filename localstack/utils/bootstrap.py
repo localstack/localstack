@@ -227,22 +227,19 @@ def get_enabled_apis() -> Set[str]:
 
     The result is cached, so it's safe to call. Clear the cache with get_enabled_apis.cache_clear().
     """
+    from localstack.services.plugins import SERVICE_PLUGINS
+
     services_env = os.environ.get("SERVICES", "").strip()
-    services = None
+    services = SERVICE_PLUGINS.list_available()
 
     if services_env and is_env_true("STRICT_SERVICE_LOADING"):
         from localstack.services.plugins import SERVICE_PLUGINS
 
         # SERVICES and STRICT_SERVICE_LOADING are set
-        # we check with SERVICE_PLUGINS.list_available() to cross the user-provided list with the available ones
-        available_services = SERVICE_PLUGINS.list_available()
-        services = [service for service in services_env.split(",") if service in available_services]
+        # we filter the result of SERVICE_PLUGINS.list_available() to cross the user-provided list with
+        # the available ones
+        services = [service for service in services_env.split(",") if service in services]
         # TODO: log a message if a service was not supported? see with pro loading
-
-    if not services:
-        from localstack.services.plugins import SERVICE_PLUGINS
-
-        services = SERVICE_PLUGINS.list_available()
 
     return resolve_apis(services)
 
@@ -266,12 +263,7 @@ def get_preloaded_services() -> Set[str]:
     if services_env and is_env_true("EAGER_SERVICE_LOADING"):
         # SERVICES and EAGER_SERVICE_LOADING are set
         # SERVICES env var might contain ports, but we do not support these anymore
-        services = []
-        for service_port in re.split(r"\s*,\s*", services_env):
-            # Only extract the service name, discard the port
-            parts = re.split(r"[:=]", service_port)
-            service = parts[0]
-            services.append(service)
+        services = [service for service in services_env.split(",")]
 
     if not services:
         from localstack.services.plugins import SERVICE_PLUGINS
@@ -282,16 +274,7 @@ def get_preloaded_services() -> Set[str]:
 
 
 def should_eager_load_api(api: str) -> bool:
-    apis = get_preloaded_services()
-
-    if api in apis:
-        return True
-
-    for enabled_api in apis:
-        if api.startswith(f"{enabled_api}:"):
-            return True
-
-    return False
+    return api in get_preloaded_services()
 
 
 def start_infra_locally():

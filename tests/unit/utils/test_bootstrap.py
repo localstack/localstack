@@ -61,14 +61,19 @@ class TestGetPreloadedServices:
         assert "foobar" in result
 
     def test_custom_port_mapping_in_services_env(self):
+        """
+        We do not support custom port mapping anymore, assert that it goes through but will not load the service
+        """
+
         with temporary_env({"SERVICES": "foobar:1235", "EAGER_SERVICE_LOADING": "1"}):
             result = get_preloaded_services()
 
         assert len(result) == 1
-        assert "foobar" in result
+        assert "foobar:1235" in result
+        assert "foobar" not in result
 
     def test_resolve_meta(self):
-        with temporary_env({"SERVICES": "es,cognito:1337", "EAGER_SERVICE_LOADING": "1"}):
+        with temporary_env({"SERVICES": "es,cognito", "EAGER_SERVICE_LOADING": "1"}):
             result = get_preloaded_services()
 
         assert len(result) == 4
@@ -111,12 +116,10 @@ class TestGetEnabledApis:
         assert "sqs" in result
 
     def test_custom_service_not_supported(self):
-        from localstack.services.plugins import SERVICE_PLUGINS
-
         with temporary_env({"SERVICES": "foobar", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
-        assert result == set(SERVICE_PLUGINS.list_available())
+        assert not result
 
     def test_custom_service_and_supported_service(self):
         with temporary_env({"SERVICES": "foobar,s3", "STRICT_SERVICE_LOADING": "1"}):
@@ -126,12 +129,10 @@ class TestGetEnabledApis:
         assert "s3" in result
 
     def test_custom_port_mapping_in_services_env_not_supported(self):
-        from localstack.services.plugins import SERVICE_PLUGINS
-
         with temporary_env({"SERVICES": "foobar:1235", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
-        assert result == set(SERVICE_PLUGINS.list_available())
+        assert not result
 
     def test_resolve_meta(self):
         with temporary_env({"SERVICES": "es,lambda", "STRICT_SERVICE_LOADING": "1"}):

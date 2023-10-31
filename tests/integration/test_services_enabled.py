@@ -22,7 +22,10 @@ class TestEnabledServices:
         response = aws_client.s3.list_buckets()
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        with pytest.raises(ClientError) as e:
+        with pytest.raises(
+            ClientError,
+            match="Service 'lambda' is not enabled. Please check your 'SERVICES' configuration variable.",
+        ) as e:
             aws_client.lambda_.list_functions()
 
-        e.match("API action 'ListFunctions' for service 'lambda' not yet implemented")
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 501
