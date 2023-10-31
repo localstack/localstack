@@ -543,7 +543,7 @@ class KeyStore:
         return self._store.pop(object_key, default)
 
     def values(self, *_, **__) -> list[S3Object | S3DeleteMarker]:
-        # we create a shallow copy with dict to avoid size hanged during iteration
+        # we create a shallow copy with dict to avoid size changed during iteration
         return [value for value in dict(self._store).values()]
 
     def is_empty(self) -> bool:
@@ -624,7 +624,7 @@ class VersionedKeyStore:
 
     def values(self, with_versions: bool = False) -> list[S3Object | S3DeleteMarker]:
         if with_versions:
-            # we create a shallow copy with dict to avoid size hanged during iteration
+            # we create a shallow copy with dict to avoid size changed during iteration
             return [
                 object_version
                 for values in dict(self._store).values()
