@@ -89,6 +89,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Lambda::Permission": "ResourceProvider",
     "AWS::Lambda::EventInvokeConfig": "ResourceProvider",
     "AWS::Lambda::CodeSigningConfig": "ResourceProvider",
+    "AWS::Lambda::LayerVersion": "ResourceProvider",
     "AWS::Logs::LogGroup": "ResourceProvider",
     "AWS::Logs::LogStream": "ResourceProvider",
     "AWS::Logs::SubscriptionFilter": "ResourceProvider",
