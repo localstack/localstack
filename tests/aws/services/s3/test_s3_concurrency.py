@@ -57,7 +57,7 @@ class TestParallelBucketCreation:
                         Bucket=s3_bucket, Key=f"random-key-{runner}", Body="random"
                     )
             except Exception:
-                LOG.exception("Create bucket failed")
+                LOG.exception("Listing objects failed")
                 errored = True
 
         thread_list = []
