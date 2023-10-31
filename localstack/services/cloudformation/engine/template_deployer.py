@@ -966,7 +966,7 @@ class TemplateDeployer:
         for resource_id, resource in resources.items():
             if not resource:
                 raise Exception(
-                    f"Resource {resource_id} not found in stack {self.stack.stack_name}"
+                    f"Resource '{resource_id}' not found in stack {self.stack.stack_name}"
                 )
             if not self.is_deployed(resource):
                 LOG.debug(
