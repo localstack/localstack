@@ -15,12 +15,9 @@ def config_endpoint(monkeypatch):
 
     router = get_internal_apis()
     monkeypatch.setattr(config, "ENABLE_CONFIG_UPDATES", True)
-    # will listen on /?_config_
-    config_listener.start_listener()
     # will listen on /_localstack/config
     rules = router.add(Resource("/_localstack/config", ConfigResource()))
     yield
-    config_listener.remove_listener()
     router.remove(rules)
 
 

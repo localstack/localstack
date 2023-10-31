@@ -25,7 +25,7 @@ from localstack.runtime.exceptions import LocalstackExit
 from localstack.services import motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
-from localstack.utils import config_listener, files, objects
+from localstack.utils import files, objects
 from localstack.utils.analytics import usage
 from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import is_api_enabled, log_duration, setup_logging
@@ -65,9 +65,6 @@ SHUTDOWN_INFRA = threading.Event()
 
 # can be set
 EXIT_CODE: objects.Value[int] = objects.Value(0)
-
-# Start config update backdoor
-config_listener.start_listener()
 
 
 # ---------------
