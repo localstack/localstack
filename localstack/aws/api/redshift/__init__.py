@@ -196,6 +196,16 @@ class UsageLimitPeriod(str):
     monthly = "monthly"
 
 
+class ZeroETLIntegrationStatus(str):
+    creating = "creating"
+    active = "active"
+    modifying = "modifying"
+    failed = "failed"
+    deleting = "deleting"
+    syncing = "syncing"
+    needs_attention = "needs_attention"
+
+
 class AccessToClusterDeniedFault(ServiceException):
     code: str = "AccessToClusterDenied"
     sender_fault: bool = True
@@ -364,6 +374,12 @@ class ClusterSubnetQuotaExceededFault(ServiceException):
     status_code: int = 400
 
 
+class ConflictPolicyUpdateFault(ServiceException):
+    code: str = "ConflictPolicyUpdateFault"
+    sender_fault: bool = True
+    status_code: int = 409
+
+
 class CopyToRegionDisabledFault(ServiceException):
     code: str = "CopyToRegionDisabledFault"
     sender_fault: bool = True
@@ -502,6 +518,12 @@ class InsufficientS3BucketPolicyFault(ServiceException):
     status_code: int = 400
 
 
+class IntegrationNotFoundFault(ServiceException):
+    code: str = "IntegrationNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 404
+
+
 class InvalidAuthenticationProfileRequestFault(ServiceException):
     code: str = "InvalidAuthenticationProfileRequestFault"
     sender_fault: bool = True
@@ -598,6 +620,12 @@ class InvalidNamespaceFault(ServiceException):
     status_code: int = 400
 
 
+class InvalidPolicyFault(ServiceException):
+    code: str = "InvalidPolicyFault"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
 class InvalidReservedNodeStateFault(ServiceException):
     code: str = "InvalidReservedNodeState"
     sender_fault: bool = True
@@ -678,6 +706,12 @@ class InvalidUsageLimitFault(ServiceException):
 
 class InvalidVPCNetworkStateFault(ServiceException):
     code: str = "InvalidVPCNetworkStateFault"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class Ipv6CidrBlockNotFoundFault(ServiceException):
+    code: str = "Ipv6CidrBlockNotFoundFault"
     sender_fault: bool = True
     status_code: int = 400
 
@@ -1382,6 +1416,7 @@ class NetworkInterface(TypedDict, total=False):
     SubnetId: Optional[String]
     PrivateIpAddress: Optional[String]
     AvailabilityZone: Optional[String]
+    Ipv6Address: Optional[String]
 
 
 NetworkInterfaceList = List[NetworkInterface]
@@ -1460,6 +1495,7 @@ class Cluster(TypedDict, total=False):
     CustomDomainCertificateExpiryDate: Optional[TStamp]
     MasterPasswordSecretArn: Optional[String]
     MasterPasswordSecretKmsKeyId: Optional[String]
+    IpAddressType: Optional[String]
 
 
 class ClusterCredentials(TypedDict, total=False):
@@ -1551,6 +1587,7 @@ class ClusterSecurityGroupMessage(TypedDict, total=False):
 
 
 ClusterSecurityGroupNameList = List[String]
+ValueStringList = List[String]
 
 
 class Subnet(TypedDict, total=False):
@@ -1569,6 +1606,7 @@ class ClusterSubnetGroup(TypedDict, total=False):
     SubnetGroupStatus: Optional[String]
     Subnets: Optional[SubnetList]
     Tags: Optional[TagList]
+    SupportedClusterIpAddressTypes: Optional[ValueStringList]
 
 
 ClusterSubnetGroups = List[ClusterSubnetGroup]
@@ -1660,6 +1698,7 @@ class CreateClusterMessage(ServiceRequest):
     LoadSampleData: Optional[String]
     ManageMasterPassword: Optional[BooleanOptional]
     MasterPasswordSecretKmsKeyId: Optional[String]
+    IpAddressType: Optional[String]
 
 
 class CreateClusterParameterGroupMessage(ServiceRequest):
@@ -1980,6 +2019,10 @@ class DeleteHsmConfigurationMessage(ServiceRequest):
     HsmConfigurationIdentifier: String
 
 
+class DeleteResourcePolicyMessage(ServiceRequest):
+    ResourceArn: String
+
+
 class DeleteScheduledActionMessage(ServiceRequest):
     ScheduledActionName: String
 
@@ -2208,11 +2251,15 @@ class DescribeHsmConfigurationsMessage(ServiceRequest):
     TagValues: Optional[TagValueList]
 
 
+class DescribeInboundIntegrationsMessage(ServiceRequest):
+    IntegrationArn: Optional[String]
+    TargetArn: Optional[String]
+    MaxRecords: Optional[IntegerOptional]
+    Marker: Optional[String]
+
+
 class DescribeLoggingStatusMessage(ServiceRequest):
     ClusterIdentifier: String
-
-
-ValueStringList = List[String]
 
 
 class NodeConfigurationOptionsFilter(TypedDict, total=False):
@@ -2587,6 +2634,19 @@ class GetReservedNodeExchangeOfferingsOutputMessage(TypedDict, total=False):
     ReservedNodeOfferings: Optional[ReservedNodeOfferingList]
 
 
+class GetResourcePolicyMessage(ServiceRequest):
+    ResourceArn: String
+
+
+class ResourcePolicy(TypedDict, total=False):
+    ResourceArn: Optional[String]
+    Policy: Optional[String]
+
+
+class GetResourcePolicyResult(TypedDict, total=False):
+    ResourcePolicy: Optional[ResourcePolicy]
+
+
 HsmClientCertificateList = List[HsmClientCertificate]
 
 
@@ -2606,6 +2666,31 @@ class HsmConfigurationMessage(TypedDict, total=False):
 ImportTablesCompleted = List[String]
 ImportTablesInProgress = List[String]
 ImportTablesNotStarted = List[String]
+
+
+class IntegrationError(TypedDict, total=False):
+    ErrorCode: String
+    ErrorMessage: Optional[String]
+
+
+IntegrationErrorList = List[IntegrationError]
+
+
+class InboundIntegration(TypedDict, total=False):
+    IntegrationArn: Optional[String]
+    SourceArn: Optional[String]
+    TargetArn: Optional[String]
+    Status: Optional[ZeroETLIntegrationStatus]
+    Errors: Optional[IntegrationErrorList]
+    CreateTime: Optional[TStamp]
+
+
+InboundIntegrationList = List[InboundIntegration]
+
+
+class InboundIntegrationsMessage(TypedDict, total=False):
+    Marker: Optional[String]
+    InboundIntegrations: Optional[InboundIntegrationList]
 
 
 class LoggingStatus(TypedDict, total=False):
@@ -2705,6 +2790,7 @@ class ModifyClusterMessage(ServiceRequest):
     Port: Optional[IntegerOptional]
     ManageMasterPassword: Optional[BooleanOptional]
     MasterPasswordSecretKmsKeyId: Optional[String]
+    IpAddressType: Optional[String]
 
 
 class ModifyClusterParameterGroupMessage(ServiceRequest):
@@ -2861,6 +2947,15 @@ class PurchaseReservedNodeOfferingResult(TypedDict, total=False):
     ReservedNode: Optional[ReservedNode]
 
 
+class PutResourcePolicyMessage(ServiceRequest):
+    ResourceArn: String
+    Policy: String
+
+
+class PutResourcePolicyResult(TypedDict, total=False):
+    ResourcePolicy: Optional[ResourcePolicy]
+
+
 class RebootClusterMessage(ServiceRequest):
     ClusterIdentifier: String
 
@@ -2951,6 +3046,7 @@ class RestoreFromClusterSnapshotMessage(ServiceRequest):
     Encrypted: Optional[BooleanOptional]
     ManageMasterPassword: Optional[BooleanOptional]
     MasterPasswordSecretKmsKeyId: Optional[String]
+    IpAddressType: Optional[String]
 
 
 class RestoreFromClusterSnapshotResult(TypedDict, total=False):
@@ -3283,6 +3379,7 @@ class RedshiftApi:
         load_sample_data: String = None,
         manage_master_password: BooleanOptional = None,
         master_password_secret_kms_key_id: String = None,
+        ip_address_type: String = None,
     ) -> CreateClusterResult:
         raise NotImplementedError
 
@@ -3532,6 +3629,10 @@ class RedshiftApi:
         database_name: PartnerIntegrationDatabaseName,
         partner_name: PartnerIntegrationPartnerName,
     ) -> PartnerIntegrationOutputMessage:
+        raise NotImplementedError
+
+    @handler("DeleteResourcePolicy")
+    def delete_resource_policy(self, context: RequestContext, resource_arn: String) -> None:
         raise NotImplementedError
 
     @handler("DeleteScheduledAction")
@@ -3820,6 +3921,17 @@ class RedshiftApi:
     ) -> HsmConfigurationMessage:
         raise NotImplementedError
 
+    @handler("DescribeInboundIntegrations")
+    def describe_inbound_integrations(
+        self,
+        context: RequestContext,
+        integration_arn: String = None,
+        target_arn: String = None,
+        max_records: IntegerOptional = None,
+        marker: String = None,
+    ) -> InboundIntegrationsMessage:
+        raise NotImplementedError
+
     @handler("DescribeLoggingStatus")
     def describe_logging_status(
         self, context: RequestContext, cluster_identifier: String
@@ -4077,6 +4189,12 @@ class RedshiftApi:
     ) -> GetReservedNodeExchangeOfferingsOutputMessage:
         raise NotImplementedError
 
+    @handler("GetResourcePolicy")
+    def get_resource_policy(
+        self, context: RequestContext, resource_arn: String
+    ) -> GetResourcePolicyResult:
+        raise NotImplementedError
+
     @handler("ModifyAquaConfiguration")
     def modify_aqua_configuration(
         self,
@@ -4126,6 +4244,7 @@ class RedshiftApi:
         port: IntegerOptional = None,
         manage_master_password: BooleanOptional = None,
         master_password_secret_kms_key_id: String = None,
+        ip_address_type: String = None,
     ) -> ModifyClusterResult:
         raise NotImplementedError
 
@@ -4287,6 +4406,12 @@ class RedshiftApi:
     ) -> PurchaseReservedNodeOfferingResult:
         raise NotImplementedError
 
+    @handler("PutResourcePolicy")
+    def put_resource_policy(
+        self, context: RequestContext, resource_arn: String, policy: String
+    ) -> PutResourcePolicyResult:
+        raise NotImplementedError
+
     @handler("RebootCluster")
     def reboot_cluster(
         self, context: RequestContext, cluster_identifier: String
@@ -4360,6 +4485,7 @@ class RedshiftApi:
         encrypted: BooleanOptional = None,
         manage_master_password: BooleanOptional = None,
         master_password_secret_kms_key_id: String = None,
+        ip_address_type: String = None,
     ) -> RestoreFromClusterSnapshotResult:
         raise NotImplementedError
 

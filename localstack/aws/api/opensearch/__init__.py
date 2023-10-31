@@ -182,6 +182,11 @@ class EngineType(str):
     Elasticsearch = "Elasticsearch"
 
 
+class IPAddressType(str):
+    ipv4 = "ipv4"
+    dualstack = "dualstack"
+
+
 class InboundConnectionStatusCode(str):
     PENDING_ACCEPTANCE = "PENDING_ACCEPTANCE"
     APPROVED = "APPROVED"
@@ -991,6 +996,7 @@ class CreateDomainRequest(ServiceRequest):
     ClusterConfig: Optional[ClusterConfig]
     EBSOptions: Optional[EBSOptions]
     AccessPolicies: Optional[PolicyDocument]
+    IPAddressType: Optional[IPAddressType]
     SnapshotOptions: Optional[SnapshotOptions]
     VPCOptions: Optional[VPCOptions]
     CognitoOptions: Optional[CognitoOptions]
@@ -1023,6 +1029,7 @@ class DomainStatus(TypedDict, total=False):
     Created: Optional[Boolean]
     Deleted: Optional[Boolean]
     Endpoint: Optional[ServiceUrl]
+    EndpointV2: Optional[ServiceUrl]
     Endpoints: Optional[EndpointsMap]
     Processing: Optional[Boolean]
     UpgradeProcessing: Optional[Boolean]
@@ -1030,6 +1037,7 @@ class DomainStatus(TypedDict, total=False):
     ClusterConfig: ClusterConfig
     EBSOptions: Optional[EBSOptions]
     AccessPolicies: Optional[PolicyDocument]
+    IPAddressType: Optional[IPAddressType]
     SnapshotOptions: Optional[SnapshotOptions]
     VPCOptions: Optional[VPCDerivedInfo]
     CognitoOptions: Optional[CognitoOptions]
@@ -1257,6 +1265,11 @@ class SnapshotOptionsStatus(TypedDict, total=False):
     Status: OptionStatus
 
 
+class IPAddressTypeStatus(TypedDict, total=False):
+    Options: IPAddressType
+    Status: OptionStatus
+
+
 class EBSOptionsStatus(TypedDict, total=False):
     Options: EBSOptions
     Status: OptionStatus
@@ -1272,6 +1285,7 @@ class DomainConfig(TypedDict, total=False):
     ClusterConfig: Optional[ClusterConfigStatus]
     EBSOptions: Optional[EBSOptionsStatus]
     AccessPolicies: Optional[AccessPoliciesStatus]
+    IPAddressType: Optional[IPAddressTypeStatus]
     SnapshotOptions: Optional[SnapshotOptionsStatus]
     VPCOptions: Optional[VPCDerivedInfoStatus]
     CognitoOptions: Optional[CognitoOptionsStatus]
@@ -1923,6 +1937,7 @@ class UpdateDomainConfigRequest(ServiceRequest):
     CognitoOptions: Optional[CognitoOptions]
     AdvancedOptions: Optional[AdvancedOptions]
     AccessPolicies: Optional[PolicyDocument]
+    IPAddressType: Optional[IPAddressType]
     LogPublishingOptions: Optional[LogPublishingOptions]
     EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
     DomainEndpointOptions: Optional[DomainEndpointOptions]
@@ -2030,6 +2045,7 @@ class OpensearchApi:
         cluster_config: ClusterConfig = None,
         ebs_options: EBSOptions = None,
         access_policies: PolicyDocument = None,
+        ip_address_type: IPAddressType = None,
         snapshot_options: SnapshotOptions = None,
         vpc_options: VPCOptions = None,
         cognito_options: CognitoOptions = None,
@@ -2422,6 +2438,7 @@ class OpensearchApi:
         cognito_options: CognitoOptions = None,
         advanced_options: AdvancedOptions = None,
         access_policies: PolicyDocument = None,
+        ip_address_type: IPAddressType = None,
         log_publishing_options: LogPublishingOptions = None,
         encryption_at_rest_options: EncryptionAtRestOptions = None,
         domain_endpoint_options: DomainEndpointOptions = None,

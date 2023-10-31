@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_externally_to, connect_to
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
@@ -31,11 +32,7 @@ from localstack.constants import (
     LOCALSTACK_VENV_FOLDER,
     TEST_AWS_REGION_NAME,
 )
-from localstack.services.lambda_.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.lambda_.lambda_utils import (
-    LAMBDA_DEFAULT_HANDLER,
-    LAMBDA_DEFAULT_RUNTIME,
-    LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
 from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
@@ -59,8 +56,12 @@ from localstack.utils.threads import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
+LAMBDA_DEFAULT_HANDLER = "handler.handler"
+LAMBDA_DEFAULT_RUNTIME = Runtime.python3_9
+LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 LAMBDA_TIMEOUT_SEC = 30
 LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"
+LAMBDA_TEST_ROLE = "arn:aws:iam::{account_id}:role/lambda-test-role"
 MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 
@@ -340,10 +341,9 @@ def create_lambda_api_gateway_integration(
 
     # create Lambda
     zip_file = create_lambda_archive(handler_file, get_content=True, runtime=runtime)
-    create_lambda_function(
+    func_arn = create_lambda_function(
         func_name=func_name, zip_file=zip_file, runtime=runtime, client=lambda_client
-    )
-    func_arn = arns.lambda_function_arn(func_name)
+    )["CreateFunctionResponse"]["FunctionArn"]
     target_arn = arns.apigateway_invocations_arn(func_arn, TEST_AWS_REGION_NAME)
 
     # connect API GW to Lambda

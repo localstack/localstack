@@ -235,7 +235,7 @@ class TestS3NotificationsToSns:
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..Error.BucketName"]
     )
-    def test_bucket_not_exist(self, account_id, snapshot, aws_client):
+    def test_bucket_not_exist(self, account_id, region, snapshot, aws_client):
         bucket_name = f"this-bucket-does-not-exist-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.s3_api())
         config = {
@@ -243,7 +243,7 @@ class TestS3NotificationsToSns:
                 {
                     "Id": "id123",
                     "Events": ["s3:ObjectCreated:*"],
-                    "TopicArn": f"{arns.sns_topic_arn('my-topic', account_id=account_id)}",
+                    "TopicArn": f"{arns.sns_topic_arn('my-topic', account_id=account_id, region_name=region)}",
                 }
             ]
         }
@@ -262,7 +262,7 @@ class TestS3NotificationsToSns:
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=["$..Error.ArgumentName", "$..Error.ArgumentValue"],
     )
-    def test_invalid_topic_arn(self, s3_create_bucket, account_id, snapshot, aws_client):
+    def test_invalid_topic_arn(self, s3_create_bucket, account_id, region, snapshot, aws_client):
         bucket_name = s3_create_bucket()
         config = {
             "TopicConfigurations": [
@@ -293,7 +293,7 @@ class TestS3NotificationsToSns:
         # set valid but not-existing topic
         config["TopicConfigurations"][0][
             "TopicArn"
-        ] = f"{arns.sns_topic_arn('my-topic', account_id=account_id, region_name=aws_client.s3.meta.region_name)}"
+        ] = f"{arns.sns_topic_arn('my-topic', account_id=account_id, region_name=region)}"
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name,

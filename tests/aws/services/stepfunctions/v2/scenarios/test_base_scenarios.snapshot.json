@@ -9742,5 +9742,1023 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_lambda_invoke_with_retry_base": {
+    "recorded-date": "24-10-2023, 12:52:08",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambdaWithRetry"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 6,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 8,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 9,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 11,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 12,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 14,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:4>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambdaWithRetry",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleError"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "stateExitedEventDetails": {
+              "name": "HandleError",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_lambda_invoke_with_retry_extended_input": {
+    "recorded-date": "24-10-2023, 17:18:16",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambdaWithRetry"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "ThisContextObject": {
+                  "Execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "Value1": "HelloWorld!",
+                      "Value2": null
+                    },
+                    "StartTime": "<start-time>",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "StateMachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "State": {
+                    "Name": "InvokeLambdaWithRetry",
+                    "EnteredTime": "<entered-time>",
+                    "RetryCount": 0
+                  }
+                },
+                "ThisState": {
+                  "Value1": "HelloWorld!",
+                  "Value2": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 6,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "ThisContextObject": {
+                  "Execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "Value1": "HelloWorld!",
+                      "Value2": null
+                    },
+                    "StartTime": "<start-time>",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "StateMachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "State": {
+                    "Name": "InvokeLambdaWithRetry",
+                    "EnteredTime": "<entered-time>",
+                    "RetryCount": 1
+                  }
+                },
+                "ThisState": {
+                  "Value1": "HelloWorld!",
+                  "Value2": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 8,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 9,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "ThisContextObject": {
+                  "Execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "Value1": "HelloWorld!",
+                      "Value2": null
+                    },
+                    "StartTime": "<start-time>",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "StateMachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "State": {
+                    "Name": "InvokeLambdaWithRetry",
+                    "EnteredTime": "<entered-time>",
+                    "RetryCount": 2
+                  }
+                },
+                "ThisState": {
+                  "Value1": "HelloWorld!",
+                  "Value2": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 11,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 12,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "ThisContextObject": {
+                  "Execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "Value1": "HelloWorld!",
+                      "Value2": null
+                    },
+                    "StartTime": "<start-time>",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "StateMachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "State": {
+                    "Name": "InvokeLambdaWithRetry",
+                    "EnteredTime": "<entered-time>",
+                    "RetryCount": 3
+                  }
+                },
+                "ThisState": {
+                  "Value1": "HelloWorld!",
+                  "Value2": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 14,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:4>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambdaWithRetry",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleError"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "stateExitedEventDetails": {
+              "name": "HandleError",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke_with_retry_extended_input": {
+    "recorded-date": "24-10-2023, 17:26:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambdaWithRetry"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Payload": {
+                  "ThisContextObject": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "FunctionName": "<lambda_function_1_name>",
+                        "Value1": "HelloWorld!",
+                        "Value2": null
+                      },
+                      "StartTime": "<start-time>",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "InvokeLambdaWithRetry",
+                      "EnteredTime": "<entered-time>",
+                      "RetryCount": 0
+                    }
+                  },
+                  "ThisState": {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Value1": "HelloWorld!",
+                    "Value2": null
+                  }
+                },
+                "FunctionName": "<lambda_function_1_name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Payload": {
+                  "ThisContextObject": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "FunctionName": "<lambda_function_1_name>",
+                        "Value1": "HelloWorld!",
+                        "Value2": null
+                      },
+                      "StartTime": "<start-time>",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "InvokeLambdaWithRetry",
+                      "EnteredTime": "<entered-time>",
+                      "RetryCount": 1
+                    }
+                  },
+                  "ThisState": {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Value1": "HelloWorld!",
+                    "Value2": null
+                  }
+                },
+                "FunctionName": "<lambda_function_1_name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Payload": {
+                  "ThisContextObject": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "FunctionName": "<lambda_function_1_name>",
+                        "Value1": "HelloWorld!",
+                        "Value2": null
+                      },
+                      "StartTime": "<start-time>",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "InvokeLambdaWithRetry",
+                      "EnteredTime": "<entered-time>",
+                      "RetryCount": 2
+                    }
+                  },
+                  "ThisState": {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Value1": "HelloWorld!",
+                    "Value2": null
+                  }
+                },
+                "FunctionName": "<lambda_function_1_name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Payload": {
+                  "ThisContextObject": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "FunctionName": "<lambda_function_1_name>",
+                        "Value1": "HelloWorld!",
+                        "Value2": null
+                      },
+                      "StartTime": "<start-time>",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "InvokeLambdaWithRetry",
+                      "EnteredTime": "<entered-time>",
+                      "RetryCount": 3
+                    }
+                  },
+                  "ThisState": {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Value1": "HelloWorld!",
+                    "Value2": null
+                  }
+                },
+                "FunctionName": "<lambda_function_1_name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:4>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambdaWithRetry",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:4>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:4>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleError"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "stateExitedEventDetails": {
+              "name": "HandleError",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:4>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:4>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

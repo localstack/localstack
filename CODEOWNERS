@@ -172,7 +172,6 @@
 /localstack/services/lambda_/ @joe4dev @dominikschubert @dfangl
 /localstack/services/cloudformation/models/lambda_.py @joe4dev @dominikschubert @dfangl
 /tests/aws/services/lambda_/ @joe4dev @dominikschubert @dfangl
-/tests/unit/test_lambda.py @joe4dev @dominikschubert @dfangl
 /tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl
 
 # logs

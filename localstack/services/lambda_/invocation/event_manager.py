@@ -18,7 +18,7 @@ from localstack.services.lambda_.invocation.lambda_models import (
     InvocationResult,
 )
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
-from localstack.services.lambda_.lambda_executors import InvocationException
+from localstack.services.lambda_.legacy.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.strings import md5, to_str

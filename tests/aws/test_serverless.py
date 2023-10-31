@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from localstack.constants import TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.common import retry, run
@@ -128,7 +128,9 @@ class TestServerless:
         assert 1 == len(events)
         event_source_arn = events[0]["EventSourceArn"]
 
-        assert event_source_arn == arns.sqs_queue_arn(queue_name)
+        assert event_source_arn == arns.sqs_queue_arn(
+            queue_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+        )
         result = sqs_client.get_queue_attributes(
             QueueUrl=arns.sqs_queue_url_for_arn(queue_name),
             AttributeNames=[
@@ -182,7 +184,7 @@ class TestServerless:
             assert method in proxy_resource["resourceMethods"]
             resource_method = proxy_resource["resourceMethods"][method]
             assert (
-                arns.lambda_function_arn(function_name)
+                arns.lambda_function_arn(function_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
                 in resource_method["methodIntegration"]["uri"]
             )
 

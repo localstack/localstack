@@ -267,7 +267,15 @@ class SqsQueue:
 
         host_url = context.request.host_url
 
-        if config.SQS_ENDPOINT_STRATEGY == "domain":
+        if config.SQS_ENDPOINT_STRATEGY == "standard":
+            # Region is always part of the queue URL
+            # sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/my-queue
+            scheme = context.request.scheme
+            host_definition = localstack_host(use_localhost_cloud=True)
+            host_url = f"{scheme}://sqs.{self.region}.{host_definition.host_and_port()}"
+
+        elif config.SQS_ENDPOINT_STRATEGY == "domain":
+            # Legacy style
             # queue.localhost.localstack.cloud:4566/000000000000/my-queue (us-east-1)
             # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
             region = "" if self.region == "us-east-1" else self.region + "."

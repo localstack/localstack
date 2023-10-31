@@ -402,7 +402,7 @@ class TestEvents:
     # TODO: further unify/parameterize the tests for the different target types below
 
     @markers.aws.unknown
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_put_events_with_target_sns(
         self,
         monkeypatch,
@@ -470,7 +470,7 @@ class TestEvents:
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
     @markers.aws.unknown
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_put_events_into_event_bus(
         self, monkeypatch, sqs_get_queue_arn, aws_client, clean_up, strategy
     ):
@@ -631,7 +631,7 @@ class TestEvents:
         queue_name = f"queue-{short_uid()}"
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         rule_name = f"rule-{short_uid()}"
-        sm_role_arn = arns.role_arn("sfn_role")
+        sm_role_arn = arns.role_arn("sfn_role", account_id=TEST_AWS_ACCOUNT_ID)
         sm_name = f"state-machine-{short_uid()}"
         topic_target_id = f"target-{short_uid()}"
         sm_target_id = f"target-{short_uid()}"
@@ -946,7 +946,7 @@ class TestEvents:
         stream = aws_client.firehose.create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "BucketARN": arns.s3_bucket_arn(s3_bucket),
                 "Prefix": s3_prefix,
             },
@@ -1267,7 +1267,7 @@ class TestEvents:
         assert response.get("Entries")
 
     @markers.aws.unknown
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_trigger_event_on_ssm_change(self, monkeypatch, aws_client, clean_up, strategy):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 

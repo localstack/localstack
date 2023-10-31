@@ -55,7 +55,7 @@ Please make sure that you have a working [`docker` environment](https://docs.doc
 ### Brew (MacOS or Linux with Homebrew)
 Install the LocalStack CLI by using our [official LocalStack Brew Tap](https://github.com/localstack/homebrew-tap):
 ```
-$ brew install localstack/tap/localstack-cli
+brew install localstack/tap/localstack-cli
 ```
 
 ### Binary download (MacOS, Linux, Windows)

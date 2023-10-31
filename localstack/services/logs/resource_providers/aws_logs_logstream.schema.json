@@ -1,0 +1,29 @@
+{
+  "typeName": "AWS::Logs::LogStream",
+  "description": "Resource Type definition for AWS::Logs::LogStream",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "type": "string"
+    },
+    "LogGroupName": {
+      "type": "string"
+    },
+    "LogStreamName": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "LogGroupName"
+  ],
+  "createOnlyProperties": [
+    "/properties/LogGroupName",
+    "/properties/LogStreamName"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

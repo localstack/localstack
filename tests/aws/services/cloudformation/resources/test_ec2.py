@@ -1,6 +1,7 @@
 import os
 
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer import SortingTransformer
 
 THIS_FOLDER = os.path.dirname(__file__)
 
@@ -83,3 +84,18 @@ def test_internet_gateway_ref_and_attr(deploy_cfn_template, snapshot, aws_client
 
     snapshot.match("outputs", stack.outputs)
     snapshot.match("description", response["StackResourceDetail"])
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Tags", "$..OwnerId"])
+def test_dhcp_options(aws_client, deploy_cfn_template, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(THIS_FOLDER, "../../../templates/dhcp_options.yml")
+    )
+
+    response = aws_client.ec2.describe_dhcp_options(
+        DhcpOptionsIds=[stack.outputs["RefDhcpOptions"]]
+    )
+    snapshot.add_transformer(snapshot.transform.key_value("DhcpOptionsId", "dhcp-options-id"))
+    snapshot.add_transformer(SortingTransformer("DhcpConfigurations", lambda x: x["Key"]))
+    snapshot.match("description", response["DhcpOptions"][0])

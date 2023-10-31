@@ -53,7 +53,10 @@ def add_dynamodb_stream(
     latest_stream_label = latest_stream_label or "latest"
     stream = {
         "StreamArn": arns.dynamodb_stream_arn(
-            table_name=table_name, latest_stream_label=latest_stream_label
+            table_name=table_name,
+            latest_stream_label=latest_stream_label,
+            account_id=account_id,
+            region_name=region_name,
         ),
         "TableName": table_name,
         "StreamLabel": latest_stream_label,

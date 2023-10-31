@@ -1114,6 +1114,30 @@ class TestKMS:
             )
         snapshot.match("decrypt_response_without_encryption_context", e.value.response)
 
+    @markers.aws.validated
+    def test_get_parameters_for_import(self, kms_create_key, snapshot, aws_client):
+        sign_verify_key = kms_create_key(
+            KeyUsage="SIGN_VERIFY", KeySpec="ECC_NIST_P256", Origin="EXTERNAL"
+        )
+        params_sign_verify = aws_client.kms.get_parameters_for_import(
+            KeyId=sign_verify_key["KeyId"],
+            WrappingAlgorithm="RSAES_OAEP_SHA_256",
+            WrappingKeySpec="RSA_4096",
+        )
+        assert params_sign_verify["KeyId"] == sign_verify_key["Arn"]
+        assert params_sign_verify["ImportToken"]
+        assert params_sign_verify["PublicKey"]
+        assert isinstance(params_sign_verify["ParametersValidTo"], datetime)
+
+        encrypt_decrypt_key = kms_create_key()
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.get_parameters_for_import(
+                KeyId=encrypt_decrypt_key["KeyId"],
+                WrappingAlgorithm="RSAES_OAEP_SHA_256",
+                WrappingKeySpec="RSA_4096",
+            )
+        snapshot.match("response-error", e.value.response)
+
 
 class TestKMSMultiAccounts:
     @markers.aws.unknown

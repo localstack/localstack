@@ -150,7 +150,9 @@ def generate_waitcondition_url(account_id: str, region_name: str, stack_name: st
     region = client.meta.region_name
 
     bucket = f"cloudformation-waitcondition-{region}"
-    key = arns.cloudformation_stack_arn(stack_name=stack_name)
+    key = arns.cloudformation_stack_arn(
+        stack_name=stack_name, stack_id="id-123", account_id=account_id, region_name=region_name
+    )
 
     return connect_to(
         aws_access_key_id=account_id, region_name=region_name
@@ -231,7 +233,12 @@ class CloudFormationWaitCondition(GenericBaseModel):
             logical_resource_id: str,
             resource: dict,
         ):
-            stack_arn = arns.cloudformation_stack_arn(result["stack_name"])
+            stack_arn = arns.cloudformation_stack_arn(
+                result["stack_name"],
+                stack_id="id-123",
+                account_id=account_id,
+                region_name=region_name,
+            )
             resource["PhysicalResourceId"] = f"{stack_arn}/{uuid.uuid4()}/{logical_resource_id}"
 
         return {

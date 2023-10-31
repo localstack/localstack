@@ -2,16 +2,9 @@ from typing import Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType, MapStateStartedEventDetails
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
-from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
-    CatchOutcome,
-    CatchOutcomeNotCaught,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
-    CustomErrorName,
-)
+from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import CatchOutcome
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
-    FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.common.path.items_path import ItemsPath
@@ -109,57 +102,6 @@ class StateMap(ExecutionState):
         else:
             raise ValueError(f"Unknown value for IteratorDecl '{iteration_decl}'.")
 
-    def _handle_retry(self, ex: Exception, env: Environment) -> None:
-        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
-        env.stack.append(failure_event.error_name)
-
-        self.retry.eval(env)
-        res: RetryOutcome = env.stack.pop()
-
-        match res:
-            case RetryOutcome.CanRetry:
-                self._eval_state(env)
-            case _:
-                env.event_history.add_event(
-                    context=env.event_history_context,
-                    hist_type_event=HistoryEventType.MapStateFailed,
-                )
-                self._terminate_with_event(failure_event=failure_event, env=env)
-
-    def _handle_catch(self, ex: Exception, env: Environment) -> None:
-        env.event_history.add_event(
-            context=env.event_history_context, hist_type_event=HistoryEventType.MapStateFailed
-        )
-
-        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
-
-        env.stack.append(failure_event)
-
-        self.catch.eval(env)
-        res: CatchOutcome = env.stack.pop()
-
-        if isinstance(res, CatchOutcomeNotCaught):
-            self._terminate_with_event(failure_event=failure_event, env=env)
-
-    def _handle_uncaught(self, ex: Exception, env: Environment):
-        env.event_history.add_event(
-            context=env.event_history_context, hist_type_event=HistoryEventType.MapStateFailed
-        )
-
-        event_details = None
-        if isinstance(ex, FailureEventException):
-            event_details = EventDetails(
-                executionFailedEventDetails=ex.get_execution_failed_event_details()
-            )
-
-        failure_event = FailureEvent(
-            error_name=CustomErrorName(HistoryEventType.MapStateFailed),
-            event_type=HistoryEventType.MapStateFailed,
-            event_details=event_details,
-        )
-
-        self._terminate_with_event(failure_event, env)
-
     def _eval_execution(self, env: Environment) -> None:
         self.items_path.eval(env)
         if self.item_reader:
@@ -215,3 +157,36 @@ class StateMap(ExecutionState):
             hist_type_event=HistoryEventType.MapStateSucceeded,
             update_source_event_id=False,
         )
+
+    def _eval_state(self, env: Environment) -> None:
+        # Initialise the retry counter for execution states.
+        env.context_object_manager.context_object["State"]["RetryCount"] = 0
+
+        # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
+        while True:
+            try:
+                self._evaluate_with_timeout(env)
+                break
+            except Exception as ex:
+                failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+
+                if self.retry:
+                    retry_outcome: RetryOutcome = self._handle_retry(
+                        env=env, failure_event=failure_event
+                    )
+                    if retry_outcome == RetryOutcome.CanRetry:
+                        continue
+
+                env.event_history.add_event(
+                    context=env.event_history_context,
+                    hist_type_event=HistoryEventType.MapStateFailed,
+                )
+
+                if self.catch:
+                    catch_outcome: CatchOutcome = self._handle_catch(
+                        env=env, failure_event=failure_event
+                    )
+                    if catch_outcome == CatchOutcome.Caught:
+                        break
+
+                self._handle_uncaught(env=env, failure_event=failure_event)
