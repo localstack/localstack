@@ -1600,7 +1600,7 @@ class TestTagging:
         api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
         assert api_id == "c0stIOm1d"
 
-        api_arn = arns.apigateway_restapi_arn(api_id=api_id)
+        api_arn = arns.apigateway_restapi_arn(api_id, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         aws_client.apigateway.tag_resource(resourceArn=api_arn, tags=tags)
 
         # receive and assert tags
@@ -2017,7 +2017,7 @@ class TestIntegrations:
         )
 
         test_role = "test-s3-role"
-        role_arn = arns.role_arn(role_name=test_role)
+        role_arn = arns.role_arn(role_name=test_role, account_id=TEST_AWS_ACCOUNT_ID)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]

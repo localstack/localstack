@@ -94,8 +94,7 @@ from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineVersion,
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
-from localstack.utils.aws.arns import ArnData, parse_arn
-from localstack.utils.aws.arns import state_machine_arn as aws_stack_state_machine_arn
+from localstack.utils.aws.arns import ArnData, parse_arn, state_machine_arn
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
@@ -207,7 +206,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         StepFunctionsProvider._validate_definition(definition=state_machine_definition)
 
         name: Optional[Name] = request["name"]
-        arn = aws_stack_state_machine_arn(
+        arn = state_machine_arn(
             name=name, account_id=context.account_id, region_name=context.region
         )
 

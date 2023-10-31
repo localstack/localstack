@@ -563,7 +563,9 @@ def filter_event_based_on_event_format(
 
         return True
 
-    rule_information = self.events_backend.describe_rule(rule_name, event_bus_arn(event_bus_name))
+    rule_information = self.events_backend.describe_rule(
+        rule_name, event_bus_arn(event_bus_name, self.current_account, self.region)
+    )
 
     if not rule_information:
         LOG.info('Unable to find rule "%s" in backend: %s', rule_name, rule_information)
@@ -663,7 +665,7 @@ def events_handler_put_events(self):
         for rule in matching_rules:
             if filter_event_based_on_event_format(self, rule.name, event_bus_name, formatted_event):
                 rule_targets = self.events_backend.list_targets_by_rule(
-                    rule.name, event_bus_arn(event_bus_name)
+                    rule.name, event_bus_arn(event_bus_name, self.current_account, self.region)
                 ).get("Targets", [])
 
                 targets.extend([{"RuleArn": rule.arn} | target for target in rule_targets])

@@ -566,7 +566,9 @@ class TestCloudFormation:
         assert "VpcId" in outputs
         assert outputs["VpcId"].get("export") == f"{environment}-vpc-id"
 
-        topic_arn = arns.sns_topic_arn(f"{environment}-slack-sns-topic")  # TODO(!)
+        topic_arn = arns.sns_topic_arn(
+            f"{environment}-slack-sns-topic", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+        )
         assert "TopicArn" in outputs
         assert outputs["TopicArn"].get("export") == topic_arn
 
@@ -624,7 +626,10 @@ class TestCloudFormation:
         # assert creation of further resources
         resp = aws_client.sns.list_topics()
         topic_arns = [tp["TopicArn"] for tp in resp["Topics"]]
-        assert arns.sns_topic_arn("companyname-slack-topic") in topic_arns  # TODO: manual ARN
+        assert (
+            arns.sns_topic_arn("companyname-slack-topic", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+            in topic_arns
+        )
         # TODO: fix assertions, to make tests parallelizable!
         metric_alarms_after = aws_client.cloudwatch.describe_alarms().get("MetricAlarms", [])
         composite_alarms_after = aws_client.cloudwatch.describe_alarms().get("CompositeAlarms", [])
