@@ -71,3 +71,7 @@ class ScenariosTemplate(TemplateLoader):
     LAMBDA_SERVICE_INVOKE_WITH_RETRY_BASE_EXTENDED_INPUT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_service_invoke_with_retry_extended_input.json5"
     )
+    WAIT_TIMESTAMP: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_timestamp.json5")
+    WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/wait_timestamp_path.json5"
+    )
