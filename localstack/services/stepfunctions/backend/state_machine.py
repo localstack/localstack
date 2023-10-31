@@ -118,7 +118,6 @@ class TagManager:
 
 
 class StateMachineRevision(StateMachineInstance):
-
     _next_version_number: int
     versions: Final[dict[RevisionId, Arn]]
     tag_manager: Final[TagManager]

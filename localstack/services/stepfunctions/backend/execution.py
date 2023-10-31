@@ -79,7 +79,6 @@ class BaseExecutionWorkerComm(ExecutionWorkerComm):
 
 
 class Execution:
-
     name: Final[str]
     role_arn: Final[Arn]
     exec_arn: Final[Arn]
