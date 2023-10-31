@@ -105,6 +105,7 @@ PROVIDER_DEFAULTS = {
     # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
     "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::StepFunctions::Activity": "ResourceProvider",
+    "AWS::StepFunctions::StateMachine": "ResourceProvider",
 }
 
 
