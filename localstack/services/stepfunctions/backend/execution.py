@@ -51,32 +51,34 @@ from localstack.services.stepfunctions.backend.state_machine import (
 LOG = logging.getLogger(__name__)
 
 
-class Execution:
-    class BaseExecutionWorkerComm(ExecutionWorkerComm):
-        def __init__(self, execution: Execution):
-            self.execution: Execution = execution
+class BaseExecutionWorkerComm(ExecutionWorkerComm):
+    def __init__(self, execution: Execution):
+        self.execution: Execution = execution
 
-        def terminated(self) -> None:
-            exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
-            self.execution.stop_date = datetime.datetime.now()
-            if isinstance(exit_program_state, ProgramEnded):
-                self.execution.exec_status = ExecutionStatus.SUCCEEDED
-                self.execution.output = to_json_str(
-                    self.execution.exec_worker.env.inp, separators=(",", ":")
-                )
-            elif isinstance(exit_program_state, ProgramStopped):
-                self.execution.exec_status = ExecutionStatus.ABORTED
-            elif isinstance(exit_program_state, ProgramError):
-                self.execution.exec_status = ExecutionStatus.FAILED
-                self.execution.error = exit_program_state.error["error"]
-                self.execution.cause = exit_program_state.error["cause"]
-            elif isinstance(exit_program_state, ProgramTimedOut):
-                self.execution.exec_status = ExecutionStatus.TIMED_OUT
-            else:
-                raise RuntimeWarning(
-                    f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
-                )
-            self.execution._publish_execution_status_change_event()
+    def terminated(self) -> None:
+        exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
+        self.execution.stop_date = datetime.datetime.now()
+        if isinstance(exit_program_state, ProgramEnded):
+            self.execution.exec_status = ExecutionStatus.SUCCEEDED
+            self.execution.output = to_json_str(
+                self.execution.exec_worker.env.inp, separators=(",", ":")
+            )
+        elif isinstance(exit_program_state, ProgramStopped):
+            self.execution.exec_status = ExecutionStatus.ABORTED
+        elif isinstance(exit_program_state, ProgramError):
+            self.execution.exec_status = ExecutionStatus.FAILED
+            self.execution.error = exit_program_state.error["error"]
+            self.execution.cause = exit_program_state.error["cause"]
+        elif isinstance(exit_program_state, ProgramTimedOut):
+            self.execution.exec_status = ExecutionStatus.TIMED_OUT
+        else:
+            raise RuntimeWarning(
+                f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
+            )
+        self.execution._publish_execution_status_change_event()
+
+
+class Execution:
 
     name: Final[str]
     role_arn: Final[Arn]
@@ -213,7 +215,7 @@ class Execution:
         self.exec_worker = ExecutionWorker(
             definition=self.state_machine.definition,
             input_data=self.input_data,
-            exec_comm=Execution.BaseExecutionWorkerComm(self),
+            exec_comm=BaseExecutionWorkerComm(self),
             context_object_init=ContextObjectInitData(
                 Execution=ContextObjectExecution(
                     Id=self.exec_arn,
