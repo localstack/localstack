@@ -443,10 +443,10 @@ class TestKinesisPythonClient:
         resources.create_kinesis_stream(kinesis, stream_name, delete=True)
         process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
+            region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
             kcl_log_level=logging.INFO,
             wait_until_started=True,
-            region_name=TEST_AWS_REGION_NAME,
         )
 
         try:
