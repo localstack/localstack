@@ -5,9 +5,8 @@ from typing import Optional, TypedDict
 
 from botocore.utils import ArnParser, InvalidArnException
 
-from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID, get_aws_account_id
+from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID
 from localstack.aws.connect import connect_to
-from localstack.utils.aws.aws_stack import get_region
 
 LOG = logging.getLogger(__name__)
 
@@ -72,12 +71,9 @@ def extract_resource_from_arn(arn: str) -> Optional[str]:
 #
 
 
-# TODO make account_id and region required
-def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: str = None) -> str:
+def _resource_arn(name: str, pattern: str, account_id: str, region_name: str) -> str:
     if ":" in name:
         return name
-    account_id = account_id or get_aws_account_id()
-    region_name = region_name or get_region()
     if len(pattern.split("%s")) == 3:
         return pattern % (account_id, name)
     return pattern % (region_name, account_id, name)
@@ -280,8 +276,6 @@ def sqs_queue_arn(queue_name: str, account_id: str, region_name: str) -> str:
 
 
 def apigateway_restapi_arn(api_id: str, account_id: str, region_name: str) -> str:
-    account_id = account_id or get_aws_account_id()
-    region_name = region_name or get_region()
     return "arn:aws:apigateway:%s:%s:/restapis/%s" % (region_name, account_id, api_id)
 
 
@@ -299,7 +293,7 @@ def opensearch_domain_name(domain_arn: str) -> str:
 
 def apigateway_invocations_arn(lambda_uri: str, region_name: str) -> str:
     return "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations" % (
-        region_name or get_region(),
+        region_name,
         lambda_uri,
     )
 
