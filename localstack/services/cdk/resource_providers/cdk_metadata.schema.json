@@ -5,8 +5,7 @@
   "properties": {
     "Id": {
       "type": "string"
-    },
-
+    }
   },
   "definitions": {
   },
