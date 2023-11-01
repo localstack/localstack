@@ -5989,7 +5989,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_in_place": {
-    "recorded-date": "03-08-2023, 16:51:58",
+    "recorded-date": "26-10-2023, 14:34:19",
     "recorded-content": {
       "put_object": {
         "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
@@ -6030,6 +6030,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      },
+      "copy-object-same-key-diff-bucket": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "copy-object-in-place-with-storage-class": {
@@ -11308,6 +11319,133 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_src_not_exists": {
+    "recorded-date": "26-10-2023, 15:03:13",
+    "recorded-content": {
+      "copy-object-src-bucket-not-exists": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "copy-object-src-object-not-exists": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "random-src-key",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-obj-versioned": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-obj-versioned": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "copy-object-src-delete-marker-current-version": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "random-src-key",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "copy-object-src-target-delete-marker": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The source of a copy request may not specifically refer to a delete marker by version id."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "copy-object-src-target-object-version": {
+        "CopyObjectResult": {
+          "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_key_validation": {
+    "recorded-date": "26-10-2023, 16:04:23",
+    "recorded-content": {
+      "upload-part-wrong-key-name": {
+        "Error": {
+          "Code": "NoSuchUpload",
+          "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "complete-multipart-wrong-key-name": {
+        "Error": {
+          "Code": "NoSuchUpload",
+          "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list-parts-wrong-key-name": {
+        "Error": {
+          "Code": "NoSuchUpload",
+          "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "abort-multipart-wrong-key-name": {
+        "Error": {
+          "Code": "NoSuchUpload",
+          "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }

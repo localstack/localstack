@@ -1411,6 +1411,66 @@ class TestS3:
         snapshot.match("get-object-attrs", object_attrs)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
+    def test_s3_copy_object_src_not_exists(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "random-src-key"
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"fake-bucket-{short_uid()}-{short_uid()}/{object_key}",
+                Key="fake-dest-key",
+            )
+        snapshot.match("copy-object-src-bucket-not-exists", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key="fake-dest-key",
+            )
+        snapshot.match("copy-object-src-object-not-exists", e.value.response)
+
+        # enable versioning so that we can test DeleteMarker behaviour
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("put-obj-versioned", put_obj)
+        object_version = put_obj["VersionId"]
+
+        # put a DeleteMarker on top
+        del_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)
+        delete_marker_version = del_obj["VersionId"]
+        snapshot.match("del-obj-versioned", del_obj)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key="fake-dest-key",
+            )
+        snapshot.match("copy-object-src-delete-marker-current-version", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}?versionId={delete_marker_version}",
+                Key="fake-dest-key",
+            )
+        snapshot.match("copy-object-src-target-delete-marker", e.value.response)
+
+        copy_obj_version = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}?versionId={object_version}",
+            Key="fake-dest-key",
+        )
+        snapshot.match("copy-object-src-target-object-version", copy_obj_version)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not is_native_provider(),
@@ -1572,7 +1632,9 @@ class TestS3:
         condition=lambda: not is_native_provider(),
         paths=["$..ServerSideEncryption"],
     )
-    def test_s3_copy_object_in_place(self, s3_bucket, allow_bucket_acl, snapshot, aws_client):
+    def test_s3_copy_object_in_place(
+        self, s3_bucket, s3_create_bucket, allow_bucket_acl, snapshot, aws_client
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(
             [
@@ -1606,6 +1668,12 @@ class TestS3:
                 Bucket=s3_bucket, CopySource=f"{s3_bucket}/{object_key}", Key=object_key
             )
         snapshot.match("copy-object-in-place-no-change", e.value.response)
+
+        s3_bucket_2 = s3_create_bucket()
+        copy_obj_diff_bucket = aws_client.s3.copy_object(
+            Bucket=s3_bucket_2, CopySource=f"{s3_bucket}/{object_key}", Key=object_key
+        )
+        snapshot.match("copy-object-same-key-diff-bucket", copy_obj_diff_bucket)
 
         # it seems as long as you specify the field necessary, it does not check if the previous value was the same
         # and allows the copy
@@ -3039,7 +3107,6 @@ class TestS3:
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
         # Test for https://github.com/localstack/localstack/issues/8703
-        object_key = "data"
         body = "Hello Blob"
         precalculated_etag = hashlib.md5(body.encode()).hexdigest()
         headers = {
@@ -3065,7 +3132,9 @@ class TestS3:
         upload_id = response["UploadId"]
 
         # # upload the part 1
-        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}?partNumber={1}&uploadId={upload_id}"
+        url = (
+            f"{config.service_url('s3')}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
+        )
         response = requests.put(url, data, headers=headers, verify=False)
         assert response.ok
         part_etag = response.headers.get("ETag")
@@ -4776,6 +4845,55 @@ class TestS3:
             UploadId=upload_id,
         )
         snapshot.match("complete-multipart-with-step-2", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
+    def test_multipart_key_validation(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("UploadId"))
+
+        key_name = "test-multipart-key-validation"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key="fake-key-name",
+                Body=BytesIO(b"a"),
+                PartNumber=1,
+                UploadId=upload_id,
+            )
+        snapshot.match("upload-part-wrong-key-name", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key="fake-fake-name",
+                MultipartUpload={"Parts": []},
+                UploadId=upload_id,
+            )
+        snapshot.match("complete-multipart-wrong-key-name", e.value.response)
+
+        # ASF provider completely defers those to moto, and moto does not properly handle it
+        if is_aws_cloud() or config.NATIVE_S3_PROVIDER:
+            with pytest.raises(ClientError) as e:
+                aws_client.s3.list_parts(
+                    Bucket=s3_bucket,
+                    Key="fake-fake-name",
+                    UploadId=upload_id,
+                )
+            snapshot.match("list-parts-wrong-key-name", e.value.response)
+
+            with pytest.raises(ClientError) as e:
+                aws_client.s3.abort_multipart_upload(
+                    Bucket=s3_bucket,
+                    Key="fake-fake-name",
+                    UploadId=upload_id,
+                )
+            snapshot.match("abort-multipart-wrong-key-name", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.parametrize(

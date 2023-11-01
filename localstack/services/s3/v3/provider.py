@@ -122,6 +122,7 @@ from localstack.aws.api.s3 import (
     MaxKeys,
     MaxParts,
     MaxUploads,
+    MethodNotAllowed,
     MissingSecurityHeader,
     MultipartUpload,
     MultipartUploadId,
@@ -658,7 +659,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if tagging:
             store.TAGS.tags[key_id] = tagging
 
-        # TODO: returned fields
         # RequestCharged: Optional[RequestCharged]  # TODO
         response = PutObjectOutput(
             ETag=s3_object.quoted_etag,
@@ -693,15 +693,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> GetObjectOutput:
         # TODO: missing handling parameters:
         #  request_payer: RequestPayer = None,
-        #  part_number: PartNumber = None,
         #  expected_bucket_owner: AccountId = None,
 
         bucket_name = request["Bucket"]
         object_key = request["Key"]
         version_id = request.get("VersionId")
         store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
-
-        # TODO implement PartNumber once multipart is done (being able to select only a Part)
 
         s3_object = s3_bucket.get_object(
             key=object_key,
@@ -821,7 +818,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         version_id = request.get("VersionId")
         store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
 
-        # TODO implement PartNumber, don't know about part number + version id?
         s3_object = s3_bucket.get_object(
             key=object_key,
             version_id=version_id,
@@ -909,7 +905,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
     ) -> DeleteObjectOutput:
-        # TODO: implement bypass_governance_retention, it is done in moto
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if bypass_governance_retention is not None and not s3_bucket.object_lock_enabled:
@@ -938,8 +933,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not version_id:
             delete_marker_id = generate_version_id(s3_bucket.versioning_status)
             delete_marker = S3DeleteMarker(key=key, version_id=delete_marker_id)
-            # TODO: verify with Suspended bucket? does it override last version or still append?? big question
-            #  I think it puts a delete marker with a `null` VersionId, which deletes the object under
             s3_bucket.objects.set(key, delete_marker)
             # TODO: make a proper difference between DeleteMarker and S3Object, not done yet
             #  s3:ObjectRemoved:DeleteMarkerCreated
@@ -996,8 +989,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise MalformedXML()
 
         # TODO: max 1000 delete at once? test against AWS?
-        # TODO: implement ByPassGovernance
-        # TODO: implement Locking error
 
         quiet = delete.get("Quiet", False)
         deleted = []
@@ -1005,7 +996,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         to_remove = []
         for to_delete_object in objects:
-            # TODO: beware of key encoding (XML?)
             object_key = to_delete_object.get("Key")
             version_id = to_delete_object.get("VersionId")
             if s3_bucket.versioning_status is None:
@@ -1113,8 +1103,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: CopyObjectRequest,
     ) -> CopyObjectOutput:
-        # TODO: handle those parameters next:
-        # request_payer: RequestPayer = None,
+        # request_payer: RequestPayer = None,  # TODO:
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
         store = self.get_store(context.account_id, context.region)
@@ -1127,15 +1116,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         if not (src_s3_bucket := store.buckets.get(src_bucket)):
-            # TODO: validate this
             raise NoSuchBucket("The specified bucket does not exist", BucketName=src_bucket)
 
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             validate_kms_key_id(sse_kms_key_id, dest_s3_bucket)
 
-        # validate method not allowed?
-        # if the object is a delete marker, get_object will raise, like AWS
-        src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
+        # if the object is a delete marker, get_object will raise NotFound if no versionId, like AWS
+        try:
+            src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
+        except MethodNotAllowed:
+            raise InvalidRequest(
+                "The source of a copy request may not specifically refer to a delete marker by version id."
+            )
 
         if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES and not src_s3_object.restore:
             raise InvalidObjectState(
@@ -1161,15 +1153,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             dest_s3_bucket.encryption_rule is DEFAULT_BUCKET_ENCRYPTION
             and src_s3_object.encryption == "AES256"
         )
-        if src_key == dest_key and not any(
-            (
-                storage_class,
-                server_side_encryption,
-                metadata_directive == "REPLACE",
-                website_redirect_location,
-                dest_s3_bucket.encryption_rule
-                and not is_default_encryption,  # S3 will allow copy in place if the bucket has encryption configured
-                src_s3_object.restore,
+        if (
+            src_bucket == dest_bucket
+            and src_key == dest_key
+            and not any(
+                (
+                    storage_class,
+                    server_side_encryption,
+                    metadata_directive == "REPLACE",
+                    website_redirect_location,
+                    dest_s3_bucket.encryption_rule
+                    and not is_default_encryption,  # S3 will allow copy in place if the bucket has encryption configured
+                    src_s3_object.restore,
+                )
             )
         ):
             raise InvalidRequest(
@@ -1424,7 +1420,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         for s3_object in all_objects:
             key = urlparse.quote(s3_object.key) if encoding_type else s3_object.key
             # skip all keys that alphabetically come before key_marker
-            # TODO: what if there's StartAfter AND ContinuationToken
             if continuation_token:
                 if key < decoded_continuation_token:
                     continue
@@ -1672,7 +1667,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_bucket.versioning_status:
             response["VersionId"] = s3_object.version_id
 
-        # TODO implement PartNumber test once multipart is done
         if s3_object.parts:
             response["ObjectParts"] = GetObjectAttributesParts(TotalPartsCount=len(s3_object.parts))
 
@@ -1829,7 +1823,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
 
         upload_id = request.get("UploadId")
-        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+        if not (
+            s3_multipart := s3_bucket.multiparts.get(upload_id)
+        ) or s3_multipart.object.key != request.get("Key"):
             raise NoSuchUpload(
                 "The specified upload does not exist. "
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
@@ -1841,10 +1837,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentName="partNumber",
                 ArgumentValue=part_number,
             )
-
-        # TODO: validate key?
-        if s3_multipart.object.key != request.get("Key"):
-            pass
 
         checksum_algorithm = request.get("ChecksumAlgorithm")
         checksum_value = (
@@ -1901,7 +1893,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #  copy_source_if_unmodified_since: CopySourceIfUnmodifiedSince = None,
         #  request_payer: RequestPayer = None,
         dest_bucket = request["Bucket"]
-        dest_key = request["Bucket"]
+        dest_key = request["Key"]
         store = self.get_store(context.account_id, context.region)
         # TODO: validate cross-account UploadPartCopy
         if not (dest_s3_bucket := store.buckets.get(dest_bucket)):
@@ -1912,11 +1904,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         if not (src_s3_bucket := store.buckets.get(src_bucket)):
-            # TODO: validate this
             raise NoSuchBucket("The specified bucket does not exist", BucketName=src_bucket)
 
-        # validate method not allowed?
-        src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
+        # if the object is a delete marker, get_object will raise NotFound if no versionId, like AWS
+        try:
+            src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
+        except MethodNotAllowed:
+            raise InvalidRequest(
+                "The source of a copy request may not specifically refer to a delete marker by version id."
+            )
 
         if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES and not src_s3_object.restore:
             raise InvalidObjectState(
@@ -1925,7 +1921,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         upload_id = request.get("UploadId")
-        if not (s3_multipart := dest_s3_bucket.multiparts.get(upload_id)):
+        if (
+            not (s3_multipart := dest_s3_bucket.multiparts.get(upload_id))
+            or s3_multipart.object.key != dest_key
+        ):
             raise NoSuchUpload(
                 "The specified upload does not exist. "
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
@@ -1938,10 +1937,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentName="partNumber",
                 ArgumentValue=part_number,
             )
-
-        # TODO: validate key?
-        if s3_multipart.object.key != dest_key:
-            pass
 
         source_range = request.get("CopySourceRange")
         # TODO implement copy source IF (done in ASF provider)
@@ -1996,15 +1991,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> CompleteMultipartUploadOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+        if (
+            not (s3_multipart := s3_bucket.multiparts.get(upload_id))
+            or s3_multipart.object.key != key
+        ):
             raise NoSuchUpload(
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
-
-        # TODO: validate key?
-        if s3_multipart.object.key != key:
-            pass
 
         parts = multipart_upload.get("Parts", [])
         if not parts:
@@ -2083,15 +2077,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
     ) -> AbortMultipartUploadOutput:
-        # TODO: write tests around this
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        if not (s3_multipart := s3_bucket.multiparts.pop(upload_id, None)):
+        if (
+            not (s3_multipart := s3_bucket.multiparts.get(upload_id))
+            or s3_multipart.object.key != key
+        ):
             raise NoSuchUpload(
                 "The specified upload does not exist. "
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
+        s3_bucket.multiparts.pop(upload_id, None)
 
         self._storage_backend.remove_multipart(bucket, s3_multipart)
         response = AbortMultipartUploadOutput()
@@ -2112,9 +2109,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
     ) -> ListPartsOutput:
+        # TODO: implement MaxParts
+        # TODO: implements PartNumberMarker
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+        if (
+            not (s3_multipart := s3_bucket.multiparts.get(upload_id))
+            or s3_multipart.object.key != key
+        ):
             raise NoSuchUpload(
                 "The specified upload does not exist. "
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
@@ -2124,7 +2126,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #     AbortDate: Optional[AbortDate] TODO: lifecycle
         #     AbortRuleId: Optional[AbortRuleId] TODO: lifecycle
         #     RequestCharged: Optional[RequestCharged]
-        #     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
 
         response = ListPartsOutput(
             Bucket=bucket,
@@ -2137,8 +2138,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             MaxParts=max_parts or 1000,
         )
 
-        # TODO: implement MaxParts
-        # TODO: implement locking for iteration
         parts = [
             Part(
                 ETag=part.quoted_etag,
@@ -2188,7 +2187,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if delimiter:
             response["Delimiter"] = delimiter
 
-        # TODO: implement locking for iteration
         uploads = [
             MultipartUpload(
                 UploadId=multipart.id,
@@ -3071,8 +3069,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
         expected_bucket_owner: AccountId = None,
     ) -> None:
-        # TODO: there is not validation of the policy at the moment, as there was none in moto
-        #  we store the JSON policy as is, as we do not need to decode it
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if not policy or policy[0] != "{":
