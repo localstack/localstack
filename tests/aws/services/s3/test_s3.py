@@ -10328,7 +10328,7 @@ class TestS3PresignedPost:
             location = "http://localhost/key-my-file"
             etag = "d41d8cd98f00b204e9800998ecf8427f"
         else:
-            location = f"{_bucket_url_vhost(s3_bucket, aws_stack.get_region())}/key-my-file"
+            location = f"{_bucket_url_vhost(s3_bucket, TEST_AWS_REGION_NAME)}/key-my-file"
             etag = '"43281e21fce675ac3bcb3524b38ca4ed"'
             assert response.headers["ETag"] == etag
             assert response.headers["Location"] == location

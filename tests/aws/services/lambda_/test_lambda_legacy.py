@@ -17,7 +17,7 @@ from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.archives import download_and_extract
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.platform import get_arch, get_os
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -205,7 +205,7 @@ class TestLambdaLegacyProvider:
     def test_create_lambda_function(self, aws_client):
         """Basic test that creates and deletes a Lambda function"""
         func_name = f"lambda_func-{short_uid()}"
-        kms_key_arn = f"arn:{aws_stack.get_partition()}:kms:{TEST_AWS_REGION_NAME}:{TEST_AWS_ACCOUNT_ID}:key11"
+        kms_key_arn = arns.kms_key_arn("key11", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         vpc_config = {
             "SubnetIds": ["subnet-123456789"],
             "SecurityGroupIds": ["sg-123456789"],
