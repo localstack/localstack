@@ -1916,11 +1916,11 @@ def assert_host_customisation(monkeypatch):
         custom_host: Optional[str] = None,
     ):
         if custom_host is not None:
-            assert custom_host in url
+            assert custom_host in url, f"Could not find `{custom_host}` in `{url}`"
 
             assert localstack_host not in url
         else:
-            assert localstack_host in url
+            assert localstack_host in url, f"Could not find `{localstack_host}` in `{url}`"
 
     yield asserter
 
