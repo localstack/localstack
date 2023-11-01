@@ -107,7 +107,7 @@ class StepFunctionsStateMachineProvider(ResourceProvider[StepFunctionsStateMachi
         params = {
             "name": model.get("StateMachineName"),
             "roleArn": model.get("RoleArn"),
-            "type": model.get("StateMachineType", None),
+            "type": model.get("StateMachineType", "STANDARD"),
         }
 
         # get definition
