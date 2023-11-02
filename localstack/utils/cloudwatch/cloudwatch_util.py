@@ -45,18 +45,24 @@ def publish_lambda_metric(metric, value, kwargs, region_name: Optional[str] = No
 
 
 def publish_sqs_metric(
-    region: str, queue_name: str, metric: str, value: float = 1, unit: str = "Count"
+    region: str,
+    account_id: str,
+    queue_name: str,
+    metric: str,
+    value: float = 1,
+    unit: str = "Count",
 ):
     """
     Publishes the metrics for SQS to CloudWatch using the namespace "AWS/SQS"
     See also: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
     :param region The region that should be used for CloudWatch
+    :param account_id The account id that should be used for CloudWatch
     :param queue_name The name of the queue
     :param metric The metric name to be used
     :param value The value of the metric data, default: 1
     :param unit The unit of the metric data, default: "Count"
     """
-    cw_client = connect_to(region_name=region).cloudwatch
+    cw_client = connect_to(region_name=region, aws_access_key_id=account_id).cloudwatch
     try:
         cw_client.put_metric_data(
             Namespace="AWS/SQS",
