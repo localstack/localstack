@@ -54,7 +54,6 @@ from localstack.aws.api.ses import (
 from localstack.aws.connect import connect_to
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Resource, Response
-from localstack.services.internal import DeprecatedResource, get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.ses.models import SentEmail, SentEmailBody
@@ -165,23 +164,9 @@ def register_ses_api_resource():
     global _EMAILS_ENDPOINT_REGISTERED
 
     if not _EMAILS_ENDPOINT_REGISTERED:
-        ses_service_api_resource = SesServiceApiResource()
-        get_internal_apis().add(
-            Resource(
-                "/_localstack/ses",
-                DeprecatedResource(
-                    ses_service_api_resource,
-                    previous_path="/_localstack/ses",
-                    deprecation_version="1.4.0",
-                    new_path="/_aws/ses",
-                ),
-            )
-        )
-
         from localstack.services.edge import ROUTER
 
-        ROUTER.add(Resource(EMAILS_ENDPOINT, ses_service_api_resource))
-
+        ROUTER.add(Resource(EMAILS_ENDPOINT, SesServiceApiResource()))
         _EMAILS_ENDPOINT_REGISTERED = True
 
 

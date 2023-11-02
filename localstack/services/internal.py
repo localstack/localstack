@@ -328,20 +328,7 @@ class LocalstackResources(Router):
         from localstack.services.plugins import SERVICE_PLUGINS
 
         health_resource = HealthResource(SERVICE_PLUGINS)
-        # special route for legacy support (before `/_localstack` was introduced)
-        self.add(
-            Resource(
-                "/health",
-                DeprecatedResource(
-                    health_resource,
-                    previous_path="/health",
-                    deprecation_version="1.3.0",
-                    new_path="/_localstack/health",
-                ),
-            ),
-        )
         self.add(Resource("/_localstack/health", health_resource))
-
         self.add(Resource("/_localstack/info", InfoResource()))
         self.add(Resource("/_localstack/plugins", PluginsResource()))
         self.add(Resource("/_localstack/init", InitScriptsResource()))
