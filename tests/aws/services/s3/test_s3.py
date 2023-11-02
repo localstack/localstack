@@ -934,7 +934,7 @@ class TestS3:
         snapshot.match("list-multiparts-next-key-empty", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=is_v2_provider, reason="not implemented in moto")
     def test_list_multiparts_with_prefix_and_delimiter(
         self, s3_bucket, snapshot, aws_client, aws_http_client_factory
     ):
@@ -980,7 +980,7 @@ class TestS3:
         resp_dict["ListMultipartUploadsResult"].pop("@xmlns", None)
         snapshot.match("list-multiparts-no-encoding", resp_dict)
 
-    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=is_v2_provider, reason="not implemented in moto")
     @markers.aws.validated
     def test_list_parts_pagination(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
