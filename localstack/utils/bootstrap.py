@@ -233,12 +233,17 @@ def get_enabled_apis() -> Set[str]:
     services = SERVICE_PLUGINS.list_available()
 
     if services_env and is_env_true("STRICT_SERVICE_LOADING"):
-        from localstack.services.plugins import SERVICE_PLUGINS
-
         # SERVICES and STRICT_SERVICE_LOADING are set
         # we filter the result of SERVICE_PLUGINS.list_available() to cross the user-provided list with
         # the available ones
-        services = [service for service in services_env.split(",") if service in services]
+        enabled_services = []
+        for service_port in re.split(r"\s*,\s*", services_env):
+            # Only extract the service name, discard the port
+            parts = re.split(r"[:=]", service_port)
+            service = parts[0]
+            enabled_services.append(service)
+
+        services = [service for service in enabled_services if service in services]
         # TODO: log a message if a service was not supported? see with pro loading
 
     return resolve_apis(services)
@@ -263,7 +268,12 @@ def get_preloaded_services() -> Set[str]:
     if services_env and is_env_true("EAGER_SERVICE_LOADING"):
         # SERVICES and EAGER_SERVICE_LOADING are set
         # SERVICES env var might contain ports, but we do not support these anymore
-        services = [service for service in services_env.split(",")]
+        services = []
+        for service_port in re.split(r"\s*,\s*", services_env):
+            # Only extract the service name, discard the port
+            parts = re.split(r"[:=]", service_port)
+            service = parts[0]
+            services.append(service)
 
     if not services:
         from localstack.services.plugins import SERVICE_PLUGINS
@@ -274,7 +284,16 @@ def get_preloaded_services() -> Set[str]:
 
 
 def should_eager_load_api(api: str) -> bool:
-    return api in get_preloaded_services()
+    apis = get_preloaded_services()
+
+    if api in apis:
+        return True
+
+    for enabled_api in apis:
+        if api.startswith(f"{enabled_api}:"):
+            return True
+
+    return False
 
 
 def start_infra_locally():
