@@ -83,12 +83,6 @@ class TestCloudFormationUiResource:
 class TestLocalstackResourceHandlerIntegration:
     def test_health(self, monkeypatch):
         with proxy_server(LocalstackResourceHandler()) as url:
-            # legacy endpoint
-            response = requests.get(f"{url}/health")
-            assert response.ok
-            assert "services" in response.json()
-
-            # new internal endpoint
             response = requests.get(f"{url}/_localstack/health")
             assert response.ok
             assert "services" in response.json()
