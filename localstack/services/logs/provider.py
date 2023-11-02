@@ -40,7 +40,7 @@ from localstack.services.logs.models import get_moto_logs_backend, logs_stores
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import extract_region_from_arn
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
 
@@ -250,8 +250,12 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
     if not log_group:
         raise ResourceNotFoundException("The specified log group does not exist.")
 
+    arn_data = parse_arn(destination_arn)
+
     if ":lambda:" in destination_arn:
-        client = connect_to(region_name=extract_region_from_arn(destination_arn)).lambda_
+        client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).lambda_
         lambda_name = arns.lambda_function_name(destination_arn)
         try:
             client.get_function(FunctionName=lambda_name)
@@ -261,31 +265,34 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
             )
 
     elif ":kinesis:" in destination_arn:
-        client = connect_to().kinesis
+        client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).kinesis
         stream_name = arns.kinesis_stream_name(destination_arn)
         try:
             client.describe_stream(StreamName=stream_name)
         except Exception:
             raise InvalidParameterException(
-                "Could not deliver test message to specified Kinesis stream. "
-                "Check if the given kinesis stream is in ACTIVE state. "
+                "Could not deliver message to specified Kinesis stream. "
+                "Ensure that the Kinesis stream exists and is ACTIVE."
             )
 
     elif ":firehose:" in destination_arn:
-        client = connect_to().firehose
+        client = connect_to(
+            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+        ).firehose
         firehose_name = arns.firehose_name(destination_arn)
         try:
             client.describe_delivery_stream(DeliveryStreamName=firehose_name)
         except Exception:
             raise InvalidParameterException(
-                "Could not deliver test message to specified Firehose stream. "
-                "Check if the given Firehose stream is in ACTIVE state."
+                "Could not deliver message to specified Firehose stream. "
+                "Ensure that the Firehose stream exists and is ACTIVE."
             )
 
     else:
-        service = arns.extract_service_from_arn(destination_arn)
         raise InvalidParameterException(
-            f"PutSubscriptionFilter operation cannot work with destinationArn for vendor {service}"
+            f"PutSubscriptionFilter operation cannot work with destinationArn for vendor {arn_data['service']}"
         )
 
     if filter_pattern:
@@ -341,20 +348,30 @@ def moto_put_log_events(self: "MotoLogStream", log_events):
             payload_gz_encoded = output.getvalue()
             event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
 
+            arn_data = parse_arn(destination_arn)
+
             if ":lambda:" in destination_arn:
-                client = connect_to(region_name=extract_region_from_arn(destination_arn)).lambda_
+                client = connect_to(
+                    aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+                ).lambda_
                 lambda_name = arns.lambda_function_name(destination_arn)
                 client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
+
             if ":kinesis:" in destination_arn:
-                client = connect_to().kinesis
+                client = connect_to(
+                    aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+                ).kinesis
                 stream_name = arns.kinesis_stream_name(destination_arn)
                 client.put_record(
                     StreamName=stream_name,
                     Data=payload_gz_encoded,
                     PartitionKey=self.log_group.name,
                 )
+
             if ":firehose:" in destination_arn:
-                client = connect_to().firehose
+                client = connect_to(
+                    aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+                ).firehose
                 firehose_name = arns.firehose_name(destination_arn)
                 client.put_record(
                     DeliveryStreamName=firehose_name,
