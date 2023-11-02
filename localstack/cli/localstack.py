@@ -552,7 +552,7 @@ def cmd_stop() -> None:
     Stops the current LocalStack runtime.
 
     This command stops the currently running LocalStack docker container.
-    By default, this command looks for a container named `localstack_main` (which is the default
+    By default, this command looks for a container named `localstack-main` (which is the default
     container name used by the `localstack start` command).
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.
@@ -597,7 +597,7 @@ def cmd_logs(follow: bool, tail: int) -> None:
     Show the logs of the current LocalStack runtime.
 
     This command shows the logs of the currently running LocalStack docker container.
-    By default, this command looks for a container named `localstack_main` (which is the default
+    By default, this command looks for a container named `localstack-main` (which is the default
     container name used by the `localstack start` command).
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.
@@ -647,7 +647,7 @@ def cmd_wait(timeout: Optional[float] = None) -> None:
 
     This commands waits for a started LocalStack runtime to be up and running, ready to serve
     requests.
-    By default, this command looks for a container named `localstack_main` (which is the default
+    By default, this command looks for a container named `localstack-main` (which is the default
     container name used by the `localstack start` command).
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.
@@ -665,7 +665,7 @@ def cmd_ssh() -> None:
     Obtain a shell in the current LocalStack runtime.
 
     This command starts a new interactive shell in the currently running LocalStack container.
-    By default, this command looks for a container named `localstack_main` (which is the default
+    By default, this command looks for a container named `localstack-main` (which is the default
     container name used by the `localstack start` command).
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.

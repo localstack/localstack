@@ -51,7 +51,7 @@ services:
       - KAFKA_BROKERS=kafka:29092
 
   localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
+    container_name: "${LOCALSTACK_DOCKER_NAME-localstack-main}"
     image: localstack/localstack
     network_mode: bridge
     ports:

@@ -146,7 +146,7 @@ def test_validate_config(runner, monkeypatch, tmp_path):
         """version: "3.3"
 services:
   localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
+    container_name: "${LOCALSTACK_DOCKER_NAME-localstack-main}"
     image: localstack/localstack
     network_mode: bridge
     ports:
