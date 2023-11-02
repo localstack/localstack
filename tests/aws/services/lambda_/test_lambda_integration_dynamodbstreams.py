@@ -9,7 +9,6 @@ from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
     _get_lambda_invocation_events,
-    is_old_provider,
     lambda_role,
     s3_lambda_permission,
 )
@@ -54,21 +53,6 @@ def get_lambda_logs_event(aws_client):
     return _get_lambda_logs_event
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_old_provider,
-    paths=[
-        "$..BisectBatchOnFunctionError",
-        "$..DestinationConfig",
-        "$..FunctionResponseTypes",
-        "$..LastProcessingResult",
-        "$..MaximumBatchingWindowInSeconds",
-        "$..MaximumRecordAgeInSeconds",
-        "$..ResponseMetadata.HTTPStatusCode",
-        "$..State",
-        "$..Topics",
-        "$..TumblingWindowInSeconds",
-    ],
-)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # dynamodb issues, not related to lambda

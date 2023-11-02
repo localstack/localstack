@@ -20,8 +20,10 @@ TRACKED_ENV_VAR = [
     "KINESIS_PROVIDER",
     "KMS_PROVIDER",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
+    # Irrelevant post v3 but intentionally tracked for some time
     "LAMBDA_EXECUTOR",
     "LAMBDA_PREBUILD_IMAGES",
+    # Irrelevant post v3 but intentionally tracked for some time
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LEGACY_DIRECTORIES",
@@ -50,8 +52,6 @@ PRESENCE_ENV_VAR = [
     "HOSTNAME_FROM_LAMBDA",
     "HOST_TMP_FOLDER",
     "INIT_SCRIPTS_PATH",
-    "LAMBDA_FALLBACK_URL",
-    "LAMBDA_FORWARD_URL",
     "LEGACY_DIRECTORIES",
     "LEGACY_INIT_DIR",
     "LOCALSTACK_HOST",

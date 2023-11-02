@@ -11,7 +11,6 @@ from localstack import constants
 from localstack.constants import (
     DEFAULT_BUCKET_MARKER_LOCAL,
     DEFAULT_DEVELOP_PORT,
-    DEFAULT_LAMBDA_CONTAINER_REGISTRY,
     DEFAULT_VOLUME_DIR,
     ENV_INTERNAL_TEST_COLLECT_METRIC,
     ENV_INTERNAL_TEST_RUN,
@@ -829,10 +828,6 @@ KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", 
 # Kinesis mock log level override when inconsistent with LS_LOG (e.g., when LS_LOG=debug)
 KINESIS_MOCK_LOG_LEVEL = os.environ.get("KINESIS_MOCK_LOG_LEVEL", "").strip()
 
-# DEPRECATED: 1 (default) only applies to old lambda provider
-# Whether to handle Kinesis Lambda event sources as synchronous invocations.
-SYNCHRONOUS_KINESIS_EVENTS = is_env_not_false("SYNCHRONOUS_KINESIS_EVENTS")  # DEPRECATED
-
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get("KINESIS_ERROR_PROBABILITY", "").strip() or 0.0)
 
@@ -877,17 +872,6 @@ SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL = int(
     os.environ.get("SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL") or 60
 )
 
-# DEPRECATED: only applies to old lambda provider
-# Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
-HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
-
-# DEPRECATED: true (default) only applies to old lambda provider
-# Determines whether Lambda code is copied or mounted into containers.
-LAMBDA_REMOTE_DOCKER = is_env_true("LAMBDA_REMOTE_DOCKER")
-# make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
-if is_in_docker and not os.environ.get("LAMBDA_REMOTE_DOCKER", "").strip():
-    LAMBDA_REMOTE_DOCKER = True
-
 # PUBLIC: hot-reload (default v2), __local__ (default v1)
 # Magic S3 bucket name for Hot Reloading. The S3Key points to the source code on the local file system.
 BUCKET_MARKER_LOCAL = (
@@ -898,7 +882,7 @@ BUCKET_MARKER_LOCAL = (
 # Docker network driver for the Lambda and ECS containers. https://docs.docker.com/network/
 LAMBDA_DOCKER_NETWORK = os.environ.get("LAMBDA_DOCKER_NETWORK", "").strip()
 
-# PUBLIC v1: Currently only supported by the old lambda provider
+# PUBLIC v1: LocalStack DNS (default)
 # Custom DNS server for the container running your lambda function.
 LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 
@@ -923,13 +907,6 @@ LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
 # PUBLIC: 10 (default)
 # How many seconds Lambda will wait for the runtime environment to start up.
 LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 10)
-
-# DEPRECATED: lambci/lambda (default) only applies to old lambda provider
-# An alternative docker registry from where to pull lambda execution containers.
-# Replaced by LAMBDA_RUNTIME_IMAGE_MAPPING in new provider.
-LAMBDA_CONTAINER_REGISTRY = (
-    os.environ.get("LAMBDA_CONTAINER_REGISTRY", "").strip() or DEFAULT_LAMBDA_CONTAINER_REGISTRY
-)
 
 # PUBLIC: base images for Lambda (default) https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html
 # localstack/services/lambda_/invocation/lambda_models.py:IMAGE_MAPPING
@@ -1016,30 +993,6 @@ WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get("WINDOWS_DOCKER_MOUNT_PREFIX", "/ho
 S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
 # whether to skip S3 validation of provided KMS key
 S3_SKIP_KMS_KEY_VALIDATION = is_env_not_false("S3_SKIP_KMS_KEY_VALIDATION")
-
-# DEPRECATED: docker (default), local (fallback without Docker), docker-reuse. only applies to old lambda provider
-# Method to use for executing Lambda functions.
-LAMBDA_EXECUTOR = os.environ.get("LAMBDA_EXECUTOR", "").strip()
-
-# DEPRECATED: only applies to old lambda provider
-# Fallback URL to use when a non-existing Lambda is invoked. If this matches
-# `dynamodb://<table_name>`, then the invocation is recorded in the corresponding
-# DynamoDB table. If this matches `http(s)://...`, then the Lambda invocation is
-# forwarded as a POST request to that URL.
-LAMBDA_FALLBACK_URL = os.environ.get("LAMBDA_FALLBACK_URL", "").strip()
-# DEPRECATED: only applies to old lambda provider
-# Forward URL used to forward any Lambda invocations to an external
-# endpoint (can use useful for advanced test setups)
-LAMBDA_FORWARD_URL = os.environ.get("LAMBDA_FORWARD_URL", "").strip()
-# DEPRECATED: ignored in new lambda provider because creation happens asynchronously
-# Time in seconds to wait at max while extracting Lambda code.
-# By default, it is 25 seconds for limiting the execution time
-# to avoid client/network timeout issues
-LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
-
-# DEPRECATED: 1 (default) only applies to old lambda provider
-# whether lambdas should use stay open mode if executed in "docker-reuse" executor
-LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE")
 
 # PUBLIC: 2000 (default)
 # Allows increasing the default char limit for truncation of lambda log lines when printed in the console.
@@ -1204,21 +1157,15 @@ CONFIG_ENV_VARS = [
     "GATEWAY_LISTEN",
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
-    "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
     "KMS_PROVIDER",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
-    "LAMBDA_CODE_EXTRACT_TIME",
-    "LAMBDA_CONTAINER_REGISTRY",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",
-    "LAMBDA_EXECUTOR",
-    "LAMBDA_FALLBACK_URL",
-    "LAMBDA_FORWARD_URL",
     "LAMBDA_INIT_DEBUG",
     "LAMBDA_INIT_BIN_PATH",
     "LAMBDA_INIT_BOOTSTRAP_PATH",
@@ -1230,11 +1177,9 @@ CONFIG_ENV_VARS = [
     "LAMBDA_KEEPALIVE_MS",
     "LAMBDA_RUNTIME_IMAGE_MAPPING",
     "LAMBDA_JAVA_OPTS",
-    "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
-    "LAMBDA_STAY_OPEN_MODE",
     "LAMBDA_TRUNCATE_STDOUT",
     "LAMBDA_RETRY_BASE_DELAY_SECONDS",
     "LAMBDA_SYNCHRONOUS_CREATE",
@@ -1280,8 +1225,6 @@ CONFIG_ENV_VARS = [
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "STRICT_SERVICE_LOADING",
-    "SYNCHRONOUS_KINESIS_EVENTS",
-    "SYNCHRONOUS_SNS_EVENTS",
     "TEST_AWS_ACCOUNT_ID",
     "TF_COMPAT_MODE",
     "USE_SINGLE_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
