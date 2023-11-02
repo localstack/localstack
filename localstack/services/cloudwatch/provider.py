@@ -28,7 +28,6 @@ from localstack.aws.api.cloudwatch import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
-from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request
 from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
@@ -232,16 +231,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
-        # TODO remove with 2.0
-        ROUTER.add(
-            DEPRECATED_PATH_GET_RAW_METRICS,
-            deprecated_endpoint(
-                self.get_raw_metrics,
-                previous_path=DEPRECATED_PATH_GET_RAW_METRICS,
-                deprecation_version="1.3.0",
-                new_path=PATH_GET_RAW_METRICS,
-            ),
-        )
         self.start_alarm_scheduler()
 
     def on_before_state_reset(self):
