@@ -1,0 +1,49 @@
+{
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_hosted_zone": {
+    "recorded-date": "02-11-2023, 08:26:25",
+    "recorded-content": {
+      "create_hosted_zone_response": {
+        "ChangeInfo": {
+          "Id": "/change/<change-id>",
+          "Status": "<status:1>",
+          "SubmittedAt": "datetime"
+        },
+        "DelegationSet": {
+          "NameServers": "<name-server>"
+        },
+        "HostedZone": {
+          "CallerReference": "<caller-reference:1>",
+          "Config": {
+            "PrivateZone": false
+          },
+          "Id": "/hostedzone/<zone_id>",
+          "Name": "<zone_name:1>",
+          "ResourceRecordSetCount": 2
+        },
+        "Location": "https://route53.amazonaws.com/2013-04-01/hostedzone/<zone_id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_hosted_zone": {
+        "DelegationSet": {
+          "NameServers": "<name-server>"
+        },
+        "HostedZone": {
+          "CallerReference": "<caller-reference:1>",
+          "Config": {
+            "PrivateZone": false
+          },
+          "Id": "/hostedzone/<zone_id>",
+          "Name": "<zone_name:1>",
+          "ResourceRecordSetCount": 2
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
