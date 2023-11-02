@@ -1,6 +1,6 @@
 {
   "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_hosted_zone": {
-    "recorded-date": "02-11-2023, 08:26:25",
+    "recorded-date": "02-11-2023, 12:59:59",
     "recorded-content": {
       "create_hosted_zone_response": {
         "ChangeInfo": {
@@ -16,11 +16,11 @@
           "Config": {
             "PrivateZone": false
           },
-          "Id": "/hostedzone/<zone_id>",
+          "Id": "/hostedzone/<zone-id:1>",
           "Name": "<zone_name:1>",
           "ResourceRecordSetCount": 2
         },
-        "Location": "https://route53.amazonaws.com/2013-04-01/hostedzone/<zone_id>",
+        "Location": "https://route53.amazonaws.com/2013-04-01/hostedzone/<zone-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -35,7 +35,7 @@
           "Config": {
             "PrivateZone": false
           },
-          "Id": "/hostedzone/<zone_id>",
+          "Id": "/hostedzone/<zone-id:1>",
           "Name": "<zone_name:1>",
           "ResourceRecordSetCount": 2
         },
