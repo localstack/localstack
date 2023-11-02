@@ -10,11 +10,11 @@ import xmltodict
 from requests.models import Request as RequestsRequest
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_EDGE_URL,
     TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
 from localstack.services.generic_proxy import (
@@ -334,7 +334,7 @@ class TestEdgeAPI:
             json.loads(content1)
         content1 = xmltodict.parse(content1)
         content1_result = content1["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
-        assert content1_result["Account"] == get_aws_account_id()
+        assert content1_result["Account"] == TEST_AWS_ACCOUNT_ID
 
         # receive response as JSON (via Accept header)
         headers = aws_stack.mock_aws_request_headers(
@@ -345,7 +345,7 @@ class TestEdgeAPI:
         assert response
         content2 = json.loads(to_str(response.content))
         content2_result = content2["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
-        assert content2_result["Account"] == get_aws_account_id()
+        assert content2_result["Account"] == TEST_AWS_ACCOUNT_ID
         content1.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
         content2.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
         assert strip_xmlns(content1) == content2
