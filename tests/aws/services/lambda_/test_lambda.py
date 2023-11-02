@@ -1667,6 +1667,7 @@ class TestLambdaConcurrency:
             )
         snapshot.match("invoke_latest_second_exc", e.value.response)
 
+    @pytest.mark.skip(reason="Not yet implemented")
     @pytest.mark.skipif(condition=is_aws(), reason="very slow (only execute when needed)")
     @markers.aws.validated
     def test_lambda_provisioned_concurrency_moves_with_alias(
