@@ -252,7 +252,7 @@ class TestKinesis:
         iterator = get_shard_iterator(stream_name, aws_client.kinesis)
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers(
-            "kinesis", region_name=TEST_AWS_REGION_NAME, access_key=TEST_AWS_ACCESS_KEY_ID
+            "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
@@ -286,7 +286,7 @@ class TestKinesis:
         # empty get records with CBOR encoding
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers(
-            "kinesis", region_name=TEST_AWS_REGION_NAME, access_key=TEST_AWS_ACCESS_KEY_ID
+            "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"

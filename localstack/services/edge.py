@@ -21,6 +21,7 @@ from localstack.aws.accounts import (
 from localstack.aws.protocol.service_router import determine_aws_service_name
 from localstack.config import HostAndPort
 from localstack.constants import (
+    AWS_REGION_US_EAST_1,
     HEADER_LOCALSTACK_ACCOUNT_ID,
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
@@ -170,7 +171,9 @@ class ProxyListenerEdge(ProxyListener):
             return response
 
         if api and not headers.get("Authorization"):
-            headers["Authorization"] = aws_stack.mock_aws_request_headers(api)["Authorization"]
+            headers["Authorization"] = aws_stack.mock_aws_request_headers(
+                api, aws_access_key_id=access_key_id, region_name=AWS_REGION_US_EAST_1
+            )["Authorization"]
         headers[HEADER_TARGET_API] = str(api)
 
         headers["Host"] = host
