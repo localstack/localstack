@@ -957,7 +957,7 @@ class TestSESRetrospection:
         assert '{"A key": "A value"}' == contents["TemplateData"]
         assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
 
-        api_contents = requests.get("http://localhost:4566/_localstack/ses").json()
+        api_contents = requests.get("http://localhost:4566/_aws/ses").json()
         api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
         assert message_id in api_contents
         assert api_contents[message_id] == contents
