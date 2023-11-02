@@ -2,7 +2,6 @@ import pytest
 import requests
 
 from localstack import config
-from localstack.constants import CONFIG_UPDATE_PATH
 from localstack.http import Resource
 from localstack.services.internal import ConfigResource, get_internal_apis
 from localstack.utils import config_listener
@@ -31,17 +30,6 @@ def test_config_endpoint(config_endpoint):
 
     config.FOO = None
     config_listener.CONFIG_LISTENERS.append(custom_listener)
-
-    # test the ProxyListener
-    body = {"variable": "FOO", "value": "BAR"}
-    url = f"{config.get_edge_url()}{CONFIG_UPDATE_PATH}"
-    response = requests.post(url, json=body)
-    assert 200 == response.status_code
-    response_body = response.json()
-    assert body == response_body
-    assert body["value"] == config.FOO
-    assert body["variable"] == key
-    assert body["value"] == value
 
     # test the Route
     body = {"variable": "FOO", "value": "BAZ"}
