@@ -33,7 +33,6 @@ class Job:
 
 
 class JobScheduler:
-
     _instance = None
 
     def __init__(self):
@@ -46,6 +45,11 @@ class JobScheduler:
         job = Job(job_func, schedule, enabled=enabled)
         self.jobs.append(job)
         return job.job_id
+
+    def get_job(self, job_id) -> Job | None:
+        for job in self.jobs:
+            if job.job_id == job_id:
+                return job
 
     def disable_job(self, job_id):
         for job in self.jobs:

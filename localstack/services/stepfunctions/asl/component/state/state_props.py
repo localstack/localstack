@@ -31,11 +31,9 @@ class StateProps(TypedProps):
 
         # End-Next conflicts:
         if inst_type == End and Next in self._instance_by_type:
-            raise ValueError(
-                f"'{End}' redefines '{Next}', from '{self.get(Next)}' to '{instance}'."
-            )
+            raise ValueError(f"End redefines Next, from '{self.get(Next)}' to '{instance}'.")
         if inst_type == Next and End in self._instance_by_type:
-            raise ValueError(f"'{Next}' redefines '{End}', from '{self.get(End)}' to '{instance}'.")
+            raise ValueError(f"Next redefines End, from '{self.get(End)}' to '{instance}'.")
 
         # Subclasses
         for typ in self._UNIQUE_SUBINSTANCES:

@@ -1,4 +1,3 @@
-import contextlib
 import json
 import re
 from typing import Any, Dict
@@ -7,6 +6,15 @@ import airspeed
 
 from localstack.utils.objects import recurse_object
 from localstack.utils.patch import patch
+
+
+# remove this patch fails test_api_gateway_kinesis_integration
+# we need to validate against AWS behavior before removing this patch
+@patch(airspeed.operators.VariableExpression.calculate)
+def calculate(fn, self, *args, **kwarg):
+    result = fn(self, *args, **kwarg)
+    result = "" if result is None else result
+    return result
 
 
 class VelocityUtil:
@@ -112,113 +120,3 @@ def render_velocity_template(template, context, variables=None, as_json=False):
     context = context or {}
     context.update(variables or {})
     return VtlTemplate().render_vtl(template, context, as_json=as_json)
-
-
-# START of patches for airspeed
-# TODO: contribute these patches upstream!
-
-
-airspeed.operators.MacroDefinition.RESERVED_NAMES = (
-    airspeed.operators.MacroDefinition.RESERVED_NAMES + ("return",)
-)
-
-
-@patch(airspeed.operators.VariableExpression.calculate)
-def calculate(fn, self, *args, **kwarg):
-    result = fn(self, *args, **kwarg)
-    result = "" if result is None else result
-    return result
-
-
-class ExtAssignment(airspeed.operators.Assignment):
-    """
-    Extends the airspeed Assignment class to support names with dashes, e.g., "X-Amz-Target"
-    """
-
-    START = re.compile(r"\s*\(\s*\$(\w*(?:\.[\w-]+|\[\"\$\w+\"\]*)*)\s*=\s*(.*)$", re.S + re.I)
-
-
-class ExtNameOrCall(airspeed.operators.NameOrCall):
-    """
-    Extends the airspeed NameOrCall class to support names with dashes, e.g., "foo-bar"
-    """
-
-    NAME = re.compile(r"([a-zA-Z0-9_-]+)(.*)$", re.S)
-
-
-@patch(airspeed.operators.VariableExpression.parse, pass_target=False)
-def parse_expr(self):
-    self.part = self.next_element(ExtNameOrCall)
-    with contextlib.suppress(airspeed.operators.NoMatch):
-        self.subexpression = self.next_element(airspeed.operators.SubExpression)
-
-
-@patch(airspeed.operators.SetDirective.parse, pass_target=False)
-def parse_setexpr(self):
-    self.identity_match(self.START)
-    self.assignment = self.require_next_element(ExtAssignment, "assignment")
-
-
-class ReturnDirective(airspeed.operators.EvaluateDirective):
-    """Defines an airspeed VTL directive that supports `#return(...)` expressions"""
-
-    START = re.compile(r"#return\b(.*)")
-
-    def evaluate_raw(self, stream, namespace, loader):
-        import json
-
-        value = self.value.calculate(namespace, loader)
-        str_value = str(value)
-        # string conversion of certain values (e.g., dict->JSON)
-        if isinstance(value, dict):
-            try:
-                str_value = json.dumps(value)
-            except Exception:
-                pass
-        stream.write(str_value)
-
-
-@patch(airspeed.operators.Block.parse, pass_target=False)
-def parse(self):
-    # need to copy the entire function body, no easier way to apply the patch here..
-    self.children = []
-    while True:
-        try:
-            self.children.append(
-                self.next_element(
-                    (
-                        airspeed.operators.Text,
-                        airspeed.operators.FormalReference,
-                        airspeed.operators.Comment,
-                        airspeed.operators.IfDirective,
-                        airspeed.operators.SetDirective,
-                        airspeed.operators.ForeachDirective,
-                        airspeed.operators.IncludeDirective,
-                        airspeed.operators.ParseDirective,
-                        airspeed.operators.MacroDefinition,
-                        airspeed.operators.DefineDefinition,
-                        airspeed.operators.StopDirective,
-                        airspeed.operators.UserDefinedDirective,
-                        airspeed.operators.EvaluateDirective,
-                        ReturnDirective,
-                        airspeed.operators.MacroCall,
-                        airspeed.operators.FallthroughHashText,
-                    )
-                )
-            )
-        except airspeed.operators.NoMatch:
-            break
-
-
-def dict_to_string(self) -> str:
-    return str(self)
-
-
-def str_contains(self, other: str) -> bool:
-    return other in self
-
-
-airspeed.operators.__additional_methods__[dict]["toString"] = dict_to_string
-airspeed.operators.__additional_methods__[str]["contains"] = str_contains
-
-# END of patches for airspeed

@@ -1,6 +1,13 @@
+"""Lambda scenario tests for different runtimes (i.e., multiruntime tests).
+
+Directly correlates to the structure found in tests.aws.lambda_.functions.common
+Each scenario has the following folder structure: ./common/<scenario>/runtime/
+Runtime can either be directly one of the supported runtimes (e.g. in case of version specific compilation instructions)
+or one of the keys in RUNTIMES_AGGREGATED. To selectively execute runtimes, use the runtimes parameter of multiruntime.
+Example: runtimes=[Runtime.go1_x]
+"""
 import json
 import logging
-import platform
 import time
 import zipfile
 
@@ -10,6 +17,7 @@ from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
+from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -44,16 +52,9 @@ def snapshot_transformers(snapshot):
     reason="Local executor does not support the majority of the runtimes",
 )
 @pytest.mark.skipif(
-    condition=platform.machine() != "x86_64", reason="build process doesn't support arm64 right now"
+    condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
 )
 class TestLambdaRuntimesCommon:
-    """
-    Directly correlates to the structure found in tests.aws.lambda_.functions.common
-    Each scenario has the following folder structure: ./common/<scenario>/runtime/
-    Runtime can either be directly one of the supported runtimes (e.g. in case of version specific compilation instructions) or one of the keys in RUNTIMES_AGGREGATED
-    To selectively execute runtimes, use the runtimes parameter of multiruntime. Example: runtimes=[Runtime.go1_x]
-    """
-
     # TODO: refactor builds:
     # * Remove specific hashes and `touch -t` since we're not actually checking size & hash of the zip files anymore
     # * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
@@ -255,7 +256,7 @@ class TestLambdaRuntimesCommon:
     reason="Local executor does not support the majority of the runtimes",
 )
 @pytest.mark.skipif(
-    condition=platform.machine() != "x86_64", reason="build process doesn't support arm64 right now"
+    condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
 )
 class TestLambdaCallingLocalstack:
     @markers.multiruntime(

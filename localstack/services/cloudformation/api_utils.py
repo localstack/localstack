@@ -86,14 +86,14 @@ def convert_s3_to_local_url(url: str) -> str:
     headers = {"host": url_parsed.netloc}
     bucket_name, key_name = extract_bucket_name_and_key_from_headers_and_path(headers, path)
 
-    if not bucket_name or not key_name:
-        if url_parsed.scheme != "s3" and not (
-            url_parsed.netloc.startswith("s3.") or ".s3." in url_parsed.netloc
-        ):
-            raise ValidationError("TemplateURL must be a supported URL.")
+    if url_parsed.scheme == "s3":
         raise ValidationError(
             f"S3 error: Domain name specified in {url_parsed.netloc} is not a valid S3 domain"
         )
+
+    if not bucket_name or not key_name:
+        if not (url_parsed.netloc.startswith("s3.") or ".s3." in url_parsed.netloc):
+            raise ValidationError("TemplateURL must be a supported URL.")
 
     # note: make sure to normalize the bucket name here!
     bucket_name = normalize_bucket_name(bucket_name)

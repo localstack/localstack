@@ -257,7 +257,6 @@ def test_retry_and_catch(deploy_cfn_template, aws_client):
 
 @markers.aws.validated
 def test_cfn_statemachine_with_dependencies(deploy_cfn_template, aws_client):
-
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/statemachine_test.json"

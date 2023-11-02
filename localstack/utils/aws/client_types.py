@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_apigatewayv2 import ApiGatewayV2Client
     from mypy_boto3_appconfig import AppConfigClient
+    from mypy_boto3_appconfigdata import AppConfigDataClient
     from mypy_boto3_appsync import AppSyncClient
     from mypy_boto3_athena import AthenaClient
     from mypy_boto3_autoscaling import AutoScalingClient
@@ -101,6 +102,7 @@ class TypedServiceClientFactory(abc.ABC):
     apigateway: Union["APIGatewayClient", "MetadataRequestInjector[APIGatewayClient]"]
     apigatewayv2: Union["ApiGatewayV2Client", "MetadataRequestInjector[ApiGatewayV2Client]"]
     appconfig: Union["AppConfigClient", "MetadataRequestInjector[AppConfigClient]"]
+    appconfigdata: Union["AppConfigDataClient", "MetadataRequestInjector[AppConfigDataClient]"]
     appsync: Union["AppSyncClient", "MetadataRequestInjector[AppSyncClient]"]
     athena: Union["AthenaClient", "MetadataRequestInjector[AthenaClient]"]
     autoscaling: Union["AutoScalingClient", "MetadataRequestInjector[AutoScalingClient]"]

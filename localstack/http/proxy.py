@@ -25,7 +25,6 @@ def forward(
 
 
 class Proxy(HttpClient):
-
     preserve_host: bool
 
     def __init__(

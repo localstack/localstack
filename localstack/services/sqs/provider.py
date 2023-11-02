@@ -256,10 +256,9 @@ class CloudwatchPublishWorker:
         self.thread: Optional[FuncThread] = None
 
     def publish_approximate_cloudwatch_metrics(self):
-        for account_id, region_bundle in sqs_stores.items():
-            for region, store in region_bundle.items():
-                for queue in store.queues.values():
-                    self.publish_approximate_metrics_for_queue_to_cloudwatch(queue)
+        for account_id, region, store in sqs_stores.iter_stores():
+            for queue in store.queues.values():
+                self.publish_approximate_metrics_for_queue_to_cloudwatch(queue)
 
     def publish_approximate_metrics_for_queue_to_cloudwatch(self, queue):
         """Publishes the metrics for ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
@@ -324,18 +323,17 @@ class QueueUpdateWorker:
         self.mutex = threading.RLock()
 
     def do_update_all_queues(self):
-        for account_id, region_bundle in sqs_stores.items():
-            for region, store in region_bundle.items():
-                for queue in store.queues.values():
-                    try:
-                        queue.requeue_inflight_messages()
-                    except Exception:
-                        LOG.exception("error re-queueing inflight messages")
+        for account_id, region, store in sqs_stores.iter_stores():
+            for queue in store.queues.values():
+                try:
+                    queue.requeue_inflight_messages()
+                except Exception:
+                    LOG.exception("error re-queueing inflight messages")
 
-                    try:
-                        queue.enqueue_delayed_messages()
-                    except Exception:
-                        LOG.exception("error enqueueing delayed messages")
+                try:
+                    queue.enqueue_delayed_messages()
+                except Exception:
+                    LOG.exception("error enqueueing delayed messages")
 
     def start(self):
         with self.mutex:
@@ -479,8 +477,15 @@ class SqsDeveloperEndpoints:
         return self._get_and_serialize_messages(request, region, account_id, queue_name)
 
     def _get_and_serialize_messages(
-        self, request: Request, region: str, account_id: str, queue_name: str
+        self,
+        request: Request,
+        region: str,
+        account_id: str,
+        queue_name: str,
     ) -> ReceiveMessageResult:
+        show_invisible = request.values.get("ShowInvisible", "").lower() in ["true", "1"]
+        show_delayed = request.values.get("ShowDelayed", "").lower() in ["true", "1"]
+
         try:
             store = SqsProvider.get_store(account_id, region)
             queue = store.queues[queue_name]
@@ -490,20 +495,30 @@ class SqsDeveloperEndpoints:
             )
             raise QueueDoesNotExist()
 
-        messages = self._collect_visible_messages(queue)
+        messages = self._collect_messages(
+            queue, show_invisible=show_invisible, show_delayed=show_delayed
+        )
+
         return ReceiveMessageResult(Messages=messages)
 
-    def _collect_visible_messages(self, queue: SqsQueue) -> List[Message]:
+    def _collect_messages(
+        self, queue: SqsQueue, show_invisible: bool = False, show_delayed: bool = False
+    ) -> List[Message]:
         """
         Retrieves from a given SqsQueue all visible messages without causing any side effects (not setting any
         receive timestamps, receive counts, or visibility state).
 
         :param queue: the queue
+        :param show_invisible: show invisible messages as well
+        :param show_delayed: show delayed messages as well
         :return: a list of messages
         """
         receipt_handle = "SQS/BACKDOOR/ACCESS"  # dummy receipt handle
 
         sqs_messages: List[SqsMessage] = []
+
+        if show_invisible:
+            sqs_messages.extend(queue.inflight)
 
         if isinstance(queue, StandardQueue):
             sqs_messages.extend(queue.visible.queue)
@@ -514,10 +529,18 @@ class SqsDeveloperEndpoints:
         else:
             raise ValueError(f"unknown queue type {type(queue)}")
 
+        if show_delayed:
+            sqs_messages.extend(queue.delayed)
+
         messages = []
 
         for sqs_message in sqs_messages:
             message: Message = to_sqs_api_message(sqs_message, QueueAttributeName.All, ["All"])
+            # these are all non-standard fields so we squelch the linter
+            if show_invisible:
+                message["Attributes"]["IsVisible"] = str(sqs_message.is_visible).lower()  # noqa
+            if show_delayed:
+                message["Attributes"]["IsDelayed"] = str(sqs_message.is_delayed).lower()  # noqa
             messages.append(message)
             message["ReceiptHandle"] = receipt_handle
 

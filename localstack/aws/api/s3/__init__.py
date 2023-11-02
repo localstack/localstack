@@ -3255,7 +3255,6 @@ class PostResponse(TypedDict, total=False):
 
 
 class S3Api:
-
     service = "s3"
     version = "2006-03-01"
 

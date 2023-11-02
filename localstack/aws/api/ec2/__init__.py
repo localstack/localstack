@@ -129,6 +129,7 @@ GetCapacityReservationUsageRequestMaxResults = int
 GetGroupsForCapacityReservationRequestMaxResults = int
 GetIpamPoolAllocationsMaxResults = int
 GetManagedPrefixListAssociationsMaxResults = int
+GetSecurityGroupsForVpcRequestMaxResults = int
 GetSubnetCidrReservationsMaxResults = int
 GpuDeviceCount = int
 GpuDeviceManufacturerName = str
@@ -580,6 +581,7 @@ class CapacityReservationInstancePlatform(str):
     RHEL_with_HA = "RHEL with HA"
     RHEL_with_HA_and_SQL_Server_Standard = "RHEL with HA and SQL Server Standard"
     RHEL_with_HA_and_SQL_Server_Enterprise = "RHEL with HA and SQL Server Enterprise"
+    Ubuntu_Pro = "Ubuntu Pro"
 
 
 class CapacityReservationPreference(str):
@@ -1051,6 +1053,7 @@ class ImageState(str):
     transient = "transient"
     failed = "failed"
     error = "error"
+    disabled = "disabled"
 
 
 class ImageTypeValues(str):
@@ -1914,6 +1917,28 @@ class InstanceType(str):
     r7iz_12xlarge = "r7iz.12xlarge"
     r7iz_16xlarge = "r7iz.16xlarge"
     r7iz_32xlarge = "r7iz.32xlarge"
+    c7a_medium = "c7a.medium"
+    c7a_large = "c7a.large"
+    c7a_xlarge = "c7a.xlarge"
+    c7a_2xlarge = "c7a.2xlarge"
+    c7a_4xlarge = "c7a.4xlarge"
+    c7a_8xlarge = "c7a.8xlarge"
+    c7a_12xlarge = "c7a.12xlarge"
+    c7a_16xlarge = "c7a.16xlarge"
+    c7a_24xlarge = "c7a.24xlarge"
+    c7a_32xlarge = "c7a.32xlarge"
+    c7a_48xlarge = "c7a.48xlarge"
+    c7a_metal_48xl = "c7a.metal-48xl"
+    r7a_metal_48xl = "r7a.metal-48xl"
+    r7i_large = "r7i.large"
+    r7i_xlarge = "r7i.xlarge"
+    r7i_2xlarge = "r7i.2xlarge"
+    r7i_4xlarge = "r7i.4xlarge"
+    r7i_8xlarge = "r7i.8xlarge"
+    r7i_12xlarge = "r7i.12xlarge"
+    r7i_16xlarge = "r7i.16xlarge"
+    r7i_24xlarge = "r7i.24xlarge"
+    r7i_48xlarge = "r7i.48xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -10564,6 +10589,7 @@ class DescribeImagesRequest(ServiceRequest):
     ImageIds: Optional[ImageIdStringList]
     Owners: Optional[OwnerStringList]
     IncludeDeprecated: Optional[Boolean]
+    IncludeDisabled: Optional[Boolean]
     DryRun: Optional[Boolean]
     MaxResults: Optional[Integer]
     NextToken: Optional[String]
@@ -10600,6 +10626,7 @@ class Image(TypedDict, total=False):
     TpmSupport: Optional[TpmSupportValues]
     DeprecationTime: Optional[String]
     ImdsSupport: Optional[ImdsSupportValues]
+    SourceInstanceId: Optional[String]
 
 
 ImageList = List[Image]
@@ -13895,6 +13922,15 @@ class DisableImageDeprecationResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
+class DisableImageRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Optional[Boolean]
+
+
+class DisableImageResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
 class DisableIpamOrganizationAdminAccountRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     DelegatedAdminAccountId: String
@@ -14262,6 +14298,15 @@ class EnableImageDeprecationRequest(ServiceRequest):
 
 
 class EnableImageDeprecationResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
+class EnableImageRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Optional[Boolean]
+
+
+class EnableImageResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
@@ -14918,6 +14963,31 @@ class GetReservedInstancesExchangeQuoteResult(TypedDict, total=False):
     TargetConfigurationValueRollup: Optional[ReservationValue]
     TargetConfigurationValueSet: Optional[TargetReservationValueSet]
     ValidationFailureReason: Optional[String]
+
+
+class GetSecurityGroupsForVpcRequest(ServiceRequest):
+    VpcId: VpcId
+    NextToken: Optional[String]
+    MaxResults: Optional[GetSecurityGroupsForVpcRequestMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+class SecurityGroupForVpc(TypedDict, total=False):
+    Description: Optional[String]
+    GroupName: Optional[String]
+    OwnerId: Optional[String]
+    GroupId: Optional[String]
+    Tags: Optional[TagList]
+    PrimaryVpcId: Optional[String]
+
+
+SecurityGroupForVpcList = List[SecurityGroupForVpc]
+
+
+class GetSecurityGroupsForVpcResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    SecurityGroupForVpcs: Optional[SecurityGroupForVpcList]
 
 
 class GetSerialConsoleAccessStatusRequest(ServiceRequest):
@@ -17518,7 +17588,6 @@ class WithdrawByoipCidrResult(TypedDict, total=False):
 
 
 class Ec2Api:
-
     service = "ec2"
     version = "2016-11-15"
 
@@ -20348,6 +20417,7 @@ class Ec2Api:
         image_ids: ImageIdStringList = None,
         owners: OwnerStringList = None,
         include_deprecated: Boolean = None,
+        include_disabled: Boolean = None,
         dry_run: Boolean = None,
         max_results: Integer = None,
         next_token: String = None,
@@ -21684,6 +21754,12 @@ class Ec2Api:
     ) -> DisableFastSnapshotRestoresResult:
         raise NotImplementedError
 
+    @handler("DisableImage")
+    def disable_image(
+        self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
+    ) -> DisableImageResult:
+        raise NotImplementedError
+
     @handler("DisableImageBlockPublicAccess")
     def disable_image_block_public_access(
         self, context: RequestContext, dry_run: Boolean = None
@@ -21918,6 +21994,12 @@ class Ec2Api:
         source_snapshot_ids: SnapshotIdStringList,
         dry_run: Boolean = None,
     ) -> EnableFastSnapshotRestoresResult:
+        raise NotImplementedError
+
+    @handler("EnableImage")
+    def enable_image(
+        self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
+    ) -> EnableImageResult:
         raise NotImplementedError
 
     @handler("EnableImageBlockPublicAccess")
@@ -22333,6 +22415,18 @@ class Ec2Api:
         dry_run: Boolean = None,
         target_configurations: TargetConfigurationRequestSet = None,
     ) -> GetReservedInstancesExchangeQuoteResult:
+        raise NotImplementedError
+
+    @handler("GetSecurityGroupsForVpc")
+    def get_security_groups_for_vpc(
+        self,
+        context: RequestContext,
+        vpc_id: VpcId,
+        next_token: String = None,
+        max_results: GetSecurityGroupsForVpcRequestMaxResults = None,
+        filters: FilterList = None,
+        dry_run: Boolean = None,
+    ) -> GetSecurityGroupsForVpcResult:
         raise NotImplementedError
 
     @handler("GetSerialConsoleAccessStatus")

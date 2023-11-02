@@ -9,7 +9,6 @@ from pathlib import Path
 
 
 def handler(event, context):
-
     if event.get("wait"):
         time.sleep(event["wait"])
 

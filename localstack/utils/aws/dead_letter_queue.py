@@ -5,7 +5,6 @@ from typing import Dict, List
 
 from localstack.aws.connect import connect_to
 from localstack.utils.aws import arns
-from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.strings import convert_to_printable_chars, first_char_to_upper
 
 LOG = logging.getLogger(__name__)
@@ -35,12 +34,6 @@ def sns_error_to_dead_letter_queue(
     return _send_to_dead_letter_queue(sns_subscriber["SubscriptionArn"], target_arn, event, error)
 
 
-def lambda_error_to_dead_letter_queue(func_details: LambdaFunction, event: Dict, error):
-    dlq_arn = (func_details.dead_letter_config or {}).get("TargetArn")
-    source_arn = func_details.id
-    _send_to_dead_letter_queue(source_arn, dlq_arn, event, error)
-
-
 def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error, role: str = None):
     if not dlq_arn:
         return
@@ -55,7 +48,7 @@ def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error
     else:
         clients = connect_to(region_name=region)
     if ":sqs:" in dlq_arn:
-        queue_url = arns.get_sqs_queue_url(dlq_arn)
+        queue_url = arns.sqs_queue_url_for_arn(dlq_arn)
         sqs_client = clients.sqs.request_metadata(
             source_arn=source_arn, service_principal=source_service
         )

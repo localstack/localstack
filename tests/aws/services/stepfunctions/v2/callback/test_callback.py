@@ -27,7 +27,6 @@ pytestmark = pytest.mark.skipif(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",
-        "$..previousEventId",
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
     ]

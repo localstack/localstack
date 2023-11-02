@@ -494,7 +494,6 @@ class UntagQueueRequest(ServiceRequest):
 
 
 class SqsApi:
-
     service = "sqs"
     version = "2012-11-05"
 

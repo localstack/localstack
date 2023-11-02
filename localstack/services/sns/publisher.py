@@ -403,23 +403,24 @@ class HttpTopicPublisher(TopicPublisher):
         message_body = self.prepare_message(message_context, subscriber)
         try:
             message_headers = {
-                "Content-Type": "text/plain",
+                "Content-Type": "text/plain; charset=UTF-8",
+                "Accept-Encoding": "gzip,deflate",
+                "User-Agent": "Amazon Simple Notification Service Agent",
                 # AWS headers according to
                 # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
                 "x-amz-sns-message-type": message_context.type,
                 "x-amz-sns-message-id": message_context.message_id,
                 "x-amz-sns-topic-arn": subscriber["TopicArn"],
-                "User-Agent": "Amazon Simple Notification Service Agent",
             }
             if message_context.type != "SubscriptionConfirmation":
                 # while testing, never had those from AWS but the docs above states it should be there
                 message_headers["x-amz-sns-subscription-arn"] = subscriber["SubscriptionArn"]
 
-            # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
-            # indicating that the message has been published without JSON formatting.
-            # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-            elif message_context.type == "Notification" and is_raw_message_delivery(subscriber):
-                message_headers["x-amz-sns-rawdelivery"] = "true"
+                # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
+                # indicating that the message has been published without JSON formatting.
+                # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
+                if message_context.type == "Notification" and is_raw_message_delivery(subscriber):
+                    message_headers["x-amz-sns-rawdelivery"] = "true"
 
             response = requests.post(
                 subscriber["Endpoint"],
@@ -934,55 +935,29 @@ class SubscriptionFilter:
 
     def _evaluate_nested_filter_policy_on_dict(self, filter_policy, payload: dict) -> bool:
         """
-        This method evaluate the filter policy recursively, while still being able to validate the `exists` condition.
+        This method evaluates the filter policy against the JSON decoded payload.
+        Although it's not documented anywhere, AWS allows `.` in the fields name in the filter policy and the payload,
+        and will evaluate them. However, it's not JSONPath compatible:
         Example:
-        nested_filter_policy = {
-            "object": {
-                "key": [{"prefix": "auto-"}],
-                "nested_key": [{"exists": False}],
-            },
-            "test": [{"exists": False}],
-        }
-        payload = {
-            "object": {
-                "key": "auto-test",
-            }
-        }
-        This function then iterates on top level keys of the filter policy: ("object", "test")
-        The value of "object" is a dict, we need to evaluate this level of the filter policy.
-        We pass the nested property values (the dict) as well as the values of the payload's field to the recursive
-        function, to evaluate the conditions on the same level of depth.
-        We now have these parameters to the function:
-        filter_policy = {
-            "key": [{"prefix": "auto-"}],
-            "nested_key": [{"exists": False}],
-        }
-        payload = {
-            "key": "auto-test",
-        }
-        We can now properly evaluate the conditions on the same level of depth in the dict object.
-        As it passes the filter policy, we then continue to evaluate the top keys, going back to "test".
+        Policy: `{"field1.field2": "value1"}`
+        This policy will match both `{"field1.field2": "value1"}` and  {"field1: {"field2": "value1"}}`, unlike JSONPath
+        for which `.` points to a child node.
+        This might show they are flattening the both dictionaries to a single level for an easier matching without
+        recursion.
         :param filter_policy: a dict, starting at the FilterPolicy
         :param payload: a dict, starting at the MessageBody
         :return: True if the payload respect the filter policy, otherwise False
         """
-        for field_name, values in filter_policy.items():
-            # if values is not a dict, then it's a nested property
-            if not isinstance(values, list):
-                if not self._evaluate_nested_filter_policy_on_dict(
-                    values, payload.get(field_name, {})
-                ):
-                    return False
-            else:
-                # else, values represents the list of conditions of the filter policy
-                if not any(
-                    self._evaluate_condition(
-                        payload.get(field_name), condition, field_exists=field_name in payload
-                    )
-                    for condition in values
-                ):
-                    return False
-
+        flat_policy = self._flatten_dict(filter_policy)
+        flat_payload = self._flatten_dict(payload)
+        for key, values in flat_policy.items():
+            if not any(
+                self._evaluate_condition(
+                    flat_payload.get(key), condition, field_exists=key in flat_payload
+                )
+                for condition in values
+            ):
+                return False
         return True
 
     def _evaluate_filter_policy_conditions_on_attribute(
@@ -1007,13 +982,6 @@ class SubscriptionFilter:
                 value = val or None
                 if self._evaluate_condition(value, condition, field_exists):
                     return True
-
-        return False
-
-    def _evaluate_filter_policy_conditions_on_field(self, conditions, value, field_exists: bool):
-        for condition in conditions:
-            if self._evaluate_condition(value, condition, field_exists):
-                return True
 
         return False
 
@@ -1065,6 +1033,33 @@ class SubscriptionFilter:
                     return False
 
         return True
+
+    @staticmethod
+    def _flatten_dict(nested_dict: dict):
+        """
+        Takes a dictionary as input and will output the dictionary on a single level.
+        Input:
+        `{"field1": {"field2: {"field3: "val1", "field4": "val2"}}}`
+        Output:
+        `{
+            "field1.field2.field3": "val1",
+            "field1.field2.field4": "val1"
+        }`
+        :param nested_dict: a (nested) dictionary
+        :return: flatten_dict: a dictionary with no nested dict inside, flattened to a single level
+        """
+        flatten = {}
+
+        def _traverse(_policy: dict, parent_key=None):
+            for key, values in _policy.items():
+                pkey = key if not parent_key else f"{parent_key}.{key}"
+                if not isinstance(values, dict):
+                    flatten[pkey] = values
+                else:
+                    _traverse(values, parent_key=pkey)
+
+        _traverse(nested_dict)
+        return flatten
 
 
 class PublishDispatcher:

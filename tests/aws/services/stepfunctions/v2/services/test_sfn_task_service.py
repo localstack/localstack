@@ -23,7 +23,6 @@ pytestmark = pytest.mark.skipif(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",
-        "$..previousEventId",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",

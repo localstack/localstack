@@ -233,5 +233,70 @@
         ]
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put_in_different_region": {
+    "recorded-date": "18-10-2023, 01:26:55",
+    "recorded-content": {
+      "object-created-different-regions": {
+        "messages": [
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "8d777f385d3dfec8815d20f7496026dc",
+                "key": "<key-name:1>",
+                "sequencer": "object-sequencer",
+                "size": 4
+              },
+              "reason": "PutObject",
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object Created",
+            "id": "<uuid:1>",
+            "region": "<region:1>",
+            "resources": [
+              "arn:aws:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          },
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "8d777f385d3dfec8815d20f7496026dc",
+                "key": "<key-name:1>",
+                "sequencer": "object-sequencer",
+                "size": 4
+              },
+              "reason": "PutObject",
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object Created",
+            "id": "<uuid:2>",
+            "region": "<region:1>",
+            "resources": [
+              "arn:aws:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          }
+        ]
+      }
+    }
   }
 }

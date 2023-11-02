@@ -62,3 +62,16 @@ class ScenariosTemplate(TemplateLoader):
     CHOICE_STATE_AWS_SCENARIO: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_aws_scenario.json5"
     )
+    LAMBDA_INVOKE_WITH_RETRY_BASE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_invoke_with_retry_base.json5"
+    )
+    LAMBDA_INVOKE_WITH_RETRY_BASE_EXTENDED_INPUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_invoke_with_retry_extended_input.json5"
+    )
+    LAMBDA_SERVICE_INVOKE_WITH_RETRY_BASE_EXTENDED_INPUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_service_invoke_with_retry_extended_input.json5"
+    )
+    WAIT_TIMESTAMP: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_timestamp.json5")
+    WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/wait_timestamp_path.json5"
+    )

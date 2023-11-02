@@ -140,6 +140,12 @@ class InvalidSecurityException(ServiceException):
     status_code: int = 403
 
 
+class InvalidStateException(ServiceException):
+    code: str = "InvalidState"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
 class KMSAccessDeniedException(ServiceException):
     code: str = "KMSAccessDenied"
     sender_fault: bool = True
@@ -192,6 +198,12 @@ class PlatformApplicationDisabledException(ServiceException):
     code: str = "PlatformApplicationDisabled"
     sender_fault: bool = True
     status_code: int = 400
+
+
+class ReplayLimitExceededException(ServiceException):
+    code: str = "ReplayLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 403
 
 
 class ResourceNotFoundException(ServiceException):
@@ -734,7 +746,6 @@ class VerifySMSSandboxPhoneNumberResult(TypedDict, total=False):
 
 
 class SnsApi:
-
     service = "sns"
     version = "2010-03-31"
 

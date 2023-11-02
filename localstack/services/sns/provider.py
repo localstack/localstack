@@ -60,7 +60,12 @@ from localstack.services.sns.publisher import (
     SnsBatchPublishContext,
     SnsPublishContext,
 )
-from localstack.utils.aws.arns import ArnData, parse_arn
+from localstack.utils.aws.arns import (
+    ArnData,
+    extract_account_id_from_arn,
+    extract_region_from_arn,
+    parse_arn,
+)
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -352,8 +357,26 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return result
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
-        call_moto(context)
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
+        count = len(subscription_arn.split(":"))
+        try:
+            parsed_arn = parse_arn(subscription_arn)
+        except InvalidArnException:
+            # TODO: check for invalid SubscriptionGUID
+            if count < 6:
+                raise InvalidParameterException(
+                    f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}"
+                )
+
+        account_id = parsed_arn["account"]
+        region_name = parsed_arn["region"]
+
+        store = self.get_store(account_id=account_id, region_name=region_name)
+
+        if count == 6 and subscription_arn not in store.topic_subscriptions:
+            raise InvalidParameterException("Invalid parameter: SubscriptionId")
+
+        moto_sns_backend = self.get_moto_backend(account_id, region_name)
+        moto_sns_backend.unsubscribe(subscription_arn)
 
         # pop the subscription at the end, to avoid race condition by iterating over the topic subscriptions
         subscription = store.subscriptions.get(subscription_arn)
@@ -897,6 +920,7 @@ def register_sns_api_resource(router: Router):
     """Register the retrospection endpoints as internal LocalStack endpoints."""
     router.add(SNSServicePlatformEndpointMessagesApiResource())
     router.add(SNSServiceSMSMessagesApiResource())
+    router.add(SNSServiceSubscriptionTokenApiResource())
 
 
 def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[str]):
@@ -944,9 +968,17 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
-        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
-        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
+        account_id = (
+            request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+            if not filter_endpoint_arn
+            else extract_account_id_from_arn(filter_endpoint_arn)
+        )
+        region = (
+            request.args.get("region", AWS_REGION_US_EAST_1)
+            if not filter_endpoint_arn
+            else extract_region_from_arn(filter_endpoint_arn)
+        )
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             messages = store.platform_endpoint_messages.get(filter_endpoint_arn, [])
@@ -967,9 +999,17 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
     def on_delete(self, request: Request) -> Response:
-        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
-        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
+        account_id = (
+            request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+            if not filter_endpoint_arn
+            else extract_account_id_from_arn(filter_endpoint_arn)
+        )
+        region = (
+            request.args.get("region", AWS_REGION_US_EAST_1)
+            if not filter_endpoint_arn
+            else extract_region_from_arn(filter_endpoint_arn)
+        )
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             store.platform_endpoint_messages.pop(filter_endpoint_arn, None)
@@ -1041,3 +1081,47 @@ class SNSServiceSMSMessagesApiResource:
 
         store.sms_messages.clear()
         return Response("", status=204)
+
+
+class SNSServiceSubscriptionTokenApiResource:
+    """Provides a REST API for retrospective access to Subscription Confirmation Tokens to confirm subscriptions.
+    Those are not sent for email, and sometimes inaccessible when working with external HTTPS endpoint which won't be
+    able to reach your local host.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint has the following parameter:
+    - GET `subscription_arn`: `subscriptionArn`resource in SNS for which you want the SubscriptionToken
+    """
+
+    @route(f"{sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>", methods=["GET"])
+    def on_get(self, _request: Request, subscription_arn: str):
+        try:
+            parsed_arn = parse_arn(subscription_arn)
+        except InvalidArnException:
+            response = Response("", 400)
+            response.set_json(
+                {
+                    "error": "The provided SubscriptionARN is invalid",
+                    "subscription_arn": subscription_arn,
+                }
+            )
+            return response
+
+        store: SnsStore = sns_stores[parsed_arn["account"]][parsed_arn["region"]]
+
+        for token, sub_arn in store.subscription_tokens.items():
+            if sub_arn == subscription_arn:
+                return {
+                    "subscription_token": token,
+                    "subscription_arn": subscription_arn,
+                }
+
+        response = Response("", 404)
+        response.set_json(
+            {
+                "error": "The provided SubscriptionARN is not found",
+                "subscription_arn": subscription_arn,
+            }
+        )
+        return response

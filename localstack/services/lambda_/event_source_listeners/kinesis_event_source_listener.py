@@ -1,11 +1,10 @@
 import base64
 from typing import Dict, List, Optional
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.services.lambda_.event_source_listeners.stream_event_source_listener import (
     StreamEventSourceListener,
 )
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.common import first_char_to_lower, to_str
 from localstack.utils.threads import FuncThread
 
@@ -66,8 +65,8 @@ class KinesisEventSourceListener(StreamEventSourceListener):
                     "eventSource": "aws:kinesis",
                     "eventVersion": "1.0",
                     "eventName": "aws:kinesis:record",
-                    "invokeIdentityArn": f"arn:aws:iam::{get_aws_account_id()}:role/lambda-role",
-                    "awsRegion": aws_stack.get_region(),
+                    "invokeIdentityArn": f"arn:aws:iam::{extract_account_id_from_arn(stream_arn)}:role/lambda-role",
+                    "awsRegion": extract_region_from_arn(stream_arn),
                     "kinesis": record_payload,
                 }
             )

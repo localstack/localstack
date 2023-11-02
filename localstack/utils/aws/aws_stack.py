@@ -1,33 +1,26 @@
-import functools
 import json
 import logging
 import os
 import re
 import socket
-import threading
-import warnings
 from functools import lru_cache
 from typing import Dict, Optional, Union
 
 import boto3
-import botocore
-import botocore.config
 
 from localstack import config
-from localstack.aws.accounts import get_aws_access_key_id, get_aws_account_id
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
     APPLICATION_X_WWW_FORM_URLENCODED,
+    DEFAULT_AWS_ACCOUNT_ID,
     ENV_DEV,
     HEADER_LOCALSTACK_ACCOUNT_ID,
     INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
-    MAX_POOL_CONNECTIONS,
     REGION_LOCAL,
     S3_VIRTUAL_HOSTNAME,
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.strings import is_string, is_string_or_bytes, to_str
 
@@ -37,20 +30,11 @@ LOG = logging.getLogger(__name__)
 # cache local region
 LOCAL_REGION = None
 
-# Use this flag to enable creation of a new session for each boto3 connection.
-CREATE_NEW_SESSION_PER_BOTO3_CONNECTION = False
-
 # Used in AWS assume role function
 INITIAL_BOTO3_SESSION = None
 
-# Boto clients cache
-BOTO_CLIENTS_CACHE = {}
-
 # cached value used to determine the DNS status of the S3 hostname (whether it can be resolved properly)
 CACHE_S3_HOSTNAME_DNS_STATUS = None
-
-# mutex used when creating boto clients (which isn't thread safe: https://github.com/boto/boto3/issues/801)
-BOTO_CLIENT_CREATE_LOCK = threading.RLock()
 
 
 @lru_cache()
@@ -62,6 +46,8 @@ def get_valid_regions():
     return valid_regions
 
 
+# FIXME: AWS recommends use of SSM parameter store to determine per region availability
+# https://github.com/aws/aws-sdk/issues/206#issuecomment-1471354853
 def get_valid_regions_for_service(service_name):
     regions = list(boto3.Session().get_available_regions(service_name))
     regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-us-gov"))
@@ -69,6 +55,7 @@ def get_valid_regions_for_service(service_name):
     return regions
 
 
+# TODO: Remove, this is super legacy functionality
 class Environment:
     def __init__(self, region=None, prefix=None):
         # target is the runtime environment to use, e.g.,
@@ -110,6 +97,7 @@ class Environment:
 PREDEFINED_ENVIRONMENTS = {ENV_DEV: Environment(region=REGION_LOCAL, prefix=ENV_DEV)}
 
 
+# TODO: Remove
 def get_environment(env=None, region_name=None):
     """
     Return an Environment object based on the input arguments.
@@ -144,29 +132,8 @@ def is_local_env(env):
     return not env or env.region == REGION_LOCAL or env.prefix == ENV_DEV
 
 
-class Boto3Session(boto3.session.Session):
-    """Custom boto3 session that points to local endpoint URLs."""
-
-    def resource(self, service, *args, **kwargs):
-        self._fix_endpoint(kwargs)
-        return connect_to_resource(service, *args, **kwargs)
-
-    def client(self, service, *args, **kwargs):
-        self._fix_endpoint(kwargs)
-        return connect_to_service(service, *args, **kwargs)
-
-    def _fix_endpoint(self, kwargs):
-        if "amazonaws.com" in kwargs.get("endpoint_url", ""):
-            kwargs.pop("endpoint_url")
-
-
-def get_boto3_session(cache=True):
-    if not cache or CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
-        return boto3.session.Session()
-    # return default session
-    return boto3
-
-
+# NOTE: This method should not be used as it is not guaranteed to return the correct region
+# In the near future it will be deprecated and removed
 def get_region():
     # Note: leave import here to avoid import errors (e.g., "flask") for CLI commands
     from localstack.utils.aws.request_context import get_region_from_request_context
@@ -221,189 +188,6 @@ def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
     return config.service_url(service_name)
 
 
-def connect_to_resource(
-    service_name, env=None, region_name=None, endpoint_url=None, *args, **kwargs
-):
-    """
-    Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
-    """
-    warnings.warn(
-        "`connect_to_resource` is obsolete. Use `localstack.aws.connect`", DeprecationWarning
-    )
-
-    return connect_to_service(
-        service_name,
-        client=False,
-        env=env,
-        region_name=region_name,
-        endpoint_url=endpoint_url,
-        *args,
-        **kwargs,
-    )
-
-
-def connect_to_resource_external(
-    service_name,
-    env=None,
-    region_name=None,
-    endpoint_url=None,
-    config: botocore.config.Config = None,
-    **kwargs,
-):
-    """
-    Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
-    """
-    warnings.warn(
-        "`connect_to_resource_external` is obsolete. Use `localstack.aws.connect`",
-        DeprecationWarning,
-    )
-
-    return create_external_boto_client(
-        service_name,
-        client=False,
-        env=env,
-        region_name=region_name,
-        endpoint_url=endpoint_url,
-        config=config,
-    )
-
-
-def connect_to_service(
-    service_name,
-    client=True,
-    env=None,
-    region_name=None,
-    endpoint_url=None,
-    config: botocore.config.Config = None,
-    verify=False,
-    cache=True,
-    internal=True,
-    *args,
-    **kwargs,
-):
-    """
-    Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
-    """
-    warnings.warn(
-        "`connect_to_service` is obsolete. Use `localstack.aws.connect`",
-        DeprecationWarning,
-    )
-
-    # determine context and create cache key
-    region_name = region_name or get_region()
-    env = get_environment(env, region_name=region_name)
-    region = env.region if env.region != REGION_LOCAL else region_name
-    key_elements = [service_name, client, env, region, endpoint_url, config, internal, kwargs]
-    cache_key = "/".join([str(k) for k in key_elements])
-
-    # check cache first (most calls will be served from cache)
-    if cache and cache_key in BOTO_CLIENTS_CACHE:
-        return BOTO_CLIENTS_CACHE[cache_key]
-
-    with BOTO_CLIENT_CREATE_LOCK:
-        # check cache again within lock context to avoid race conditions
-        if cache and cache_key in BOTO_CLIENTS_CACHE:
-            return BOTO_CLIENTS_CACHE[cache_key]
-
-        # determine endpoint_url if it is not set explicitly
-        if not endpoint_url:
-            if is_local_env(env):
-                endpoint_url = get_local_service_url(service_name)
-                verify = False
-            backend_env_name = "%s_BACKEND" % service_name.upper()
-            backend_url = os.environ.get(backend_env_name, "").strip()
-            if backend_url:
-                endpoint_url = backend_url
-
-        # configure S3 path/host style addressing
-        if service_name == "s3":
-            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
-                endpoint_url = endpoint_url.replace("://localhost", "://%s" % get_s3_hostname())
-
-        # create boto client or resource from potentially cached session
-        boto_session = get_boto3_session(cache=cache)
-        boto_config = config or botocore.client.Config()
-        boto_factory = boto_session.client if client else boto_session.resource
-
-        # To, prevent error "Connection pool is full, discarding connection ...",
-        # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
-        boto_config.max_pool_connections = MAX_POOL_CONNECTIONS
-
-        new_client = boto_factory(
-            service_name,
-            region_name=region,
-            endpoint_url=endpoint_url,
-            verify=verify,
-            config=boto_config,
-            **kwargs,
-        )
-
-        # We set a custom header in all internal calls which help LocalStack
-        # identify requests as such
-        if client and internal:
-
-            def _add_internal_header(account_id: str, request, **kwargs):
-                request.headers.add_header(HEADER_LOCALSTACK_ACCOUNT_ID, account_id)
-
-            # The handler invocation happens in boto context leading to loss of account ID
-            # Hence we build a partial here with the account ID baked-in.
-            _handler = functools.partial(
-                _add_internal_header, kwargs.get("aws_access_key_id", get_aws_account_id())
-            )
-
-            event_system = new_client.meta.events
-            event_system.register_first("before-sign.*.*", _handler)
-
-        if cache:
-            BOTO_CLIENTS_CACHE[cache_key] = new_client
-
-        return new_client
-
-
-def create_external_boto_client(
-    service_name,
-    client=True,
-    env=None,
-    region_name=None,
-    endpoint_url=None,
-    config: botocore.config.Config = None,
-    verify=False,
-    cache=True,
-    aws_access_key_id=None,
-    aws_secret_access_key=None,
-    *args,
-    **kwargs,
-):
-    warnings.warn(
-        "`create_external_boto_client` is obsolete. Use `localstack.aws.connect`",
-        DeprecationWarning,
-    )
-
-    # Currently we use the Access Key ID field to specify the AWS account ID; this will change when IAM matures.
-    # It is important that the correct Account ID is included in the request as that will determine access to namespaced resources.
-    if aws_access_key_id is None:
-        aws_access_key_id = get_aws_account_id()
-
-    if aws_secret_access_key is None:
-        aws_secret_access_key = TEST_AWS_SECRET_ACCESS_KEY
-
-    return connect_to_service(
-        service_name,
-        client,
-        env,
-        region_name,
-        endpoint_url,
-        config,
-        verify,
-        cache,
-        internal=False,
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key,
-        *args,
-        **kwargs,
-    )
-
-
 def get_s3_hostname():
     global CACHE_S3_HOSTNAME_DNS_STATUS
     if CACHE_S3_HOSTNAME_DNS_STATUS is None:
@@ -417,24 +201,6 @@ def get_s3_hostname():
     return LOCALHOST
 
 
-def generate_presigned_url(*args, **kwargs):
-    warnings.warn(
-        "`aws_stack.generate_presigned_url` is obsolete. Use the Boto client `generate_presigned_url` method",
-        DeprecationWarning,
-    )
-
-    endpoint_url = kwargs.pop("endpoint_url", None)
-    s3_client = connect_to_service(
-        "s3",
-        endpoint_url=endpoint_url,
-        cache=False,
-        # Note: presigned URL needs to be created with (external) test credentials
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-    )
-    return s3_client.generate_presigned_url(*args, **kwargs)
-
-
 def set_default_region_in_headers(headers, service=None, region=None):
     # this should now be a no-op, as we support arbitrary regions and don't use a "default" region
     # TODO: remove this function once the legacy USE_SINGLE_REGION config is removed
@@ -445,9 +211,9 @@ def set_default_region_in_headers(headers, service=None, region=None):
     region = region or get_region()
     if not auth_header:
         if service:
-            headers["Authorization"] = mock_aws_request_headers(service, region_name=region)[
-                "Authorization"
-            ]
+            headers["Authorization"] = mock_aws_request_headers(
+                service, aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID, region_name=region
+            )["Authorization"]
         return
     replaced = re.sub(r"(.*Credential=[^/]+/[^/]+/)([^/])+/", r"\1%s/" % region, auth_header)
     headers["Authorization"] = replaced
@@ -514,8 +280,11 @@ def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[
 
 # TODO remove the `internal` arg
 def mock_aws_request_headers(
-    service="dynamodb", region_name=None, access_key=None, internal=False
+    service: str, aws_access_key_id: str, region_name: str, internal: bool = False
 ) -> Dict[str, str]:
+    """
+    Returns a mock set of headers that resemble SigV4 signing method.
+    """
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
@@ -525,18 +294,18 @@ def mock_aws_request_headers(
     # For S3 presigned URLs, we require that the client and server use the same
     # access key ID to sign requests. So try to use the access key ID for the
     # current request if available
-    access_key = access_key or get_aws_access_key_id()
-    region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,
         "Accept-Encoding": "identity",
-        "X-Amz-Date": "20160623T103251Z",
+        "X-Amz-Date": "20160623T103251Z",  # TODO: Use current date
         "Authorization": (
             "AWS4-HMAC-SHA256 "
-            + f"Credential={access_key}/20160623/{region_name}/{service}/aws4_request, "
+            + f"Credential={aws_access_key_id}/20160623/{region_name}/{service}/aws4_request, "
             + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
         ),
     }
     if internal:
+        # TODO: This method of detecting internal calls is no longer valid
+        # We now use the `INTERNAL_REQUEST_PARAMS_HEADER` header which is set to the DTO
         headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_aws_account_id()
     return headers

@@ -75,7 +75,6 @@ Outputs:
 def create_macro(
     macro_name, function_path, deploy_cfn_template, create_lambda_function, lambda_client
 ):
-
     macro_function_path = function_path
 
     func_name = f"test_lambda_{short_uid()}"

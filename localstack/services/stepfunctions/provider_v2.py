@@ -83,7 +83,10 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackOutcomeFailure,
     CallbackOutcomeSuccess,
 )
-from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
+from localstack.services.stepfunctions.asl.parse.asl_parser import (
+    AmazonStateLanguageParser,
+    ASLParserException,
+)
 from localstack.services.stepfunctions.backend.execution import Execution
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
@@ -91,8 +94,8 @@ from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineVersion,
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
-from localstack.utils.aws.arns import ArnData, parse_arn
-from localstack.utils.aws.arns import state_machine_arn as aws_stack_state_machine_arn
+from localstack.state import StateVisitor
+from localstack.utils.aws.arns import ArnData, parse_arn, state_machine_arn
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
@@ -102,6 +105,9 @@ class StepFunctionsProvider(StepfunctionsApi):
     @staticmethod
     def get_store(context: RequestContext) -> SFNStore:
         return sfn_stores[context.account_id][context.region]
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(sfn_stores)
 
     def _get_execution(self, context: RequestContext, execution_arn: Arn) -> Execution:
         execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
@@ -163,9 +169,18 @@ class StepFunctionsProvider(StepfunctionsApi):
         # TODO: pass through static analyser.
         try:
             AmazonStateLanguageParser.parse(definition)
-        except Exception as ex:
-            # TODO: add message from static analyser, this just helps the user debug issues in the derivation.
-            raise InvalidDefinition(f"Error '{str(ex)}' in definition '{definition}'.")
+        except ASLParserException as asl_parser_exception:
+            invalid_definition = InvalidDefinition()
+            invalid_definition.message = repr(asl_parser_exception)
+            raise invalid_definition
+        except Exception as exception:
+            exception_name = exception.__class__.__name__
+            exception_args = list(exception.args)
+            invalid_definition = InvalidDefinition()
+            invalid_definition.message = (
+                f"Error={exception_name} Args={exception_args} in definition '{definition}'."
+            )
+            raise invalid_definition
 
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput
@@ -195,7 +210,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         StepFunctionsProvider._validate_definition(definition=state_machine_definition)
 
         name: Optional[Name] = request["name"]
-        arn = aws_stack_state_machine_arn(
+        arn = state_machine_arn(
             name=name, account_id=context.account_id, region_name=context.region
         )
 
@@ -241,7 +256,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         # TODO: add arn validation.
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
         if state_machine is None:
-            raise ExecutionDoesNotExist()
+            raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
         return state_machine.describe()
 
     def describe_state_machine_for_execution(

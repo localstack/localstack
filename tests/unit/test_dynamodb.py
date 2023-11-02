@@ -2,10 +2,16 @@ from unittest.mock import patch
 
 import pytest
 
-from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.dynamodb.provider import DynamoDBProvider, get_store
-from localstack.services.dynamodb.utils import ItemSet, SchemaExtractor, dynamize_value
+from localstack.services.dynamodb.utils import (
+    SCHEMA_CACHE,
+    ItemSet,
+    SchemaExtractor,
+    dynamize_value,
+)
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import dynamodb_table_arn
 
 
 def test_fix_region_in_headers():
@@ -13,8 +19,10 @@ def test_fix_region_in_headers():
     # TODO: this may need to be updated once we migrate DynamoDB to ASF
 
     for region_name in ["local", "localhost"]:
-        headers = aws_stack.mock_aws_request_headers("dynamodb", region_name=region_name)
-        assert aws_stack.get_region() not in headers.get("Authorization")
+        headers = aws_stack.mock_aws_request_headers(
+            "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
+        )
+        assert TEST_AWS_REGION_NAME not in headers.get("Authorization")
 
         # Ensure that the correct namespacing key is passed as Access Key ID to DynamoDB Local
         DynamoDBProvider.prepare_request_headers(
@@ -66,17 +74,50 @@ def test_get_key_schema_without_table_definition(mock_get_table_schema):
         "Table": {"KeySchema": key_schema, "AttributeDefinitions": attr_definitions}
     }
 
-    schema = schema_extractor.get_key_schema(table_name)
+    schema = schema_extractor.get_key_schema(
+        table_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+    )
 
     # Assert output is expected from the get_table_schema (fallback)
     assert schema == key_schema
     # Assert table_definitions has new table entry (cache)
-    dynamodb_store = get_store(account_id=get_aws_account_id(), region_name=aws_stack.get_region())
+    dynamodb_store = get_store(account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME)
     assert table_name in dynamodb_store.table_definitions
     # Assert table_definitions has the correct content
     assert (
         dynamodb_store.table_definitions[table_name] == mock_get_table_schema.return_value["Table"]
     )
+
+
+def test_invalidate_table_schema():
+    schema_extractor = SchemaExtractor()
+
+    key_schema = [{"AttributeName": "id", "KeyType": "HASH"}]
+    attr_definitions = [
+        {"AttributeName": "Artist", "AttributeType": "S"},
+        {"AttributeName": "SongTitle", "AttributeType": "S"},
+    ]
+    table_name = "nonexistent_table"
+
+    key = dynamodb_table_arn(
+        table_name=table_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+    )
+
+    table_schema = {"Table": {"KeySchema": key_schema, "AttributeDefinitions": attr_definitions}}
+    # This isn't great but we need to inject into the cache here so that we're not trying to hit dynamodb
+    # to look up the table later on
+    SCHEMA_CACHE[key] = table_schema
+
+    schema = schema_extractor.get_table_schema(
+        table_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+    )
+
+    # Assert output is expected from the get_table_schema (fallback)
+    assert schema == table_schema
+    # Invalidate the cache now for the table
+    schema_extractor.invalidate_table_schema(table_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    # Assert that the key is now set to None
+    assert SCHEMA_CACHE.get(key) is None
 
 
 @pytest.mark.parametrize(

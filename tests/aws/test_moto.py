@@ -326,17 +326,17 @@ def test_moto_fallback_dispatcher_error_handling(monkeypatch):
     # Test fallback implementation raises a service exception which has the additional attribute "BucketName"
     with pytest.raises(ServiceException) as e:
         _dispatch("GetObject", {"Bucket": bucket_name, "Key": "key"})
-    assert getattr(e.value, "BucketName") == bucket_name
+    assert e.value.BucketName == bucket_name
 
     # Test provider implementation raises a service exception
     with pytest.raises(ServiceException) as e:
         _dispatch("ListObjects", {"Bucket": bucket_name})
-    assert getattr(e.value, "BucketName") == bucket_name
+    assert e.value.BucketName == bucket_name
 
     # Test provider uses call_moto, which raises a service exception
     with pytest.raises(ServiceException) as e:
         _dispatch("ListObjectsV2", {"Bucket": bucket_name})
-    assert getattr(e.value, "BucketName") == bucket_name
+    assert e.value.BucketName == bucket_name
 
     # Test provider raises NotImplementedAvoidFallbackError, avoiding a fall-through, raising the "not implemented" directly
     with pytest.raises(NotImplementedError) as e:

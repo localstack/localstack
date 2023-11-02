@@ -18,9 +18,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestSnfApiMapRun:
     @markers.aws.validated
     def test_list_map_runs_and_describe_map_run(

@@ -27,6 +27,16 @@ from localstack.services.cloudformation.deployment_utils import (
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
 
+PRO_RESOURCE_PROVIDERS = False
+try:
+    from localstack_ext.services.cloudformation.resource_provider import (
+        CloudFormationResourceProviderPluginExt,
+    )
+
+    PRO_RESOURCE_PROVIDERS = True
+except ImportError:
+    pass
+
 if TYPE_CHECKING:
     from localstack.services.cloudformation.engine.types import (
         FuncDetails,
@@ -43,32 +53,67 @@ PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 # by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
 # add your new provider here when you want it to be the default
 PROVIDER_DEFAULTS = {
-    "AWS::SQS::Queue": "ResourceProvider",
-    "AWS::SQS::QueuePolicy": "ResourceProvider",
-    "AWS::IAM::User": "ResourceProvider",
-    "AWS::IAM::Role": "ResourceProvider",
-    "AWS::IAM::Group": "ResourceProvider",
-    "AWS::IAM::ManagedPolicy": "ResourceProvider",
+    "AWS::ApiGateway::Account": "ResourceProvider",
+    "AWS::ApiGateway::ApiKey": "ResourceProvider",
+    "AWS::ApiGateway::BasePathMapping": "ResourceProvider",
+    "AWS::ApiGateway::Deployment": "ResourceProvider",
+    "AWS::ApiGateway::DomainName": "ResourceProvider",
+    "AWS::ApiGateway::GatewayResponse": "ResourceProvider",
+    "AWS::ApiGateway::Method": "ResourceProvider",
+    "AWS::ApiGateway::Model": "ResourceProvider",
+    "AWS::ApiGateway::RequestValidator": "ResourceProvider",
+    "AWS::ApiGateway::Resource": "ResourceProvider",
+    "AWS::ApiGateway::RestApi": "ResourceProvider",
+    "AWS::ApiGateway::Stage": "ResourceProvider",
+    "AWS::ApiGateway::UsagePlan": "ResourceProvider",
+    "AWS::ApiGateway::UsagePlanKey": "ResourceProvider",
+    "AWS::CertificateManager::Certificate": "ResourceProvider",
+    "AWS::CloudWatch::Alarm": "ResourceProvider",
+    "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
+    "AWS::DynamoDB::Table": "ResourceProvider",
+    "AWS::EKS::Nodegroup": "ResourceProvider",
+    "AWS::ElasticBeanstalk::Application": "ResourceProvider",
+    "AWS::ElasticBeanstalk::ApplicationVersion": "ResourceProvider",
+    "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
+    "AWS::ElasticBeanstalk::Environment": "ResourceProvider",
+    "AWS::Events::Connection": "ResourceProvider",
+    "AWS::Events::EventBus": "ResourceProvider",
+    "AWS::Events::EventBusPolicy": "ResourceProvider",
+    "AWS::Events::Rule": "ResourceProvider",
     "AWS::IAM::AccessKey": "ResourceProvider",
-    "AWS::IAM::Policy": "ResourceProvider",
+    "AWS::IAM::Group": "ResourceProvider",
     "AWS::IAM::InstanceProfile": "ResourceProvider",
+    "AWS::IAM::ManagedPolicy": "ResourceProvider",
+    "AWS::IAM::Policy": "ResourceProvider",
+    "AWS::IAM::Role": "ResourceProvider",
     "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
-    "AWS::OpenSearchService::Domain": "ResourceProvider",
-    "AWS::Lambda::Alias": "ResourceProvider",
-    "AWS::Scheduler::Schedule": "ResourceProvider",
-    "AWS::Scheduler::ScheduleGroup": "ResourceProvider",
-    "AWS::Route53::HealthCheck": "ResourceProvider",
-    "AWS::Route53::RecordSet": "ResourceProvider",
-    "AWS::SNS::Topic": "ResourceProvider",
+    "AWS::IAM::User": "ResourceProvider",
+    "AWS::KMS::Alias": "ResourceProvider",
+    "AWS::KMS::Key": "ResourceProvider",
     "AWS::Kinesis::Stream": "ResourceProvider",
     "AWS::Kinesis::StreamConsumer": "ResourceProvider",
     "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
-    "AWS::DynamoDB::Table": "ResourceProvider",
-    "AWS::CloudWatch::Alarm": "ResourceProvider",
-    "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
+    "AWS::Lambda::Alias": "ResourceProvider",
+    "AWS::Logs::LogGroup": "ResourceProvider",
+    "AWS::Logs::LogStream": "ResourceProvider",
+    "AWS::Logs::SubscriptionFilter": "ResourceProvider",
+    "AWS::OpenSearchService::Domain": "ResourceProvider",
+    "AWS::Redshift::Cluster": "ResourceProvider",
+    "AWS::Route53::HealthCheck": "ResourceProvider",
+    "AWS::Route53::RecordSet": "ResourceProvider",
+    "AWS::S3::Bucket": "ResourceProvider",
+    "AWS::S3::BucketPolicy": "ResourceProvider",
+    "AWS::SNS::Topic": "ResourceProvider",
+    "AWS::SQS::Queue": "ResourceProvider",
+    "AWS::SQS::QueuePolicy": "ResourceProvider",
+    "AWS::Scheduler::Schedule": "ResourceProvider",
+    "AWS::Scheduler::ScheduleGroup": "ResourceProvider",
+    "AWS::SecretsManager::ResourcePolicy": "ResourceProvider",
+    "AWS::SecretsManager::RotationSchedule": "ResourceProvider",
+    "AWS::SecretsManager::Secret": "ResourceProvider",
+    # "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",  # FIXME: add full -ext and override logic for -ext
     # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
-    "AWS::KMS::Key": "ResourceProvider",
-    "AWS::KMS::Alias": "ResourceProvider",
+    "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::EC2::RouteTable": "ResourceProvider",
     "AWS::EC2::Route": "ResourceProvider",
     "AWS::EC2::InternetGateway": "ResourceProvider",
@@ -272,9 +317,9 @@ def invoke_function(
     except Exception as e:
         if action_name == "Remove" and check_not_found_exception(e, resource_type, resource):
             return
-        log_method = getattr(LOG, "warning")
+        log_method = LOG.warning
         if config.CFN_VERBOSE_ERRORS:
-            log_method = getattr(LOG, "exception")
+            log_method = LOG.exception
         log_method("Error calling %s with params: %s for resource: %s", function, params, resource)
         raise e
 
@@ -666,7 +711,6 @@ class ResourceProviderExecutor:
                     return event
 
                 if event.status == OperationStatus.SUCCESS:
-
                     if not isinstance(resource_provider, LegacyResourceProvider):
                         # branch for non-legacy providers
                         # TODO: move out of if? (physical res id can be set earlier possibly)
@@ -760,12 +804,26 @@ class ResourceProviderExecutor:
         if self.should_use_legacy_provider(resource_type):
             return self._load_legacy_resource_provider(resource_type)
 
+        # prioritise pro resource providers
+        if PRO_RESOURCE_PROVIDERS:
+            try:
+                plugin = pro_plugin_manager.load(resource_type)
+                return plugin.factory()
+            except ValueError:
+                # could not load the plugin
+                pass
+            except Exception:
+                LOG.warning(
+                    "error loading plugin from plugin manager",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+
         try:
             plugin = plugin_manager.load(resource_type)
             return plugin.factory()
         except Exception:
             LOG.warning(
-                "Failed to load resource type as a ResourceProvider.",
+                "Failed to load resource type %s as a ResourceProvider.",
                 resource_type,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
@@ -802,3 +860,5 @@ class ResourceProviderExecutor:
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
+if PRO_RESOURCE_PROVIDERS:
+    pro_plugin_manager = PluginManager(CloudFormationResourceProviderPluginExt.namespace)

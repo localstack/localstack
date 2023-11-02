@@ -923,7 +923,6 @@ def import_api_from_openapi_spec(
         return False
 
     def create_authorizers(security_schemes: dict) -> None:
-
         for security_scheme_name, security_config in security_schemes.items():
             aws_apigateway_authorizer = security_config.get(OpenAPIExt.AUTHORIZER, {})
             if not aws_apigateway_authorizer:

@@ -68,6 +68,9 @@ class JobPool:
 
     def close_job(self, job: Job):
         with self._mutex:
+            if self._is_terminated():
+                return
+
             if job in self._closed_jobs:
                 LOG.warning(
                     f"Duplicate execution of Job with index '{job.job_index}' and input '{to_json_str(job.job_input)}'"

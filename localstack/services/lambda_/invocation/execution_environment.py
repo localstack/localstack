@@ -136,8 +136,8 @@ class ExecutionEnvironment:
             "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
             # 3) Public LocalStack endpoint
             "LOCALSTACK_HOSTNAME": self.runtime_executor.get_endpoint_from_executor(),
-            "EDGE_PORT": str(config.EDGE_PORT),
-            "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.EDGE_PORT}",
+            "EDGE_PORT": str(config.GATEWAY_LISTEN[0].port),
+            "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}",
             # 4) Internal LocalStack runtime API
             "LOCALSTACK_RUNTIME_ID": self.id,
             "LOCALSTACK_RUNTIME_ENDPOINT": self.runtime_executor.get_runtime_endpoint(),
@@ -155,8 +155,9 @@ class ExecutionEnvironment:
             env_vars.update(self.function_version.config.environment)
         if config.LAMBDA_INIT_DEBUG:
             # Disable dropping privileges because it breaks debugging
-            env_vars["LOCALSTACK_USER"] = ""
-        if config.LAMBDA_INIT_USER:
+            env_vars["LOCALSTACK_USER"] = "root"
+        # Forcefully overwrite the user might break debugging!
+        if config.LAMBDA_INIT_USER is not None:
             env_vars["LOCALSTACK_USER"] = config.LAMBDA_INIT_USER
         if config.DEBUG:
             env_vars["LOCALSTACK_INIT_LOG_LEVEL"] = "debug"
@@ -330,10 +331,15 @@ class ExecutionEnvironment:
 
     def get_credentials(self) -> Credentials:
         sts_client = connect_to().sts.request_metadata(service_principal="lambda")
+        role_session_name = self.function_version.id.function_name
+
+        # To handle single character function names #9016
+        if len(role_session_name) == 1:
+            role_session_name += "@lambda_function"
         # TODO we should probably set a maximum alive duration for environments, due to the session expiration
         return sts_client.assume_role(
             RoleArn=self.function_version.config.role,
-            RoleSessionName=self.function_version.id.function_name,
+            RoleSessionName=role_session_name,
             DurationSeconds=43200,
         )["Credentials"]
 

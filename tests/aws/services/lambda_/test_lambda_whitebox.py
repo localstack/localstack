@@ -10,11 +10,12 @@ from botocore.exceptions import ClientError
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
-import localstack.services.lambda_.lambda_api
+import localstack.services.lambda_.legacy.lambda_api
 from localstack import config
-from localstack.services.lambda_ import lambda_api, lambda_executors
-from localstack.services.lambda_.lambda_api import do_set_function_code, use_docker
-from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.services.lambda_.legacy import lambda_api, lambda_executors
+from localstack.services.lambda_.legacy.lambda_api import do_set_function_code, use_docker
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
@@ -43,6 +44,7 @@ TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2 = os.path.join(
 
 LOG = logging.getLogger(__name__)
 
+# TODO[LambdaV1] Remove this test file upon 3.0
 pytestmark = pytest.mark.skipif(
     condition=is_new_provider(), reason="only relevant for old provider"
 )
@@ -99,7 +101,6 @@ class TestLambdaFallbackUrl:
 
         # using pytest HTTPServer instead of the fixture because this test is still based on unittest
         with HTTPServer() as server:
-
             server.expect_request("").respond_with_handler(_handler)
             http_endpoint = server.url_for("/")
 
@@ -248,7 +249,7 @@ class TestDockerExecutors:
     def test_prime_and_destroy_containers(self, aws_client):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = f"test_prime_and_destroy_containers_{short_uid()}"
-        func_arn = lambda_api.func_arn(func_name)
+        func_arn = lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, func_name)
 
         # make sure existing containers are gone
         executor.cleanup()
@@ -319,7 +320,7 @@ class TestDockerExecutors:
     def test_destroy_idle_containers(self, aws_client):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_destroy_idle_containers"
-        func_arn = lambda_api.func_arn(func_name)
+        func_arn = lambda_api.func_arn(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, func_name)
 
         # make sure existing containers are gone
         executor.destroy_existing_docker_containers()
@@ -403,7 +404,7 @@ class TestLocalExecutors:
             testutil.create_lambda_function(
                 func_name=lambda_name1,
                 zip_file=python3_with_settings1,
-                runtime=LAMBDA_RUNTIME_PYTHON39,
+                runtime=Runtime.python3_9,
                 handler="handler1.handler",
                 client=aws_client.lambda_,
             )
@@ -413,7 +414,7 @@ class TestLocalExecutors:
             testutil.create_lambda_function(
                 func_name=lambda_name2,
                 zip_file=python3_with_settings2,
-                runtime=LAMBDA_RUNTIME_PYTHON39,
+                runtime=Runtime.python3_9,
                 handler="handler2.handler",
                 client=aws_client.lambda_,
             )
@@ -453,7 +454,9 @@ class TestFunctionStates:
             return result
 
         monkeypatch.setattr(
-            localstack.services.lambda_.lambda_api, "do_set_function_code", _do_set_function_code
+            localstack.services.lambda_.legacy.lambda_api,
+            "do_set_function_code",
+            _do_set_function_code,
         )
         try:
             response = aws_client.lambda_.create_function(

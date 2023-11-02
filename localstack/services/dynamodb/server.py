@@ -4,6 +4,7 @@ import threading
 
 from localstack import config
 from localstack.aws.connect import connect_externally_to
+from localstack.aws.forwarder import AwsRequestProxy
 from localstack.config import is_env_true
 from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
@@ -29,6 +30,8 @@ class DynamodbServer(Server):
     optimize_db_before_startup: bool
     share_db: bool
     cors: str | None
+
+    proxy: AwsRequestProxy
 
     def __init__(
         self,
@@ -65,6 +68,7 @@ class DynamodbServer(Server):
         self.optimize_db_before_startup = is_env_true("DYNAMODB_OPTIMIZE_DB_BEFORE_STARTUP")
         self.share_db = is_env_true("DYNAMODB_SHARE_DB")
         self.cors = os.getenv("DYNAMODB_CORS", None)
+        self.proxy = AwsRequestProxy(self.url)
 
     def start_dynamodb(self) -> bool:
         """Start the DynamoDB server."""

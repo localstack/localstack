@@ -3,6 +3,7 @@ import json
 import pytest
 
 from localstack.config import LEGACY_S3_PROVIDER
+from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -235,3 +236,35 @@ class TestS3NotificationsToEventBridge:
         retry(_receive_messages, retries=retries, sleep=0.1)
         messages.sort(key=lambda x: x["time"])
         snapshot.match("messages", {"messages": messages})
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..detail.object.etag"]
+    )
+    def test_object_created_put_in_different_region(
+        self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client_factory, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("region"), priority=-1)
+        # create the bucket and the queue URL in the default region
+        bucket_name, queue_url = basic_event_bridge_rule_to_sqs_queue
+
+        # create an S3 client in another region, to verify the region in the event
+        s3_client = aws_client_factory(region_name=SECONDARY_TEST_AWS_REGION_NAME).s3
+        test_key = "test-key"
+        s3_client.put_object(Bucket=bucket_name, Key=test_key, Body=b"data")
+        aws_client.s3.put_object(Bucket=bucket_name, Key=test_key, Body=b"data")
+
+        messages = []
+
+        def _receive_messages():
+            received = aws_client.sqs.receive_message(QueueUrl=queue_url).get("Messages", [])
+            for msg in received:
+                event_message = json.loads(msg["Body"])
+                messages.append(event_message)
+
+            assert len(messages) == 2
+
+        retries = 10 if is_aws_cloud() else 5
+        retry(_receive_messages, retries=retries)
+        snapshot.match("object-created-different-regions", {"messages": messages})
+        assert messages[0]["region"] == messages[1]["region"] == aws_client.s3.meta.region_name

@@ -51,7 +51,6 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
                     # { "Fn::Sub" : [ "Hello ${Name}", { "Name": "SomeName" } ] }
                     variables_found = re.findall("\\${([^}]+)}", v[0])
                     for var in variables_found:
-
                         if var in v[1]:
                             # variable is included in provided mapping and can either be a static value or another reference
                             if isinstance(v[1][var], dict):

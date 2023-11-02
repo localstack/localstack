@@ -517,3 +517,11 @@ def split_list_by(
             falsy.append(item)
 
     return truthy, falsy
+
+
+def is_comma_delimited_list(string: str) -> bool:
+    """Checks is a string is comma-delimited"""
+    pattern = re.compile(r"^(\w+)(,\s*\w+)*$")
+    if pattern.match(string) is None:
+        return False
+    return True

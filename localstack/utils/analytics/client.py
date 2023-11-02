@@ -17,7 +17,6 @@ LOG = logging.getLogger(__name__)
 
 
 class SessionResponse:
-
     response: Dict[str, Any]
     status: int
 

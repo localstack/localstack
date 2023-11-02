@@ -47,9 +47,6 @@ from localstack.aws.api.lambda_ import (
     FunctionName,
     FunctionUrlAuthType,
     FunctionUrlQualifier,
-)
-from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
-from localstack.aws.api.lambda_ import (
     GetAccountSettingsResponse,
     GetCodeSigningConfigResponse,
     GetFunctionCodeSigningConfigResponse,
@@ -116,9 +113,6 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     Runtime,
     RuntimeVersionConfig,
-)
-from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
-from localstack.aws.api.lambda_ import (
     SnapStart,
     SnapStartApplyOn,
     SnapStartOptimizationStatus,
@@ -137,6 +131,8 @@ from localstack.aws.api.lambda_ import (
     UpdateFunctionUrlConfigResponse,
     Version,
 )
+from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
+from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
 from localstack.aws.connect import connect_to
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
@@ -145,6 +141,7 @@ from localstack.services.lambda_.api_utils import ARCHITECTURES, STATEMENT_ID_RE
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
+from localstack.services.lambda_.event_source_listeners.utils import validate_filters
 from localstack.services.lambda_.invocation import AccessDeniedException
 from localstack.services.lambda_.invocation.execution_environment import (
     EnvironmentStartupTimeoutException,
@@ -186,7 +183,6 @@ from localstack.services.lambda_.invocation.lambda_service import (
 )
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.services.lambda_.lambda_utils import validate_filters
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
@@ -386,11 +382,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         else:
             return resolved_fn.versions[resolved_qualifier].config.revision_id
 
-    def _resolve_vpc_id(self, subnet_id: str) -> str:
-        return connect_to().ec2.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["VpcId"]
+    def _resolve_vpc_id(self, account_id: str, region_name: str, subnet_id: str) -> str:
+        return connect_to(
+            aws_access_key_id=account_id, region_name=region_name
+        ).ec2.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["VpcId"]
 
     def _build_vpc_config(
         self,
+        account_id: str,
+        region_name: str,
         vpc_config: Optional[dict] = None,
     ) -> VpcConfig | None:
         if not vpc_config:
@@ -401,7 +401,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             return VpcConfig(vpc_id="", security_group_ids=[], subnet_ids=[])
 
         return VpcConfig(
-            vpc_id=self._resolve_vpc_id(subnet_ids[0]),
+            vpc_id=self._resolve_vpc_id(account_id, region_name, subnet_ids[0]),
             security_group_ids=vpc_config.get("SecurityGroupIds", []),
             subnet_ids=subnet_ids,
         )
@@ -841,7 +841,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ),
                     runtime_version_config=runtime_version_config,
                     dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
-                    vpc_config=self._build_vpc_config(request.get("VpcConfig")),
+                    vpc_config=self._build_vpc_config(
+                        context.account_id, context.region, request.get("VpcConfig")
+                    ),
                     state=VersionState(
                         state=State.Pending,
                         code=StateReasonCode.Creating,
@@ -934,7 +936,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             replace_kwargs["dead_letter_arn"] = request.get("DeadLetterConfig", {}).get("TargetArn")
 
         if vpc_config := request.get("VpcConfig"):
-            replace_kwargs["vpc_config"] = self._build_vpc_config(vpc_config)
+            replace_kwargs["vpc_config"] = self._build_vpc_config(
+                context.account_id, context.region, vpc_config
+            )
 
         if "Runtime" in request:
             if request["Runtime"] not in IMAGE_MAPPING:
@@ -1686,7 +1690,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )  # TODO: test?
-        event_source_mapping = {**old_event_source_mapping, **request_data}
+
+        # remove the FunctionName field
+        function_name_or_arn = request_data.pop("FunctionName", None)
+
+        # normalize values to overwrite
+        event_source_mapping = {
+            **old_event_source_mapping,
+            **request_data,
+        }
+
+        if function_name_or_arn:
+            # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
+            account_id, region = api_utils.get_account_and_region(function_name_or_arn, context)
+            function_name, qualifier = api_utils.get_name_and_qualifier(
+                function_name_or_arn, None, context
+            )
+            event_source_mapping["FunctionArn"] = api_utils.qualified_lambda_arn(
+                function_name, qualifier, account_id, region
+            )
 
         temp_params = (
             {}
@@ -1823,7 +1845,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         url_id = api_utils.generate_random_url_id()
 
         host_definition = localstack_host(
-            use_localhost_cloud=True, custom_port=config.EDGE_PORT_HTTP or config.EDGE_PORT
+            use_localhost_cloud=True,
+            custom_port=config.EDGE_PORT_HTTP or config.GATEWAY_LISTEN[0].port,
         )
         fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(
             function_arn=function_arn,
@@ -2203,7 +2226,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
     ) -> CreateCodeSigningConfigResponse:
-
         state = lambda_stores[context.account_id][context.region]
         # TODO: can there be duplicates?
         csc_id = f"csc-{get_random_hex(17)}"  # e.g. 'csc-077c33b4c19e26036'
@@ -2630,7 +2652,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         configs = []
         for qualifier, pc_config in fn.provisioned_concurrency_configs.items():
-
             if api_utils.qualifier_is_alias(qualifier):
                 alias = fn.aliases.get(qualifier)
                 fn_arn = api_utils.qualified_lambda_arn(

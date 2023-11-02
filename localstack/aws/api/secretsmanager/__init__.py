@@ -521,7 +521,6 @@ class ValidateResourcePolicyResponse(TypedDict, total=False):
 
 
 class SecretsmanagerApi:
-
     service = "secretsmanager"
     version = "2017-10-17"
 

@@ -131,6 +131,24 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def lambda_report_logs():
+        """Transformers for Lambda REPORT logs replacing dynamic metrics including:
+        * Duration
+        * Billed Duration
+        * Max Memory Used
+        * Init Duration
+
+        Excluding:
+        * Memory Size
+        """
+        return [
+            TransformerUtility.regex(
+                re.compile(r"Duration: \d+(\.\d{2})? ms"), "Duration: <duration> ms"
+            ),
+            TransformerUtility.regex(re.compile(r"Used: \d+ MB"), "Used: <memory> MB"),
+        ]
+
+    @staticmethod
     def apigateway_api():
         return [
             TransformerUtility.key_value("id"),

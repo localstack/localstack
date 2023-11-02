@@ -1,11 +1,12 @@
 import datetime
 import os
+import re
 import unittest
-import zoneinfo
 from io import BytesIO
 from urllib.parse import urlparse
 
 import pytest
+import zoneinfo
 from requests.models import Response
 
 from localstack.aws.api import RequestContext
@@ -482,37 +483,42 @@ class TestS3UtilsAsf:
     # path style format example: https://s3.{region}.localhost.localstack.cloud:4566/{bucket-name}/{key-name}
     # hosted style format example: http://{bucket-name}.s3.{region}localhost.localstack.cloud:4566/
     # region is optional in localstack
-    # the requested has been forwarded by the router, and S3_VIRTUAL_HOST_FORWARDED_HEADER has been added with the
-    # original host header
     def test_uses_virtual_host_addressing(self):
         addresses = [
-            ({"host": f"https://aws.{LOCALHOST}:4566"}, False),
-            ({"host": f"https://{LOCALHOST}.aws:4566"}, False),
-            ({"host": f"https://{LOCALHOST}.swa:4566"}, False),
-            ({"host": f"https://swa.{LOCALHOST}:4566"}, False),
-            ({"host": "https://bucket.s3.localhost.localstack.cloud"}, True),
-            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, True),
-            ({"host": "https://s3.eu-west-1.localhost.localstack.cloud/bucket"}, False),
-            ({"host": "https://s3.eu-west-1.localhost.localstack.cloud/bucket/key"}, False),
-            ({"host": "https://s3.localhost.localstack.cloud/bucket"}, False),
-            ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key"}, True),
-            (
-                {
-                    "host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key/key/content.png"
-                },
-                True,
-            ),
-            ({"host": "https://s3.localhost.localstack.cloud/bucket/key"}, False),
-            ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud"}, True),
-            ({"host": "https://bucket.s3.localhost.localstack.cloud/key"}, True),
-            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, True),
-            ({"host": "bucket.s3.amazonaws.com"}, True),
-            ({"host": "notabucket.amazonaws.com"}, False),
-            ({"host": "s3.amazonaws.com"}, False),
-            ({"host": "s3.eu-west-1.amazonaws.com"}, False),
+            ({"host": f"aws.{LOCALHOST}:4566"}, None),
+            ({"host": f"{LOCALHOST}.aws:4566"}, None),
+            ({"host": f"{LOCALHOST}.swa:4566"}, None),
+            ({"host": f"swa.{LOCALHOST}:4566"}, None),
+            ({"host": "bucket.s3.localhost.localstack.cloud"}, "bucket"),
+            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, "bucket"),
+            ({"host": "s3.eu-west-1.localhost.localstack.cloud/bucket"}, None),
+            ({"host": "s3.localhost.localstack.cloud"}, None),
+            ({"host": "s3.localhost.localstack.cloud:4566"}, None),
+            ({"host": "bucket.s3.eu-west-1.localhost.localstack.cloud"}, "bucket"),
+            ({"host": "bucket.s3.localhost.localstack.cloud/key"}, "bucket"),
+            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, "bucket"),
+            ({"host": "bucket.s3.amazonaws.com"}, "bucket"),
+            ({"host": "notabucket.amazonaws.com"}, None),
+            ({"host": "s3.amazonaws.com"}, None),
+            ({"host": "s3.eu-west-1.amazonaws.com"}, None),
+            ({"host": "tests3.eu-west-1.amazonaws.com"}, None),
         ]
         for headers, expected_result in addresses:
             assert s3_utils_asf.uses_host_addressing(headers) == expected_result
+
+    def test_virtual_host_matching(self):
+        hosts = [
+            ("bucket.s3.localhost.localstack.cloud", "bucket", None),
+            ("bucket.s3.eu-west-1.amazonaws.com", "bucket", "eu-west-1"),
+            ("test-bucket.s3.eu-west-1.localhost.localstack.cloud", "test-bucket", "eu-west-1"),
+            ("bucket.s3.notrealregion-west-1.localhost.localstack.cloud", "bucket", None),
+            ("mybucket.s3.amazonaws.com", "mybucket", None),
+        ]
+        compiled_regex = re.compile(s3_utils_asf.S3_VIRTUAL_HOSTNAME_REGEX)
+        for host, bucket_name, region_name in hosts:
+            result = compiled_regex.match(host)
+            assert result.group("bucket") == bucket_name
+            assert result.group("region") == region_name
 
     def test_is_valid_canonical_id(self):
         canonical_ids = [

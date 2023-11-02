@@ -82,11 +82,13 @@ class StateTaskService(StateTask, abc.ABC):
             heartbeat_seconds = env.stack.pop()
             scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.TaskScheduled,
             event_detail=EventDetails(taskScheduledEventDetails=scheduled_event_details),
         )
 
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.TaskStarted,
             event_detail=EventDetails(
                 taskStartedEventDetails=TaskStartedEventDetails(
@@ -103,6 +105,7 @@ class StateTaskService(StateTask, abc.ABC):
     ) -> None:
         output = env.stack[-1]
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.TaskSucceeded,
             event_detail=EventDetails(
                 taskSucceededEventDetails=TaskSucceededEventDetails(

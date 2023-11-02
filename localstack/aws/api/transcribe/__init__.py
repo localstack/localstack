@@ -113,6 +113,7 @@ class MediaFormat(str):
     ogg = "ogg"
     amr = "amr"
     webm = "webm"
+    m4a = "m4a"
 
 
 class MedicalContentIdentificationType(str):
@@ -1029,7 +1030,6 @@ class UpdateVocabularyResponse(TypedDict, total=False):
 
 
 class TranscribeApi:
-
     service = "transcribe"
     version = "2017-10-26"
 

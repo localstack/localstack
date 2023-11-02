@@ -3,10 +3,12 @@ import copy
 import logging
 import os
 import re
+import textwrap
 import threading
 from datetime import datetime
 from functools import cache
 from ipaddress import IPv4Address, IPv4Interface
+from pathlib import Path
 from socket import AddressFamily
 from typing import Iterable, Literal, Tuple
 
@@ -51,10 +53,8 @@ from localstack.dns.models import (
 )
 from localstack.services.edge import run_module_as_sudo
 from localstack.utils import iputils
-from localstack.utils.files import load_file
 from localstack.utils.net import Port, port_can_be_bound
 from localstack.utils.platform import in_docker
-from localstack.utils.run import is_root, run
 from localstack.utils.serving import Server
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import sleep_forever
@@ -779,29 +779,27 @@ def get_available_dns_server():
 
 
 # ###### LEGACY METHODS ######
-def add_resolv_entry():
-    from localstack.services.edge import ensure_can_use_sudo
+def add_resolv_entry(file_path: Path | str = Path("/etc/resolv.conf")):
+    # never overwrite the host configuration without the user's permission
+    if not in_docker():
+        LOG.warning("Incorrectly attempted to alter host networking config")
+        return
 
-    resolv_conf = "/etc/resolv.conf"
-    if os.path.exists(resolv_conf):
-        content = load_file(resolv_conf)
-
-        comment = "# The following line is required by LocalStack"
-        line = "nameserver 127.0.0.1"
-        if line not in content:
-            sudo_cmd = "" if is_root() else "sudo"
-            ensure_can_use_sudo()
-
-            for new_line in ("", line, comment):
-                # Surprisingly hard to find a reliable cross-platform shell
-                # solution to prepend text to a file, hence we use python here.
-                run(
-                    (
-                        '%s python -c "import sys; f=open(sys.argv[1]).read(); '
-                        "open(sys.argv[1], 'w').write('%s\\n' + f)\" %s"
-                    )
-                    % (sudo_cmd, new_line, resolv_conf)
-                )
+    LOG.debug("Overwriting container DNS server to point to localhost")
+    content = textwrap.dedent(
+        """
+    # The following line is required by LocalStack
+    nameserver 127.0.0.1
+    """
+    )
+    file_path = Path(file_path)
+    try:
+        with file_path.open("w") as outfile:
+            print(content, file=outfile)
+    except Exception:
+        LOG.warning(
+            "Could not update container DNS settings", exc_info=LOG.isEnabledFor(logging.DEBUG)
+        )
 
 
 def setup_network_configuration():

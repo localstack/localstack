@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
-    from _typeshed.wsgi import WSGIEnvironment, StartResponse
+    from _typeshed.wsgi import StartResponse, WSGIEnvironment
 
 from werkzeug.datastructures import Headers, MultiDict
 from werkzeug.wrappers import Request

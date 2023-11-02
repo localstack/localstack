@@ -138,7 +138,9 @@ STAGE_UPDATE_PATHS = [
     "/{resourcePath}/{httpMethod}/metrics/enabled",
     "/{resourcePath}/{httpMethod}/logging/dataTrace",
     "/{resourcePath}/{httpMethod}/logging/loglevel",
-    "/{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+    "/{resourcePath}/{httpMethod}/throttling/burstLimit",
+    "/{resourcePath}/{httpMethod}/throttling/rateLimit",
+    "/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
     "/{resourcePath}/{httpMethod}/caching/enabled",
     "/{resourcePath}/{httpMethod}/caching/dataEncrypted",
     "/{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl",
@@ -940,6 +942,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             if not path_valid:
                 valid_paths = f"[{', '.join(STAGE_UPDATE_PATHS)}]"
                 # note: weird formatting in AWS - required for snapshot testing
+                valid_paths = valid_paths.replace(
+                    "/{resourcePath}/{httpMethod}/throttling/burstLimit, /{resourcePath}/{httpMethod}/throttling/rateLimit, /{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+                    "/{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+                )
                 valid_paths = valid_paths.replace("/burstLimit, /", "/burstLimit /")
                 valid_paths = valid_paths.replace("/rateLimit, /", "/rateLimit /")
                 raise BadRequestException(
@@ -1224,7 +1230,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
     ) -> DocumentationPartIds:
-
         body_data = body.read()
         openapi_spec = parse_json_or_yaml(to_str(body_data))
 
@@ -1684,7 +1689,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
     ) -> RestApi:
-
         body_data = body.read()
 
         # create rest api
@@ -1832,6 +1836,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             export_type=export_type,
             export_format=accepts,
             with_extension=has_extension,
+            account_id=context.account_id,
+            region_name=context.region,
         )
 
         accepts = accepts or APPLICATION_JSON

@@ -25,7 +25,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[s3_url]": {
-    "recorded-date": "08-10-2023, 16:15:04",
+    "recorded-date": "11-10-2023, 00:03:44",
     "recorded-content": {
       "create-error": {
         "Error": {
@@ -41,7 +41,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_path]": {
-    "recorded-date": "08-10-2023, 16:15:14",
+    "recorded-date": "11-10-2023, 00:03:53",
     "recorded-content": {
       "matching-topic": [
         {
@@ -51,7 +51,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_host]": {
-    "recorded-date": "08-10-2023, 16:15:24",
+    "recorded-date": "11-10-2023, 00:04:02",
     "recorded-content": {
       "matching-topic": [
         {
@@ -61,7 +61,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_invalid]": {
-    "recorded-date": "08-10-2023, 16:15:26",
+    "recorded-date": "11-10-2023, 00:04:04",
     "recorded-content": {
       "create-error": {
         "Error": {

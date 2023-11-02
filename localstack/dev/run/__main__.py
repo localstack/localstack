@@ -7,7 +7,7 @@ from rich.rule import Rule
 
 from localstack import config
 from localstack.cli import console
-from localstack.utils.bootstrap import ContainerConfigurators
+from localstack.utils.bootstrap import Container, ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     PortMappings,
@@ -114,6 +114,9 @@ from .paths import HostPaths
     required=False,
     help="Docker network to start the container in",
 )
+@click.option(
+    "--dev-extensions", is_flag=True, default=False, help="Load extensions in develop mode"
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     image: str = None,
@@ -131,6 +134,7 @@ def run(
     entrypoint: str = None,
     network: str = None,
     command: str = None,
+    dev_extensions: bool = False,
 ):
     """
     A tool for localstack developers to start localstack containers. Run this in your localstack or
@@ -281,6 +285,25 @@ def run(
         configurators.append(DependencyMountConfigurator(host_paths=host_paths))
     if develop:
         configurators.append(ContainerConfigurators.develop)
+    if dev_extensions:
+        if pro:
+            try:
+                from localstack_ext.extensions.bootstrap import (
+                    run_on_configure_host_hook,
+                    run_on_configure_localstack_container_hook,
+                )
+
+                # collect dev extensions
+                run_on_configure_host_hook()
+
+                # create stub container with configuration to apply
+                c = Container(container_config=container_config)
+                run_on_configure_localstack_container_hook(c)
+
+            except ImportError:
+                pass
+        else:
+            click.echo("Pro mode is required for extensions support")
 
     # make sure anything coming from CLI arguments has priority
     configurators.extend(

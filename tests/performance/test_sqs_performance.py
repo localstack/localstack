@@ -6,7 +6,7 @@ from localstack.constants import (
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.utils.aws.arns import get_sqs_queue_url
+from localstack.utils.aws.arns import sqs_queue_url_for_arn
 
 QUEUE_NAME = "test-perf-3610"
 NUM_MESSAGES = 300
@@ -42,7 +42,7 @@ def receive_messages():
         aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
     ).sqs
-    queue_url = get_sqs_queue_url(QUEUE_NAME)
+    queue_url = sqs_queue_url_for_arn(QUEUE_NAME)
     messages = []
 
     start = datetime.now()

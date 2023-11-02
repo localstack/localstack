@@ -48,6 +48,7 @@ from localstack.aws.api.ec2 import (
     Ec2Api,
     InstanceType,
     IpAddressType,
+    LaunchTemplate,
     ModifyLaunchTemplateRequest,
     ModifyLaunchTemplateResult,
     ModifySubnetAttributeRequest,
@@ -74,7 +75,6 @@ from localstack.aws.api.ec2 import (
     VpcEndpointSubnetIdList,
     scope,
 )
-from localstack.aws.connect import connect_to
 from localstack.services.ec2.exceptions import (
     InvalidLaunchTemplateIdError,
     InvalidLaunchTemplateNameError,
@@ -355,7 +355,6 @@ class Ec2Provider(Ec2Api, ABC):
         context: RequestContext,
         request: CreateLaunchTemplateRequest,
     ) -> CreateLaunchTemplateResult:
-
         # parameter validation
         if not request["LaunchTemplateData"]:
             raise MissingParameterError(parameter="LaunchTemplateData")
@@ -372,7 +371,6 @@ class Ec2Provider(Ec2Api, ABC):
         context: RequestContext,
         request: ModifyLaunchTemplateRequest,
     ) -> ModifyLaunchTemplateResult:
-
         backend = get_ec2_backend(context.account_id, context.region)
         template_id = (
             request["LaunchTemplateId"]
@@ -389,14 +387,16 @@ class Ec2Provider(Ec2Api, ABC):
 
         template.default_version_number = int(request["DefaultVersion"])
 
-        client = connect_to().ec2
-        retrieved_template = client.describe_launch_templates(LaunchTemplateIds=[template.id])
-
-        result: ModifyLaunchTemplateResult = {
-            "LaunchTemplate": retrieved_template["LaunchTemplates"][0],
-        }
-
-        return result
+        return ModifyLaunchTemplateResult(
+            LaunchTemplate=LaunchTemplate(
+                LaunchTemplateId=template.id,
+                LaunchTemplateName=template.name,
+                CreateTime=template.create_time,
+                DefaultVersionNumber=template.default_version_number,
+                LatestVersionNumber=template.latest_version_number,
+                Tags=template.tags,
+            )
+        )
 
     @handler("DescribeVpcEndpointServices", expand=False)
     def describe_vpc_endpoint_services(

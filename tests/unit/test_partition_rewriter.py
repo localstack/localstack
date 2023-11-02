@@ -10,7 +10,7 @@ from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.partition_rewriter import ArnPartitionRewriteHandler
-from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.http import Request, Response
 from localstack.http.request import get_full_raw_path, get_raw_path
 from localstack.utils.aws.aws_stack import mock_aws_request_headers
@@ -58,8 +58,9 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
     # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
     if internal_call:
         headers = mock_aws_request_headers(
+            "dummy",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=origin_partition,
-            access_key=INTERNAL_AWS_ACCESS_KEY_ID,
             internal=True,
         )
     else:
@@ -331,7 +332,7 @@ def test_arn_partition_rewriting_in_request_and_response(
         handler_data["received_request"] = _request
         response = Response()
         response.set_data(_request.data)
-        response.headers = request.headers
+        response.headers = _request.headers
         handler_data["sent_request"] = response
         return response
 
@@ -354,8 +355,9 @@ def test_arn_partition_rewriting_in_request_and_response(
     # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
     if internal_call:
         headers = mock_aws_request_headers(
+            "dummy",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=origin_partition,
-            access_key=INTERNAL_AWS_ACCESS_KEY_ID,
             internal=True,
         )
     else:

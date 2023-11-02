@@ -29,7 +29,6 @@ from localstack.constants import (
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.sync import poll_condition
 
 
@@ -55,8 +54,8 @@ def bucket_exists(client, bucket_name: str) -> bool:
     return False
 
 
-def wait_for_user(keys):
-    sts_client = create_client_with_keys(service="sts", keys=keys)
+def wait_for_user(keys, region_name: str):
+    sts_client = create_client_with_keys(service="sts", keys=keys, region_name=region_name)
 
     def is_user_ready():
         try:
@@ -74,7 +73,7 @@ def wait_for_user(keys):
 def create_client_with_keys(
     service: str,
     keys: Dict[str, str],
-    region_name: str = None,
+    region_name: str,
     client_config: Config = None,
 ):
     """
@@ -87,8 +86,6 @@ def create_client_with_keys(
     :param client_config:
     :return:
     """
-    if not region_name and os.environ.get("TEST_TARGET") != "AWS_CLOUD":
-        region_name = aws_stack.get_region()
     return boto3.client(
         service,
         region_name=region_name,

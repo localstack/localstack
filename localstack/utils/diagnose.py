@@ -40,11 +40,11 @@ ENDPOINT_RESOLVE_LIST = ["localhost.localstack.cloud", "api.localstack.cloud"]
 INSPECT_DIRECTORIES = [DEFAULT_VOLUME_DIR, "/tmp"]
 
 
-def get_localstack_logs() -> Union[str, Dict]:
+def get_localstack_logs() -> Dict:
     try:
         result = DOCKER_CLIENT.get_container_logs(get_main_container_name())
     except Exception as e:
-        result = "error getting docker logs for container: %s" % e
+        result = f"error getting docker logs for container: {e}"
 
     return {"docker": result}
 

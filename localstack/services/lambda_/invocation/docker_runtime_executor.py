@@ -18,8 +18,8 @@ from localstack.services.lambda_.invocation.runtime_executor import (
     LambdaRuntimeException,
     RuntimeExecutor,
 )
-from localstack.services.lambda_.lambda_utils import (
-    HINT_LOG,
+from localstack.services.lambda_.lambda_utils import HINT_LOG
+from localstack.services.lambda_.networking import (
     get_all_container_networks_for_lambda,
     get_main_endpoint_from_container,
 )
@@ -436,7 +436,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
 
     def get_runtime_endpoint(self) -> str:
-        return f"http://{self.get_endpoint_from_executor()}:{config.EDGE_PORT}{self.executor_endpoint.get_endpoint_prefix()}"
+        return f"http://{self.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}{self.executor_endpoint.get_endpoint_prefix()}"
 
     @classmethod
     def validate_environment(cls) -> bool:

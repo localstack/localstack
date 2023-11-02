@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from flask_cors.core import (
     ACL_ALLOW_HEADERS,
+    ACL_CREDENTIALS,
     ACL_EXPOSE_HEADERS,
     ACL_METHODS,
     ACL_ORIGIN,
@@ -229,22 +230,29 @@ class CorsResponseEnricher(Handler):
             if headers.get(header) == "":
                 del headers[header]
 
+        request_headers = context.request.headers
+        # CORS headers should only be returned when an Origin header is set.
         # use DISABLE_CORS_HEADERS to disable returning CORS headers entirely (more restrictive security setting)
         # also don't add CORS response headers if the service manages the CORS handling
-        if config.DISABLE_CORS_HEADERS or not should_enforce_self_managed_service(context):
+        if (
+            "Origin" not in request_headers
+            or config.DISABLE_CORS_HEADERS
+            or not should_enforce_self_managed_service(context)
+        ):
             return
 
-        request_headers = context.request.headers
         self.add_cors_headers(request_headers, response_headers=headers)
 
     @staticmethod
     def add_cors_headers(request_headers: Headers, response_headers: Headers):
         if ACL_ORIGIN not in response_headers:
             response_headers[ACL_ORIGIN] = (
-                request_headers["origin"]
-                if request_headers.get("origin") and not config.DISABLE_CORS_CHECKS
+                request_headers["Origin"]
+                if request_headers.get("Origin") and not config.DISABLE_CORS_CHECKS
                 else "*"
             )
+        if "*" not in response_headers.get(ACL_ORIGIN, ""):
+            response_headers[ACL_CREDENTIALS] = "true"
         if ACL_METHODS not in response_headers:
             response_headers[ACL_METHODS] = ",".join(CORS_ALLOWED_METHODS)
         if ACL_ALLOW_HEADERS not in response_headers:
@@ -258,3 +266,6 @@ class CorsResponseEnricher(Handler):
             and ACL_ALLOW_PRIVATE_NETWORK not in response_headers
         ):
             response_headers[ACL_ALLOW_PRIVATE_NETWORK] = "true"
+
+        # we conditionally apply CORS headers depending on the Origin, so add it to `Vary`
+        response_headers["Vary"] = "Origin"

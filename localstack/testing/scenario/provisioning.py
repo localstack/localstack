@@ -3,13 +3,14 @@ import logging
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, ContextManager, Optional
 
 import aws_cdk as cdk
 from botocore.exceptions import WaiterError
 
 from localstack.config import is_env_true
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
@@ -106,7 +107,7 @@ class InfraProvisioner:
     @contextmanager
     def provisioner(
         self, skip_deployment: Optional[bool] = False, skip_teardown: Optional[bool] = False
-    ):
+    ) -> ContextManager["InfraProvisioner"]:
         """
         :param skip_deployment: Set to True to skip stack creation and re-use existing stack without modifications.
             Also skips custom setup steps.
@@ -204,28 +205,32 @@ class InfraProvisioner:
                     WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
                 )
             except WaiterError:
-                change_set_status = self.aws_client.cloudformation.describe_change_set(
-                    ChangeSetName=change_set["Id"]
-                )
                 # it's OK if we don't have any updates to perform here (!)
                 # there is no specific error code unfortunately
-                if not (
-                    is_update
-                    and change_set_status["StatusReason"] == "No updates are to be performed."
-                ):
+                if not (is_update):
                     raise
+                else:
+                    LOG.warning("Execution of change set %s failed. Assuming no changes detected.")
             else:
                 self.aws_client.cloudformation.execute_change_set(ChangeSetName=change_set["Id"])
-                if is_update:
-                    self.aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+                try:
+                    self.aws_client.cloudformation.get_waiter(
+                        "stack_update_complete" if is_update else "stack_create_complete"
+                    ).wait(
                         StackName=stack_id,
                         WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
                     )
-                else:
-                    self.aws_client.cloudformation.get_waiter("stack_create_complete").wait(
-                        StackName=stack_id,
-                        WaiterConfig=WAITER_CONFIG_AWS if is_aws_cloud() else WAITER_CONFIG_LS,
-                    )
+
+                except WaiterError as e:
+                    raise StackDeployError(
+                        self.aws_client.cloudformation.describe_stacks(StackName=stack_id)[
+                            "Stacks"
+                        ][0],
+                        self.aws_client.cloudformation.describe_stack_events(StackName=stack_id)[
+                            "StackEvents"
+                        ],
+                    ) from e
+
             if stack["AutoCleanS3"]:
                 stack_resources = self.aws_client.cloudformation.describe_stack_resources(
                     StackName=stack_id

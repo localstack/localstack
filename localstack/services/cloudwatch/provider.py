@@ -278,7 +278,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames) -> None:
         moto.call_moto(context)
         for alarm_name in alarm_names:
-            arn = arns.cloudwatch_alarm_arn(alarm_name)
+            arn = arns.cloudwatch_alarm_arn(alarm_name, context.account_id, context.region)
             self.alarm_scheduler.delete_scheduler_for_alarm(arn)
 
     def get_raw_metrics(self, request: Request):
@@ -352,9 +352,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutMetricAlarmInput,
     ) -> None:
-
         # missing will be the default, when not set (but it will not explicitly be set)
-        if not request.get("TreatMissingData", "missing") in [
+        if request.get("TreatMissingData", "missing") not in [
             "breaching",
             "notBreaching",
             "ignore",
@@ -371,7 +370,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 if value % 60 != 0:
                     raise ValidationError("Period must be 10, 30 or a multiple of 60")
         if request.get("Statistic"):
-            if not request.get("Statistic") in [
+            if request.get("Statistic") not in [
                 "SampleCount",
                 "Average",
                 "Sum",
@@ -385,7 +384,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         moto.call_moto(context)
 
         name = request.get("AlarmName")
-        arn = arns.cloudwatch_alarm_arn(name)
+        arn = arns.cloudwatch_alarm_arn(name, context.account_id, context.region)
         self.tags.tag_resource(arn, request.get("Tags"))
         self.alarm_scheduler.schedule_metric_alarm(arn)
 

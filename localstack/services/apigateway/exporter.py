@@ -59,7 +59,13 @@ class _BaseOpenApiExporter(abc.ABC):
 
     @abc.abstractmethod
     def export(
-        self, api_id: str, stage: str, export_format: str, with_extension: bool
+        self,
+        api_id: str,
+        stage: str,
+        export_format: str,
+        with_extension: bool,
+        account_id: str,
+        region_name: str,
     ) -> str | dict:
         ...
 
@@ -148,11 +154,21 @@ class _OpenApiSwaggerExporter(_BaseOpenApiExporter):
 
                 spec.path(path=path, operations={method: method_operations})
 
-    def export(self, api_id: str, stage: str, export_format: str, with_extension: bool) -> str:
+    def export(
+        self,
+        api_id: str,
+        stage: str,
+        export_format: str,
+        with_extension: bool,
+        account_id: str,
+        region_name: str,
+    ) -> str:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md
         """
-        apigateway_client = connect_to().apigateway
+        apigateway_client = connect_to(
+            aws_access_key_id=account_id, region_name=region_name
+        ).apigateway
 
         rest_api = apigateway_client.get_rest_api(restApiId=api_id)
         resources = apigateway_client.get_resources(restApiId=api_id)
@@ -245,11 +261,21 @@ class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
 
                 spec.path(path=path, operations={method: method_operations})
 
-    def export(self, api_id: str, stage: str, export_format: str, with_extension: bool) -> str:
+    def export(
+        self,
+        api_id: str,
+        stage: str,
+        export_format: str,
+        with_extension: bool,
+        account_id: str,
+        region_name: str,
+    ) -> str:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
         """
-        apigateway_client = connect_to().apigateway
+        apigateway_client = connect_to(
+            aws_access_key_id=account_id, region_name=region_name
+        ).apigateway
 
         rest_api = apigateway_client.get_rest_api(restApiId=api_id)
         resources = apigateway_client.get_resources(restApiId=api_id)
@@ -289,8 +315,12 @@ class OpenApiExporter:
         api_id: str,
         stage: str,
         export_type: str,
+        account_id: str,
+        region_name: str,
         export_format: str = "application/json",
         with_extension=False,
     ) -> str:
         exporter = self.exporters.get(export_type)()
-        return exporter.export(api_id, stage, export_format, with_extension)
+        return exporter.export(
+            api_id, stage, export_format, with_extension, account_id, region_name
+        )

@@ -1783,7 +1783,6 @@ class UpdateJobStatusResult(TypedDict, total=False):
 
 
 class S3ControlApi:
-
     service = "s3control"
     version = "2018-08-20"
 

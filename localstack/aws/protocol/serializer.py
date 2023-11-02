@@ -86,9 +86,8 @@ from xml.etree import ElementTree as ETree
 
 import cbor2
 import xmltodict
-from boto.utils import ISO8601
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
-from botocore.serialize import ISO8601_MICRO
+from botocore.serialize import ISO8601, ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 from werkzeug import Request as WerkzeugRequest
 from werkzeug import Response as WerkzeugResponse

@@ -1452,7 +1452,6 @@ class WorkflowTypeInfos(TypedDict, total=False):
 
 
 class SwfApi:
-
     service = "swf"
     version = "2012-01-25"
 

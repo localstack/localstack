@@ -180,6 +180,9 @@ class S3Bucket(GenericBaseModel):
                     "TopicConfigurations": topic_configs,
                 },
             }
+            if notif_config.get("EventBridgeConfiguration", {}).get("EventBridgeEnabled"):
+                result["NotificationConfiguration"]["EventBridgeConfiguration"] = {}
+
             return result
 
         def _handle_result(

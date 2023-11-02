@@ -18,7 +18,6 @@ moto_settings.ACM_VALIDATION_WAIT = min(10, moto_settings.ACM_VALIDATION_WAIT)
 
 @patch(acm_models.CertBundle.describe)
 def describe(describe_orig, self):
-
     # TODO fix! Terrible hack (for parity). Moto adds certain required fields only if status is PENDING_VALIDATION.
     cert_status = self.status
     self.status = "PENDING_VALIDATION"

@@ -69,6 +69,8 @@ env:
 jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
+    # This job needs secrets and cannot be executed on forks, skip it in this case
+    if: github.event.repository.fork == false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -157,7 +159,7 @@ jobs:
           python-version: '3.11'
 
       - name: Set up Node 18.x
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18.x
 
@@ -168,7 +170,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 0.13.7
 
