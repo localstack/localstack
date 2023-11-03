@@ -114,7 +114,7 @@ PROVIDER_DEFAULTS = {
     # "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",  # FIXME: add full -ext and override logic for -ext
     # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
     "AWS::EC2::DHCPOptions": "ResourceProvider",
-    "AWS::CloudFormationResource::Stack": "ResourceProvider",
+    "AWS::CloudFormation::Stack": "ResourceProvider",
 }
 
 
