@@ -1063,9 +1063,6 @@ LAMBDA_SYNCHRONOUS_CREATE = is_env_true("LAMBDA_SYNCHRONOUS_CREATE")
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
 
-# KMS provider - can be either "local-kms" or "moto"
-KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
-
 # URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
 # create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
 # `ES_CUSTOM_BACKEND` is DEPRECATED!
@@ -1209,6 +1206,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
+    "KMS_PROVIDER",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "LAMBDA_CODE_EXTRACT_TIME",
     "LAMBDA_CONTAINER_REGISTRY",
     "LAMBDA_DOCKER_DNS",
