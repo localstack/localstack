@@ -6232,11 +6232,13 @@ class TestS3MultiAccounts:
 
     @markers.aws.unknown
     def test_shared_bucket_namespace(self, primary_client, secondary_client):
+        bucket_name = short_uid()
+
         # Ensure that the bucket name space is shared by all accounts and regions
-        create_s3_bucket(bucket_name="foo", s3_client=primary_client)
+        create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
 
         with pytest.raises(ClientError) as exc:
-            create_s3_bucket(bucket_name="foo", s3_client=secondary_client)
+            create_s3_bucket(bucket_name=bucket_name, s3_client=secondary_client)
         exc.match("BucketAlreadyExists")
 
     @markers.aws.unknown
@@ -6246,7 +6248,7 @@ class TestS3MultiAccounts:
         # - PutObject
         # - GetObject
 
-        bucket_name = "foo"
+        bucket_name = short_uid()
         key_name = "lorem/ipsum"
         body1 = b"zaphod beeblebrox"
         body2 = b"42"
