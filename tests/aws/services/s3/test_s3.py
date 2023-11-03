@@ -34,7 +34,6 @@ from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-    SECONDARY_TEST_AWS_REGION_NAME,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
@@ -51,6 +50,7 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.run import run
 from localstack.utils.server import http2_server
@@ -6233,13 +6233,10 @@ class TestS3MultiAccounts:
     @markers.aws.unknown
     def test_shared_bucket_namespace(self, primary_client, secondary_client):
         # Ensure that the bucket name space is shared by all accounts and regions
-        primary_client.create_bucket(Bucket="foo")
+        create_s3_bucket(bucket_name="foo", s3_client=primary_client)
 
         with pytest.raises(ClientError) as exc:
-            secondary_client.create_bucket(
-                Bucket="foo",
-                CreateBucketConfiguration={"LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME},
-            )
+            create_s3_bucket(bucket_name="foo", s3_client=secondary_client)
         exc.match("BucketAlreadyExists")
 
     @markers.aws.unknown
@@ -6255,7 +6252,7 @@ class TestS3MultiAccounts:
         body2 = b"42"
 
         # First user creates a bucket and puts an object
-        primary_client.create_bucket(Bucket=bucket_name)
+        create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
         response = primary_client.list_buckets()
         assert bucket_name in [bucket["Name"] for bucket in response["Buckets"]]
         primary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body1)
