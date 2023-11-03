@@ -10,7 +10,6 @@ import pytest
 import requests
 from botocore.auth import SigV4Auth
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
     CreateSecretRequest,
@@ -19,7 +18,7 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     ListSecretsResponse,
 )
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
@@ -38,7 +37,7 @@ RESOURCE_POLICY = {
     "Statement": [
         {
             "Effect": "Allow",
-            "Principal": {"AWS": f"arn:aws:iam::{get_aws_account_id()}:root"},
+            "Principal": {"AWS": f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:root"},
             "Action": "secretsmanager:GetSecretValue",
             "Resource": "*",
         }

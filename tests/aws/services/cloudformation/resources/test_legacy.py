@@ -7,7 +7,6 @@ import yaml
 from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.testing.aws.lambda_utils import is_new_provider
@@ -84,7 +83,7 @@ Resources:
             - 'MessageFooHandler'
             - !FindInMap [ AccountInfo, !Ref "AWS::AccountId", ENV ]
 """
-    % get_aws_account_id()
+    % TEST_AWS_ACCOUNT_ID
 )
 
 TEST_TEMPLATE_13 = """
@@ -198,7 +197,7 @@ Resources:
     Properties:
       BucketName: cf-prd-{id}
 """
-    % get_aws_account_id()
+    % TEST_AWS_ACCOUNT_ID
 )
 
 TEST_TEMPLATE_20 = """
