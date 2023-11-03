@@ -727,6 +727,9 @@ DEBUG_HANDLER_CHAIN = is_env_true("DEBUG_HANDLER_CHAIN")
 # whether to eagerly start services
 EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 
+# whether to selectively load services in SERVICES
+STRICT_SERVICE_LOADING = is_env_true("STRICT_SERVICE_LOADING")
+
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
@@ -1282,6 +1285,7 @@ CONFIG_ENV_VARS = [
     "SQS_DISABLE_CLOUDWATCH_METRICS",
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
+    "STRICT_SERVICE_LOADING",
     "SYNCHRONOUS_KINESIS_EVENTS",
     "SYNCHRONOUS_SNS_EVENTS",
     "TEST_AWS_ACCOUNT_ID",

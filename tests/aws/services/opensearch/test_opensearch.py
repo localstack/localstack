@@ -12,10 +12,13 @@ from opensearchpy import OpenSearch
 from opensearchpy.exceptions import AuthorizationException
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.opensearch import AdvancedSecurityOptionsInput, MasterUserOptions
 from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
-from localstack.constants import OPENSEARCH_DEFAULT_VERSION, OPENSEARCH_PLUGIN_LIST
+from localstack.constants import (
+    OPENSEARCH_DEFAULT_VERSION,
+    OPENSEARCH_PLUGIN_LIST,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.services.opensearch import provider
 from localstack.services.opensearch.cluster import CustomEndpoint, EdgeProxiedOpensearchCluster
 from localstack.services.opensearch.cluster_manager import (
@@ -759,12 +762,12 @@ class TestMultiClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -807,12 +810,12 @@ class TestMultiplexingClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -855,12 +858,12 @@ class TestSingletonClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -941,7 +944,7 @@ class TestCustomBackendManager:
         domain_key = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         cluster = manager.create(domain_key.arn, OPENSEARCH_DEFAULT_VERSION)
         # check that we're using the domain endpoint strategy
