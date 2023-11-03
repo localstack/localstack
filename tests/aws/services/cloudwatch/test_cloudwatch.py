@@ -2,6 +2,7 @@ import copy
 import gzip
 import json
 import time
+import os
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 
@@ -13,6 +14,7 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import retry, short_uid, to_str
 from localstack.utils.sync import poll_condition
@@ -1195,6 +1197,29 @@ class TestCloudwatch:
         )
 
         assert isinstance(response["MetricWidgetImage"], bytes)
+    @pytest.mark.skipif(
+        os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2", reason="New test for v2 provider"
+    )
+    def test_describe_minimal_metric_alarm(self, snapshot, aws_client, cleanups):
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+        alarm_name = f"a-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        name_space = f"n-sp-{short_uid()}"
+
+        snapshot.add_transformer(TransformerUtility.key_value("MetricName"))
+        aws_client.cloudwatch.put_metric_alarm(
+            AlarmName=alarm_name,
+            MetricName=metric_name,
+            Namespace=name_space,
+            EvaluationPeriods=1,
+            Period=10,
+            Statistic="Sum",
+            ComparisonOperator="GreaterThanThreshold",
+            Threshold=30,
+        )
+        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
+        response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+        snapshot.match("describe_minimal_metric_alarm", response)
 
 
 def _check_alarm_triggered(
