@@ -26,7 +26,9 @@ class _RequestCollectingClient(HttpClient):
         Factory used to plug into S3VirtualHostProxyHandler._create_proxy
         :return: a proxy using this client
         """
-        return Proxy(config.get_edge_url(), preserve_host=False, client=self)
+        return Proxy(
+            config.get_edge_url(localstack_hostname="localhost"), preserve_host=False, client=self
+        )
 
 
 class TestS3VirtualHostProxyHandler:
@@ -46,7 +48,7 @@ class TestS3VirtualHostProxyHandler:
         )
         request, server = collector.requests.get()
         assert request.url == "http://s3.localhost.localstack.cloud:4566/abucket/my/key"
-        assert server == "http://localhost.localstack.cloud:4566"
+        assert server == "http://localhost:4566"
 
         # test root key
         router.dispatch(
@@ -78,7 +80,7 @@ class TestS3VirtualHostProxyHandler:
         )
         request, server = collector.requests.get()
         assert request.url == "http://s3.localhost.localstack.cloud:4566/abucket/my/key"
-        assert server == "http://localhost.localstack.cloud:4566"
+        assert server == "http://localhost:4566"
 
         # test key with path (gov cloud
         router.dispatch(
@@ -89,7 +91,7 @@ class TestS3VirtualHostProxyHandler:
         )
         request, server = collector.requests.get()
         assert request.url == "http://s3.localhost.localstack.cloud:4566/abucket/my/key"
-        assert server == "http://localhost.localstack.cloud:4566"
+        assert server == "http://localhost:4566"
 
         # test root key
         router.dispatch(
@@ -143,7 +145,7 @@ class TestS3VirtualHostProxyHandler:
         )
         request, server = collector.requests.get()
         assert request.url == "http://s3.localhost.localstack.cloud:4566/abucket/my/key"
-        assert server == "http://localhost.localstack.cloud:4566"
+        assert server == "http://localhost:4566"
 
         # test root key
         router.dispatch(
