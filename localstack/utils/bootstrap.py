@@ -46,7 +46,7 @@ API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
     "dynamodbstreams": ["kinesis"],
     "es": ["opensearch"],
-    "lambda": ["logs", "cloudwatch"],
+    "lambda": ["logs", "cloudwatch", "s3", "sqs"],
     "kinesis": ["dynamodb"],
     "firehose": ["kinesis"],
 }
@@ -221,17 +221,51 @@ def resolve_apis(services: Iterable[str]) -> Set[str]:
 @functools.lru_cache()
 def get_enabled_apis() -> Set[str]:
     """
-    Returns the list of APIs that are enabled through the SERVICES variable. If the SERVICES variable is empty,
-    then it will return all available services. Meta-services like "serverless" or "cognito", and dependencies are
-    resolved.
+    Returns the list of APIs that are enabled through the combination of the SERVICES variable and
+    STRICT_SERVICE_LOADING variable. If the SERVICES variable is empty, then it will return all available services.
+    Meta-services like "serverless" or "cognito", and dependencies are resolved.
 
     The result is cached, so it's safe to call. Clear the cache with get_enabled_apis.cache_clear().
     """
+    from localstack.services.plugins import SERVICE_PLUGINS
+
+    services_env = os.environ.get("SERVICES", "").strip()
+    services = SERVICE_PLUGINS.list_available()
+
+    if services_env and is_env_true("STRICT_SERVICE_LOADING"):
+        # SERVICES and STRICT_SERVICE_LOADING are set
+        # we filter the result of SERVICE_PLUGINS.list_available() to cross the user-provided list with
+        # the available ones
+        enabled_services = []
+        for service_port in re.split(r"\s*,\s*", services_env):
+            # Only extract the service name, discard the port
+            parts = re.split(r"[:=]", service_port)
+            service = parts[0]
+            enabled_services.append(service)
+
+        services = [service for service in enabled_services if service in services]
+        # TODO: log a message if a service was not supported? see with pro loading
+
+    return resolve_apis(services)
+
+
+def is_api_enabled(api: str) -> bool:
+    return api in get_enabled_apis()
+
+
+@functools.lru_cache()
+def get_preloaded_services() -> Set[str]:
+    """
+    Returns the list of APIs that are marked to be eager loaded through the combination of SERVICES variable and
+    EAGER_SERVICE_LOADING. If the SERVICES variable is empty, then it will return all available services.
+    Meta-services like "serverless" or "cognito", and dependencies are resolved.
+
+    The result is cached, so it's safe to call. Clear the cache with get_preloaded_services.cache_clear().
+    """
     services_env = os.environ.get("SERVICES", "").strip()
     services = None
-    if services_env and not is_env_true("EAGER_SERVICE_LOADING"):
-        LOG.warning("SERVICES variable is ignored if EAGER_SERVICE_LOADING=0.")
-    elif services_env:
+
+    if services_env and is_env_true("EAGER_SERVICE_LOADING"):
         # SERVICES and EAGER_SERVICE_LOADING are set
         # SERVICES env var might contain ports, but we do not support these anymore
         services = []
@@ -249,9 +283,8 @@ def get_enabled_apis() -> Set[str]:
     return resolve_apis(services)
 
 
-# DEPRECATED, lazy loading should be assumed
-def is_api_enabled(api: str) -> bool:
-    apis = get_enabled_apis()
+def should_eager_load_api(api: str) -> bool:
+    apis = get_preloaded_services()
 
     if api in apis:
         return True
