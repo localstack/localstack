@@ -146,11 +146,11 @@ DEPRECATIONS = [
         "1.4.0",
         "This feature will not be supported in the future. Please remove this environment variable.",
     ),
-    # Since 1.4.0 - Local-KMS will be removed in the future making this variable obsolete
+    # Deprecated in 1.4.0, removed in 3.0.0
     EnvVarDeprecation(
         "KMS_PROVIDER",
         "1.4.0",
-        "This feature will not be supported in the future. Please remove this environment variable.",
+        "This option has no effect. Please remove it from your configuration.",
     ),
     # Since 2.0.0 - HOSTNAME_EXTERNAL will be replaced with LOCALSTACK_HOST
     EnvVarDeprecation(
