@@ -643,7 +643,7 @@ class TestS3:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not NATIVE_S3_PROVIDER,
+        condition=is_v2_provider,
         paths=["$..Prefix"],
     )
     def test_list_objects_v2_with_prefix_and_delimiter(self, s3_bucket, snapshot, aws_client):
@@ -828,7 +828,7 @@ class TestS3:
         snapshot.match("list-objects-marker-empty", resp)
 
     @markers.aws.validated
-    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=is_v2_provider, reason="not implemented in moto")
     def test_list_multiparts_next_marker(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformers_list(
