@@ -1,4 +1,3 @@
-from localstack import config
 from localstack.aws.forwarder import HttpFallbackDispatcher
 from localstack.services.moto import MotoFallbackDispatcher
 from localstack.services.plugins import Service, aws_provider
@@ -122,17 +121,6 @@ def kinesis():
 
 @aws_provider()
 def kms():
-    if config.KMS_PROVIDER == "local-kms":
-        from localstack.services.kms.local_kms_provider import LocalKmsProvider
-
-        provider = LocalKmsProvider()
-        return Service.for_provider(
-            provider,
-            dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
-                _provider, _provider.start_and_get_backend
-            ),
-        )
-
     from localstack.services.kms.provider import KmsProvider
 
     provider = KmsProvider()
