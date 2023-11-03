@@ -12,7 +12,6 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
-    DEFAULT_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -4149,7 +4148,7 @@ class TestSQSMultiAccounts:
         queue_name = f"test-queue-cross-account-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         account_id, region_name, queue_name_from_url = parse_queue_url(queue_url)
-        assert account_id == DEFAULT_AWS_ACCOUNT_ID
+        assert account_id == TEST_AWS_ACCOUNT_ID
         assert region_name == TEST_AWS_REGION_NAME
         assert queue_name_from_url == queue_name
 
