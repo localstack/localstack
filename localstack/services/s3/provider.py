@@ -159,6 +159,7 @@ from localstack.services.s3.utils import (
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_failed_precondition_copy_source,
+    get_full_default_bucket_location,
     get_key_from_moto_bucket,
     get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
@@ -186,7 +187,6 @@ from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 from localstack.utils.time import parse_timestamp
-from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -197,11 +197,6 @@ os.environ[
 MOTO_CANONICAL_USER_ID = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a"
 # max file size for S3 objects kept in memory (500 KB by default)
 S3_MAX_FILE_SIZE_BYTES = 512 * 1024
-
-
-def get_full_default_bucket_location(bucket_name):
-    host_definition = localstack_host()
-    return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):

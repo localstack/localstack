@@ -3813,8 +3813,11 @@ class TestS3:
                 snapshot.transform.key_value("Bucket"),
             ]
         )
+        custom_hostname = "foobar"
         monkeypatch.setattr(
-            config, "LOCALSTACK_HOST", config.HostAndPort(host="foobar", port=config.EDGE_PORT)
+            config,
+            "LOCALSTACK_HOST",
+            config.HostAndPort(host=custom_hostname, port=config.EDGE_PORT),
         )
         key = "test.file"
         content = "test content 123"
@@ -3823,7 +3826,9 @@ class TestS3:
         response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, acl=acl)
         snapshot.match("multipart-upload", response)
 
-        expected_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
+        expected_url = (
+            f"{_bucket_url(bucket_name=s3_bucket, localstack_host=custom_hostname)}/{key}"
+        )
         assert response["Location"] == expected_url
 
         # download object via API
