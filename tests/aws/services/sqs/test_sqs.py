@@ -3686,7 +3686,12 @@ class TestSqsQueryApi:
         assert queue_url.split("/")[-1] in response.text
 
     @markers.aws.only_localstack
-    def test_get_queue_attributes_works_without_authparams(self, sqs_create_queue):
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
+    def test_get_queue_attributes_works_without_authparams(
+        self, monkeypatch, sqs_create_queue, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
         response = requests.get(
             queue_url,
@@ -3936,6 +3941,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue_url.split("/")[-1],
+                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
             },
         )
         assert f"<QueueUrl>{queue_url}</QueueUrl>" in response.text
@@ -3957,6 +3963,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue2_url.split("/")[-1],
+                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
             },
         )
         assert f"<QueueUrl>{queue2_url}</QueueUrl>" in response.text
