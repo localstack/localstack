@@ -1231,6 +1231,17 @@ CONFIG_ENV_VARS = [
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
+    # Removed in 3.0.0
+    "HOSTNAME_FROM_LAMBDA",  # deprecated since 2.0.0
+    "LAMBDA_CODE_EXTRACT_TIME",  # deprecated since 2.0.0
+    "LAMBDA_CONTAINER_REGISTRY",  # deprecated since 2.0.0
+    "LAMBDA_EXECUTOR",  # deprecated since 2.0.0
+    "LAMBDA_FALLBACK_URL",  # deprecated since 2.0.0
+    "LAMBDA_FORWARD_URL",  # deprecated since 2.0.0
+    "LAMBDA_REMOTE_DOCKER",  # deprecated since 2.0.0
+    "LAMBDA_STAY_OPEN_MODE",  # deprecated since 2.0.0
+    "SYNCHRONOUS_KINESIS_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_SNS_EVENTS",  # deprecated since 1.3.0
 ]
 
 
