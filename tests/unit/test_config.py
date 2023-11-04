@@ -177,6 +177,45 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_port_http == 0
         assert edge_bind_host == default_ip
 
+    def test_localstack_host_no_port_gateway_listen_set(self, default_ip):
+        environment = {"LOCALSTACK_HOST": "foobar", "GATEWAY_LISTEN": ":1234"}
+        (
+            ls_host,
+            gateway_listen,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(environment)
+
+        assert ls_host == HostAndPort(host="foobar", port=1234)
+        assert gateway_listen == [HostAndPort(host=default_ip, port=1234)]
+
+    def test_localstack_host_not_set_gateway_listen_set(self, default_ip):
+        environment = {"GATEWAY_LISTEN": ":1234"}
+        (
+            ls_host,
+            gateway_listen,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(environment)
+
+        assert ls_host == HostAndPort(host="localhost.localstack.cloud", port=1234)
+        assert gateway_listen == [HostAndPort(host=default_ip, port=1234)]
+
+    def test_localstack_host_port_set_gateway_listen_set(self, default_ip):
+        environment = {"LOCALSTACK_HOST": "foobar:5555", "GATEWAY_LISTEN": ":1234"}
+        (
+            ls_host,
+            gateway_listen,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(environment)
+
+        assert ls_host == HostAndPort(host="foobar", port=5555)
+        assert gateway_listen == [HostAndPort(host=default_ip, port=1234)]
+
     def test_gateway_listen_multiple_addresses(self):
         environment = {"GATEWAY_LISTEN": "0.0.0.0:9999,0.0.0.0:443"}
         (

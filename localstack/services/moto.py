@@ -14,7 +14,7 @@ from werkzeug.exceptions import NotFound
 from werkzeug.routing import Map, Rule
 
 from localstack import __version__ as localstack_version
-from localstack import config
+from localstack import constants
 from localstack.aws.api import (
     CommonServiceException,
     HttpRequest,
@@ -140,7 +140,7 @@ def get_dispatcher(service: str, path: str) -> MotoDispatcher:
         rule = next(url_map.iter_rules())
         return rule.endpoint
 
-    matcher = url_map.bind(config.LOCALSTACK_HOSTNAME)
+    matcher = url_map.bind(constants.LOCALHOST)
     try:
         endpoint, _ = matcher.match(path_info=path)
     except NotFound as e:
