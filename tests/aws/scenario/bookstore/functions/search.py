@@ -17,7 +17,7 @@ index = "lambda-index"
 type = "lambda-type"
 if os.getenv("LOCALSTACK_HOSTNAME"):
     url = "http://" + os.environ["ESENDPOINT"] + "/_search"  # TODO ssl error for localstack
-    url = url.replace("localhost", os.getenv("LOCALSTACK_HOSTNAME"))
+    url = url.replace("localhost.localstack.cloud", os.getenv("LOCALSTACK_HOSTNAME"))
 else:
     url = (
         "https://" + os.environ["ESENDPOINT"] + "/_search"

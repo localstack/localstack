@@ -117,14 +117,14 @@ def build_cluster_endpoint(
         else:
             assigned_port = external_service_ports.reserve_port()
 
-        host_definition = localstack_host(use_localstack_hostname=True, custom_port=assigned_port)
+        host_definition = localstack_host(custom_port=assigned_port)
         return host_definition.host_and_port()
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
-        host_definition = localstack_host(use_localstack_hostname=True)
+        host_definition = localstack_host()
         return f"{host_definition.host_and_port()}/{engine_domain}/{domain_key.region}/{domain_key.domain_name}"
 
     # or through a subdomain (domain-name.region.opensearch.localhost.localstack.cloud)
-    host_definition = localstack_host(use_localhost_cloud=True)
+    host_definition = localstack_host()
     return f"{domain_key.domain_name}.{domain_key.region}.{engine_domain}.{host_definition.host_and_port()}"
 
 

@@ -22,6 +22,7 @@ from localstack.aws.chain import Handler, HandlerChain
 from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Response
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ def _get_allowed_cors_internal_domains() -> Set[str]:
     Construct the list of allowed internal domains for CORS enforcement purposes
     Defined as function to allow easier testing with monkeypatch of config values
     """
-    return {LOCALHOST, LOCALHOST_HOSTNAME, config.HOSTNAME_EXTERNAL}
+    return {LOCALHOST, LOCALHOST_HOSTNAME, localstack_host().host}
 
 
 _ALLOWED_INTERNAL_DOMAINS = _get_allowed_cors_internal_domains()
