@@ -3817,7 +3817,12 @@ class TestS3:
                 snapshot.transform.key_value("Bucket"),
             ]
         )
-        monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", "foobar")
+        custom_hostname = "foobar"
+        monkeypatch.setattr(
+            config,
+            "LOCALSTACK_HOST",
+            config.HostAndPort(host=custom_hostname, port=config.EDGE_PORT),
+        )
         key = "test.file"
         content = "test content 123"
         acl = "public-read"
@@ -3825,10 +3830,9 @@ class TestS3:
         response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, acl=acl)
         snapshot.match("multipart-upload", response)
 
-        if is_aws_cloud():  # TODO: default addressing is vhost for AWS
-            expected_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
-        else:  # LS default is path addressing
-            expected_url = f"{_bucket_url(bucket_name=s3_bucket, localstack_host=config.HOSTNAME_EXTERNAL)}/{key}"
+        expected_url = (
+            f"{_bucket_url(bucket_name=s3_bucket, localstack_host=custom_hostname)}/{key}"
+        )
         assert response["Location"] == expected_url
 
         # download object via API
@@ -3837,7 +3841,9 @@ class TestS3:
         assert content == to_str(downloaded_object["Body"].read())
 
         # download object directly from download link
-        download_url = response["Location"].replace(f"{config.HOSTNAME_EXTERNAL}:", "localhost:")
+        download_url = response["Location"].replace(
+            f"{get_localstack_host().host}:", "localhost.localstack.cloud:"
+        )
         response = requests.get(download_url)
         assert response.status_code == 200
         assert to_str(response.content) == content
@@ -4395,7 +4401,7 @@ class TestS3:
             ACL="public-read-write",
         )
 
-        url = f"{_bucket_url(s3_bucket, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
+        url = f"{_bucket_url(s3_bucket, localstack_host=get_localstack_host().host)}?delete"
 
         data = f"""
         <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -4452,7 +4458,7 @@ class TestS3:
         )
 
         # TODO delete does currently not work with S3_VIRTUAL_HOSTNAME
-        url = f"{_bucket_url(s3_bucket, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
+        url = f"{_bucket_url(s3_bucket, localstack_host=get_localstack_host().host)}?delete"
 
         data = f"""
             <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -10178,7 +10184,7 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
         else:
             return f"https://{bucket_name}.s3.{region}.amazonaws.com"
 
-    host_definition = get_localstack_host(use_localhost_cloud=True)
+    host_definition = get_localstack_host()
     if localstack_host:
         host_and_port = f"{localstack_host}:{config.get_edge_port_http()}"
     else:

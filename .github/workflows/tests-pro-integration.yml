@@ -264,7 +264,6 @@ jobs:
           DEBUG: 1
           DISABLE_BOTO_RETRIES: 1
           DNS_ADDRESS: 0
-          LAMBDA_EXECUTOR: "local"
           LOCALSTACK_API_KEY: "test"
           AWS_SECRET_ACCESS_KEY: "test"
           AWS_ACCESS_KEY_ID: "test"
