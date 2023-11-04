@@ -196,10 +196,6 @@ RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > 
 RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
 
-# Install the latest version of the LocalStack Persistence Plugin
-RUN --mount=type=cache,target=/root/.cache \
-    (. .venv/bin/activate && pip3 install --upgrade localstack-plugin-persistence)
-
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678
 
