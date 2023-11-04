@@ -1554,9 +1554,7 @@ def create_url_config(function):
 
     custom_id = md5(str(random()))
     region_name = aws_stack.get_region()
-    host_definition = localstack_host(
-        use_localhost_cloud=True, custom_port=config.EDGE_PORT_HTTP or config.EDGE_PORT
-    )
+    host_definition = localstack_host(custom_port=config.EDGE_PORT_HTTP or config.EDGE_PORT)
     url = f"http://{custom_id}.lambda-url.{region_name}.{host_definition.host_and_port()}/"
     # TODO: HTTPS support
 

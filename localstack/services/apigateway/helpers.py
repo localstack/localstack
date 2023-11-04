@@ -166,7 +166,7 @@ class OpenAPISpecificationResolver:
         # cache which maps known refs to part of the document
         self._cache = {}
         self._refpaths = ["#"]
-        host_definition = localstack_host(use_localhost_cloud=True)
+        host_definition = localstack_host()
         self._base_url = f"{config.get_protocol()}://apigateway.{host_definition.host_and_port()}/restapis/{rest_api_id}/models/"
 
     def _is_ref(self, item) -> bool:
