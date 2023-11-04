@@ -16,7 +16,7 @@ from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 from zoneinfo import ZoneInfo
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3 import (
     AccessControlPolicy,
@@ -307,13 +307,12 @@ def parse_copy_source_range_header(copy_source_range: str, object_size: int) -> 
 
 
 def get_full_default_bucket_location(bucket_name: BucketName) -> str:
-    if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
-        host_definition = localstack_host(
-            use_hostname_external=True, custom_port=config.get_edge_port_http()
-        )
+    host_definition = localstack_host()
+    if host_definition.host != constants.LOCALHOST_HOSTNAME:
+        # the user has customised their LocalStack hostname, and may not support subdomains.
+        # Return the location in path form.
         return f"{config.get_protocol()}://{host_definition.host_and_port()}/{bucket_name}/"
     else:
-        host_definition = localstack_host(use_localhost_cloud=True)
         return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 

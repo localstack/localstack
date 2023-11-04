@@ -470,14 +470,6 @@ if is_trace_logging_enabled():
         "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
     )
 
-# expose services on a specific host externally
-# DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
-HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
-
-# name of the host under which the LocalStack services are available
-# DEPRECATED: if the user sets this since v2.0.0 as we are moving to LOCALSTACK_HOST
-LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
-
 
 class HostAndPort:
     """
@@ -540,6 +532,9 @@ class HostAndPort:
     def is_unprivileged(self) -> bool:
         return self.port >= self._get_unprivileged_port_range_start()
 
+    def host_and_port(self):
+        return f"{self.host}:{self.port}" if self.port is not None else self.host
+
     def __hash__(self) -> int:
         return hash((self.host, self.port))
 
@@ -553,7 +548,7 @@ class HostAndPort:
             raise TypeError(f"cannot compare {self.__class__} to {other.__class__}")
 
     def __str__(self) -> str:
-        return f"{self.host}:{self.port}" if self.port is not None else self.host
+        return self.host_and_port()
 
     def __repr__(self) -> str:
         return f"HostAndPort(host={self.host}, port={self.port})"
@@ -606,18 +601,14 @@ def populate_legacy_edge_configuration(
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
     # new for v2
-    # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
-    localstack_host = localstack_host_raw
-    if localstack_host is None:
-        localstack_host = HostAndPort(
-            host=constants.LOCALHOST_HOSTNAME, port=constants.DEFAULT_PORT_EDGE
-        )
-    else:
-        localstack_host = HostAndPort.parse(
-            localstack_host,
+    # get the potentially set port from LOCALSTACK_HOST first to use for gateway listen
+    localstack_host_port = constants.DEFAULT_PORT_EDGE
+    if localstack_host_raw is not None:
+        localstack_host_port = HostAndPort.parse(
+            localstack_host_raw,
             default_host=constants.LOCALHOST_HOSTNAME,
             default_port=constants.DEFAULT_PORT_EDGE,
-        )
+        ).port
 
     def legacy_fallback(envar_name: str, default: T) -> T:
         result = default
@@ -635,15 +626,28 @@ def populate_legacy_edge_configuration(
                 HostAndPort.parse(
                     address.strip(),
                     default_host=default_ip,
-                    default_port=localstack_host.port,
+                    default_port=localstack_host_port,
                 )
             )
     else:
-        edge_port = int(environment.get("EDGE_PORT", localstack_host.port))
+        edge_port = int(environment.get("EDGE_PORT", localstack_host_port))
         edge_port_http = int(environment.get("EDGE_PORT_HTTP", 0))
         gateway_listen = [HostAndPort(host=default_ip, port=edge_port)]
         if edge_port_http:
             gateway_listen.append(HostAndPort(host=default_ip, port=edge_port_http))
+
+    # the actual value of the LOCALSTACK_HOST port now depends on what gateway listen actually listens to.
+    if localstack_host_raw is None:
+        # TODO use actual gateway port?
+        localstack_host = HostAndPort(
+            host=constants.LOCALHOST_HOSTNAME, port=gateway_listen[0].port
+        )
+    else:
+        localstack_host = HostAndPort.parse(
+            localstack_host_raw,
+            default_host=constants.LOCALHOST_HOSTNAME,
+            default_port=gateway_listen[0].port,
+        )
 
     assert gateway_listen is not None
     assert localstack_host is not None
@@ -1362,7 +1366,7 @@ def service_url(service_key, host=None, port=None):
 
 
 def external_service_url(service_key, host=None, port=None):
-    host = host or HOSTNAME_EXTERNAL
+    host = host or LOCALSTACK_HOST.host
     port = port or service_port(service_key, external=True)
     return service_url(service_key, host=host, port=port)
 
@@ -1376,7 +1380,7 @@ def get_edge_port_http():
 def get_edge_url(localstack_hostname=None, protocol=None):
     port = get_edge_port_http()
     protocol = protocol or get_protocol()
-    localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
+    localstack_hostname = localstack_hostname or LOCALSTACK_HOST.host
     return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
 
