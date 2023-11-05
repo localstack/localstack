@@ -93,6 +93,7 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
@@ -399,7 +400,7 @@ def is_valid_domain_name(name: str) -> bool:
     return True if _domain_name_pattern.match(name) else False
 
 
-class OpensearchProvider(OpensearchApi):
+class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
     @staticmethod
     def get_store(account_id: str, region_name: str) -> OpenSearchStore:
         return opensearch_stores[account_id][region_name]
