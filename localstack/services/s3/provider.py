@@ -219,6 +219,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._expiration_cache.pop(bucket, None)
 
     def on_after_init(self):
+        LOG.warning(
+            "You are using the deprecated 'asf'/'v2'/'legacy_v2' S3 provider"
+            "Remove 'PROVIDER_OVERRIDE_S3' to use the new S3 'v3' provider (current default)."
+        )
+
         apply_moto_patches()
         preprocess_request.append(self._cors_handler)
         register_website_hosting_routes(router=ROUTER)

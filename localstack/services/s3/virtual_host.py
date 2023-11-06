@@ -131,7 +131,7 @@ def add_s3_vhost_rules(router, s3_proxy_handler):
     )
 
 
-@hooks.on_infra_ready(should_load=not config.NATIVE_S3_PROVIDER)
+@hooks.on_infra_ready(should_load=config.LEGACY_V2_S3_PROVIDER)
 def register_virtual_host_routes():
     """
     Registers the S3 virtual host handler into the edge router.
