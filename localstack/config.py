@@ -872,6 +872,11 @@ SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL = int(
     os.environ.get("SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL") or 60
 )
 
+# DEPRECATED: deprecated since 2.0.0 but added back upon customer request for the new Lambda provider
+# Keep a bit longer until we are sure that LOCALSTACK_HOST covers the special scenario but do not advertise publicly.
+# Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
+HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
+
 # PUBLIC: hot-reload (default v2), __local__ (default v1)
 # Magic S3 bucket name for Hot Reloading. The S3Key points to the source code on the local file system.
 BUCKET_MARKER_LOCAL = (
@@ -1157,6 +1162,7 @@ CONFIG_ENV_VARS = [
     "GATEWAY_LISTEN",
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
+    "HOSTNAME_FROM_LAMBDA",  # deprecated since 2.0.0 but added to new Lambda provider
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",
@@ -1232,7 +1238,6 @@ CONFIG_ENV_VARS = [
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
     # Removed in 3.0.0
-    "HOSTNAME_FROM_LAMBDA",  # deprecated since 2.0.0
     "LAMBDA_CODE_EXTRACT_TIME",  # deprecated since 2.0.0
     "LAMBDA_CONTAINER_REGISTRY",  # deprecated since 2.0.0
     "LAMBDA_EXECUTOR",  # deprecated since 2.0.0

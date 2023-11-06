@@ -10,6 +10,8 @@ LAMBDA_CONTAINER_NETWORK = None
 
 
 def get_main_endpoint_from_container() -> str:
+    if config.HOSTNAME_FROM_LAMBDA:
+        return config.HOSTNAME_FROM_LAMBDA
     return get_endpoint_for_network(network=get_main_container_network_for_lambda())
 
 
