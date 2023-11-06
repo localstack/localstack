@@ -729,7 +729,7 @@ DEBUG_HANDLER_CHAIN = is_env_true("DEBUG_HANDLER_CHAIN")
 EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 
 # whether to selectively load services in SERVICES
-STRICT_SERVICE_LOADING = is_env_true("STRICT_SERVICE_LOADING")
+STRICT_SERVICE_LOADING = is_env_not_false("STRICT_SERVICE_LOADING")
 
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
