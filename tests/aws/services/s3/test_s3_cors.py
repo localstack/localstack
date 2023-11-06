@@ -235,7 +235,7 @@ class TestS3Cors:
         ]
     )
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not config.NATIVE_S3_PROVIDER,
+        condition=lambda: config.LEGACY_V2_S3_PROVIDER,
         paths=["$..Headers.x-amz-server-side-encryption"],
     )
     def test_cors_match_origins(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
@@ -327,7 +327,7 @@ class TestS3Cors:
         ]
     )
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not config.NATIVE_S3_PROVIDER,
+        condition=lambda: config.LEGACY_V2_S3_PROVIDER,
         paths=["$..Headers.x-amz-server-side-encryption"],
     )
     def test_cors_match_methods(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
@@ -393,7 +393,7 @@ class TestS3Cors:
         ]
     )
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not config.NATIVE_S3_PROVIDER,
+        condition=lambda: config.LEGACY_V2_S3_PROVIDER,
         paths=["$..Headers.x-amz-server-side-encryption"],
     )
     def test_cors_match_headers(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
