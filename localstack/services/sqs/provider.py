@@ -175,10 +175,17 @@ class CloudwatchDispatcher:
         self.executor.shutdown(wait=False)
 
     def dispatch_sqs_metric(
-        self, region: str, queue_name: str, metric: str, value: float = 1, unit: str = "Count"
+        self,
+        account_id: str,
+        region: str,
+        queue_name: str,
+        metric: str,
+        value: float = 1,
+        unit: str = "Count",
     ):
         """
         Publishes a metric to Cloudwatch using a Threadpool
+        :param account_id The account id that should be used for Cloudwatch client
         :param region The region that should be used for Cloudwatch client
         :param queue_name The name of the queue that the metric belongs to
         :param metric The name of the metric
@@ -187,6 +194,7 @@ class CloudwatchDispatcher:
         """
         self.executor.submit(
             publish_sqs_metric,
+            account_id=account_id,
             region=region,
             queue_name=queue_name,
             metric=metric,
@@ -201,9 +209,13 @@ class CloudwatchDispatcher:
         :param message_body_size the size of the message in bytes
         """
         self.dispatch_sqs_metric(
-            region=queue.region, queue_name=queue.name, metric="NumberOfMessagesSent"
+            account_id=queue.account_id,
+            region=queue.region,
+            queue_name=queue.name,
+            metric="NumberOfMessagesSent",
         )
         self.dispatch_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="SentMessageSize",
@@ -218,6 +230,7 @@ class CloudwatchDispatcher:
         :param deleted The number of messages that were successfully deleted, default: 1
         """
         self.dispatch_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="NumberOfMessagesDeleted",
@@ -232,6 +245,7 @@ class CloudwatchDispatcher:
         """
         if received > 0:
             self.dispatch_sqs_metric(
+                account_id=queue.account_id,
                 region=queue.region,
                 queue_name=queue.name,
                 metric="NumberOfMessagesReceived",
@@ -239,7 +253,10 @@ class CloudwatchDispatcher:
             )
         else:
             self.dispatch_sqs_metric(
-                region=queue.region, queue_name=queue.name, metric="NumberOfEmptyReceives"
+                account_id=queue.account_id,
+                region=queue.region,
+                queue_name=queue.name,
+                metric="NumberOfEmptyReceives",
             )
 
 
@@ -266,18 +283,21 @@ class CloudwatchPublishWorker:
         # TODO ApproximateAgeOfOldestMessage is missing
         #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
         publish_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="ApproximateNumberOfMessagesVisible",
             value=queue.approx_number_of_messages,
         )
         publish_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="ApproximateNumberOfMessagesNotVisible",
             value=queue.approx_number_of_messages_not_visible,
         )
         publish_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="ApproximateNumberOfMessagesDelayed",
