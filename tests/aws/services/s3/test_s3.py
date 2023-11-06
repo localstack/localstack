@@ -4236,7 +4236,7 @@ class TestS3:
             "$..x-amzn-requestid",
         ],
     )
-    def test_create_bucket_head_bucket(self, snapshot, aws_client):
+    def test_create_bucket_head_bucket(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         bucket_1 = f"my-bucket-1{short_uid()}"
@@ -4260,7 +4260,7 @@ class TestS3:
 
             response = aws_client.s3.create_bucket(
                 Bucket=bucket_2,
-                CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
+                CreateBucketConfiguration={"LocationConstraint": "us-west-1" if TEST_AWS_REGION_NAME != "us-west-1" else "us-west-2"},
             )
             snapshot.match("create_bucket_location_constraint", response)
 
