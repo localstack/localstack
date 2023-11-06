@@ -6,7 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
-from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled, is_old_provider
+from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -356,7 +356,6 @@ def test_redrive_policy_with_failing_lambda(
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_old_provider(), reason="not supported anymore")
 def test_sqs_queue_as_lambda_dead_letter_queue(
     lambda_su_role,
     create_lambda_function,
@@ -884,9 +883,6 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
 class TestSQSEventSourceMapping:
     # TODO refactor
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Error.Message", "$..message"]
-    )
     def test_event_source_mapping_default_batch_size(
         self,
         create_lambda_function,
@@ -1167,7 +1163,6 @@ class TestSQSEventSourceMapping:
         snapshot.match("create_event_source_mapping_exception", expected.value.response)
         expected.match(InvalidParameterValueException.code)
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="broken")
     @markers.aws.validated
     def test_sqs_event_source_mapping_update(
         self,

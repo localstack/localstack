@@ -476,7 +476,6 @@ class CaptureOutput:
         return proxy
 
     def _ident(self):
-        # TODO: On some systems we seem to be running into a stack overflow with LAMBDA_EXECUTOR=local here!
         return threading.current_thread().ident
 
     def stdout(self):

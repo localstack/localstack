@@ -243,6 +243,13 @@ DEPRECATIONS = [
         "This feature is marked for removal. Please use AWS client API to seed Kinesis streams.",
     ),
     EnvVarDeprecation(
+        "PROVIDER_OVERRIDE_LAMBDA",
+        "3.0.0",
+        "This option is ignored because the legacy Lambda provider (v1) has been removed since 3.0.0. "
+        "Please remove PROVIDER_OVERRIDE_LAMBDA and migrate to our new Lambda provider (v2): "
+        "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
+    ),
+    EnvVarDeprecation(
         "ES_CUSTOM_BACKEND",
         "0.14.0",
         "This option is marked for removal. Please use OPENSEARCH_CUSTOM_BACKEND instead.",
@@ -303,23 +310,6 @@ def log_env_warning(deprecations: List[EnvVarDeprecation]) -> None:
 def log_deprecation_warnings(deprecations: Optional[List[EnvVarDeprecation]] = None) -> None:
     affected_deprecations = collect_affected_deprecations(deprecations)
     log_env_warning(affected_deprecations)
-
-    provider_override_lambda = os.environ.get("PROVIDER_OVERRIDE_LAMBDA")
-    if provider_override_lambda and provider_override_lambda in ["v1", "legacy"]:
-        env_var_value = f"PROVIDER_OVERRIDE_LAMBDA={provider_override_lambda}"
-        deprecation_version = "2.0.0"
-        # TODO[LambdaV1] adjust message or convert into generic deprecation for PROVIDER_OVERRIDE_LAMBDA
-        deprecation_path = (
-            f"Remove {env_var_value} to use the new Lambda 'v2' provider (current default). "
-            "For more details, refer to our Lambda migration guide "
-            "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2"
-        )
-        LOG.warning(
-            "%s is deprecated (since %s) and will be removed in upcoming releases of LocalStack! %s",
-            env_var_value,
-            deprecation_version,
-            deprecation_path,
-        )
 
 
 def deprecated_endpoint(

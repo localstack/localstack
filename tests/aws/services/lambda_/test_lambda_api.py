@@ -26,7 +26,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
-from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
+from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
@@ -68,7 +68,6 @@ def environment_length_bytes(e: dict) -> int:
     return string_length_bytes(serialized_environment)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaFunction:
     @markers.snapshot.skip_snapshot_verify(
         # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
@@ -685,7 +684,6 @@ class TestLambdaFunction:
         )
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaImages:
     @pytest.fixture(scope="class")
     def login_docker_client(self, aws_client):
@@ -974,7 +972,6 @@ class TestLambdaImages:
         snapshot.match("second_publish_response", second_publish_response)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaVersions:
     @markers.aws.validated
     def test_publish_version_on_create(
@@ -1182,7 +1179,6 @@ class TestLambdaVersions:
         snapshot.match("get_function_latest_result", get_function_latest_result)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaAlias:
     @markers.aws.validated
     def test_alias_lifecycle(
@@ -1516,7 +1512,6 @@ class TestLambdaAlias:
         snapshot.match("alias_does_not_exist_esc", e.value.response)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaRevisions:
     @markers.snapshot.skip_snapshot_verify(
         # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
@@ -1757,7 +1752,6 @@ class TestLambdaRevisions:
         assert rev3_added_permission != rev4_removed_permission
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaTag:
     @pytest.fixture(scope="function")
     def fn_arn(self, create_lambda_function, aws_client):
@@ -1874,31 +1868,6 @@ class TestLambdaTag:
         snapshot.match("not_found_exception_list", e.value.response)
 
 
-# some more common ones that usually don't work in the old provider
-pytestmark = markers.snapshot.skip_snapshot_verify(
-    condition=is_old_provider,
-    paths=[
-        "$..Architectures",
-        "$..EphemeralStorage",
-        "$..LastUpdateStatus",
-        "$..MemorySize",
-        "$..State",
-        "$..StateReason",
-        "$..StateReasonCode",
-        "$..VpcConfig",
-        "$..CodeSigningConfig",
-        "$..Environment",  # missing
-        "$..HTTPStatusCode",  # 201 vs 200
-        "$..Layers",
-        "$..RuntimeVersionConfig",
-        "$..SnapStart",
-        "$..CreateFunctionResponse.RuntimeVersionConfig",
-        "$..CreateFunctionResponse.SnapStart",
-    ],
-)
-
-
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaEventInvokeConfig:
     """TODO: add sqs & stream specific lifecycle snapshot tests"""
 
@@ -2351,10 +2320,8 @@ class TestLambdaEventInvokeConfig:
 # Against AWS, these tests might require increasing the service quota for concurrent executions (e.g., 10 => 101):
 # https://us-east-1.console.aws.amazon.com/servicequotas/home/services/lambda/quotas/L-B99A9384
 # New accounts in an organization have by default a quota of 10 or 50.
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaReservedConcurrency:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     def test_function_concurrency_exceptions(
         self, create_lambda_function, snapshot, aws_client, monkeypatch
     ):
@@ -2437,7 +2404,6 @@ class TestLambdaReservedConcurrency:
         snapshot.match("put_function_concurrency_below_unreserved_min_value", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     def test_function_concurrency(self, create_lambda_function, snapshot, aws_client, monkeypatch):
         """Testing the api of the put function concurrency action"""
         # A lower limits (e.g., 11) could work if the minium unreservered concurrency is lower as well
@@ -2494,7 +2460,6 @@ class TestLambdaReservedConcurrency:
         )
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaProvisionedConcurrency:
     # TODO: test ARN
     # TODO: test shorthand ARN
@@ -2810,20 +2775,7 @@ class TestLambdaProvisionedConcurrency:
         snapshot.match("list_response_postdeletes", list_response_postdeletes)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_old_provider,
-    paths=[
-        "$..RevisionId",
-        "$..Policy.Statement",
-        "$..PolicyName",
-        "$..PolicyArn",
-        "$..Layers",
-        # mismatching resource index due to SnapStart
-        "$..Statement.Condition.ArnLike.'AWS:SourceArn'",
-    ],
-)
 class TestLambdaPermissions:
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @markers.aws.validated
     def test_permission_exceptions(self, create_lambda_function, account_id, snapshot, aws_client):
         function_name = f"lambda_func-{short_uid()}"
@@ -3014,7 +2966,6 @@ class TestLambdaPermissions:
         get_policy_result = aws_client.lambda_.get_policy(FunctionName=function_name)
         snapshot.match("get_policy", get_policy_result)
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @markers.aws.validated
     def test_lambda_permission_fn_versioning(
         self, create_lambda_function, account_id, snapshot, aws_client
@@ -3135,7 +3086,6 @@ class TestLambdaPermissions:
         get_policy_result_adding_2 = aws_client.lambda_.get_policy(FunctionName=function_name)
         snapshot.match("get_policy_after_adding_2", get_policy_result_adding_2)
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @markers.aws.validated
     def test_add_lambda_permission_fields(
         self, create_lambda_function, account_id, snapshot, aws_client
@@ -3220,7 +3170,6 @@ class TestLambdaPermissions:
         )
         snapshot.match("add_permission_alexa_skill", response)
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @markers.aws.validated
     def test_remove_multi_permissions(self, create_lambda_function, snapshot, aws_client):
         """Tests creation and subsequent removal of multiple permissions, including the changes in the policy"""
@@ -3328,7 +3277,6 @@ class TestLambdaPermissions:
 
 
 class TestLambdaUrl:
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @markers.aws.validated
     def test_url_config_exceptions(self, create_lambda_function, snapshot, aws_client):
         """
@@ -3459,7 +3407,6 @@ class TestLambdaUrl:
             AuthType="AWS_IAM",
         )
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @markers.aws.validated
     def test_url_config_list_paging(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
@@ -3581,7 +3528,6 @@ class TestLambdaSizeLimits:
         py_str += "#" * (size - len(py_str))
         return py_str
 
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     @markers.aws.validated
     def test_oversized_request_create_lambda(self, lambda_su_role, snapshot, aws_client):
         function_name = f"test_lambda_{short_uid()}"
@@ -3727,20 +3673,6 @@ class TestLambdaSizeLimits:
         assert exc.match("ResourceNotFoundException")
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..CodeSha256",
-            "$..EphemeralStorage",
-            "$..LastUpdateStatus",
-            "$..MemorySize",
-            "$..ResponseMetadata",
-            "$..State",
-            "$..StateReason",
-            "$..StateReasonCode",
-            "$..VpcConfig",
-        ],
-    )
     def test_lambda_envvars_near_limit_succeeds(self, create_lambda_function, snapshot, aws_client):
         """Lambda functions with environments less than or equal to 4 KB can be created."""
         snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -3769,7 +3701,6 @@ class TestLambdaSizeLimits:
 
 # TODO: test paging
 # TODO: test function name / ARN resolving
-@pytest.mark.skipif(condition=is_old_provider(), reason="not implemented")
 class TestCodeSigningConfig:
     @markers.aws.validated
     def test_function_code_signing_config(
@@ -3941,7 +3872,6 @@ class TestCodeSigningConfig:
         snapshot.match("list_functions_by_csc_invalid_cscarn", e.value.response)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not implemented")
 class TestLambdaAccountSettings:
     @markers.aws.validated
     def test_account_settings(self, snapshot, aws_client):
@@ -4118,7 +4048,6 @@ class TestLambdaAccountSettings:
 
 
 class TestLambdaEventSourceMappings:
-    @pytest.mark.skipif(condition=is_old_provider(), reason="new provider only")
     @markers.aws.validated
     def test_event_source_mapping_exceptions(self, snapshot, aws_client):
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
@@ -4153,18 +4082,6 @@ class TestLambdaEventSourceMappings:
         # TODO: add test for event source arn == failure destination
         # TODO: add test for adding success destination
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..BisectBatchOnFunctionError",
-            "$..FunctionResponseTypes",
-            "$..LastProcessingResult",
-            "$..MaximumBatchingWindowInSeconds",
-            "$..MaximumRecordAgeInSeconds",
-            "$..Topics",
-            "$..TumblingWindowInSeconds",
-        ],
-    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # all dynamodb service issues not related to lambda
@@ -4248,7 +4165,6 @@ class TestLambdaEventSourceMappings:
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="new provider only")
     @markers.aws.validated
     def test_create_event_source_validation(
         self, create_lambda_function, lambda_su_role, dynamodb_create_table, snapshot, aws_client
@@ -4279,7 +4195,6 @@ class TestLambdaEventSourceMappings:
         snapshot.match("error", response)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not correctly supported")
 class TestLambdaTags:
     @markers.aws.validated
     def test_tag_exceptions(self, create_lambda_function, snapshot, account_id, aws_client):
@@ -4473,7 +4388,6 @@ class TestLambdaTags:
 
 # TODO: add more tests where layername can be an ARN
 # TODO: test if function has to be in same region as layer
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaLayer:
     @markers.aws.validated
     # AWS only allows a max of 15 compatible runtimes, split runtimes and run two tests
@@ -5130,7 +5044,6 @@ class TestLambdaLayer:
         )
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaSnapStart:
     @markers.aws.validated
     @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17])

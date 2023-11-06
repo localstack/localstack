@@ -92,40 +92,6 @@ jobs:
           paths:
             - repo/target/coverage/
 
-  itest-lambda-legacy-local:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - run:
-          # legacy tests are executed locally, new runners ship with Java 17, downgrade to Java 11 for stepfunctions
-          name: Install OpenJDK 11
-          command: |
-            sudo apt-get update && sudo apt-get install openjdk-11-jdk
-            sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java
-            sudo update-alternatives --set javac /usr/lib/jvm/java-11-openjdk-amd64/bin/javac
-            java -version
-      - run:
-          name: Test 'local' Lambda executor
-          environment:
-            LAMBDA_EXECUTOR: "local"
-            PROVIDER_OVERRIDE_LAMBDA: "legacy"
-            TEST_PATH: "tests/aws/services/lambda_/ tests/aws/test_integration.py tests/aws/services/apigateway/test_apigateway_basic.py tests/aws/services/cloudformation/resources/test_lambda.py"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.lambdav1.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   itest-sfn-v2-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -514,9 +480,6 @@ workflows:
       - acceptance-tests:
           requires:
             - preflight
-      - itest-lambda-legacy-local:
-          requires:
-            - preflight
       - itest-sfn-v2-provider:
           requires:
             - preflight
@@ -565,7 +528,6 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-lambda-legacy-local
             - itest-sfn-v2-provider
             - itest-s3-v2-legacy-provider
             - acceptance-tests
@@ -578,7 +540,6 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-lambda-legacy-local
             - itest-sfn-v2-provider
             - itest-s3-v2-legacy-provider
             - acceptance-tests
