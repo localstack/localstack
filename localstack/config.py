@@ -596,10 +596,6 @@ class UniqueHostAndPortList(List[HostAndPort]):
         super().append(value)
 
 
-def default_gateway_listen() -> List[HostAndPort]:
-    return [HostAndPort(host=default_ip, port=constants.DEFAULT_PORT_EDGE)]
-
-
 def populate_legacy_edge_configuration(
     environment: Mapping[str, str]
 ) -> Tuple[HostAndPort, UniqueHostAndPortList, int]:
@@ -637,7 +633,7 @@ def populate_legacy_edge_configuration(
             )
     else:
         # use default if gateway listen is not defined
-        gateway_listen = default_gateway_listen()
+        gateway_listen = [HostAndPort(host=default_ip, port=localstack_host_port)]
 
     # the actual value of the LOCALSTACK_HOST port now depends on what gateway listen actually listens to.
     if localstack_host_raw is None:
