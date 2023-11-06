@@ -4269,9 +4269,7 @@ class TestS3:
             response = aws_client.s3.create_bucket(
                 Bucket=bucket_2,
                 CreateBucketConfiguration={
-                    "LocationConstraint": "us-east-2"
-                    if TEST_AWS_REGION_NAME != "us-east-2"
-                    else "us-west-2"
+                    "LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME,
                 },
             )
             snapshot.match("create_bucket_location_constraint", response)
