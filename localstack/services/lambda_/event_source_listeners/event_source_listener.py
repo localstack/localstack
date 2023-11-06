@@ -21,29 +21,6 @@ class EventSourceListener(SubtypesInstanceManager):
         pass
 
     @staticmethod
-    def start_listeners(event_source_mapping: Dict):
-        # force import EventSourceListener subclasses
-        # otherwise they will not be detected by EventSourceListener.get(service_type)
-        from . import (
-            dynamodb_event_source_listener,  # noqa: F401
-            kinesis_event_source_listener,  # noqa: F401
-            sqs_event_source_listener,  # noqa: F401
-        )
-
-        source_arn = event_source_mapping.get("EventSourceArn") or ""
-        parts = source_arn.split(":")
-        service_type = parts[2] if len(parts) > 2 else ""
-        if not service_type:
-            self_managed_endpoints = event_source_mapping.get("SelfManagedEventSource", {}).get(
-                "Endpoints", {}
-            )
-            if self_managed_endpoints.get("KAFKA_BOOTSTRAP_SERVERS"):
-                service_type = "kafka"
-        instance = EventSourceListener.get(service_type, raise_if_missing=False)
-        if instance:
-            instance.start()
-
-    @staticmethod
     def start_listeners_for_asf(event_source_mapping: Dict, lambda_service: LambdaService):
         """limited version of start_listeners for the new provider during migration"""
         # force import EventSourceListener subclasses
