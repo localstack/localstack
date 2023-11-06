@@ -138,9 +138,6 @@ LOCALSTACK_INFRA_PROCESS = "LOCALSTACK_INFRA_PROCESS"
 # AWS region us-east-1
 AWS_REGION_US_EAST_1 = "us-east-1"
 
-# default lambda registry
-DEFAULT_LAMBDA_CONTAINER_REGISTRY = "lambci/lambda"
-
 # environment variable to override max pool connections
 try:
     MAX_POOL_CONNECTIONS = int(os.environ["MAX_POOL_CONNECTIONS"])
