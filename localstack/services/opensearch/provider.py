@@ -117,6 +117,12 @@ DEFAULT_OPENSEARCH_CLUSTER_CONFIG = ClusterConfig(
     DedicatedMasterCount=1,
 )
 
+DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS = DomainEndpointOptions(
+    EnforceHTTPS=False,
+    TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
+    CustomEndpointEnabled=False,
+)
+
 
 def cluster_manager() -> ClusterManager:
     global __CLUSTER_MANAGER
@@ -355,18 +361,13 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             AutomatedUpdateDate=datetime.fromtimestamp(0, tz=timezone.utc),
             OptionalDeployment=True,
         ),
-        DomainEndpointOptions=DomainEndpointOptions(
-            EnforceHTTPS=False,
-            TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
-            CustomEndpointEnabled=False,
-        ),
+        DomainEndpointOptions=stored_status.get("DomainEndpointOptions")
+        or DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS,
         AdvancedSecurityOptions=AdvancedSecurityOptions(
             Enabled=False, InternalUserDatabaseEnabled=False
         ),
         AutoTuneOptions=AutoTuneOptionsOutput(State=AutoTuneState.ENABLE_IN_PROGRESS),
     )
-    if stored_status.get("Endpoint"):
-        new_status["Endpoint"] = new_status.get("Endpoint")
     return new_status
 
 
@@ -398,6 +399,20 @@ _domain_name_pattern = re.compile(r"[a-z][a-z0-9\\-]{3,28}")
 
 def is_valid_domain_name(name: str) -> bool:
     return True if _domain_name_pattern.match(name) else False
+
+
+def validate_endpoint_options(endpoint_options: DomainEndpointOptions):
+    custom_endpoint = endpoint_options.get("CustomEndpoint", "")
+    custom_endpoint_enabled = endpoint_options.get("CustomEndpointEnabled", False)
+
+    if custom_endpoint and not custom_endpoint_enabled:
+        raise ValidationException(
+            "CustomEndpointEnabled flag should be set in order to use CustomEndpoint."
+        )
+    if custom_endpoint_enabled and not custom_endpoint:
+        raise ValidationException(
+            "Please provide CustomEndpoint field to create a custom endpoint."
+        )
 
 
 class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
@@ -485,6 +500,9 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
                 "Member must satisfy regular expression pattern: [a-z][a-z0-9\\-]+"
             )
 
+        if domain_endpoint_options:
+            validate_endpoint_options(domain_endpoint_options)
+
         with _domain_mutex:
             if domain_name in store.opensearch_domains:
                 raise ResourceAlreadyExistsException(
@@ -499,6 +517,10 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
 
             # "create" domain data
             store.opensearch_domains[domain_name] = get_domain_status(domain_key)
+            if domain_endpoint_options:
+                store.opensearch_domains[domain_name]["DomainEndpointOptions"] = (
+                    DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS | domain_endpoint_options
+                )
 
             # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
             # TODO handle additional parameters (cluster config,...)
