@@ -1209,6 +1209,9 @@ CONFIG_ENV_VARS = [
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
     # Removed in 3.0.0
+    "EDGE_BIND_HOST",  # deprecated since 2.0.0
+    "EDGE_PORT",  # deprecated since 2.0.0
+    "EDGE_PORT_HTTP",  # deprecated since 2.0.0
     "LAMBDA_XRAY_INIT",  # deprecated since 2.0.0
     "LAMBDA_CODE_EXTRACT_TIME",  # deprecated since 2.0.0
     "LAMBDA_CONTAINER_REGISTRY",  # deprecated since 2.0.0
