@@ -156,9 +156,7 @@ class TestEdgeVariablesDerivedCorrectly:
         (
             ls_host,
             gateway_listen,
-            edge_bind_host,
             edge_port,
-            edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
         assert ls_host == HostAndPort(host="foobar", port=1234)
@@ -169,9 +167,7 @@ class TestEdgeVariablesDerivedCorrectly:
         (
             ls_host,
             gateway_listen,
-            edge_bind_host,
             edge_port,
-            edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
         assert ls_host == HostAndPort(host="localhost.localstack.cloud", port=1234)
@@ -182,9 +178,7 @@ class TestEdgeVariablesDerivedCorrectly:
         (
             ls_host,
             gateway_listen,
-            edge_bind_host,
             edge_port,
-            edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
         assert ls_host == HostAndPort(host="foobar", port=5555)
