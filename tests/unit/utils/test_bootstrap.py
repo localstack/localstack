@@ -102,6 +102,14 @@ class TestGetEnabledApis:
 
         assert result == set(SERVICE_PLUGINS.list_available())
 
+    def test_strict_service_loading_disabled(self):
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        with temporary_env({"STRICT_SERVICE_LOADING": "0", "SERVICES": "s3,sqs"}):
+            result = get_enabled_apis()
+
+        assert result == set(SERVICE_PLUGINS.list_available())
+
     def test_with_service_subset(self):
         with temporary_env({"SERVICES": "s3,sqs", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
