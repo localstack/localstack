@@ -230,23 +230,6 @@ class TestSNSTopicCrud:
         topic1 = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "abc"}])
         snapshot.match("topic-1", topic1)
 
-    @markers.aws.validated
-    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
-
-        snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
-
-        snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
-
-        snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
-
 
 class TestSNSPublishCrud:
     """
@@ -832,6 +815,39 @@ class TestSNSSubscriptionCrud:
                 }
             )
         snapshot.match("subscribe-diff-attributes", e.value.response)
+
+    @markers.aws.validated
+    def test_unsubscribe_idempotency(
+        self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
+    ):
+        topic_name = f"topic-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        sub_arn = subscription["SubscriptionArn"]
+
+        unsubscribe_1 = aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
+        snapshot.match("unsubscribe-1", unsubscribe_1)
+        unsubscribe_2 = aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
+        snapshot.match("unsubscribe-2", unsubscribe_2)
+
+    @markers.aws.validated
+    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
+
+        snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
+
+        snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
+
+        snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
 
 
 class TestSNSSubscriptionLambda:

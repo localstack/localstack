@@ -4674,7 +4674,7 @@
       }
     }
   },
-  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_unsubscribe_wrong_arn_format": {
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_wrong_arn_format": {
     "recorded-date": "20-10-2023, 12:52:36",
     "recorded-content": {
       "invalid-unsubscribe-arn-1": {
@@ -4708,6 +4708,23 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_idempotency": {
+    "recorded-date": "07-11-2023, 00:36:06",
+    "recorded-content": {
+      "unsubscribe-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "unsubscribe-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

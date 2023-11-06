@@ -66,6 +66,7 @@ from localstack.utils.aws.arns import (
     extract_region_from_arn,
     parse_arn,
 )
+from localstack.utils.bootstrap import log_duration
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -129,7 +130,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # see the attributes we need: https://docs.aws.amazon.com/sns/latest/dg/sns-topic-attributes.html
         # would need more work to have the proper format out of moto, maybe extract the model to our store
         for attr in vars(moto_topic_model):
-            if "success_feedback" in attr:
+            if "_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
                 moto_response["Attributes"][key] = getattr(moto_topic_model, attr)
             elif attr == "signature_version":
@@ -221,10 +222,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 success["SequenceNumber"] = msg_ctx.sequencer_number
             response["Successful"].append(success)
 
+        moto_topic = self._get_topic(topic_arn, context)
         publish_ctx = SnsBatchPublishContext(
             messages=message_contexts,
             store=store,
             request_headers=context.request.headers,
+            topic_attributes=vars(moto_topic),
         )
         self._publisher.publish_batch_to_topic(publish_ctx, topic_arn)
 
@@ -358,21 +361,23 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
         count = len(subscription_arn.split(":"))
+        if count < 6:
+            raise InvalidParameterException(
+                f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}"
+            )
         try:
             parsed_arn = parse_arn(subscription_arn)
         except InvalidArnException:
             # TODO: check for invalid SubscriptionGUID
-            if count < 6:
-                raise InvalidParameterException(
-                    f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}"
-                )
+            raise InvalidParameterException(
+                f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}"
+            )
 
         account_id = parsed_arn["account"]
         region_name = parsed_arn["region"]
 
         store = self.get_store(account_id=account_id, region_name=region_name)
-
-        if count == 6 and subscription_arn not in store.topic_subscriptions:
+        if count == 6 and subscription_arn not in store.subscriptions:
             raise InvalidParameterException("Invalid parameter: SubscriptionId")
 
         moto_sns_backend = self.get_moto_backend(account_id, region_name)
@@ -394,8 +399,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 token=subscription_token,
                 message=f"You have chosen to deactivate subscription {subscription_arn}.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
             )
+            moto_topic = moto_sns_backend.topics.get(subscription["TopicArn"])
             publish_ctx = SnsPublishContext(
-                message=message_ctx, store=store, request_headers=context.request.headers
+                message=message_ctx,
+                store=store,
+                request_headers=context.request.headers,
+                topic_attributes=vars(moto_topic),
             )
             self._publisher.publish_to_topic_subscriber(
                 publish_ctx,
@@ -423,6 +432,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attributes = {k: v for k, v in sub.items() if k not in removed_attrs}
         return GetSubscriptionAttributesResponse(Attributes=attributes)
 
+    @log_duration(min_ms=0)
     def publish(
         self,
         context: RequestContext,
@@ -454,14 +464,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # for compatibility reasons, AWS allows users to use either TargetArn or TopicArn for publishing to a topic
         # use any of them for topic validation
         topic_or_target_arn = topic_arn or target_arn
+        topic_model = None
 
         if is_fifo := (topic_or_target_arn and ".fifo" in topic_or_target_arn):
             if not message_group_id:
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
-            topic = self._get_topic(topic_or_target_arn, context)
-            if topic.content_based_deduplication == "false":
+            topic_model = self._get_topic(topic_or_target_arn, context)
+            if topic_model.content_based_deduplication == "false":
                 if not message_deduplication_id:
                     raise InvalidParameterException(
                         "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
@@ -514,6 +525,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     raise NotFoundException(
                         "Topic does not exist",
                     )
+                topic_model = moto_sns_backend.topics.get(topic_or_target_arn)
         else:
             # use the store from the request context
             store = self.get_store(account_id=context.account_id, region_name=context.region)
@@ -542,6 +554,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # beware if the subscription is FIFO, the order might not be guaranteed.
             # 2 quick call to this method in succession might not be executed in order in the executor?
             # TODO: test how this behaves in a FIFO context with a lot of threads.
+            publish_ctx.topic_attributes |= vars(topic_model)
             self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn)
 
         if is_fifo:
@@ -656,7 +669,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 message=f"You have chosen to subscribe to the topic {topic_arn}.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
             )
             publish_ctx = SnsPublishContext(
-                message=message_ctx, store=store, request_headers=context.request.headers
+                message=message_ctx,
+                store=store,
+                request_headers=context.request.headers,
+                topic_attributes=vars(self._get_topic(topic_arn, context)),
             )
             self._publisher.publish_to_topic_subscriber(
                 ctx=publish_ctx,
