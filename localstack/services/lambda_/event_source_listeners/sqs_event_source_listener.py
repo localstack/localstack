@@ -6,16 +6,15 @@ from typing import Dict, List, Optional
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.services.lambda_.event_source_listeners.adapters import (
     EventSourceAdapter,
-    EventSourceLegacyAdapter,
 )
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
+from localstack.services.lambda_.event_source_listeners.lambda_legacy import LegacyInvocationResult
 from localstack.services.lambda_.event_source_listeners.utils import (
     filter_stream_records,
     message_attributes_to_lower,
 )
-from localstack.services.lambda_.legacy.lambda_executors import InvocationResult
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.threads import FuncThread
@@ -35,7 +34,10 @@ class SQSEventSourceListener(EventSourceListener):
         return "sqs"
 
     def start(self, invoke_adapter: Optional[EventSourceAdapter] = None):
-        self._invoke_adapter = invoke_adapter or EventSourceLegacyAdapter()
+        self._invoke_adapter = invoke_adapter
+        if self._invoke_adapter is None:
+            LOG.error("Invoke adapter needs to be set for new Lambda provider. Aborting.")
+            raise Exception("Invoke adapter not set ")
 
         if self.SQS_LISTENER_THREAD:
             return
@@ -133,7 +135,7 @@ class SQSEventSourceListener(EventSourceListener):
     ) -> None:
         records = []
 
-        def delete_messages(result: InvocationResult, func_arn, event, error=None, **kwargs):
+        def delete_messages(result: LegacyInvocationResult, func_arn, event, error=None, **kwargs):
             if error:
                 # Skip deleting messages from the queue in case of processing errors. We'll pick them up and retry
                 # next time they become visible in the queue. Redrive policies will be handled automatically by SQS
@@ -248,7 +250,9 @@ class SQSEventSourceListener(EventSourceListener):
         )
 
 
-def parse_batch_item_failures(result: InvocationResult, valid_message_ids: List[str]) -> List[str]:
+def parse_batch_item_failures(
+    result: LegacyInvocationResult, valid_message_ids: List[str]
+) -> List[str]:
     """
     Parses a lambda responses as a partial batch failure response, that looks something like this::
 

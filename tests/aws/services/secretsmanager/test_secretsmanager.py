@@ -19,7 +19,6 @@ from localstack.aws.api.secretsmanager import (
     ListSecretsResponse,
 )
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
@@ -321,7 +320,8 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
 
-    @pytest.mark.skipif(condition=is_new_provider(), reason="needs lambda usage rework")
+    # TODO: validate against AWS, then check against new lambda provider
+    @pytest.mark.skipif(reason="needs lambda usage rework")
     @markers.aws.unknown
     def test_rotate_secret_with_lambda_1(
         self, secret_name, create_secret, create_lambda_function, aws_client
@@ -350,7 +350,8 @@ class TestSecretsManager:
 
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    @pytest.mark.skipif(condition=is_new_provider(), reason="needs lambda usage rework")
+    # TODO: validate against AWS, then check against new lambda provider
+    @pytest.mark.skipif(reason="needs lambda usage rework")
     @markers.aws.unknown
     def test_rotate_secret_with_lambda_2(
         self, secret_name, create_lambda_function, create_secret, aws_client

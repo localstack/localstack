@@ -16,7 +16,6 @@ from botocore.auth import SigV4Auth
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.strings import short_uid
 
@@ -201,7 +200,6 @@ class TestSQS:
 
 
 class TestLambda:
-    @pytest.mark.skipif(condition=is_old_provider(), reason="Not implemented for legacy provider")
     @markers.aws.only_localstack
     def test_function_url(self, assert_host_customisation, create_lambda_function, aws_client):
         function_name = f"function-{short_uid()}"
@@ -222,7 +220,7 @@ class TestLambda:
 
         assert_host_customisation(function_url)
 
-    @pytest.mark.skipif(condition=is_new_provider(), reason="Not implemented for new provider")
+    @pytest.mark.skipif(reason="Not implemented for new provider (was tested for old provider)")
     @markers.aws.only_localstack
     def test_http_api_for_function_url(
         self, assert_host_customisation, create_lambda_function, aws_http_client_factory
