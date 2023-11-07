@@ -105,6 +105,55 @@ class TestCloudwatch:
         assert namespace == rs["Metrics"][0]["Namespace"]
 
     @markers.aws.validated
+    def test_put_metric_data_validation(self, aws_client):
+        metric_name = "test-metric"
+        namespace = f"ns-{short_uid()}"
+        utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+
+        # test invalid due to having both Values and Value
+        with pytest.raises(Exception) as ex:
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": "mymetric",
+                        "Timestamp": utc_now,
+                        "Value": 1.5,
+                        "Values": [1.0, 10.0],
+                        "Unit": "Count",
+                    }
+                ],
+            )
+        err = ex.value.response["Error"]
+        assert err["Code"] == "InvalidParameterCombination"
+        assert (
+                err["Message"]
+                == "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both."
+        )
+
+        # test invalid due to data can not have and values mismatched_counts
+        with pytest.raises(Exception) as ex:
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": "mymetric",
+                        "Timestamp": utc_now,
+                        "Values": [1.0, 10.0],
+                        "Counts": [2, 4, 5],
+                        "Unit": "Count",
+                    }
+                ],
+            )
+        err = ex.value.response["Error"]
+        assert err["Code"] == "InvalidParameterValue"
+        assert (
+                err["Message"]
+                == "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size."
+        )
+
+
+    @markers.aws.validated
     def test_get_metric_data(self, aws_client):
         namespace1 = f"test/{short_uid()}"
         namespace2 = f"test/{short_uid()}"

@@ -78,39 +78,55 @@ class CloudwatchDatabase:
             )  # TODO check if we need to set timeout higher, testing with 20 seconds
             cur = conn.cursor()
 
-            def _get_current_timestamp_utc():  # TODO verify if this is the standard format, might need to convert
+            def _get_current_unix_timestamp_utc():
                 now = datetime.utcnow().replace(tzinfo=timezone.utc)
                 return int(now.timestamp())
 
             for metric in metric_data:
+                unix_timestamp = (
+                    self._convert_timestamp_to_unix(metric.get("Timestamp"))
+                    if metric.get("Timestamp")
+                    else _get_current_unix_timestamp_utc
+                )
+
+                inserts = []
                 if metric.get("Value"):
-                    # TODO convert timestamp
-                    # TODO convert dimensions
-                    timestamp = (
-                        self._convert_timestamp_to_unix(metric.get("Timestamp"))
-                        if metric.get("Timestamp")
-                        else _get_current_timestamp_utc()
-                    )
+                    inserts.append({"Value": metric.get("Value"), "TimesToInsert": 1})
+                elif metric.get("Values"):
+                    inserts = [{"Value": value, "TimesToInsert": metric.get("Counts")[indexValue]} for indexValue,value in enumerate(metric.get("Values"))]
+
+                for insert in inserts:
+                    for _ in range(insert.get("TimesToInsert")):
+                        cur.execute(self._get_insert_single_metric_query(),(
+                            account_id,
+                            region,
+                            metric.get("MetricName"),
+                            namespace,
+                            unix_timestamp,
+                            self._get_ordered_dimensions_with_separator(metric.get("Dimensions")),
+                            metric.get("Unit"),
+                            metric.get("StorageResolution"),
+                            insert.get("Value"),
+                        ))
+
+                if statistic_values := metric.get("StatisticValues"):
                     cur.execute(
-                        f"""INSERT INTO {self.TABLE_SINGLE_METRICS}
-                        ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "value")
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        self._get_insert_aggregated_metric_query(),
                         (
                             account_id,
                             region,
                             metric.get("MetricName"),
                             namespace,
-                            timestamp,
+                            unix_timestamp,
                             self._get_ordered_dimensions_with_separator(metric.get("Dimensions")),
                             metric.get("Unit"),
                             metric.get("StorageResolution"),
-                            metric["Value"],
-                        ),
+                            statistic_values.get("SampleCount"),
+                            statistic_values.get("Sum"),
+                            statistic_values.get("Minimum"),
+                            statistic_values.get("Maximum")
+                        )
                     )
-                elif metric.get("Values"):
-                    pass
-                elif metric.get("StatisticValues"):
-                    pass
 
             conn.commit()
 
@@ -242,3 +258,13 @@ class CloudwatchDatabase:
         self, timestamp: datetime
     ):  # TODO verify if this is the standard format, might need to convert
         return int(timestamp.timestamp())
+
+    def _get_insert_single_metric_query(self):
+        return f"""INSERT INTO {self.TABLE_SINGLE_METRICS}
+                    ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "value")
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+    def _get_insert_aggregated_metric_query(self, account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution, sample_count, sum, min, max):
+        return f"""INSERT INTO {self.TABLE_AGGREGATED_METRICS}
+                    ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "sample_count", "sum", "min", "max")
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"""

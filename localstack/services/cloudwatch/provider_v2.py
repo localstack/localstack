@@ -22,6 +22,7 @@ from localstack.aws.api.cloudwatch import (
     GetMetricDataMaxDatapoints,
     GetMetricDataOutput,
     IncludeLinkedAccounts,
+    InvalidParameterCombinationException,
     InvalidParameterValueException,
     LabelOptions,
     ListDashboardsOutput,
@@ -72,6 +73,23 @@ class ValidationError(CommonServiceException):
     # TODO: check this error against AWS (doesn't exist in the API)
     def __init__(self, message: str):
         super().__init__("ValidationError", message, 400, True)
+
+
+def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
+    for index, metric_item in enumerate(metric_data):
+        indexplusone = index + 1
+        if metric_item.get("Value") and metric_item.get("Values"):
+            raise InvalidParameterCombinationException(
+                f"The parameters MetricData.member.{indexplusone}.Value and MetricData.member.{indexplusone}.Values are mutually exclusive and you have specified both."
+            )
+
+        if (values := metric_item.get("Values")) and (counts := metric_item.get("Counts")):
+            if len(values) != len(counts):
+                raise InvalidParameterValueException(
+                    f"The parameters MetricData.member.{indexplusone}.Values and MetricData.member.{indexplusone}.Counts must be of the same size."
+                )
+
+        # TODO: check for other validations
 
 
 class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
@@ -141,7 +159,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def put_metric_data(
         self, context: RequestContext, namespace: Namespace, metric_data: MetricData
     ) -> None:
-        # TODO add validation
+        _validate_parameters_for_put_metric_data(metric_data)
+
         self.cloudwatch_database.add_metric_data(
             context.account_id, context.region, namespace, metric_data
         )
