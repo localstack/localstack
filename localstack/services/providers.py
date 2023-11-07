@@ -319,7 +319,7 @@ def events():
 
 @aws_provider()
 def stepfunctions():
-    from localstack.services.stepfunctions.provider_v2 import StepFunctionsProvider
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
     return Service.for_provider(provider)
@@ -327,7 +327,7 @@ def stepfunctions():
 
 @aws_provider(api="stepfunctions", name="v2")
 def stepfunctions_v2():
-    from localstack.services.stepfunctions.provider_v2 import StepFunctionsProvider
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
     return Service.for_provider(provider)
