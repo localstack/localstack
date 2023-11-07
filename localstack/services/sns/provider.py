@@ -66,7 +66,6 @@ from localstack.utils.aws.arns import (
     extract_region_from_arn,
     parse_arn,
 )
-from localstack.utils.bootstrap import log_duration
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -432,7 +431,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attributes = {k: v for k, v in sub.items() if k not in removed_attrs}
         return GetSubscriptionAttributesResponse(Attributes=attributes)
 
-    @log_duration(min_ms=0)
     def publish(
         self,
         context: RequestContext,
