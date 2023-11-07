@@ -1844,9 +1844,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # create function URL config
         url_id = api_utils.generate_random_url_id()
 
-        host_definition = localstack_host(
-            custom_port=config.EDGE_PORT_HTTP or config.GATEWAY_LISTEN[0].port
-        )
+        host_definition = localstack_host(custom_port=config.GATEWAY_LISTEN[0].port)
         fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(
             function_arn=function_arn,
             function_name=function_name,
