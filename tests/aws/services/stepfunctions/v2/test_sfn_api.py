@@ -3,7 +3,6 @@ import json
 import pytest
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.aws.api.stepfunctions import StateMachineType
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
@@ -13,14 +12,8 @@ from tests.aws.services.stepfunctions.utils import (
     await_execution_aborted,
     await_execution_started,
     await_execution_success,
-    await_no_state_machines_listed,
     await_state_machine_listed,
     await_state_machine_not_listed,
-    is_old_provider,
-)
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
 )
 
 
@@ -244,11 +237,6 @@ class TestSnfApi:
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
 
-        await_no_state_machines_listed(stepfunctions_client=aws_client.stepfunctions)
-
-        lst_resp = aws_client.stepfunctions.list_state_machines()
-        sfn_snapshot.match("lst_resp_init", lst_resp)
-
         sm_names = [
             f"statemachine_1_{short_uid()}",
             f"statemachine_2_{short_uid()}",
@@ -261,7 +249,6 @@ class TestSnfApi:
                 name=sm_name,
                 definition=definition_str,
                 roleArn=snf_role_arn,
-                type=StateMachineType.EXPRESS,
             )
             sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, i))
             sfn_snapshot.match(f"creation_resp_{i}", creation_resp)
@@ -271,8 +258,10 @@ class TestSnfApi:
             await_state_machine_listed(
                 stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
             )
-            lst_resp = aws_client.stepfunctions.list_state_machines()
-            sfn_snapshot.match(f"lst_resp_{i}", lst_resp)
+
+        lst_resp = aws_client.stepfunctions.list_state_machines()
+        lst_resp_filter = [sm for sm in lst_resp["stateMachines"] if sm["name"] in sm_names]
+        sfn_snapshot.match("lst_resp_filter", lst_resp_filter)
 
         for i, state_machine_arn in enumerate(state_machine_arns):
             deletion_resp = aws_client.stepfunctions.delete_state_machine(
@@ -284,11 +273,9 @@ class TestSnfApi:
                 stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
             )
 
-            lst_resp = aws_client.stepfunctions.list_state_machines()
-            sfn_snapshot.match(f"lst_resp_del_{i}", lst_resp)
-
         lst_resp = aws_client.stepfunctions.list_state_machines()
-        sfn_snapshot.match("lst_resp_del_end", lst_resp)
+        lst_resp_filter = [sm for sm in lst_resp["stateMachines"] if sm["name"] in sm_names]
+        sfn_snapshot.match("lst_resp_del_filter", lst_resp_filter)
 
     @markers.aws.needs_fixing
     def test_start_execution(

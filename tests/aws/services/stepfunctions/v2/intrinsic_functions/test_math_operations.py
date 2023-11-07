@@ -1,21 +1,13 @@
 import json
 
-import pytest
-
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.intrinsicfunctions.intrinsic_functions_templates import (
     IntrinsicFunctionTemplate as IFT,
 )
-from tests.aws.services.stepfunctions.utils import await_execution_success, is_old_provider
+from tests.aws.services.stepfunctions.utils import await_execution_success
 from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create_and_test_on_inputs
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider() and not is_aws_cloud(), reason="Test suite for v2 provider only."
-)
-
 
 # TODO: test for validation errors, and boundary testing.
 
