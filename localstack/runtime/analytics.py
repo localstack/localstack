@@ -20,11 +20,15 @@ TRACKED_ENV_VAR = [
     "KINESIS_PROVIDER",
     "KMS_PROVIDER",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
-    # Irrelevant post v3 but intentionally tracked for some time
-    "LAMBDA_EXECUTOR",
+    "LAMBDA_EXECUTOR",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_STAY_OPEN_MODE",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_REMOTE_DOCKER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_CODE_EXTRACT_TIME",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_CONTAINER_REGISTRY",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_FALLBACK_URL",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_FORWARD_URL",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_XRAY_INIT",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "LAMBDA_PREBUILD_IMAGES",
-    # Irrelevant post v3 but intentionally tracked for some time
-    "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LEGACY_DIRECTORIES",
     "LEGACY_EDGE_PROXY",
