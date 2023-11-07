@@ -44,10 +44,9 @@ LOG = logging.getLogger(__name__)
 # maps from API names to list of other API names that they depend on
 API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
-    "dynamodbstreams": ["kinesis"],
+    "dynamodbstreams": ["kinesis", "dynamodb"],
     "es": ["opensearch"],
-    "lambda": ["logs", "cloudwatch", "s3", "sqs"],
-    "kinesis": ["dynamodb"],
+    "lambda": ["s3", "sqs"],
     "firehose": ["kinesis"],
 }
 # composites define an abstract name like "serverless" that maps to a set of services
