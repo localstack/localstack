@@ -89,7 +89,7 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "KINESIS_PROVIDER",
         "1.1.0",
-        "Only a single provider is supported for kinesis. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     # Since 1.1.0 - Init dir has been deprecated in favor of pluggable init hooks
     EnvVarDeprecation(

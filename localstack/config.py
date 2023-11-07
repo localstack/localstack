@@ -1250,6 +1250,7 @@ CONFIG_ENV_VARS = [
     "SYNCHRONOUS_DYNAMODB_EVENTS",  # deprecated since 1.3.0
     "SYNCHRONOUS_API_GATEWAY_EVENTS",  # deprecated since 1.3.0
     "SYNCHRONOUS_SQS_EVENTS",  # deprecated since 1.3.0
+    "KINESIS_PROVIDER",  # deprecated since 1.3.0
 ]
 
 
