@@ -471,7 +471,7 @@ class TestCloudwatch:
         retry(_count_aggregated_metrics, retries=retries, sleep_before=sleep_seconds)
 
     @markers.aws.validated
-    def test_list_metrics_with_querys(self, aws_client):
+    def test_list_metrics_with_filters(self, aws_client):
         namespace = f"test/{short_uid()}"
         sleep_seconds = 10 if is_aws_cloud() else 1
         retries = 100 if is_aws_cloud() else 10

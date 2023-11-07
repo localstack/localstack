@@ -208,14 +208,18 @@ class CloudwatchDatabase:
 
             namespace_filter = f"AND namespace = '{namespace}'" if namespace else ""
             metric_name_filter = f"AND metric_name = '{metric_name}'" if metric_name else ""
-            # TODO check how to filter dimmension correctly
+
+            dimension_filter = ""
+            for dimension in dimensions:
+                dimension_filter += f"AND dimensions LIKE '%{dimension['Name']}={dimension.get('Value','')}%' "
+
             # TODO add support for next token
             data = (account_id, region)
 
             cur.execute(
                 f"""SELECT DISTINCT metric_name, namespace ,dimensions FROM {self.TABLE_SINGLE_METRICS}
                                     WHERE account_id = ? AND region = ?
-                                        {namespace_filter} {metric_name_filter}
+                                        {namespace_filter} {metric_name_filter} {dimension_filter}
                                     ORDER BY timestamp DESC""",
                 data,
             )
@@ -225,6 +229,7 @@ class CloudwatchDatabase:
                 f"""SELECT DISTINCT metric_name, namespace ,dimensions FROM {self.TABLE_AGGREGATED_METRICS}
                                     WHERE account_id = ? AND region = ?
                                         {namespace_filter} {metric_name_filter}
+                                        {dimension_filter}
                                     ORDER BY timestamp DESC""",
                 data,
             )

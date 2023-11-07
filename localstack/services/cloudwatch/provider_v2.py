@@ -383,7 +383,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             context.region,
             namespace,
             metric_name,
-            dimensions,
+            dimensions or [],
         )
 
         metrics = [
