@@ -163,11 +163,9 @@ class TestGetEnabledApis:
             "es",
             # a dependency of es
             "opensearch",
-            # lambda has internal dependencies on s3, sqs, logs and cloudwatch
+            # lambda has internal dependencies on s3, and sqs
             "s3",
             "sqs",
-            "logs",
-            "cloudwatch",
         }
 
 
