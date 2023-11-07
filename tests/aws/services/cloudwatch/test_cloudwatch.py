@@ -421,7 +421,7 @@ class TestCloudwatch:
             Namespace=namespace,
             MetricData=[
                 {
-                    "MetricName": "Memory",
+                    "MetricName": "MemoryUtilization",
                     "Dimensions": [{"Name": "InstanceId", "Value": "i-46cdcd06a11207ab3"}],
                     "Value": 30,
                 }
@@ -433,20 +433,42 @@ class TestCloudwatch:
             Namespace=namespace,
             MetricData=[
                 {
-                    "MetricName": "CPUUtilization",
+                    "MetricName": "MemoryUtilization",
                     "Dimensions": [{"Name": "InstanceId", "Value": "i-46cdcd06a11207ab3"}],
                     "Value": 15,
                 }
             ],
         )
 
-        def _count_metrics():
+        def _count_single_metrics():
             results = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
             assert len(results) == 2
-            print(results)
 
         # asserting only unique values are returned
-        retry(_count_metrics, retries=retries, sleep_before=sleep_seconds)
+        retry(_count_single_metrics, retries=retries, sleep_before=sleep_seconds)
+
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "DiskReadOps",
+                    "StatisticValues": {
+                        "Maximum": 1.0,
+                        "Minimum": 1.0,
+                        "SampleCount": 1.0,
+                        "Sum": 1.0,
+                    },
+                    "Dimensions": [{"Name": "InstanceId", "Value": "i-46cdcd06a11207ab3"}],
+                }
+            ],
+        )
+
+        def _count_aggregated_metrics():
+            results = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
+            assert len(results) == 3
+
+        retry(_count_aggregated_metrics, retries=retries, sleep_before=sleep_seconds)
 
     @markers.aws.validated
     def test_put_metric_alarm_escape_character(self, cleanups, aws_client):

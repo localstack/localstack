@@ -86,7 +86,7 @@ class CloudwatchDatabase:
                 unix_timestamp = (
                     self._convert_timestamp_to_unix(metric.get("Timestamp"))
                     if metric.get("Timestamp")
-                    else _get_current_unix_timestamp_utc
+                    else _get_current_unix_timestamp_utc()
                 )
 
                 inserts = []
@@ -219,9 +219,18 @@ class CloudwatchDatabase:
                                     ORDER BY timestamp DESC""",
                 data,
             )
+            single_metrics_result = [{"metric_name": r[0], "namespace": r[1], "dimensions": self._restore_dimensions_from_string(r[2])} for r in cur.fetchall()]
 
-            results = cur.fetchall()
-            return {"metrics": [{"metric_name": r[0], "namespace": r[1], "dimensions": self._restore_dimensions_from_string(r[2])} for r in results]}
+            cur.execute(
+                f"""SELECT DISTINCT metric_name, namespace ,dimensions FROM {self.TABLE_AGGREGATED_METRICS}
+                                    WHERE account_id = ? AND region = ?
+                                        {namespace_filter} {metric_name_filter}
+                                    ORDER BY timestamp DESC""",
+                data,
+            )
+            aggregated_metrics_result = [{"metric_name": r[0], "namespace": r[1], "dimensions": self._restore_dimensions_from_string(r[2])} for r in cur.fetchall()]
+
+            return {"metrics": (single_metrics_result + aggregated_metrics_result)}
 
     def clear_tables(self):
         # TODO clear tables for reset calls on cloudwatch
@@ -259,12 +268,12 @@ class CloudwatchDatabase:
     ):  # TODO verify if this is the standard format, might need to convert
         return int(timestamp.timestamp())
 
-    def _get_insert_single_metric_query(self):
+    def _get_insert_single_metric_query(self)->str:
         return f"""INSERT INTO {self.TABLE_SINGLE_METRICS}
                     ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "value")
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
-    def _get_insert_aggregated_metric_query(self, account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution, sample_count, sum, min, max):
+    def _get_insert_aggregated_metric_query(self)->str:
         return f"""INSERT INTO {self.TABLE_AGGREGATED_METRICS}
                     ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "sample_count", "sum", "min", "max")
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"""
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
