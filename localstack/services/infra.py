@@ -490,7 +490,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
                 # make another call with quiet=False to print detailed error logs
                 is_port_open(config.get_edge_port_http(), quiet=False)
             raise TimeoutError(
-                f"gave up waiting for edge server on {config.EDGE_BIND_HOST}:{config.EDGE_PORT}"
+                f"gave up waiting for edge server on {config.GATEWAY_LISTEN[0].host}:{config.GATEWAY_LISTEN[0].port}"
             )
 
         return t

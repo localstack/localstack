@@ -48,7 +48,7 @@ class PortConfigurator:
         self.randomize = randomize
 
     def __call__(self, cfg: ContainerConfiguration):
-        cfg.ports.bind_host = config.EDGE_BIND_HOST
+        cfg.ports.bind_host = config.GATEWAY_LISTEN[0].host
 
         if self.randomize:
             ContainerConfigurators.random_gateway_port(cfg)
