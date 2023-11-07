@@ -75,6 +75,7 @@ PROVIDER_DEFAULTS = {
     "AWS::EC2::Instance": "ResourceProvider",
     "AWS::EC2::InternetGateway": "ResourceProvider",
     "AWS::EC2::NatGateway": "ResourceProvider",
+    "AWS::EC2::NetworkAcl": "ResourceProvider",
     "AWS::EC2::Route": "ResourceProvider",
     "AWS::EC2::RouteTable": "ResourceProvider",
     "AWS::EC2::SecurityGroup": "ResourceProvider",
@@ -123,10 +124,6 @@ PROVIDER_DEFAULTS = {
     "AWS::SecretsManager::ResourcePolicy": "ResourceProvider",
     "AWS::SecretsManager::RotationSchedule": "ResourceProvider",
     "AWS::SecretsManager::Secret": "ResourceProvider",
-    # "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",  # FIXME: add full -ext and override logic for -ext
-    # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
-    "AWS::EC2::DHCPOptions": "ResourceProvider",
-    "AWS::EC2::NetworkAcl": "ResourceProvider",
     "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",
 }
 
