@@ -3601,7 +3601,9 @@ def get_encryption_parameters_from_request_and_bucket(
             key_id = kms_key_id or s3_bucket.encryption_rule[
                 "ApplyServerSideEncryptionByDefault"
             ].get("KMSMasterKeyID")
-            kms_key_id = get_kms_key_arn(key_id, s3_bucket.bucket_account_id)
+            kms_key_id = get_kms_key_arn(
+                key_id, s3_bucket.bucket_account_id, s3_bucket.bucket_region
+            )
             if not kms_key_id:
                 # if not key is provided, AWS will use an AWS managed KMS key
                 # create it if it doesn't already exist, and save it in the store per region
