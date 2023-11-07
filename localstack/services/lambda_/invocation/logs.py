@@ -6,6 +6,7 @@ from typing import Optional, Union
 
 from localstack.aws.connect import connect_to
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.threads import FuncThread
 
@@ -62,10 +63,15 @@ class LogHandler:
                 )
 
     def start_subscriber(self) -> None:
+        if not is_api_enabled("logs"):
+            LOG.debug("Service 'logs' is disabled, not storing any logs for lambda executions")
+            return
         self._thread = FuncThread(self.run_log_loop, name="log_handler")
         self._thread.start()
 
     def add_logs(self, log_item: LogItem) -> None:
+        if not is_api_enabled("logs"):
+            return
         self.log_queue.put(log_item)
 
     def stop(self) -> None:
