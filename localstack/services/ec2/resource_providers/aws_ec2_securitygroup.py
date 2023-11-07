@@ -88,17 +88,21 @@ class EC2SecurityGroupProvider(ResourceProvider[EC2SecurityGroupProperties]):
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
 
-        params = util.select_attributes(model, ["GroupName", "VpcId", "GroupDescription"])
+        params = {}
 
-        if not params.get("GroupName"):
+        if not model.get("GroupName"):
             params["GroupName"] = util.generate_default_name(
                 request.stack_name, request.logical_resource_id
             )
-        response = ec2.create_security_group(
-            VpcId=params["VpcID"],
-            GroupName=params["GroupName"],
-            Description=params.get("GroupDescription", ""),
-        )
+        else:
+            params["GroupName"] = model["GroupName"]
+
+        if vpc_id := model.get("VpcId"):
+            params["VpcId"] = vpc_id
+
+        params["Description"] = model.get("GroupDescription", "")
+
+        response = ec2.create_security_group(**params)
         model["GroupId"] = response["GroupId"]
         model["Id"] = response["GroupId"]
         return ProgressEvent(
