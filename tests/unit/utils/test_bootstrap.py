@@ -156,7 +156,7 @@ class TestGetEnabledApis:
         with temporary_env({"SERVICES": "es,lambda", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
-        assert len(result) == 7
+        assert len(result) == 5
         assert result == {
             # directly given
             "lambda",
