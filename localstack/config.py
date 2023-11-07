@@ -596,9 +596,10 @@ class UniqueHostAndPortList(List[HostAndPort]):
         super().append(value)
 
 
-def populate_legacy_edge_configuration(
+def populate_edge_configuration(
     environment: Mapping[str, str]
 ) -> Tuple[HostAndPort, UniqueHostAndPortList, int]:
+    """Populate the LocalStack edge configuration from environment variables."""
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
@@ -611,14 +612,6 @@ def populate_legacy_edge_configuration(
             default_host=constants.LOCALHOST_HOSTNAME,
             default_port=constants.DEFAULT_PORT_EDGE,
         ).port
-
-    def legacy_fallback(envar_name: str, default: T) -> T:
-        result = default
-        result_raw = environment.get(envar_name)
-        if result_raw is not None and gateway_listen_raw is None:
-            result = result_raw
-
-        return result
 
     # parse gateway listen from multiple components
     if gateway_listen_raw is not None:
@@ -652,7 +645,7 @@ def populate_legacy_edge_configuration(
     assert localstack_host is not None
 
     # derive legacy variables from GATEWAY_LISTEN
-    edge_port = int(legacy_fallback("EDGE_PORT", gateway_listen[0].port))
+    edge_port = gateway_listen[0].port
 
     return (
         localstack_host,
@@ -662,7 +655,6 @@ def populate_legacy_edge_configuration(
 
 
 # How to access LocalStack
-GATEWAY_LISTEN: List[HostAndPort]
 (
     # -- Cosmetic
     LOCALSTACK_HOST,
@@ -672,7 +664,7 @@ GATEWAY_LISTEN: List[HostAndPort]
     GATEWAY_LISTEN,
     # -- Legacy variables
     EDGE_PORT,
-) = populate_legacy_edge_configuration(os.environ)
+) = populate_edge_configuration(os.environ)
 
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
