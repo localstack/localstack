@@ -65,11 +65,15 @@ DEPRECATIONS = [
         "1.0.0",
         "Please use PERSISTENCE instead. The state will be stored in your LocalStack volume in the state/ directory.",
     ),
-    EnvVarDeprecation("HOST_TMP_FOLDER", "1.0.0", "Please remove this environment variable."),
+    EnvVarDeprecation(
+        "HOST_TMP_FOLDER",
+        "1.0.0",
+        "This option has no effect anymore. Please remove this environment variable.",
+    ),
     EnvVarDeprecation(
         "LEGACY_DIRECTORIES",
         "1.0.0",
-        "Please migrate to the new filesystem layout (introduced with v1.0).",
+        "This option has no effect anymore. Please migrate to the new filesystem layout (introduced with v1.0).",
     ),
     EnvVarDeprecation(
         "TMPDIR", "1.0.0", "Please migrate to the new filesystem layout (introduced with v1.0)."
@@ -95,11 +99,13 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "LEGACY_INIT_DIR",
         "1.1.0",
+        "This option has no effect anymore. "
         "Please use the pluggable initialization hooks in /etc/localhost/init/<stage>.d instead.",
     ),
     EnvVarDeprecation(
         "INIT_SCRIPTS_PATH",
         "1.1.0",
+        "This option has no effect anymore. "
         "Please use the pluggable initialization hooks in /etc/localhost/init/<stage>.d instead.",
     ),
     # Since 1.3.0 - Synchronous events break AWS parity
@@ -138,7 +144,7 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "MOCK_UNIMPLEMENTED",
         "1.3.0",
-        "This feature will not be supported in the future. Please remove this environment variable.",
+        "This feature is not supported anymore. Please remove this environment variable.",
     ),
     # Since 1.4.0 - The Edge Forwarding is only used for legacy HTTPS proxying and will be removed
     EnvVarDeprecation(
