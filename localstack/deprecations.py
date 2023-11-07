@@ -106,27 +106,27 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "SYNCHRONOUS_SNS_EVENTS",
         "1.3.0",
-        "This configuration breaks parity with AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     EnvVarDeprecation(
         "SYNCHRONOUS_SQS_EVENTS",
         "1.3.0",
-        "This configuration breaks parity with AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     EnvVarDeprecation(
         "SYNCHRONOUS_API_GATEWAY_EVENTS",
         "1.3.0",
-        "This configuration breaks parity with AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     EnvVarDeprecation(
         "SYNCHRONOUS_KINESIS_EVENTS",
         "1.3.0",
-        "This configuration breaks with parity AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     EnvVarDeprecation(
         "SYNCHRONOUS_DYNAMODB_EVENTS",
         "1.3.0",
-        "This configuration breaks with parity AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     # Since 1.3.0 - All non-pre-seeded infra is downloaded asynchronously
     EnvVarDeprecation(
