@@ -1036,28 +1036,18 @@ KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").st
 
 # URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
 # create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
-# `ES_CUSTOM_BACKEND` is DEPRECATED!
-OPENSEARCH_CUSTOM_BACKEND = (
-    os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
-    or os.environ.get("ES_CUSTOM_BACKEND", "").strip()
-)
+OPENSEARCH_CUSTOM_BACKEND = os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
 
 # Strategy used when creating OpenSearch/Elasticsearch domain endpoints routed through the edge proxy
 # valid values: domain | path | port (off)
-# `ES_ENDPOINT_STRATEGY` is DEPRECATED!
 OPENSEARCH_ENDPOINT_STRATEGY = (
-    os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip()
-    or os.environ.get("ES_ENDPOINT_STRATEGY", "").strip()
-    or "domain"
+    os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip() or "domain"
 )
 if OPENSEARCH_ENDPOINT_STRATEGY == "off":
     OPENSEARCH_ENDPOINT_STRATEGY = "port"
 
 # Whether to start one cluster per domain (default), or multiplex opensearch domains to a single clusters
-# `ES_MULTI_CLUSTER` is DEPRECATED!
-OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_env_true(
-    "ES_MULTI_CLUSTER"
-)
+OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 
 # Whether to really publish to GCM while using SNS Platform Application (needs credentials)
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")

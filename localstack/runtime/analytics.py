@@ -43,6 +43,9 @@ TRACKED_ENV_VAR = [
     "SQS_ENDPOINT_STRATEGY",
     "USE_SINGLE_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "USE_SSL",
+    "ES_CUSTOM_BACKEND",  # deprecated in 0.14.0, removed in 3.0.0
+    "ES_MULTI_CLUSTER",  # deprecated in 0.14.0, removed in 3.0.0
+    "ES_ENDPOINT_STRATEGY",  # deprecated in 0.14.0, removed in 3.0.0
 ]
 
 PRESENCE_ENV_VAR = [
