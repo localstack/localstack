@@ -862,30 +862,6 @@ def localstack_completion(ctx: click.Context, shell: str) -> None:
     click.echo(comp.source())
 
 
-# legacy support
-@localstack.group(name="infra", deprecated=True)
-def infra() -> None:
-    """
-    Manage LocalStack infrastructure
-    """
-    pass
-
-
-# FIXME remove with next major version
-@infra.command(name="start", short_help=cmd_start.short_help)
-@click.pass_context
-@publish_invocation
-def cmd_infra_start(ctx: click.Context, *args, **kwargs) -> None:
-    """
-    This command is deprecated. Please use `localstack start` instead.
-    """
-    ctx.invoke(cmd_start, *args, **kwargs)
-
-
-# just apply the same params as the "localstack start" command has
-cmd_infra_start.params = cmd_start.params
-
-
 def print_version() -> None:
     console.print(f" :laptop_computer: [bold]LocalStack CLI[/bold] [blue]{__version__}[/blue]")
 
