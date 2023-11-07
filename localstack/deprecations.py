@@ -252,17 +252,17 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "ES_CUSTOM_BACKEND",
         "0.14.0",
-        "This option is marked for removal. Please use OPENSEARCH_CUSTOM_BACKEND instead.",
+        "This option has no effect anymore. Please use OPENSEARCH_CUSTOM_BACKEND instead.",
     ),
     EnvVarDeprecation(
         "ES_MULTI_CLUSTER",
         "0.14.0",
-        "This option is marked for removal. Please use OPENSEARCH_MULTI_CLUSTER instead.",
+        "This option has no effect anymore. Please use OPENSEARCH_MULTI_CLUSTER instead.",
     ),
     EnvVarDeprecation(
         "ES_ENDPOINT_STRATEGY",
         "0.14.0",
-        "This option is marked for removal. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
+        "This option has no effect anymore. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
     ),
 ]
 
