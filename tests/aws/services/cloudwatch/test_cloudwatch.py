@@ -471,6 +471,79 @@ class TestCloudwatch:
         retry(_count_aggregated_metrics, retries=retries, sleep_before=sleep_seconds)
 
     @markers.aws.validated
+    def test_list_metrics_with_querys(self, aws_client):
+        namespace = f"test/{short_uid()}"
+        sleep_seconds = 10 if is_aws_cloud() else 1
+        retries = 100 if is_aws_cloud() else 10
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "CPUUtilization",
+                    "Value": 15,
+                }
+            ],
+        )
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "MemoryUtilization",
+                    "Dimensions": [{"Name": "InstanceId", "Value": "one"}],
+                    "Value": 30,
+                }
+            ],
+        )
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "DiskReadOps",
+                    "Dimensions": [{"Name": "InstanceId", "Value": "two"}],
+                    "Value": 15,
+                }
+            ],
+        )
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "DiskWriteOps",
+                    "Dimensions": [{"Name": "InstanceId", "Value": "two"}],
+                    "StatisticValues": {
+                        "Maximum": 1.0,
+                        "Minimum": 1.0,
+                        "SampleCount": 1.0,
+                        "Sum": 1.0,
+                    },
+                }
+            ],
+        )
+
+        def _count_all_metrics_in_namespace():
+            results = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
+            assert len(results) == 4
+        retry(_count_all_metrics_in_namespace, retries=retries, sleep_before=sleep_seconds)
+
+        def _count_specific_metric_in_namespace():
+            results = aws_client.cloudwatch.list_metrics(Namespace=namespace, MetricName="CPUUtilization")["Metrics"]
+            assert len(results) == 1
+        retry(_count_specific_metric_in_namespace, retries=retries, sleep_before=sleep_seconds)
+
+        def _count_metrics_in_namespace_with_dimension():
+            results = aws_client.cloudwatch.list_metrics(Namespace=namespace, Dimensions=[{"Name": "InstanceId"}])["Metrics"]
+            assert len(results) == 3
+        retry(_count_metrics_in_namespace_with_dimension, retries=retries, sleep_before=sleep_seconds)
+
+        def _count_metrics_in_namespace_with_dimension_value():
+            results = aws_client.cloudwatch.list_metrics(Namespace=namespace, Dimensions=[{"Name": "InstanceId", "Value": "two"}])["Metrics"]
+            assert len(results) == 2
+        retry(_count_metrics_in_namespace_with_dimension_value, retries=retries, sleep_before=sleep_seconds)
+
+
+    @markers.aws.validated
     def test_put_metric_alarm_escape_character(self, cleanups, aws_client):
         aws_client.cloudwatch.put_metric_alarm(
             AlarmName="cpu-mon",
