@@ -92,7 +92,7 @@ jobs:
           paths:
             - repo/target/coverage/
 
-  itest-sfn-v2-provider:
+  itest-sfn-legacy-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
@@ -100,14 +100,14 @@ jobs:
           at: /tmp/workspace
       - prepare-pytest-tinybird
       - run:
-          name: Test SFN V2 provider
+          name: Test SFN Legacy provider
           environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
-            TEST_PATH: "tests/aws/services/stepfunctions/v2/"
+            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
+            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
             COVERAGE_ARGS: "-p"
           command: |
-            COVERAGE_FILE="target/coverage/.coverage.sfnv2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" \
+            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -480,7 +480,7 @@ workflows:
       - acceptance-tests:
           requires:
             - preflight
-      - itest-sfn-v2-provider:
+      - itest-sfn-legacy-provider:
           requires:
             - preflight
       - itest-s3-v2-legacy-provider:
@@ -528,7 +528,7 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-sfn-v2-provider
+            - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
             - acceptance-tests
             - docker-test-amd64
@@ -540,7 +540,7 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-sfn-v2-provider
+            - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
             - acceptance-tests
             - docker-test-amd64
