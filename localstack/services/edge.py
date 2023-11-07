@@ -8,7 +8,6 @@ import subprocess
 import sys
 import threading
 from typing import List, Optional, TypeVar
-from urllib.parse import urlparse
 
 from requests.models import Response
 
@@ -91,11 +90,6 @@ class ProxyListenerEdge(ProxyListener):
 
         if events.infra_stopping.is_set():
             return 503
-
-        if config.EDGE_FORWARD_URL:
-            return do_forward_request_network(
-                0, method, path, data, headers, target_url=config.EDGE_FORWARD_URL
-            )
 
         target = headers.get("x-amz-target", "")
         auth_header = get_auth_string(method, path, headers, data)
@@ -433,29 +427,18 @@ def start_proxy(
 ) -> FuncThread:
     """
     Starts a TCP proxy to perform a low-level forwarding of incoming requests.
-    The proxy's source port (given as method argument) is bound to the EDGE_BIND_HOST.
-    The target IP is always 127.0.0.1.
-    The target port is parsed from the EDGE_FORWARD_URL (for compatibility with the legacy edge proxy forwarding).
-    All other parts of the EDGE_FORWARD_URL are _not_ used any more.
 
     :param listen_str: address to listen on
     :param target_address: target address to proxy requests to
     :param asynchronous: False if the function should join the proxy thread and block until it terminates.
     :return: created thread executing the proxy
     """
-    if config.EDGE_FORWARD_URL != "":
-        destination_port = urlparse(config.EDGE_FORWARD_URL).port
-        if not destination_port or destination_port < 1 or destination_port > 65535:
-            raise ValueError("EDGE_FORWARD_URL does not contain a valid port.")
-
-        listen = f"{constants.LOCALHOST_IP}:{destination_port}"
-    else:
-        listen_hosts = parse_gateway_listen(
-            listen_str,
-            default_host=constants.LOCALHOST_IP,
-            default_port=constants.DEFAULT_PORT_EDGE,
-        )
-        listen = listen_hosts[0]
+    listen_hosts = parse_gateway_listen(
+        listen_str,
+        default_host=constants.LOCALHOST_IP,
+        default_port=constants.DEFAULT_PORT_EDGE,
+    )
+    listen = listen_hosts[0]
     return do_start_tcp_proxy(listen, target_address, asynchronous)
 
 
