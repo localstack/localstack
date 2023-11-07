@@ -91,7 +91,9 @@ class SnapshotSession:
         for transformer in transformer_list:
             self.transformers.append((transformer, priority))  # TODO
 
-    def add_transformer(self, transformer: Transformer, *, priority: Optional[int] = 0):
+    def add_transformer(
+        self, transformer: Transformer | list[Transformer], *, priority: Optional[int] = 0
+    ):
         if isinstance(transformer, list):
             self.add_transformers_list(transformer, priority)
         else:
