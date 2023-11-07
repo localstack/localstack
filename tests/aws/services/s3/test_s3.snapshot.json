@@ -1860,7 +1860,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
-    "recorded-date": "03-08-2023, 04:19:13",
+    "recorded-date": "06-11-2023, 16:32:57",
     "recorded-content": {
       "create_bucket": {
         "Location": "/<bucket-name:1>",
@@ -1885,7 +1885,7 @@
       "head_bucket_filtered_header": {
         "content-type": "application/xml",
         "x-amz-access-point-alias": "false",
-        "x-amz-bucket-region": "<region>",
+        "x-amz-bucket-region": "<x-amz-bucket-region:1>",
         "x-amz-id-2": "x-amz-id-2",
         "x-amz-request-id": "x-amz-request-id"
       },
@@ -1898,7 +1898,7 @@
       "head_bucket_2_filtered_header": {
         "content-type": "application/xml",
         "x-amz-access-point-alias": "false",
-        "x-amz-bucket-region": "us-west-1",
+        "x-amz-bucket-region": "<x-amz-bucket-region:2>",
         "x-amz-id-2": "x-amz-id-2",
         "x-amz-request-id": "x-amz-request-id"
       },

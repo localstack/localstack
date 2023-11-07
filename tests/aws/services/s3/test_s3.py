@@ -3058,8 +3058,13 @@ class TestS3:
             snapshot.transform.key_value("Location", "<location>", reference_replacement=False)
         )
         bucket_1_name = f"bucket-{short_uid()}"
-        s3_create_bucket(Bucket=bucket_1_name)
-        response = aws_client.s3.get_bucket_location(Bucket=bucket_1_name)
+        region_1 = "us-east-1"
+        client_1 = aws_client_factory(region_name=region_1).s3
+        s3_create_bucket_with_client(
+            client_1,
+            Bucket=bucket_1_name,
+        )
+        response = client_1.get_bucket_location(Bucket=bucket_1_name)
         snapshot.match("get_bucket_location_bucket_1", response)
 
         region_2 = "us-east-2"
@@ -4236,7 +4241,7 @@ class TestS3:
             "$..x-amzn-requestid",
         ],
     )
-    def test_create_bucket_head_bucket(self, snapshot, aws_client):
+    def test_create_bucket_head_bucket(self, aws_client_factory, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         bucket_1 = f"my-bucket-1{short_uid()}"
@@ -4251,20 +4256,24 @@ class TestS3:
                 snapshot.transform.regex(r"s3\.amazonaws\.com", "<host>"),
                 snapshot.transform.regex(r"s3\.localhost\.localstack\.cloud:4566", "<host>"),
                 snapshot.transform.regex(r"s3\.localhost\.localstack\.cloud:443", "<host>"),
+                snapshot.transform.key_value("x-amz-bucket-region"),
             ]
         )
 
         try:
-            response = aws_client.s3.create_bucket(Bucket=bucket_1)
+            client = aws_client_factory(region_name="us-east-1").s3
+            response = client.create_bucket(Bucket=bucket_1)
             snapshot.match("create_bucket", response)
 
             response = aws_client.s3.create_bucket(
                 Bucket=bucket_2,
-                CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
+                CreateBucketConfiguration={
+                    "LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME,
+                },
             )
             snapshot.match("create_bucket_location_constraint", response)
 
-            response = aws_client.s3.head_bucket(Bucket=bucket_1)
+            response = client.head_bucket(Bucket=bucket_1)
             snapshot.match("head_bucket", response)
             snapshot.match(
                 "head_bucket_filtered_header",
@@ -4282,7 +4291,7 @@ class TestS3:
                 aws_client.s3.head_bucket(Bucket=f"does-not-exist-{long_uid()}")
             snapshot.match("head_bucket_not_exist", e.value.response)
         finally:
-            aws_client.s3.delete_bucket(Bucket=bucket_1)
+            client.delete_bucket(Bucket=bucket_1)
             aws_client.s3.delete_bucket(Bucket=bucket_2)
 
     @markers.aws.validated
