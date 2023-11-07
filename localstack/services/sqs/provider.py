@@ -84,6 +84,7 @@ from localstack.services.sqs.utils import (
 )
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.request_context import extract_region_from_headers
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.cloudwatch.cloudwatch_util import publish_sqs_metric
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
@@ -1290,19 +1291,21 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 )
 
     def _init_cloudwatch_metrics_reporting(self):
-        self._cloudwatch_publish_worker = (
-            None if config.SQS_DISABLE_CLOUDWATCH_METRICS else CloudwatchPublishWorker()
-        )
-        self._cloudwatch_dispatcher = (
-            None if config.SQS_DISABLE_CLOUDWATCH_METRICS else CloudwatchDispatcher()
+        self.cloudwatch_disabled: bool = (
+            config.SQS_DISABLE_CLOUDWATCH_METRICS or not is_api_enabled("cloudwatch")
         )
 
+        self._cloudwatch_publish_worker = (
+            None if self.cloudwatch_disabled else CloudwatchPublishWorker()
+        )
+        self._cloudwatch_dispatcher = None if self.cloudwatch_disabled else CloudwatchDispatcher()
+
     def _start_cloudwatch_metrics_reporting(self):
-        if not config.SQS_DISABLE_CLOUDWATCH_METRICS:
+        if not self.cloudwatch_disabled:
             self._cloudwatch_publish_worker.start()
 
     def _stop_cloudwatch_metrics_reporting(self):
-        if not config.SQS_DISABLE_CLOUDWATCH_METRICS:
+        if not self.cloudwatch_disabled:
             self._cloudwatch_publish_worker.stop()
             self._cloudwatch_dispatcher.shutdown()
 

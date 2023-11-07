@@ -3058,8 +3058,13 @@ class TestS3:
             snapshot.transform.key_value("Location", "<location>", reference_replacement=False)
         )
         bucket_1_name = f"bucket-{short_uid()}"
-        s3_create_bucket(Bucket=bucket_1_name)
-        response = aws_client.s3.get_bucket_location(Bucket=bucket_1_name)
+        region_1 = "us-east-1"
+        client_1 = aws_client_factory(region_name=region_1).s3
+        s3_create_bucket_with_client(
+            client_1,
+            Bucket=bucket_1_name,
+        )
+        response = client_1.get_bucket_location(Bucket=bucket_1_name)
         snapshot.match("get_bucket_location_bucket_1", response)
 
         region_2 = "us-east-2"
@@ -4236,7 +4241,7 @@ class TestS3:
             "$..x-amzn-requestid",
         ],
     )
-    def test_create_bucket_head_bucket(self, snapshot, aws_client):
+    def test_create_bucket_head_bucket(self, aws_client_factory, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         bucket_1 = f"my-bucket-1{short_uid()}"
@@ -4251,20 +4256,24 @@ class TestS3:
                 snapshot.transform.regex(r"s3\.amazonaws\.com", "<host>"),
                 snapshot.transform.regex(r"s3\.localhost\.localstack\.cloud:4566", "<host>"),
                 snapshot.transform.regex(r"s3\.localhost\.localstack\.cloud:443", "<host>"),
+                snapshot.transform.key_value("x-amz-bucket-region"),
             ]
         )
 
         try:
-            response = aws_client.s3.create_bucket(Bucket=bucket_1)
+            client = aws_client_factory(region_name="us-east-1").s3
+            response = client.create_bucket(Bucket=bucket_1)
             snapshot.match("create_bucket", response)
 
             response = aws_client.s3.create_bucket(
                 Bucket=bucket_2,
-                CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
+                CreateBucketConfiguration={
+                    "LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME,
+                },
             )
             snapshot.match("create_bucket_location_constraint", response)
 
-            response = aws_client.s3.head_bucket(Bucket=bucket_1)
+            response = client.head_bucket(Bucket=bucket_1)
             snapshot.match("head_bucket", response)
             snapshot.match(
                 "head_bucket_filtered_header",
@@ -4282,7 +4291,7 @@ class TestS3:
                 aws_client.s3.head_bucket(Bucket=f"does-not-exist-{long_uid()}")
             snapshot.match("head_bucket_not_exist", e.value.response)
         finally:
-            aws_client.s3.delete_bucket(Bucket=bucket_1)
+            client.delete_bucket(Bucket=bucket_1)
             aws_client.s3.delete_bucket(Bucket=bucket_2)
 
     @markers.aws.validated
@@ -4793,23 +4802,32 @@ class TestS3:
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
     )
     def test_s3_sse_validate_kms_key(
-        self, s3_create_bucket, kms_create_key, monkeypatch, snapshot, aws_client
+        self,
+        aws_client_factory,
+        s3_create_bucket_with_client,
+        kms_create_key,
+        monkeypatch,
+        snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.key_value("Description"))
         data = b"test-sse"
         bucket_name = f"bucket-test-kms-{short_uid()}"
-        s3_create_bucket(
-            Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        region_1 = "us-east-2"
+        client = aws_client_factory(region_name=region_1).s3
+        s3_create_bucket_with_client(
+            client, Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": region_1}
         )
         # create key in a different region than the bucket
-        kms_key = kms_create_key(region_name="us-east-1")
+        region_2 = "us-west-2"
+        kms_key = kms_create_key(region_name=region_2)
         # snapshot the KMS key to save the UUID for replacement in Error message.
         snapshot.match("create-kms-key", kms_key)
 
         # test whether the validation is skipped when not disabling the validation
         if not is_aws_cloud():
             key_name = "test-sse-validate-kms-key-no-check"
-            response = aws_client.s3.put_object(
+            response = client.put_object(
                 Bucket=bucket_name,
                 Key=key_name,
                 Body=data,
@@ -4818,7 +4836,7 @@ class TestS3:
             )
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-            response = aws_client.s3.create_multipart_upload(
+            response = client.create_multipart_upload(
                 Bucket=bucket_name,
                 Key="multipart-test-sse-validate-kms-key-no-check",
                 ServerSideEncryption="aws:kms",
@@ -4826,7 +4844,7 @@ class TestS3:
             )
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-            response = aws_client.s3.copy_object(
+            response = client.copy_object(
                 Bucket=bucket_name,
                 Key="copy-test-sse-validate-kms-key-no-check",
                 CopySource={"Bucket": bucket_name, "Key": key_name},
@@ -4841,7 +4859,7 @@ class TestS3:
         # activating the validation, for AWS parity
         monkeypatch.setattr(config, "S3_SKIP_KMS_KEY_VALIDATION", False)
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_object(
+            client.put_object(
                 Bucket=bucket_name,
                 Key=key_name,
                 Body=data,
@@ -4851,7 +4869,7 @@ class TestS3:
         snapshot.match("put-obj-wrong-kms-key", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_object(
+            client.put_object(
                 Bucket=bucket_name,
                 Key=key_name,
                 Body=data,
@@ -4862,12 +4880,10 @@ class TestS3:
 
         # we create a wrong arn but with the right region to test error message
         wrong_id_arn = (
-            kms_key["Arn"]
-            .replace("us-east-1", "us-west-2")
-            .replace(kms_key["KeyId"], fake_key_uuid)
+            kms_key["Arn"].replace(region_2, region_1).replace(kms_key["KeyId"], fake_key_uuid)
         )
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_object(
+            client.put_object(
                 Bucket=bucket_name,
                 Key=key_name,
                 Body=data,
@@ -4877,7 +4893,7 @@ class TestS3:
         snapshot.match("put-obj-wrong-kms-key-real-uuid-arn", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_object(
+            client.put_object(
                 Bucket=bucket_name,
                 Key="test-sse-validate-kms-key-no-check-region",
                 Body=data,
@@ -4887,7 +4903,7 @@ class TestS3:
         snapshot.match("put-obj-different-region-kms-key", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.put_object(
+            client.put_object(
                 Bucket=bucket_name,
                 Key="test-sse-validate-kms-key-different-region-no-arn",
                 Body=data,
@@ -4897,7 +4913,7 @@ class TestS3:
         snapshot.match("put-obj-different-region-kms-key-no-arn", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.create_multipart_upload(
+            client.create_multipart_upload(
                 Bucket=bucket_name,
                 Key="multipart-test-sse-validate-kms-key-no-check",
                 ServerSideEncryption="aws:kms",
@@ -4907,9 +4923,9 @@ class TestS3:
 
         # create a object to be copied
         src_key = "key-to-be-copied"
-        aws_client.s3.put_object(Bucket=bucket_name, Key=src_key, Body=b"test-data")
+        client.put_object(Bucket=bucket_name, Key=src_key, Body=b"test-data")
         with pytest.raises(ClientError) as e:
-            aws_client.s3.copy_object(
+            client.copy_object(
                 Bucket=bucket_name,
                 Key="copy-test-sse-validate-kms-key-no-check",
                 CopySource={"Bucket": bucket_name, "Key": src_key},

@@ -315,6 +315,14 @@ def cleanup_resources():
                 config.dirs.tmp,
                 e,
             )
+        try:
+            files.rm_rf(config.dirs.mounted_tmp)
+        except PermissionError as e:
+            LOG.error(
+                "unable to delete mounted temp folder %s: %s, please delete manually or you will keep seeing these errors",
+                config.dirs.mounted_tmp,
+                e,
+            )
 
 
 def log_startup_message(service):

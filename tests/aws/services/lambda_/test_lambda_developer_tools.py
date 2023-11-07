@@ -49,7 +49,7 @@ class TestHotReloading:
         """Test hot reloading of lambda code"""
         function_name = f"test-hot-reloading-{short_uid()}"
         hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
-        tmp_path = config.dirs.tmp
+        tmp_path = config.dirs.mounted_tmp
         hot_reloading_dir_path = os.path.join(tmp_path, f"hot-reload-{short_uid()}")
         mkdir(hot_reloading_dir_path)
         cleanups.append(lambda: rm_rf(hot_reloading_dir_path))
@@ -116,7 +116,7 @@ class TestHotReloading:
 
         function_name = f"test-hot-reloading-{short_uid()}"
         hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
-        tmp_path = config.dirs.tmp
+        tmp_path = config.dirs.mounted_tmp
         hot_reloading_dir_path = os.path.join(tmp_path, f"hot-reload-{short_uid()}")
         mkdir(hot_reloading_dir_path)
         cleanups.append(lambda: rm_rf(hot_reloading_dir_path))

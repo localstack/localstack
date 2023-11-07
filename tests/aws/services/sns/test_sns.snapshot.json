@@ -3999,7 +3999,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishDelivery::test_delivery_lambda": {
-    "recorded-date": "25-08-2023, 00:31:30",
+    "recorded-date": "07-11-2023, 11:11:37",
     "recorded-content": {
       "get-topic-attrs": {
         "Attributes": {
@@ -4021,7 +4021,74 @@
               }
             }
           },
-          "LambdaSuccessFeedbackRoleArn": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-no-logs": {
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-topic-attrs-with-success-feedback": {
+        "Attributes": {
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "LambdaSuccessFeedbackRoleArn": "arn:aws:iam::111111111111:role/<resource:2>",
           "LambdaSuccessFeedbackSampleRate": "100",
           "Owner": "111111111111",
           "Policy": {
@@ -4044,7 +4111,7 @@
                   "SNS:ListSubscriptionsByTopic",
                   "SNS:Publish"
                 ],
-                "Resource": "arn:aws:sns:<region>:111111111111:<resource:2>",
+                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
                 "Condition": {
                   "StringEquals": {
                     "AWS:SourceOwner": "111111111111"
@@ -4056,8 +4123,15 @@
           "SubscriptionsConfirmed": "0",
           "SubscriptionsDeleted": "0",
           "SubscriptionsPending": "0",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-logs": {
+        "MessageId": "<uuid:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4069,19 +4143,19 @@
             "ingestionTime": "timestamp",
             "message": {
               "delivery": {
-                "deliveryId": "<uuid:1>",
+                "deliveryId": "<uuid:3>",
                 "destination": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
                 "dwellTimeMs": "<time-ms>",
                 "providerResponse": {
-                  "lambdaRequestId": "<uuid:2>"
+                  "lambdaRequestId": "<uuid:4>"
                 },
                 "statusCode": 202
               },
               "notification": {
-                "messageId": "<uuid:3>",
-                "messageMD5Sum": "764569e58f53ea8b6404f6fa7fc0247f",
+                "messageId": "<uuid:2>",
+                "messageMD5Sum": "c1c7ff780647014d463e6801bf83c59d",
                 "timestamp": "timestamp",
-                "topicArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+                "topicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
               },
               "status": "SUCCESS"
             },
@@ -4674,7 +4748,7 @@
       }
     }
   },
-  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_unsubscribe_wrong_arn_format": {
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_wrong_arn_format": {
     "recorded-date": "20-10-2023, 12:52:36",
     "recorded-content": {
       "invalid-unsubscribe-arn-1": {
@@ -4708,6 +4782,23 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_idempotency": {
+    "recorded-date": "07-11-2023, 00:36:06",
+    "recorded-content": {
+      "unsubscribe-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "unsubscribe-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
