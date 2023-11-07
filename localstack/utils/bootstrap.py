@@ -116,7 +116,7 @@ def get_image_environment_variable(env_name: str) -> Optional[str]:
 
 
 def get_container_default_logfile_location(container_name: str) -> str:
-    return os.path.join(config.dirs.tmp, f"{container_name}_container.log")
+    return os.path.join(config.dirs.mounted_tmp, f"{container_name}_container.log")
 
 
 def get_server_version_from_running_container() -> str:
