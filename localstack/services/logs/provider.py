@@ -41,6 +41,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_region_from_arn
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
 
@@ -61,7 +62,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         sequence_token: SequenceToken = None,
     ) -> PutLogEventsResponse:
         logs_backend = get_moto_logs_backend(context.account_id, context.region)
-        metric_filters = logs_backend.filters.metric_filters
+        metric_filters = logs_backend.filters.metric_filters if is_api_enabled("cloudwatch") else []
         for metric_filter in metric_filters:
             pattern = metric_filter.get("filterPattern", "")
             transformations = metric_filter.get("metricTransformations", [])
