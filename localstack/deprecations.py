@@ -246,7 +246,7 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "KINESIS_INITIALIZE_STREAMS",
         "1.4.0",
-        "This feature is marked for removal. Please use AWS client API to seed Kinesis streams.",
+        "This option has no effect anymore. Please use the AWS client and init hooks instead.",
     ),
     EnvVarDeprecation(
         "PROVIDER_OVERRIDE_LAMBDA",
