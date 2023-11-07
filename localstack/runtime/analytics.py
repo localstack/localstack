@@ -78,6 +78,7 @@ def _publish_config_as_analytics_event():
         if key.startswith("PROVIDER_OVERRIDE_"):
             env_vars.append(key)
         elif key.startswith("SYNCHRONOUS_") and key.endswith("_EVENTS"):
+            # these config variables have been removed with 3.0.0
             env_vars.append(key)
 
     env_vars = {key: os.getenv(key) for key in env_vars}
