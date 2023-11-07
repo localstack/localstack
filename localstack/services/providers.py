@@ -335,7 +335,7 @@ def stepfunctions_v2():
 
 @aws_provider(api="stepfunctions", name="v1")
 def stepfunctions_legacy():
-    from localstack.services.stepfunctions.provider import StepFunctionsProvider
+    from localstack.services.stepfunctions.legacy.provider_legacy import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
     return Service.for_provider(
@@ -348,7 +348,7 @@ def stepfunctions_legacy():
 
 @aws_provider(api="stepfunctions", name="legacy")
 def stepfunctions_v1():
-    from localstack.services.stepfunctions.provider import StepFunctionsProvider
+    from localstack.services.stepfunctions.legacy.provider_legacy import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
     return Service.for_provider(

@@ -17,7 +17,9 @@ from localstack.aws.api.stepfunctions import (
 from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import LOCALHOST
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.stepfunctions.stepfunctions_starter import StepFunctionsServerManager
+from localstack.services.stepfunctions.legacy.stepfunctions_starter import (
+    StepFunctionsServerManager,
+)
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import aws_stack
 
