@@ -5,7 +5,6 @@ import requests
 from pytest_httpserver.httpserver import HTTPServer
 from werkzeug.datastructures import Headers
 
-from localstack import config, constants
 from localstack.config import HostAndPort
 from localstack.services.edge import get_auth_string, start_proxy
 from localstack.utils.net import get_free_tcp_port
@@ -78,54 +77,6 @@ def test_edge_tcp_proxy(httpserver):
         response = requests.get(f"http://localhost:{port}")
         assert response.status_code == 200
         assert response.text == "Target Server Response"
-    finally:
-        proxy_server.stop()
-
-
-def test_edge_tcp_proxy_raises_exception_on_invalid_url(monkeypatch):
-    # Point the Edge TCP proxy towards the target server
-    monkeypatch.setattr(config, "EDGE_FORWARD_URL", "this-is-no-url")
-
-    # Start the TCP proxy
-    port = get_free_tcp_port()
-    with pytest.raises(ValueError):
-        start_proxy(
-            listen_str=f"127.0.0.1:{port}",
-            target_address=HostAndPort(host="127.0.0.1", port=constants.DEFAULT_PORT_EDGE),
-            asynchronous=True,
-        ).stop()
-
-
-def test_edge_tcp_proxy_raises_exception_on_url_without_port(monkeypatch):
-    # Point the Edge TCP proxy towards the target server
-    monkeypatch.setattr(config, "EDGE_FORWARD_URL", "http://url-without-port/")
-
-    # Start the TCP proxy
-    port = get_free_tcp_port()
-    with pytest.raises(ValueError):
-        start_proxy(
-            listen_str=f"127.0.0.1:{port}",
-            asynchronous=True,
-            target_address=HostAndPort(host="127.0.0.1", port=constants.DEFAULT_PORT_EDGE),
-        ).stop()
-
-
-def test_edge_tcp_proxy_raises_connection_refused_on_missing_target_server(monkeypatch):
-    # Point the Edge TCP proxy towards a port which is not bound to any server
-    dst_port = get_free_tcp_port()
-    monkeypatch.setattr(config, "EDGE_FORWARD_URL", f"http://unused-host-part:{dst_port}/")
-
-    # Start the TCP proxy
-    port = get_free_tcp_port()
-    proxy_server = start_proxy(
-        listen_str=f"127.0.0.1:{port}",
-        target_address=HostAndPort(host="127.0.0.1", port=dst_port),
-        asynchronous=True,
-    )
-    try:
-        # Start the proxy server and send a request (which is proxied towards a non-bound port)
-        with pytest.raises(requests.exceptions.ConnectionError):
-            requests.get(f"http://localhost:{port}")
     finally:
         proxy_server.stop()
 

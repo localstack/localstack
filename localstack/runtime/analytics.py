@@ -31,7 +31,7 @@ TRACKED_ENV_VAR = [
     "LAMBDA_PREBUILD_IMAGES",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LEGACY_DIRECTORIES",
-    "LEGACY_EDGE_PROXY",
+    "LEGACY_EDGE_PROXY",  # Not functional; deprecated in 1.0.0, removed in 2.0.0
     "LS_LOG",
     "MOCK_UNIMPLEMENTED",
     "OPENSEARCH_ENDPOINT_STRATEGY",
@@ -54,7 +54,7 @@ TRACKED_ENV_VAR = [
 
 PRESENCE_ENV_VAR = [
     "DATA_DIR",
-    "EDGE_FORWARD_URL",
+    "EDGE_FORWARD_URL",  # Not functional; deprecated in 1.4.0, removed in 3.0.0
     "GATEWAY_LISTEN",
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",

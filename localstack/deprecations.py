@@ -83,7 +83,7 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "LEGACY_EDGE_PROXY",
         "1.0.0",
-        "Please migrate to the new HTTP gateway by removing this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     # Since 1.1.0 - Kinesalite removed with 1.3, only kinesis-mock is used as kinesis provider / backend
     EnvVarDeprecation(
@@ -144,7 +144,7 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "EDGE_FORWARD_URL",
         "1.4.0",
-        "This feature will not be supported in the future. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     # Deprecated in 1.4.0, removed in 3.0.0
     EnvVarDeprecation(
