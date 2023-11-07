@@ -22,7 +22,6 @@ from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from localstack.utils.threads import parallelize
 from tests.aws.services.lambda_.functions import lambda_environment
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
-from tests.aws.services.stepfunctions.utils import is_old_provider
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_NAME_1 = "lambda_sfn_1"
@@ -277,11 +276,6 @@ def cleanup(sm_arn, state_machines_before, sfn_client):
 def get_machine_arn(sm_name, sfn_client):
     state_machines = sfn_client.list_state_machines()["stateMachines"]
     return [m["stateMachineArn"] for m in state_machines if m["name"] == sm_name][0]
-
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
-)
 
 
 @pytest.mark.usefixtures("setup_and_tear_down")

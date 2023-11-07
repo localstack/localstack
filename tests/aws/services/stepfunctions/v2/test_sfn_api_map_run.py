@@ -1,21 +1,11 @@
 import json
 
-import pytest
-
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
     ScenariosTemplate as ST,
 )
-from tests.aws.services.stepfunctions.utils import (
-    await_execution_terminated,
-    create,
-    is_old_provider,
-)
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
-)
+from tests.aws.services.stepfunctions.utils import await_execution_terminated, create
 
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
