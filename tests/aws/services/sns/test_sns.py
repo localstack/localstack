@@ -4207,9 +4207,9 @@ class TestSNSPublishDelivery:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",
-            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-            "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            "$..Attributes.DeliveryPolicy",
+            "$..Attributes.EffectiveDeliveryPolicy",
+            "$..Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
         ]
     )
     def test_delivery_lambda(
@@ -4235,7 +4235,8 @@ class TestSNSPublishDelivery:
         function_name = f"lambda-function-{short_uid()}"
         permission_id = f"test-statement-{short_uid()}"
         subject = "[Subject] Test subject"
-        message = "Hello world."
+        message_fail = "Should not be received"
+        message_success = "Should be received"
         topic_name = f"test-topic-{short_uid()}"
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
         parsed_arn = parse_arn(topic_arn)
@@ -4245,7 +4246,6 @@ class TestSNSPublishDelivery:
         policy_name = f"SNSSuccessFeedback-policy-{short_uid()}"
 
         # enable Success Feedback from SNS to be sent to CloudWatch
-        # TODO: this is enabled by default in LS
         trust_policy = {
             "Version": "2012-10-17",
             "Statement": [
@@ -4285,18 +4285,6 @@ class TestSNSPublishDelivery:
             # wait for the policy to be properly attached
             time.sleep(20)
 
-        aws_client.sns.set_topic_attributes(
-            TopicArn=topic_arn,
-            AttributeName="LambdaSuccessFeedbackRoleArn",
-            AttributeValue=role_arn,
-        )
-
-        aws_client.sns.set_topic_attributes(
-            TopicArn=topic_arn,
-            AttributeName="LambdaSuccessFeedbackSampleRate",
-            AttributeValue="100",
-        )
-
         topic_attributes = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
         snapshot.match("get-topic-attrs", topic_attributes)
 
@@ -4330,7 +4318,32 @@ class TestSNSPublishDelivery:
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        aws_client.sns.publish(TopicArn=topic_arn, Subject=subject, Message=message)
+        publish_no_logs = aws_client.sns.publish(
+            TopicArn=topic_arn, Subject=subject, Message=message_fail
+        )
+        snapshot.match("publish-no-logs", publish_no_logs)
+
+        # Then enable the SNS Delivery Logs for Lambda on the topic
+        aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackRoleArn",
+            AttributeValue=role_arn,
+        )
+
+        aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackSampleRate",
+            AttributeValue="100",
+        )
+
+        topic_attributes = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attrs-with-success-feedback", topic_attributes)
+
+        publish_logs = aws_client.sns.publish(
+            TopicArn=topic_arn, Subject=subject, Message=message_success
+        )
+        # we snapshot the publish call to match the messageId to the events
+        snapshot.match("publish-logs", publish_logs)
 
         # TODO: Wait until Lambda function actually executes and not only for SNS logs
         log_group_name = f"sns/{region}/{account_id}/{topic_name}"
