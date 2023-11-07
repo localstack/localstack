@@ -1312,10 +1312,9 @@ def get_edge_url(localstack_hostname=None, protocol=None):
 
 
 def edge_ports_info():
-    """Example: http port 4566,443"""
+    """Example: http port [4566,443]"""
     gateway_listen_ports = [gw_listen.port for gw_listen in GATEWAY_LISTEN]
-    port_enumeration = ",".join(str(gateway_listen_ports))
-    return f"{get_protocol()} port {port_enumeration}"
+    return f"{get_protocol()} port {gateway_listen_ports}"
 
 
 class ServiceProviderConfig(Mapping[str, str]):
