@@ -325,8 +325,29 @@ def stepfunctions():
     return Service.for_provider(provider)
 
 
-@aws_provider(api="stepfunctions", name="legacy")
+@aws_provider(api="stepfunctions", name="v2")
+def stepfunctions_v2():
+    from localstack.services.stepfunctions.provider_v2 import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    return Service.for_provider(provider)
+
+
+@aws_provider(api="stepfunctions", name="v1")
 def stepfunctions_legacy():
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
+    )
+
+
+@aws_provider(api="stepfunctions", name="legacy")
+def stepfunctions_v1():
     from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
