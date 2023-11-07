@@ -1247,6 +1247,9 @@ CONFIG_ENV_VARS = [
     "LAMBDA_STAY_OPEN_MODE",  # deprecated since 2.0.0
     "SYNCHRONOUS_KINESIS_EVENTS",  # deprecated since 1.3.0
     "SYNCHRONOUS_SNS_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_DYNAMODB_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_API_GATEWAY_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_SQS_EVENTS",  # deprecated since 1.3.0
 ]
 
 
