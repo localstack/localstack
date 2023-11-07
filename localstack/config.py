@@ -403,9 +403,6 @@ VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip() or TMP_FOLDER
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
     TMP_FOLDER = "/private%s" % TMP_FOLDER
 
-# temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set. (DEPRECATED!)
-HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
-
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
 DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
@@ -762,9 +759,6 @@ ARN_PARTITION_FALLBACK = os.environ.get("ARN_PARTITION_FALLBACK", "") or "aws"
 
 # whether to skip waiting for the infrastructure to shut down, or exit immediately
 FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
-
-# whether to return mocked success responses for still unimplemented API methods
-MOCK_UNIMPLEMENTED = is_env_true("MOCK_UNIMPLEMENTED")
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ",".join([constants.LOCALHOST_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]"])
@@ -1245,6 +1239,7 @@ CONFIG_ENV_VARS = [
     "SYNCHRONOUS_API_GATEWAY_EVENTS",  # deprecated since 1.3.0
     "SYNCHRONOUS_SQS_EVENTS",  # deprecated since 1.3.0
     "KINESIS_PROVIDER",  # deprecated since 1.3.0
+    "MOCK_UNIMPLEMENTED",  # deprecated since 1.3.0
 ]
 
 

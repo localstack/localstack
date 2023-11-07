@@ -30,10 +30,9 @@ TRACKED_ENV_VAR = [
     "LAMBDA_XRAY_INIT",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "LAMBDA_PREBUILD_IMAGES",
     "LAMBDA_RUNTIME_EXECUTOR",
-    "LEGACY_DIRECTORIES",
     "LEGACY_EDGE_PROXY",  # Not functional; deprecated in 1.0.0, removed in 2.0.0
     "LS_LOG",
-    "MOCK_UNIMPLEMENTED",
+    "MOCK_UNIMPLEMENTED",  # Not functional; deprecated in 1.3.0, removed in 3.0.0
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "PERSISTENCE",
     "PERSISTENCE_SINGLE_FILE",
@@ -59,10 +58,10 @@ PRESENCE_ENV_VAR = [
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
     "HOSTNAME_FROM_LAMBDA",
-    "HOST_TMP_FOLDER",
-    "INIT_SCRIPTS_PATH",
-    "LEGACY_DIRECTORIES",
-    "LEGACY_INIT_DIR",
+    "HOST_TMP_FOLDER",  # Not functional; deprecated in 1.0.0, removed in 2.0.0
+    "INIT_SCRIPTS_PATH",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
+    "LEGACY_DIRECTORIES",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
+    "LEGACY_INIT_DIR",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
     "LOCALSTACK_HOST",
     "LOCALSTACK_HOSTNAME",
     "S3_DIR",
