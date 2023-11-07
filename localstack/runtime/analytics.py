@@ -17,7 +17,7 @@ TRACKED_ENV_VAR = [
     "EDGE_PORT",
     "ENFORCE_IAM",
     "IAM_SOFT_MODE",
-    "KINESIS_PROVIDER",
+    "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "KMS_PROVIDER",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
     "LAMBDA_EXECUTOR",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
