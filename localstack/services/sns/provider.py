@@ -360,10 +360,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
         count = len(subscription_arn.split(":"))
-        if count < 6:
-            raise InvalidParameterException(
-                f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}"
-            )
         try:
             parsed_arn = parse_arn(subscription_arn)
         except InvalidArnException:
