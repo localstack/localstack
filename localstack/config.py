@@ -423,9 +423,6 @@ WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 # TODO: this is deprecated and should be removed (edge port supports HTTP/HTTPS multiplexing)
 USE_SSL = is_env_true("USE_SSL")
 
-# whether to use the legacy edge proxy or the newer Gateway/HandlerChain framework
-LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
-
 # whether the S3 legacy V2/ASF provider is enabled
 LEGACY_V2_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v2", "legacy_v2", "asf")
 
@@ -691,9 +688,6 @@ GATEWAY_LISTEN: List[HostAndPort]
     EDGE_PORT,
     EDGE_PORT_HTTP,
 ) = populate_legacy_edge_configuration(os.environ)
-
-# optional target URL to forward all edge requests to
-EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
 
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
@@ -1148,7 +1142,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
     "EDGE_BIND_HOST",
-    "EDGE_FORWARD_URL",
+    "EDGE_FORWARD_URL",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "EDGE_PORT",
     "EDGE_PORT_HTTP",
     "ENABLE_CONFIG_UPDATES",
@@ -1197,7 +1191,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES",
     "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
-    "LEGACY_EDGE_PROXY",
+    "LEGACY_EDGE_PROXY",  # Not functional; Deprecated in 1.0.0, removed in 3.0.0
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_AUTH_TOKEN",
