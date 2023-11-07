@@ -1017,11 +1017,6 @@ LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60
 # to match the behavior of the old lambda provider.
 LAMBDA_SYNCHRONOUS_CREATE = is_env_true("LAMBDA_SYNCHRONOUS_CREATE")
 
-# A comma-delimited string of stream names and its corresponding shard count to
-# initialize during startup (DEPRECATED).
-# For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
-KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
-
 # URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
 # create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
 OPENSEARCH_CUSTOM_BACKEND = os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
@@ -1151,7 +1146,7 @@ CONFIG_ENV_VARS = [
     "HOSTNAME_EXTERNAL",
     "HOSTNAME_FROM_LAMBDA",  # deprecated since 2.0.0 but added to new Lambda provider
     "KINESIS_ERROR_PROBABILITY",
-    "KINESIS_INITIALIZE_STREAMS",
+    "KINESIS_INITIALIZE_STREAMS",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
