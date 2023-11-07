@@ -7,7 +7,6 @@ from botocore.utils import ArnParser
 
 from localstack import config
 from localstack.aws.api.opensearch import DomainEndpointOptions, EngineType
-from localstack.config import EDGE_BIND_HOST
 from localstack.constants import LOCALHOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
@@ -345,10 +344,12 @@ class MultiClusterManager(ClusterManager):
         else:
             port = _get_port_from_url(url)
             if engine_type == EngineType.OpenSearch:
-                return OpensearchCluster(port=port, host=EDGE_BIND_HOST, arn=arn, version=version)
+                return OpensearchCluster(
+                    port=port, host=config.GATEWAY_LISTEN[0].host, arn=arn, version=version
+                )
             else:
                 return ElasticsearchCluster(
-                    port=port, host=EDGE_BIND_HOST, arn=arn, version=version
+                    port=port, host=config.GATEWAY_LISTEN[0].host, arn=arn, version=version
                 )
 
 
@@ -396,7 +397,7 @@ class SingletonClusterManager(ClusterManager):
             if engine_type == EngineType.OpenSearch:
                 self.cluster = OpensearchCluster(
                     port=port,
-                    host=EDGE_BIND_HOST,
+                    host=config.GATEWAY_LISTEN[0].host,
                     version=version,
                     arn=arn,
                     security_options=security_options,

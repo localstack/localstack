@@ -92,7 +92,7 @@ def _get_allowed_cors_ports() -> Set[int]:
     Construct the list of allowed ports for CORS enforcement purposes
     Defined as function to allow easier testing with monkeypatch of config values
     """
-    return set([config.EDGE_PORT] + ([config.EDGE_PORT_HTTP] if config.EDGE_PORT_HTTP else []))
+    return set([host_and_port.port for host_and_port in config.GATEWAY_LISTEN])
 
 
 _ALLOWED_INTERNAL_PORTS = _get_allowed_cors_ports()
@@ -110,7 +110,6 @@ def _get_allowed_cors_origins() -> List[str]:
         "file://",
     ]
     # Add allowed origins for localhost domains, using different protocol/port combinations.
-    # If a different port is configured for EDGE_PORT_HTTP, add it to allowed origins as well
     for protocol in {"http", "https"}:
         for port in _get_allowed_cors_ports():
             result.append(f"{protocol}://{LOCALHOST}:{port}")

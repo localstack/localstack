@@ -988,7 +988,7 @@ class LocalstackContainerServer(Server):
     def __init__(
         self, container_configuration: ContainerConfiguration | Container | None = None
     ) -> None:
-        super().__init__(config.EDGE_PORT, config.EDGE_BIND_HOST)
+        super().__init__(config.GATEWAY_LISTEN[0].port, config.GATEWAY_LISTEN[0].host)
 
         if container_configuration is None:
             port_configuration = PortMappings(bind_host=config.GATEWAY_LISTEN[0].host)

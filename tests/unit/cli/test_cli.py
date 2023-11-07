@@ -13,6 +13,7 @@ import localstack.utils.analytics.cli
 from localstack import config, constants
 from localstack.cli.localstack import create_with_plugins, is_frozen_bundle
 from localstack.cli.localstack import localstack as cli
+from localstack.config import HostAndPort
 from localstack.utils import testutil
 from localstack.utils.common import is_command_available
 from localstack.utils.container_utils.container_client import ContainerException, DockerNotAvailable
@@ -110,9 +111,9 @@ def test_start_host(runner, monkeypatch):
 
 
 def test_status_services(runner, httpserver, monkeypatch):
-    # TODO: legacy API, switch to use GATEWAY_LISTEN in the next step
-    monkeypatch.setattr(config, "EDGE_PORT_HTTP", httpserver.port)
-    monkeypatch.setattr(config, "EDGE_PORT", httpserver.port)
+    monkeypatch.setattr(
+        config, "GATEWAY_LISTEN", [HostAndPort(host="0.0.0.0", port=httpserver.port)]
+    )
 
     services = {"dynamodb": "starting", "s3": "running"}
     httpserver.expect_request("/_localstack/health", method="GET").respond_with_json(
