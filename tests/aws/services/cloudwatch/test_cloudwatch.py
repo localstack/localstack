@@ -106,7 +106,6 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_put_metric_data_validation(self, aws_client):
-        metric_name = "test-metric"
         namespace = f"ns-{short_uid()}"
         utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)
 
