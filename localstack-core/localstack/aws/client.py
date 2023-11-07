@@ -42,7 +42,7 @@ def create_http_request(aws_request: awsrequest.AWSPreparedRequest) -> Request:
     # prepare the RequestContext
     headers = Headers()
     for k, v in aws_request.headers.items():
-        headers[k] = v
+        headers[k] = to_str(v)
 
     return Request(
         method=aws_request.method,

@@ -445,7 +445,14 @@ class InternalClientFactory(ClientFactory):
         client.meta.events.register(
             "provide-client-params.*.*", handler=_handler_create_request_parameters
         )
+
         client.meta.events.register("before-call.*.*", handler=_handler_inject_dto_header)
+
+        # this make the client call the gateway directly
+        from localstack.aws.client import GatewayShortCircuit
+        from localstack.runtime import components
+
+        GatewayShortCircuit.modify_client(client, components.gateway())
 
         return client
 
