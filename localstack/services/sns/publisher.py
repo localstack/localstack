@@ -35,6 +35,7 @@ from localstack.utils.aws.arns import (
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.objects import not_none_or
 from localstack.utils.strings import long_uid, md5, to_bytes
@@ -921,7 +922,6 @@ def store_delivery_log(
     """
     # TODO: effectively use `<ENDPOINT>SuccessFeedbackSampleRate` to sample delivery logs
     # TODO: validate format of `delivery` for each Publisher
-
     # map Protocol to TopicAttribute
     available_delivery_logs_services = {
         "http",
@@ -950,6 +950,13 @@ def store_delivery_log(
         role_arn = topic_attributes.get(topic_attribute)
         if not role_arn:
             return
+
+    if not is_api_enabled("logs"):
+        LOG.warning(
+            "Service 'logs' is not enabled: skip storing SNS delivery logs. "
+            "Please check your 'SERVICES' configuration variable."
+        )
+        return
 
     log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
     log_stream_name = long_uid()
