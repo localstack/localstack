@@ -51,7 +51,6 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.run import run
 from localstack.utils.server import http2_server
