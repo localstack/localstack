@@ -1,8 +1,8 @@
 import copy
 import gzip
 import json
-import time
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 
@@ -1197,6 +1197,8 @@ class TestCloudwatch:
         )
 
         assert isinstance(response["MetricWidgetImage"], bytes)
+
+    @markers.aws.validated
     @pytest.mark.skipif(
         os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2", reason="New test for v2 provider"
     )
