@@ -85,6 +85,13 @@ class _ResponseStream(io.RawIOBase):
         except StopIteration:
             return 0  # indicate EOF
 
+    def read(self, amt=None) -> bytes | None:
+        # adds compatibility for botocore's client-side AWSResponse.raw attribute.
+        # it seems the default implementation of RawIOBase.read to not handle well some cases
+        if amt is None:
+            amt = -1
+        return super().read(amt)
+
     def close(self) -> None:
         return self.response.close()
 
