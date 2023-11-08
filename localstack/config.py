@@ -448,10 +448,6 @@ LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
 # Docker image to use when starting up containers for port checks
 PORTS_CHECK_DOCKER_IMAGE = os.environ.get("PORTS_CHECK_DOCKER_IMAGE", "").strip()
 
-# whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
-# TODO: this will likely become the default and may get removed in the future
-FORWARD_EDGE_INMEM = True
-
 
 def is_trace_logging_enabled():
     if LS_LOG:

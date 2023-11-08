@@ -35,7 +35,6 @@ class LocalstackAwsGateway(Gateway):
                 handlers.enforce_cors,
                 handlers.content_decoder,
                 handlers.serve_localstack_resources,  # try to serve internal resources in /_localstack first
-                handlers.serve_default_listeners,  # legacy proxy default listeners
                 handlers.serve_edge_router_rules,
                 # start aws handler chain
                 handlers.parse_pre_signed_url_request,

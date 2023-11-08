@@ -8,7 +8,7 @@ import shutil
 import tempfile
 import time
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_externally_to, connect_to
@@ -53,7 +53,6 @@ from localstack.utils.net import get_free_tcp_port, is_port_open
 from localstack.utils.platform import is_debian
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition
-from localstack.utils.threads import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
@@ -416,26 +415,6 @@ def find_recursive(key, value, obj):
         return False
 
 
-def start_http_server(
-    test_port: int = None, invocations: List = None, invocation_handler: Callable = None
-) -> Tuple[int, List, FuncThread]:
-    # Note: leave imports here to avoid import errors (e.g., "flask") for CLI commands
-    from localstack.services.generic_proxy import ProxyListener
-    from localstack.services.infra import start_proxy
-
-    class TestListener(ProxyListener):
-        def forward_request(self, **kwargs):
-            if invocation_handler:
-                kwargs = invocation_handler(**kwargs)
-            invocations.append(kwargs)
-            return 200
-
-    test_port = test_port or get_free_tcp_port()
-    invocations = invocations or []
-    proxy = start_proxy(test_port, update_listener=TestListener())
-    return test_port, invocations, proxy
-
-
 def list_all_s3_objects(s3_client):
     return map_all_s3_objects(s3_client=s3_client).values()
 
@@ -627,25 +606,6 @@ def http_server(handler, host="127.0.0.1", port=None) -> str:
     host = host
     port = port or get_free_tcp_port()
     thread = run_server(port, [host], handler=handler, asynchronous=True)
-    url = f"http://{host}:{port}"
-    assert poll_condition(
-        lambda: is_port_open(port), timeout=5
-    ), f"server on port {port} did not start"
-    yield url
-    thread.stop()
-
-
-@contextmanager
-def proxy_server(proxy_listener, host="127.0.0.1", port=None) -> str:
-    """
-    Create a temporary proxy server on a random port (or the specified port) with the given proxy listener
-    for the duration of the context manager.
-    """
-    from localstack.services.generic_proxy import start_proxy_server
-
-    host = host
-    port = port or get_free_tcp_port()
-    thread = start_proxy_server(port, bind_address=host, update_listener=proxy_listener)
     url = f"http://{host}:{port}"
     assert poll_condition(
         lambda: is_port_open(port), timeout=5

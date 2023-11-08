@@ -7,12 +7,9 @@ from localstack.http import Response
 from localstack.services.plugins import Service, ServiceManager
 from localstack.utils.sync import SynchronizedDefaultDict
 
-from ...utils.bootstrap import is_api_enabled
 from ..api import RequestContext
 from ..api.core import ServiceOperation
 from ..chain import Handler, HandlerChain
-from ..proxy import AwsApiListener
-from .legacy import LegacyPluginHandler
 from .service import ServiceRequestRouter
 
 LOG = logging.getLogger(__name__)
@@ -43,10 +40,6 @@ class ServiceLoader(Handler):
         service_name: str = context.service.service_name
         if not self.service_manager.exists(service_name):
             raise NotImplementedError
-        elif not is_api_enabled(service_name):
-            raise NotImplementedError(
-                f"Service '{service_name}' is not enabled. Please check your 'SERVICES' configuration variable."
-            )
 
         service_operation: Optional[ServiceOperation] = context.service_operation
         request_router = self.service_request_router
@@ -63,10 +56,7 @@ class ServiceLoader(Handler):
             if service_operation in request_router.handlers:
                 return
             if isinstance(service_plugin, Service):
-                if type(service_plugin.listener) == AwsApiListener:
-                    request_router.add_skeleton(service_plugin.listener.skeleton)
-                else:
-                    request_router.add_handler(service_operation, LegacyPluginHandler())
+                request_router.add_skeleton(service_plugin.skeleton)
             else:
                 LOG.warning(
                     f"found plugin for '{service_name}', "

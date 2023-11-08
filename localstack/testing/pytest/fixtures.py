@@ -41,7 +41,6 @@ from localstack.utils.json import CustomEncoder, json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
-from localstack.utils.testutil import start_http_server
 
 LOG = logging.getLogger(__name__)
 
@@ -1538,10 +1537,15 @@ def acm_request_certificate(aws_client_factory):
 
 
 @pytest.fixture
-def tmp_http_server():
-    test_port, invocations, proxy = start_http_server()
-    yield test_port, invocations, proxy
-    proxy.stop()
+def tmp_http_server(httpserver):
+    invocations = []
+
+    def _handler(**kwargs) -> Response:
+        invocations.append(kwargs)
+        return Response(status=200)
+
+    httpserver.expect_request("").respond_with_handler(_handler)
+    yield httpserver.port, invocations
 
 
 role_policy_su = {

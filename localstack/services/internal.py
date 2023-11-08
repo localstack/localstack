@@ -14,7 +14,6 @@ from werkzeug.exceptions import NotFound
 from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Resource, Response, Router
-from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.services.infra import exit_infra, signal_supervisor_restart
 from localstack.utils.analytics.metadata import (
@@ -345,28 +344,6 @@ class LocalstackResources(Router):
             )
             self.add(Resource("/_localstack/diagnose", DiagnoseResource()))
             self.add(Resource("/_localstack/usage", UsageResource()))
-
-
-class LocalstackResourceHandler(RouterListener):
-    """
-    Adapter to serve LocalstackResources through the edge proxy.
-    """
-
-    resources: LocalstackResources
-
-    def __init__(self, resources: LocalstackResources = None) -> None:
-        super().__init__(resources or get_internal_apis(), fall_through=False)
-
-    def forward_request(self, method, path, data, headers):
-        try:
-            return super().forward_request(method, path, data, headers)
-        except NotFound:
-            if not path.startswith(constants.INTERNAL_RESOURCE_PATH + "/"):
-                # only return 404 if we're accessing an internal resource, otherwise fall back to the other listeners
-                return True
-            else:
-                LOG.warning("Unable to find handler for path: %s", path)
-                return 404
 
 
 @singleton_factory
