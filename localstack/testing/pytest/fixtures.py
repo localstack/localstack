@@ -1536,18 +1536,6 @@ def acm_request_certificate(aws_client_factory):
             LOG.debug("error cleaning up certificate %s: %s", certificate_arn, e)
 
 
-@pytest.fixture
-def tmp_http_server(httpserver):
-    invocations = []
-
-    def _handler(**kwargs) -> Response:
-        invocations.append(kwargs)
-        return Response(status=200)
-
-    httpserver.expect_request("").respond_with_handler(_handler)
-    yield httpserver.port, invocations
-
-
 role_policy_su = {
     "Version": "2012-10-17",
     "Statement": [{"Effect": "Allow", "Action": ["*"], "Resource": ["*"]}],
