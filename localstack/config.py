@@ -1047,6 +1047,10 @@ def use_custom_dns():
     return str(DNS_ADDRESS) not in FALSE_STRINGS
 
 
+# s3 virtual host name
+S3_VIRTUAL_HOSTNAME = "s3.%s" % LOCALSTACK_HOST.host
+S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALSTACK_HOST.host
+
 BOTO_WAITER_DELAY = int(os.environ.get("BOTO_WAITER_DELAY") or "1")
 BOTO_WAITER_MAX_ATTEMPTS = int(os.environ.get("BOTO_WAITER_MAX_ATTEMPTS") or "120")
 DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONFIG")

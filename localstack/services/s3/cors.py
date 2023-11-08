@@ -19,7 +19,7 @@ from localstack.aws.chain import Handler, HandlerChain
 from localstack.aws.handlers.cors import CorsEnforcer, CorsResponseEnricher
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.protocol.service_router import get_service_catalog
-from localstack.constants import S3_VIRTUAL_HOSTNAME
+from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.http import Request, Response
 from localstack.services.s3.utils import S3_VIRTUAL_HOSTNAME_REGEX
 
