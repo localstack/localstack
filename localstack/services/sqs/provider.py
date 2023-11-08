@@ -84,6 +84,7 @@ from localstack.services.sqs.utils import (
 )
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.request_context import extract_region_from_headers
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.cloudwatch.cloudwatch_util import publish_sqs_metric
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
@@ -175,10 +176,17 @@ class CloudwatchDispatcher:
         self.executor.shutdown(wait=False)
 
     def dispatch_sqs_metric(
-        self, region: str, queue_name: str, metric: str, value: float = 1, unit: str = "Count"
+        self,
+        account_id: str,
+        region: str,
+        queue_name: str,
+        metric: str,
+        value: float = 1,
+        unit: str = "Count",
     ):
         """
         Publishes a metric to Cloudwatch using a Threadpool
+        :param account_id The account id that should be used for Cloudwatch client
         :param region The region that should be used for Cloudwatch client
         :param queue_name The name of the queue that the metric belongs to
         :param metric The name of the metric
@@ -187,6 +195,7 @@ class CloudwatchDispatcher:
         """
         self.executor.submit(
             publish_sqs_metric,
+            account_id=account_id,
             region=region,
             queue_name=queue_name,
             metric=metric,
@@ -201,9 +210,13 @@ class CloudwatchDispatcher:
         :param message_body_size the size of the message in bytes
         """
         self.dispatch_sqs_metric(
-            region=queue.region, queue_name=queue.name, metric="NumberOfMessagesSent"
+            account_id=queue.account_id,
+            region=queue.region,
+            queue_name=queue.name,
+            metric="NumberOfMessagesSent",
         )
         self.dispatch_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="SentMessageSize",
@@ -218,6 +231,7 @@ class CloudwatchDispatcher:
         :param deleted The number of messages that were successfully deleted, default: 1
         """
         self.dispatch_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="NumberOfMessagesDeleted",
@@ -232,6 +246,7 @@ class CloudwatchDispatcher:
         """
         if received > 0:
             self.dispatch_sqs_metric(
+                account_id=queue.account_id,
                 region=queue.region,
                 queue_name=queue.name,
                 metric="NumberOfMessagesReceived",
@@ -239,7 +254,10 @@ class CloudwatchDispatcher:
             )
         else:
             self.dispatch_sqs_metric(
-                region=queue.region, queue_name=queue.name, metric="NumberOfEmptyReceives"
+                account_id=queue.account_id,
+                region=queue.region,
+                queue_name=queue.name,
+                metric="NumberOfEmptyReceives",
             )
 
 
@@ -266,18 +284,21 @@ class CloudwatchPublishWorker:
         # TODO ApproximateAgeOfOldestMessage is missing
         #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
         publish_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="ApproximateNumberOfMessagesVisible",
             value=queue.approx_number_of_messages,
         )
         publish_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="ApproximateNumberOfMessagesNotVisible",
             value=queue.approx_number_of_messages_not_visible,
         )
         publish_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="ApproximateNumberOfMessagesDelayed",
@@ -1270,19 +1291,21 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 )
 
     def _init_cloudwatch_metrics_reporting(self):
-        self._cloudwatch_publish_worker = (
-            None if config.SQS_DISABLE_CLOUDWATCH_METRICS else CloudwatchPublishWorker()
-        )
-        self._cloudwatch_dispatcher = (
-            None if config.SQS_DISABLE_CLOUDWATCH_METRICS else CloudwatchDispatcher()
+        self.cloudwatch_disabled: bool = (
+            config.SQS_DISABLE_CLOUDWATCH_METRICS or not is_api_enabled("cloudwatch")
         )
 
+        self._cloudwatch_publish_worker = (
+            None if self.cloudwatch_disabled else CloudwatchPublishWorker()
+        )
+        self._cloudwatch_dispatcher = None if self.cloudwatch_disabled else CloudwatchDispatcher()
+
     def _start_cloudwatch_metrics_reporting(self):
-        if not config.SQS_DISABLE_CLOUDWATCH_METRICS:
+        if not self.cloudwatch_disabled:
             self._cloudwatch_publish_worker.start()
 
     def _stop_cloudwatch_metrics_reporting(self):
-        if not config.SQS_DISABLE_CLOUDWATCH_METRICS:
+        if not self.cloudwatch_disabled:
             self._cloudwatch_publish_worker.stop()
             self._cloudwatch_dispatcher.shutdown()
 

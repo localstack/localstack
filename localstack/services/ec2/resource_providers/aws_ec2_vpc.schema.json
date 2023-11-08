@@ -1,0 +1,155 @@
+{
+  "typeName": "AWS::EC2::VPC",
+  "description": "Resource Type definition for AWS::EC2::VPC",
+  "additionalProperties": false,
+  "properties": {
+    "VpcId": {
+      "type": "string",
+      "description": "The Id for the model."
+    },
+    "CidrBlock": {
+      "type": "string",
+      "description": "The primary IPv4 CIDR block for the VPC."
+    },
+    "CidrBlockAssociations": {
+      "type": "array",
+      "description": "A list of IPv4 CIDR block association IDs for the VPC.",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "DefaultNetworkAcl": {
+      "type": "string",
+      "insertionOrder": false,
+      "description": "The default network ACL ID that is associated with the VPC."
+    },
+    "DefaultSecurityGroup": {
+      "type": "string",
+      "insertionOrder": false,
+      "description": "The default security group ID that is associated with the VPC."
+    },
+    "Ipv6CidrBlocks": {
+      "type": "array",
+      "description": "A list of IPv6 CIDR blocks that are associated with the VPC.",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "EnableDnsHostnames": {
+      "type": "boolean",
+      "description": "Indicates whether the instances launched in the VPC get DNS hostnames. If enabled, instances in the VPC get DNS hostnames; otherwise, they do not. Disabled by default for nondefault VPCs."
+    },
+    "EnableDnsSupport": {
+      "type": "boolean",
+      "description": "Indicates whether the DNS resolution is supported for the VPC. If enabled, queries to the Amazon provided DNS server at the 169.254.169.253 IP address, or the reserved IP address at the base of the VPC network range \"plus two\" succeed. If disabled, the Amazon provided DNS service in the VPC that resolves public DNS hostnames to IP addresses is not enabled. Enabled by default."
+    },
+    "InstanceTenancy": {
+      "type": "string",
+      "description": "The allowed tenancy of instances launched into the VPC.\n\n\"default\": An instance launched into the VPC runs on shared hardware by default, unless you explicitly specify a different tenancy during instance launch.\n\n\"dedicated\": An instance launched into the VPC is a Dedicated Instance by default, unless you explicitly specify a tenancy of host during instance launch. You cannot specify a tenancy of default during instance launch.\n\nUpdating InstanceTenancy requires no replacement only if you are updating its value from \"dedicated\" to \"default\". Updating InstanceTenancy from \"default\" to \"dedicated\" requires replacement."
+    },
+    "Ipv4IpamPoolId": {
+      "type": "string",
+      "description": "The ID of an IPv4 IPAM pool you want to use for allocating this VPC's CIDR"
+    },
+    "Ipv4NetmaskLength": {
+      "type": "integer",
+      "description": "The netmask length of the IPv4 CIDR you want to allocate to this VPC from an Amazon VPC IP Address Manager (IPAM) pool"
+    },
+    "Tags": {
+      "type": "array",
+      "description": "The tags for the VPC.",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    }
+  },
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string"
+        },
+        "Value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": true,
+    "tagProperty": "/properties/Tags"
+  },
+  "createOnlyProperties": [
+    "/properties/CidrBlock",
+    "/properties/Ipv4IpamPoolId",
+    "/properties/Ipv4NetmaskLength"
+  ],
+  "conditionalCreateOnlyProperties": [
+    "/properties/InstanceTenancy"
+  ],
+  "readOnlyProperties": [
+    "/properties/CidrBlockAssociations",
+    "/properties/DefaultNetworkAcl",
+    "/properties/DefaultSecurityGroup",
+    "/properties/Ipv6CidrBlocks",
+    "/properties/VpcId"
+  ],
+  "primaryIdentifier": [
+    "/properties/VpcId"
+  ],
+  "writeOnlyProperties": [
+    "/properties/Ipv4IpamPoolId",
+    "/properties/Ipv4NetmaskLength"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:CreateVpc",
+        "ec2:DescribeVpcs",
+        "ec2:ModifyVpcAttribute"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeNetworkAcls",
+        "ec2:DescribeVpcAttribute"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ec2:CreateTags",
+        "ec2:ModifyVpcAttribute",
+        "ec2:DeleteTags",
+        "ec2:ModifyVpcTenancy"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DeleteVpc",
+        "ec2:DescribeVpcs"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeVpcs"
+      ]
+    }
+  }
+}

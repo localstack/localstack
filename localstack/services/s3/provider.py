@@ -613,8 +613,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
         src_moto_bucket = get_bucket_from_moto(moto_backend, bucket=src_bucket)
         source_key_object = get_key_from_moto_bucket(
-            src_moto_bucket, key=src_key, version_id=src_version_id
+            src_moto_bucket,
+            key=src_key,
+            version_id=src_version_id,
         )
+        # if the source object does not have an etag, it means it's a DeleteMarker
+        if not hasattr(source_key_object, "etag"):
+            if src_version_id:
+                raise InvalidRequest(
+                    "The source of a copy request may not specifically refer to a delete marker by version id."
+                )
+            raise NoSuchKey("The specified key does not exist.", Key=src_key)
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html
         source_object_last_modified = source_key_object.last_modified.replace(
@@ -783,7 +792,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         bucket_name = request["Bucket"]
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket_name)
-        if (upload_id := request.get("UploadId")) not in moto_bucket.multiparts:
+        upload_id = request.get("UploadId")
+        if not (
+            multipart := moto_bucket.multiparts.get(upload_id)
+        ) or not multipart.key_name == request.get("Key"):
             raise NoSuchUpload(
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
@@ -801,7 +813,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_name = request["Bucket"]
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
-        if (upload_id := request.get("UploadId")) not in moto_bucket.multiparts:
+        upload_id = request.get("UploadId")
+        if not (
+            multipart := moto_bucket.multiparts.get(upload_id)
+        ) or not multipart.key_name == request.get("Key"):
             raise NoSuchUpload(
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,

@@ -158,6 +158,9 @@ class LambdaFunction(Component):
     def region(self):
         return self.id.split(":")[3]
 
+    def account_id(self):
+        return self.id.split(":")[4]
+
     def arn(self):
         return self.id
 
