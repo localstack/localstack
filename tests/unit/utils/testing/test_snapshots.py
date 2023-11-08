@@ -93,6 +93,14 @@ class TestSnapshotManager:
         )
         sm._assert_all()
 
+    def test_reference_replacement_skip_outer_keys(self):
+        """Test if the reference replacement properly skips the snapshot keys on the outermost level"""
+        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm.add_transformer(TransformerUtility.key_value("name"))
+        sm.recorded_state = {"key_a": {"name": "<name:1>"}}
+        sm.match("key_a", {"name": "key"})
+        sm._assert_all()
+
     def test_replacement_key_value(self):
         sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
         sm.add_transformer(
