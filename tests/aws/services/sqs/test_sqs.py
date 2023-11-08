@@ -1059,12 +1059,11 @@ class TestSqsProvider:
     @markers.aws.only_localstack
     def test_external_endpoint(self, monkeypatch, sqs_create_queue, aws_client):
         external_host = "external-host"
-        external_port = "12345"
+        external_port = 12345
 
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
         monkeypatch.setattr(
-            config, "LOCALSTACK_HOST", config.HostAndPort(host=external_host, port=config.EDGE_PORT)
+            config, "LOCALSTACK_HOST", config.HostAndPort(host=external_host, port=external_port)
         )
 
         queue_url = sqs_create_queue()
@@ -1085,19 +1084,18 @@ class TestSqsProvider:
         queue_name = f"queue-{short_uid()}"
         sqs_create_queue(QueueName=queue_name)
 
-        edge_url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers(
             "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         payload = f"Action=GetQueueUrl&QueueName={queue_name}"
 
         # assert regular/default queue URL is returned
-        url = f"{edge_url}"
+        url = config.external_service_url()
         result = requests.post(url, data=payload, headers=headers)
         assert result
         content = to_str(result.content)
         kwargs = {"flags": re.MULTILINE | re.DOTALL}
-        assert re.match(rf".*<QueueUrl>\s*{edge_url}/[^<]+</QueueUrl>.*", content, **kwargs)
+        assert re.match(rf".*<QueueUrl>\s*{url}/[^<]+</QueueUrl>.*", content, **kwargs)
 
     @markers.aws.only_localstack
     def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch):

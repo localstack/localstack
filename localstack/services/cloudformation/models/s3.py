@@ -3,7 +3,7 @@ import re
 from botocore.exceptions import ClientError
 
 from localstack.aws.connect import connect_to
-from localstack.config import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME, get_edge_port_http
+from localstack.config import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.cfn_utils import rename_params
 from localstack.services.cloudformation.deployment_utils import (
     dump_json_params,
@@ -14,6 +14,7 @@ from localstack.services.s3.utils import normalize_bucket_name
 from localstack.utils.aws import arns
 from localstack.utils.common import canonical_json, md5
 from localstack.utils.testutil import delete_all_s3_objects
+from localstack.utils.urls import localstack_host
 
 
 class S3BucketPolicy(GenericBaseModel):
@@ -200,7 +201,7 @@ class S3Bucket(GenericBaseModel):
             #   you can use Amazon CloudFront [...]"
             resource["Properties"][
                 "WebsiteURL"
-            ] = f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
+            ] = f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{localstack_host().port}"
             # resource["Properties"]["DualStackDomainName"] = ?
 
         def _pre_delete(
