@@ -126,6 +126,11 @@ PROVIDER_DEFAULTS = {
     "AWS::SecretsManager::RotationSchedule": "ResourceProvider",
     "AWS::SecretsManager::Secret": "ResourceProvider",
     "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",
+    "AWS::SSM::Parameter": "ResourceProvider",
+    "AWS::SSM::MaintenanceWindow": "ResourceProvider",
+    "AWS::SSM::MaintenanceWindowTarget": "ResourceProvider",
+    "AWS::SSM::MaintenanceWindowTask": "ResourceProvider",
+    "AWS::SSM::PatchBaseline": "ResourceProvider",
 }
 
 
