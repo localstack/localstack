@@ -26,14 +26,14 @@ from botocore.client import Config
 from botocore.exceptions import ClientError
 from zoneinfo import ZoneInfo
 
-from localstack import config, constants
+import localstack.config
+from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.s3 import StorageClass
-from localstack.config import LEGACY_V2_S3_PROVIDER
+from localstack.config import LEGACY_V2_S3_PROVIDER, S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
-    S3_VIRTUAL_HOSTNAME,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -683,7 +683,8 @@ class TestS3:
         paths=[
             "$..Error.ArgumentName",
             "$..ContinuationToken",
-            "list-objects-v2-max-5.Contents[4].Key",  # this is because moto returns a Cont.Token equal to Key
+            "list-objects-v2-max-5.Contents[4].Key",
+            # this is because moto returns a Cont.Token equal to Key
         ],
     )
     def test_list_objects_v2_continuation_start_after(self, s3_bucket, snapshot, aws_client):
@@ -1858,7 +1859,8 @@ class TestS3:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..ServerSideEncryption",
-            "$..SSEKMSKeyId",  # TODO: fix this in moto, when not providing a KMS key, it should use AWS managed one
+            "$..SSEKMSKeyId",
+            # TODO: fix this in moto, when not providing a KMS key, it should use AWS managed one
             "$..ETag",  # Etag are different because of encryption
         ]
     )
@@ -1889,7 +1891,8 @@ class TestS3:
             Bucket=s3_bucket,
             CopySource=f"{s3_bucket}/{object_key}",
             Key=object_key,
-            ServerSideEncryption="aws:kms",  # this will use AWS managed key, and not copy the original object key
+            ServerSideEncryption="aws:kms",
+            # this will use AWS managed key, and not copy the original object key
         )
         snapshot.match("copy-object-in-place-with-sse", resp)
         head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
@@ -1993,7 +1996,8 @@ class TestS3:
             CopySource=f"{s3_bucket}/{object_key}",
             Key=object_key,
             MetadataDirective="COPY",  # this is the default value
-            StorageClass=StorageClass.STANDARD,  # we need to add storage class to make the copy request legal
+            StorageClass=StorageClass.STANDARD,
+            # we need to add storage class to make the copy request legal
         )
         snapshot.match("copy-copy-directive", resp)
         head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
@@ -2005,7 +2009,8 @@ class TestS3:
             Key=object_key,
             MetadataDirective="COPY",
             Metadata={"key3": "value3"},  # assert that this is ignored
-            StorageClass=StorageClass.STANDARD,  # we need to add storage class to make the copy request legal
+            StorageClass=StorageClass.STANDARD,
+            # we need to add storage class to make the copy request legal
         )
         snapshot.match("copy-copy-directive-ignore", resp)
         head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
@@ -3443,7 +3448,8 @@ class TestS3:
             "$..ServerSideEncryption",
             "$..Deleted..DeleteMarker",
             "$..Deleted..DeleteMarkerVersionId",
-            "$.get-acl-delete-marker-version-id.Error",  # Moto is not handling that case well with versioning
+            "$.get-acl-delete-marker-version-id.Error",
+            # Moto is not handling that case well with versioning
             "$.get-acl-delete-marker-version-id.ResponseMetadata",
         ],
     )
@@ -8151,7 +8157,8 @@ class TestS3BucketLifecycle:
                     "Filter": {},
                     "ID": "wholebucket",
                     "Status": "Enabled",
-                    "NoncurrentVersionExpiration": {},  # No NewerNoncurrentVersions or NoncurrentDays
+                    "NoncurrentVersionExpiration": {},
+                    # No NewerNoncurrentVersions or NoncurrentDays
                 }
             ]
             aws_client.s3.put_bucket_lifecycle_configuration(
@@ -10172,7 +10179,9 @@ def _website_bucket_url(bucket_name: str):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         region = AWS_REGION_US_EAST_1
         return f"http://{bucket_name}.s3-website-{region}.amazonaws.com"
-    return _bucket_url_vhost(bucket_name, localstack_host=constants.S3_STATIC_WEBSITE_HOSTNAME)
+    return _bucket_url_vhost(
+        bucket_name, localstack_host=localstack.config.S3_STATIC_WEBSITE_HOSTNAME
+    )
 
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:

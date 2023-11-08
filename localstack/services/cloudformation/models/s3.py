@@ -3,8 +3,7 @@ import re
 from botocore.exceptions import ClientError
 
 from localstack.aws.connect import connect_to
-from localstack.config import get_edge_port_http
-from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.config import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME, get_edge_port_http
 from localstack.services.cloudformation.cfn_utils import rename_params
 from localstack.services.cloudformation.deployment_utils import (
     dump_json_params,
