@@ -156,16 +156,17 @@ class TestGetEnabledApis:
         with temporary_env({"SERVICES": "es,lambda", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
-        assert len(result) == 5
+        assert len(result) == 6
         assert result == {
             # directly given
             "lambda",
             "es",
             # a dependency of es
             "opensearch",
-            # lambda has internal dependencies on s3, and sqs
+            # lambda has internal dependencies on s3, sqs, and sts
             "s3",
             "sqs",
+            "sts",
         }
 
 
