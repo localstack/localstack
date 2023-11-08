@@ -617,9 +617,8 @@ def host_based_url(rest_api_id: str, path: str, stage_name: str = None):
 
 
 def get_execute_api_endpoint(api_id: str, protocol: str = "") -> str:
-    port = config.get_edge_port_http()
-    host = localstack_host().host
-    return f"{protocol}{api_id}.execute-api.{host}:{port}"
+    host = localstack_host()
+    return f"{protocol}{api_id}.execute-api.{host.host_and_port()}"
 
 
 def tokenize_path(path):
