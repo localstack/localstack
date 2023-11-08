@@ -4,6 +4,7 @@ import requests
 from localstack import config
 from localstack.aws.handlers import cors as cors_handler
 from localstack.aws.handlers.cors import _get_allowed_cors_origins
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid, to_str
 
@@ -100,7 +101,9 @@ class TestCSRF:
 
     def test_disable_cors_headers(self, monkeypatch):
         """Test DISABLE_CORS_CHECKS=1 (most restrictive setting, not sending any CORS headers)"""
-        headers = aws_stack.mock_aws_request_headers("sns")
+        headers = aws_stack.mock_aws_request_headers(
+            "sns", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         headers["Origin"] = "https://app.localstack.cloud"
         url = config.get_edge_url()
         data = {"Action": "ListTopics", "Version": "2010-03-31"}
@@ -126,7 +129,9 @@ class TestCSRF:
         monkeypatch.setattr(cors_handler, "ALLOWED_CORS_ORIGINS", _get_allowed_cors_origins())
 
         url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers("sns")
+        headers = aws_stack.mock_aws_request_headers(
+            "sns", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         data = {"Action": "ListTopics", "Version": "2010-03-31"}
 
         # test successful request

@@ -1017,7 +1017,7 @@ class Util:
 
     @staticmethod
     def mountable_tmp_file():
-        f = os.path.join(config.dirs.tmp, short_uid())
+        f = os.path.join(config.dirs.mounted_tmp, short_uid())
         TMP_FILES.append(f)
         return f
 

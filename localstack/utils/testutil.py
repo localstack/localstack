@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_externally_to, connect_to
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
@@ -29,13 +30,10 @@ from localstack.constants import (
     LOCALHOST_HOSTNAME,
     LOCALSTACK_ROOT_FOLDER,
     LOCALSTACK_VENV_FOLDER,
+    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
 )
-from localstack.services.lambda_.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.lambda_.lambda_utils import (
-    LAMBDA_DEFAULT_HANDLER,
-    LAMBDA_DEFAULT_RUNTIME,
-    LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
 from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
@@ -59,8 +57,12 @@ from localstack.utils.threads import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
+LAMBDA_DEFAULT_HANDLER = "handler.handler"
+LAMBDA_DEFAULT_RUNTIME = Runtime.python3_9
+LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 LAMBDA_TIMEOUT_SEC = 30
 LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"
+LAMBDA_TEST_ROLE = "arn:aws:iam::{account_id}:role/lambda-test-role"
 MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 
@@ -515,7 +517,9 @@ def send_dynamodb_request(path, action, request_body):
     headers = {
         "Host": "dynamodb.amazonaws.com",
         "x-amz-target": "DynamoDB_20120810.{}".format(action),
-        "Authorization": aws_stack.mock_aws_request_headers("dynamodb")["Authorization"],
+        "Authorization": aws_stack.mock_aws_request_headers(
+            "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )["Authorization"],
     }
     url = f"{config.service_url('dynamodb')}/{path}"
     return requests.put(url, data=request_body, headers=headers, verify=False)

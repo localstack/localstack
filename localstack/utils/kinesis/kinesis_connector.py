@@ -268,6 +268,7 @@ class KclStartedLogListener(KclLogListener):
 # construct a stream info hash
 def get_stream_info(
     stream_name,
+    region_name,
     log_file=None,
     shards=None,
     env=None,
@@ -287,7 +288,7 @@ def get_stream_info(
     app_name = "%s%s" % (stream_name, ddb_lease_table_suffix)
     stream_info = {
         "name": stream_name,
-        "region": aws_stack.get_region(),
+        "region": region_name,
         "shards": shards,
         "properties_file": props_file,
         "log_file": log_file,
@@ -314,13 +315,13 @@ def get_stream_info(
 def start_kcl_client_process(
     stream_name: str,
     listener_script,
+    region_name,
     log_file=None,
     env=None,
     configs=None,
     endpoint_url=None,
     ddb_lease_table_suffix=None,
     env_vars=None,
-    region_name=None,
     kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
     log_subscribers=None,
 ):
@@ -356,6 +357,7 @@ def start_kcl_client_process(
     # construct stream info
     stream_info = get_stream_info(
         stream_name,
+        region_name,
         log_file,
         env=env,
         endpoint_url=endpoint_url,
@@ -454,6 +456,7 @@ if __name__ == '__main__':
 
 def listen_to_kinesis(
     stream_name,
+    region_name,
     listener_func=None,
     processor_script=None,
     events_file=None,
@@ -467,7 +470,6 @@ def listen_to_kinesis(
     log_subscribers=None,
     wait_until_started=False,
     fh_d_stream=None,
-    region_name=None,
 ):
     """
     High-level function that allows to subscribe to a Kinesis stream
@@ -507,6 +509,7 @@ def listen_to_kinesis(
     process = start_kcl_client_process(
         stream_name,
         processor_script,
+        region_name,
         endpoint_url=endpoint_url,
         log_file=log_file,
         configs=configs,
@@ -515,7 +518,6 @@ def listen_to_kinesis(
         env_vars=env_vars,
         kcl_log_level=kcl_log_level,
         log_subscribers=log_subscribers,
-        region_name=region_name,
     )
 
     if wait_until_started:

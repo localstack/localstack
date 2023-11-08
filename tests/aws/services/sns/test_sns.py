@@ -10,6 +10,7 @@ from operator import itemgetter
 import pytest
 import requests
 import xmltodict
+from botocore.auth import SigV4Auth
 from botocore.exceptions import ClientError
 from pytest_httpserver import HTTPServer
 from werkzeug import Response
@@ -20,8 +21,10 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
+    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.sns.constants import (
     PLATFORM_ENDPOINT_MSGS_ENDPOINT,
@@ -227,23 +230,6 @@ class TestSNSTopicCrud:
         topic1 = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "abc"}])
         snapshot.match("topic-1", topic1)
 
-    @markers.aws.validated
-    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
-
-        snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
-
-        snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
-
-        snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
-
 
 class TestSNSPublishCrud:
     """
@@ -265,10 +251,16 @@ class TestSNSPublishCrud:
         queue_url = sqs_create_queue()
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
-        client = aws_http_client_factory("sns", region="us-east-1")
+        client = aws_http_client_factory(
+            "sns",
+            signer_factory=SigV4Auth,
+            region=TEST_AWS_REGION_NAME,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
 
         if is_aws_cloud():
-            endpoint_url = "https://sns.us-east-1.amazonaws.com"
+            endpoint_url = f"https://sns.{TEST_AWS_REGION_NAME}.amazonaws.com"
         else:
             endpoint_url = config.get_edge_url()
 
@@ -823,6 +815,39 @@ class TestSNSSubscriptionCrud:
                 }
             )
         snapshot.match("subscribe-diff-attributes", e.value.response)
+
+    @markers.aws.validated
+    def test_unsubscribe_idempotency(
+        self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
+    ):
+        topic_name = f"topic-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        sub_arn = subscription["SubscriptionArn"]
+
+        unsubscribe_1 = aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
+        snapshot.match("unsubscribe-1", unsubscribe_1)
+        unsubscribe_2 = aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
+        snapshot.match("unsubscribe-2", unsubscribe_2)
+
+    @markers.aws.validated
+    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
+
+        snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
+
+        snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
+
+        snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
 
 
 class TestSNSSubscriptionLambda:
@@ -4182,9 +4207,9 @@ class TestSNSPublishDelivery:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",
-            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-            "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            "$..Attributes.DeliveryPolicy",
+            "$..Attributes.EffectiveDeliveryPolicy",
+            "$..Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
         ]
     )
     def test_delivery_lambda(
@@ -4210,7 +4235,8 @@ class TestSNSPublishDelivery:
         function_name = f"lambda-function-{short_uid()}"
         permission_id = f"test-statement-{short_uid()}"
         subject = "[Subject] Test subject"
-        message = "Hello world."
+        message_fail = "Should not be received"
+        message_success = "Should be received"
         topic_name = f"test-topic-{short_uid()}"
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
         parsed_arn = parse_arn(topic_arn)
@@ -4220,7 +4246,6 @@ class TestSNSPublishDelivery:
         policy_name = f"SNSSuccessFeedback-policy-{short_uid()}"
 
         # enable Success Feedback from SNS to be sent to CloudWatch
-        # TODO: this is enabled by default in LS
         trust_policy = {
             "Version": "2012-10-17",
             "Statement": [
@@ -4260,18 +4285,6 @@ class TestSNSPublishDelivery:
             # wait for the policy to be properly attached
             time.sleep(20)
 
-        aws_client.sns.set_topic_attributes(
-            TopicArn=topic_arn,
-            AttributeName="LambdaSuccessFeedbackRoleArn",
-            AttributeValue=role_arn,
-        )
-
-        aws_client.sns.set_topic_attributes(
-            TopicArn=topic_arn,
-            AttributeName="LambdaSuccessFeedbackSampleRate",
-            AttributeValue="100",
-        )
-
         topic_attributes = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
         snapshot.match("get-topic-attrs", topic_attributes)
 
@@ -4305,7 +4318,32 @@ class TestSNSPublishDelivery:
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        aws_client.sns.publish(TopicArn=topic_arn, Subject=subject, Message=message)
+        publish_no_logs = aws_client.sns.publish(
+            TopicArn=topic_arn, Subject=subject, Message=message_fail
+        )
+        snapshot.match("publish-no-logs", publish_no_logs)
+
+        # Then enable the SNS Delivery Logs for Lambda on the topic
+        aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackRoleArn",
+            AttributeValue=role_arn,
+        )
+
+        aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackSampleRate",
+            AttributeValue="100",
+        )
+
+        topic_attributes = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attrs-with-success-feedback", topic_attributes)
+
+        publish_logs = aws_client.sns.publish(
+            TopicArn=topic_arn, Subject=subject, Message=message_success
+        )
+        # we snapshot the publish call to match the messageId to the events
+        snapshot.match("publish-logs", publish_logs)
 
         # TODO: Wait until Lambda function actually executes and not only for SNS logs
         log_group_name = f"sns/{region}/{account_id}/{topic_name}"
@@ -4415,7 +4453,9 @@ class TestSNSRetrospectionEndpoints:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
         msgs_url = config.get_edge_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
-        api_contents = requests.get(msgs_url, params={"region": TEST_AWS_REGION_NAME}).json()
+        api_contents = requests.get(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        ).json()
         api_platform_endpoints_msgs = api_contents["platform_endpoint_messages"]
 
         assert len(api_platform_endpoints_msgs) == 2
@@ -4432,7 +4472,8 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure you can select the region
         msg_with_region = requests.get(
-            msgs_url, params={"region": SECONDARY_TEST_AWS_REGION_NAME}
+            msgs_url,
+            params={"region": SECONDARY_TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID},
         ).json()
         assert len(msg_with_region["platform_endpoint_messages"]) == 0
         assert msg_with_region["region"] == SECONDARY_TEST_AWS_REGION_NAME
@@ -4443,26 +4484,41 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure messages can be filtered by EndpointArn
         api_contents_with_endpoint = requests.get(
-            msgs_url, params={"endpointArn": endpoint_arn}
+            msgs_url,
+            params={
+                "endpointArn": endpoint_arn,
+            },
         ).json()
         msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
         assert len(msgs_with_endpoint) == 1
         assert len(msgs_with_endpoint[endpoint_arn]) == 1
-        assert api_contents_with_endpoint["region"] == "us-east-1"
+        assert api_contents_with_endpoint["region"] == TEST_AWS_REGION_NAME
 
         # Ensure you can reset the saved messages by EndpointArn
-        delete_res = requests.delete(msgs_url, params={"endpointArn": endpoint_arn})
+        delete_res = requests.delete(
+            msgs_url,
+            params={
+                "endpointArn": endpoint_arn,
+            },
+        )
         assert delete_res.status_code == 204
         api_contents_with_endpoint = requests.get(
-            msgs_url, params={"endpointArn": endpoint_arn}
+            msgs_url,
+            params={
+                "endpointArn": endpoint_arn,
+            },
         ).json()
         msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
         assert len(msgs_with_endpoint[endpoint_arn]) == 0
 
         # Ensure you can reset the saved messages by region
-        delete_res = requests.delete(msgs_url, params={"region": "us-east-1"})
+        delete_res = requests.delete(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        )
         assert delete_res.status_code == 204
-        msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
+        msg_with_region = requests.get(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        ).json()
         assert not msg_with_region["platform_endpoint_messages"]
 
     @markers.aws.only_localstack
@@ -4499,7 +4555,9 @@ class TestSNSRetrospectionEndpoints:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
         msgs_url = config.get_edge_url() + SMS_MSGS_ENDPOINT
-        api_contents = requests.get(msgs_url, params={"region": TEST_AWS_REGION_NAME}).json()
+        api_contents = requests.get(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        ).json()
         api_sms_msgs = api_contents["sms_messages"]
 
         assert len(api_sms_msgs) == 3
@@ -4524,15 +4582,27 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure messages can be filtered by EndpointArn
         api_contents_with_number = requests.get(
-            msgs_url, params={"phoneNumber": phone_number_1}
+            msgs_url,
+            params={
+                "phoneNumber": phone_number_1,
+                "accountId": TEST_AWS_ACCOUNT_ID,
+                "region": TEST_AWS_REGION_NAME,
+            },
         ).json()
         msgs_with_number = api_contents_with_number["sms_messages"]
         assert len(msgs_with_number) == 1
         assert len(msgs_with_number[phone_number_1]) == 2
-        assert api_contents_with_number["region"] == "us-east-1"
+        assert api_contents_with_number["region"] == TEST_AWS_REGION_NAME
 
         # Ensure you can reset the saved messages by EndpointArn
-        delete_res = requests.delete(msgs_url, params={"phoneNumber": phone_number_1})
+        delete_res = requests.delete(
+            msgs_url,
+            params={
+                "phoneNumber": phone_number_1,
+                "accountId": TEST_AWS_ACCOUNT_ID,
+                "region": TEST_AWS_REGION_NAME,
+            },
+        )
         assert delete_res.status_code == 204
         api_contents_with_number = requests.get(
             msgs_url, params={"phoneNumber": phone_number_1}
@@ -4541,9 +4611,11 @@ class TestSNSRetrospectionEndpoints:
         assert len(msgs_with_number[phone_number_1]) == 0
 
         # Ensure you can reset the saved messages by region
-        delete_res = requests.delete(msgs_url, params={"region": "us-east-1"})
+        delete_res = requests.delete(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        )
         assert delete_res.status_code == 204
-        msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
+        msg_with_region = requests.get(msgs_url, params={"region": TEST_AWS_REGION_NAME}).json()
         assert not msg_with_region["sms_messages"]
 
     @markers.aws.only_localstack
@@ -4589,7 +4661,10 @@ class TestSNSRetrospectionEndpoints:
             timeout=2,
         )
 
-        wrong_sub_arn = subscription_arn.replace(TEST_AWS_REGION_NAME, "us-west-1")
+        wrong_sub_arn = subscription_arn.replace(
+            TEST_AWS_REGION_NAME,
+            "il-central-1" if TEST_AWS_REGION_NAME != "il-central-1" else "me-south-1",
+        )
         wrong_region_req = requests.get(f"{tokens_base_url}/{wrong_sub_arn}")
         assert wrong_region_req.status_code == 404
         assert wrong_region_req.json() == {

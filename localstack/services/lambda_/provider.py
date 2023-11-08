@@ -141,6 +141,7 @@ from localstack.services.lambda_.api_utils import ARCHITECTURES, STATEMENT_ID_RE
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
+from localstack.services.lambda_.event_source_listeners.utils import validate_filters
 from localstack.services.lambda_.invocation import AccessDeniedException
 from localstack.services.lambda_.invocation.execution_environment import (
     EnvironmentStartupTimeoutException,
@@ -182,7 +183,6 @@ from localstack.services.lambda_.invocation.lambda_service import (
 )
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.services.lambda_.lambda_utils import validate_filters
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
@@ -1690,7 +1690,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )  # TODO: test?
-        event_source_mapping = {**old_event_source_mapping, **request_data}
+
+        # remove the FunctionName field
+        function_name_or_arn = request_data.pop("FunctionName", None)
+
+        # normalize values to overwrite
+        event_source_mapping = {
+            **old_event_source_mapping,
+            **request_data,
+        }
+
+        if function_name_or_arn:
+            # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
+            account_id, region = api_utils.get_account_and_region(function_name_or_arn, context)
+            function_name, qualifier = api_utils.get_name_and_qualifier(
+                function_name_or_arn, None, context
+            )
+            event_source_mapping["FunctionArn"] = api_utils.qualified_lambda_arn(
+                function_name, qualifier, account_id, region
+            )
 
         temp_params = (
             {}

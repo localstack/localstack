@@ -5,7 +5,6 @@ from typing import Dict, List
 
 from localstack.aws.connect import connect_to
 from localstack.utils.aws import arns
-from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.strings import convert_to_printable_chars, first_char_to_upper
 
 LOG = logging.getLogger(__name__)
@@ -33,12 +32,6 @@ def sns_error_to_dead_letter_queue(
         **kwargs,
     }
     return _send_to_dead_letter_queue(sns_subscriber["SubscriptionArn"], target_arn, event, error)
-
-
-def lambda_error_to_dead_letter_queue(func_details: LambdaFunction, event: Dict, error):
-    dlq_arn = (func_details.dead_letter_config or {}).get("TargetArn")
-    source_arn = func_details.id
-    _send_to_dead_letter_queue(source_arn, dlq_arn, event, error)
 
 
 def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error, role: str = None):

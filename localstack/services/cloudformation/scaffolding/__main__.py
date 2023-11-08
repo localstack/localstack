@@ -126,11 +126,14 @@ def run_black(text: str) -> str:
 
 
 def get_formatted_template_output(
-    env: Environment, template_name: str, *render_args, **render_kwargs
+    env: Environment, template_name: str, do_run_black: bool, *render_args, **render_kwargs
 ) -> str:
     template = env.get_template(template_name)
     raw_text = template.render(*render_args, **render_kwargs)
-    return run_black(raw_text)
+    if do_run_black:
+        return run_black(raw_text)
+    else:
+        return raw_text
 
 
 class SchemaProvider:
@@ -222,6 +225,7 @@ class TemplateRenderer:
         self,
         file_type: FileType,
         resource_name: ResourceName,
+        do_run_black: bool,
     ) -> str:
         # Generated outputs (template, schema)
         # templates
@@ -292,8 +296,9 @@ class TemplateRenderer:
                     self.schema.get("handlers", {}).get("list", {}).get("permissions")
                 )
             case FileType.plugin:
-                kwargs["service"] = resource_name.service.lower()
+                kwargs["service"] = resource_name.python_compatible_service_name.lower()
                 kwargs["lower_resource"] = resource_name.resource.lower()
+                kwargs["pro"] = False
             case FileType.integration_test:
                 kwargs["black_box_template_path"] = str(
                     template_path(resource_name, FileType.minimal_template, tests_output_path)
@@ -317,7 +322,7 @@ class TemplateRenderer:
                 raise NotImplementedError(f"Rendering template of type {file_type}")
 
         return get_formatted_template_output(
-            self.environment, template_mapping[file_type], **kwargs
+            self.environment, template_mapping[file_type], do_run_black, **kwargs
         )
 
     def get_getatt_targets(self) -> Generator[str, None, None]:
@@ -635,13 +640,20 @@ class FileWriter:
 
 
 class OutputFactory:
-    def __init__(self, template_renderer: TemplateRenderer, printer: Console, writer: FileWriter):
+    def __init__(
+        self,
+        template_renderer: TemplateRenderer,
+        printer: Console,
+        writer: FileWriter,
+        do_run_black: bool,
+    ):
         self.template_renderer = template_renderer
         self.printer = printer
         self.writer = writer
+        self.do_run_black = do_run_black
 
     def get(self, file_type: FileType, resource_name: ResourceName) -> Output:
-        contents = self.template_renderer.render(file_type, resource_name)
+        contents = self.template_renderer.render(file_type, resource_name, self.do_run_black)
         return Output(contents, file_type, self.printer, self.writer, resource_name)
 
 
@@ -729,7 +741,10 @@ def cli():
 @click.option("-w", "--write/--no-write", default=False)
 @click.option("--overwrite", is_flag=True, default=False)
 @click.option("-t", "--write-tests/--no-write-tests", default=False)
-def generate(resource_type: str, write: bool, write_tests: bool, overwrite: bool):
+@click.option("--run-black/--no-run-black", "do_run_black", default=True)
+def generate(
+    resource_type: str, write: bool, write_tests: bool, overwrite: bool, do_run_black: bool
+):
     console = Console()
     console.rule(title=resource_type)
 
@@ -756,7 +771,7 @@ def generate(resource_type: str, write: bool, write_tests: bool, overwrite: bool
 
         template_renderer = TemplateRenderer(schema, env)
         writer = FileWriter(resource_name, console, overwrite)
-        output_factory = OutputFactory(template_renderer, console, writer)  # noqa
+        output_factory = OutputFactory(template_renderer, console, writer, do_run_black)  # noqa
         for file_type in FileType:
             if not write_tests and file_type in {
                 FileType.integration_test,
