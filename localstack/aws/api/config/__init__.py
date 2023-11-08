@@ -680,6 +680,23 @@ class ResourceType(str):
         "AWS::Route53Resolver::ResolverQueryLoggingConfig"
     )
     AWS_Batch_SchedulingPolicy = "AWS::Batch::SchedulingPolicy"
+    AWS_ACMPCA_CertificateAuthorityActivation = "AWS::ACMPCA::CertificateAuthorityActivation"
+    AWS_AppMesh_GatewayRoute = "AWS::AppMesh::GatewayRoute"
+    AWS_AppMesh_Mesh = "AWS::AppMesh::Mesh"
+    AWS_Connect_Instance = "AWS::Connect::Instance"
+    AWS_Connect_QuickConnect = "AWS::Connect::QuickConnect"
+    AWS_EC2_CarrierGateway = "AWS::EC2::CarrierGateway"
+    AWS_EC2_IPAMPool = "AWS::EC2::IPAMPool"
+    AWS_EC2_TransitGatewayConnect = "AWS::EC2::TransitGatewayConnect"
+    AWS_EC2_TransitGatewayMulticastDomain = "AWS::EC2::TransitGatewayMulticastDomain"
+    AWS_ECS_CapacityProvider = "AWS::ECS::CapacityProvider"
+    AWS_IAM_InstanceProfile = "AWS::IAM::InstanceProfile"
+    AWS_IoT_CACertificate = "AWS::IoT::CACertificate"
+    AWS_IoTTwinMaker_SyncJob = "AWS::IoTTwinMaker::SyncJob"
+    AWS_KafkaConnect_Connector = "AWS::KafkaConnect::Connector"
+    AWS_Lambda_CodeSigningConfig = "AWS::Lambda::CodeSigningConfig"
+    AWS_NetworkManager_ConnectPeer = "AWS::NetworkManager::ConnectPeer"
+    AWS_ResourceExplorer2_Index = "AWS::ResourceExplorer2::Index"
 
 
 class ResourceValueType(str):

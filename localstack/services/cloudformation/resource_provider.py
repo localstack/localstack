@@ -27,6 +27,16 @@ from localstack.services.cloudformation.deployment_utils import (
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
 
+PRO_RESOURCE_PROVIDERS = False
+try:
+    from localstack_ext.services.cloudformation.resource_provider import (
+        CloudFormationResourceProviderPluginExt,
+    )
+
+    PRO_RESOURCE_PROVIDERS = True
+except ImportError:
+    pass
+
 if TYPE_CHECKING:
     from localstack.services.cloudformation.engine.types import (
         FuncDetails,
@@ -61,6 +71,19 @@ PROVIDER_DEFAULTS = {
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
     "AWS::DynamoDB::Table": "ResourceProvider",
+    "AWS::EC2::DHCPOptions": "ResourceProvider",
+    "AWS::EC2::Instance": "ResourceProvider",
+    "AWS::EC2::InternetGateway": "ResourceProvider",
+    "AWS::EC2::NatGateway": "ResourceProvider",
+    "AWS::EC2::NetworkAcl": "ResourceProvider",
+    "AWS::EC2::Route": "ResourceProvider",
+    "AWS::EC2::RouteTable": "ResourceProvider",
+    "AWS::EC2::SecurityGroup": "ResourceProvider",
+    "AWS::EC2::Subnet": "ResourceProvider",
+    "AWS::EC2::SubnetRouteTableAssociation": "ResourceProvider",
+    "AWS::EC2::VPC": "ResourceProvider",
+    "AWS::EC2::VPCGatewayAttachment": "ResourceProvider",
+    "AWS::ECR::Repository": "ResourceProvider",
     "AWS::EKS::Nodegroup": "ResourceProvider",
     "AWS::ElasticBeanstalk::Application": "ResourceProvider",
     "AWS::ElasticBeanstalk::ApplicationVersion": "ResourceProvider",
@@ -88,6 +111,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Logs::LogStream": "ResourceProvider",
     "AWS::Logs::SubscriptionFilter": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
+    "AWS::RDS::DBCluster": "ResourceProvider",
     "AWS::Redshift::Cluster": "ResourceProvider",
     "AWS::Route53::HealthCheck": "ResourceProvider",
     "AWS::Route53::RecordSet": "ResourceProvider",
@@ -101,9 +125,7 @@ PROVIDER_DEFAULTS = {
     "AWS::SecretsManager::ResourcePolicy": "ResourceProvider",
     "AWS::SecretsManager::RotationSchedule": "ResourceProvider",
     "AWS::SecretsManager::Secret": "ResourceProvider",
-    # "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",  # FIXME: add full -ext and override logic for -ext
-    # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
-    "AWS::EC2::DHCPOptions": "ResourceProvider",
+    "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",
     "AWS::StepFunctions::Activity": "ResourceProvider",
     "AWS::StepFunctions::StateMachine": "ResourceProvider",
 }
@@ -784,6 +806,20 @@ class ResourceProviderExecutor:
         if self.should_use_legacy_provider(resource_type):
             return self._load_legacy_resource_provider(resource_type)
 
+        # prioritise pro resource providers
+        if PRO_RESOURCE_PROVIDERS:
+            try:
+                plugin = pro_plugin_manager.load(resource_type)
+                return plugin.factory()
+            except ValueError:
+                # could not load the plugin
+                pass
+            except Exception:
+                LOG.warning(
+                    "error loading plugin from plugin manager",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+
         try:
             plugin = plugin_manager.load(resource_type)
             return plugin.factory()
@@ -826,3 +862,5 @@ class ResourceProviderExecutor:
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
+if PRO_RESOURCE_PROVIDERS:
+    pro_plugin_manager = PluginManager(CloudFormationResourceProviderPluginExt.namespace)

@@ -4,7 +4,6 @@ import os.path
 
 import pytest
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.lambda_.legacy import lambda_api
@@ -206,7 +205,7 @@ class TestLambdaLegacyProvider:
     def test_create_lambda_function(self, aws_client):
         """Basic test that creates and deletes a Lambda function"""
         func_name = f"lambda_func-{short_uid()}"
-        kms_key_arn = f"arn:{aws_stack.get_partition()}:kms:{aws_stack.get_region()}:{get_aws_account_id()}:key11"
+        kms_key_arn = f"arn:{aws_stack.get_partition()}:kms:{TEST_AWS_REGION_NAME}:{TEST_AWS_ACCOUNT_ID}:key11"
         vpc_config = {
             "SubnetIds": ["subnet-123456789"],
             "SecurityGroupIds": ["sg-123456789"],
@@ -217,7 +216,7 @@ class TestLambdaLegacyProvider:
             "FunctionName": func_name,
             "Runtime": Runtime.python3_7,
             "Handler": LAMBDA_DEFAULT_HANDLER,
-            "Role": LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
+            "Role": LAMBDA_TEST_ROLE.format(account_id=TEST_AWS_ACCOUNT_ID),
             "KMSKeyArn": kms_key_arn,
             "Code": {
                 "ZipFile": create_lambda_archive(

@@ -13,7 +13,11 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 from tests.aws.services.lambda_.functions import lambda_integration
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
+    TEST_LAMBDA_PYTHON_ECHO_VERSION_ENV,
+)
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 LAMBDA_SQS_INTEGRATION_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_sqs_integration.py")
@@ -1163,5 +1167,119 @@ class TestSQSEventSourceMapping:
         snapshot.match("create_event_source_mapping_exception", expected.value.response)
         expected.match(InvalidParameterValueException.code)
 
+    @pytest.mark.skipif(condition=is_old_provider(), reason="broken")
+    @markers.aws.validated
+    def test_sqs_event_source_mapping_update(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        lambda_su_role,
+        snapshot,
+        cleanups,
+        aws_client,
+    ):
+        """
+        Testing an update to an event source mapping that changes the targeted lambda function version
 
-# TODO: test integration with lambda logs
+        Resources used:
+        - Lambda function
+        - 2 published versions of that lambda function
+        - 1 event source mapping
+
+        First the event source mapping points towards the qualified ARN of the first version.
+        A message is sent to the SQS queue, triggering the function version with ID 1.
+        The lambda function is updated with a different value for the environment variable and a new version published.
+        Then we update the event source mapping and make the qualified ARN of the function version with ID 2 the new target.
+        A message is sent to the SQS queue, triggering the function with version ID 2.
+
+        We should have one log entry for each of the invocations.
+
+        """
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name_1 = f"queue-{short_uid()}-1"
+        mapping_uuid = None
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO_VERSION_ENV,
+            runtime=Runtime.python3_11,
+            role=lambda_su_role,
+        )
+
+        aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, Environment={"Variables": {"CUSTOM_VAR": "a"}}
+        )
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        publish_v1 = aws_client.lambda_.publish_version(FunctionName=function_name)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(
+            FunctionName=publish_v1["FunctionArn"]
+        )
+
+        queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
+        queue_arn_1 = sqs_get_queue_arn(queue_url_1)
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            EventSourceArn=queue_arn_1,
+            FunctionName=publish_v1["FunctionArn"],
+            MaximumBatchingWindowInSeconds=1,
+        )
+        mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+        snapshot.match("create-event-source-mapping-response", create_event_source_mapping_response)
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
+
+        aws_client.sqs.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps({"foo": "bar"}))
+
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name,
+            expected_length=1,
+            logs_client=aws_client.logs,
+        )
+        snapshot.match("events", events)
+
+        rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
+        assert rs.get("Messages") is None
+
+        # # create new function version
+        aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, Environment={"Variables": {"CUSTOM_VAR": "b"}}
+        )
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        publish_v2 = aws_client.lambda_.publish_version(FunctionName=function_name)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(
+            FunctionName=publish_v2["FunctionArn"]
+        )
+        # we're now pointing the existing event source mapping towards the new version.
+        # only v2 should now be called
+        updated_esm = aws_client.lambda_.update_event_source_mapping(
+            UUID=mapping_uuid, FunctionName=publish_v2["FunctionArn"]
+        )
+        assert mapping_uuid == updated_esm["UUID"]
+        assert publish_v2["FunctionArn"] == updated_esm["FunctionArn"]
+        snapshot.match("updated_esm", updated_esm)
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
+
+        # TODO: we actually would probably need to wait for an updating state here.
+        #   we experience flaky cases on AWS where the next send actually goes to the old version.
+        #   Not sure yet how we could prevent this
+        if is_aws_cloud():
+            time.sleep(10)
+
+        # verify function v2 was called, not latest and not v1
+        aws_client.sqs.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps({"foo": "bar2"}))
+        # get the event message
+        events_postupdate = retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name,
+            expected_length=2,
+            logs_client=aws_client.logs,
+        )
+        snapshot.match("events_postupdate", events_postupdate)
+
+        rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
+        assert rs.get("Messages") is None

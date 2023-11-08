@@ -867,3 +867,45 @@ class TestBaseScenarios:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    def test_wait_timestamp(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.WAIT_TIMESTAMP)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_wait_timestamp_path(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.WAIT_TIMESTAMP_PATH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"TimestampValue": "2016-03-14T01:59:00Z"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )

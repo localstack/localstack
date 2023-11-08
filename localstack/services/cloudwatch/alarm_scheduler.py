@@ -126,8 +126,10 @@ def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> Optional[MetricAla
 
 
 def get_cloudwatch_client_for_region_of_alarm(alarm_arn: str) -> "CloudWatchClient":
-    region = arns.extract_region_from_arn(alarm_arn)
-    return connect_to(region_name=region).cloudwatch
+    parsed_arn = arns.parse_arn(alarm_arn)
+    region = parsed_arn["region"]
+    access_key_id = parsed_arn["account"]
+    return connect_to(region_name=region, aws_access_key_id=access_key_id).cloudwatch
 
 
 def generate_metric_query(alarm_details: MetricAlarm) -> MetricDataQuery:

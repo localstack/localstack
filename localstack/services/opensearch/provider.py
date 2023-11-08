@@ -93,6 +93,7 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
@@ -114,6 +115,12 @@ DEFAULT_OPENSEARCH_CLUSTER_CONFIG = ClusterConfig(
     ZoneAwarenessEnabled=False,
     DedicatedMasterType=OpenSearchPartitionInstanceType.m3_medium_search,
     DedicatedMasterCount=1,
+)
+
+DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS = DomainEndpointOptions(
+    EnforceHTTPS=False,
+    TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
+    CustomEndpointEnabled=False,
 )
 
 
@@ -354,18 +361,13 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             AutomatedUpdateDate=datetime.fromtimestamp(0, tz=timezone.utc),
             OptionalDeployment=True,
         ),
-        DomainEndpointOptions=DomainEndpointOptions(
-            EnforceHTTPS=False,
-            TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
-            CustomEndpointEnabled=False,
-        ),
+        DomainEndpointOptions=stored_status.get("DomainEndpointOptions")
+        or DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS,
         AdvancedSecurityOptions=AdvancedSecurityOptions(
             Enabled=False, InternalUserDatabaseEnabled=False
         ),
         AutoTuneOptions=AutoTuneOptionsOutput(State=AutoTuneState.ENABLE_IN_PROGRESS),
     )
-    if stored_status.get("Endpoint"):
-        new_status["Endpoint"] = new_status.get("Endpoint")
     return new_status
 
 
@@ -399,7 +401,21 @@ def is_valid_domain_name(name: str) -> bool:
     return True if _domain_name_pattern.match(name) else False
 
 
-class OpensearchProvider(OpensearchApi):
+def validate_endpoint_options(endpoint_options: DomainEndpointOptions):
+    custom_endpoint = endpoint_options.get("CustomEndpoint", "")
+    custom_endpoint_enabled = endpoint_options.get("CustomEndpointEnabled", False)
+
+    if custom_endpoint and not custom_endpoint_enabled:
+        raise ValidationException(
+            "CustomEndpointEnabled flag should be set in order to use CustomEndpoint."
+        )
+    if custom_endpoint_enabled and not custom_endpoint:
+        raise ValidationException(
+            "Please provide CustomEndpoint field to create a custom endpoint."
+        )
+
+
+class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
     @staticmethod
     def get_store(account_id: str, region_name: str) -> OpenSearchStore:
         return opensearch_stores[account_id][region_name]
@@ -484,6 +500,9 @@ class OpensearchProvider(OpensearchApi):
                 "Member must satisfy regular expression pattern: [a-z][a-z0-9\\-]+"
             )
 
+        if domain_endpoint_options:
+            validate_endpoint_options(domain_endpoint_options)
+
         with _domain_mutex:
             if domain_name in store.opensearch_domains:
                 raise ResourceAlreadyExistsException(
@@ -498,6 +517,10 @@ class OpensearchProvider(OpensearchApi):
 
             # "create" domain data
             store.opensearch_domains[domain_name] = get_domain_status(domain_key)
+            if domain_endpoint_options:
+                store.opensearch_domains[domain_name]["DomainEndpointOptions"] = (
+                    DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS | domain_endpoint_options
+                )
 
             # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
             # TODO handle additional parameters (cluster config,...)

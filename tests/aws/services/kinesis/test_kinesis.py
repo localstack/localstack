@@ -252,7 +252,7 @@ class TestKinesis:
         iterator = get_shard_iterator(stream_name, aws_client.kinesis)
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers(
-            "kinesis", region_name=TEST_AWS_REGION_NAME, access_key=TEST_AWS_ACCESS_KEY_ID
+            "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
@@ -286,7 +286,7 @@ class TestKinesis:
         # empty get records with CBOR encoding
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers(
-            "kinesis", region_name=TEST_AWS_REGION_NAME, access_key=TEST_AWS_ACCESS_KEY_ID
+            "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
@@ -443,10 +443,10 @@ class TestKinesisPythonClient:
         resources.create_kinesis_stream(kinesis, stream_name, delete=True)
         process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
+            region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
             kcl_log_level=logging.INFO,
             wait_until_started=True,
-            region_name=TEST_AWS_REGION_NAME,
         )
 
         try:

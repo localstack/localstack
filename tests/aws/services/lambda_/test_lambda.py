@@ -52,6 +52,9 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
 TEST_LAMBDA_PYTHON_REQUEST_ID = os.path.join(THIS_FOLDER, "functions/lambda_request_id.py")
+TEST_LAMBDA_PYTHON_ECHO_VERSION_ENV = os.path.join(
+    THIS_FOLDER, "functions/lambda_echo_version_env.py"
+)
 TEST_LAMBDA_PYTHON_ROLE = os.path.join(THIS_FOLDER, "functions/lambda_role.py")
 TEST_LAMBDA_MAPPING_RESPONSES = os.path.join(THIS_FOLDER, "functions/lambda_mapping_responses.py")
 TEST_LAMBDA_PYTHON_SELECT_PATTERN = os.path.join(THIS_FOLDER, "functions/lambda_select_pattern.py")

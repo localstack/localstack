@@ -1,0 +1,11 @@
+{
+  "Comment": "WAIT_TIMESTAMP_PATH",
+  "StartAt": "WaitUntil",
+  "States": {
+    "WaitUntil": {
+      "Type": "Wait",
+      "TimestampPath": "$.TimestampValue",
+      "End": true
+    }
+  }
+}
