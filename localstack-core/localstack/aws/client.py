@@ -86,6 +86,7 @@ class _ResponseStream(io.RawIOBase):
             return 0  # indicate EOF
 
     def read(self, amt=None) -> bytes | None:
+        # see https://github.com/python/cpython/blob/main/Lib/_pyio.py
         # adds compatibility for botocore's client-side AWSResponse.raw attribute.
         # it seems the default implementation of RawIOBase.read to not handle well some cases
         if amt is None:
