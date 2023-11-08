@@ -98,6 +98,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Logs::LogStream": "ResourceProvider",
     "AWS::Logs::SubscriptionFilter": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
+    "AWS::RDS::DBCluster": "ResourceProvider",
     "AWS::Redshift::Cluster": "ResourceProvider",
     "AWS::Route53::HealthCheck": "ResourceProvider",
     "AWS::Route53::RecordSet": "ResourceProvider",
@@ -115,6 +116,7 @@ PROVIDER_DEFAULTS = {
     # "AWS::ECR::Repository": "ResourceProvider",  # FIXME: add full -ext provider & override logic for -ext
     "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::CloudFormation::Stack": "ResourceProvider",
+    "AWS::EC2::NetworkAcl": "ResourceProvider",
 }
 
 
