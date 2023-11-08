@@ -603,16 +603,6 @@ def populate_edge_configuration(
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
-    # new for v2
-    # get the potentially set port from LOCALSTACK_HOST first to use for gateway listen
-    localstack_host_port = constants.DEFAULT_PORT_EDGE
-    if localstack_host_raw is not None:
-        localstack_host_port = HostAndPort.parse(
-            localstack_host_raw,
-            default_host=constants.LOCALHOST_HOSTNAME,
-            default_port=constants.DEFAULT_PORT_EDGE,
-        ).port
-
     # parse gateway listen from multiple components
     if gateway_listen_raw is not None:
         gateway_listen = []
@@ -621,16 +611,15 @@ def populate_edge_configuration(
                 HostAndPort.parse(
                     address.strip(),
                     default_host=default_ip,
-                    default_port=localstack_host_port,
+                    default_port=constants.DEFAULT_PORT_EDGE,
                 )
             )
     else:
         # use default if gateway listen is not defined
-        gateway_listen = [HostAndPort(host=default_ip, port=localstack_host_port)]
+        gateway_listen = [HostAndPort(host=default_ip, port=constants.DEFAULT_PORT_EDGE)]
 
     # the actual value of the LOCALSTACK_HOST port now depends on what gateway listen actually listens to.
     if localstack_host_raw is None:
-        # TODO use actual gateway port?
         localstack_host = HostAndPort(
             host=constants.LOCALHOST_HOSTNAME, port=gateway_listen[0].port
         )
@@ -1057,6 +1046,10 @@ DNS_VERIFICATION_DOMAIN = os.environ.get("DNS_VERIFICATION_DOMAIN") or "localsta
 def use_custom_dns():
     return str(DNS_ADDRESS) not in FALSE_STRINGS
 
+
+# s3 virtual host name
+S3_VIRTUAL_HOSTNAME = "s3.%s" % LOCALSTACK_HOST.host
+S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALSTACK_HOST.host
 
 BOTO_WAITER_DELAY = int(os.environ.get("BOTO_WAITER_DELAY") or "1")
 BOTO_WAITER_MAX_ATTEMPTS = int(os.environ.get("BOTO_WAITER_MAX_ATTEMPTS") or "120")

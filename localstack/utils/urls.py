@@ -18,10 +18,6 @@ def localstack_host(custom_port: Optional[int] = None) -> HostAndPort:
     - the user's configuration (e.g environment variable overrides)
     - the defaults of the system
     """
-    port = config.EDGE_PORT
-    if custom_port is not None:
-        port = custom_port
-
+    port = custom_port or config.LOCALSTACK_HOST.port
     host = config.LOCALSTACK_HOST.host
-
     return HostAndPort(host=host, port=port)

@@ -8,8 +8,7 @@ from typing import Optional, TypedDict
 from botocore.exceptions import ClientError
 
 import localstack.services.cloudformation.provider_utils as util
-from localstack.config import get_edge_port_http
-from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.config import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME, get_edge_port_http
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,

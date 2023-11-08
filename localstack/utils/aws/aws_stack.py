@@ -10,6 +10,7 @@ import boto3
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
@@ -20,7 +21,6 @@ from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
     REGION_LOCAL,
-    S3_VIRTUAL_HOSTNAME,
 )
 from localstack.utils.strings import is_string, is_string_or_bytes, to_str
 

@@ -5,24 +5,6 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
-@pytest.fixture
-def hosted_zone(aws_client):
-    zone_ids = []
-
-    def factory(**kwargs):
-        if "CallerReference" not in kwargs:
-            kwargs["CallerReference"] = f"ref-{short_uid()}"
-        response = aws_client.route53.create_hosted_zone(**kwargs)
-        zone_id = response["HostedZone"]["Id"]
-        zone_ids.append(zone_id)
-        return response
-
-    yield factory
-
-    for zone_id in zone_ids:
-        aws_client.route53.delete_hosted_zone(Id=zone_id)
-
-
 @pytest.fixture(autouse=True)
 def route53_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.route53_api())
