@@ -2074,3 +2074,21 @@ def register_extension(s3_bucket, aws_client):
             except Exception:
                 continue
         cfn_client.deregister_type(Arn=arn)
+
+
+@pytest.fixture
+def hosted_zone(aws_client):
+    zone_ids = []
+
+    def factory(**kwargs):
+        if "CallerReference" not in kwargs:
+            kwargs["CallerReference"] = f"ref-{short_uid()}"
+        response = aws_client.route53.create_hosted_zone(**kwargs)
+        zone_id = response["HostedZone"]["Id"]
+        zone_ids.append(zone_id)
+        return response
+
+    yield factory
+
+    for zone_id in zone_ids[::-1]:
+        aws_client.route53.delete_hosted_zone(Id=zone_id)

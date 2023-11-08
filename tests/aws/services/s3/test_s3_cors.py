@@ -7,10 +7,10 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.handlers.cors import ALLOWED_CORS_ORIGINS
+from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
-    S3_VIRTUAL_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
 )
@@ -227,11 +227,14 @@ class TestS3Cors:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
-            "$..Body.Error.RequestId",  # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Body.Error.HostId",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.RequestId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
-            "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
+            "$..Headers.Transfer-Encoding",
+            # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
         ]
     )
     @markers.snapshot.skip_snapshot_verify(
@@ -317,11 +320,14 @@ class TestS3Cors:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
-            "$..Body.Error.RequestId",  # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Body.Error.HostId",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.RequestId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
-            "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
+            "$..Headers.Transfer-Encoding",
+            # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
             "$.put-op.Body",  # TODO: We should not return a body for almost all PUT requests
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
@@ -382,8 +388,10 @@ class TestS3Cors:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
-            "$..Body.Error.RequestId",  # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Body.Error.HostId",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.RequestId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",
@@ -596,8 +604,10 @@ class TestS3Cors:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
-            "$..Body.Error.RequestId",  # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Body.Error.HostId",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.RequestId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",
         ]

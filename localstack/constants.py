@@ -181,10 +181,6 @@ OFFICIAL_IMAGES = [
     "localstack/localstack-pro",
 ]
 
-# s3 virtual host name
-S3_VIRTUAL_HOSTNAME = "s3.%s" % LOCALHOST_HOSTNAME
-S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALHOST_HOSTNAME
-
 # port for debug py
 DEFAULT_DEVELOP_PORT = 5678
 

@@ -9,7 +9,8 @@ import zoneinfo
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import InvalidArgument
-from localstack.constants import LOCALHOST, S3_VIRTUAL_HOSTNAME
+from localstack.config import S3_VIRTUAL_HOSTNAME
+from localstack.constants import LOCALHOST
 from localstack.http import Request
 from localstack.services.s3 import presigned_url
 from localstack.services.s3 import utils as s3_utils
