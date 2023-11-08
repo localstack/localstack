@@ -245,12 +245,17 @@ class CloudwatchDatabase:
                 for r in cur.fetchall()
             ]
 
+            query = f"""
+                SELECT DISTINCT metric_name, namespace ,dimensions FROM {self.TABLE_AGGREGATED_METRICS}
+                WHERE account_id = ? AND region = ?
+                {namespace_filter}
+                {metric_name_filter}
+                {dimension_filter}
+                ORDER BY timestamp DESC
+            """
+
             cur.execute(
-                f"""SELECT DISTINCT metric_name, namespace ,dimensions FROM {self.TABLE_AGGREGATED_METRICS}
-                                    WHERE account_id = ? AND region = ?
-                                        {namespace_filter} {metric_name_filter}
-                                        {dimension_filter}
-                                    ORDER BY timestamp DESC""",
+                query,
                 data,
             )
             aggregated_metrics_result = [
