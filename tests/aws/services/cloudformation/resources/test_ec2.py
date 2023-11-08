@@ -173,18 +173,20 @@ def test_transit_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
     stack.destroy()
 
     descriptions = aws_client.ec2.describe_transit_gateways(
-            TransitGatewayIds=[stack.outputs["TransitGateway"]]
-        )
+        TransitGatewayIds=[stack.outputs["TransitGateway"]]
+    )
     if is_aws_cloud():
         # aws changes the state to deleted
         descriptions = descriptions["TransitGateways"][0]
         assert descriptions["State"] == "deleted"
     else:
         # moto directly deletes the transit gateway
-        transit_gateways_ids = [tgateway["TransitGatewayId"] for tgateway in descriptions["TransitGateways"]]
+        transit_gateways_ids = [
+            tgateway["TransitGatewayId"] for tgateway in descriptions["TransitGateways"]
+        ]
         assert stack.outputs["TransitGateway"] not in transit_gateways_ids
 
     attachment_description = aws_client.ec2.describe_transit_gateway_attachments(
-            TransitGatewayAttachmentIds=[stack.outputs["Attachment"]]
-        )["TransitGatewayAttachments"]
+        TransitGatewayAttachmentIds=[stack.outputs["Attachment"]]
+    )["TransitGatewayAttachments"]
     assert attachment_description[0]["State"] == "deleted"
