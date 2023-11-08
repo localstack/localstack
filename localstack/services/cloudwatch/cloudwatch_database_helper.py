@@ -93,7 +93,7 @@ class CloudwatchDatabase:
                 if metric.get("Value"):
                     inserts.append({"Value": metric.get("Value"), "TimesToInsert": 1})
                 elif metric.get("Values"):
-                    inserts = [{"Value": value, "TimesToInsert": metric.get("Counts")[indexValue]} for indexValue,value in enumerate(metric.get("Values"))]
+                    inserts = [{"Value": value, "TimesToInsert": int(metric.get("Counts")[indexValue])} for indexValue,value in enumerate(metric.get("Values"))]
 
                 for insert in inserts:
                     for _ in range(insert.get("TimesToInsert")):
