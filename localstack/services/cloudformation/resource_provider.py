@@ -132,6 +132,8 @@ PROVIDER_DEFAULTS = {
     "AWS::SSM::MaintenanceWindowTarget": "ResourceProvider",
     "AWS::SSM::MaintenanceWindowTask": "ResourceProvider",
     "AWS::SSM::PatchBaseline": "ResourceProvider",
+    "AWS::StepFunctions::Activity": "ResourceProvider",
+    "AWS::StepFunctions::StateMachine": "ResourceProvider",
 }
 
 
