@@ -218,7 +218,7 @@ class LambdaTopicPublisher(TopicPublisher):
         :param subscriber: the SNS subscription
         :return: an SNS message body formatted as a lambda Event in a JSON string
         """
-        external_url = external_service_url("sns")
+        external_url = external_service_url()
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
         message_attributes = prepare_message_attributes(message_context.message_attributes)
         region_name = extract_region_from_arn(subscriber["SubscriptionArn"])
@@ -829,7 +829,7 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
     if message_type == "Notification" and is_raw_message_delivery(subscriber):
         return message_content
 
-    external_url = external_service_url("sns")
+    external_url = external_service_url()
 
     data = {
         "Type": message_type,

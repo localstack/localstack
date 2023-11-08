@@ -1059,12 +1059,11 @@ class TestSqsProvider:
     @markers.aws.only_localstack
     def test_external_endpoint(self, monkeypatch, sqs_create_queue, aws_client):
         external_host = "external-host"
-        external_port = "12345"
+        external_port = 12345
 
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
         monkeypatch.setattr(
-            config, "LOCALSTACK_HOST", config.HostAndPort(host=external_host, port=config.EDGE_PORT)
+            config, "LOCALSTACK_HOST", config.HostAndPort(host=external_host, port=external_port)
         )
 
         queue_url = sqs_create_queue()

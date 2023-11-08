@@ -821,9 +821,6 @@ SQS_DELAY_PURGE_RETRY = is_env_true("SQS_DELAY_PURGE_RETRY")
 # Used to toggle QueueDeletedRecently errors when re-creating a queue within 60 seconds of deleting it
 SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 
-# expose SQS on a specific port externally
-SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
-
 # Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", or "path"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "standard"
 
@@ -1178,7 +1175,6 @@ CONFIG_ENV_VARS = [
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",
-    "SQS_PORT_EXTERNAL",
     "SQS_DISABLE_CLOUDWATCH_METRICS",
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
@@ -1201,6 +1197,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_FORWARD_URL",  # deprecated since 2.0.0
     "LAMBDA_REMOTE_DOCKER",  # deprecated since 2.0.0
     "LAMBDA_STAY_OPEN_MODE",  # deprecated since 2.0.0
+    "SQS_PORT_EXTERNAL",  # deprecated in docs since 2022-07-13
     "SYNCHRONOUS_KINESIS_EVENTS",  # deprecated since 1.3.0
     "SYNCHRONOUS_SNS_EVENTS",  # deprecated since 1.3.0
     "SYNCHRONOUS_DYNAMODB_EVENTS",  # deprecated since 1.3.0
@@ -1268,43 +1265,63 @@ populate_config_env_var_names()
 
 
 def service_port(service_key: str, external: bool = False) -> int:
-    service_key = service_key.lower()
+    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use."""
     if external:
-        if service_key == "sqs" and SQS_PORT_EXTERNAL:
-            return SQS_PORT_EXTERNAL
-    return get_edge_port_http()
+        return LOCALSTACK_HOST.port
+    return GATEWAY_LISTEN[0].port
 
 
 def get_protocol():
     return "https" if USE_SSL else "http"
 
 
-def service_url(service_key, host=None, port=None):
-    host = host or LOCALHOST
-    port = port or service_port(service_key)
-    return f"{get_protocol()}://{host}:{port}"
-
-
-def external_service_url(service_key, host=None, port=None):
+# TODO: refactor internal codebase to use external_service_url and internal_service_url
+def external_service_url(host=None, port=None, protocol=None) -> str:
+    """Returns a service URL to an external client used outside where LocalStack runs.
+    The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.
+    `host` can be used to overwrite the default for subdomains.
+    """
+    protocol = protocol or get_protocol()
     host = host or LOCALSTACK_HOST.host
-    port = port or service_port(service_key, external=True)
-    return service_url(service_key, host=host, port=port)
+    port = port or LOCALSTACK_HOST.port
+    return f"{protocol}://{host}:{port}"
 
 
-# FIXME: we don't separate http and non-http ports any more,
-#        so this function should be removed
+def internal_service_url(host=None, port=None, protocol=None) -> str:
+    """Returns a service URL for internal use within where LocalStack runs.
+    Cannot be customized through LOCALSTACK_HOST because we assume LocalStack runs on the same host (i.e., localhost).
+    """
+    protocol = protocol or get_protocol()
+    host = host or LOCALHOST
+    port = port or GATEWAY_LISTEN[0].port
+    return f"{protocol}://{host}:{port}"
+
+
+# TODO: Go over all usages and decide whether it's an internal or external usage
+def service_url(service_key, host=None, port=None):
+    """@deprecated: Use `internal_service_url()` instead.
+    We assume that most usages are internal but really need to check and update each usage accordingly.
+    """
+    return internal_service_url(host=host, port=port)
+
+
+# TODO: go over all usages and replace depending on internal or external usage
 def get_edge_port_http():
+    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use.
+    This function is also not needed anymore because we don't separate between HTTP and HTTP ports anymore since
+    LocalStack listens to both."""
     return GATEWAY_LISTEN[0].port
 
 
+# TODO: Go over all usages and decide whether it's an internal or external usage
 def get_edge_url(localstack_hostname=None, protocol=None):
-    port = get_edge_port_http()
-    protocol = protocol or get_protocol()
-    localstack_hostname = localstack_hostname or LOCALSTACK_HOST.host
-    return "%s://%s:%s" % (protocol, localstack_hostname, port)
+    """@deprecated: Use `internal_service_url()` instead.
+    We assume that most usages are internal but really need to check and update each usage accordingly.
+    """
+    return internal_service_url(host=localstack_hostname, protocol=protocol)
 
 
-def edge_ports_info():
+def gateway_listen_port_info():
     """Example: http port [4566,443]"""
     gateway_listen_ports = [gw_listen.port for gw_listen in GATEWAY_LISTEN]
     return f"{get_protocol()} port {gateway_listen_ports}"

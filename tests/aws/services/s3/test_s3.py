@@ -10166,8 +10166,8 @@ def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
         else:
             return f"http://s3.{region}.amazonaws.com"
     if region == "us-east-1":
-        return f"{config.get_edge_url(localstack_hostname=localstack_host or S3_VIRTUAL_HOSTNAME)}"
-    return config.get_edge_url(f"s3.{region}.{LOCALHOST_HOSTNAME}")
+        return f"{config.internal_service_url(host=localstack_host or S3_VIRTUAL_HOSTNAME)}"
+    return config.internal_service_url(host=f"s3.{region}.{LOCALHOST_HOSTNAME}")
 
 
 def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
@@ -10195,7 +10195,7 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
 
     host_definition = get_localstack_host()
     if localstack_host:
-        host_and_port = f"{localstack_host}:{config.get_edge_port_http()}"
+        host_and_port = f"{localstack_host}:{config.GATEWAY_LISTEN[0].port}"
     else:
         host_and_port = (
             f"s3.{region}.{host_definition.host_and_port()}"

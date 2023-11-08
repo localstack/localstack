@@ -1,4 +1,5 @@
 from localstack.testing.pytest import markers
+from localstack.utils.urls import localstack_host
 
 """
 This test file captures the _current_ state of returning URLs before making
@@ -143,9 +144,8 @@ class TestSQS:
     """
     Test all combinations of:
 
-    * endpoint_strategy
-    * sqs_port_external
-    * hostname_external
+    * SQS_ENDPOINT_STRATEGY
+    * LOCALSTACK_HOST
     """
 
     @markers.aws.only_localstack
@@ -166,7 +166,11 @@ class TestSQS:
     ):
         external_port = 12345
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
+        monkeypatch.setattr(
+            config,
+            "LOCALSTACK_HOST",
+            config.HostAndPort(host=localstack_host().host, port=external_port),
+        )
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -220,7 +224,7 @@ class TestLambda:
 
         assert_host_customisation(function_url)
 
-    @pytest.mark.skipif(reason="Not implemented for new provider (was tested for old provider)")
+    @pytest.mark.skip(reason="Not implemented for new provider (was tested for old provider)")
     @markers.aws.only_localstack
     def test_http_api_for_function_url(
         self, assert_host_customisation, create_lambda_function, aws_http_client_factory
