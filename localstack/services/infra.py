@@ -328,7 +328,7 @@ def cleanup_resources():
 
 
 def log_startup_message(service):
-    LOG.info("Starting mock %s service on %s ...", service, config.gateway_listen_port_info())
+    LOG.info("Starting mock %s service on %s ...", service, config.gateway_listen_ports_info())
 
 
 def check_aws_credentials():

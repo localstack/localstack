@@ -1321,7 +1321,7 @@ def get_edge_url(localstack_hostname=None, protocol=None):
     return internal_service_url(host=localstack_hostname, protocol=protocol)
 
 
-def gateway_listen_port_info():
+def gateway_listen_ports_info():
     """Example: http port [4566,443]"""
     gateway_listen_ports = [gw_listen.port for gw_listen in GATEWAY_LISTEN]
     return f"{get_protocol()} port {gateway_listen_ports}"
