@@ -126,8 +126,8 @@ class TestCloudwatch:
         err = ex.value.response["Error"]
         assert err["Code"] == "InvalidParameterCombination"
         assert (
-                err["Message"]
-                == "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both."
+            err["Message"]
+            == "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both."
         )
 
         # test invalid due to data can not have and values mismatched_counts
@@ -147,10 +147,9 @@ class TestCloudwatch:
         err = ex.value.response["Error"]
         assert err["Code"] == "InvalidParameterValue"
         assert (
-                err["Message"]
-                == "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size."
+            err["Message"]
+            == "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size."
         )
-
 
     @markers.aws.validated
     def test_get_metric_data(self, aws_client):
@@ -245,6 +244,91 @@ class TestCloudwatch:
                 assert len(data_metric["Values"]) == 0
             if data_metric["Id"] == "part":
                 assert len(data_metric["Values"]) == 0
+
+    @markers.aws.validated
+    def test_get_metric_data_for_multiple_metrics(self, aws_client):
+        utc_now = datetime.now(tz=timezone.utc)
+        namespace = f"test/{short_uid()}"
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "metric1",
+                    "Value": 50,
+                    "Unit": "Seconds",
+                    "Timestamp": utc_now,
+                }
+            ],
+        )
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "metric2",
+                    "Value": 25,
+                    "Unit": "Seconds",
+                    "Timestamp": utc_now,
+                }
+            ],
+        )
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "metric3",
+                    "StatisticValues": {
+                        "SampleCount": 10,
+                        "Sum": 55,
+                        "Minimum": 1,
+                        "Maximum": 10,
+                    },
+                    "Unit": "Seconds",
+                    "Timestamp": utc_now,
+                }
+            ],
+        )
+        # get_metric_data
+        response = aws_client.cloudwatch.get_metric_data(
+            MetricDataQueries=[
+                {
+                    "Id": "result1",
+                    "MetricStat": {
+                        "Metric": {"Namespace": namespace, "MetricName": "metric1"},
+                        "Period": 60,
+                        "Stat": "Sum",
+                    },
+                },
+                {
+                    "Id": "result2",
+                    "MetricStat": {
+                        "Metric": {"Namespace": namespace, "MetricName": "metric2"},
+                        "Period": 60,
+                        "Stat": "Sum",
+                    },
+                },
+                {
+                    "Id": "result3",
+                    "MetricStat": {
+                        "Metric": {"Namespace": namespace, "MetricName": "metric3"},
+                        "Period": 60,
+                        "Stat": "Sum",
+                    },
+                },
+            ],
+            StartTime=utc_now - timedelta(seconds=60),
+            EndTime=utc_now + timedelta(seconds=60),
+        )
+
+        res1 = [res for res in response["MetricDataResults"] if res["Id"] == "result1"][0]
+        assert res1["Values"] == [50.0]
+
+        res2 = [res for res in response["MetricDataResults"] if res["Id"] == "result2"][0]
+        assert res2["Values"] == [25.0]
+
+        res3 = [res for res in response["MetricDataResults"] if res["Id"] == "result3"][0]
+        assert res3["Values"] == [55.0]
 
     @markers.aws.only_localstack
     def test_raw_metric_data(self, aws_client):
@@ -447,7 +531,6 @@ class TestCloudwatch:
         # asserting only unique values are returned
         retry(_count_single_metrics, retries=retries, sleep_before=sleep_seconds)
 
-
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
             MetricData=[
@@ -525,23 +608,38 @@ class TestCloudwatch:
         def _count_all_metrics_in_namespace():
             results = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
             assert len(results) == 4
+
         retry(_count_all_metrics_in_namespace, retries=retries, sleep_before=sleep_seconds)
 
         def _count_specific_metric_in_namespace():
-            results = aws_client.cloudwatch.list_metrics(Namespace=namespace, MetricName="CPUUtilization")["Metrics"]
+            results = aws_client.cloudwatch.list_metrics(
+                Namespace=namespace, MetricName="CPUUtilization"
+            )["Metrics"]
             assert len(results) == 1
+
         retry(_count_specific_metric_in_namespace, retries=retries, sleep_before=sleep_seconds)
 
         def _count_metrics_in_namespace_with_dimension():
-            results = aws_client.cloudwatch.list_metrics(Namespace=namespace, Dimensions=[{"Name": "InstanceId"}])["Metrics"]
+            results = aws_client.cloudwatch.list_metrics(
+                Namespace=namespace, Dimensions=[{"Name": "InstanceId"}]
+            )["Metrics"]
             assert len(results) == 3
-        retry(_count_metrics_in_namespace_with_dimension, retries=retries, sleep_before=sleep_seconds)
+
+        retry(
+            _count_metrics_in_namespace_with_dimension, retries=retries, sleep_before=sleep_seconds
+        )
 
         def _count_metrics_in_namespace_with_dimension_value():
-            results = aws_client.cloudwatch.list_metrics(Namespace=namespace, Dimensions=[{"Name": "InstanceId", "Value": "two"}])["Metrics"]
+            results = aws_client.cloudwatch.list_metrics(
+                Namespace=namespace, Dimensions=[{"Name": "InstanceId", "Value": "two"}]
+            )["Metrics"]
             assert len(results) == 2
-        retry(_count_metrics_in_namespace_with_dimension_value, retries=retries, sleep_before=sleep_seconds)
 
+        retry(
+            _count_metrics_in_namespace_with_dimension_value,
+            retries=retries,
+            sleep_before=sleep_seconds,
+        )
 
     @markers.aws.validated
     def test_put_metric_alarm_escape_character(self, cleanups, aws_client):

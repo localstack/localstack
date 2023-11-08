@@ -93,21 +93,29 @@ class CloudwatchDatabase:
                 if metric.get("Value"):
                     inserts.append({"Value": metric.get("Value"), "TimesToInsert": 1})
                 elif metric.get("Values"):
-                    inserts = [{"Value": value, "TimesToInsert": int(metric.get("Counts")[indexValue])} for indexValue,value in enumerate(metric.get("Values"))]
+                    inserts = [
+                        {"Value": value, "TimesToInsert": int(metric.get("Counts")[indexValue])}
+                        for indexValue, value in enumerate(metric.get("Values"))
+                    ]
 
                 for insert in inserts:
                     for _ in range(insert.get("TimesToInsert")):
-                        cur.execute(self._get_insert_single_metric_query(),(
-                            account_id,
-                            region,
-                            metric.get("MetricName"),
-                            namespace,
-                            unix_timestamp,
-                            self._get_ordered_dimensions_with_separator(metric.get("Dimensions")),
-                            metric.get("Unit"),
-                            metric.get("StorageResolution"),
-                            insert.get("Value"),
-                        ))
+                        cur.execute(
+                            self._get_insert_single_metric_query(),
+                            (
+                                account_id,
+                                region,
+                                metric.get("MetricName"),
+                                namespace,
+                                unix_timestamp,
+                                self._get_ordered_dimensions_with_separator(
+                                    metric.get("Dimensions")
+                                ),
+                                metric.get("Unit"),
+                                metric.get("StorageResolution"),
+                                insert.get("Value"),
+                            ),
+                        )
 
                 if statistic_values := metric.get("StatisticValues"):
                     cur.execute(
@@ -124,8 +132,8 @@ class CloudwatchDatabase:
                             statistic_values.get("SampleCount"),
                             statistic_values.get("Sum"),
                             statistic_values.get("Minimum"),
-                            statistic_values.get("Maximum")
-                        )
+                            statistic_values.get("Maximum"),
+                        ),
                     )
 
             conn.commit()
@@ -196,34 +204,46 @@ class CloudwatchDatabase:
             # TODO return datapoints, create results, join with aggregated data
             return {"id": query.get("Id"), "result": results}
 
-    def list_metrics(
-            self,
-            account_id,
-            region,
-            namespace,
-            metric_name,
-            dimensions) -> dict:
+    def list_metrics(self, account_id, region, namespace, metric_name, dimensions) -> dict:
         with sqlite3.connect(self.METRICS_DB) as conn:
             cur = conn.cursor()
 
-            namespace_filter = f"AND namespace = '{namespace}'" if namespace else ""
-            metric_name_filter = f"AND metric_name = '{metric_name}'" if metric_name else ""
+            data = (account_id, region)
+
+            namespace_filter = ""
+            if namespace:
+                namespace_filter = "AND namespace = ?"
+                data = data + (namespace,)
+
+            metric_name_filter = ""
+            if metric_name:
+                metric_name_filter = "AND metric_name = ?"
+                data = data + (metric_name,)
 
             dimension_filter = ""
             for dimension in dimensions:
-                dimension_filter += f"AND dimensions LIKE '%{dimension['Name']}={dimension.get('Value','')}%' "
+                dimension_filter += "AND dimensions LIKE ? "
+                data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
 
-            # TODO add support for next token
-            data = (account_id, region)
+            query = f"""
+                SELECT DISTINCT metric_name, namespace, dimensions
+                FROM {self.TABLE_SINGLE_METRICS}
+                WHERE account_id = ? AND region = ? {namespace_filter} {metric_name_filter} {dimension_filter}
+                ORDER BY timestamp DESC
+            """
 
             cur.execute(
-                f"""SELECT DISTINCT metric_name, namespace ,dimensions FROM {self.TABLE_SINGLE_METRICS}
-                                    WHERE account_id = ? AND region = ?
-                                        {namespace_filter} {metric_name_filter} {dimension_filter}
-                                    ORDER BY timestamp DESC""",
+                query,
                 data,
             )
-            single_metrics_result = [{"metric_name": r[0], "namespace": r[1], "dimensions": self._restore_dimensions_from_string(r[2])} for r in cur.fetchall()]
+            single_metrics_result = [
+                {
+                    "metric_name": r[0],
+                    "namespace": r[1],
+                    "dimensions": self._restore_dimensions_from_string(r[2]),
+                }
+                for r in cur.fetchall()
+            ]
 
             cur.execute(
                 f"""SELECT DISTINCT metric_name, namespace ,dimensions FROM {self.TABLE_AGGREGATED_METRICS}
@@ -233,7 +253,14 @@ class CloudwatchDatabase:
                                     ORDER BY timestamp DESC""",
                 data,
             )
-            aggregated_metrics_result = [{"metric_name": r[0], "namespace": r[1], "dimensions": self._restore_dimensions_from_string(r[2])} for r in cur.fetchall()]
+            aggregated_metrics_result = [
+                {
+                    "metric_name": r[0],
+                    "namespace": r[1],
+                    "dimensions": self._restore_dimensions_from_string(r[2]),
+                }
+                for r in cur.fetchall()
+            ]
 
             return {"metrics": (single_metrics_result + aggregated_metrics_result)}
 
@@ -273,12 +300,12 @@ class CloudwatchDatabase:
     ):  # TODO verify if this is the standard format, might need to convert
         return int(timestamp.timestamp())
 
-    def _get_insert_single_metric_query(self)->str:
+    def _get_insert_single_metric_query(self) -> str:
         return f"""INSERT INTO {self.TABLE_SINGLE_METRICS}
                     ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "value")
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
-    def _get_insert_aggregated_metric_query(self)->str:
+    def _get_insert_aggregated_metric_query(self) -> str:
         return f"""INSERT INTO {self.TABLE_AGGREGATED_METRICS}
                     ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "sample_count", "sum", "min", "max")
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
