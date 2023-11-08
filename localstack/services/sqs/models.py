@@ -20,7 +20,6 @@ from localstack.aws.api.sqs import (
     ReceiptHandleIsInvalid,
     TagMap,
 )
-from localstack.config import get_protocol
 from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import (
     InvalidAttributeValue,
@@ -287,9 +286,6 @@ class SqsQueue:
             host_url = f"{scheme}://{host_definition.host_and_port()}/queue/{self.region}"
         else:
             host_url = f"{scheme}://{host_definition.host_and_port()}"
-            if config.SQS_PORT_EXTERNAL:
-                host_definition = localstack_host(custom_port=config.SQS_PORT_EXTERNAL)
-                host_url = f"{get_protocol()}://{host_definition.host_and_port()}"
 
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),

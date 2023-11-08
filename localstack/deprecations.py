@@ -249,6 +249,11 @@ DEPRECATIONS = [
         "This option has no effect anymore. Please use the AWS client and init hooks instead.",
     ),
     EnvVarDeprecation(
+        "SQS_PORT_EXTERNAL",
+        "1.0.0",
+        "This option has no effect anymore. Please use LOCALSTACK_HOST instead.",
+    ),
+    EnvVarDeprecation(
         "PROVIDER_OVERRIDE_LAMBDA",
         "3.0.0",
         "This option is ignored because the legacy Lambda provider (v1) has been removed since 3.0.0. "

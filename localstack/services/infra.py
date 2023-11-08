@@ -328,7 +328,7 @@ def cleanup_resources():
 
 
 def log_startup_message(service):
-    LOG.info("Starting mock %s service on %s ...", service, config.edge_ports_info())
+    LOG.info("Starting mock %s service on %s ...", service, config.gateway_listen_ports_info())
 
 
 def check_aws_credentials():
@@ -484,13 +484,13 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
         # TODO: properly encapsulate starting/stopping of edge server in a class
         if not poll_condition(
-            lambda: is_port_open(config.get_edge_port_http()), timeout=15, interval=0.3
+            lambda: is_port_open(config.GATEWAY_LISTEN[0].port), timeout=15, interval=0.3
         ):
             if LOG.isEnabledFor(logging.DEBUG):
                 # make another call with quiet=False to print detailed error logs
-                is_port_open(config.get_edge_port_http(), quiet=False)
+                is_port_open(config.GATEWAY_LISTEN[0].port, quiet=False)
             raise TimeoutError(
-                f"gave up waiting for edge server on {config.GATEWAY_LISTEN[0].host}:{config.GATEWAY_LISTEN[0].port}"
+                f"gave up waiting for edge server on {config.GATEWAY_LISTEN[0].host_and_port()}"
             )
 
         return t

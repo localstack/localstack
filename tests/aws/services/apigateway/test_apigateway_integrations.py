@@ -586,7 +586,7 @@ def test_create_execute_api_vpc_endpoint(
     # create Lambda function that invokes the API GW (private VPC endpoint not accessible from outside of AWS)
     if not is_aws_cloud():
         api_host = get_main_endpoint_from_container()
-        endpoint = endpoint.replace(host_header, f"{api_host}:{config.get_edge_port_http()}")
+        endpoint = endpoint.replace(host_header, f"{api_host}:{config.GATEWAY_LISTEN[0].port}")
     lambda_code = textwrap.dedent(
         f"""
     def handler(event, context):

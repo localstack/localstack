@@ -30,7 +30,7 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
     host = localstack_host or (
         f"s3.{region}.{LOCALHOST_HOSTNAME}" if region != "us-east-1" else S3_VIRTUAL_HOSTNAME
     )
-    s3_edge_url = config.get_edge_url(localstack_hostname=host)
+    s3_edge_url = config.internal_service_url(host=host)
     # TODO might add the region here
     return s3_edge_url.replace(f"://{host}", f"://{bucket_name}.{host}")
 

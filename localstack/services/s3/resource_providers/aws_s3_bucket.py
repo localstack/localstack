@@ -8,7 +8,7 @@ from typing import Optional, TypedDict
 from botocore.exceptions import ClientError
 
 import localstack.services.cloudformation.provider_utils as util
-from localstack.config import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME, get_edge_port_http
+from localstack.config import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
@@ -18,6 +18,7 @@ from localstack.services.cloudformation.resource_provider import (
 from localstack.services.s3.utils import normalize_bucket_name
 from localstack.utils.aws import arns
 from localstack.utils.testutil import delete_all_s3_objects
+from localstack.utils.urls import localstack_host
 
 
 class S3BucketProperties(TypedDict):
@@ -589,7 +590,7 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
         #   you can use Amazon CloudFront [...]"
         model[
             "WebsiteURL"
-        ] = f"http://{model['BucketName']}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
+        ] = f"http://{model['BucketName']}.{S3_STATIC_WEBSITE_HOSTNAME}:{localstack_host().port}"
         # resource["Properties"]["DualStackDomainName"] = ?
 
     def _create_bucket_if_does_not_exist(self, model, region_name, s3_client):

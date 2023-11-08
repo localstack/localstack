@@ -27,7 +27,7 @@ class _RequestCollectingClient(HttpClient):
         :return: a proxy using this client
         """
         return Proxy(
-            config.get_edge_url(localstack_hostname="localhost"), preserve_host=False, client=self
+            config.internal_service_url(host="localhost"), preserve_host=False, client=self
         )
 
 

@@ -59,7 +59,7 @@ class S3VirtualHostProxyHandler:
         """
         return Proxy(
             # Just use localhost for proxying, do not rely on external - potentially dangerous - configuration
-            forward_base_url=config.get_edge_url(localstack_hostname="localhost"),
+            forward_base_url=config.internal_service_url(),
             # do not preserve the Host when forwarding (to avoid an endless loop)
             preserve_host=False,
         )
@@ -96,7 +96,7 @@ class S3VirtualHostProxyHandler:
         # the user can specify whatever domain & port he wants in the Host header
         # we need to make sure we're redirecting the request to our edge URL, possibly s3.localhost.localstack.cloud
         host = domain
-        edge_host = f"{LOCALHOST_HOSTNAME}:{config.get_edge_port_http()}"
+        edge_host = f"{LOCALHOST_HOSTNAME}:{config.GATEWAY_LISTEN[0].port}"
         if host != edge_host:
             netloc = netloc.replace(host, edge_host)
 
