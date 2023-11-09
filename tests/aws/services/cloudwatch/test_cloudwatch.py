@@ -330,6 +330,72 @@ class TestCloudwatch:
         res3 = [res for res in response["MetricDataResults"] if res["Id"] == "result3"][0]
         assert res3["Values"] == [55.0]
 
+    # parametrize test
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "stat,result",
+        [
+            ("Sum", 66),
+            ("SampleCount", 11),
+            ("Minimum", 1),
+            ("Maximum", 11),
+            ("Average", 6),
+        ],
+    )
+    def test_get_metric_data_stats(self, aws_client, stat, result):
+        utc_now = datetime.now(tz=timezone.utc)
+        namespace = f"test/{short_uid()}"
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "metric1",
+                    "Value": 11,
+                    "Unit": "Seconds",
+                    "Timestamp": utc_now,
+                }
+            ],
+        )
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "metric1",
+                    "StatisticValues": {
+                        "SampleCount": 10,
+                        "Sum": 55,
+                        "Minimum": 1,
+                        "Maximum": 10,
+                    },
+                    "Unit": "Seconds",
+                    "Timestamp": utc_now,
+                }
+            ],
+        )
+
+        # Instant querying gets wrong results
+        time.sleep(2)
+
+        response = aws_client.cloudwatch.get_metric_data(
+            MetricDataQueries=[
+                {
+                    "Id": "result1",
+                    "MetricStat": {
+                        "Metric": {"Namespace": namespace, "MetricName": "metric1"},
+                        "Period": 60,
+                        "Stat": stat,
+                    },
+                }
+            ],
+            StartTime=utc_now - timedelta(seconds=60),
+            EndTime=utc_now + timedelta(seconds=60),
+        )
+
+        res1 = [res for res in response["MetricDataResults"] if res["Id"] == "result1"][0]
+        assert res1["Values"] == [result]
+
     @markers.aws.only_localstack
     def test_raw_metric_data(self, aws_client):
         """

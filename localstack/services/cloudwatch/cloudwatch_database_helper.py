@@ -220,7 +220,9 @@ class CloudwatchDatabase:
                         next_start_time,
                     ),
                 )
-                datapoints[str(start_time_unix)]["values"].append(cur.fetchall()[0][0])
+                single_result = cur.fetchall()[0][0]
+                if single_result:
+                    datapoints[str(start_time_unix)]["values"].append(single_result)
 
                 cur.execute(
                     query_agg_metric,
@@ -252,8 +254,26 @@ class CloudwatchDatabase:
                 if not cleaned_values:
                     continue
 
-                if stat == "Sum":
+                if stat == "Sum" or stat == "SampleCount":
                     cleaned_datapoints[timestamp] = sum(cleaned_values)
+
+                elif stat == "Minimum":
+                    cleaned_datapoints[timestamp] = min(cleaned_values)
+
+                elif stat == "Maximum":
+                    cleaned_datapoints[timestamp] = max(cleaned_values)
+
+                elif stat == "Average":
+                    total_sum = 0
+                    count = 0
+                    for claned_value in cleaned_values:
+                        if isinstance(claned_value, tuple):
+                            total_sum += claned_value[0]
+                            count += claned_value[1]
+                        else:
+                            total_sum += claned_value
+                            count += 1
+                    cleaned_datapoints[timestamp] = total_sum / count
 
             return {"id": query.get("Id"), "datapoints": cleaned_datapoints}
 
