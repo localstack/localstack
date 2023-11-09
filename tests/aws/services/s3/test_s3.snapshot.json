@@ -4267,11 +4267,11 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key": {
-    "recorded-date": "07-11-2023, 14:17:45",
+    "recorded-date": "08-11-2023, 14:59:10",
     "recorded-content": {
       "create-kms-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:us-west-2:111111111111:key/<uuid:1>",
+        "Arn": "arn:aws:kms:<region_2>:111111111111:key/<uuid:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "<description:1>",
@@ -4300,7 +4300,7 @@
       "put-obj-wrong-kms-key-real-uuid": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Key 'arn:aws:kms:us-east-2:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
+          "Message": "Key 'arn:aws:kms:<region_1>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4310,7 +4310,7 @@
       "put-obj-wrong-kms-key-real-uuid-arn": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Key 'arn:aws:kms:us-east-2:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
+          "Message": "Key 'arn:aws:kms:<region_1>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4320,7 +4320,7 @@
       "put-obj-different-region-kms-key": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Invalid arn us-west-2"
+          "Message": "Invalid arn <region_2>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4330,7 +4330,7 @@
       "put-obj-different-region-kms-key-no-arn": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Key 'arn:aws:kms:us-east-2:111111111111:key/<uuid:1>' does not exist"
+          "Message": "Key 'arn:aws:kms:<region_1>:111111111111:key/<uuid:1>' does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

@@ -48,6 +48,7 @@ from localstack.services.s3.utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -4814,12 +4815,14 @@ class TestS3:
         data = b"test-sse"
         bucket_name = f"bucket-test-kms-{short_uid()}"
         region_1 = "us-east-2"
+        snapshot.add_transformer(RegexTransformer(region_1, "<region_1>"))
         client = aws_client_factory(region_name=region_1).s3
         s3_create_bucket_with_client(
             client, Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": region_1}
         )
         # create key in a different region than the bucket
         region_2 = "us-west-2"
+        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
         kms_key = kms_create_key(region_name=region_2)
         # snapshot the KMS key to save the UUID for replacement in Error message.
         snapshot.match("create-kms-key", kms_key)
