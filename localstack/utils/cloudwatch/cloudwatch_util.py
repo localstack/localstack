@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from flask import Response
+from werkzeug import Response as WerkzeugResponse
 
 from localstack import config
 from localstack.aws.connect import connect_to
@@ -91,7 +91,7 @@ def publish_lambda_error(time_before, kwargs):
 
 
 def publish_lambda_result(time_before, result, kwargs):
-    if isinstance(result, Response) and result.status_code >= 400:
+    if isinstance(result, WerkzeugResponse) and result.status_code >= 400:
         return publish_lambda_error(time_before, kwargs)
     publish_lambda_metric("Invocations", 1, kwargs)
 

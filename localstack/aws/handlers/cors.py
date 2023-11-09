@@ -6,14 +6,6 @@ import re
 from typing import List, Set
 from urllib.parse import urlparse
 
-from flask_cors.core import (
-    ACL_ALLOW_HEADERS,
-    ACL_CREDENTIALS,
-    ACL_EXPOSE_HEADERS,
-    ACL_METHODS,
-    ACL_ORIGIN,
-    ACL_REQUEST_HEADERS,
-)
 from werkzeug.datastructures import Headers
 
 from localstack import config
@@ -25,6 +17,14 @@ from localstack.http import Response
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
+
+# CORS headers
+ACL_ALLOW_HEADERS = "Access-Control-Allow-Headers"
+ACL_CREDENTIALS = "Access-Control-Allow-Credentials"
+ACL_EXPOSE_HEADERS = "Access-Control-Expose-Headers"
+ACL_METHODS = "Access-Control-Allow-Methods"
+ACL_ORIGIN = "Access-Control-Allow-Origin"
+ACL_REQUEST_HEADERS = "Access-Control-Request-Headers"
 
 # header name constants
 ACL_REQUEST_PRIVATE_NETWORK = "Access-Control-Request-Private-Network"
