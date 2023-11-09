@@ -171,7 +171,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         """
 
         for alarm_name in alarm_names:
-            alarm_arn = arns.cloudwatch_alarm_arn(alarm_name)  # obtain alarm ARN from alarm name
+            alarm_arn = arns.cloudwatch_alarm_arn(
+                alarm_name, account_id=context.account_id, region_name=context.region
+            )  # obtain alarm ARN from alarm name
             self.alarm_scheduler.delete_scheduler_for_alarm(alarm_arn)
 
     def put_metric_data(
@@ -256,7 +258,11 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             )
 
         store = self.get_store(context.account_id, context.region)
-        alarm = store.Alarms.get(arns.cloudwatch_alarm_arn(alarm_name))
+        alarm = store.Alarms.get(
+            arns.cloudwatch_alarm_arn(
+                alarm_name, account_id=context.account_id, region_name=context.region
+            )
+        )
         old_state = alarm.alarm["StateValue"]
         if not alarm:
             raise InvalidParameterValueException(
@@ -284,7 +290,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             if data["service"] == "sns":
                 service = connect_to.get_client(data["service"])
                 subject = f"""{state_value}: "{alarm_name}" in {context.region}"""
-                message = self.create_message_response_update_state(self, old_state)
+                message = self.create_message_response_update_state(context, alarm, old_state)
                 service.publish(TopicArn=action, Subject=subject, Message=message)
             else:
                 # TODO: support other actions
@@ -573,7 +579,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     ):
         alarm = alarm.alarm
         response = {
-            "AWSAccountId": context,
+            "AWSAccountId": context.account_id,
             "OldStateValue": old_state,
             "AlarmName": alarm["AlarmName"],
             "AlarmDescription": alarm.get("AlarmDescription"),
@@ -596,20 +602,19 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             "Namespace": alarm.get("Namespace", ""),
             "Unit": alarm.get("Unit", ""),
             "Period": int(alarm.get("Period", 0)),
-            "EvaluationPeriods": int(alarm.get("EvaluationPeriod", 0)),
+            "EvaluationPeriods": int(alarm.get("EvaluationPeriods", 0)),
             "ComparisonOperator": alarm.get("ComparisonOperator", ""),
             "Threshold": float(alarm.get("Threshold", 0.0)),
             "TreatMissingData": alarm.get("TreatMissingData", ""),
             "EvaluateLowSampleCountPercentile": alarm.get("EvaluateLowSampleCountPercentile", ""),
         }
 
-        # Dimensions not serializable
+        # Dimensions not serializable # TODO: check
         dimensions = []
         alarm_dimensions = alarm.get("Dimensions", [])
         if alarm_dimensions:
-            for d in alarm.dimensions:
-                dimensions.append({"value": d.value, "name": d.name})
-
+            for d in alarm["Dimensions"]:
+                dimensions.append({"value": d["Value"], "name": d["Name"]})
         details["Dimensions"] = dimensions or ""
 
         alarm_statistic = alarm.get("Statistic")
@@ -624,4 +629,4 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
         response["Trigger"] = details
 
-        return json.dumps(response)
+        return json.dumps(response, default=str)
