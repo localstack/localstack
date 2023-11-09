@@ -396,6 +396,80 @@ class TestCloudwatch:
         res1 = [res for res in response["MetricDataResults"] if res["Id"] == "result1"][0]
         assert res1["Values"] == [result]
 
+    @markers.aws.validated
+    def test_get_metric_data_with_dimensions(self, aws_client):
+        utc_now = datetime.now(tz=timezone.utc)
+        namespace = f"test/{short_uid()}"
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "metric1",
+                    "Value": 11,
+                    "Unit": "Seconds",
+                    "Dimensions": [{"Name": "InstanceId", "Value": "one"}],
+                    "Timestamp": utc_now,
+                }
+            ],
+        )
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "metric1",
+                    "Value": 11,
+                    "Unit": "Seconds",
+                    "Dimensions": [{"Name": "InstanceId", "Value": "two"}],
+                    "Timestamp": utc_now,
+                }
+            ],
+        )
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "metric1",
+                    "StatisticValues": {
+                        "SampleCount": 10,
+                        "Sum": 55,
+                        "Minimum": 1,
+                        "Maximum": 10,
+                    },
+                    "Unit": "Seconds",
+                    "Timestamp": utc_now,
+                }
+            ],
+        )
+
+        # Instant querying gets wrong results
+        time.sleep(2)
+        response = aws_client.cloudwatch.get_metric_data(
+            MetricDataQueries=[
+                {
+                    "Id": "result1",
+                    "MetricStat": {
+                        "Metric": {
+                            "Namespace": namespace,
+                            "MetricName": "metric1",
+                            "Dimensions": [
+                                {"Name": "InstanceId", "Value": "one"},
+                            ],
+                        },
+                        "Period": 60,
+                        "Stat": "Sum",
+                    },
+                }
+            ],
+            StartTime=utc_now - timedelta(seconds=60),
+            EndTime=utc_now + timedelta(seconds=60),
+        )
+
+        res1 = [res for res in response["MetricDataResults"] if res["Id"] == "result1"][0]
+        assert res1["Values"] == [11]
+
     @markers.aws.only_localstack
     def test_raw_metric_data(self, aws_client):
         """

@@ -174,6 +174,7 @@ class CloudwatchDatabase:
             metric = metric_stat.get("Metric")
             period = metric_stat.get("Period")
             stat = metric_stat.get("Stat")
+            dimensions = metric.get("Dimensions")
             # unit = metric_stat.get("Unit")
 
             order_by = (
@@ -192,10 +193,16 @@ class CloudwatchDatabase:
                 metric.get("MetricName"),
             )
 
+            dimension_filter = ""
+            for dimension in dimensions:
+                dimension_filter += "AND dimensions LIKE ? "
+                data = data + (f"%{dimension.get('Name')}={dimension.get('Value')}%",)
+
             query_single_metric = f"""
             SELECT {STAT_TO_SQLITE_FUNC[stat]} FROM {self.TABLE_SINGLE_METRICS}
             WHERE account_id = ? AND region = ?
             AND namespace = ? AND metric_name = ?
+            {dimension_filter}
             AND timestamp >= ? AND timestamp < ?
             ORDER BY {order_by}
             """
@@ -204,6 +211,7 @@ class CloudwatchDatabase:
             SELECT {STAT_TO_SQLITE_COLUMNS[stat]} FROM {self.TABLE_AGGREGATED_METRICS}
             WHERE account_id = ? AND region = ?
             AND namespace = ? AND metric_name = ?
+            {dimension_filter}
             AND timestamp >= ? AND timestamp < ?
             ORDER BY {order_by}
             """
