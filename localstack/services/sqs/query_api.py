@@ -134,10 +134,6 @@ class BotoException(CommonServiceException):
 
 
 def handle_request(request: Request, region: str) -> Response:
-    if request.is_json:
-        # TODO: the response should be sent as JSON response
-        raise NotImplementedError
-
     request_id = long_uid()
 
     try:
