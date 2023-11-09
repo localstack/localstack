@@ -446,7 +446,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return self.server.url
 
     def handle_shell_ui_redirect(self, request: werkzeug.Request) -> Response:
-        headers = {"Refresh": f"0; url={config.service_url('dynamodb')}/shell/index.html"}
+        headers = {"Refresh": f"0; url={config.external_service_url()}/shell/index.html"}
         return Response("", headers=headers)
 
     def handle_shell_ui_request(self, request: werkzeug.Request, req_path: str) -> Response:

@@ -602,7 +602,7 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
 def path_based_url(api_id: str, stage_name: str, path: str) -> str:
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
     pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
-        config.service_url("apigateway"),
+        config.external_service_url(),
         PATH_USER_REQUEST,
     )
     return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
@@ -611,14 +611,15 @@ def path_based_url(api_id: str, stage_name: str, path: str) -> str:
 def host_based_url(rest_api_id: str, path: str, stage_name: str = None):
     """Return URL for inbound API gateway for given API ID, stage name, and path with custom dns
     format"""
-    pattern = "http://{endpoint}{stage}{path}"
+    pattern = "{endpoint}{stage}{path}"
     stage = stage_name and f"/{stage_name}" or ""
     return pattern.format(endpoint=get_execute_api_endpoint(rest_api_id), stage=stage, path=path)
 
 
-def get_execute_api_endpoint(api_id: str, protocol: str = "") -> str:
+def get_execute_api_endpoint(api_id: str, protocol: str | None = None) -> str:
     host = localstack_host()
-    return f"{protocol}{api_id}.execute-api.{host.host_and_port()}"
+    protocol = protocol or config.get_protocol()
+    return f"{protocol}://{api_id}.execute-api.{host.host_and_port()}"
 
 
 def tokenize_path(path):

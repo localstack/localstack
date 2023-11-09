@@ -1271,7 +1271,6 @@ def get_protocol():
     return "https" if USE_SSL else "http"
 
 
-# TODO: refactor internal codebase to use external_service_url and internal_service_url
 def external_service_url(host=None, port=None, protocol=None) -> str:
     """Returns a service URL to an external client used outside where LocalStack runs.
     The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.

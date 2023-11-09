@@ -500,7 +500,7 @@ def send_dynamodb_request(path, action, request_body):
             "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )["Authorization"],
     }
-    url = f"{config.service_url('dynamodb')}/{path}"
+    url = f"{config.internal_service_url()}/{path}"
     return requests.put(url, data=request_body, headers=headers, verify=False)
 
 

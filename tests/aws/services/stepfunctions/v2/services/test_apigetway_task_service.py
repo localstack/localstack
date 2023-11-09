@@ -179,7 +179,7 @@ class TestTaskApiGateway:
         if is_aws_cloud():
             invocation_url = f"{api_id}.execute-api.{aws_stack.get_boto3_region()}.amazonaws.com"
         else:
-            invocation_url = f"{config.service_url('apigateway')}/restapis/{api_id}"
+            invocation_url = f"{config.internal_service_url()}/restapis/{api_id}"
         return invocation_url, stage_name
 
     @markers.aws.validated

@@ -487,7 +487,7 @@ class KinesisIntegration(BackendIntegration):
         headers["X-Amz-Target"] = target
 
         result = common.make_http_request(
-            url=config.service_url("kinesis"), data=payload, headers=headers, method="POST"
+            url=config.internal_service_url(), data=payload, headers=headers, method="POST"
         )
 
         # apply response template
@@ -689,7 +689,7 @@ class SQSIntegration(BackendIntegration):
             queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
             new_request = f"{payload}&QueueUrl={queue_url}"
 
-        url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
+        url = urljoin(config.internal_service_url(), f"{get_aws_account_id()}/{queue}")
         response = common.make_http_request(url, method="POST", headers=headers, data=new_request)
 
         # apply response template
@@ -716,7 +716,7 @@ class SNSIntegration(BackendIntegration):
             service="sns", aws_access_key_id=invocation_context.account_id, region_name=region_name
         )
         result = make_http_request(
-            config.service_url("sns"), method="POST", headers=headers, data=payload
+            config.internal_service_url(), method="POST", headers=headers, data=payload
         )
         return self.apply_response_parameters(invocation_context, result)
 
@@ -926,7 +926,7 @@ class EventBridgeIntegration(BackendIntegration):
         )
         headers.update({"X-Amz-Target": invocation_context.headers.get("X-Amz-Target")})
         response = make_http_request(
-            config.service_url("events"), method="POST", headers=headers, data=payload
+            config.internal_service_url(), method="POST", headers=headers, data=payload
         )
 
         invocation_context.response = response

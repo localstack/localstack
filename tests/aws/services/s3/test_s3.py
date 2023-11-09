@@ -2611,7 +2611,7 @@ class TestS3:
             f"{body}\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
         )
         # put object
-        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
         requests.put(url, data, headers=headers, verify=False)
         # get object and assert content length
         downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
@@ -2653,7 +2653,7 @@ class TestS3:
                 "x-amz-trailer-signature:712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c\r\n\r\n"
             )
 
-        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
 
         # test with wrong checksum
         wrong_data = get_data(body, "wrongchecksum")
@@ -2708,9 +2708,7 @@ class TestS3:
         upload_id = response["UploadId"]
 
         # # upload the part 1
-        url = (
-            f"{config.service_url('s3')}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
-        )
+        url = f"{config.internal_service_url()}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
         response = requests.put(url, data, headers=headers, verify=False)
         assert response.ok
         part_etag = response.headers.get("ETag")
