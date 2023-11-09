@@ -69,6 +69,7 @@ class LambdaLayerVersionPermissionProvider(
         model["Id"] = util.generate_default_name(
             stack_name=request.stack_name, logical_resource_id=request.logical_resource_id
         )
+        request.custom_context["StatementId"] = params["StatementId"]
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
@@ -103,7 +104,21 @@ class LambdaLayerVersionPermissionProvider(
 
 
         """
-        raise NotImplementedError
+        model = request.desired_state
+        lambda_client = request.aws_client_factory.lambda_
+
+        layer_name, version_number = self.layer_name_and_version(model)
+        params = {"StatementId": request.custom_context["StatementId"],
+                  "LayerName": layer_name,
+                  "VersionNumber": version_number}
+
+        lambda_client.remove_layer_version_permission(**params)
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def update(
         self,
