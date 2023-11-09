@@ -147,7 +147,7 @@ def custom_path_addressing_rules(path: str) -> Optional[str]:
     """
 
     if is_sqs_queue_url(path):
-        return "sqs"
+        return "sqs-query"
 
     if path.startswith("/2015-03-31/functions/"):
         return "lambda"

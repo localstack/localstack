@@ -3,7 +3,7 @@ import logging
 import traceback
 from collections import defaultdict
 from functools import lru_cache
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
 from botocore.model import OperationModel, ServiceModel
 
@@ -128,10 +128,7 @@ class ServiceRequestRouter(Handler):
 
         self.handlers[key] = handler
 
-    def add_provider(self, provider: Any, service: Optional[Union[str, ServiceModel]] = None):
-        if not service:
-            service = provider.service
-
+    def add_provider(self, provider: Any, service: Union[str, ServiceModel]):
         self.add_skeleton(create_skeleton(service, provider))
 
     def add_skeleton(self, skeleton: Skeleton):
@@ -151,7 +148,9 @@ class ServiceRequestRouter(Handler):
         message = f"no handler for operation '{operation_name}' on service '{service_name}'"
         error = CommonServiceException("InternalFailure", message, status_code=501)
         serializer = create_serializer(context.service)
-        return serializer.serialize_error_to_response(error, operation, context.request.headers)
+        return serializer.serialize_error_to_response(
+            error, operation, context.request.headers, context.request_id
+        )
 
 
 class ServiceExceptionSerializer(ExceptionHandler):

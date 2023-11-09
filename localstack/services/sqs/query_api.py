@@ -30,7 +30,7 @@ from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
-service = load_service("sqs")
+service = load_service("sqs-query")
 parser = create_parser(service)
 serializer = create_serializer(service)
 

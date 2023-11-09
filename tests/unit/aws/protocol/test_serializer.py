@@ -1941,7 +1941,7 @@ class TestAwsResponseSerializerDecorator:
 
     def test_invoke_on_bound_method(self):
         class MyHandler:
-            @aws_response_serializer("sqs", "ListQueues")
+            @aws_response_serializer("sqs-query", "ListQueues")
             def handle(self, request: Request):
                 from localstack.aws.api.sqs import ListQueuesResult
 

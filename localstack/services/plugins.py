@@ -142,6 +142,7 @@ class Service:
         provider: ServiceProvider,
         dispatch_table_factory: Callable[[ServiceProvider], DispatchTable] = None,
         service_lifecycle_hook: ServiceLifecycleHook = None,
+        custom_service_name: Optional[str] = None,
     ) -> "Service":
         """
         Factory method for creating services for providers. This method hides a bunch of legacy code and
@@ -151,6 +152,7 @@ class Service:
         :param dispatch_table_factory: a `MotoFallbackDispatcher` or something similar that uses the provider to
             create a dispatch table. this one's a bit clumsy.
         :param service_lifecycle_hook: if left empty, the factory checks whether the provider is a ServiceLifecycleHook.
+        :param custom_service_name: allows defining a custom name for this service (instead of the one in the provider).
         :return: a service instance
         """
         # determine the service_lifecycle_hook
@@ -160,10 +162,10 @@ class Service:
 
         # determine the delegate for injecting into the skeleton
         delegate = dispatch_table_factory(provider) if dispatch_table_factory else provider
-
+        service_name = custom_service_name or provider.service
         service = Service(
-            name=provider.service,
-            skeleton=Skeleton(load_service(provider.service), delegate),
+            name=service_name,
+            skeleton=Skeleton(load_service(service_name), delegate),
             lifecycle_hook=service_lifecycle_hook,
         )
         service._provider = provider
