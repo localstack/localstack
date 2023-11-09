@@ -340,16 +340,16 @@ def test_redrive_policy_with_failing_lambda(
     snapshot.match("first_attempt", first_response)
 
     # check that the DLQ is empty
-    assert "Messages" not in aws_client.sqs.receive_message(
-        QueueUrl=event_dlq_url, WaitTimeSeconds=1
-    )
+    second_response = aws_client.sqs.receive_message(QueueUrl=event_dlq_url, WaitTimeSeconds=1)
+    assert "Messages" in second_response
+    assert second_response["Messages"] == []
 
     # the second is also expected to fail, and then the message moves into the DLQ
-    second_response = aws_client.sqs.receive_message(
+    third_response = aws_client.sqs.receive_message(
         QueueUrl=destination_url, WaitTimeSeconds=15, MaxNumberOfMessages=1
     )
-    assert "Messages" in second_response
-    snapshot.match("second_attempt", second_response)
+    assert "Messages" in third_response
+    snapshot.match("second_attempt", third_response)
 
     # now check that the event messages was placed in the DLQ
     dlq_response = aws_client.sqs.receive_message(QueueUrl=event_dlq_url, WaitTimeSeconds=15)
@@ -862,7 +862,8 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     dlq_response = aws_client.sqs.receive_message(
         QueueUrl=event_dlq_url, WaitTimeSeconds=retry_timeout + 1
     )
-    assert "Messages" not in dlq_response
+    assert "Messages" in dlq_response
+    assert dlq_response["Messages"] == []
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -989,7 +990,7 @@ class TestSQSEventSourceMapping:
         snapshot.match("events", events)
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
-        assert rs.get("Messages") is None
+        assert rs.get("Messages") == []
 
     @markers.aws.validated
     @pytest.mark.parametrize(
@@ -1119,7 +1120,7 @@ class TestSQSEventSourceMapping:
         snapshot.match("invocation_events", invocation_events)
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
-        assert rs.get("Messages") is None
+        assert rs.get("Messages") == []
 
     @markers.aws.validated
     @pytest.mark.parametrize(
@@ -1238,7 +1239,7 @@ class TestSQSEventSourceMapping:
         snapshot.match("events", events)
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
-        assert rs.get("Messages") is None
+        assert rs.get("Messages") == []
 
         # # create new function version
         aws_client.lambda_.update_function_configuration(
@@ -1279,4 +1280,4 @@ class TestSQSEventSourceMapping:
         snapshot.match("events_postupdate", events_postupdate)
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
-        assert rs.get("Messages") is None
+        assert rs.get("Messages") == []

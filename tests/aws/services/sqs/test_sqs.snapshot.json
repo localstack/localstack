@@ -1,6 +1,6 @@
 {
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_attribute_names_filters": {
-    "recorded-date": "06-07-2023, 11:20:02",
+    "recorded-date": "09-11-2023, 23:41:25",
     "recorded-content": {
       "send_message_response": {
         "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
@@ -99,6 +99,7 @@
       "only_non_existing_names": {
         "Body": "msg",
         "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MessageAttributes": {},
         "MessageId": "<uuid:1>",
         "ReceiptHandle": "<receipt-handle:5>"
       },
@@ -466,12 +467,11 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_updated_maximum_message_size": {
-    "recorded-date": "29-08-2023, 11:15:06",
+    "recorded-date": "09-11-2023, 23:08:30",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "One or more parameters are invalid. Reason: Message must be shorter than 1024 bytes.",
           "Type": "Sender"
         },
@@ -500,9 +500,10 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size": {
-    "recorded-date": "29-08-2023, 11:15:05",
+    "recorded-date": "09-11-2023, 23:11:24",
     "recorded-content": {
       "send_oversized_message_batch": {
+        "Failed": [],
         "Successful": [
           {
             "Id": "1",
@@ -632,12 +633,11 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_max_number_of_messages": {
-    "recorded-date": "29-12-2022, 08:55:47",
+    "recorded-date": "09-11-2023, 23:02:55",
     "recorded-content": {
       "send_max_number_of_messages": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "Value 11 for parameter MaxNumberOfMessages is invalid. Reason: Must be between 1 and 10, if provided.",
           "Type": "Sender"
         },
@@ -649,7 +649,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[True]": {
-    "recorded-date": "14-04-2023, 19:30:06",
+    "recorded-date": "09-11-2023, 23:33:43",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -668,6 +668,7 @@
         }
       },
       "get-messages-duplicate": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -676,7 +677,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[False]": {
-    "recorded-date": "14-04-2023, 19:30:08",
+    "recorded-date": "09-11-2023, 23:33:45",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -695,6 +696,7 @@
         }
       },
       "get-messages-duplicate": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -703,7 +705,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[True]": {
-    "recorded-date": "14-04-2023, 20:25:10",
+    "recorded-date": "09-11-2023, 23:35:04",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -722,6 +724,7 @@
         }
       },
       "get-dedup-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -730,7 +733,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[False]": {
-    "recorded-date": "14-04-2023, 20:25:12",
+    "recorded-date": "09-11-2023, 23:35:06",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -749,6 +752,7 @@
         }
       },
       "get-dedup-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -252,7 +252,8 @@ class TestSqsProvider:
         aws_client.sqs.send_message(QueueUrl=queue0, MessageBody="message")
 
         result = aws_client.sqs.receive_message(QueueUrl=queue1)
-        assert "Messages" not in result
+        assert "Messages" in result
+        assert result["Messages"] == []
 
         result = aws_client.sqs.receive_message(QueueUrl=queue0)
         assert len(result["Messages"]) == 1
@@ -436,7 +437,8 @@ class TestSqsProvider:
         aws_client.sqs.untag_queue(QueueUrl=queue_url, TagKeys=["tag2"])
 
         response = aws_client.sqs.list_queue_tags(QueueUrl=queue_url)
-        assert "Tags" not in response
+        assert "Tags" in response
+        assert response["Tags"] == {}
 
     @markers.aws.validated
     def test_tags_case_sensitive(self, sqs_create_queue, aws_client):
@@ -814,7 +816,8 @@ class TestSqsProvider:
         aws_client.sqs.send_message(QueueUrl=sqs_queue, MessageBody="foobar", DelaySeconds=1)
 
         result = aws_client.sqs.receive_message(QueueUrl=sqs_queue)
-        assert "Messages" not in result
+        assert "Messages" in result
+        assert result["Messages"] == []
 
         result = aws_client.sqs.receive_message(QueueUrl=sqs_queue, WaitTimeSeconds=2)
         assert "Messages" in result
@@ -872,7 +875,8 @@ class TestSqsProvider:
 
         # message should be within the visibility timeout
         result = aws_client.sqs.receive_message(QueueUrl=queue_url)
-        assert "Messages" not in result
+        assert "Messages" in result
+        assert result["Messages"] == []
 
         # visibility timeout should have expired
         result = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
@@ -903,7 +907,8 @@ class TestSqsProvider:
 
         # TODO: check if this is correct (whether receive with VisibilityTimeout = 0 is permanent)
         result = aws_client.sqs.receive_message(QueueUrl=queue_url)
-        assert "Messages" not in result
+        assert "Messages" in result
+        assert result["Messages"] == []
 
     @markers.aws.validated
     def test_extend_message_visibility_timeout_set_in_queue(self, sqs_create_queue, aws_client):
@@ -991,7 +996,8 @@ class TestSqsProvider:
         )
 
         receive_result = aws_client.sqs.receive_message(QueueUrl=queue_url)
-        assert "Messages" not in receive_result.keys()
+        assert "Messages" in receive_result
+        assert receive_result["Messages"] == []
 
     @markers.aws.validated
     def test_invalid_receipt_handle_should_return_error_message(self, sqs_create_queue, aws_client):
@@ -1747,7 +1753,8 @@ class TestSqsProvider:
             QueueUrl=queue_url, ReceiptHandle=result_recv["Messages"][0]["ReceiptHandle"]
         )
         result_recv = aws_client.sqs.receive_message(QueueUrl=queue_url)
-        assert "Messages" not in result_recv.keys()
+        assert "Messages" in result_recv
+        assert result_recv["Messages"] == []
 
     @markers.aws.validated
     def test_delete_message_deletes_with_change_visibility_timeout(
@@ -1763,7 +1770,8 @@ class TestSqsProvider:
         result_recv = aws_client.sqs.receive_message(QueueUrl=queue_url)
         result_follow_up = aws_client.sqs.receive_message(QueueUrl=queue_url)
         assert result_recv["Messages"][0]["MessageId"] == message_id
-        assert "Messages" not in result_follow_up.keys()
+        assert "Messages" in result_follow_up
+        assert result_follow_up["Messages"] == []
 
         receipt_handle = result_recv["Messages"][0]["ReceiptHandle"]
         aws_client.sqs.change_message_visibility(
@@ -1777,7 +1785,8 @@ class TestSqsProvider:
         receipt_handle = result_recv["Messages"][0]["ReceiptHandle"]
         aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
         result_follow_up = aws_client.sqs.receive_message(QueueUrl=queue_url)
-        assert "Messages" not in result_follow_up.keys()
+        assert "Messages" in result_follow_up
+        assert result_follow_up["Messages"] == []
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
@@ -1917,7 +1926,8 @@ class TestSqsProvider:
         confirmation = aws_client.sqs.receive_message(
             QueueUrl=queue_url, MaxNumberOfMessages=message_count
         )
-        assert "Messages" not in confirmation.keys()
+        assert "Messages" in confirmation
+        assert confirmation["Messages"] == []
 
     @markers.aws.validated
     @pytest.mark.parametrize(
@@ -2487,7 +2497,7 @@ class TestSqsProvider:
         result_recv1_messages = aws_client.sqs.receive_message(QueueUrl=queue_url).get("Messages")
         result_recv2_messages = aws_client.sqs.receive_message(QueueUrl=queue_url).get("Messages")
         # only one request received a message
-        assert (result_recv1_messages is None) != (result_recv2_messages is None)
+        assert result_recv1_messages != result_recv2_messages
 
         assert poll_condition(
             lambda: "Messages" in aws_client.sqs.receive_message(QueueUrl=dl_queue_url), 5.0, 1.0
@@ -2968,7 +2978,8 @@ class TestSqsProvider:
             result_recv_1.get("Messages")[0]["MessageId"]
             == result_receive.get("Messages")[0]["MessageId"]
         )
-        assert "Messages" not in result_recv_2.keys()
+        assert "Messages" in result_recv_2
+        assert result_recv_2["Messages"] == []
 
     @pytest.mark.skip
     @markers.aws.unknown
@@ -3048,7 +3059,8 @@ class TestSqsProvider:
         aws_client.sqs.purge_queue(QueueUrl=queue_url)
 
         receive_result = aws_client.sqs.receive_message(QueueUrl=queue_url)
-        assert "Messages" not in receive_result.keys()
+        assert "Messages" in receive_result
+        assert receive_result["Messages"] == []
 
         # test that adding messages after purge works
         for i in range(3):
@@ -3083,7 +3095,8 @@ class TestSqsProvider:
         time.sleep(3)
 
         receive_result = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
-        assert "Messages" not in receive_result.keys()
+        assert "Messages" in receive_result
+        assert receive_result["Messages"] == []
 
     @markers.aws.validated
     def test_purge_queue_deletes_delayed_messages(self, sqs_create_queue, aws_client):
@@ -3100,7 +3113,8 @@ class TestSqsProvider:
         time.sleep(2)
 
         receive_result = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
-        assert "Messages" not in receive_result.keys()
+        assert "Messages" in receive_result
+        assert receive_result["Messages"] == []
 
     @markers.aws.validated
     def test_purge_queue_clears_fifo_deduplication_cache(self, sqs_create_queue, aws_client):
@@ -3310,7 +3324,8 @@ class TestSqsProvider:
         assert result_send.get("MD5OfMessageBody") == result_receive.get("Messages")[0].get(
             "MD5OfBody"
         )
-        assert "Messages" not in result_receive_duplicate.keys()
+        assert "Messages" in result_receive_duplicate
+        assert result_receive_duplicate["Messages"] == []
 
         result_send = aws_client.sqs.send_message(
             QueueUrl=queue_url,
