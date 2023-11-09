@@ -9,7 +9,6 @@ import unittest
 from unittest import mock
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.lambda_.legacy import lambda_api, lambda_executors, lambda_utils
 from localstack.services.lambda_.legacy.aws_models import LambdaFunction
@@ -20,7 +19,7 @@ from localstack.services.lambda_.legacy.lambda_utils import (
     get_lambda_store_v1,
     get_lambda_store_v1_for_arn,
 )
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file
 
 TEST_EVENT_SOURCE_ARN = "arn:aws:sqs:eu-west-1:000000000000:testq"
@@ -129,7 +128,7 @@ class TestLambdaAPI(unittest.TestCase):
             self._create_function("myFunction")
             result = json.loads(
                 lambda_api.get_function(
-                    f"{aws_stack.get_region()}:000000000000:function:myFunction"
+                    f"{TEST_AWS_REGION_NAME}:000000000000:function:myFunction"
                 ).get_data()
             )
             self.assertEqual(
@@ -138,7 +137,7 @@ class TestLambdaAPI(unittest.TestCase):
             )
             result = json.loads(
                 lambda_api.get_function(
-                    f"{aws_stack.get_region()}:000000000000:function:myFunctions"
+                    f"{TEST_AWS_REGION_NAME}:000000000000:function:myFunctions"
                 ).get_data()
             )
             self.assertEqual(
@@ -865,7 +864,7 @@ class TestLambdaAPI(unittest.TestCase):
             arns.lambda_function_arn("my_function_name", TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         )
         self.assertIn(
-            f"_lambda_arn_aws_lambda_{aws_stack.get_region()}_{get_aws_account_id()}_function_my_function_name",
+            f"_lambda_arn_aws_lambda_{TEST_AWS_REGION_NAME}_{TEST_AWS_ACCOUNT_ID}_function_my_function_name",
             name,
         )
 
@@ -1243,15 +1242,13 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
 
 class TestLambdaStore:
     def test_get_lambda_store_v1_for_arn(self):
-        default_region = aws_stack.get_region()
-
         def _lookup(resource_id, region):
             store = get_lambda_store_v1_for_arn(resource_id)
             assert store
             assert store._region_name == region
 
-        _lookup("my-func", default_region)
-        _lookup("my-layer", default_region)
+        _lookup("my-func", TEST_AWS_REGION_NAME)
+        _lookup("my-layer", TEST_AWS_REGION_NAME)
 
         for region in ["us-east-1", "us-east-1", "eu-central-1"]:
             # check lookup for function ARNs

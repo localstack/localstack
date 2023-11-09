@@ -631,7 +631,7 @@ class TestEvents:
         queue_name = f"queue-{short_uid()}"
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         rule_name = f"rule-{short_uid()}"
-        sm_role_arn = arns.role_arn("sfn_role")
+        sm_role_arn = arns.role_arn("sfn_role", account_id=TEST_AWS_ACCOUNT_ID)
         sm_name = f"state-machine-{short_uid()}"
         topic_target_id = f"target-{short_uid()}"
         sm_target_id = f"target-{short_uid()}"
@@ -946,7 +946,7 @@ class TestEvents:
         stream = aws_client.firehose.create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "BucketARN": arns.s3_bucket_arn(s3_bucket),
                 "Prefix": s3_prefix,
             },

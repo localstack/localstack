@@ -12,10 +12,13 @@ from opensearchpy import OpenSearch
 from opensearchpy.exceptions import AuthorizationException
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.opensearch import AdvancedSecurityOptionsInput, MasterUserOptions
 from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
-from localstack.constants import OPENSEARCH_DEFAULT_VERSION, OPENSEARCH_PLUGIN_LIST
+from localstack.constants import (
+    OPENSEARCH_DEFAULT_VERSION,
+    OPENSEARCH_PLUGIN_LIST,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.services.opensearch import provider
 from localstack.services.opensearch.cluster import CustomEndpoint, EdgeProxiedOpensearchCluster
 from localstack.services.opensearch.cluster_manager import (
@@ -447,11 +450,31 @@ class TestOpensearchProvider:
         with pytest.raises(botocore.exceptions.ClientError) as e:
             aws_client.opensearch.create_domain(
                 DomainName="123abc"
-            )  # domain needs to start with characters
+            )  # domain needs to start with alphabetic characters
         assert e.value.response["Error"]["Code"] == "ValidationException"
 
         with pytest.raises(botocore.exceptions.ClientError) as e:
             aws_client.opensearch.create_domain(DomainName="abc#")  # no special characters allowed
+        assert e.value.response["Error"]["Code"] == "ValidationException"
+
+    @markers.aws.unknown
+    def test_create_domain_with_invalid_custom_endpoint(self, aws_client):
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            aws_client.opensearch.create_domain(
+                DomainName="abc",
+                DomainEndpointOptions={
+                    "CustomEndpoint": "custom-endpoint",
+                },
+            )  # CustomEndpoint cannot be set without CustomEndpointEnabled
+        assert e.value.response["Error"]["Code"] == "ValidationException"
+
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            aws_client.opensearch.create_domain(
+                DomainName="abc",
+                DomainEndpointOptions={
+                    "CustomEndpointEnabled": True,
+                },
+            )  # CustomEndpointEnabled cannot be set without CustomEndpoint
         assert e.value.response["Error"]["Code"] == "ValidationException"
 
     @markers.aws.validated
@@ -704,6 +727,13 @@ class TestEdgeProxiedOpensearchCluster:
             DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
         )
 
+        response = aws_client.opensearch.describe_domain(DomainName=domain_name)
+        response_domain_endpoint_options = response["DomainStatus"]["DomainEndpointOptions"]
+        assert response_domain_endpoint_options["EnforceHTTPS"] is False
+        assert response_domain_endpoint_options["TLSSecurityPolicy"]
+        assert response_domain_endpoint_options["CustomEndpointEnabled"] is True
+        assert response_domain_endpoint_options["CustomEndpoint"] == custom_endpoint
+
         response = aws_client.opensearch.list_domain_names(EngineType="OpenSearch")
         domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
 
@@ -719,9 +749,7 @@ class TestEdgeProxiedOpensearchCluster:
         self, opensearch_wait_for_cluster, opensearch_create_domain, aws_client
     ):
         domain_name = f"opensearch-domain-{short_uid()}"
-        custom_endpoint = "http://localhost:4566/my-custom-endpoint"
         domain_endpoint_options = {
-            "CustomEndpoint": custom_endpoint,
             "CustomEndpointEnabled": False,
         }
 
@@ -733,14 +761,16 @@ class TestEdgeProxiedOpensearchCluster:
         response_domain_name = response["DomainStatus"]["DomainName"]
         assert domain_name == response_domain_name
 
+        response_domain_endpoint_options = response["DomainStatus"]["DomainEndpointOptions"]
+        assert response_domain_endpoint_options["EnforceHTTPS"] is False
+        assert response_domain_endpoint_options["TLSSecurityPolicy"]
+        assert response_domain_endpoint_options["CustomEndpointEnabled"] is False
+        assert "CustomEndpoint" not in response_domain_endpoint_options
+
         endpoint = f"http://{response['DomainStatus']['Endpoint']}"
 
         # wait for the cluster
         opensearch_wait_for_cluster(domain_name=domain_name)
-        response = requests.get(f"{custom_endpoint}/_cluster/health")
-        assert not response.ok
-        assert response.status_code == 404
-
         response = requests.get(f"{endpoint}/_cluster/health")
         assert response.ok
         assert response.status_code == 200
@@ -759,12 +789,12 @@ class TestMultiClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -807,12 +837,12 @@ class TestMultiplexingClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -855,12 +885,12 @@ class TestSingletonClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -941,7 +971,7 @@ class TestCustomBackendManager:
         domain_key = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=get_aws_account_id(),
+            account=TEST_AWS_ACCOUNT_ID,
         )
         cluster = manager.create(domain_key.arn, OPENSEARCH_DEFAULT_VERSION)
         # check that we're using the domain endpoint strategy

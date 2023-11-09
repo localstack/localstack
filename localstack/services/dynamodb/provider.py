@@ -299,7 +299,7 @@ class SSEUtils:
             if not kms_master_key_id:
                 # this is of course not the actual key for dynamodb, just a better, since existing, mock
                 kms_master_key_id = cls.get_sse_kms_managed_key(account_id, region_name)
-            kms_master_key_id = arns.kms_key_arn(kms_master_key_id)
+            kms_master_key_id = arns.kms_key_arn(kms_master_key_id, account_id, region_name)
             return {
                 "Status": "ENABLED",
                 "SSEType": "KMS",  # no other value is allowed here
@@ -711,7 +711,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_name = put_item_input["TableName"]
 
         existing_item = None
-        if streams_enabled := has_streams_enabled(table_name):
+        if streams_enabled := has_streams_enabled(context.account_id, context.region, table_name):
             # TODO: we could manually override ReturnValues to return the old value?
             existing_item = ItemFinder.find_existing_item(
                 put_item_input,
@@ -771,7 +771,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         existing_item = None
-        if has_streams_enabled(table_name):
+        if has_streams_enabled(context.account_id, context.region, table_name):
             existing_item = ItemFinder.find_existing_item(
                 delete_item_input, table_name, context.account_id, context.region
             )
@@ -780,7 +780,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         # determine and forward stream record
         if existing_item:
-            event_sources_or_streams_enabled = has_streams_enabled(table_name)
+            event_sources_or_streams_enabled = has_streams_enabled(
+                context.account_id, context.region, table_name
+            )
             if event_sources_or_streams_enabled:
                 # create record
                 record = self.get_record_template(context.region)
@@ -814,7 +816,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         existing_item = None
-        event_sources_or_streams_enabled = has_streams_enabled(table_name)
+        event_sources_or_streams_enabled = has_streams_enabled(
+            context.account_id, context.region, table_name
+        )
         if event_sources_or_streams_enabled:
             # TODO: we could manually override ReturnValues to return the old value?
             existing_item = ItemFinder.find_existing_item(
@@ -905,7 +909,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         tables_with_stream = []
 
         for table_name, items in sorted(request_items.items(), key=itemgetter(0)):
-            if stream_enabled := has_streams_enabled(table_name):
+            if stream_enabled := has_streams_enabled(
+                context.account_id, context.region, table_name
+            ):
                 tables_with_stream.append(table_name)
 
             for request in items:
@@ -1009,7 +1015,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         event_sources_or_streams_enabled = False
         for record in records:
             event_sources_or_streams_enabled = (
-                event_sources_or_streams_enabled or has_streams_enabled(record["eventSourceARN"])
+                event_sources_or_streams_enabled
+                or has_streams_enabled(context.account_id, context.region, record["eventSourceARN"])
             )
         if event_sources_or_streams_enabled:
             self.forward_stream_records(context.account_id, context.region, records)
@@ -1041,7 +1048,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         statement = execute_statement_input["Statement"]
         table_name = extract_table_name_from_partiql_update(statement)
         existing_items = None
-        if table_name and has_streams_enabled(table_name):
+        if table_name and has_streams_enabled(context.account_id, context.region, table_name):
             # Note: fetching the entire list of items is hugely inefficient, especially for larger tables
             # TODO: find a mechanism to hook into the PartiQL update mechanism of DynamoDB Local directly!
             existing_items = ItemFinder.list_existing_items_for_statement(
@@ -1051,7 +1058,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self.forward_request(context)
 
         # construct and forward stream record
-        event_sources_or_streams_enabled = table_name and has_streams_enabled(table_name)
+        event_sources_or_streams_enabled = table_name and has_streams_enabled(
+            context.account_id, context.region, table_name
+        )
         if event_sources_or_streams_enabled:
             records = get_updated_records(
                 context.account_id, context.region, table_name, existing_items
@@ -1502,7 +1511,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["dynamodb"]["NewImage"] = put_request["Item"]
                 if existing_item:
                     new_record["dynamodb"]["OldImage"] = existing_item
-                new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
+                new_record["eventSourceARN"] = arns.dynamodb_table_arn(
+                    table_name, account_id=account_id, region_name=region_name
+                )
                 new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(put_request["Item"])
                 records.append(new_record)
                 i += 1
@@ -1528,7 +1539,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["dynamodb"]["Keys"] = keys
                 new_record["dynamodb"]["OldImage"] = existing_items[i]
                 new_record["dynamodb"]["NewImage"] = updated_item
-                new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
+                new_record["eventSourceARN"] = arns.dynamodb_table_arn(
+                    table_name, account_id=account_id, region_name=region_name
+                )
                 new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(updated_item)
                 records.append(new_record)
                 i += 1
@@ -1550,7 +1563,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["dynamodb"]["Keys"] = keys
                 new_record["dynamodb"]["OldImage"] = existing_item
                 new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_items)
-                new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
+                new_record["eventSourceARN"] = arns.dynamodb_table_arn(
+                    table_name, account_id=account_id, region_name=region_name
+                )
                 records.append(new_record)
                 i += 1
         return records
@@ -1611,7 +1626,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         new_record["dynamodb"]["NewImage"] = request["Item"]
                         if existing_item:
                             new_record["dynamodb"]["OldImage"] = existing_item
-                        new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
+                        new_record["eventSourceARN"] = arns.dynamodb_table_arn(
+                            table_name, account_id=account_id, region_name=region_name
+                        )
                         records.append(new_record)
 
                     elif key == "DeleteRequest" and existing_item:
@@ -1622,7 +1639,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         new_record["dynamodb"]["Keys"] = keys
                         new_record["dynamodb"]["OldImage"] = existing_item
                         new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_item)
-                        new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
+                        new_record["eventSourceARN"] = arns.dynamodb_table_arn(
+                            table_name, account_id=account_id, region_name=region_name
+                        )
                         records.append(new_record)
 
         return records
@@ -1633,7 +1652,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if records and "eventName" in records[0]:
             if table_name:
                 for record in records:
-                    record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
+                    record["eventSourceARN"] = arns.dynamodb_table_arn(
+                        table_name, account_id=account_id, region_name=region_name
+                    )
             EventForwarder.forward_to_targets(account_id, region_name, records, background=True)
 
     def get_record_template(self, region_name: str) -> Dict:
@@ -1732,14 +1753,10 @@ def is_index_query_valid(account_id: str, region_name: str, query_data: dict) ->
     return True
 
 
-def has_streams_enabled(table_name: str):
+def has_streams_enabled(account_id: str, region_name: str, table_name: str):
     if not table_name:
         return
-    table_arn = arns.dynamodb_table_arn(table_name)
-    # TODO: change this, it's using `_resource_arn` which calls get_aws_account_id() and get_region() which we
-    #  are extracting from the ARN after?
-    account_id = extract_account_id_from_arn(table_arn)
-    region_name = extract_region_from_arn(table_arn)
+    table_arn = arns.dynamodb_table_arn(table_name, account_id=account_id, region_name=region_name)
 
     if dynamodbstreams_api.get_stream_for_table(account_id, region_name, table_arn):
         return True

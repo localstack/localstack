@@ -149,7 +149,7 @@ def get_internal_mocked_headers(
     else:
         access_key_id = None
     headers = aws_stack.mock_aws_request_headers(
-        service=service_name, region_name=region_name, access_key=access_key_id
+        service=service_name, aws_access_key_id=access_key_id, region_name=region_name
     )
 
     dto = InternalRequestParameters(
@@ -586,7 +586,11 @@ class S3Integration(BackendIntegration):
             LOG.debug(msg)
             return make_error_response(msg, 404)
 
-        headers = aws_stack.mock_aws_request_headers(service="s3")
+        headers = aws_stack.mock_aws_request_headers(
+            service="s3",
+            aws_access_key_id=invocation_context.account_id,
+            region_name=invocation_context.region_name,
+        )
 
         if object.get("ContentType"):
             headers["Content-Type"] = object["ContentType"]
@@ -708,7 +712,9 @@ class SNSIntegration(BackendIntegration):
             LOG.warning("Failed to apply template for SNS integration", e)
             raise
         region_name = uri.split(":")[3]
-        headers = aws_stack.mock_aws_request_headers(service="sns", region_name=region_name)
+        headers = aws_stack.mock_aws_request_headers(
+            service="sns", aws_access_key_id=invocation_context.account_id, region_name=region_name
+        )
         result = make_http_request(
             config.service_url("sns"), method="POST", headers=headers, data=payload
         )
@@ -770,7 +776,13 @@ class StepFunctionIntegration(BackendIntegration):
         result = method(**payload)
         result = json_safe(remove_attributes(result, ["ResponseMetadata"]))
         response = StepFunctionIntegration._create_response(
-            HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=json.dumps(result)
+            HTTPStatus.OK.value,
+            aws_stack.mock_aws_request_headers(
+                "stepfunctions",
+                aws_access_key_id=invocation_context.account_id,
+                region_name=invocation_context.region_name,
+            ),
+            data=json.dumps(result),
         )
         if action == "StartSyncExecution":
             # poll for the execution result and return it

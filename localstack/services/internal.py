@@ -27,6 +27,7 @@ from localstack.utils.config_listener import update_config_variable
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.numbers import is_number
 from localstack.utils.objects import singleton_factory
 from localstack.utils.server.http2_server import HTTP_METHODS
 
@@ -303,6 +304,8 @@ class ConfigResource:
         if not re.match(r"^[_a-zA-Z0-9]+$", variable):
             return Response("{}", mimetype="application/json", status=400)
         new_value = data.get("value")
+        if is_number(new_value):
+            new_value = float(new_value)
         update_config_variable(variable, new_value)
         value = getattr(config, variable, None)
         return {

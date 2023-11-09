@@ -22,6 +22,9 @@ LOCALSTACK_COMMAND = [sys.executable, "-m", "localstack.runtime.main"]
 
 DEBUG = os.getenv("DEBUG", "").strip().lower() in ["1", "true"]
 
+# configurable process shutdown timeout, to allow for longer shutdown procedures
+DEFAULT_SHUTDOWN_TIMEOUT = int(os.getenv("SHUTDOWN_TIMEOUT", "").strip() or 5)
+
 
 class AlarmException(Exception):
     """Special exception raise if SIGALRM is received."""
@@ -77,7 +80,7 @@ def waitpid_reap_other_children(pid: int) -> Optional[int]:
     return status
 
 
-def stop_child_process(name: str, pid: int, sig: int = signal.SIGTERM, timeout: int = 5):
+def stop_child_process(name: str, pid: int, sig: int = signal.SIGTERM, timeout: int | None = None):
     """
     Sends a signal to the given process and then waits for all child processes to avoid zombie processes.
 
@@ -92,6 +95,7 @@ def stop_child_process(name: str, pid: int, sig: int = signal.SIGTERM, timeout: 
         os.kill(pid, sig)
     except OSError:
         pass
+    timeout = timeout or DEFAULT_SHUTDOWN_TIMEOUT
     signal.alarm(timeout)
     try:
         waitpid_reap_other_children(pid)

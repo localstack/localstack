@@ -91,7 +91,7 @@ class Stack:
         # initialize stack template attributes
         stack_id = self.metadata.get("StackId") or arns.cloudformation_stack_arn(
             self.stack_name,
-            short_uid(),
+            stack_id=short_uid(),
             account_id=account_id,
             region_name=region_name,
         )

@@ -13,7 +13,7 @@ from localstack import config
 from localstack.aws.skeleton import DispatchTable
 from localstack.config import ServiceProviderConfig
 from localstack.state import StateLifecycleHook, StateVisitable, StateVisitor
-from localstack.utils.bootstrap import get_enabled_apis, log_duration
+from localstack.utils.bootstrap import get_enabled_apis, is_api_enabled, log_duration
 from localstack.utils.functions import call_safe
 from localstack.utils.net import wait_for_port_status
 from localstack.utils.sync import SynchronizedDefaultDict, poll_condition
@@ -127,7 +127,7 @@ class Service:
         return self.plugin_name
 
     def is_enabled(self):
-        return True
+        return is_api_enabled(self.plugin_name)
 
     def accept_state_visitor(self, visitor: StateVisitor):
         """
@@ -545,7 +545,7 @@ class ServicePluginManager(ServiceManager):
         if self.plugin_errors.has_errors(name, provider):
             return ServiceState.ERROR
 
-        return ServiceState.AVAILABLE
+        return ServiceState.AVAILABLE if is_api_enabled(name) else ServiceState.DISABLED
 
     def get_service_container(self, name: str) -> Optional[ServiceContainer]:
         if container := self._services.get(name):

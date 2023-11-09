@@ -1280,6 +1280,20 @@ class CancelResizeMessage(ServiceRequest):
     ClusterIdentifier: String
 
 
+class ClusterNode(TypedDict, total=False):
+    NodeRole: Optional[String]
+    PrivateIPAddress: Optional[String]
+    PublicIPAddress: Optional[String]
+
+
+ClusterNodesList = List[ClusterNode]
+
+
+class SecondaryClusterInfo(TypedDict, total=False):
+    AvailabilityZone: Optional[String]
+    ClusterNodes: Optional[ClusterNodesList]
+
+
 class ReservedNodeExchangeStatus(TypedDict, total=False):
     ReservedNodeExchangeRequestId: Optional[String]
     Status: Optional[ReservedNodeExchangeStatusType]
@@ -1321,15 +1335,6 @@ ClusterIamRoleList = List[ClusterIamRole]
 class ElasticIpStatus(TypedDict, total=False):
     ElasticIp: Optional[String]
     Status: Optional[String]
-
-
-class ClusterNode(TypedDict, total=False):
-    NodeRole: Optional[String]
-    PrivateIPAddress: Optional[String]
-    PublicIPAddress: Optional[String]
-
-
-ClusterNodesList = List[ClusterNode]
 
 
 class ClusterSnapshotCopyStatus(TypedDict, total=False):
@@ -1496,6 +1501,8 @@ class Cluster(TypedDict, total=False):
     MasterPasswordSecretArn: Optional[String]
     MasterPasswordSecretKmsKeyId: Optional[String]
     IpAddressType: Optional[String]
+    MultiAZ: Optional[String]
+    MultiAZSecondary: Optional[SecondaryClusterInfo]
 
 
 class ClusterCredentials(TypedDict, total=False):
@@ -1699,6 +1706,7 @@ class CreateClusterMessage(ServiceRequest):
     ManageMasterPassword: Optional[BooleanOptional]
     MasterPasswordSecretKmsKeyId: Optional[String]
     IpAddressType: Optional[String]
+    MultiAZ: Optional[BooleanOptional]
 
 
 class CreateClusterParameterGroupMessage(ServiceRequest):
@@ -2569,6 +2577,14 @@ class EventsMessage(TypedDict, total=False):
     Events: Optional[EventList]
 
 
+class FailoverPrimaryComputeInputMessage(ServiceRequest):
+    ClusterIdentifier: String
+
+
+class FailoverPrimaryComputeResult(TypedDict, total=False):
+    Cluster: Optional[Cluster]
+
+
 class GetClusterCredentialsMessage(ServiceRequest):
     DbUser: String
     DbName: Optional[String]
@@ -2791,6 +2807,7 @@ class ModifyClusterMessage(ServiceRequest):
     ManageMasterPassword: Optional[BooleanOptional]
     MasterPasswordSecretKmsKeyId: Optional[String]
     IpAddressType: Optional[String]
+    MultiAZ: Optional[BooleanOptional]
 
 
 class ModifyClusterParameterGroupMessage(ServiceRequest):
@@ -3047,6 +3064,7 @@ class RestoreFromClusterSnapshotMessage(ServiceRequest):
     ManageMasterPassword: Optional[BooleanOptional]
     MasterPasswordSecretKmsKeyId: Optional[String]
     IpAddressType: Optional[String]
+    MultiAZ: Optional[BooleanOptional]
 
 
 class RestoreFromClusterSnapshotResult(TypedDict, total=False):
@@ -3380,6 +3398,7 @@ class RedshiftApi:
         manage_master_password: BooleanOptional = None,
         master_password_secret_kms_key_id: String = None,
         ip_address_type: String = None,
+        multi_az: BooleanOptional = None,
     ) -> CreateClusterResult:
         raise NotImplementedError
 
@@ -4142,6 +4161,12 @@ class RedshiftApi:
     ) -> EnableSnapshotCopyResult:
         raise NotImplementedError
 
+    @handler("FailoverPrimaryCompute")
+    def failover_primary_compute(
+        self, context: RequestContext, cluster_identifier: String
+    ) -> FailoverPrimaryComputeResult:
+        raise NotImplementedError
+
     @handler("GetClusterCredentials")
     def get_cluster_credentials(
         self,
@@ -4245,6 +4270,7 @@ class RedshiftApi:
         manage_master_password: BooleanOptional = None,
         master_password_secret_kms_key_id: String = None,
         ip_address_type: String = None,
+        multi_az: BooleanOptional = None,
     ) -> ModifyClusterResult:
         raise NotImplementedError
 
@@ -4486,6 +4512,7 @@ class RedshiftApi:
         manage_master_password: BooleanOptional = None,
         master_password_secret_kms_key_id: String = None,
         ip_address_type: String = None,
+        multi_az: BooleanOptional = None,
     ) -> RestoreFromClusterSnapshotResult:
         raise NotImplementedError
 

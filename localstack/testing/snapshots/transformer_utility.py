@@ -437,6 +437,25 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def route53_api():
+        return [
+            TransformerUtility.jsonpath("$..HostedZone.CallerReference", "caller-reference"),
+            TransformerUtility.jsonpath(
+                jsonpath="$..DelegationSet.NameServers",
+                value_replacement="<name-server>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.jsonpath(
+                jsonpath="$..ChangeInfo.Status", value_replacement="status"
+            ),
+            KeyValueBasedTransformer(_route53_hosted_zone_id_transformer, "zone-id"),
+            TransformerUtility.regex(r"/change/[A-Za-z0-9]+", "/change/<change-id>"),
+            TransformerUtility.jsonpath(
+                jsonpath="$..HostedZone.Name", value_replacement="zone_name"
+            ),
+        ]
+
+    @staticmethod
     def sqs_api():
         """
         :return: array with Transformers, for sqs api.
@@ -662,6 +681,13 @@ def _log_stream_name_transformer(key: str, val: str) -> str:
         if match:
             return val
     return None
+
+
+def _route53_hosted_zone_id_transformer(key: str, val: str) -> str:
+    if isinstance(val, str) and key == "Id":
+        match = re.match(r".*/hostedzone/([A-Za-z0-9]+)", val)
+        if match:
+            return match.groups()[0]
 
 
 # TODO: actual and declared type diverge

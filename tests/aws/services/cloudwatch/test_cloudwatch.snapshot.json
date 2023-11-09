@@ -369,7 +369,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm": {
-    "recorded-date": "12-09-2023, 12:05:17",
+    "recorded-date": "26-10-2023, 11:44:13",
     "recorded-content": {
       "describe-alarm": {
         "CompositeAlarms": [],
@@ -440,7 +440,7 @@
               "arn:aws:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 30,
-            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (12/09/23 10:03:00)] was greater than the threshold (2.0).",
+            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (26/10/23 16:42:00)] was greater than the threshold (2.0).",
             "StateReasonData": {
               "version": "1.0",
               "queryDate": "date",
@@ -484,7 +484,7 @@
         "AlarmDescription": "testing cloudwatch alarms",
         "AlarmName": "<alarm-name:1>",
         "InsufficientDataActions": [],
-        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (12/09/23 10:03:00)] was greater than the threshold (2.0).",
+        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (26/10/23 16:42:00)] was greater than the threshold (2.0).",
         "NewStateValue": "ALARM",
         "OKActions": [
           "arn:aws:sns:<region>:111111111111:<topic_arn>"
@@ -510,6 +510,111 @@
           "Threshold": 2.0,
           "TreatMissingData": "notBreaching",
           "Unit": "Seconds"
+        }
+      },
+      "describe-alarm-history": {
+        "AlarmHistoryItems": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmType": "MetricAlarm",
+            "HistoryData": {
+              "version": "1.0",
+              "oldState": {
+                "stateValue": "INSUFFICIENT_DATA",
+                "stateReason": "Unchecked: Initial alarm creation"
+              },
+              "newState": {
+                "stateValue": "ALARM",
+                "stateReason": "Threshold Crossed: 1 datapoint [21.5 (26/10/23 16:42:00)] was greater than the threshold (2.0).",
+                "stateReasonData": {
+                  "version": "1.0",
+                  "queryDate": "date",
+                  "startDate": "date",
+                  "unit": "Seconds",
+                  "statistic": "Average",
+                  "period": 30,
+                  "recentDatapoints": [
+                    21.5
+                  ],
+                  "threshold": 2.0,
+                  "evaluatedDatapoints": [
+                    {
+                      "timestamp": "date",
+                      "sampleCount": 2.0,
+                      "value": 21.5
+                    }
+                  ]
+                }
+              }
+            },
+            "HistoryItemType": "StateUpdate",
+            "HistorySummary": "Alarm updated from INSUFFICIENT_DATA to ALARM",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-alarms-for-metric": {
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 30,
+            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (26/10/23 16:42:00)] was greater than the threshold (2.0).",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "startDate": "date",
+              "unit": "Seconds",
+              "statistic": "Average",
+              "period": 30,
+              "recentDatapoints": [
+                21.5
+              ],
+              "threshold": 2.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date",
+                  "sampleCount": 2.0,
+                  "value": 21.5
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 2.0,
+            "TreatMissingData": "notBreaching",
+            "Unit": "Seconds"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "ok-triggered-describe": {
@@ -759,6 +864,342 @@
             "Value": "bar"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_dashboard_lifecycle": {
+    "recorded-date": "25-10-2023, 13:16:20",
+    "recorded-content": {
+      "get_dashboard": {
+        "DashboardArn": "arn:aws:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
+        "DashboardBody": {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [
+                    "AWS/EC2",
+                    "CPUUtilization",
+                    "InstanceId",
+                    "i-12345678"
+                  ]
+                ],
+                "region": "<region>",
+                "view": "timeSeries",
+                "stacked": false
+              }
+            }
+          ]
+        },
+        "DashboardName": "<dashboard-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_create_metric_stream": {
+    "recorded-date": "26-10-2023, 09:12:10",
+    "recorded-content": {
+      "create_metric_stream": {
+        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_metric_stream": {
+        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/<name:1>",
+        "CreationDate": "datetime",
+        "FirehoseArn": "<firehose-arn:1>",
+        "IncludeLinkedAccountsMetrics": false,
+        "LastUpdateDate": "datetime",
+        "Name": "<name:1>",
+        "OutputFormat": "json",
+        "RoleArn": "<role-arn:1>",
+        "State": "running",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_metric_stream": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stop_metric_stream": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_metric_stream": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_insight_rule": {
+    "recorded-date": "26-10-2023, 10:07:59",
+    "recorded-content": {
+      "create_insight_rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_insight_rule": {
+        "InsightRules": [
+          {
+            "Definition": {
+              "Schema": {
+                "Name": "<name:1>",
+                "Version": 1
+              },
+              "LogGroupNames": [
+                "API-Gateway-Access-Logs*"
+              ],
+              "LogFormat": "CLF",
+              "Fields": {
+                "4": "IpAddress",
+                "7": "StatusCode"
+              },
+              "Contribution": {
+                "Keys": [
+                  "IpAddress"
+                ],
+                "Filters": [
+                  {
+                    "Match": "StatusCode",
+                    "EqualTo": 200
+                  }
+                ]
+              },
+              "AggregateOn": "Count"
+            },
+            "ManagedRule": false,
+            "Name": "<name:2>",
+            "Schema": "<name:1>/1",
+            "State": "ENABLED"
+          },
+          {
+            "Definition": {
+              "Schema": {
+                "Name": "<name:1>",
+                "Version": 1
+              },
+              "LogGroupNames": [
+                "API-Gateway-Access-Logs*"
+              ],
+              "LogFormat": "CLF",
+              "Fields": {
+                "4": "IpAddress",
+                "7": "StatusCode"
+              },
+              "Contribution": {
+                "Keys": [
+                  "IpAddress"
+                ],
+                "Filters": [
+                  {
+                    "Match": "StatusCode",
+                    "EqualTo": 200
+                  }
+                ]
+              },
+              "AggregateOn": "Count"
+            },
+            "ManagedRule": false,
+            "Name": "<name:3>",
+            "Schema": "<name:1>/1",
+            "State": "ENABLED"
+          },
+          {
+            "Definition": {
+              "Schema": {
+                "Name": "<name:1>",
+                "Version": 1
+              },
+              "LogGroupNames": [
+                "API-Gateway-Access-Logs*"
+              ],
+              "LogFormat": "CLF",
+              "Fields": {
+                "4": "IpAddress",
+                "7": "StatusCode"
+              },
+              "Contribution": {
+                "Keys": [
+                  "IpAddress"
+                ],
+                "Filters": [
+                  {
+                    "Match": "StatusCode",
+                    "EqualTo": 200
+                  }
+                ]
+              },
+              "AggregateOn": "Count"
+            },
+            "ManagedRule": false,
+            "Name": "<name:4>",
+            "Schema": "<name:1>/1",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "disable_insight_rule": {
+        "Failures": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "enable_insight_rule": {
+        "Failures": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_insight_rule_report": {
+        "AggregateValue": 0.0,
+        "AggregationStatistic": "SampleCount",
+        "ApproximateUniqueCount": 0,
+        "Contributors": [],
+        "KeyLabels": [
+          "IpAddress"
+        ],
+        "MetricDatapoints": [
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          },
+          {
+            "Timestamp": "timestamp",
+            "UniqueContributors": 0.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_insight_rule": {
+        "Failures": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_anomaly_detector_lifecycle": {
+    "recorded-date": "26-10-2023, 10:42:43",
+    "recorded-content": {
+      "create_anomaly_detector": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_anomaly_detector": {
+        "AnomalyDetectors": [
+          {
+            "Configuration": {
+              "ExcludedTimeRanges": []
+            },
+            "Dimensions": [
+              {
+                "Name": "DimensionName",
+                "Value": "DimensionValue"
+              }
+            ],
+            "MetricName": "MyMetric",
+            "Namespace": "MyNamespace",
+            "SingleMetricAnomalyDetector": {
+              "Dimensions": [
+                {
+                  "Name": "DimensionName",
+                  "Value": "DimensionValue"
+                }
+              ],
+              "MetricName": "MyMetric",
+              "Namespace": "MyNamespace",
+              "Stat": "Sum"
+            },
+            "Stat": "Sum",
+            "StateValue": "PENDING_TRAINING"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_anomaly_detector": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

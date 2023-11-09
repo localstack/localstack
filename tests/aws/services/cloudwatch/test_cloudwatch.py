@@ -1,6 +1,7 @@
 import copy
 import gzip
 import json
+import time
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 
@@ -73,14 +74,12 @@ class TestCloudwatch:
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers(
             "cloudwatch",
-            internal=True,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=TEST_AWS_REGION_NAME,
-            access_key=TEST_AWS_ACCESS_KEY_ID,
+            internal=True,
         )
         authorization = aws_stack.mock_aws_request_headers(
-            "monitoring",
-            region_name=TEST_AWS_REGION_NAME,
-            access_key=TEST_AWS_ACCESS_KEY_ID,
+            "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )["Authorization"]
 
         headers.update(
@@ -204,9 +203,7 @@ class TestCloudwatch:
         )
         url = f"{config.get_edge_url()}{PATH_GET_RAW_METRICS}"
         headers = aws_stack.mock_aws_request_headers(
-            "cloudwatch",
-            region_name=TEST_AWS_REGION_NAME,
-            access_key=TEST_AWS_ACCESS_KEY_ID,
+            "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         result = requests.get(url, headers=headers)
         assert 200 == result.status_code
@@ -635,6 +632,21 @@ class TestCloudwatch:
             identifier="alarm-triggered",
         )
 
+        # describe alarm history
+        history = aws_client.cloudwatch.describe_alarm_history(
+            AlarmName=alarm_name, HistoryItemType="StateUpdate"
+        )
+        snapshot.match("describe-alarm-history", history)
+
+        # describe alarms for metric
+        alarms = aws_client.cloudwatch.describe_alarms_for_metric(
+            MetricName=metric_name,
+            Namespace=namespace,
+            Dimensions=dimension,
+            Statistic="Average",
+        )
+        snapshot.match("describe-alarms-for-metric", alarms)
+
         # missing are treated as not breaching, so we should reach OK state again
         retry(
             _check_alarm_triggered,
@@ -923,6 +935,266 @@ class TestCloudwatch:
         )
 
         snapshot.match("get_metric_data_2", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..DashboardArn"])  # ARN has a typo
+    def test_dashboard_lifecycle(self, aws_client, snapshot):
+        dashboard_name = f"test-{short_uid()}"
+        dashboard_body = {
+            "widgets": [
+                {
+                    "type": "metric",
+                    "x": 0,
+                    "y": 0,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "i-12345678"]],
+                        "region": "us-east-1",
+                        "view": "timeSeries",
+                        "stacked": False,
+                    },
+                }
+            ]
+        }
+        aws_client.cloudwatch.put_dashboard(
+            DashboardName=dashboard_name, DashboardBody=json.dumps(dashboard_body)
+        )
+        response = aws_client.cloudwatch.get_dashboard(DashboardName=dashboard_name)
+        snapshot.add_transformer(snapshot.transform.key_value("DashboardName"))
+        snapshot.match("get_dashboard", response)
+
+        dashboards_list = aws_client.cloudwatch.list_dashboards()
+        dashboards_names = [
+            dashboard["DashboardName"] for dashboard in dashboards_list["DashboardEntries"]
+        ]
+        assert dashboard_name in dashboards_names
+
+        aws_client.cloudwatch.delete_dashboards(DashboardNames=[dashboard_name])
+        dashboards_list = aws_client.cloudwatch.list_dashboards()
+        dashboards = [
+            dashboard["DashboardName"] for dashboard in dashboards_list["DashboardEntries"]
+        ]
+        assert dashboard_name not in dashboards
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
+    def test_create_metric_stream(
+        self,
+        aws_client,
+        firehose_create_delivery_stream,
+        s3_create_bucket,
+        create_role_with_policy,
+        snapshot,
+    ):
+        bucket_name = f"test-bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name)
+
+        _, subscription_role_arn = create_role_with_policy(
+            "Allow",
+            "s3:*",
+            json.dumps(
+                {
+                    "Statement": {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {"Service": "firehose.amazonaws.com"},
+                        "Action": "sts:AssumeRole",
+                    }
+                }
+            ),
+            "*",
+        )
+
+        if is_aws_cloud():
+            time.sleep(15)
+
+        stream_name = f"MyStream-{short_uid()}"
+        stream_arn = firehose_create_delivery_stream(
+            DeliveryStreamName=stream_name,
+            DeliveryStreamType="DirectPut",
+            S3DestinationConfiguration={
+                "RoleARN": subscription_role_arn,
+                "BucketARN": f"arn:aws:s3:::{bucket_name}",
+                "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 60},
+            },
+        )["DeliveryStreamARN"]
+
+        _, role_arn = create_role_with_policy(
+            "Allow",
+            "firehose:*",
+            json.dumps(
+                {
+                    "Statement": {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {"Service": "cloudwatch.amazonaws.com"},
+                        "Action": "sts:AssumeRole",
+                    }
+                }
+            ),
+            stream_arn,
+        )
+
+        if is_aws_cloud():
+            time.sleep(15)
+
+        metric_stream_name = f"MyMetricStream-{short_uid()}"
+        response_create = aws_client.cloudwatch.put_metric_stream(
+            Name=metric_stream_name,
+            FirehoseArn=stream_arn,
+            RoleArn=role_arn,
+            OutputFormat="json",
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        snapshot.add_transformer(snapshot.transform.key_value("FirehoseArn"))
+        snapshot.add_transformer(snapshot.transform.key_value("RoleArn"))
+
+        snapshot.match("create_metric_stream", response_create)
+
+        get_response = aws_client.cloudwatch.get_metric_stream(Name=metric_stream_name)
+        snapshot.match("get_metric_stream", get_response)
+
+        response_list = aws_client.cloudwatch.list_metric_streams()
+        metric_streams = response_list.get("Entries", [])
+        metric_streams_names = [metric_stream["Name"] for metric_stream in metric_streams]
+        assert metric_stream_name in metric_streams_names
+
+        start_response = aws_client.cloudwatch.start_metric_streams(Names=[metric_stream_name])
+        snapshot.match("start_metric_stream", start_response)
+
+        stop_response = aws_client.cloudwatch.stop_metric_streams(Names=[metric_stream_name])
+        snapshot.match("stop_metric_stream", stop_response)
+
+        response_delete = aws_client.cloudwatch.delete_metric_stream(Name=metric_stream_name)
+        snapshot.match("delete_metric_stream", response_delete)
+        response_list = aws_client.cloudwatch.list_metric_streams()
+        metric_streams = response_list.get("Entries", [])
+        metric_streams_names = [metric_stream["Name"] for metric_stream in metric_streams]
+        assert metric_stream_name not in metric_streams_names
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
+    def test_insight_rule(self, aws_client, snapshot):
+        insight_rule_name = f"MyInsightRule-{short_uid()}"
+        response_create = aws_client.cloudwatch.put_insight_rule(
+            RuleName=insight_rule_name,
+            RuleState="ENABLED",
+            RuleDefinition=json.dumps(
+                {
+                    "Schema": {"Name": "CloudWatchLogRule", "Version": 1},
+                    "LogGroupNames": ["API-Gateway-Access-Logs*"],
+                    "LogFormat": "CLF",
+                    "Fields": {"4": "IpAddress", "7": "StatusCode"},
+                    "Contribution": {
+                        "Keys": ["IpAddress"],
+                        "Filters": [{"Match": "StatusCode", "EqualTo": 200}],
+                    },
+                    "AggregateOn": "Count",
+                }
+            ),
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        snapshot.match("create_insight_rule", response_create)
+
+        response_describe = aws_client.cloudwatch.describe_insight_rules()
+        snapshot.match("describe_insight_rule", response_describe)
+
+        response_disable = aws_client.cloudwatch.disable_insight_rules(
+            RuleNames=[insight_rule_name]
+        )
+        snapshot.match("disable_insight_rule", response_disable)
+
+        response_enable = aws_client.cloudwatch.enable_insight_rules(RuleNames=[insight_rule_name])
+        snapshot.match("enable_insight_rule", response_enable)
+
+        insight_rule_report = aws_client.cloudwatch.get_insight_rule_report(
+            RuleName=insight_rule_name,
+            StartTime=datetime.utcnow() - timedelta(hours=1),
+            EndTime=datetime.utcnow(),
+            Period=300,
+            MaxContributorCount=10,
+            Metrics=["UniqueContributors"],
+        )
+        snapshot.match("get_insight_rule_report", insight_rule_report)
+
+        response_list = aws_client.cloudwatch.describe_insight_rules()
+        insight_rules_names = [
+            insight_rule["Name"] for insight_rule in response_list["InsightRules"]
+        ]
+        assert insight_rule_name in insight_rules_names
+
+        response_delete = aws_client.cloudwatch.delete_insight_rules(RuleNames=[insight_rule_name])
+        snapshot.match("delete_insight_rule", response_delete)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
+    def test_anomaly_detector_lifecycle(self, aws_client, snapshot):
+        namespace = "MyNamespace"
+        metric_name = "MyMetric"
+
+        response_create = aws_client.cloudwatch.put_anomaly_detector(
+            MetricName=metric_name,
+            Namespace=namespace,
+            Stat="Sum",
+            Configuration={},
+            Dimensions=[{"Name": "DimensionName", "Value": "DimensionValue"}],
+        )
+        snapshot.match("create_anomaly_detector", response_create)
+
+        response_list = aws_client.cloudwatch.describe_anomaly_detectors()
+        snapshot.match("describe_anomaly_detector", response_list)
+
+        response_delete = aws_client.cloudwatch.delete_anomaly_detector(
+            MetricName=metric_name,
+            Namespace=namespace,
+            Stat="Sum",
+            Dimensions=[{"Name": "DimensionName", "Value": "DimensionValue"}],
+        )
+        snapshot.match("delete_anomaly_detector", response_delete)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
+    def test_metric_widget(self, aws_client):
+        metric_name = f"test-metric-{short_uid()}"
+        namespace = f"ns-{short_uid()}"
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                    "Values": [1.0, 10.0],
+                    "Counts": [2, 4],
+                    "Unit": "Count",
+                }
+            ],
+        )
+
+        response = aws_client.cloudwatch.get_metric_widget_image(
+            MetricWidget=json.dumps(
+                {
+                    "metrics": [
+                        [
+                            namespace,
+                            metric_name,
+                            {"stat": "Sum", "id": "m1"},
+                        ]
+                    ],
+                    "view": "timeSeries",
+                    "stacked": False,
+                    "region": "us-east-1",
+                    "title": "test",
+                    "width": 600,
+                    "height": 400,
+                    "start": "-PT3H",
+                    "end": "P0D",
+                }
+            )
+        )
+
+        assert isinstance(response["MetricWidgetImage"], bytes)
 
 
 def _check_alarm_triggered(

@@ -1,0 +1,11 @@
+{
+  "Comment": "WAIT_TIMESTAMP",
+  "StartAt": "WaitUntil",
+  "States": {
+    "WaitUntil": {
+      "Type": "Wait",
+      "Timestamp": "2016-03-14T01:59:00Z",
+      "End": true
+    }
+  }
+}

@@ -43,6 +43,7 @@ from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import short_uid
 from localstack.utils.time import parse_timestamp, timestamp_millis
 
@@ -449,6 +450,14 @@ class SqsNotifier(BaseNotifier):
         return queue_configuration.get("QueueArn", ""), "QueueArn"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        if not is_api_enabled("sqs"):
+            LOG.warning(
+                "Service 'sqs' is not enabled: skipping validation of the following destination: '%s' "
+                "Please check your 'SERVICES' configuration variable.",
+                target_arn,
+            )
+            return
+
         arn_data = parse_arn(target_arn)
         sqs_client = connect_to(
             aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
@@ -524,6 +533,13 @@ class SnsNotifier(BaseNotifier):
         return topic_configuration.get("TopicArn", ""), "TopicArn"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        if not is_api_enabled("sns"):
+            LOG.warning(
+                "Service 'sns' is not enabled: skipping validation of the following destination: '%s' "
+                "Please check your 'SERVICES' configuration variable.",
+                target_arn,
+            )
+            return
         arn_data = parse_arn(target_arn)
         sns_client = connect_to(
             aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
@@ -600,6 +616,13 @@ class LambdaNotifier(BaseNotifier):
         return lambda_configuration.get("LambdaFunctionArn", ""), "LambdaFunctionArn"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        if not is_api_enabled("lambda"):
+            LOG.warning(
+                "Service 'lambda' is not enabled: skipping validation of the following destination: '%s' "
+                "Please check your 'SERVICES' configuration variable.",
+                target_arn,
+            )
+            return
         arn_data = parse_arn(arn=target_arn)
         lambda_client = connect_to(
             aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
@@ -635,10 +658,10 @@ class LambdaNotifier(BaseNotifier):
         lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
-        lambda_function_config = arns.lambda_function_name(lambda_arn)
+
         try:
             lambda_client.invoke(
-                FunctionName=lambda_function_config,
+                FunctionName=lambda_arn,
                 InvocationType="Event",
                 Payload=payload,
             )
@@ -646,11 +669,13 @@ class LambdaNotifier(BaseNotifier):
             LOG.exception(
                 'Unable to send notification for S3 bucket "%s" to Lambda function "%s".',
                 ctx.bucket_name,
-                lambda_function_config,
+                lambda_arn,
             )
 
 
 class EventBridgeNotifier(BaseNotifier):
+    service_name = "events"
+
     @staticmethod
     def _get_event_payload(
         ctx: S3EventNotificationContext, config_id: NotificationId = None
@@ -784,6 +809,13 @@ class NotificationDispatcher:
     ):
         for configuration_key, configurations in notification_config.items():
             notifier = self.notifiers[configuration_key]
+            if not is_api_enabled(notifier.service_name):
+                LOG.warning(
+                    "Service '%s' is not enabled: skip sending notification. "
+                    "Please check your 'SERVICES' configuration variable.",
+                    notifier.service_name,
+                )
+                continue
             # there is not really a configuration for EventBridge, it is an empty dict
             configurations = (
                 configurations if isinstance(configurations, list) else [configurations]

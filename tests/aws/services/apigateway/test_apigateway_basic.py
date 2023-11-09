@@ -19,6 +19,7 @@ from localstack.config import get_edge_url
 from localstack.constants import (
     APPLICATION_JSON,
     LOCALHOST_HOSTNAME,
+    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
@@ -1600,7 +1601,7 @@ class TestTagging:
         api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
         assert api_id == "c0stIOm1d"
 
-        api_arn = arns.apigateway_restapi_arn(api_id=api_id)
+        api_arn = arns.apigateway_restapi_arn(api_id, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         aws_client.apigateway.tag_resource(resourceArn=api_arn, tags=tags)
 
         # receive and assert tags
@@ -1669,7 +1670,9 @@ def test_apigateway_rust_lambda(
 
 @markers.aws.unknown
 def test_apigw_call_api_with_aws_endpoint_url(aws_client):
-    headers = aws_stack.mock_aws_request_headers("apigateway")
+    headers = aws_stack.mock_aws_request_headers(
+        "apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+    )
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
     url = f"{get_edge_url()}/apikeys?includeValues=true&name=test%40example.org"
     response = requests.get(url, headers=headers)
@@ -2017,7 +2020,7 @@ class TestIntegrations:
         )
 
         test_role = "test-s3-role"
-        role_arn = arns.role_arn(role_name=test_role)
+        role_arn = arns.role_arn(role_name=test_role, account_id=TEST_AWS_ACCOUNT_ID)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]

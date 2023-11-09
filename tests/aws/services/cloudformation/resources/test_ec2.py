@@ -1,8 +1,47 @@
 import os
 
+import pytest
+
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer import SortingTransformer
 
 THIS_FOLDER = os.path.dirname(__file__)
+
+
+@markers.aws.unknown
+def test_simple_route_table_creation_without_vpc(deploy_cfn_template, aws_client):
+    ec2 = aws_client.ec2
+    vpc_id = ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
+    stack = deploy_cfn_template(
+        template_path=os.path.join(THIS_FOLDER, "../../../templates/ec2_route_table_isolated.yaml"),
+        parameters={"MyVpcId": vpc_id},
+    )
+
+    route_table_id = stack.outputs["RouteTableId"]
+    route_table = ec2.describe_route_tables(RouteTableIds=[route_table_id])["RouteTables"][0]
+    assert route_table["RouteTableId"] == route_table_id
+
+    stack.destroy()
+    with pytest.raises(ec2.exceptions.ClientError):
+        ec2.describe_route_tables(RouteTableIds=[route_table_id])
+    # TODO move vpc to fixture, so we are sure it is deleted after tests
+    ec2.delete_vpc(VpcId=vpc_id)
+
+
+@markers.aws.unknown
+def test_simple_route_table_creation(deploy_cfn_template, aws_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(THIS_FOLDER, "../../../templates/ec2_route_table_simple.yaml")
+    )
+
+    route_table_id = stack.outputs["RouteTableId"]
+    ec2 = aws_client.ec2
+    route_table = ec2.describe_route_tables(RouteTableIds=[route_table_id])["RouteTables"][0]
+    assert route_table["RouteTableId"] == route_table_id
+
+    stack.destroy()
+    with pytest.raises(ec2.exceptions.ClientError):
+        ec2.describe_route_tables(RouteTableIds=[route_table_id])
 
 
 @markers.aws.unknown
@@ -83,3 +122,18 @@ def test_internet_gateway_ref_and_attr(deploy_cfn_template, snapshot, aws_client
 
     snapshot.match("outputs", stack.outputs)
     snapshot.match("description", response["StackResourceDetail"])
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Tags", "$..OwnerId"])
+def test_dhcp_options(aws_client, deploy_cfn_template, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(THIS_FOLDER, "../../../templates/dhcp_options.yml")
+    )
+
+    response = aws_client.ec2.describe_dhcp_options(
+        DhcpOptionsIds=[stack.outputs["RefDhcpOptions"]]
+    )
+    snapshot.add_transformer(snapshot.transform.key_value("DhcpOptionsId", "dhcp-options-id"))
+    snapshot.add_transformer(SortingTransformer("DhcpConfigurations", lambda x: x["Key"]))
+    snapshot.match("description", response["DhcpOptions"][0])

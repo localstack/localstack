@@ -13,6 +13,7 @@ from localstack.aws.api.apigateway import (
     RequestValidator,
     RestApi,
 )
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -82,7 +83,9 @@ class ApiGatewayStore(BaseStore):
 
         self.account.update(
             {
-                "cloudwatchRoleArn": arns.role_arn("api-gw-cw-role"),
+                "cloudwatchRoleArn": arns.role_arn(
+                    "api-gw-cw-role", DEFAULT_AWS_ACCOUNT_ID
+                ),  # FIXME: account ID must be of the current store
                 "throttleSettings": {"burstLimit": 1000, "rateLimit": 500},
                 "features": ["UsagePlans"],
                 "apiKeyVersion": "1",

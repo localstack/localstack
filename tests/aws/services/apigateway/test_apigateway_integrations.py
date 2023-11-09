@@ -10,8 +10,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import APPLICATION_JSON, LOCALHOST
+from localstack.constants import APPLICATION_JSON, LOCALHOST, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.lambda_.networking import get_main_endpoint_from_container
 from localstack.testing.aws.lambda_utils import is_old_provider
@@ -377,7 +376,7 @@ def test_put_integration_validation(aws_client, echo_http_server, echo_http_serv
             restApiId=api_id,
             resourceId=root_id,
             credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
-                get_aws_account_id()
+                TEST_AWS_ACCOUNT_ID,
             ),
             httpMethod="GET",
             type=_type,
@@ -402,7 +401,7 @@ def test_put_integration_validation(aws_client, echo_http_server, echo_http_serv
                 restApiId=api_id,
                 resourceId=root_id,
                 credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
-                    get_aws_account_id()
+                    TEST_AWS_ACCOUNT_ID,
                 ),
                 httpMethod="GET",
                 type=_type,

@@ -1690,7 +1690,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )  # TODO: test?
-        event_source_mapping = {**old_event_source_mapping, **request_data}
+
+        # remove the FunctionName field
+        function_name_or_arn = request_data.pop("FunctionName", None)
+
+        # normalize values to overwrite
+        event_source_mapping = {
+            **old_event_source_mapping,
+            **request_data,
+        }
+
+        if function_name_or_arn:
+            # if the FunctionName field was present, update the FunctionArn of the EventSourceMapping
+            account_id, region = api_utils.get_account_and_region(function_name_or_arn, context)
+            function_name, qualifier = api_utils.get_name_and_qualifier(
+                function_name_or_arn, None, context
+            )
+            event_source_mapping["FunctionArn"] = api_utils.qualified_lambda_arn(
+                function_name, qualifier, account_id, region
+            )
 
         temp_params = (
             {}

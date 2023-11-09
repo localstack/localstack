@@ -1086,7 +1086,9 @@ class TestSqsProvider:
         sqs_create_queue(QueueName=queue_name)
 
         edge_url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers("sqs")
+        headers = aws_stack.mock_aws_request_headers(
+            "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         payload = f"Action=GetQueueUrl&QueueName={queue_name}"
 
         # assert regular/default queue URL is returned
@@ -1113,7 +1115,9 @@ class TestSqsProvider:
         queue_name = f"queue-{short_uid()}"
 
         edge_url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers("sqs")
+        headers = aws_stack.mock_aws_request_headers(
+            "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         port = 12345
         hostname = "aws-local"
 
@@ -2480,7 +2484,11 @@ class TestSqsProvider:
 
         # create arn
         url_parts = dl_queue_url.split("/")
-        dl_target_arn = arns.sqs_queue_arn(url_parts[-1], account_id=url_parts[len(url_parts) - 2])
+        dl_target_arn = arns.sqs_queue_arn(
+            url_parts[-1],
+            account_id=url_parts[len(url_parts) - 2],
+            region_name=TEST_AWS_REGION_NAME,
+        )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
         queue_url = sqs_create_queue(

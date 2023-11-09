@@ -261,7 +261,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         # regular KeyId are UUID, and MultiRegion keys starts with 'mrk-' and 32 hex chars
         if not PATTERN_UUID.match(key_id) and not MULTI_REGION_PATTERN.match(key_id):
-            raise NotFoundException(f"Invalid keyId {key_id}")
+            raise NotFoundException(f"Invalid keyId '{key_id}'")
 
         if key_id not in store.keys:
             if not key_arn:

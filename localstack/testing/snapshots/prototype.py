@@ -91,7 +91,9 @@ class SnapshotSession:
         for transformer in transformer_list:
             self.transformers.append((transformer, priority))  # TODO
 
-    def add_transformer(self, transformer: Transformer, *, priority: Optional[int] = 0):
+    def add_transformer(
+        self, transformer: Transformer | list[Transformer], *, priority: Optional[int] = 0
+    ):
         if isinstance(transformer, list):
             self.add_transformers_list(transformer, priority)
         else:
@@ -240,18 +242,21 @@ class SnapshotSession:
         if not self.update:
             self._remove_skip_verification_paths(tmp)
 
-        tmp = json.dumps(tmp, default=str)
-        for sr in ctx.serialized_replacements:
-            tmp = sr(tmp)
+        replaced_tmp = {}
+        # avoid replacements in snapshot keys
+        for key, value in tmp.items():
+            dumped_value = json.dumps(value, default=str)
+            for sr in ctx.serialized_replacements:
+                dumped_value = sr(dumped_value)
 
-        assert tmp
-        try:
-            tmp = json.loads(tmp)
-        except JSONDecodeError:
-            SNAPSHOT_LOGGER.error(f"could not decode json-string:\n{tmp}")
-            return {}
+            assert dumped_value
+            try:
+                replaced_tmp[key] = json.loads(dumped_value)
+            except JSONDecodeError:
+                SNAPSHOT_LOGGER.error(f"could not decode json-string:\n{tmp}")
+                return {}
 
-        return tmp
+        return replaced_tmp
 
     def _order_dict(self, response) -> dict:
         if isinstance(response, dict):

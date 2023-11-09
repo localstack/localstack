@@ -8,6 +8,7 @@ from localstack.utils.collections import (
     ImmutableDict,
     ImmutableList,
     convert_to_typed_dict,
+    is_comma_delimited_list,
     select_from_typed_dict,
 )
 
@@ -178,3 +179,13 @@ def test_convert_to_typed_dict_with_typed_subdict():
     result = convert_to_typed_dict(TestTypedDict, test_dict)
     assert isinstance(result, dict)
     assert result["subdict"] == {"str_member": "1"}
+
+
+def test_is_comma_limited_list():
+    assert is_comma_delimited_list("foo")
+    assert is_comma_delimited_list("foo,bar")
+    assert is_comma_delimited_list("foo, bar")
+
+    assert not is_comma_delimited_list("foo, bar baz")
+    assert not is_comma_delimited_list("foo,")
+    assert not is_comma_delimited_list("")

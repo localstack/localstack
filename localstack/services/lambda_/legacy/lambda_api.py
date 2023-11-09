@@ -2346,7 +2346,8 @@ def create_code_signing_config():
     signing_profile_version_arns = data.get("AllowedPublishers").get("SigningProfileVersionArns")
 
     code_signing_id = "csc-%s" % long_uid().replace("-", "")[0:17]
-    arn = arns.code_signing_arn(code_signing_id)
+    # See note above on the use of `aws_stack.get_region()` and `get_aws_account_id()`
+    arn = arns.code_signing_arn(code_signing_id, get_aws_account_id(), aws_stack.get_region())
 
     store.code_signing_configs[arn] = CodeSigningConfig(
         arn, code_signing_id, signing_profile_version_arns
