@@ -1,4 +1,12 @@
-{
+{ "sqs/2012-11-05/service-2": [
+    {
+      "op": "add",
+      "path": "/metadata/xmlNamespace",
+      "value": {
+        "xmlNamespace": "http://queue.amazonaws.com/doc/2012-11-05/"
+      }
+    }
+  ],
   "s3/2006-03-01/service-2": [
     {
       "op": "add",
