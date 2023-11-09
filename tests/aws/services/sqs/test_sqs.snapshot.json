@@ -853,7 +853,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle": {
-    "recorded-date": "22-06-2023, 17:01:51",
+    "recorded-date": "09-11-2023, 21:13:51",
     "recorded-content": {
       "add-permission-response": {
         "ResponseMetadata": {
@@ -872,8 +872,8 @@
                 "Effect": "Allow",
                 "Principal": {
                   "AWS": [
-                    "arn:aws:iam::111111111111:<resource:3>",
-                    "arn:aws:iam::668614515564:<resource:3>"
+                    "arn:aws:iam::668614515564:<resource:3>",
+                    "arn:aws:iam::111111111111:<resource:3>"
                   ]
                 },
                 "Action": "SQS:ReceiveMessage",
@@ -894,6 +894,7 @@
         }
       },
       "get-queue-policy-attribute-after-removal": {
+        "Attributes": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -925,7 +926,6 @@
       "get-queue-policy-attribute-second-account-same-label": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "Value crossaccountpermission for parameter Label is invalid. Reason: Already exists.",
           "Type": "Sender"
         },
@@ -990,6 +990,7 @@
         }
       },
       "get-queue-policy-attribute-delete-second-permission": {
+        "Attributes": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -998,7 +999,6 @@
       "get-queue-policy-attribute-delete-non-existent-label": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "Value crossaccountpermission2 for parameter Label is invalid. Reason: can't find label.",
           "Type": "Sender"
         },

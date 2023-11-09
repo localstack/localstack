@@ -1161,7 +1161,7 @@ class TestEvents:
         )
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        assert messages is None
+        assert messages == []
 
         # clean up
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
@@ -1236,7 +1236,7 @@ class TestEvents:
         )
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        assert messages is None
+        assert messages == []
 
         # clean up
         clean_up(
@@ -1412,7 +1412,7 @@ class TestEvents:
         aws_client.events.put_events(Entries=[event])
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        assert messages is None
+        assert messages == []
 
         # clean up
         clean_up(
