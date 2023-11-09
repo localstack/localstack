@@ -300,6 +300,7 @@ class InitScriptsStageResource:
 class ConfigResource:
     def on_get(self, request):
         from localstack.utils import diagnose
+
         return call_safe(diagnose.get_localstack_config)
 
     def on_post(self, request: Request):
