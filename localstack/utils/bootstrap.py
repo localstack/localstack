@@ -44,7 +44,7 @@ LOG = logging.getLogger(__name__)
 # maps from API names to list of other API names that they depend on
 API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
-    "dynamodbstreams": ["kinesis", "dynamodb"],
+    "dynamodbstreams": ["kinesis"],
     "es": ["opensearch"],
     "lambda": ["s3", "sqs", "sts"],
     "firehose": ["kinesis"],
