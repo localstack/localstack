@@ -254,7 +254,7 @@ def test_dispatch_common_service_exception():
     table: DispatchTable = {}
     table["DeleteQueue"] = delete_queue
 
-    sqs_service = load_service("sqs")
+    sqs_service = load_service("sqs-query")
     skeleton = Skeleton(sqs_service, table)
 
     context = RequestContext()
@@ -287,7 +287,7 @@ def test_dispatch_common_service_exception():
 def test_dispatch_missing_method_returns_internal_failure():
     table: DispatchTable = {}
 
-    sqs_service = load_service("sqs")
+    sqs_service = load_service("sqs-query")
     skeleton = Skeleton(sqs_service, table)
 
     context = RequestContext()

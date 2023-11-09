@@ -191,7 +191,7 @@ def test_endpoint_prefix_based_routing():
     detected_service_name = determine_aws_service_name(
         Request(method="GET", path="/", headers={"Host": "sqs.localhost.localstack.cloud"})
     )
-    assert detected_service_name == "sqs"
+    assert detected_service_name == "sqs-query"
 
     detected_service_name = determine_aws_service_name(
         Request(
