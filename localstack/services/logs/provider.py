@@ -253,12 +253,9 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
     arn_data = parse_arn(destination_arn)
 
     if ":lambda:" in destination_arn:
-        client = connect_to(
-            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
-        ).lambda_
-        lambda_name = arns.lambda_function_name(destination_arn)
+        client = connect_to().lambda_
         try:
-            client.get_function(FunctionName=lambda_name)
+            client.get_function(FunctionName=destination_arn)
         except Exception:
             raise InvalidParameterException(
                 "destinationArn for vendor lambda cannot be used with roleArn"
@@ -351,11 +348,8 @@ def moto_put_log_events(self: "MotoLogStream", log_events):
             arn_data = parse_arn(destination_arn)
 
             if ":lambda:" in destination_arn:
-                client = connect_to(
-                    aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
-                ).lambda_
-                lambda_name = arns.lambda_function_name(destination_arn)
-                client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
+                client = connect_to().lambda_
+                client.invoke(FunctionName=destination_arn, Payload=json.dumps(event))
 
             if ":kinesis:" in destination_arn:
                 client = connect_to(
