@@ -220,7 +220,7 @@ class CloudwatchDatabase:
                         next_start_time,
                     ),
                 )
-                single_result = cur.fetchall()[0][0]
+                single_result = cur.fetchone()[0]
                 if single_result:
                     datapoints[str(start_time_unix)]["values"].append(single_result)
 
@@ -266,12 +266,12 @@ class CloudwatchDatabase:
                 elif stat == "Average":
                     total_sum = 0
                     count = 0
-                    for claned_value in cleaned_values:
-                        if isinstance(claned_value, tuple):
-                            total_sum += claned_value[0]
-                            count += claned_value[1]
+                    for cleaned_value in cleaned_values:
+                        if isinstance(cleaned_value, tuple):
+                            total_sum += cleaned_value[0]
+                            count += cleaned_value[1]
                         else:
-                            total_sum += claned_value
+                            total_sum += cleaned_value
                             count += 1
                     cleaned_datapoints[timestamp] = total_sum / count
 
