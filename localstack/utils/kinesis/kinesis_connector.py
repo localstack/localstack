@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-
+import dataclasses
 import logging
 import os
 import re
 import subprocess
 import tempfile
 import threading
+from dataclasses import field
 from urllib.parse import urlparse
 
 from amazon_kclpy import kcl
@@ -14,7 +15,6 @@ from amazon_kclpy.v2 import processor
 from localstack import config
 from localstack.constants import LOCALHOST, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.utils.aws import arns, aws_stack
-from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.files import TMP_FILES, chmod_r, rm_rf, save_file
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
@@ -56,6 +56,12 @@ LOGGER = logging.getLogger(__name__)
 CHECKPOINT_RETRIES = 5
 CHECKPOINT_SLEEP_SECS = 5
 CHECKPOINT_FREQ_SECS = 60
+
+
+@dataclasses.dataclass
+class KinesisStream:
+    id: str
+    stream_info: dict = field(default_factory=dict)
 
 
 class KinesisProcessor(processor.RecordProcessorBase):
@@ -125,7 +131,7 @@ class KinesisProcessor(processor.RecordProcessorBase):
 
 
 class KinesisProcessorThread(ShellCommandThread):
-    def __init__(self, params):
+    def __init__(self, params: dict):
         props_file = params["properties_file"]
         env_vars = params["env_vars"]
         cmd = kclipy_helper.get_kcl_app_command("java", MULTI_LANG_DAEMON_CLASS, props_file)
@@ -384,7 +390,7 @@ def start_kcl_client_process(
     )
     TMP_FILES.append(props_file)
     # start stream consumer
-    stream = KinesisStream(id=stream_name, params=stream_info)
+    stream = KinesisStream(id=stream_name, stream_info=stream_info)
     thread_consumer = KinesisProcessorThread.start_consumer(stream)
     TMP_THREADS.append(thread_consumer)
     return thread_consumer
