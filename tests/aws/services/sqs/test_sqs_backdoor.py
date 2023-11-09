@@ -76,7 +76,9 @@ class TestSqsDeveloperEndpoints:
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
 
         # use the developer endpoint as boto client URL
-        client = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
+        client = aws_client_factory(
+            endpoint_url="http://localhost:4566/_aws/sqs/messages"
+        ).sqs_query
         # max messages is ignored
         response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 

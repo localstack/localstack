@@ -155,9 +155,11 @@ def test_failing_lambda_retries_after_visibility_timeout(
     assert time.time() >= then + retry_timeout
 
     # assert message is removed from the queue
-    assert "Messages" not in aws_client.sqs.receive_message(
+    third_response = aws_client.sqs.receive_message(
         QueueUrl=destination_url, WaitTimeSeconds=retry_timeout + 1, MaxNumberOfMessages=1
     )
+    assert "Messages" in third_response
+    assert third_response["Messages"] == []
 
 
 @markers.snapshot.skip_snapshot_verify(

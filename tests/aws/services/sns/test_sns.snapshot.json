@@ -4594,9 +4594,10 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_dot_attribute": {
-    "recorded-date": "09-10-2023, 15:05:32",
+    "recorded-date": "09-11-2023, 18:50:59",
     "recorded-content": {
       "recv-init": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
