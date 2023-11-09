@@ -92,7 +92,17 @@ class LambdaVersionProvider(ResourceProvider[LambdaVersionProperties]):
 
 
         """
-        raise NotImplementedError
+        model = request.desired_state
+        lambda_client = request.aws_client_factory.lambda_
+
+        # without qualifier entire function is deleted instead of just version
+        lambda_client.delete_function(FunctionName=model["Id"], Qualifier=model["Version"])
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def update(
         self,
