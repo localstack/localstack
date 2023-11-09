@@ -202,8 +202,26 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         nxt: NextToken = None
         # TODO might contain error messages if data could not be retrieved, needs testing
         messages: MetricDataResultMessages = None  # TODO
-        # TODO parse dataresults
-        return GetMetricDataOutput(MetricDataResults=[], NextToken=nxt, Messages=messages)
+
+        formatted_results = []
+        for result in results:
+            formatted_result = {
+                "Id": result.get("id"),
+                "Label": "TODO",
+                "StatusCode": "Complete",
+                "Timestamps": [],
+                "Values": [],
+            }
+            datapoints = result.get("datapoints", {})
+            for timestamp, datapoint_result in datapoints.items():
+                formatted_result["Timestamps"].append(int(timestamp))
+                formatted_result["Values"].append(datapoint_result)
+
+            formatted_results.append(formatted_result)
+
+        return GetMetricDataOutput(
+            MetricDataResults=formatted_results, NextToken=nxt, Messages=messages
+        )
 
     def get_raw_metrics(self, request: Request):
         # TODO this needs to be read from the database
