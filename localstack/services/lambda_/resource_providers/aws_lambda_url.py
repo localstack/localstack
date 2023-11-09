@@ -67,13 +67,11 @@ class LambdaUrlProvider(ResourceProvider[LambdaUrlProperties]):
         """
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
+        params = util.select_attributes(model, ["Qualifier", "Cors", "AuthType"])
+        params["FunctionName"] = model["TargetFunctionArn"]
 
-        response = lambda_client.create_function_url_config(
-            Qualifier=model["Qualifier"],
-            Cors=model["Cors"],
-            FunctionName=model["TargetFunctionArn"],
-            AuthType=model["AuthType"],
-        )
+        response = lambda_client.create_function_url_config(**params)
+
         model["FunctionArn"] = response["FunctionArn"]
         model["FunctionUrl"] = response["FunctionUrl"]
 
@@ -107,11 +105,12 @@ class LambdaUrlProvider(ResourceProvider[LambdaUrlProperties]):
         """
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
+        params = {"FunctionName": model["TargetFunctionArn"]}
 
-        lambda_client.delete_function_url_config(
-            Qualifier=model["Qualifier"],
-            FunctionName=model["TargetFunctionArn"],
-        )
+        if qualifier := model.get("Qualifier"):
+            params["Qualifier"] = qualifier
+
+        lambda_client.delete_function_url_config(**params)
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
