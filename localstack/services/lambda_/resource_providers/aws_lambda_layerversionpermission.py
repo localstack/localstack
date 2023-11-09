@@ -108,9 +108,11 @@ class LambdaLayerVersionPermissionProvider(
         lambda_client = request.aws_client_factory.lambda_
 
         layer_name, version_number = self.layer_name_and_version(model)
-        params = {"StatementId": request.custom_context["StatementId"],
-                  "LayerName": layer_name,
-                  "VersionNumber": version_number}
+        params = {
+            "StatementId": request.custom_context["StatementId"],
+            "LayerName": layer_name,
+            "VersionNumber": version_number,
+        }
 
         lambda_client.remove_layer_version_permission(**params)
 
