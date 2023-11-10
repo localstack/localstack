@@ -13,6 +13,7 @@ from jsonpatch import apply_patch
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
+from localstack.aws.connect import connect_to
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
@@ -1933,7 +1934,7 @@ class TestIntegrations:
 
         # create API Gateway and connect it to the target stream
         api_name = f"test-gw-kinesis-{short_uid()}"
-        result = self.connect_api_gateway_to_kinesis(aws_client, api_name, stream_name)
+        result = self.connect_api_gateway_to_kinesis(api_name, stream_name,TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         # generate test data
         test_data = {
@@ -2040,9 +2041,8 @@ class TestIntegrations:
             requestParameters={"integration.request.path.proxy": "method.request.path.proxy"},
         )
 
-    def connect_api_gateway_to_kinesis(self, aws_client, gateway_name: str, kinesis_stream: str):
+    def connect_api_gateway_to_kinesis(self, gateway_name: str, kinesis_stream: str, account_id : str, region_name: str):
         template = APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
-        region_name = aws_client.kinesis.meta.region_name
         resources = {
             "data": [
                 {
@@ -2075,7 +2075,7 @@ class TestIntegrations:
             name=gateway_name,
             resources=resources,
             stage_name=TEST_STAGE_NAME,
-            client=aws_client.apigateway,
+            client=connect_to(aws_access_key_id=account_id, region_name=region_name).apigateway
         )
 
     def connect_api_gateway_to_http(
