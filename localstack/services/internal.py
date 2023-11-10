@@ -354,6 +354,10 @@ class LocalstackResources(Router):
         self.add(Resource("/_localstack/cloudformation/deploy", CloudFormationUi()))
 
         if config.ENABLE_CONFIG_UPDATES:
+            LOG.warning(
+                "Enabling config endpoint, "
+                "please be aware that this can expose sensitive information via your network."
+            )
             self.add(Resource("/_localstack/config", ConfigResource()))
 
         if config.DEBUG:
