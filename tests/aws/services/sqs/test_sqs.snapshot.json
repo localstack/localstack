@@ -1,6 +1,6 @@
 {
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_attribute_names_filters": {
-    "recorded-date": "09-11-2023, 23:41:25",
+    "recorded-date": "10-11-2023, 14:18:22",
     "recorded-content": {
       "send_message_response": {
         "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
@@ -343,16 +343,46 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_seconds_fails": {
-    "recorded-date": "29-08-2023, 11:14:59",
+    "recorded-date": "10-11-2023, 13:58:32",
     "recorded-content": {
-      "send_message": "An error occurred (InvalidParameterValue) when calling the SendMessage operation: Value 2 for parameter DelaySeconds is invalid. Reason: The request include parameter that is not valid for this queue type."
+      "send_message": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value 2 for parameter DelaySeconds is invalid. Reason: The request include parameter that is not valid for this queue type.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_different_attributes_raises_exception": {
-    "recorded-date": "29-08-2023, 11:14:54",
+    "recorded-date": "10-11-2023, 13:44:56",
     "recorded-content": {
-      "create_queue_01": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds",
-      "create_queue_02": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds"
+      "create_queue_01": {
+        "Error": {
+          "Code": "QueueAlreadyExists",
+          "Message": "A queue already exists with the same name and a different value for attribute DelaySeconds",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_queue_02": {
+        "Error": {
+          "Code": "QueueAlreadyExists",
+          "Message": "A queue already exists with the same name and a different value for attribute DelaySeconds",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_attributes": {
@@ -467,7 +497,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_updated_maximum_message_size": {
-    "recorded-date": "09-11-2023, 23:08:30",
+    "recorded-date": "10-11-2023, 13:17:06",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
@@ -500,7 +530,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size": {
-    "recorded-date": "09-11-2023, 23:11:24",
+    "recorded-date": "10-11-2023, 13:37:26",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Failed": [],
@@ -649,7 +679,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[True]": {
-    "recorded-date": "09-11-2023, 23:33:43",
+    "recorded-date": "10-11-2023, 14:03:46",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -677,7 +707,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[False]": {
-    "recorded-date": "09-11-2023, 23:33:45",
+    "recorded-date": "10-11-2023, 14:03:48",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -705,7 +735,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[True]": {
-    "recorded-date": "09-11-2023, 23:35:04",
+    "recorded-date": "10-11-2023, 14:45:16",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -733,7 +763,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[False]": {
-    "recorded-date": "09-11-2023, 23:35:06",
+    "recorded-date": "10-11-2023, 14:45:18",
     "recorded-content": {
       "get-messages": {
         "Messages": [
@@ -857,7 +887,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle": {
-    "recorded-date": "09-11-2023, 21:13:51",
+    "recorded-date": "10-11-2023, 16:41:27",
     "recorded-content": {
       "add-permission-response": {
         "ResponseMetadata": {
@@ -1070,6 +1100,54 @@
           "Code": "InvalidParameterValue",
           "Detail": null,
           "Message": "The queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_tag_untag_queue": {
+    "recorded-date": "10-11-2023, 13:40:30",
+    "recorded-content": {
+      "get-tag-1": {
+        "Tags": {
+          "tag1": "value1",
+          "tag2": "value2",
+          "tag3": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-tag-2": {
+        "Tags": {
+          "tag2": "value2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-tag-after-untag": {
+        "Tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_fifo_queue_with_different_attributes_raises_error": {
+    "recorded-date": "10-11-2023, 13:43:32",
+    "recorded-content": {
+      "queue-already-exists": {
+        "Error": {
+          "Code": "QueueAlreadyExists",
+          "Message": "A queue already exists with the same name and a different value for attribute ContentBasedDeduplication",
           "Type": "Sender"
         },
         "ResponseMetadata": {
