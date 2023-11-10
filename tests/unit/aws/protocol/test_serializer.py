@@ -476,7 +476,7 @@ def test_query_serializer_sqs_none_value_in_map():
 def test_query_protocol_error_serialization():
     exception = InvalidMessageContents("Exception message!")
     _botocore_error_serializer_integration_test(
-        "sqs", "SendMessage", exception, "InvalidMessageContents", 400, "Exception message!"
+        "sqs-query", "SendMessage", exception, "InvalidMessageContents", 400, "Exception message!"
     )
 
 
@@ -528,7 +528,12 @@ def test_query_protocol_error_serialization_plain():
 def test_query_protocol_custom_error_serialization():
     exception = CommonServiceException("InvalidParameterValue", "Parameter x was invalid!")
     _botocore_error_serializer_integration_test(
-        "sqs", "SendMessage", exception, "InvalidParameterValue", 400, "Parameter x was invalid!"
+        "sqs-query",
+        "SendMessage",
+        exception,
+        "InvalidParameterValue",
+        400,
+        "Parameter x was invalid!",
     )
 
 
@@ -536,6 +541,19 @@ def test_query_protocol_error_serialization_sender_fault():
     exception = UnsupportedOperation("Operation not supported.")
     _botocore_error_serializer_integration_test(
         "sqs-query",
+        "SendMessage",
+        exception,
+        "AWS.SimpleQueueService.UnsupportedOperation",
+        400,
+        "Operation not supported.",
+        True,
+    )
+
+
+def test_sqs_json_protocol_error_serialization_sender_fault():
+    exception = UnsupportedOperation("Operation not supported.")
+    _botocore_error_serializer_integration_test(
+        "sqs",
         "SendMessage",
         exception,
         "AWS.SimpleQueueService.UnsupportedOperation",
