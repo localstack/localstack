@@ -165,10 +165,6 @@ def load_moto_routing_table(service: str) -> Map:
     :return: a new Map object
     """
     # code from moto.moto_server.werkzeug_app.create_backend_app
-    # TODO remove this hack / check if this is even necessary?
-    if service == "sqs-query":
-        service = "sqs"
-
     backend_dict = moto_backends.get_backend(service)
     # Get an instance of this backend.
     # We'll only use this backend to resolve the URL's, so the exact region/account_id is irrelevant
