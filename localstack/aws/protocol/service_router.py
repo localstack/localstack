@@ -357,7 +357,7 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
                 if len(services_per_prefix) == 1:
                     return services_per_prefix[0]
                 candidates.update(services_per_prefix)
-        print(f"{candidates=}")
+
         custom_host_match = custom_host_addressing_rules(host)
         if custom_host_match:
             return custom_host_match

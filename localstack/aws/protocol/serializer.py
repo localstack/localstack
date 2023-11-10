@@ -1633,7 +1633,7 @@ class SqsResponseSerializer(JSONResponseSerializer):
     ) -> None:
         """
         Overrides _serialize_error as SQS has a special header for query API legacy reason: 'x-amzn-query-error',
-        which contatained the exception code as well as a Sender field.
+        which contained the exception code as well as a Sender field.
         Ex: 'x-amzn-query-error': 'InvalidParameterValue;Sender'
         """
         # TODO: for body["__type"] = error.code, it seems AWS differs from what we send for SQS
