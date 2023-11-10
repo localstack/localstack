@@ -109,8 +109,9 @@ class CloudwatchDatabase:
                 if metric.get("Value"):
                     inserts.append({"Value": metric.get("Value"), "TimesToInsert": 1})
                 elif metric.get("Values"):
+                    counts = metric.get("Counts", [1] * len(metric.get("Values")))
                     inserts = [
-                        {"Value": value, "TimesToInsert": int(metric.get("Counts")[indexValue])}
+                        {"Value": value, "TimesToInsert": int(counts[indexValue])}
                         for indexValue, value in enumerate(metric.get("Values"))
                     ]
 
@@ -177,6 +178,7 @@ class CloudwatchDatabase:
             dimensions = metric.get("Dimensions")
             # unit = metric_stat.get("Unit")
 
+            # prepare SQL query
             order_by = (
                 "timestamp DESC"
                 if scan_by and scan_by == ScanBy.TimestampDescending
@@ -216,6 +218,7 @@ class CloudwatchDatabase:
             ORDER BY {order_by}
             """
 
+            # Execution of query according to period
             datapoints = {}
             while start_time_unix < end_time_unix:
                 next_start_time = start_time_unix + period
@@ -258,10 +261,12 @@ class CloudwatchDatabase:
 
             cleaned_datapoints = {}
             for timestamp, timestamp_values in datapoints.items():
+                # clean up datapoints
                 cleaned_values = [v for v in timestamp_values["values"] if v is not None]
                 if not cleaned_values:
                     continue
 
+                # calculate statistic
                 if stat == "Sum" or stat == "SampleCount":
                     cleaned_datapoints[timestamp] = sum(cleaned_values)
 

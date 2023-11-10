@@ -83,8 +83,9 @@ def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
                 f"The parameters MetricData.member.{indexplusone}.Value and MetricData.member.{indexplusone}.Values are mutually exclusive and you have specified both."
             )
 
-        if (values := metric_item.get("Values")) and (counts := metric_item.get("Counts")):
-            if len(values) != len(counts):
+        if values := metric_item.get("Values"):
+            counts = metric_item.get("Counts", [])
+            if len(values) != len(counts) and len(counts) != 0:
                 raise InvalidParameterValueException(
                     f"The parameters MetricData.member.{indexplusone}.Values and MetricData.member.{indexplusone}.Counts must be of the same size."
                 )
