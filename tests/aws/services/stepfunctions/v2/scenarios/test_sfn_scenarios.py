@@ -6,7 +6,7 @@ from typing import Any, TypedDict
 from localstack.aws.api.stepfunctions import ExecutionStatus
 from localstack.testing.pytest import markers
 from localstack.utils.sync import wait_until
-from tests.aws.services.stepfunctions.utils import is_new_provider, is_old_provider
+from tests.aws.services.stepfunctions.utils import is_legacy_provider, is_not_legacy_provider
 
 THIS_FOLDER = Path(os.path.dirname(__file__))
 
@@ -17,9 +17,11 @@ class RunConfig(TypedDict):
     terminal_state: ExecutionStatus | None
 
 
-@markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..tracingConfiguration"])
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_new_provider,
+    condition=is_legacy_provider, paths=["$..tracingConfiguration"]
+)
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_not_legacy_provider,
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",
@@ -115,7 +117,6 @@ class TestFundamental:
             )
 
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
         paths=[
             "$..taskFailedEventDetails.resource",
             "$..taskFailedEventDetails.resourceType",
@@ -123,7 +124,7 @@ class TestFundamental:
             "$..previousEventId",
         ],
     )
-    @markers.snapshot.skip_snapshot_verify(condition=is_new_provider, paths=["$..MessageId"])
+    @markers.snapshot.skip_snapshot_verify(condition=is_not_legacy_provider, paths=["$..MessageId"])
     @markers.aws.validated
     def test_wait_for_callback(self, deploy_cfn_template, sfn_snapshot, aws_client):
         """
@@ -174,10 +175,10 @@ class TestFundamental:
             )
 
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Headers", "$..StatusText"]
+        condition=is_legacy_provider, paths=["$..Headers", "$..StatusText"]
     )
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_new_provider,
+        condition=is_not_legacy_provider,
         paths=["$..content-type"],  # FIXME: v2 includes extra content-type fields in Header fields.
     )
     @markers.aws.validated

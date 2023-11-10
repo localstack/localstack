@@ -1,0 +1,131 @@
+{
+  "typeName": "AWS::EC2::NatGateway",
+  "description": "Resource Type definition for AWS::EC2::NatGateway",
+  "additionalProperties": false,
+  "properties": {
+    "SubnetId": {
+      "type": "string"
+    },
+    "NatGatewayId": {
+      "type": "string"
+    },
+    "ConnectivityType": {
+      "type": "string"
+    },
+    "PrivateIpAddress": {
+      "type": "string"
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "AllocationId": {
+      "type": "string"
+    },
+    "SecondaryAllocationIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "SecondaryPrivateIpAddresses": {
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "SecondaryPrivateIpAddressCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "MaxDrainDurationSeconds": {
+      "type": "integer"
+    }
+  },
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Value": {
+          "type": "string"
+        },
+        "Key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "required": [
+    "SubnetId"
+  ],
+  "createOnlyProperties": [
+    "/properties/SubnetId",
+    "/properties/ConnectivityType",
+    "/properties/AllocationId",
+    "/properties/PrivateIpAddress"
+  ],
+  "primaryIdentifier": [
+    "/properties/NatGatewayId"
+  ],
+  "readOnlyProperties": [
+    "/properties/NatGatewayId"
+  ],
+  "writeOnlyProperties": [
+    "/properties/MaxDrainDurationSeconds"
+  ],
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": true
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:CreateNatGateway",
+        "ec2:DescribeNatGateways",
+        "ec2:CreateTags"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DeleteNatGateway",
+        "ec2:DescribeNatGateways"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeNatGateways"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeNatGateways"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ec2:DescribeNatGateways",
+        "ec2:CreateTags",
+        "ec2:DeleteTags",
+        "ec2:AssociateNatGatewayAddress",
+        "ec2:DisassociateNatGatewayAddress",
+        "ec2:AssignPrivateNatGatewayAddress",
+        "ec2:UnassignPrivateNatGatewayAddress"
+      ]
+    }
+  }
+}

@@ -7,7 +7,6 @@ import pytest
 from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
@@ -18,7 +17,7 @@ from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from localstack.utils.threads import parallelize
 from tests.aws.services.lambda_.functions import lambda_environment
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
-from tests.aws.services.stepfunctions.utils import is_new_provider
+from tests.aws.services.stepfunctions.utils import is_not_legacy_provider
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_NAME_1 = "lambda_sfn_1"
@@ -293,8 +292,7 @@ def get_machine_arn(sm_name, sfn_client):
 
 
 pytestmark = pytest.mark.skipif(
-    condition=not is_aws_cloud() and is_new_provider(),
-    reason="Test suite only for legacy provider.",
+    condition=is_not_legacy_provider, reason="Test suite only for legacy provider."
 )
 
 

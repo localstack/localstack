@@ -26,7 +26,9 @@ class _RequestCollectingClient(HttpClient):
         Factory used to plug into S3VirtualHostProxyHandler._create_proxy
         :return: a proxy using this client
         """
-        return Proxy(config.get_edge_url(), preserve_host=False, client=self)
+        return Proxy(
+            config.internal_service_url(host="localhost"), preserve_host=False, client=self
+        )
 
 
 class TestS3VirtualHostProxyHandler:

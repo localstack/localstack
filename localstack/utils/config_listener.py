@@ -5,9 +5,7 @@ from typing import Callable, List
 
 from requests.models import Response
 
-from localstack import config, constants
-from localstack.deprecations import deprecated_endpoint
-from localstack.services.generic_proxy import ProxyListener
+from localstack import config
 
 LOG = logging.getLogger(__name__)
 
@@ -42,37 +40,3 @@ def _update_config_variable_handler(data):
     result = {"variable": variable, "value": value}
     response._content = json.dumps(result)
     return response
-
-
-class ConfigUpdateProxyListener(ProxyListener):
-    """Default proxy listener that intercepts requests to retrieve or update config variables."""
-
-    def __init__(self):
-        self._handler = deprecated_endpoint(
-            endpoint=_update_config_variable_handler,
-            previous_path=constants.CONFIG_UPDATE_PATH,
-            deprecation_version="1.4.0",
-            new_path="/_localstack/config",
-        )
-
-    def forward_request(self, method, path, data, headers):
-        if path != constants.CONFIG_UPDATE_PATH or method != "POST":
-            return True
-
-        return self._handler(data)
-
-
-CONFIG_UPDATE_LISTENER = ConfigUpdateProxyListener()
-
-
-def start_listener():
-    if config.ENABLE_CONFIG_UPDATES:
-        ProxyListener.DEFAULT_LISTENERS.append(CONFIG_UPDATE_LISTENER)
-
-
-def remove_listener():
-    if not config.ENABLE_CONFIG_UPDATES:
-        try:
-            ProxyListener.DEFAULT_LISTENERS.remove(CONFIG_UPDATE_LISTENER)
-        except ValueError:
-            pass

@@ -14,9 +14,9 @@ awsauth = AWS4Auth(
 )
 if os.getenv("LOCALSTACK_HOSTNAME"):
     host = "http://" + os.environ["ESENDPOINT"]  # TODO ssl error for localstack
-    host = host.replace("localhost", os.getenv("LOCALSTACK_HOSTNAME"))
+    host = host.replace("localhost.localstack.cloud", os.getenv("LOCALSTACK_HOSTNAME"))
 else:
-    host = "https://" + os.environ["ESENDPOINT"]  # the Amazon ElaticSearch domain, with https://
+    host = "https://" + os.environ["ESENDPOINT"]  # the Amazon ElasticSearch domain, with https://
 
 index = "lambda-index"
 type = "_doc"

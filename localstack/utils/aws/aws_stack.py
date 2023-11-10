@@ -10,17 +10,17 @@ import boto3
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
     APPLICATION_X_WWW_FORM_URLENCODED,
-    DEFAULT_AWS_ACCOUNT_ID,
+    AWS_REGION_US_EAST_1,
     ENV_DEV,
     HEADER_LOCALSTACK_ACCOUNT_ID,
     INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
     REGION_LOCAL,
-    S3_VIRTUAL_HOSTNAME,
 )
 from localstack.utils.strings import is_string, is_string_or_bytes, to_str
 
@@ -150,11 +150,12 @@ def get_partition(region_name: str = None):
     return boto3.session.Session().get_partition_for_region(region_name)
 
 
+# TODO: Deprecate and remove this
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
         LOCAL_REGION = get_boto3_region() or ""
-    return config.DEFAULT_REGION or LOCAL_REGION
+    return AWS_REGION_US_EAST_1 or LOCAL_REGION
 
 
 def get_boto3_region() -> str:
@@ -199,24 +200,6 @@ def get_s3_hostname():
     if CACHE_S3_HOSTNAME_DNS_STATUS:
         return S3_VIRTUAL_HOSTNAME
     return LOCALHOST
-
-
-def set_default_region_in_headers(headers, service=None, region=None):
-    # this should now be a no-op, as we support arbitrary regions and don't use a "default" region
-    # TODO: remove this function once the legacy USE_SINGLE_REGION config is removed
-    if not config.USE_SINGLE_REGION:
-        return
-
-    auth_header = headers.get("Authorization")
-    region = region or get_region()
-    if not auth_header:
-        if service:
-            headers["Authorization"] = mock_aws_request_headers(
-                service, aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID, region_name=region
-            )["Authorization"]
-        return
-    replaced = re.sub(r"(.*Credential=[^/]+/[^/]+/)([^/])+/", r"\1%s/" % region, auth_header)
-    headers["Authorization"] = replaced
 
 
 def fix_account_id_in_arns(response, colon_delimiter=":", existing=None, replace=None):

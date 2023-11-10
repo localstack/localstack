@@ -29,6 +29,7 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import GenericTransformer
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
+from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
@@ -73,7 +74,7 @@ def sqs_snapshot_transformer(snapshot):
 
 class TestSqsProvider:
     @markers.aws.only_localstack
-    def test_get_queue_url_contains_request_host(
+    def test_get_queue_url_contains_localstack_host(
         self, sqs_create_queue, monkeypatch, aws_client, aws_client_factory
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
@@ -84,15 +85,12 @@ class TestSqsProvider:
 
         queue_url = aws_client.sqs.get_queue_url(QueueName=queue_name)["QueueUrl"]
 
-        host = config.get_edge_url()
+        host_definition = localstack_host()
         # our current queue pattern looks like this, but may change going forward, or may be configurable
-        assert queue_url == f"{host}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
-
-        # attempt to connect through a different host and make sure the URL contains that host
-        host = f"http://127.0.0.1:{config.EDGE_PORT}"
-        client = aws_client_factory(endpoint_url=host).sqs
-        queue_url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-        assert queue_url == f"{host}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        assert (
+            queue_url
+            == f"http://{host_definition.host_and_port()}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        )
 
     @markers.aws.validated
     def test_list_queues(self, sqs_create_queue, aws_client):
@@ -1059,13 +1057,14 @@ class TestSqsProvider:
         assert bodies == {"0", "1", "2", "3", "4", "5", "6", "7", "8"}
 
     @markers.aws.only_localstack
-    def test_external_hostname(self, monkeypatch, sqs_create_queue, aws_client):
+    def test_external_endpoint(self, monkeypatch, sqs_create_queue, aws_client):
         external_host = "external-host"
-        external_port = "12345"
+        external_port = 12345
 
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
-        monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
+        monkeypatch.setattr(
+            config, "LOCALSTACK_HOST", config.HostAndPort(host=external_host, port=external_port)
+        )
 
         queue_url = sqs_create_queue()
 
@@ -1085,28 +1084,18 @@ class TestSqsProvider:
         queue_name = f"queue-{short_uid()}"
         sqs_create_queue(QueueName=queue_name)
 
-        edge_url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers(
             "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         payload = f"Action=GetQueueUrl&QueueName={queue_name}"
 
         # assert regular/default queue URL is returned
-        url = f"{edge_url}"
+        url = config.external_service_url()
         result = requests.post(url, data=payload, headers=headers)
         assert result
         content = to_str(result.content)
         kwargs = {"flags": re.MULTILINE | re.DOTALL}
-        assert re.match(rf".*<QueueUrl>\s*{edge_url}/[^<]+</QueueUrl>.*", content, **kwargs)
-
-        # assert custom port is returned in queue URL
-        port = 12345
-        headers["Host"] = f"local-test-host:{port}"
-        result = requests.post(url, data=payload, headers=headers)
-        assert result
-        content = to_str(result.content)
-        # TODO: currently only asserting that the port matches - potentially should also return the custom hostname?
-        assert re.match(rf".*<QueueUrl>\s*http://[^:]+:{port}[^<]+</QueueUrl>.*", content, **kwargs)
+        assert re.match(rf".*<QueueUrl>\s*{url}/[^<]+</QueueUrl>.*", content, **kwargs)
 
     @markers.aws.only_localstack
     def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch):
@@ -1122,11 +1111,9 @@ class TestSqsProvider:
         hostname = "aws-local"
 
         url = f"{hostname}:{port}"
-        headers["Host"] = url
         payload = f"Action=CreateQueue&QueueName={queue_name}"
         result = requests.post(edge_url, data=payload, headers=headers)
         assert result.status_code == 200
-        assert url in result.text
 
         queue_url = f"http://{url}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
         message_body = f"test message {short_uid()}"
@@ -4024,7 +4011,7 @@ class TestSqsQueryApi:
         queue_name = f"path_queue_{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         assert (
-            f"localhost:4566/queue/{TEST_AWS_REGION_NAME}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+            f"localhost.localstack.cloud:4566/queue/{TEST_AWS_REGION_NAME}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
             in queue_url
         )
 

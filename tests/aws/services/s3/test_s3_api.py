@@ -11,17 +11,17 @@ from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.strings import long_uid, short_uid
 
 
-def is_not_native_provider():
-    return not config.NATIVE_S3_PROVIDER
+def is_legacy_v2_provider():
+    return config.LEGACY_V2_S3_PROVIDER
 
 
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_not_native_provider, paths=["$..ServerSideEncryption"]
+    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
 )
 class TestS3BucketCRUD:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_not_native_provider, paths=["$.delete-with-obj.Error.BucketName"]
+        condition=is_legacy_v2_provider, paths=["$.delete-with-obj.Error.BucketName"]
     )
     def test_delete_bucket_with_objects(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -41,7 +41,7 @@ class TestS3BucketCRUD:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_not_native_provider,
+        condition=is_legacy_v2_provider,
         paths=[
             "$..Error.BucketName",
             "$..Error.Message",
@@ -84,12 +84,12 @@ class TestS3BucketCRUD:
 
 
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_not_native_provider, paths=["$..ServerSideEncryption"]
+    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
 )
 class TestS3ObjectCRUD:
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise exceptions",
     )
     def test_delete_object(self, s3_bucket, aws_client, snapshot):
@@ -111,7 +111,7 @@ class TestS3ObjectCRUD:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise exceptions",
     )
     def test_delete_objects(self, s3_bucket, aws_client, snapshot):
@@ -144,7 +144,7 @@ class TestS3ObjectCRUD:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not return proper headers",
     )
     def test_delete_object_versioned(self, s3_bucket, aws_client, snapshot):
@@ -246,7 +246,7 @@ class TestS3ObjectCRUD:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not return right values",
     )
     def test_delete_objects_versioned(self, s3_bucket, aws_client, snapshot):
@@ -326,7 +326,7 @@ class TestS3ObjectCRUD:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation raises the wrong exception",
     )
     def test_get_object_with_version_unversioned_bucket(self, s3_bucket, aws_client, snapshot):
@@ -346,7 +346,7 @@ class TestS3ObjectCRUD:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation deletes all versions when suspending versioning, when it should keep it",
     )
     def test_put_object_on_suspended_bucket(self, s3_bucket, aws_client, snapshot):
@@ -397,7 +397,7 @@ class TestS3ObjectCRUD:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation has the wrong behaviour",
     )
     def test_delete_object_on_suspended_bucket(self, s3_bucket, aws_client, snapshot):
@@ -446,7 +446,7 @@ class TestS3ObjectCRUD:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_not_native_provider,
+        condition=is_legacy_v2_provider,
         paths=[
             "$..Delimiter",
             "$..EncodingType",
@@ -520,7 +520,7 @@ class TestS3ObjectCRUD:
         resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-1,3-4,7-9")
         snapshot.match("get-multiple-ranges", resp)
 
-        if config.NATIVE_S3_PROVIDER or is_aws_cloud():
+        if not config.LEGACY_V2_S3_PROVIDER or is_aws_cloud():
             # FIXME: missing handling in moto for very wrong format of the range header
             resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="0-1")
             snapshot.match("get-wrong-format", resp)
@@ -541,7 +541,7 @@ class TestS3Multipart:
     # TODO: write a validated test for UploadPartCopy preconditions
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto does not handle the exceptions properly",
     )
     @markers.snapshot.skip_snapshot_verify(paths=["$..PartNumberMarker"])  # TODO: invetigate this
@@ -627,7 +627,7 @@ class TestS3Multipart:
 class TestS3BucketVersioning:
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation not raising exceptions",
     )
     def test_bucket_versioning_crud(self, aws_client, s3_bucket, snapshot):
@@ -681,7 +681,7 @@ class TestS3BucketVersioning:
 class TestS3BucketEncryption:
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have default encryption",
     )
     def test_s3_default_bucket_encryption(self, s3_bucket, aws_client, snapshot):
@@ -699,7 +699,7 @@ class TestS3BucketEncryption:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have proper validation",
     )
     def test_s3_default_bucket_encryption_exc(self, s3_bucket, aws_client, snapshot):
@@ -797,7 +797,7 @@ class TestS3BucketEncryption:
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_not_native_provider, paths=["$..BucketKeyEnabled"]
+        condition=is_legacy_v2_provider, paths=["$..BucketKeyEnabled"]
     )
     def test_s3_bucket_encryption_sse_kms(self, s3_bucket, kms_key, aws_client, snapshot):
         put_bucket_enc = aws_client.s3.put_bucket_encryption(
@@ -857,7 +857,7 @@ class TestS3BucketEncryption:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have S3 KMS managed key",
     )
     # there is currently no server side encryption is place in LS, ETag will be different
@@ -905,12 +905,12 @@ class TestS3BucketEncryption:
 
 
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_not_native_provider, paths=["$..ServerSideEncryption"]
+    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
 )
 class TestS3BucketObjectTagging:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_not_native_provider, paths=["$.get-bucket-tags.TagSet[1].Value"]
+        condition=is_legacy_v2_provider, paths=["$.get-bucket-tags.TagSet[1].Value"]
     )
     def test_bucket_tagging_crud(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
@@ -1013,7 +1013,7 @@ class TestS3BucketObjectTagging:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation do not catch exceptions",
     )
     def test_object_tagging_exc(self, s3_bucket, aws_client, snapshot):
@@ -1059,7 +1059,7 @@ class TestS3BucketObjectTagging:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation missing versioning implementation",
     )
     def test_object_tagging_versioned(self, s3_bucket, aws_client, snapshot):
@@ -1188,7 +1188,7 @@ class TestS3BucketObjectTagging:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise exceptions",
     )
     def test_tagging_validation(self, s3_bucket, aws_client, snapshot):
@@ -1275,7 +1275,7 @@ class TestS3BucketObjectTagging:
 class TestS3ObjectLock:
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not catch exception",
     )
     def test_put_object_lock_configuration_on_existing_bucket(
@@ -1306,7 +1306,7 @@ class TestS3ObjectLock:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_not_native_provider,
+        condition=is_legacy_v2_provider,
         paths=["$.get-lock-config.ObjectLockConfiguration.Rule.DefaultRetention.Years"],
     )
     def test_get_put_object_lock_configuration(self, s3_create_bucket, aws_client, snapshot):
@@ -1345,7 +1345,7 @@ class TestS3ObjectLock:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not catch exception",
     )
     def test_put_object_lock_configuration_exc(self, s3_create_bucket, aws_client, snapshot):
@@ -1419,7 +1419,7 @@ class TestS3ObjectLock:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_not_native_provider, paths=["$..Error.BucketName"]
+        condition=is_legacy_v2_provider, paths=["$..Error.BucketName"]
     )
     def test_get_object_lock_configuration_exc(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
@@ -1433,7 +1433,7 @@ class TestS3ObjectLock:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise exceptions",
     )
     def test_disable_versioning_on_locked_bucket(self, s3_create_bucket, aws_client, snapshot):
@@ -1470,7 +1470,7 @@ class TestS3ObjectLock:
 class TestS3BucketOwnershipControls:
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have default ownership controls",
     )
     def test_crud_bucket_ownership_controls(self, s3_create_bucket, aws_client, snapshot):
@@ -1506,7 +1506,7 @@ class TestS3BucketOwnershipControls:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have default ownership controls",
     )
     def test_bucket_ownership_controls_exc(self, s3_create_bucket, aws_client, snapshot):
@@ -1553,7 +1553,7 @@ class TestS3BucketOwnershipControls:
 class TestS3PublicAccessBlock:
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have default public access block",
     )
     def test_crud_public_access_block(self, s3_bucket, aws_client, snapshot):
@@ -1631,7 +1631,7 @@ class TestS3BucketPolicy:
 
     @markers.aws.validated
     @pytest.mark.xfail(
-        condition=not config.NATIVE_S3_PROVIDER,
+        condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise Exception",
     )
     def test_bucket_policy_exc(self, s3_bucket, snapshot, aws_client):
@@ -1678,7 +1678,7 @@ class TestS3BucketAccelerateConfiguration:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_not_native_provider,
+        condition=is_legacy_v2_provider,
         paths=[
             "$.put-bucket-accelerate-config-dot-bucket.Error.Code",
             "$.put-bucket-accelerate-config-dot-bucket.Error.Message",

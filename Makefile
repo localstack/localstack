@@ -6,7 +6,7 @@ PIP_CMD ?= pip3
 TEST_PATH ?= .
 PYTEST_LOGLEVEL ?=
 DISABLE_BOTO_RETRIES ?= 1
-MAIN_CONTAINER_NAME ?= localstack_main
+MAIN_CONTAINER_NAME ?= localstack-main
 
 MAJOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f1)
 MINOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f2)
@@ -117,9 +117,11 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) \
 				)) && \
@@ -144,6 +146,9 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION) \
+			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION)-amd64 \
+			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION)-arm64 && \
 			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-arm64 && \
@@ -151,6 +156,7 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-arm64 && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) && \
+				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION))) && \
 		docker manifest push $(MANIFEST_IMAGE_NAME):latest \

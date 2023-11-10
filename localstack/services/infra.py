@@ -1,26 +1,26 @@
 import logging
 import os
 import signal
-import subprocess
 import sys
 import threading
 import traceback
-from typing import Dict, List, Union
 
 import boto3
-from localstack_client.config import get_service_port
 from moto.core import BaseModel
 from moto.core.base_backend import InstanceTrackerMeta
 
 from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    ENV_DEV,
+    LOCALSTACK_INFRA_PROCESS,
+)
+from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.runtime import events, hooks
 from localstack.runtime.exceptions import LocalstackExit
-from localstack.services import motoserver
-from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
-from localstack.utils import config_listener, files, objects
+from localstack.utils import files, objects
 from localstack.utils.analytics import usage
 from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import (
@@ -31,15 +31,11 @@ from localstack.utils.bootstrap import (
 )
 from localstack.utils.container_networking import get_main_container_id
 from localstack.utils.files import cleanup_tmp_files
-from localstack.utils.net import get_free_tcp_port, is_port_open
+from localstack.utils.net import is_port_open
 from localstack.utils.patch import patch
 from localstack.utils.platform import in_docker
-from localstack.utils.run import ShellCommandThread, run
-from localstack.utils.server import multiserver
 from localstack.utils.sync import poll_condition
 from localstack.utils.threads import (
-    TMP_THREADS,
-    FuncThread,
     cleanup_threads_and_processes,
     start_thread,
 )
@@ -49,9 +45,6 @@ READY_MARKER_OUTPUT = constants.READY_MARKER_OUTPUT
 
 # default backend host address
 DEFAULT_BACKEND_HOST = "127.0.0.1"
-
-# maps ports to proxy listener details
-PROXY_LISTENERS = {}
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -65,9 +58,6 @@ SHUTDOWN_INFRA = threading.Event()
 
 # can be set
 EXIT_CODE: objects.Value[int] = objects.Value(0)
-
-# Start config update backdoor
-config_listener.start_listener()
 
 
 # ---------------
@@ -122,147 +112,6 @@ def patch_instance_tracker_meta():
     InstanceTrackerMeta._ls_patch_applied = True
 
 
-def get_multiserver_or_free_service_port():
-    if config.FORWARD_EDGE_INMEM:
-        return multiserver.get_moto_server_port()
-    return get_free_tcp_port()
-
-
-def do_run(
-    cmd: Union[str, List],
-    asynchronous: bool,
-    print_output: bool = None,
-    env_vars: Dict[str, str] = None,
-    auto_restart=False,
-    strip_color: bool = False,
-):
-    sys.stdout.flush()
-    if asynchronous:
-        if config.DEBUG and print_output is None:
-            print_output = True
-        outfile = subprocess.PIPE if print_output else None
-        t = ShellCommandThread(
-            cmd,
-            outfile=outfile,
-            env_vars=env_vars,
-            auto_restart=auto_restart,
-            strip_color=strip_color,
-            name="todo_dorun",
-        )
-        t.start()
-        TMP_THREADS.append(t)
-        return t
-    return run(cmd, env_vars=env_vars)
-
-
-class MotoServerProperties:
-    moto_thread: FuncThread
-    service_port: int
-
-    def __init__(self, moto_thread: FuncThread, service_port: int):
-        self.moto_thread = moto_thread
-        self.service_port = service_port
-
-
-def start_proxy_for_service(
-    service_name,
-    port,
-    backend_port,
-    update_listener,
-    quiet=False,
-):
-    # TODO: remove special switch for Elasticsearch (see also note in service_port(...) in config.py)
-    if config.FORWARD_EDGE_INMEM and service_name != "elasticsearch":
-        if backend_port:
-            PROXY_LISTENERS[service_name] = (
-                service_name,
-                backend_port,
-                update_listener,
-            )
-        return
-    # check if we have a custom backend configured
-    custom_backend_url = os.environ.get("%s_BACKEND" % service_name.upper())
-    backend_url = custom_backend_url or ("http://%s:%s" % (DEFAULT_BACKEND_HOST, backend_port))
-    return start_proxy(
-        port,
-        backend_url=backend_url,
-        update_listener=update_listener,
-        quiet=quiet,
-    )
-
-
-def start_proxy(
-    port: int,
-    backend_url: str = None,
-    update_listener=None,
-    quiet: bool = False,
-    use_ssl: bool = None,
-):
-    use_ssl = config.USE_SSL if use_ssl is None else use_ssl
-    proxy_thread = start_proxy_server(
-        port=port,
-        forward_url=backend_url,
-        use_ssl=use_ssl,
-        update_listener=update_listener,
-        quiet=quiet,
-        check_port=False,
-    )
-    return proxy_thread
-
-
-def start_moto_server(
-    key, port, name=None, backend_port=None, asynchronous=False, update_listener=None
-) -> MotoServerProperties:
-    # TODO: refactor this method! the name and parameters suggest that a server is started, but it actually only adds
-    #  a proxy listener around the already started motoserver singleton.
-    # TODO: remove asynchronous parameter (from all calls to this function)
-    # TODO: re-think backend_port parameter (still needed since determined by motoserver singleton?)
-
-    if not name:
-        name = key
-    log_startup_message(name)
-    if not backend_port:
-        if config.FORWARD_EDGE_INMEM:
-            backend_port = motoserver.get_moto_server().port
-        elif config.USE_SSL or update_listener:
-            backend_port = get_free_tcp_port()
-    if backend_port or config.FORWARD_EDGE_INMEM:
-        start_proxy_for_service(key, port, backend_port, update_listener)
-
-    server = motoserver.get_moto_server()
-    return MotoServerProperties(server._thread, server.port)
-
-
-def start_moto_server_separate(key, port, name=None, backend_port=None, asynchronous=False):
-    moto_server_cmd = "%s/bin/moto_server" % LOCALSTACK_VENV_FOLDER
-    if not os.path.exists(moto_server_cmd):
-        moto_server_cmd = run("which moto_server").strip()
-    server_port = backend_port or port
-    cmd = "VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s" % (
-        moto_server_cmd,
-        key,
-        server_port,
-        constants.BIND_HOST,
-    )
-    return MotoServerProperties(do_run(cmd, asynchronous), server_port)
-
-
-def add_service_proxy_listener(api: str, listener: ProxyListener, port=None):
-    PROXY_LISTENERS[api] = (api, port or get_service_port(api), listener)
-
-
-def start_local_api(name, port, api, method, asynchronous=False, listener=None):
-    log_startup_message(name)
-    if config.FORWARD_EDGE_INMEM:
-        port = get_free_tcp_port()
-        PROXY_LISTENERS[api] = (api, port, listener)
-    if asynchronous:
-        thread = start_thread(method, port, quiet=True, name=f"aws-api-{api}")
-        return thread
-    else:
-        method(port)
-
-
 def exit_infra(code: int):
     """
     Triggers an orderly shutdown of the localstack infrastructure and sets the code the main process should
@@ -315,10 +164,18 @@ def cleanup_resources():
                 config.dirs.tmp,
                 e,
             )
+        try:
+            files.rm_rf(config.dirs.mounted_tmp)
+        except PermissionError as e:
+            LOG.error(
+                "unable to delete mounted temp folder %s: %s, please delete manually or you will keep seeing these errors",
+                config.dirs.mounted_tmp,
+                e,
+            )
 
 
 def log_startup_message(service):
-    LOG.info("Starting mock %s service on %s ...", service, config.edge_ports_info())
+    LOG.info("Starting mock %s service on %s ...", service, config.gateway_listen_ports_info())
 
 
 def check_aws_credentials():
@@ -436,9 +293,13 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     @log_duration()
     def prepare_environment():
+        # enable the HTTP/HTTPS duplex socket
+        enable_duplex_socket()
+
         # set environment
-        os.environ["AWS_REGION"] = config.DEFAULT_REGION
+        os.environ["AWS_REGION"] = AWS_REGION_US_EAST_1
         os.environ["ENV"] = ENV_DEV
+
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
         patch_moto_request_handling()
@@ -474,13 +335,13 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
         # TODO: properly encapsulate starting/stopping of edge server in a class
         if not poll_condition(
-            lambda: is_port_open(config.get_edge_port_http()), timeout=15, interval=0.3
+            lambda: is_port_open(config.GATEWAY_LISTEN[0].port), timeout=15, interval=0.3
         ):
             if LOG.isEnabledFor(logging.DEBUG):
                 # make another call with quiet=False to print detailed error logs
-                is_port_open(config.get_edge_port_http(), quiet=False)
+                is_port_open(config.GATEWAY_LISTEN[0].port, quiet=False)
             raise TimeoutError(
-                f"gave up waiting for edge server on {config.EDGE_BIND_HOST}:{config.EDGE_PORT}"
+                f"gave up waiting for edge server on {config.GATEWAY_LISTEN[0].host_and_port()}"
             )
 
         return t

@@ -13,7 +13,6 @@ from opensearchpy.exceptions import AuthorizationException
 
 from localstack import config
 from localstack.aws.api.opensearch import AdvancedSecurityOptionsInput, MasterUserOptions
-from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
 from localstack.constants import (
     OPENSEARCH_DEFAULT_VERSION,
     OPENSEARCH_PLUGIN_LIST,
@@ -34,6 +33,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import call_safe, poll_condition, retry, short_uid, start_worker_thread
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.strings import to_str
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -450,11 +450,31 @@ class TestOpensearchProvider:
         with pytest.raises(botocore.exceptions.ClientError) as e:
             aws_client.opensearch.create_domain(
                 DomainName="123abc"
-            )  # domain needs to start with characters
+            )  # domain needs to start with alphabetic characters
         assert e.value.response["Error"]["Code"] == "ValidationException"
 
         with pytest.raises(botocore.exceptions.ClientError) as e:
             aws_client.opensearch.create_domain(DomainName="abc#")  # no special characters allowed
+        assert e.value.response["Error"]["Code"] == "ValidationException"
+
+    @markers.aws.unknown
+    def test_create_domain_with_invalid_custom_endpoint(self, aws_client):
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            aws_client.opensearch.create_domain(
+                DomainName="abc",
+                DomainEndpointOptions={
+                    "CustomEndpoint": "custom-endpoint",
+                },
+            )  # CustomEndpoint cannot be set without CustomEndpointEnabled
+        assert e.value.response["Error"]["Code"] == "ValidationException"
+
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            aws_client.opensearch.create_domain(
+                DomainName="abc",
+                DomainEndpointOptions={
+                    "CustomEndpointEnabled": True,
+                },
+            )  # CustomEndpointEnabled cannot be set without CustomEndpoint
         assert e.value.response["Error"]["Code"] == "ValidationException"
 
     @markers.aws.validated
@@ -638,7 +658,7 @@ class TestOpensearchProvider:
         assert "Endpoint" in status
         endpoint = status["Endpoint"]
         parts = endpoint.split(":")
-        assert parts[0] in ("localhost", "127.0.0.1")
+        assert parts[0] in (localstack_host().host, "127.0.0.1")
         assert int(parts[1]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
@@ -707,6 +727,13 @@ class TestEdgeProxiedOpensearchCluster:
             DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
         )
 
+        response = aws_client.opensearch.describe_domain(DomainName=domain_name)
+        response_domain_endpoint_options = response["DomainStatus"]["DomainEndpointOptions"]
+        assert response_domain_endpoint_options["EnforceHTTPS"] is False
+        assert response_domain_endpoint_options["TLSSecurityPolicy"]
+        assert response_domain_endpoint_options["CustomEndpointEnabled"] is True
+        assert response_domain_endpoint_options["CustomEndpoint"] == custom_endpoint
+
         response = aws_client.opensearch.list_domain_names(EngineType="OpenSearch")
         domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
 
@@ -722,9 +749,7 @@ class TestEdgeProxiedOpensearchCluster:
         self, opensearch_wait_for_cluster, opensearch_create_domain, aws_client
     ):
         domain_name = f"opensearch-domain-{short_uid()}"
-        custom_endpoint = "http://localhost:4566/my-custom-endpoint"
         domain_endpoint_options = {
-            "CustomEndpoint": custom_endpoint,
             "CustomEndpointEnabled": False,
         }
 
@@ -736,14 +761,16 @@ class TestEdgeProxiedOpensearchCluster:
         response_domain_name = response["DomainStatus"]["DomainName"]
         assert domain_name == response_domain_name
 
+        response_domain_endpoint_options = response["DomainStatus"]["DomainEndpointOptions"]
+        assert response_domain_endpoint_options["EnforceHTTPS"] is False
+        assert response_domain_endpoint_options["TLSSecurityPolicy"]
+        assert response_domain_endpoint_options["CustomEndpointEnabled"] is False
+        assert "CustomEndpoint" not in response_domain_endpoint_options
+
         endpoint = f"http://{response['DomainStatus']['Endpoint']}"
 
         # wait for the cluster
         opensearch_wait_for_cluster(domain_name=domain_name)
-        response = requests.get(f"{custom_endpoint}/_cluster/health")
-        assert not response.ok
-        assert response.status_code == 404
-
         response = requests.get(f"{endpoint}/_cluster/health")
         assert response.ok
         assert response.status_code == 200
@@ -873,7 +900,7 @@ class TestSingletonClusterManager:
         parts = cluster_0.url.split(":")
         assert parts[0] == "http"
         # either f"//{the bind host}" is used, or in the case of "//0.0.0.0" the localstack hostname instead
-        assert parts[1][2:] in [EDGE_BIND_HOST, LOCALSTACK_HOSTNAME]
+        assert parts[1][2:] in [config.GATEWAY_LISTEN[0].host, localstack_host().host]
         assert int(parts[2]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )

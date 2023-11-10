@@ -40,6 +40,7 @@ from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
+from localstack.utils.urls import localstack_host
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
@@ -199,7 +200,7 @@ def resolve_refs_recursively(
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]
-            port = config.service_port("apigateway")
+            port = localstack_host().port
             return f"{prefix}{host}:{port}/{path}"
 
         # basic dynamic reference support

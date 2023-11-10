@@ -552,7 +552,7 @@ def cmd_stop() -> None:
     Stops the current LocalStack runtime.
 
     This command stops the currently running LocalStack docker container.
-    By default, this command looks for a container named `localstack_main` (which is the default
+    By default, this command looks for a container named `localstack-main` (which is the default
     container name used by the `localstack start` command).
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.
@@ -597,7 +597,7 @@ def cmd_logs(follow: bool, tail: int) -> None:
     Show the logs of the current LocalStack runtime.
 
     This command shows the logs of the currently running LocalStack docker container.
-    By default, this command looks for a container named `localstack_main` (which is the default
+    By default, this command looks for a container named `localstack-main` (which is the default
     container name used by the `localstack start` command).
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.
@@ -647,7 +647,7 @@ def cmd_wait(timeout: Optional[float] = None) -> None:
 
     This commands waits for a started LocalStack runtime to be up and running, ready to serve
     requests.
-    By default, this command looks for a container named `localstack_main` (which is the default
+    By default, this command looks for a container named `localstack-main` (which is the default
     container name used by the `localstack start` command).
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.
@@ -665,7 +665,7 @@ def cmd_ssh() -> None:
     Obtain a shell in the current LocalStack runtime.
 
     This command starts a new interactive shell in the currently running LocalStack container.
-    By default, this command looks for a container named `localstack_main` (which is the default
+    By default, this command looks for a container named `localstack-main` (which is the default
     container name used by the `localstack start` command).
     If your LocalStack container has a different name, set the config variable
     `MAIN_CONTAINER_NAME`.
@@ -860,30 +860,6 @@ def localstack_completion(ctx: click.Context, shell: str) -> None:
     # instantiate the completion class and print the completion source
     comp = comp_cls(ctx.command, {}, prog_name, complete_var)
     click.echo(comp.source())
-
-
-# legacy support
-@localstack.group(name="infra", deprecated=True)
-def infra() -> None:
-    """
-    Manage LocalStack infrastructure
-    """
-    pass
-
-
-# FIXME remove with next major version
-@infra.command(name="start", short_help=cmd_start.short_help)
-@click.pass_context
-@publish_invocation
-def cmd_infra_start(ctx: click.Context, *args, **kwargs) -> None:
-    """
-    This command is deprecated. Please use `localstack start` instead.
-    """
-    ctx.invoke(cmd_start, *args, **kwargs)
-
-
-# just apply the same params as the "localstack start" command has
-cmd_infra_start.params = cmd_start.params
 
 
 def print_version() -> None:

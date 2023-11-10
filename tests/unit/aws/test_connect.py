@@ -18,6 +18,7 @@ from localstack.aws.handlers import add_internal_request_params, add_region_from
 from localstack.config import HostAndPort
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
+from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.http.hypercorn import GatewayServer
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -31,6 +32,10 @@ class TestClientFactory:
 
         def _create(request_handlers: list[Handler]) -> str:
             nonlocal server
+
+            # explicitly enable the duplex socket support here
+            enable_duplex_socket()
+
             gateway = Gateway()
             gateway.request_handlers.append(add_internal_request_params)
             for handler in request_handlers:
