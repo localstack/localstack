@@ -3303,6 +3303,54 @@ class TestSNSPlatformEndpoint:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="Test asserts wrong behaviour")
+    # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
+    # TODO: AWS validate this test
+    # See https://github.com/getmoto/moto/pull/6953 where Moto updated errors.
+    def test_create_platform_endpoint_check_idempotency(
+        self, sns_create_platform_application, aws_client
+    ):
+        response = sns_create_platform_application(
+            Name=f"test-{short_uid()}",
+            Platform="GCM",
+            Attributes={"PlatformCredential": "123"},
+        )
+        token = "test1"
+        # TODO: As per AWS docs:
+        # > The CreatePlatformEndpoint action is idempotent, so if the requester already owns an endpoint
+        # > with the same device token and attributes, that endpoint's ARN is returned without creating a new endpoint.
+        # The 'Token' and 'Attributes' are critical to idempotent behaviour.
+        kwargs_list = [
+            {"Token": token, "CustomUserData": "test-data"},
+            {"Token": token, "CustomUserData": "test-data"},
+            {"Token": token},
+            {"Token": token},
+        ]
+        platform_arn = response["PlatformApplicationArn"]
+        responses = []
+        for kwargs in kwargs_list:
+            responses.append(
+                aws_client.sns.create_platform_endpoint(
+                    PlatformApplicationArn=platform_arn, **kwargs
+                )
+            )
+        # Assert EndpointArn is returned in every call create platform call
+        assert all("EndpointArn" in response for response in responses)
+        endpoint_arn = responses[0]["EndpointArn"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.create_platform_endpoint(
+                PlatformApplicationArn=platform_arn,
+                Token=token,
+                CustomUserData="different-user-data",
+            )
+        assert e.value.response["Error"]["Code"] == "InvalidParameter"
+        assert (
+            e.value.response["Error"]["Message"]
+            == f"Endpoint {endpoint_arn} already exists with the same Token, but different attributes."
+        )
+
+    @markers.aws.needs_fixing
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
     def test_publish_disabled_endpoint(self, sns_create_platform_application, aws_client):
         response = sns_create_platform_application(
