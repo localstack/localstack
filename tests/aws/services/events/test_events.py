@@ -456,6 +456,7 @@ class TestEvents:
 
         def get_message(queue_url):
             resp = aws_client.sqs.receive_message(QueueUrl=queue_url)
+            assert resp["Messages"]
             return resp["Messages"]
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
@@ -522,6 +523,7 @@ class TestEvents:
 
         def get_message(queue_url):
             resp = aws_client.sqs.receive_message(QueueUrl=queue_url)
+            assert resp["Messages"]
             return resp["Messages"]
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
@@ -1143,7 +1145,8 @@ class TestEvents:
 
         def get_message(queue_url):
             resp = aws_client.sqs.receive_message(QueueUrl=queue_url)
-            return resp.get("Messages")
+            assert resp["Messages"]
+            return resp["Messages"]
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
         assert len(messages) == 1
@@ -1214,7 +1217,8 @@ class TestEvents:
 
         def get_message(queue_url):
             resp = aws_client.sqs.receive_message(QueueUrl=queue_url)
-            return resp.get("Messages")
+            assert resp["Messages"]
+            return resp["Messages"]
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
         assert len(messages) == 1
@@ -1400,7 +1404,8 @@ class TestEvents:
 
         def get_message(queue_url):
             resp = aws_client.sqs.receive_message(QueueUrl=queue_url)
-            return resp.get("Messages")
+            assert resp["Messages"]
+            return resp["Messages"]
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
         assert len(messages) == 1
@@ -1602,6 +1607,7 @@ class TestEvents:
 
         def get_message():
             recv_msg = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
+            assert recv_msg["Messages"]
             return recv_msg["Messages"]
 
         retries = 20 if is_aws_cloud() else 3
