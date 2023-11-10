@@ -101,7 +101,7 @@ class ArnPartitionRewriteHandler(Handler):
         # forward to the handler chain again
         result_response = forward(
             request=request,
-            forward_base_url=config.get_edge_url(),
+            forward_base_url=config.internal_service_url(),
             forward_path=get_raw_path(request),
             headers=request.headers,
         )

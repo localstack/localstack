@@ -98,7 +98,7 @@ def aws_http_client_factory(aws_session):
                 resolver: EndpointResolver = aws_session._session.get_component("endpoint_resolver")
                 endpoint_url = "https://" + resolver.construct_endpoint(service, region)["hostname"]
             else:
-                endpoint_url = config.get_edge_url()
+                endpoint_url = config.internal_service_url()
 
         return SigningHttpClient(signer_factory(creds, service, region), endpoint_url=endpoint_url)
 
