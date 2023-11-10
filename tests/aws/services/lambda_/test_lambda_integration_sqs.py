@@ -574,7 +574,9 @@ def test_report_batch_item_failures(
     snapshot.match("first_invocation", first_invocation)
 
     # check that the DQL is empty
-    assert "Messages" not in aws_client.sqs.receive_message(QueueUrl=event_dlq_url)
+    dlq_messages = aws_client.sqs.receive_message(QueueUrl=event_dlq_url)["Messages"]
+    assert dlq_messages == []
+    assert not dlq_messages
 
     # now wait for the second invocation result which is expected to have processed message 2 and 3
     second_invocation = aws_client.sqs.receive_message(
@@ -592,7 +594,7 @@ def test_report_batch_item_failures(
     third_attempt = aws_client.sqs.receive_message(
         QueueUrl=destination_url, WaitTimeSeconds=1, MaxNumberOfMessages=1
     )
-    assert "Messages" not in third_attempt
+    assert third_attempt["Messages"] == []
 
     # now check that message 4 was placed in the DLQ
     dlq_response = aws_client.sqs.receive_message(QueueUrl=event_dlq_url, WaitTimeSeconds=15)
