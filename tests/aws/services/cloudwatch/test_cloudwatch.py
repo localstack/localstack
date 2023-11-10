@@ -1612,7 +1612,7 @@ class TestCloudwatch:
         snapshot.match("describe_minimal_metric_alarm", response)
 
     @markers.aws.validated
-    def test_get_metric_data_within_timeframe(self, aws_client):
+    def test_get_metric_data_with_zero_and_labels(self, aws_client):
         utc_now = datetime.now(tz=timezone.utc)
 
         namespace1 = f"test/{short_uid()}"

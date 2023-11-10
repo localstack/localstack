@@ -106,7 +106,7 @@ class CloudwatchDatabase:
                 )
 
                 inserts = []
-                if metric.get("Value"):
+                if metric.get("Value") is not None:
                     inserts.append({"Value": metric.get("Value"), "TimesToInsert": 1})
                 elif metric.get("Values"):
                     counts = metric.get("Counts", [1] * len(metric.get("Values")))
@@ -232,7 +232,7 @@ class CloudwatchDatabase:
                     ),
                 )
                 single_result = cur.fetchone()[0]
-                if single_result:
+                if single_result is not None:
                     datapoints[str(start_time_unix)]["values"].append(single_result)
 
                 cur.execute(
