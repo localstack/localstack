@@ -310,14 +310,13 @@ def get_sqs_provider():
 
 @aws_provider()
 def sqs():
-    return Service.for_provider(get_sqs_provider(), dispatch_table_factory=MotoFallbackDispatcher)
+    return Service.for_provider(get_sqs_provider())
 
 
 @aws_provider("sqs-query")
 def sqs_query():
     sqs_query_service = Service.for_provider(
         get_sqs_provider(),
-        dispatch_table_factory=MotoFallbackDispatcher,
         custom_service_name="sqs-query",
     )
     return sqs_query_service
