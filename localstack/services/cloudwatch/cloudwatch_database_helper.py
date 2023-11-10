@@ -175,7 +175,7 @@ class CloudwatchDatabase:
             metric = metric_stat.get("Metric")
             period = metric_stat.get("Period")
             stat = metric_stat.get("Stat")
-            dimensions = metric.get("Dimensions")
+            dimensions = metric.get("Dimensions", [])
             # unit = metric_stat.get("Unit")
 
             # prepare SQL query
@@ -288,7 +288,11 @@ class CloudwatchDatabase:
                             count += 1
                     cleaned_datapoints[timestamp] = total_sum / count
 
-            return {"id": query.get("Id"), "datapoints": cleaned_datapoints}
+            return {
+                "id": query.get("Id"),
+                "datapoints": cleaned_datapoints,
+                "label": f"{metric.get('MetricName')} {stat}",
+            }
 
     def list_metrics(self, account_id, region, namespace, metric_name, dimensions) -> dict:
         with sqlite3.connect(self.METRICS_DB) as conn:

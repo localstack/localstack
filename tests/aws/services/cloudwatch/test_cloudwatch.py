@@ -1611,6 +1611,60 @@ class TestCloudwatch:
         response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("describe_minimal_metric_alarm", response)
 
+    @markers.aws.validated
+    def test_get_metric_data_within_timeframe(self, aws_client):
+        utc_now = datetime.now(tz=timezone.utc)
+
+        namespace1 = f"test/{short_uid()}"
+        # put metric data
+        values = [0, 2, 4, 3.5, 7, 100]
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace1,
+            MetricData=[
+                {"MetricName": "metric1", "Value": val, "Unit": "Seconds"} for val in values
+            ],
+        )
+        if is_aws_cloud():
+            time.sleep(2)
+        # get_metric_data
+        stats = ["Average", "Sum", "Minimum", "Maximum"]
+        response = aws_client.cloudwatch.get_metric_data(
+            MetricDataQueries=[
+                {
+                    "Id": "result_" + stat,
+                    "MetricStat": {
+                        "Metric": {"Namespace": namespace1, "MetricName": "metric1"},
+                        "Period": 60,
+                        "Stat": stat,
+                    },
+                }
+                for stat in stats
+            ],
+            StartTime=utc_now - timedelta(seconds=60),
+            EndTime=utc_now + timedelta(seconds=60),
+        )
+        #
+        # Assert Average/Min/Max/Sum is returned as expected
+        avg = [res for res in response["MetricDataResults"] if res["Id"] == "result_Average"][0]
+        assert avg["Label"] == "metric1 Average"
+        assert avg["StatusCode"] == "Complete"
+        assert [int(val) for val in avg["Values"]] == [19]
+
+        sum_ = [res for res in response["MetricDataResults"] if res["Id"] == "result_Sum"][0]
+        assert sum_["Label"] == "metric1 Sum"
+        assert sum_["StatusCode"] == "Complete"
+        assert [val for val in sum_["Values"]] == [sum(values)]
+
+        min_ = [res for res in response["MetricDataResults"] if res["Id"] == "result_Minimum"][0]
+        assert min_["Label"] == "metric1 Minimum"
+        assert min_["StatusCode"] == "Complete"
+        assert [int(val) for val in min_["Values"]] == [0]
+
+        max_ = [res for res in response["MetricDataResults"] if res["Id"] == "result_Maximum"][0]
+        assert max_["Label"] == "metric1 Maximum"
+        assert max_["StatusCode"] == "Complete"
+        assert [int(val) for val in max_["Values"]] == [100]
+
 
 def _check_alarm_triggered(
     expected_state,

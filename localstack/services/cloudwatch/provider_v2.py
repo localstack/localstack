@@ -208,7 +208,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         for result in results:
             formatted_result = {
                 "Id": result.get("id"),
-                "Label": "TODO",
+                "Label": result.get("label"),
                 "StatusCode": "Complete",
                 "Timestamps": [],
                 "Values": [],
