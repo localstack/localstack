@@ -14,7 +14,6 @@ from requests.structures import CaseInsensitiveDict
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.aws.connect import connect_to
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
 from localstack.constants import (
@@ -1926,7 +1925,7 @@ class TestIntegrations:
 
     @markers.aws.unknown
     def test_api_gateway_kinesis_integration(
-        self, aws_client, kinesis_create_stream, wait_for_stream_ready
+        self, aws_client, kinesis_create_stream, wait_for_stream_ready, aws_client_factory
     ):
         # create target Kinesis stream
         stream_name = kinesis_create_stream()
@@ -1934,8 +1933,14 @@ class TestIntegrations:
 
         # create API Gateway and connect it to the target stream
         api_name = f"test-gw-kinesis-{short_uid()}"
+        client = aws_client_factory(
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        ).apigateway
         result = self.connect_api_gateway_to_kinesis(
-            api_name, stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+            client,
+            api_name,
+            stream_name,
+            TEST_AWS_REGION_NAME,
         )
 
         # generate test data
@@ -2044,7 +2049,11 @@ class TestIntegrations:
         )
 
     def connect_api_gateway_to_kinesis(
-        self, gateway_name: str, kinesis_stream: str, account_id: str, region_name: str
+        self,
+        client,
+        gateway_name: str,
+        kinesis_stream: str,
+        region_name: str,
     ):
         template = APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
         resources = {
@@ -2079,7 +2088,7 @@ class TestIntegrations:
             name=gateway_name,
             resources=resources,
             stage_name=TEST_STAGE_NAME,
-            client=connect_to(aws_access_key_id=account_id, region_name=region_name).apigateway,
+            client=client,
         )
 
     def connect_api_gateway_to_http(
