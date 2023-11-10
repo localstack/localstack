@@ -342,21 +342,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> CreateEndpointResponse:
         # TODO: support mobile app events
         # see https://docs.aws.amazon.com/sns/latest/dg/application-event-notifications.html
-        try:
-            result: CreateEndpointResponse = call_moto(context)
-        except CommonServiceException as e:
-            if "DuplicateEndpoint" in e.code:
-                moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
-                for e in moto_sns_backend.platform_endpoints.values():
-                    if e.token == token:
-                        if custom_user_data and custom_user_data != e.custom_user_data:
-                            raise InvalidParameterException(
-                                f"Endpoint {e.arn} already exists with the same Token, but different attributes."
-                            )
-                        else:
-                            return CreateEndpointResponse(EndpointArn=e.arn)
-            raise
-        return result
+        return call_moto(context)
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
         count = len(subscription_arn.split(":"))
