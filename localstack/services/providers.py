@@ -168,14 +168,6 @@ def opensearch():
 
 
 @aws_provider()
-def ram():
-    from localstack.services.ram.provider import RamProvider
-
-    provider = RamProvider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
-
-
-@aws_provider()
 def redshift():
     from localstack.services.redshift.provider import RedshiftProvider
 
