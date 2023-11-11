@@ -2653,7 +2653,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
         )
         snapshot.match("messages-3", response_3)
-        assert "Messages" not in response_3
+        assert "Messages" in response_3
+        assert response_3["Messages"] == []
 
     @markers.aws.validated
     def test_exists_filter_policy(
@@ -2977,7 +2978,8 @@ class TestSNSFilter:
         )
         snapshot.match("recv-init", response)
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # publish messages that satisfies the filter policy, assert that messages are received
         messages = [
@@ -3017,7 +3019,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # publish message that does not satisfy the filter policy as it's not even JSON, or not a JSON object
         message = "Regular string message"
@@ -3034,7 +3037,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
     @markers.aws.validated
     def test_filter_policy_for_batch(
@@ -3185,7 +3189,8 @@ class TestSNSFilter:
         )
         snapshot.match("recv-init", response)
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         def _verify_and_snapshot_sqs_messages(msg_to_send: list[dict], snapshot_prefix: str):
             for i, _message in enumerate(msg_to_send):
@@ -3224,7 +3229,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # assert with more nesting
         deep_nested_filter_policy = json.dumps(
@@ -3262,7 +3268,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
 
 class TestSNSPlatformEndpoint:
@@ -3950,7 +3957,8 @@ class TestSNSSubscriptionHttp:
 
         response = aws_client.sqs.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=2)
         # AWS doesn't send to the DLQ if the UnsubscribeConfirmation fails to be delivered
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
 
 class TestSNSSubscriptionFirehose:

@@ -30,7 +30,7 @@ from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
-service = load_service("sqs")
+service = load_service("sqs-query")
 parser = create_parser(service)
 serializer = create_serializer(service)
 
@@ -134,10 +134,6 @@ class BotoException(CommonServiceException):
 
 
 def handle_request(request: Request, region: str) -> Response:
-    if request.is_json:
-        # TODO: the response should be sent as JSON response
-        raise NotImplementedError
-
     request_id = long_uid()
 
     try:

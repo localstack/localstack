@@ -1083,7 +1083,7 @@ class S3RequestParser(RestXMLRequestParser):
         return super()._parse_shape(request, shape, node, uri_params)
 
 
-class SQSRequestParser(QueryRequestParser):
+class SQSQueryRequestParser(QueryRequestParser):
     def _get_serialized_name(self, shape: Shape, default_name: str, node: dict) -> str:
         """
         SQS allows using both - the proper serialized name of a map as well as the member name - as name for maps.
@@ -1131,7 +1131,7 @@ def create_parser(service: ServiceModel) -> RequestParser:
     # informally more specific protocol implementation) has precedence over the more general protocol-specific parsers.
     service_specific_parsers = {
         "s3": S3RequestParser,
-        "sqs": SQSRequestParser,
+        "sqs-query": SQSQueryRequestParser,
     }
     protocol_specific_parsers = {
         "query": QueryRequestParser,
