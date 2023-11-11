@@ -991,18 +991,12 @@ class S3RequestParser(RestXMLRequestParser):
                 # remove the bucket name from the host part of the request
                 new_host = self.old_host.removeprefix(f"{bucket_name}.")
 
-                # split the url and put the bucket name at the front
-                path_parts = self.old_path.split("/")
-                path_parts = [bucket_name] + path_parts
-                path_parts = [part for part in path_parts if part]
-                new_path = "/" + "/".join(path_parts) or "/"
+                # put the bucket name at the front
+                new_path = "/" + bucket_name + self.old_path or "/"
 
                 # create a new RAW_URI for the WSGI environment, this is necessary because of our `get_raw_path` utility
                 if self.old_raw_uri:
-                    path_parts = self.old_raw_uri.split("/")
-                    path_parts = [bucket_name] + path_parts
-                    path_parts = [part for part in path_parts if part]
-                    new_raw_uri = "/" + "/".join(path_parts) or "/"
+                    new_raw_uri = "/" + bucket_name + self.old_raw_uri or "/"
                     if qs := self.request.query_string:
                         new_raw_uri += "?" + qs.decode("utf-8")
                 else:
