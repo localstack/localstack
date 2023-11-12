@@ -1300,14 +1300,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_objects: list[Object] = []
 
-        # sort by key
-        for s3_object in sorted(s3_bucket.objects.values(), key=lambda r: r.key):
-            if count >= max_keys:
-                is_truncated = True
-                if s3_objects:
-                    next_key_marker = s3_objects[-1]["Key"]
-                break
+        all_keys = sorted(s3_bucket.objects.values(), key=lambda r: r.key)
+        last_key = all_keys[-1] if all_keys else None
 
+        # sort by key
+        for s3_object in all_keys:
             key = urlparse.quote(s3_object.key) if encoding_type else s3_object.key
             # skip all keys that alphabetically come before key_marker
             if marker:
@@ -1318,32 +1315,44 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if prefix and not key.startswith(prefix):
                 continue
 
-            # separate keys that contain the same string between the prefix and the first occurrence of the delimiter
+            # see ListObjectsV2 for the logic comments (shared logic here)
+            prefix_including_delimiter = None
             if delimiter and delimiter in (key_no_prefix := key.removeprefix(prefix)):
                 pre_delimiter, _, _ = key_no_prefix.partition(delimiter)
                 prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
 
-                if prefix_including_delimiter not in common_prefixes:
-                    count += 1
-                    common_prefixes.add(prefix_including_delimiter)
-                continue
+                if prefix_including_delimiter in common_prefixes or (
+                    marker and marker.startswith(prefix_including_delimiter)
+                ):
+                    continue
 
-            # TODO: add RestoreStatus if present
-            object_data = Object(
-                Key=key,
-                ETag=s3_object.quoted_etag,
-                Owner=s3_bucket.owner,  # TODO: verify reality
-                Size=s3_object.size,
-                LastModified=s3_object.last_modified,
-                StorageClass=s3_object.storage_class,
-            )
+            if prefix_including_delimiter:
+                common_prefixes.add(prefix_including_delimiter)
+            else:
+                # TODO: add RestoreStatus if present
+                object_data = Object(
+                    Key=key,
+                    ETag=s3_object.quoted_etag,
+                    Owner=s3_bucket.owner,  # TODO: verify reality
+                    Size=s3_object.size,
+                    LastModified=s3_object.last_modified,
+                    StorageClass=s3_object.storage_class,
+                )
 
-            if s3_object.checksum_algorithm:
-                object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
+                if s3_object.checksum_algorithm:
+                    object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
 
-            s3_objects.append(object_data)
+                s3_objects.append(object_data)
 
+            # we just added a CommonPrefix or an Object, increase the counter
             count += 1
+            if count >= max_keys and last_key.key != s3_object.key:
+                is_truncated = True
+                if prefix_including_delimiter:
+                    next_key_marker = prefix_including_delimiter
+                elif s3_objects:
+                    next_key_marker = s3_objects[-1]["Key"]
+                break
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 
@@ -1413,13 +1422,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # sort by key
         for s3_object in sorted(s3_bucket.objects.values(), key=lambda r: r.key):
-            if count >= max_keys:
-                is_truncated = True
-                next_continuation_token = to_str(base64.urlsafe_b64encode(s3_object.key.encode()))
-                break
-
             key = urlparse.quote(s3_object.key) if encoding_type else s3_object.key
-            # skip all keys that alphabetically come before key_marker
+
+            # skip all keys that alphabetically come before continuation_token
             if continuation_token:
                 if key < decoded_continuation_token:
                     continue
@@ -1433,31 +1438,46 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 continue
 
             # separate keys that contain the same string between the prefix and the first occurrence of the delimiter
+            prefix_including_delimiter = None
             if delimiter and delimiter in (key_no_prefix := key.removeprefix(prefix)):
                 pre_delimiter, _, _ = key_no_prefix.partition(delimiter)
                 prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
 
-                if prefix_including_delimiter not in common_prefixes:
-                    count += 1
-                    common_prefixes.add(prefix_including_delimiter)
-                continue
+                # if the CommonPrefix is already in the CommonPrefixes, it doesn't count towards MaxKey, we can skip
+                # the entry without increasing the counter. We need to iterate over all of these entries before
+                # returning the next continuation marker, to properly start at the next key after this CommonPrefix
+                if prefix_including_delimiter in common_prefixes:
+                    continue
 
-            # TODO: add RestoreStatus if present
-            object_data = Object(
-                Key=key,
-                ETag=s3_object.quoted_etag,
-                Size=s3_object.size,
-                LastModified=s3_object.last_modified,
-                StorageClass=s3_object.storage_class,
-            )
+            # After skipping all entries, verify we're not over the MaxKeys before adding a new entry
+            if count >= max_keys:
+                is_truncated = True
+                next_continuation_token = to_str(base64.urlsafe_b64encode(s3_object.key.encode()))
+                break
 
-            if fetch_owner:
-                object_data["Owner"] = s3_bucket.owner
+            # if we found a new CommonPrefix, add it to the CommonPrefixes
+            # else, it means it's a new Object, add it to the Contents
+            if prefix_including_delimiter:
+                common_prefixes.add(prefix_including_delimiter)
+            else:
+                # TODO: add RestoreStatus if present
+                object_data = Object(
+                    Key=key,
+                    ETag=s3_object.quoted_etag,
+                    Size=s3_object.size,
+                    LastModified=s3_object.last_modified,
+                    StorageClass=s3_object.storage_class,
+                )
 
-            if s3_object.checksum_algorithm:
-                object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
+                if fetch_owner:
+                    object_data["Owner"] = s3_bucket.owner
 
-            s3_objects.append(object_data)
+                if s3_object.checksum_algorithm:
+                    object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
+
+                s3_objects.append(object_data)
+
+            # we just added either a CommonPrefix or an Object to the List, increase the counter by one
             count += 1
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
@@ -1555,17 +1575,21 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if prefix and not key.startswith(prefix):
                 continue
 
-            # separate keys that contain the same string between the prefix and the first occurrence of the delimiter
+            # see ListObjectsV2 for the logic comments (shared logic here)
+            prefix_including_delimiter = None
             if delimiter and delimiter in (key_no_prefix := key.removeprefix(prefix)):
                 pre_delimiter, _, _ = key_no_prefix.partition(delimiter)
                 prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
 
-                if prefix_including_delimiter not in common_prefixes:
-                    count += 1
-                    common_prefixes.add(prefix_including_delimiter)
-                continue
+                if prefix_including_delimiter in common_prefixes or (
+                    key_marker and key_marker.startswith(prefix_including_delimiter)
+                ):
+                    continue
 
-            if isinstance(version, S3DeleteMarker):
+            if prefix_including_delimiter:
+                common_prefixes.add(prefix_including_delimiter)
+
+            elif isinstance(version, S3DeleteMarker):
                 delete_marker = DeleteMarkerEntry(
                     Key=key,
                     Owner=s3_bucket.owner,
@@ -1594,11 +1618,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 object_versions.append(object_version)
 
+            # we just added a CommonPrefix, an Object or a DeleteMarker, increase the counter
             count += 1
             if count >= max_keys and last_version.version_id != version.version_id:
                 is_truncated = True
-                next_key_marker = version.key
-                next_version_id_marker = version.version_id
+                if prefix_including_delimiter:
+                    next_key_marker = prefix_including_delimiter
+                else:
+                    next_key_marker = version.key
+                    next_version_id_marker = version.version_id
                 break
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
@@ -2216,13 +2244,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         uploads = []
         # sort by key and initiated
-        for multipart in sorted(
+        all_multiparts = sorted(
             s3_bucket.multiparts.values(), key=lambda r: (r.object.key, r.initiated.timestamp())
-        ):
-            if count >= max_uploads:
-                is_truncated = True
-                break
+        )
+        last_multipart = all_multiparts[-1] if all_multiparts else None
 
+        for multipart in all_multiparts:
             key = urlparse.quote(multipart.object.key) if encoding_type else multipart.object.key
             # skip all keys that are different than key_marker
             if key_marker:
@@ -2243,27 +2270,34 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if prefix and not key.startswith(prefix):
                 continue
 
-            # separate keys that contain the same string between the prefix and the first occurrence of the delimiter
+            # see ListObjectsV2 for the logic comments (shared logic here)
+            prefix_including_delimiter = None
             if delimiter and delimiter in (key_no_prefix := key.removeprefix(prefix)):
                 pre_delimiter, _, _ = key_no_prefix.partition(delimiter)
                 prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
 
-                if prefix_including_delimiter not in common_prefixes:
-                    count += 1
-                    common_prefixes.add(prefix_including_delimiter)
-                continue
+                if prefix_including_delimiter in common_prefixes or (
+                    key_marker and key_marker.startswith(prefix_including_delimiter)
+                ):
+                    continue
 
-            multipart_upload = MultipartUpload(
-                UploadId=multipart.id,
-                Key=multipart.object.key,
-                Initiated=multipart.initiated,
-                StorageClass=multipart.object.storage_class,
-                Owner=multipart.initiator,  # TODO: check the difference
-                Initiator=multipart.initiator,
-            )
-            uploads.append(multipart_upload)
+            if prefix_including_delimiter:
+                common_prefixes.add(prefix_including_delimiter)
+            else:
+                multipart_upload = MultipartUpload(
+                    UploadId=multipart.id,
+                    Key=multipart.object.key,
+                    Initiated=multipart.initiated,
+                    StorageClass=multipart.object.storage_class,
+                    Owner=multipart.initiator,  # TODO: check the difference
+                    Initiator=multipart.initiator,
+                )
+                uploads.append(multipart_upload)
 
             count += 1
+            if count >= max_uploads and last_multipart.id != multipart.id:
+                is_truncated = True
+                break
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 
