@@ -579,9 +579,9 @@ class S3SigV4SignatureContext:
         for header, value in headers.items():
             header_low = header.lower()
             if header_low.startswith("x-amz-"):
-                if header_low in IGNORED_SIGV4_HEADERS:
-                    continue
                 if header_low not in signed_headers.lower():
+                    if header_low in IGNORED_SIGV4_HEADERS:
+                        continue
                     not_signed_headers.append(header_low)
             if header_low in signed_headers:
                 signature_headers[header_low] = value
