@@ -6546,7 +6546,7 @@ class TestS3PresignedUrl:
         "signature_version",
         ["s3", "s3v4"],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_s3_presign_url_encoding(
         self, aws_client, s3_bucket, signature_version, patch_s3_skip_signature_validation_false
     ):
@@ -6567,6 +6567,75 @@ class TestS3PresignedUrl:
         req = requests.get(url)
         assert req.ok
         assert req.content == b"123"
+
+    @markers.aws.validated
+    def test_s3_ignored_special_headers(
+        self, s3_bucket, snapshot, patch_s3_skip_signature_validation_false
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        key = "my-key"
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version="s3v4"),
+            endpoint_url=_endpoint_url(),
+        )
+
+        def add_content_sha_header(request, **kwargs):
+            request.headers["x-amz-content-sha256"] = "UNSIGNED-PAYLOAD"
+
+        presigned_client.meta.events.register(
+            "before-sign.s3.PutObject", add_content_sha_header, unique_id="1"
+        )
+        try:
+            url = presigned_client.generate_presigned_url(
+                "put_object", Params={"Bucket": s3_bucket, "Key": key}
+            )
+            assert "x-amz-content-sha256" in url
+            # somehow, it's possible to add "x-amz-content-sha256" to signed headers, the AWS Go SDK does it
+            resp = requests.put(
+                url,
+                data="something",
+                verify=False,
+                headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"},
+            )
+            assert resp.ok
+
+            # if signed but not provided, AWS will raise an exception
+            resp = requests.put(url, data="something", verify=False)
+            assert resp.status_code == 403
+
+        finally:
+            presigned_client.meta.events.unregister(
+                "before-sign.s3.PutObject", add_content_sha_header, unique_id="1"
+            )
+
+        # recreate the request, without the signed header
+        url = presigned_client.generate_presigned_url(
+            "put_object", Params={"Bucket": s3_bucket, "Key": key}
+        )
+        assert "x-amz-content-sha256" not in url
+
+        # assert that if provided and not signed, AWS will ignore it even if it starts with `x-amz`
+        resp = requests.put(
+            url,
+            data="something",
+            verify=False,
+            headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"},
+        )
+        assert resp.ok
+
+        # assert that x-amz-user-agent is not ignored, it must be set in SignedHeaders
+        resp = requests.put(
+            url, data="something", verify=False, headers={"x-amz-user-agent": "test"}
+        )
+        assert resp.status_code == 403
+
+        # X-Amz-Signature needs to be the last query string parameter: insert x-id before like the Go SDK
+        index = url.find("&X-Amz-Signature")
+        rewritten_url = url[:index] + "&x-id=PutObject" + url[index:]
+        # however, the x-id query string parameter is not ignored
+        resp = requests.put(rewritten_url, data="something", verify=False)
+        assert resp.status_code == 403
 
 
 class TestS3DeepArchive:

@@ -64,20 +64,7 @@ SIGNATURE_V4_POST_FIELDS = [
 # headers to blacklist from request_dict.signed_headers
 BLACKLISTED_HEADERS = ["X-Amz-Security-Token"]
 
-# query params overrides for multipart upload and node sdk
-# TODO: this will depends on query/post v2/v4. Manage independently
-ALLOWED_QUERY_PARAMS = [
-    "x-id",
-    "x-amz-user-agent",
-    "x-amz-content-sha256",
-    "versionid",
-    "uploadid",
-    "partnumber",
-]
-
 IGNORED_SIGV4_HEADERS = [
-    "x-id",
-    "x-amz-user-agent",
     "x-amz-content-sha256",
 ]
 
