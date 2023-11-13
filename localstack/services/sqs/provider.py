@@ -1121,7 +1121,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             if config.SQS_DELAY_PURGE_RETRY:
                 if queue.purge_timestamp and (queue.purge_timestamp + 60) > time.time():
                     raise PurgeQueueInProgress(
-                        f"Only one PurgeQueue operation on {queue.name} is allowed every 60 seconds."
+                        f"Only one PurgeQueue operation on {queue.name} is allowed every 60 seconds.",
+                        status_code=403,
                     )
             queue.purge_timestamp = time.time()
             queue.clear()
