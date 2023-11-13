@@ -3310,8 +3310,10 @@ class TestSNSPlatformEndpoint:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="Test asserts wrong behaviour")
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
-    # Error responses are from reported https://github.com/spulec/moto/issues/2333
+    # TODO: AWS validate this test
+    # See https://github.com/getmoto/moto/pull/6953 where Moto updated errors.
     def test_create_platform_endpoint_check_idempotency(
         self, sns_create_platform_application, aws_client
     ):
@@ -3321,6 +3323,10 @@ class TestSNSPlatformEndpoint:
             Attributes={"PlatformCredential": "123"},
         )
         token = "test1"
+        # TODO: As per AWS docs:
+        # > The CreatePlatformEndpoint action is idempotent, so if the requester already owns an endpoint
+        # > with the same device token and attributes, that endpoint's ARN is returned without creating a new endpoint.
+        # The 'Token' and 'Attributes' are critical to idempotent behaviour.
         kwargs_list = [
             {"Token": token, "CustomUserData": "test-data"},
             {"Token": token, "CustomUserData": "test-data"},

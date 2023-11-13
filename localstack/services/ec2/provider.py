@@ -15,7 +15,6 @@ from moto.ec2.models import (
 )
 from moto.ec2.models.launch_templates import LaunchTemplate as MotoLaunchTemplate
 from moto.ec2.models.subnets import Subnet
-from moto.ec2.models.vpcs import VPCEndPoint
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
@@ -496,8 +495,3 @@ def delete_transit_gateway_vpc_attachment(fn, self, transit_gateway_attachment_i
     transit_gateway_attachment = self.transit_gateway_attachments.get(transit_gateway_attachment_id)
     transit_gateway_attachment.state = "deleted"
     return transit_gateway_attachment
-
-
-# fix a bug in upstream moto where a space is encoded in the "Statement" key - TODO remove once fixed upstream
-if "Statement " in VPCEndPoint.DEFAULT_POLICY:
-    VPCEndPoint.DEFAULT_POLICY["Statement"] = VPCEndPoint.DEFAULT_POLICY.pop("Statement ")
