@@ -1276,7 +1276,9 @@ def get_protocol():
     return "https" if USE_SSL else "http"
 
 
-def external_service_url(host=None, port=None, protocol=None) -> str:
+def external_service_url(
+    host: Optional[str] = None, port: Optional[int] = None, protocol: Optional[str] = None
+) -> str:
     """Returns a service URL to an external client used outside where LocalStack runs.
     The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.
     `host` can be used to overwrite the default for subdomains.
@@ -1287,7 +1289,9 @@ def external_service_url(host=None, port=None, protocol=None) -> str:
     return f"{protocol}://{host}:{port}"
 
 
-def internal_service_url(host=None, port=None, protocol=None) -> str:
+def internal_service_url(
+    host: Optional[str] = None, port: Optional[int] = None, protocol: Optional[str] = None
+) -> str:
     """Returns a service URL for internal use within where LocalStack runs.
     Cannot be customized through LOCALSTACK_HOST because we assume LocalStack runs on the same host (i.e., localhost).
     """
@@ -1339,7 +1343,7 @@ def get_edge_url(localstack_hostname=None, protocol=None):
     return internal_service_url(host=localstack_hostname, protocol=protocol)
 
 
-def gateway_listen_ports_info():
+def gateway_listen_ports_info() -> str:
     """Example: http port [4566,443]"""
     gateway_listen_ports = [gw_listen.port for gw_listen in GATEWAY_LISTEN]
     return f"{get_protocol()} port {gateway_listen_ports}"
