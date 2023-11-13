@@ -30,7 +30,6 @@ from localstack.aws.api.sqs import (
     EmptyBatchRequest,
     GetQueueAttributesResult,
     GetQueueUrlResult,
-    Integer,
     InvalidAttributeName,
     InvalidBatchEntryId,
     InvalidMessageContents,
@@ -42,6 +41,7 @@ from localstack.aws.api.sqs import (
     MessageBodyAttributeMap,
     MessageBodySystemAttributeMap,
     MessageSystemAttributeName,
+    NullableInteger,
     PurgeQueueInProgress,
     QueueAttributeMap,
     QueueAttributeName,
@@ -762,7 +762,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         context: RequestContext,
         queue_url: String,
         receipt_handle: String,
-        visibility_timeout: Integer,
+        visibility_timeout: NullableInteger,
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
         queue.update_visibility_timeout(receipt_handle, visibility_timeout)
@@ -859,7 +859,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         context: RequestContext,
         queue_url: String,
         message_body: String,
-        delay_seconds: Integer = None,
+        delay_seconds: NullableInteger = None,
         message_attributes: MessageBodyAttributeMap = None,
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
@@ -955,7 +955,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue: SqsQueue,
         context: RequestContext,
         message_body: String,
-        delay_seconds: Integer = None,
+        delay_seconds: NullableInteger = None,
         message_attributes: MessageBodyAttributeMap = None,
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
@@ -993,9 +993,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue_url: String,
         attribute_names: AttributeNameList = None,
         message_attribute_names: MessageAttributeNameList = None,
-        max_number_of_messages: Integer = None,
-        visibility_timeout: Integer = None,
-        wait_time_seconds: Integer = None,
+        max_number_of_messages: NullableInteger = None,
+        visibility_timeout: NullableInteger = None,
+        wait_time_seconds: NullableInteger = None,
         receive_request_attempt_id: String = None,
     ) -> ReceiveMessageResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
