@@ -246,7 +246,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
     role_arn = args[4]
 
     log_group = self.groups.get(log_group_name)
-    log_group_arn = arns.log_group_arn(log_group, self.account_id, self.region_name)
+    log_group_arn = arns.log_group_arn(log_group_name, self.account_id, self.region_name)
 
     if not log_group:
         raise ResourceNotFoundException("The specified log group does not exist.")
