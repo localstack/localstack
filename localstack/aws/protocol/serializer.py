@@ -1578,7 +1578,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
             root.tail = "\n"
 
 
-class SqsResponseSerializer(QueryResponseSerializer):
+class SqsQueryResponseSerializer(QueryResponseSerializer):
     """
     Unfortunately, SQS uses a rare interpretation of the XML protocol: It uses HTML entities within XML tag text nodes.
     For example:
@@ -1621,6 +1621,28 @@ class SqsResponseSerializer(QueryResponseSerializer):
         )
 
 
+class SqsResponseSerializer(JSONResponseSerializer):
+    def _serialize_error(
+        self,
+        error: ServiceException,
+        response: HttpResponse,
+        shape: StructureShape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        """
+        Overrides _serialize_error as SQS has a special header for query API legacy reason: 'x-amzn-query-error',
+        which contatained the exception code as well as a Sender field.
+        Ex: 'x-amzn-query-error': 'InvalidParameterValue;Sender'
+        """
+        # TODO: for body["__type"] = error.code, it seems AWS differs from what we send for SQS
+        # AWS: "com.amazon.coral.service#InvalidParameterValueException"
+        # LocalStack: "InvalidParameterValue"
+        super()._serialize_error(error, response, shape, operation_model, mime_type, request_id)
+        response.headers["x-amzn-query-error"] = f"{error.code};Sender"
+
+
 def gen_amzn_requestid():
     """
     Generate generic AWS request ID.
@@ -1648,7 +1670,11 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
     # specific services as close as possible.
     # Therefore, the service-specific serializer implementations (basically the implicit / informally more specific
     # protocol implementation) has precedence over the more general protocol-specific serializers.
-    service_specific_serializers = {"sqs": SqsResponseSerializer, "s3": S3ResponseSerializer}
+    service_specific_serializers = {
+        "sqs-query": SqsQueryResponseSerializer,
+        "sqs": SqsResponseSerializer,
+        "s3": S3ResponseSerializer,
+    }
     protocol_specific_serializers = {
         "query": QueryResponseSerializer,
         "json": JSONResponseSerializer,

@@ -225,9 +225,15 @@ class SqsQueue:
 
     def default_attributes(self) -> QueueAttributeMap:
         return {
-            QueueAttributeName.ApproximateNumberOfMessages: lambda: self.approx_number_of_messages,
-            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: self.approx_number_of_messages_not_visible,
-            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: self.approx_number_of_messages_delayed,
+            QueueAttributeName.ApproximateNumberOfMessages: lambda: str(
+                self.approx_number_of_messages
+            ),
+            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: str(
+                self.approx_number_of_messages_not_visible
+            ),
+            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: str(
+                self.approx_number_of_messages_delayed
+            ),
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),

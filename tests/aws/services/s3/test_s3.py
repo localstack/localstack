@@ -508,32 +508,39 @@ class TestS3:
         snapshot.match("del-object-special-char", resp)
 
     @markers.aws.validated
-    def test_url_encoded_key(self, s3_bucket, aws_client, snapshot):
+    @pytest.mark.parametrize(
+        "use_virtual_address",
+        [True, False],
+    )
+    def test_url_encoded_key(self, s3_bucket, aws_client_factory, snapshot, use_virtual_address):
         """Boto adds a trailing slash always?"""
         snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        s3_client = aws_client_factory(
+            config=Config(s3=s3_config),
+            endpoint_url=_endpoint_url(),
+        ).s3
+
         key = "test@key/"
-        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test-non-encoded")
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"test-non-encoded")
         encoded_key = "test%40key/"
-        aws_client.s3.put_object(Bucket=s3_bucket, Key=encoded_key, Body=b"test-encoded")
+        s3_client.put_object(Bucket=s3_bucket, Key=encoded_key, Body=b"test-encoded")
         encoded_key_no_trailing = "test%40key"
-        aws_client.s3.put_object(
+        s3_client.put_object(
             Bucket=s3_bucket, Key=encoded_key_no_trailing, Body=b"test-encoded-no-trailing"
         )
         # assert that one did not override the over, and that both key are different
+        assert s3_client.get_object(Bucket=s3_bucket, Key=key)["Body"].read() == b"test-non-encoded"
         assert (
-            aws_client.s3.get_object(Bucket=s3_bucket, Key=key)["Body"].read()
-            == b"test-non-encoded"
-        )
-        assert (
-            aws_client.s3.get_object(Bucket=s3_bucket, Key=encoded_key)["Body"].read()
+            s3_client.get_object(Bucket=s3_bucket, Key=encoded_key)["Body"].read()
             == b"test-encoded"
         )
         assert (
-            aws_client.s3.get_object(Bucket=s3_bucket, Key=encoded_key_no_trailing)["Body"].read()
+            s3_client.get_object(Bucket=s3_bucket, Key=encoded_key_no_trailing)["Body"].read()
             == b"test-encoded-no-trailing"
         )
 
-        resp = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        resp = s3_client.list_objects_v2(Bucket=s3_bucket)
         snapshot.match("list-object-encoded-char", resp)
 
     @markers.aws.validated

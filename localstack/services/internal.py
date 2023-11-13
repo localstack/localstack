@@ -297,6 +297,11 @@ class InitScriptsStageResource:
 
 
 class ConfigResource:
+    def on_get(self, request):
+        from localstack.utils import diagnose
+
+        return call_safe(diagnose.get_localstack_config)
+
     def on_post(self, request: Request):
         data = request.get_json(force=True)
         variable = data.get("variable", "")
@@ -335,6 +340,10 @@ class LocalstackResources(Router):
         self.add(Resource("/_localstack/cloudformation/deploy", CloudFormationUi()))
 
         if config.ENABLE_CONFIG_UPDATES:
+            LOG.warning(
+                "Enabling config endpoint, "
+                "please be aware that this can expose sensitive information via your network."
+            )
             self.add(Resource("/_localstack/config", ConfigResource()))
 
         if config.DEBUG:

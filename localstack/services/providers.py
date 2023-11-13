@@ -1,6 +1,9 @@
 from localstack.aws.forwarder import HttpFallbackDispatcher
 from localstack.services.moto import MotoFallbackDispatcher
-from localstack.services.plugins import Service, aws_provider
+from localstack.services.plugins import (
+    Service,
+    aws_provider,
+)
 
 
 @aws_provider()
@@ -168,14 +171,6 @@ def opensearch():
 
 
 @aws_provider()
-def ram():
-    from localstack.services.ram.provider import RamProvider
-
-    provider = RamProvider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
-
-
-@aws_provider()
 def redshift():
     from localstack.services.redshift.provider import RedshiftProvider
 
@@ -287,16 +282,36 @@ def sns():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+# TODO fix this ugly hack to reuse a single provider instance
+sqs_provider = None
+
+
+def get_sqs_provider():
+    global sqs_provider
+
+    if not sqs_provider:
+        from localstack.services import edge
+        from localstack.services.sqs import query_api
+        from localstack.services.sqs.provider import SqsProvider
+
+        query_api.register(edge.ROUTER)
+
+        sqs_provider = SqsProvider()
+    return sqs_provider
+
+
 @aws_provider()
 def sqs():
-    from localstack.services import edge
-    from localstack.services.sqs import query_api
-    from localstack.services.sqs.provider import SqsProvider
+    return Service.for_provider(get_sqs_provider())
 
-    query_api.register(edge.ROUTER)
 
-    provider = SqsProvider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+@aws_provider("sqs-query")
+def sqs_query():
+    sqs_query_service = Service.for_provider(
+        get_sqs_provider(),
+        custom_service_name="sqs-query",
+    )
+    return sqs_query_service
 
 
 @aws_provider()
