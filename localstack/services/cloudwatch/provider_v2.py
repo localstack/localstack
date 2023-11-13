@@ -68,6 +68,7 @@ from localstack.services.cloudwatch.models import (
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import arns
+from localstack.utils.collections import PaginatedList
 from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
 from localstack.utils.threads import start_worker_thread
@@ -187,6 +188,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         label_options: LabelOptions = None,
     ) -> GetMetricDataOutput:
         results: List[MetricDataResults] = []
+        limit = max_datapoints or 100_800
+        messages: MetricDataResultMessages = []
+        nxt = None
         for query in metric_data_queries:
             query_result = self.cloudwatch_database.get_metric_data_stat(
                 account_id=context.account_id,
@@ -196,22 +200,18 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 end_time=end_time,
                 scan_by=scan_by,
             )
-            results.append(query_result)
+            if query_result.get("messages"):
+                messages.extend(query_result.get("messages"))
 
-        # TODO pagination
-        # from localstack.utils.collections import PaginatedList
-        #
-        # aliases_list = PaginatedList(results)
-        # limit = max_datapoints or 100_800
-        # page, nxt = aliases_list.get_page(
-        #     lambda metric_result: metric_result.get("Id"),
-        #     next_token=next_token,
-        #     page_size=limit,
-        # )
-        #
-        nxt: NextToken = None
-        # TODO might contain error messages if data could not be retrieved, needs testing
-        messages: MetricDataResultMessages = None  # TODO
+            # Paginate
+            aliases_list = PaginatedList(query_result.get("datapoints", {}).items())
+            page, nxt = aliases_list.get_page(
+                lambda metric_result: metric_result.get("Id"),
+                next_token=next_token,
+                page_size=limit,
+            )
+            query_result["datapoints"] = dict(page)
+            results.append(query_result)
 
         formatted_results = []
         for result in results:
