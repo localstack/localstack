@@ -3,17 +3,18 @@ import os
 
 # import requests
 import boto3
-
-# CUSTOM_LOCALSTACK_HOSTNAME = os.environ["CUSTOM_LOCALSTACK_HOSTNAME"]
-DOMAIN_ENDPOINT = os.environ["DOMAIN_ENDPOINT"]
-RESULTS_BUCKET = os.environ["RESULTS_BUCKET"]
-RESULTS_KEY = os.environ["RESULTS_KEY"]
-# assert CUSTOM_LOCALSTACK_HOSTNAME in DOMAIN_ENDPOINT
+import requests
 
 client = boto3.client("s3", endpoint_url=os.environ["AWS_ENDPOINT_URL"])
 
 
 def handler(event, context):
+    custom_localstack_hostname = os.environ["CUSTOM_LOCALSTACK_HOSTNAME"]
+    domain_endpoint = os.environ["DOMAIN_ENDPOINT"]
+    results_bucket = os.environ["RESULTS_BUCKET"]
+    results_key = os.environ["RESULTS_KEY"]
+    assert custom_localstack_hostname in domain_endpoint
+
     print(f"Event handler function {context.function_name} invoked")
 
     for record in event["Records"]:
@@ -22,16 +23,19 @@ def handler(event, context):
         print(f"Got message: {message}")
 
         # wait for cluster ready
-        # r = requests.get(
-        #     f"http://{DOMAIN_ENDPOINT}/_cluster/health?wait_for_status=yellow,timeout=50s"
-        # )
-        # r.raise_for_status()
+        try:
+            r = requests.get(
+                f"http://{domain_endpoint}/_cluster/health?wait_for_status=yellow,timeout=50s",
+            )
+            r.raise_for_status()
+        except Exception as e:
+            print(f"Error fetching cluster health status: {e!r}")
 
-        # assert CUSTOM_LOCALSTACK_HOSTNAME in body["UnsubscribeURL"]
+        assert custom_localstack_hostname in body["UnsubscribeURL"]
 
         # write the result to s3
         client.put_object(
-            Bucket=RESULTS_BUCKET, Key=RESULTS_KEY, Body=message["message"].encode("utf8")
+            Bucket=results_bucket, Key=results_key, Body=message["message"].encode("utf8")
         )
 
         # just take the first record for now

@@ -7,6 +7,7 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
+from localstack import constants
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.config import in_docker
 from localstack.testing.pytest import markers
@@ -121,7 +122,8 @@ class TestLocalStackHost:
         aws_client = aws_client_factory(endpoint_url=f"http://localhost:{port}")
 
         infra: InfraProvisioner = infrastructure_setup(
-            namespace="LocalStackHostBootstrap", port=port
+            namespace="LocalStackHostBootstrap",
+            port=port,
         )
 
         stack = cdk.Stack(infra.cdk_app, STACK_NAME)
@@ -131,11 +133,14 @@ class TestLocalStackHost:
         cdk.CfnOutput(stack, "ResultsBucketName", value=results_bucket.bucket_name)
 
         # OpenSearch domain
+        domain_name = f"domain-{short_uid()}"
         domain = cdk.aws_opensearchservice.Domain(
             stack,
             "Domain",
+            domain_name=domain_name,
             version=cdk.aws_opensearchservice.EngineVersion.OPENSEARCH_2_3,
         )
+        cdk.CfnOutput(stack, "DomainEndpoint", value=domain.domain_endpoint)
 
         def create_lambda_function(
             stack: cdk.Stack,
@@ -161,7 +166,7 @@ class TestLocalStackHost:
             )
 
             given_environment = environment or {}
-            base_environment = {"CUSTOM_LOCALSTACK_HOST": random_localstack_host}
+            base_environment = {"CUSTOM_LOCALSTACK_HOSTNAME": random_localstack_host}
             full_environment = {**base_environment, **given_environment}
             return cdk.aws_lambda.Function(
                 stack,
@@ -228,11 +233,20 @@ class TestLocalStackHost:
             * Broadcasts message onto SNS topic
             * Lambda subscribes via SQS and inserts message into OpenSearch
         """
+        # check cluster health endpoint
+
         aws_client = aws_client_factory(
             endpoint_url=f"http://localhost:{port}",
         )
 
         stack_outputs = infrastructure.get_stack_outputs(STACK_NAME)
+        assert random_localstack_host in stack_outputs["DomainEndpoint"]
+        health_url = stack_outputs["DomainEndpoint"].replace(
+            random_localstack_host, constants.LOCALHOST_HOSTNAME
+        )
+        r = requests.get(f"http://{health_url}/_cluster/health")
+        r.raise_for_status()
+
         api_url = stack_outputs["ApiUrl"].rstrip("/")
 
         url = f"{api_url}/upload"

@@ -18,6 +18,7 @@
           "EnforceHTTPS": false,
           "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07"
         },
+        "DomainName": "domain-65913c6b",
         "EBSOptions": {
           "EBSEnabled": true,
           "VolumeSize": 10,
@@ -136,7 +137,7 @@
         },
         "Environment": {
           "Variables": {
-            "CUSTOM_LOCALSTACK_HOST": "1796bffb",
+            "CUSTOM_LOCALSTACK_HOSTNAME": "5c00fc80",
             "TOPIC_ARN": {
               "Ref": "TopicBFC7AF6E"
             }
@@ -443,7 +444,7 @@
         },
         "Environment": {
           "Variables": {
-            "CUSTOM_LOCALSTACK_HOST": "1796bffb",
+            "CUSTOM_LOCALSTACK_HOSTNAME": "5c00fc80",
             "DOMAIN_ENDPOINT": {
               "Fn::GetAtt": [
                 "Domain66AC69E0",
@@ -489,6 +490,14 @@
     "ResultsBucketName": {
       "Value": {
         "Ref": "ResultsBucketA95A2103"
+      }
+    },
+    "DomainEndpoint": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Domain66AC69E0",
+          "DomainEndpoint"
+        ]
       }
     },
     "RestApiEndpoint0551178A": {

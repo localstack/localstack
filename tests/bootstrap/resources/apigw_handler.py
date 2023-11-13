@@ -10,17 +10,16 @@ if TYPE_CHECKING:
 
 client: "SNSClient" = boto3.client("sns", endpoint_url=os.environ["AWS_ENDPOINT_URL"])
 
-TOPIC_ARN = os.environ["TOPIC_ARN"]
-
 
 def handler(event, context):
     print(f"API Gateway handler {context.function_name} invoked ({event=})")
+    topic_arn = os.environ["TOPIC_ARN"]
 
     message = json.loads(event["body"])
 
     try:
         client.publish(
-            TopicArn=TOPIC_ARN,
+            TopicArn=topic_arn,
             Message=json.dumps(message),
         )
         print("Publish successful")
