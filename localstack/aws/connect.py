@@ -18,6 +18,7 @@ from botocore.config import Config
 from botocore.waiter import Waiter
 
 from localstack import config as localstack_config
+from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     INTERNAL_AWS_ACCESS_KEY_ID,
@@ -240,6 +241,11 @@ class ClientFactory(ABC):
         self._verify = verify
         self._config: Config = config or Config(max_pool_connections=MAX_POOL_CONNECTIONS)
         self._session: Session = session or Session()
+
+        # make sure we consider our custom data paths for legacy specs (like SQS query protocol)
+        if LOCALSTACK_BUILTIN_DATA_PATH not in self._session._loader.search_paths:
+            self._session._loader.search_paths.append(LOCALSTACK_BUILTIN_DATA_PATH)
+
         self._create_client_lock = threading.RLock()
 
     def __call__(
@@ -414,13 +420,11 @@ class ClientFactory(ABC):
         """
         Return the AWS region name from following sources, in order of availability.
         - LocalStack request context
-        - LocalStack default region
         - Boto session
+        - us-east-1
         """
         return (
-            get_region_from_request_context()
-            or self._get_session_region()
-            or localstack_config.DEFAULT_REGION
+            get_region_from_request_context() or self._get_session_region() or AWS_REGION_US_EAST_1
         )
 
 

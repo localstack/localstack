@@ -68,8 +68,7 @@ import functools
 import re
 from abc import ABC
 from email.utils import parsedate_to_datetime
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
-from typing.io import IO
+from typing import IO, Any, Dict, List, Mapping, Optional, Tuple, Union
 from urllib.parse import unquote
 from xml.etree import ElementTree as ETree
 
@@ -88,7 +87,7 @@ from werkzeug.exceptions import BadRequest, NotFound
 
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
-from localstack.config import LEGACY_S3_PROVIDER, NATIVE_S3_PROVIDER
+from localstack.config import LEGACY_V2_S3_PROVIDER
 
 
 def _text_content(func):
@@ -992,18 +991,12 @@ class S3RequestParser(RestXMLRequestParser):
                 # remove the bucket name from the host part of the request
                 new_host = self.old_host.removeprefix(f"{bucket_name}.")
 
-                # split the url and put the bucket name at the front
-                path_parts = self.old_path.split("/")
-                path_parts = [bucket_name] + path_parts
-                path_parts = [part for part in path_parts if part]
-                new_path = "/" + "/".join(path_parts) or "/"
+                # put the bucket name at the front
+                new_path = "/" + bucket_name + self.old_path or "/"
 
                 # create a new RAW_URI for the WSGI environment, this is necessary because of our `get_raw_path` utility
                 if self.old_raw_uri:
-                    path_parts = self.old_raw_uri.split("/")
-                    path_parts = [bucket_name] + path_parts
-                    path_parts = [part for part in path_parts if part]
-                    new_raw_uri = "/" + "/".join(path_parts) or "/"
+                    new_raw_uri = "/" + bucket_name + self.old_raw_uri or "/"
                     if qs := self.request.query_string:
                         new_raw_uri += "?" + qs.decode("utf-8")
                 else:
@@ -1050,22 +1043,13 @@ class S3RequestParser(RestXMLRequestParser):
 
         @staticmethod
         def _is_vhost_address_get_bucket(request: HttpRequest) -> str | None:
-            if LEGACY_S3_PROVIDER:
-                from localstack.services.s3.legacy.s3_utils import (
-                    extract_bucket_name,
-                    uses_host_addressing,
-                )
+            from localstack.services.s3.utils import uses_host_addressing
 
-                if uses_host_addressing(request.headers):
-                    return extract_bucket_name(request.headers, request.path)
-            else:
-                from localstack.services.s3.utils import uses_host_addressing
-
-                return uses_host_addressing(request.headers)
+            return uses_host_addressing(request.headers)
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        if LEGACY_S3_PROVIDER or NATIVE_S3_PROVIDER:
+        if not LEGACY_V2_S3_PROVIDER:
             """Handle virtual-host-addressing for S3."""
             with self.VirtualHostRewriter(request):
                 return super().parse(request)
@@ -1093,7 +1077,7 @@ class S3RequestParser(RestXMLRequestParser):
         return super()._parse_shape(request, shape, node, uri_params)
 
 
-class SQSRequestParser(QueryRequestParser):
+class SQSQueryRequestParser(QueryRequestParser):
     def _get_serialized_name(self, shape: Shape, default_name: str, node: dict) -> str:
         """
         SQS allows using both - the proper serialized name of a map as well as the member name - as name for maps.
@@ -1141,7 +1125,7 @@ def create_parser(service: ServiceModel) -> RequestParser:
     # informally more specific protocol implementation) has precedence over the more general protocol-specific parsers.
     service_specific_parsers = {
         "s3": S3RequestParser,
-        "sqs": SQSRequestParser,
+        "sqs-query": SQSQueryRequestParser,
     }
     protocol_specific_parsers = {
         "query": QueryRequestParser,

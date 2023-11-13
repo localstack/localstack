@@ -33,7 +33,6 @@ from localstack.aws.connect import connect_to
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_EDGE_URL,
-    LOCALHOST_HOSTNAME,
     PATH_USER_REQUEST,
 )
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -166,7 +165,7 @@ class OpenAPISpecificationResolver:
         # cache which maps known refs to part of the document
         self._cache = {}
         self._refpaths = ["#"]
-        host_definition = localstack_host(use_localhost_cloud=True)
+        host_definition = localstack_host()
         self._base_url = f"{config.get_protocol()}://apigateway.{host_definition.host_and_port()}/restapis/{rest_api_id}/models/"
 
     def _is_ref(self, item) -> bool:
@@ -618,8 +617,8 @@ def host_based_url(rest_api_id: str, path: str, stage_name: str = None):
 
 
 def get_execute_api_endpoint(api_id: str, protocol: str = "") -> str:
-    port = config.get_edge_port_http()
-    return f"{protocol}{api_id}.execute-api.{LOCALHOST_HOSTNAME}:{port}"
+    host = localstack_host()
+    return f"{protocol}{api_id}.execute-api.{host.host_and_port()}"
 
 
 def tokenize_path(path):
@@ -1574,4 +1573,5 @@ def get_regional_domain_name(domain_name: str) -> str:
     In LocalStack, we're returning this format: "d-<domain_hash>.execute-api.localhost.localstack.cloud"
     """
     domain_name_hash = get_domain_name_hash(domain_name)
-    return f"d-{domain_name_hash}.execute-api.{LOCALHOST_HOSTNAME}"
+    host = localstack_host().host
+    return f"d-{domain_name_hash}.execute-api.{host}"

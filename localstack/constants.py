@@ -135,11 +135,8 @@ ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack
 # environment variable to indicates this process should run the localstack infrastructure
 LOCALSTACK_INFRA_PROCESS = "LOCALSTACK_INFRA_PROCESS"
 
-# default AWS region us-east-1
+# AWS region us-east-1
 AWS_REGION_US_EAST_1 = "us-east-1"
-
-# default lambda registry
-DEFAULT_LAMBDA_CONTAINER_REGISTRY = "lambci/lambda"
 
 # environment variable to override max pool connections
 try:
@@ -183,10 +180,6 @@ OFFICIAL_IMAGES = [
     "localstack/localstack",
     "localstack/localstack-pro",
 ]
-
-# s3 virtual host name
-S3_VIRTUAL_HOSTNAME = "s3.%s" % LOCALHOST_HOSTNAME
-S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALHOST_HOSTNAME
 
 # port for debug py
 DEFAULT_DEVELOP_PORT = 5678

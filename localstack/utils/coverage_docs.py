@@ -10,6 +10,10 @@ def get_coverage_link_for_service(service_name: str, action_name: str) -> str:
 
     available_services = SERVICE_PLUGINS.list_available()
 
+    # TODO remove this once the sqs-query API has been phased out
+    if service_name == "sqs-query":
+        service_name = "sqs"
+
     if service_name not in available_services:
         return MESSAGE_TEMPLATE % ("", service_name, "")
 

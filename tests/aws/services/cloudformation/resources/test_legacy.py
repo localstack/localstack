@@ -7,10 +7,8 @@ import yaml
 from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudformation.engine import template_preparer
-from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.common import load_file, short_uid
@@ -84,7 +82,7 @@ Resources:
             - 'MessageFooHandler'
             - !FindInMap [ AccountInfo, !Ref "AWS::AccountId", ENV ]
 """
-    % get_aws_account_id()
+    % TEST_AWS_ACCOUNT_ID
 )
 
 TEST_TEMPLATE_13 = """
@@ -198,7 +196,7 @@ Resources:
     Properties:
       BucketName: cf-prd-{id}
 """
-    % get_aws_account_id()
+    % TEST_AWS_ACCOUNT_ID
 )
 
 TEST_TEMPLATE_20 = """
@@ -377,7 +375,7 @@ class TestCloudFormation:
 
     # TODO: refactor
     @pytest.mark.skipif(
-        condition=is_new_provider(), reason="fails/times out. Check Lambda resource cleanup."
+        reason="fails/times out. Check Lambda resource cleanup for new provider (was tested for old provider)."
     )
     @markers.aws.unknown
     def test_update_lambda_function(self, s3_create_bucket, deploy_cfn_template, aws_client):

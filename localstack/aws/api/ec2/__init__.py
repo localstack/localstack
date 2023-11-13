@@ -50,6 +50,7 @@ DefaultNetworkCardIndex = int
 DefaultingDhcpOptionsId = str
 DescribeAddressTransfersMaxResults = int
 DescribeByoipCidrsMaxResults = int
+DescribeCapacityBlockOfferingsMaxResults = int
 DescribeCapacityReservationFleetsMaxResults = int
 DescribeCapacityReservationsMaxResults = int
 DescribeClassicLinkInstancesMaxResults = int
@@ -595,11 +596,19 @@ class CapacityReservationState(str):
     cancelled = "cancelled"
     pending = "pending"
     failed = "failed"
+    scheduled = "scheduled"
+    payment_pending = "payment-pending"
+    payment_failed = "payment-failed"
 
 
 class CapacityReservationTenancy(str):
     default = "default"
     dedicated = "dedicated"
+
+
+class CapacityReservationType(str):
+    default = "default"
+    capacity_block = "capacity-block"
 
 
 class CarrierGatewayState(str):
@@ -710,6 +719,7 @@ class DefaultRouteTablePropagationValue(str):
 class DefaultTargetCapacityType(str):
     spot = "spot"
     on_demand = "on-demand"
+    capacity_block = "capacity-block"
 
 
 class DeleteFleetErrorCode(str):
@@ -1126,6 +1136,7 @@ class InstanceLifecycle(str):
 class InstanceLifecycleType(str):
     spot = "spot"
     scheduled = "scheduled"
+    capacity_block = "capacity-block"
 
 
 class InstanceMatchCriteria(str):
@@ -2229,6 +2240,7 @@ class LogDestinationType(str):
 
 class MarketType(str):
     spot = "spot"
+    capacity_block = "capacity-block"
 
 
 class MembershipType(str):
@@ -3019,6 +3031,7 @@ class UnsuccessfulInstanceCreditSpecificationErrorCode(str):
 class UsageClassType(str):
     spot = "spot"
     on_demand = "on-demand"
+    capacity_block = "capacity-block"
 
 
 class UserTrustProviderType(str):
@@ -5006,6 +5019,22 @@ class CapacityAllocation(TypedDict, total=False):
 CapacityAllocations = List[CapacityAllocation]
 
 
+class CapacityBlockOffering(TypedDict, total=False):
+    CapacityBlockOfferingId: Optional[OfferingId]
+    InstanceType: Optional[String]
+    AvailabilityZone: Optional[String]
+    InstanceCount: Optional[Integer]
+    StartDate: Optional[MillisecondDateTime]
+    EndDate: Optional[MillisecondDateTime]
+    CapacityBlockDurationHours: Optional[Integer]
+    UpfrontFee: Optional[String]
+    CurrencyCode: Optional[String]
+    Tenancy: Optional[CapacityReservationTenancy]
+
+
+CapacityBlockOfferingSet = List[CapacityBlockOffering]
+
+
 class CapacityReservation(TypedDict, total=False):
     CapacityReservationId: Optional[String]
     OwnerId: Optional[String]
@@ -5030,6 +5059,7 @@ class CapacityReservation(TypedDict, total=False):
     CapacityReservationFleetId: Optional[String]
     PlacementGroupArn: Optional[PlacementGroupArn]
     CapacityAllocations: Optional[CapacityAllocations]
+    ReservationType: Optional[CapacityReservationType]
 
 
 class FleetCapacityReservation(TypedDict, total=False):
@@ -9767,6 +9797,22 @@ class DescribeByoipCidrsRequest(ServiceRequest):
 
 class DescribeByoipCidrsResult(TypedDict, total=False):
     ByoipCidrs: Optional[ByoipCidrSet]
+    NextToken: Optional[String]
+
+
+class DescribeCapacityBlockOfferingsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    InstanceType: String
+    InstanceCount: Integer
+    StartDateRange: Optional[MillisecondDateTime]
+    EndDateRange: Optional[MillisecondDateTime]
+    CapacityDurationHours: Integer
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeCapacityBlockOfferingsMaxResults]
+
+
+class DescribeCapacityBlockOfferingsResult(TypedDict, total=False):
+    CapacityBlockOfferings: Optional[CapacityBlockOfferingSet]
     NextToken: Optional[String]
 
 
@@ -16703,6 +16749,17 @@ class ProvisionPublicIpv4PoolCidrResult(TypedDict, total=False):
     PoolAddressRange: Optional[PublicIpv4PoolRange]
 
 
+class PurchaseCapacityBlockRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    TagSpecifications: Optional[TagSpecificationList]
+    CapacityBlockOfferingId: OfferingId
+    InstancePlatform: CapacityReservationInstancePlatform
+
+
+class PurchaseCapacityBlockResult(TypedDict, total=False):
+    CapacityReservation: Optional[CapacityReservation]
+
+
 class PurchaseHostReservationRequest(ServiceRequest):
     ClientToken: Optional[String]
     CurrencyCode: Optional[CurrencyCodeValues]
@@ -20046,6 +20103,21 @@ class Ec2Api:
         dry_run: Boolean = None,
         next_token: NextToken = None,
     ) -> DescribeByoipCidrsResult:
+        raise NotImplementedError
+
+    @handler("DescribeCapacityBlockOfferings")
+    def describe_capacity_block_offerings(
+        self,
+        context: RequestContext,
+        instance_type: String,
+        instance_count: Integer,
+        capacity_duration_hours: Integer,
+        dry_run: Boolean = None,
+        start_date_range: MillisecondDateTime = None,
+        end_date_range: MillisecondDateTime = None,
+        next_token: String = None,
+        max_results: DescribeCapacityBlockOfferingsMaxResults = None,
+    ) -> DescribeCapacityBlockOfferingsResult:
         raise NotImplementedError
 
     @handler("DescribeCapacityReservationFleets")
@@ -23563,6 +23635,17 @@ class Ec2Api:
         netmask_length: Integer,
         dry_run: Boolean = None,
     ) -> ProvisionPublicIpv4PoolCidrResult:
+        raise NotImplementedError
+
+    @handler("PurchaseCapacityBlock")
+    def purchase_capacity_block(
+        self,
+        context: RequestContext,
+        capacity_block_offering_id: OfferingId,
+        instance_platform: CapacityReservationInstancePlatform,
+        dry_run: Boolean = None,
+        tag_specifications: TagSpecificationList = None,
+    ) -> PurchaseCapacityBlockResult:
         raise NotImplementedError
 
     @handler("PurchaseHostReservation")

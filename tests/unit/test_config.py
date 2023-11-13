@@ -59,13 +59,18 @@ class TestProviderConfig:
         assert provider_config.get_provider("kinesis") == default_value
 
 
+def ip() -> str:
+    if config.is_in_docker:
+        return "0.0.0.0"
+    else:
+        return "127.0.0.1"
+
+
 class TestEdgeVariablesDerivedCorrectly:
     """
     Post-v2 we are deriving
 
     * EDGE_PORT
-    * EDGE_PORT_HTTP
-    * EDGE_BIND_HOST
 
     from GATEWAY_LISTEN. We are also ensuring the configuration behaves
     well with LOCALSTACK_HOST, i.e. if LOCALSTACK_HOST is supplied and
@@ -77,115 +82,76 @@ class TestEdgeVariablesDerivedCorrectly:
     function that populates the configuration variables.
     """
 
-    @pytest.fixture
-    def default_ip(self):
-        if config.is_in_docker:
-            return "0.0.0.0"
-        else:
-            return "127.0.0.1"
-
-    def test_defaults(self, default_ip):
+    # This parameterised test forms a table of scenarios we need to cover. Each
+    # input variable (gateway_listen, localstack_host) has four unique
+    # combinations of inputs:
+    # * default
+    # * host only
+    # * ip only
+    # * host and ip
+    # and there are two variables so 16 total tests
+    @pytest.mark.parametrize(
+        [
+            "gateway_listen",
+            "localstack_host",
+            "expected_gateway_listen",
+            "expected_localstack_host",
+            "expected_edge_port",
+        ],
+        [
+            ###
+            (None, None, [f"{ip()}:4566"], "localhost.localstack.cloud:4566", 4566),
+            ("1.1.1.1", None, ["1.1.1.1:4566"], "localhost.localstack.cloud:4566", 4566),
+            (":5555", None, [f"{ip()}:5555"], "localhost.localstack.cloud:5555", 5555),
+            ("1.1.1.1:5555", None, ["1.1.1.1:5555"], "localhost.localstack.cloud:5555", 5555),
+            ###
+            (None, "foo.bar", [f"{ip()}:4566"], "foo.bar:4566", 4566),
+            ("1.1.1.1", "foo.bar", ["1.1.1.1:4566"], "foo.bar:4566", 4566),
+            (":5555", "foo.bar", [f"{ip()}:5555"], "foo.bar:5555", 5555),
+            ("1.1.1.1:5555", "foo.bar", ["1.1.1.1:5555"], "foo.bar:5555", 5555),
+            ###
+            (None, ":7777", [f"{ip()}:4566"], "localhost.localstack.cloud:7777", 4566),
+            ("1.1.1.1", ":7777", ["1.1.1.1:4566"], "localhost.localstack.cloud:7777", 4566),
+            (":5555", ":7777", [f"{ip()}:5555"], "localhost.localstack.cloud:7777", 5555),
+            ("1.1.1.1:5555", ":7777", ["1.1.1.1:5555"], "localhost.localstack.cloud:7777", 5555),
+            ###
+            (None, "foo.bar:7777", [f"{ip()}:4566"], "foo.bar:7777", 4566),
+            ("1.1.1.1", "foo.bar:7777", ["1.1.1.1:4566"], "foo.bar:7777", 4566),
+            (":5555", "foo.bar:7777", [f"{ip()}:5555"], "foo.bar:7777", 5555),
+            ("1.1.1.1:5555", "foo.bar:7777", ["1.1.1.1:5555"], "foo.bar:7777", 5555),
+        ],
+    )
+    def test_edge_configuration(
+        self,
+        gateway_listen: str | None,
+        localstack_host: str | None,
+        expected_gateway_listen: list[str],
+        expected_localstack_host: str,
+        expected_edge_port: int,
+    ):
         environment = {}
+        if gateway_listen is not None:
+            environment["GATEWAY_LISTEN"] = gateway_listen
+        if localstack_host is not None:
+            environment["LOCALSTACK_HOST"] = localstack_host
+
         (
-            ls_host,
-            gateway_listen,
-            edge_bind_host,
-            edge_port,
-            edge_port_http,
-        ) = config.populate_legacy_edge_configuration(environment)
+            actual_ls_host,
+            actual_gateway_listen,
+            actual_edge_port,
+        ) = config.populate_edge_configuration(environment)
 
-        assert ls_host == "localhost.localstack.cloud:4566"
-        assert gateway_listen == [HostAndPort(host=default_ip, port=4566)]
-        assert edge_port == 4566
-        assert edge_port_http == 0
-        assert edge_bind_host == default_ip
-
-    def test_custom_hostname(self):
-        environment = {"GATEWAY_LISTEN": "192.168.0.1"}
-        (
-            _,
-            gateway_listen,
-            edge_bind_host,
-            edge_port,
-            edge_port_http,
-        ) = config.populate_legacy_edge_configuration(environment)
-
-        assert gateway_listen == [HostAndPort(host="192.168.0.1", port=4566)]
-        assert edge_port == 4566
-        assert edge_port_http == 0
-        assert edge_bind_host == "192.168.0.1"
-
-    def test_custom_port(self, default_ip):
-        environment = {"GATEWAY_LISTEN": ":9999"}
-        (
-            _,
-            gateway_listen,
-            edge_bind_host,
-            edge_port,
-            edge_port_http,
-        ) = config.populate_legacy_edge_configuration(environment)
-
-        assert gateway_listen == [HostAndPort(host=default_ip, port=9999)]
-        assert edge_port == 9999
-        assert edge_port_http == 0
-        assert edge_bind_host == default_ip
-
-    def test_custom_host_and_port(self):
-        environment = {"GATEWAY_LISTEN": "192.168.0.1:9999"}
-        (
-            _,
-            gateway_listen,
-            edge_bind_host,
-            edge_port,
-            edge_port_http,
-        ) = config.populate_legacy_edge_configuration(environment)
-
-        assert gateway_listen == [HostAndPort(host="192.168.0.1", port=9999)]
-        assert edge_port == 9999
-        assert edge_port_http == 0
-        assert edge_bind_host == "192.168.0.1"
-
-    def test_localstack_host_overrides_edge_variables(self, default_ip):
-        environment = {"LOCALSTACK_HOST": "hostname:9999"}
-        (
-            ls_host,
-            gateway_listen,
-            edge_bind_host,
-            edge_port,
-            edge_port_http,
-        ) = config.populate_legacy_edge_configuration(environment)
-
-        assert ls_host == HostAndPort(host="hostname", port=9999)
-        assert gateway_listen == [HostAndPort(host=default_ip, port=9999)]
-        assert edge_port == 9999
-        assert edge_port_http == 0
-        assert edge_bind_host == default_ip
-
-    def test_localstack_host_no_port(self, default_ip):
-        environment = {"LOCALSTACK_HOST": "foobar"}
-        (
-            ls_host,
-            gateway_listen,
-            edge_bind_host,
-            edge_port,
-            edge_port_http,
-        ) = config.populate_legacy_edge_configuration(environment)
-
-        assert ls_host == HostAndPort(host="foobar", port=4566)
-        assert gateway_listen == [HostAndPort(host=default_ip, port=4566)]
-        assert edge_port == 4566
-        assert edge_port_http == 0
-        assert edge_bind_host == default_ip
+        assert actual_ls_host == expected_localstack_host
+        assert actual_gateway_listen == expected_gateway_listen
+        assert actual_edge_port == expected_edge_port
 
     def test_gateway_listen_multiple_addresses(self):
         environment = {"GATEWAY_LISTEN": "0.0.0.0:9999,0.0.0.0:443"}
         (
             _,
             gateway_listen,
-            edge_bind_host,
             edge_port,
-            edge_port_http,
-        ) = config.populate_legacy_edge_configuration(environment)
+        ) = config.populate_edge_configuration(environment)
 
         assert gateway_listen == [
             HostAndPort(host="0.0.0.0", port=9999),
@@ -193,30 +159,25 @@ class TestEdgeVariablesDerivedCorrectly:
         ]
         # take the first value
         assert edge_port == 9999
-        assert edge_port_http == 0
-        assert edge_bind_host == "0.0.0.0"
 
-    def test_legacy_variables_override_if_given(self, default_ip):
+    def test_legacy_variables_ignored_if_given(self):
+        """Providing legacy variables removed in 3.0 should not affect the default configuration"""
         environment = {
             "EDGE_BIND_HOST": "192.168.0.1",
             "EDGE_PORT": "10101",
             "EDGE_PORT_HTTP": "20202",
         }
         (
-            _,
+            localstack_host,
             gateway_listen,
-            edge_bind_host,
             edge_port,
-            edge_port_http,
-        ) = config.populate_legacy_edge_configuration(environment)
+        ) = config.populate_edge_configuration(environment)
 
+        assert localstack_host == "localhost.localstack.cloud:4566"
         assert gateway_listen == [
-            HostAndPort(host=default_ip, port=10101),
-            HostAndPort(host=default_ip, port=20202),
+            HostAndPort(host=ip(), port=4566),
         ]
-        assert edge_bind_host == "192.168.0.1"
-        assert edge_port == 10101
-        assert edge_port_http == 20202
+        assert edge_port == 4566
 
 
 class TestUniquePortList:

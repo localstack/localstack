@@ -9,11 +9,6 @@ from tests.aws.services.stepfunctions.templates.base.base_templates import BaseT
 from tests.aws.services.stepfunctions.utils import (
     create_and_record_events,
     create_and_record_execution,
-    is_old_provider,
-)
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
 )
 
 

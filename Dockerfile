@@ -1,5 +1,5 @@
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:11@sha256:1ebad7e867415ed9f523dad6c4f38de9f7bd24e2b2a60812c5868c0ffde11924 as java-builder
+FROM eclipse-temurin:11@sha256:1f62aaa9b6947e96189b4dbd14a7fc2a768914df3aefc9b0a1f7ec8a4dce8d6b as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.6-slim-bookworm@sha256:d36d3fb6c859768ec62ac36ddc7397b5331d8dc05bc8823b3cac24f6ade97483 as base
+FROM python:3.11.6-slim-bookworm@sha256:f89d4d260b6a5caa6aa8e0e14b162deb76862890c91779c31f762b22e72a6cef as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -195,10 +195,6 @@ RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > 
     mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
 RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
-
-# Install the latest version of the LocalStack Persistence Plugin
-RUN --mount=type=cache,target=/root/.cache \
-    (. .venv/bin/activate && pip3 install --upgrade localstack-plugin-persistence)
 
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678

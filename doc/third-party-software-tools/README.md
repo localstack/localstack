@@ -19,5 +19,4 @@ requests                  | Apache License 2.0
 subprocess32              | PSF License
 **Other tools:**          |
 Elasticsearch             | Apache License 2.0
-local-kms                 | MIT License
 kinesis-mock              | MIT License

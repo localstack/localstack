@@ -11,6 +11,7 @@ from localstack.services.s3.utils import (
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests
 from localstack.utils.strings import to_str
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -68,8 +69,7 @@ def is_local_service_url(url: str) -> bool:
     candidates = (
         constants.LOCALHOST,
         constants.LOCALHOST_HOSTNAME,
-        config.LOCALSTACK_HOSTNAME,
-        config.HOSTNAME_EXTERNAL,
+        localstack_host().host,
     )
     if any(re.match(r"^[^:]+://[^:/]*%s([:/]|$)" % host, url) for host in candidates):
         return True

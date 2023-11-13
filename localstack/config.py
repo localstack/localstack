@@ -9,10 +9,8 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
 from localstack.constants import (
-    AWS_REGION_US_EAST_1,
     DEFAULT_BUCKET_MARKER_LOCAL,
     DEFAULT_DEVELOP_PORT,
-    DEFAULT_LAMBDA_CONTAINER_REGISTRY,
     DEFAULT_VOLUME_DIR,
     ENV_INTERNAL_TEST_COLLECT_METRIC,
     ENV_INTERNAL_TEST_RUN,
@@ -40,7 +38,8 @@ class Directories:
         static_libs: container only; binaries and libraries statically packaged with the image
         var_libs:    shared; binaries and libraries+data computed at runtime: lazy-loaded binaries, ssl cert, ...
         cache:       shared; ephemeral data that has to persist across localstack runs and reboots
-        tmp:         shared; ephemeral data that has to persist across localstack runs but not reboots
+        tmp:         container only; ephemeral data that has to persist across localstack runs but not reboots
+        mounted_tmp: shared; same as above, but shared for persistence across different containers, tests, ...
         functions:   shared; volume to communicate between host<->lambda containers
         data:        shared; holds localstack state, pods, ...
         config:      host only; pre-defined configuration values, cached credentials, machine id, ...
@@ -52,6 +51,7 @@ class Directories:
     var_libs: str
     cache: str
     tmp: str
+    mounted_tmp: str
     functions: str
     data: str
     config: str
@@ -64,6 +64,7 @@ class Directories:
         var_libs: str,
         cache: str,
         tmp: str,
+        mounted_tmp: str,
         functions: str,
         data: str,
         config: str,
@@ -75,6 +76,7 @@ class Directories:
         self.var_libs = var_libs
         self.cache = cache
         self.tmp = tmp
+        self.mounted_tmp = mounted_tmp
         self.functions = functions
         self.data = data
         self.config = config
@@ -88,7 +90,8 @@ class Directories:
             static_libs="/usr/lib/localstack",
             var_libs=f"{DEFAULT_VOLUME_DIR}/lib",
             cache=f"{DEFAULT_VOLUME_DIR}/cache",
-            tmp=f"{DEFAULT_VOLUME_DIR}/tmp",
+            tmp=os.path.join(tempfile.gettempdir(), "localstack"),
+            mounted_tmp=f"{DEFAULT_VOLUME_DIR}/tmp",
             functions=f"{DEFAULT_VOLUME_DIR}/tmp",  # FIXME: remove - this was misconceived
             data=f"{DEFAULT_VOLUME_DIR}/state",
             logs=f"{DEFAULT_VOLUME_DIR}/logs",
@@ -100,7 +103,7 @@ class Directories:
     def for_container() -> "Directories":
         """
         Returns Localstack directory paths as they are defined within the container. Everything shared and writable
-        lives in /var/lib/localstack or /tmp/localstack.
+        lives in /var/lib/localstack or {tempfile.gettempdir()}/localstack.
 
         :returns: Directories object
         """
@@ -111,6 +114,7 @@ class Directories:
             var_libs=defaults.var_libs,
             cache=defaults.cache,
             tmp=defaults.tmp,
+            mounted_tmp=defaults.mounted_tmp,
             functions=defaults.functions,
             data=defaults.data if PERSISTENCE else os.path.join(defaults.tmp, "state"),
             config=defaults.config,
@@ -137,6 +141,7 @@ class Directories:
             var_libs=os.path.join(root, defaults.var_libs.lstrip("/")),
             cache=os.path.join(root, defaults.cache.lstrip("/")),
             tmp=tmp,
+            mounted_tmp=os.path.join(root, defaults.mounted_tmp.lstrip("/")),
             functions=os.path.join(root, defaults.functions.lstrip("/")),
             data=data if PERSISTENCE else os.path.join(tmp, "state"),
             config=os.path.join(root, defaults.config.lstrip("/")),
@@ -165,6 +170,7 @@ class Directories:
             var_libs=None,
             cache=str(cache_dir),  # used by analytics metadata
             tmp=tmp_dir,
+            mounted_tmp=tmp_dir,
             functions=None,
             data=os.path.join(tmp_dir, "state"),  # used by localstack_ext config TODO: remove
             logs=os.path.join(tmp_dir, "logs"),  # used for container logs
@@ -178,6 +184,7 @@ class Directories:
             self.var_libs,
             self.cache,
             self.tmp,
+            self.mounted_tmp,
             self.functions,
             self.data,
             self.config,
@@ -368,11 +375,6 @@ except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
     LOADED_PROFILE = None
 
-# default AWS region (DEPRECATED!)
-DEFAULT_REGION = (
-    os.environ.get("DEFAULT_REGION") or os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
-)
-
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
@@ -401,9 +403,6 @@ VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip() or TMP_FOLDER
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
     TMP_FOLDER = "/private%s" % TMP_FOLDER
 
-# temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set. (DEPRECATED!)
-HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
-
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
 DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
@@ -421,20 +420,11 @@ WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 # TODO: this is deprecated and should be removed (edge port supports HTTP/HTTPS multiplexing)
 USE_SSL = is_env_true("USE_SSL")
 
-# whether to use the legacy edge proxy or the newer Gateway/HandlerChain framework
-LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
-
-# whether legacy s3 is enabled
-LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
-
-# whether the S3 native provider is enabled
-NATIVE_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v3", "stream")
+# whether the S3 legacy V2/ASF provider is enabled
+LEGACY_V2_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v2", "legacy_v2", "asf")
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
-
-# whether to use the legacy single-region mode, defined via DEFAULT_REGION (DEPRECATED!)
-USE_SINGLE_REGION = is_env_true("USE_SINGLE_REGION")
 
 # whether to run in TF compatibility mode for TF integration tests
 # (e.g., returning verbatim ports for ELB resources, rather than edge port 4566, etc.)
@@ -458,10 +448,6 @@ LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
 # Docker image to use when starting up containers for port checks
 PORTS_CHECK_DOCKER_IMAGE = os.environ.get("PORTS_CHECK_DOCKER_IMAGE", "").strip()
 
-# whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
-# TODO: this will likely become the default and may get removed in the future
-FORWARD_EDGE_INMEM = True
-
 
 def is_trace_logging_enabled():
     if LS_LOG:
@@ -481,14 +467,6 @@ if is_trace_logging_enabled():
     LOG.debug(
         "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
     )
-
-# expose services on a specific host externally
-# DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
-HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
-
-# name of the host under which the LocalStack services are available
-# DEPRECATED: if the user sets this since v2.0.0 as we are moving to LOCALSTACK_HOST
-LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
 
 class HostAndPort:
@@ -552,6 +530,9 @@ class HostAndPort:
     def is_unprivileged(self) -> bool:
         return self.port >= self._get_unprivileged_port_range_start()
 
+    def host_and_port(self):
+        return f"{self.host}:{self.port}" if self.port is not None else self.host
+
     def __hash__(self) -> int:
         return hash((self.host, self.port))
 
@@ -565,7 +546,7 @@ class HostAndPort:
             raise TypeError(f"cannot compare {self.__class__} to {other.__class__}")
 
     def __str__(self) -> str:
-        return f"{self.host}:{self.port}" if self.port is not None else self.host
+        return self.host_and_port()
 
     def __repr__(self) -> str:
         return f"HostAndPort(host={self.host}, port={self.port})"
@@ -611,33 +592,12 @@ class UniqueHostAndPortList(List[HostAndPort]):
         super().append(value)
 
 
-def populate_legacy_edge_configuration(
+def populate_edge_configuration(
     environment: Mapping[str, str]
-) -> Tuple[HostAndPort, UniqueHostAndPortList, str, int, int]:
+) -> Tuple[HostAndPort, UniqueHostAndPortList, int]:
+    """Populate the LocalStack edge configuration from environment variables."""
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
-
-    # new for v2
-    # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
-    localstack_host = localstack_host_raw
-    if localstack_host is None:
-        localstack_host = HostAndPort(
-            host=constants.LOCALHOST_HOSTNAME, port=constants.DEFAULT_PORT_EDGE
-        )
-    else:
-        localstack_host = HostAndPort.parse(
-            localstack_host,
-            default_host=constants.LOCALHOST_HOSTNAME,
-            default_port=constants.DEFAULT_PORT_EDGE,
-        )
-
-    def legacy_fallback(envar_name: str, default: T) -> T:
-        result = default
-        result_raw = environment.get(envar_name)
-        if result_raw is not None and gateway_listen_raw is None:
-            result = result_raw
-
-        return result
 
     # parse gateway listen from multiple components
     if gateway_listen_raw is not None:
@@ -647,38 +607,39 @@ def populate_legacy_edge_configuration(
                 HostAndPort.parse(
                     address.strip(),
                     default_host=default_ip,
-                    default_port=localstack_host.port,
+                    default_port=constants.DEFAULT_PORT_EDGE,
                 )
             )
     else:
-        edge_port = int(environment.get("EDGE_PORT", localstack_host.port))
-        edge_port_http = int(environment.get("EDGE_PORT_HTTP", 0))
-        gateway_listen = [HostAndPort(host=default_ip, port=edge_port)]
-        if edge_port_http:
-            gateway_listen.append(HostAndPort(host=default_ip, port=edge_port_http))
+        # use default if gateway listen is not defined
+        gateway_listen = [HostAndPort(host=default_ip, port=constants.DEFAULT_PORT_EDGE)]
+
+    # the actual value of the LOCALSTACK_HOST port now depends on what gateway listen actually listens to.
+    if localstack_host_raw is None:
+        localstack_host = HostAndPort(
+            host=constants.LOCALHOST_HOSTNAME, port=gateway_listen[0].port
+        )
+    else:
+        localstack_host = HostAndPort.parse(
+            localstack_host_raw,
+            default_host=constants.LOCALHOST_HOSTNAME,
+            default_port=gateway_listen[0].port,
+        )
 
     assert gateway_listen is not None
     assert localstack_host is not None
 
-    # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
-    # legacy variables are
-    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", gateway_listen[0].host)
-    edge_port = int(legacy_fallback("EDGE_PORT", gateway_listen[0].port))
-    edge_port_http = int(
-        legacy_fallback("EDGE_PORT_HTTP", 0),
-    )
+    # derive legacy variables from GATEWAY_LISTEN
+    edge_port = gateway_listen[0].port
 
     return (
         localstack_host,
         UniqueHostAndPortList(gateway_listen),
-        edge_bind_host,
         edge_port,
-        edge_port_http,
     )
 
 
 # How to access LocalStack
-GATEWAY_LISTEN: List[HostAndPort]
 (
     # -- Cosmetic
     LOCALSTACK_HOST,
@@ -687,13 +648,8 @@ GATEWAY_LISTEN: List[HostAndPort]
     # <ip_address>:<port>(,<ip_address>:port>)*
     GATEWAY_LISTEN,
     # -- Legacy variables
-    EDGE_BIND_HOST,
     EDGE_PORT,
-    EDGE_PORT_HTTP,
-) = populate_legacy_edge_configuration(os.environ)
-
-# optional target URL to forward all edge requests to
-EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
+) = populate_edge_configuration(os.environ)
 
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
@@ -727,6 +683,9 @@ DEBUG_HANDLER_CHAIN = is_env_true("DEBUG_HANDLER_CHAIN")
 # whether to eagerly start services
 EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 
+# whether to selectively load services in SERVICES
+STRICT_SERVICE_LOADING = is_env_not_false("STRICT_SERVICE_LOADING")
+
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
@@ -742,7 +701,7 @@ if ALLOW_NONSTANDARD_REGIONS:
     os.environ["MOTO_ALLOW_NONEXISTENT_REGION"] = "true"
 
 # name of the main Docker container
-MAIN_CONTAINER_NAME = os.environ.get("MAIN_CONTAINER_NAME", "").strip() or "localstack_main"
+MAIN_CONTAINER_NAME = os.environ.get("MAIN_CONTAINER_NAME", "").strip() or "localstack-main"
 
 # the latest commit id of the repository when the docker image was created
 LOCALSTACK_BUILD_GIT_HASH = os.environ.get("LOCALSTACK_BUILD_GIT_HASH", "").strip() or None
@@ -759,11 +718,12 @@ OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 # Whether to enable the partition adjustment listener (in order to support other partitions that the default)
 ARN_PARTITION_REWRITING = is_env_true("ARN_PARTITION_REWRITING")
 
+# Fallback partition to use if not possible to determine from ARN region.
+# Applicable only when ARN partition rewriting is enabled.
+ARN_PARTITION_FALLBACK = os.environ.get("ARN_PARTITION_FALLBACK", "") or "aws"
+
 # whether to skip waiting for the infrastructure to shut down, or exit immediately
 FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
-
-# whether to return mocked success responses for still unimplemented API methods
-MOCK_UNIMPLEMENTED = is_env_true("MOCK_UNIMPLEMENTED")
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ",".join([constants.LOCALHOST_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]"])
@@ -830,10 +790,6 @@ KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", 
 # Kinesis mock log level override when inconsistent with LS_LOG (e.g., when LS_LOG=debug)
 KINESIS_MOCK_LOG_LEVEL = os.environ.get("KINESIS_MOCK_LOG_LEVEL", "").strip()
 
-# DEPRECATED: 1 (default) only applies to old lambda provider
-# Whether to handle Kinesis Lambda event sources as synchronous invocations.
-SYNCHRONOUS_KINESIS_EVENTS = is_env_not_false("SYNCHRONOUS_KINESIS_EVENTS")  # DEPRECATED
-
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get("KINESIS_ERROR_PROBABILITY", "").strip() or 0.0)
 
@@ -861,11 +817,8 @@ SQS_DELAY_PURGE_RETRY = is_env_true("SQS_DELAY_PURGE_RETRY")
 # Used to toggle QueueDeletedRecently errors when re-creating a queue within 60 seconds of deleting it
 SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 
-# expose SQS on a specific port externally
-SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
-
-# Strategy used when creating SQS queue urls. can be "off" (default), "standard", "domain", or "path"
-SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
+# Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", or "path"
+SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "standard"
 
 # Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
 SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT = is_env_true("SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT")
@@ -878,16 +831,10 @@ SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL = int(
     os.environ.get("SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL") or 60
 )
 
-# DEPRECATED: only applies to old lambda provider
+# DEPRECATED: deprecated since 2.0.0 but added back upon customer request for the new Lambda provider
+# Keep a bit longer until we are sure that LOCALSTACK_HOST covers the special scenario but do not advertise publicly.
 # Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
 HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
-
-# DEPRECATED: true (default) only applies to old lambda provider
-# Determines whether Lambda code is copied or mounted into containers.
-LAMBDA_REMOTE_DOCKER = is_env_true("LAMBDA_REMOTE_DOCKER")
-# make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
-if is_in_docker and not os.environ.get("LAMBDA_REMOTE_DOCKER", "").strip():
-    LAMBDA_REMOTE_DOCKER = True
 
 # PUBLIC: hot-reload (default v2), __local__ (default v1)
 # Magic S3 bucket name for Hot Reloading. The S3Key points to the source code on the local file system.
@@ -899,7 +846,7 @@ BUCKET_MARKER_LOCAL = (
 # Docker network driver for the Lambda and ECS containers. https://docs.docker.com/network/
 LAMBDA_DOCKER_NETWORK = os.environ.get("LAMBDA_DOCKER_NETWORK", "").strip()
 
-# PUBLIC v1: Currently only supported by the old lambda provider
+# PUBLIC v1: LocalStack DNS (default)
 # Custom DNS server for the container running your lambda function.
 LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 
@@ -924,13 +871,6 @@ LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
 # PUBLIC: 10 (default)
 # How many seconds Lambda will wait for the runtime environment to start up.
 LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 10)
-
-# DEPRECATED: lambci/lambda (default) only applies to old lambda provider
-# An alternative docker registry from where to pull lambda execution containers.
-# Replaced by LAMBDA_RUNTIME_IMAGE_MAPPING in new provider.
-LAMBDA_CONTAINER_REGISTRY = (
-    os.environ.get("LAMBDA_CONTAINER_REGISTRY", "").strip() or DEFAULT_LAMBDA_CONTAINER_REGISTRY
-)
 
 # PUBLIC: base images for Lambda (default) https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html
 # localstack/services/lambda_/invocation/lambda_models.py:IMAGE_MAPPING
@@ -1018,30 +958,6 @@ S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
 # whether to skip S3 validation of provided KMS key
 S3_SKIP_KMS_KEY_VALIDATION = is_env_not_false("S3_SKIP_KMS_KEY_VALIDATION")
 
-# DEPRECATED: docker (default), local (fallback without Docker), docker-reuse. only applies to old lambda provider
-# Method to use for executing Lambda functions.
-LAMBDA_EXECUTOR = os.environ.get("LAMBDA_EXECUTOR", "").strip()
-
-# DEPRECATED: only applies to old lambda provider
-# Fallback URL to use when a non-existing Lambda is invoked. If this matches
-# `dynamodb://<table_name>`, then the invocation is recorded in the corresponding
-# DynamoDB table. If this matches `http(s)://...`, then the Lambda invocation is
-# forwarded as a POST request to that URL.
-LAMBDA_FALLBACK_URL = os.environ.get("LAMBDA_FALLBACK_URL", "").strip()
-# DEPRECATED: only applies to old lambda provider
-# Forward URL used to forward any Lambda invocations to an external
-# endpoint (can use useful for advanced test setups)
-LAMBDA_FORWARD_URL = os.environ.get("LAMBDA_FORWARD_URL", "").strip()
-# DEPRECATED: ignored in new lambda provider because creation happens asynchronously
-# Time in seconds to wait at max while extracting Lambda code.
-# By default, it is 25 seconds for limiting the execution time
-# to avoid client/network timeout issues
-LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
-
-# DEPRECATED: 1 (default) only applies to old lambda provider
-# whether lambdas should use stay open mode if executed in "docker-reuse" executor
-LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE")
-
 # PUBLIC: 2000 (default)
 # Allows increasing the default char limit for truncation of lambda log lines when printed in the console.
 # This does not affect the logs processing in CloudWatch.
@@ -1063,38 +979,20 @@ LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60
 # to match the behavior of the old lambda provider.
 LAMBDA_SYNCHRONOUS_CREATE = is_env_true("LAMBDA_SYNCHRONOUS_CREATE")
 
-# A comma-delimited string of stream names and its corresponding shard count to
-# initialize during startup (DEPRECATED).
-# For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
-KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
-
-# KMS provider - can be either "local-kms" or "moto"
-KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
-
 # URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
 # create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
-# `ES_CUSTOM_BACKEND` is DEPRECATED!
-OPENSEARCH_CUSTOM_BACKEND = (
-    os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
-    or os.environ.get("ES_CUSTOM_BACKEND", "").strip()
-)
+OPENSEARCH_CUSTOM_BACKEND = os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
 
 # Strategy used when creating OpenSearch/Elasticsearch domain endpoints routed through the edge proxy
 # valid values: domain | path | port (off)
-# `ES_ENDPOINT_STRATEGY` is DEPRECATED!
 OPENSEARCH_ENDPOINT_STRATEGY = (
-    os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip()
-    or os.environ.get("ES_ENDPOINT_STRATEGY", "").strip()
-    or "domain"
+    os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip() or "domain"
 )
 if OPENSEARCH_ENDPOINT_STRATEGY == "off":
     OPENSEARCH_ENDPOINT_STRATEGY = "port"
 
 # Whether to start one cluster per domain (default), or multiplex opensearch domains to a single clusters
-# `ES_MULTI_CLUSTER` is DEPRECATED!
-OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_env_true(
-    "ES_MULTI_CLUSTER"
-)
+OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 
 # Whether to really publish to GCM while using SNS Platform Application (needs credentials)
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
@@ -1142,6 +1040,10 @@ def use_custom_dns():
     return str(DNS_ADDRESS) not in FALSE_STRINGS
 
 
+# s3 virtual host name
+S3_VIRTUAL_HOSTNAME = "s3.%s" % LOCALSTACK_HOST.host
+S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALSTACK_HOST.host
+
 BOTO_WAITER_DELAY = int(os.environ.get("BOTO_WAITER_DELAY") or "1")
 BOTO_WAITER_MAX_ATTEMPTS = int(os.environ.get("BOTO_WAITER_MAX_ATTEMPTS") or "120")
 DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONFIG")
@@ -1168,7 +1070,7 @@ CONFIG_ENV_VARS = [
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
-    "DEFAULT_REGION",
+    "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "DEVELOP",
     "DEVELOP_PORT",
     "DISABLE_BOTO_RETRIES",
@@ -1194,10 +1096,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
-    "EDGE_BIND_HOST",
-    "EDGE_FORWARD_URL",
-    "EDGE_PORT",
-    "EDGE_PORT_HTTP",
+    "EDGE_FORWARD_URL",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "ENABLE_CONFIG_UPDATES",
     "ES_CUSTOM_BACKEND",
     "ES_ENDPOINT_STRATEGY",
@@ -1208,20 +1107,16 @@ CONFIG_ENV_VARS = [
     "GATEWAY_LISTEN",
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
-    "HOSTNAME_FROM_LAMBDA",
+    "HOSTNAME_FROM_LAMBDA",  # deprecated since 2.0.0 but added to new Lambda provider
     "KINESIS_ERROR_PROBABILITY",
-    "KINESIS_INITIALIZE_STREAMS",
+    "KINESIS_INITIALIZE_STREAMS",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
-    "LAMBDA_CODE_EXTRACT_TIME",
-    "LAMBDA_CONTAINER_REGISTRY",
+    "KMS_PROVIDER",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",
-    "LAMBDA_EXECUTOR",
-    "LAMBDA_FALLBACK_URL",
-    "LAMBDA_FORWARD_URL",
     "LAMBDA_INIT_DEBUG",
     "LAMBDA_INIT_BIN_PATH",
     "LAMBDA_INIT_BOOTSTRAP_PATH",
@@ -1233,11 +1128,9 @@ CONFIG_ENV_VARS = [
     "LAMBDA_KEEPALIVE_MS",
     "LAMBDA_RUNTIME_IMAGE_MAPPING",
     "LAMBDA_JAVA_OPTS",
-    "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
-    "LAMBDA_STAY_OPEN_MODE",
     "LAMBDA_TRUNCATE_STDOUT",
     "LAMBDA_RETRY_BASE_DELAY_SECONDS",
     "LAMBDA_SYNCHRONOUS_CREATE",
@@ -1250,7 +1143,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES",
     "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
-    "LEGACY_EDGE_PROXY",
+    "LEGACY_EDGE_PROXY",  # Not functional; Deprecated in 1.0.0, removed in 3.0.0
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_AUTH_TOKEN",
@@ -1278,18 +1171,36 @@ CONFIG_ENV_VARS = [
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",
-    "SQS_PORT_EXTERNAL",
     "SQS_DISABLE_CLOUDWATCH_METRICS",
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
-    "SYNCHRONOUS_KINESIS_EVENTS",
-    "SYNCHRONOUS_SNS_EVENTS",
+    "STRICT_SERVICE_LOADING",
     "TEST_AWS_ACCOUNT_ID",
     "TF_COMPAT_MODE",
-    "USE_SINGLE_REGION",
+    "USE_SINGLE_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
+    # Removed in 3.0.0
+    "EDGE_BIND_HOST",  # deprecated since 2.0.0
+    "EDGE_PORT",  # deprecated since 2.0.0
+    "EDGE_PORT_HTTP",  # deprecated since 2.0.0
+    "LAMBDA_XRAY_INIT",  # deprecated since 2.0.0
+    "LAMBDA_CODE_EXTRACT_TIME",  # deprecated since 2.0.0
+    "LAMBDA_CONTAINER_REGISTRY",  # deprecated since 2.0.0
+    "LAMBDA_EXECUTOR",  # deprecated since 2.0.0
+    "LAMBDA_FALLBACK_URL",  # deprecated since 2.0.0
+    "LAMBDA_FORWARD_URL",  # deprecated since 2.0.0
+    "LAMBDA_REMOTE_DOCKER",  # deprecated since 2.0.0
+    "LAMBDA_STAY_OPEN_MODE",  # deprecated since 2.0.0
+    "SQS_PORT_EXTERNAL",  # deprecated in docs since 2022-07-13
+    "SYNCHRONOUS_KINESIS_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_SNS_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_DYNAMODB_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_API_GATEWAY_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_SQS_EVENTS",  # deprecated since 1.3.0
+    "KINESIS_PROVIDER",  # deprecated since 1.3.0
+    "MOCK_UNIMPLEMENTED",  # deprecated since 1.3.0
 ]
 
 
@@ -1350,49 +1261,66 @@ populate_config_env_var_names()
 
 
 def service_port(service_key: str, external: bool = False) -> int:
-    service_key = service_key.lower()
+    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use."""
     if external:
-        if service_key == "sqs" and SQS_PORT_EXTERNAL:
-            return SQS_PORT_EXTERNAL
-    return get_edge_port_http()
+        return LOCALSTACK_HOST.port
+    return GATEWAY_LISTEN[0].port
 
 
 def get_protocol():
     return "https" if USE_SSL else "http"
 
 
-def service_url(service_key, host=None, port=None):
-    host = host or LOCALHOST
-    port = port or service_port(service_key)
-    return f"{get_protocol()}://{host}:{port}"
-
-
-def external_service_url(service_key, host=None, port=None):
-    host = host or HOSTNAME_EXTERNAL
-    port = port or service_port(service_key, external=True)
-    return service_url(service_key, host=host, port=port)
-
-
-# FIXME: we don't separate http and non-http ports any more,
-#        so this function should be removed
-def get_edge_port_http():
-    return EDGE_PORT_HTTP or EDGE_PORT
-
-
-def get_edge_url(localstack_hostname=None, protocol=None):
-    port = get_edge_port_http()
+# TODO: refactor internal codebase to use external_service_url and internal_service_url
+def external_service_url(host=None, port=None, protocol=None) -> str:
+    """Returns a service URL to an external client used outside where LocalStack runs.
+    The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.
+    `host` can be used to overwrite the default for subdomains.
+    """
     protocol = protocol or get_protocol()
-    localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
-    return "%s://%s:%s" % (protocol, localstack_hostname, port)
+    host = host or LOCALSTACK_HOST.host
+    port = port or LOCALSTACK_HOST.port
+    return f"{protocol}://{host}:{port}"
 
 
-def edge_ports_info():
-    if EDGE_PORT_HTTP:
-        result = "ports %s/%s" % (EDGE_PORT, EDGE_PORT_HTTP)
-    else:
-        result = "port %s" % EDGE_PORT
-    result = "%s %s" % (get_protocol(), result)
-    return result
+def internal_service_url(host=None, port=None, protocol=None) -> str:
+    """Returns a service URL for internal use within where LocalStack runs.
+    Cannot be customized through LOCALSTACK_HOST because we assume LocalStack runs on the same host (i.e., localhost).
+    """
+    protocol = protocol or get_protocol()
+    host = host or LOCALHOST
+    port = port or GATEWAY_LISTEN[0].port
+    return f"{protocol}://{host}:{port}"
+
+
+# TODO: Go over all usages and decide whether it's an internal or external usage
+def service_url(service_key, host=None, port=None):
+    """@deprecated: Use `internal_service_url()` instead.
+    We assume that most usages are internal but really need to check and update each usage accordingly.
+    """
+    return internal_service_url(host=host, port=port)
+
+
+# TODO: go over all usages and replace depending on internal or external usage
+def get_edge_port_http():
+    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use.
+    This function is also not needed anymore because we don't separate between HTTP and HTTP ports anymore since
+    LocalStack listens to both."""
+    return GATEWAY_LISTEN[0].port
+
+
+# TODO: Go over all usages and decide whether it's an internal or external usage
+def get_edge_url(localstack_hostname=None, protocol=None):
+    """@deprecated: Use `internal_service_url()` instead.
+    We assume that most usages are internal but really need to check and update each usage accordingly.
+    """
+    return internal_service_url(host=localstack_hostname, protocol=protocol)
+
+
+def gateway_listen_ports_info():
+    """Example: http port [4566,443]"""
+    gateway_listen_ports = [gw_listen.port for gw_listen in GATEWAY_LISTEN]
+    return f"{get_protocol()} port {gateway_listen_ports}"
 
 
 class ServiceProviderConfig(Mapping[str, str]):

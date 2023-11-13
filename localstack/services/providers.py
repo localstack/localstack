@@ -1,7 +1,9 @@
-from localstack import config
 from localstack.aws.forwarder import HttpFallbackDispatcher
 from localstack.services.moto import MotoFallbackDispatcher
-from localstack.services.plugins import Service, aws_provider
+from localstack.services.plugins import (
+    Service,
+    aws_provider,
+)
 
 
 @aws_provider()
@@ -122,47 +124,10 @@ def kinesis():
 
 @aws_provider()
 def kms():
-    if config.KMS_PROVIDER == "local-kms":
-        from localstack.services.kms.local_kms_provider import LocalKmsProvider
-
-        provider = LocalKmsProvider()
-        return Service.for_provider(
-            provider,
-            dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
-                _provider, _provider.start_and_get_backend
-            ),
-        )
-
     from localstack.services.kms.provider import KmsProvider
 
     provider = KmsProvider()
     return Service.for_provider(provider)
-
-
-@aws_provider(api="lambda", name="legacy")
-def lambda_legacy():
-    from localstack.services.lambda_.legacy import lambda_starter
-
-    return Service(
-        "lambda",
-        start=lambda_starter.start_lambda,
-        stop=lambda_starter.stop_lambda,
-        check=lambda_starter.check_lambda,
-        lifecycle_hook=lambda_starter.LambdaLifecycleHook(),
-    )
-
-
-@aws_provider(api="lambda", name="v1")
-def lambda_v1():
-    from localstack.services.lambda_.legacy import lambda_starter
-
-    return Service(
-        "lambda",
-        start=lambda_starter.start_lambda,
-        stop=lambda_starter.stop_lambda,
-        check=lambda_starter.check_lambda,
-        lifecycle_hook=lambda_starter.LambdaLifecycleHook(),
-    )
 
 
 @aws_provider(api="lambda")
@@ -206,14 +171,6 @@ def opensearch():
 
 
 @aws_provider()
-def ram():
-    from localstack.services.ram.provider import RamProvider
-
-    provider = RamProvider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
-
-
-@aws_provider()
 def redshift():
     from localstack.services.redshift.provider import RedshiftProvider
 
@@ -237,42 +194,8 @@ def route53resolver():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider(api="s3", name="legacy")
-def s3_legacy():
-    from localstack.services.s3.legacy import s3_listener, s3_starter
-
-    return Service(
-        "s3",
-        listener=s3_listener.UPDATE_S3,
-        start=s3_starter.start_s3,
-        check=s3_starter.check_s3,
-        lifecycle_hook=s3_starter.S3LifecycleHook(),
-    )
-
-
-@aws_provider(api="s3", name="v1")
-def s3_v1():
-    from localstack.services.s3.legacy import s3_listener, s3_starter
-
-    return Service(
-        "s3",
-        listener=s3_listener.UPDATE_S3,
-        start=s3_starter.start_s3,
-        check=s3_starter.check_s3,
-        lifecycle_hook=s3_starter.S3LifecycleHook(),
-    )
-
-
 @aws_provider(api="s3", name="asf")
 def s3_asf():
-    from localstack.services.s3.provider import S3Provider
-
-    provider = S3Provider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
-
-
-@aws_provider(api="s3", name="default")
-def s3():
     from localstack.services.s3.provider import S3Provider
 
     provider = S3Provider()
@@ -285,6 +208,22 @@ def s3_v2():
 
     provider = S3Provider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="s3", name="legacy_v2")
+def s3_legacy_v2():
+    from localstack.services.s3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="s3", name="default")
+def s3():
+    from localstack.services.s3.v3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="s3", name="stream")
@@ -343,16 +282,36 @@ def sns():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+# TODO fix this ugly hack to reuse a single provider instance
+sqs_provider = None
+
+
+def get_sqs_provider():
+    global sqs_provider
+
+    if not sqs_provider:
+        from localstack.services import edge
+        from localstack.services.sqs import query_api
+        from localstack.services.sqs.provider import SqsProvider
+
+        query_api.register(edge.ROUTER)
+
+        sqs_provider = SqsProvider()
+    return sqs_provider
+
+
 @aws_provider()
 def sqs():
-    from localstack.services import edge
-    from localstack.services.sqs import query_api
-    from localstack.services.sqs.provider import SqsProvider
+    return Service.for_provider(get_sqs_provider())
 
-    query_api.register(edge.ROUTER)
 
-    provider = SqsProvider()
-    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+@aws_provider("sqs-query")
+def sqs_query():
+    sqs_query_service = Service.for_provider(
+        get_sqs_provider(),
+        custom_service_name="sqs-query",
+    )
+    return sqs_query_service
 
 
 @aws_provider()
@@ -378,33 +337,41 @@ def stepfunctions():
     from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
-    return Service.for_provider(
-        provider,
-        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
-            _provider, _provider.get_forward_url
-        ),
-    )
-
-
-@aws_provider(api="stepfunctions", name="v1")
-def stepfunctions_v1():
-    from localstack.services.stepfunctions.provider import StepFunctionsProvider
-
-    provider = StepFunctionsProvider()
-    return Service.for_provider(
-        provider,
-        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
-            _provider, _provider.get_forward_url
-        ),
-    )
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="stepfunctions", name="v2")
 def stepfunctions_v2():
-    from localstack.services.stepfunctions.provider_v2 import StepFunctionsProvider
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
     return Service.for_provider(provider)
+
+
+@aws_provider(api="stepfunctions", name="v1")
+def stepfunctions_legacy():
+    from localstack.services.stepfunctions.legacy.provider_legacy import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
+    )
+
+
+@aws_provider(api="stepfunctions", name="legacy")
+def stepfunctions_v1():
+    from localstack.services.stepfunctions.legacy.provider_legacy import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
+    )
 
 
 @aws_provider()

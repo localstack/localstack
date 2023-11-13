@@ -230,23 +230,6 @@ class TestSNSTopicCrud:
         topic1 = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "abc"}])
         snapshot.match("topic-1", topic1)
 
-    @markers.aws.validated
-    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
-
-        snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
-
-        snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
-
-        snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
-
 
 class TestSNSPublishCrud:
     """
@@ -832,6 +815,39 @@ class TestSNSSubscriptionCrud:
                 }
             )
         snapshot.match("subscribe-diff-attributes", e.value.response)
+
+    @markers.aws.validated
+    def test_unsubscribe_idempotency(
+        self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
+    ):
+        topic_name = f"topic-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        sub_arn = subscription["SubscriptionArn"]
+
+        unsubscribe_1 = aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
+        snapshot.match("unsubscribe-1", unsubscribe_1)
+        unsubscribe_2 = aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
+        snapshot.match("unsubscribe-2", unsubscribe_2)
+
+    @markers.aws.validated
+    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
+
+        snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
+
+        snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
+
+        snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
 
 
 class TestSNSSubscriptionLambda:
@@ -2637,7 +2653,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
         )
         snapshot.match("messages-3", response_3)
-        assert "Messages" not in response_3
+        assert "Messages" in response_3
+        assert response_3["Messages"] == []
 
     @markers.aws.validated
     def test_exists_filter_policy(
@@ -2961,7 +2978,8 @@ class TestSNSFilter:
         )
         snapshot.match("recv-init", response)
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # publish messages that satisfies the filter policy, assert that messages are received
         messages = [
@@ -3001,7 +3019,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # publish message that does not satisfy the filter policy as it's not even JSON, or not a JSON object
         message = "Regular string message"
@@ -3018,7 +3037,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
     @markers.aws.validated
     def test_filter_policy_for_batch(
@@ -3169,7 +3189,8 @@ class TestSNSFilter:
         )
         snapshot.match("recv-init", response)
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         def _verify_and_snapshot_sqs_messages(msg_to_send: list[dict], snapshot_prefix: str):
             for i, _message in enumerate(msg_to_send):
@@ -3208,7 +3229,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # assert with more nesting
         deep_nested_filter_policy = json.dumps(
@@ -3246,7 +3268,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
 
 class TestSNSPlatformEndpoint:
@@ -3287,8 +3310,10 @@ class TestSNSPlatformEndpoint:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="Test asserts wrong behaviour")
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
-    # Error responses are from reported https://github.com/spulec/moto/issues/2333
+    # TODO: AWS validate this test
+    # See https://github.com/getmoto/moto/pull/6953 where Moto updated errors.
     def test_create_platform_endpoint_check_idempotency(
         self, sns_create_platform_application, aws_client
     ):
@@ -3298,6 +3323,10 @@ class TestSNSPlatformEndpoint:
             Attributes={"PlatformCredential": "123"},
         )
         token = "test1"
+        # TODO: As per AWS docs:
+        # > The CreatePlatformEndpoint action is idempotent, so if the requester already owns an endpoint
+        # > with the same device token and attributes, that endpoint's ARN is returned without creating a new endpoint.
+        # The 'Token' and 'Attributes' are critical to idempotent behaviour.
         kwargs_list = [
             {"Token": token, "CustomUserData": "test-data"},
             {"Token": token, "CustomUserData": "test-data"},
@@ -3934,7 +3963,8 @@ class TestSNSSubscriptionHttp:
 
         response = aws_client.sqs.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=2)
         # AWS doesn't send to the DLQ if the UnsubscribeConfirmation fails to be delivered
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
 
 class TestSNSSubscriptionFirehose:
@@ -4191,9 +4221,9 @@ class TestSNSPublishDelivery:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",
-            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-            "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            "$..Attributes.DeliveryPolicy",
+            "$..Attributes.EffectiveDeliveryPolicy",
+            "$..Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
         ]
     )
     def test_delivery_lambda(
@@ -4219,7 +4249,8 @@ class TestSNSPublishDelivery:
         function_name = f"lambda-function-{short_uid()}"
         permission_id = f"test-statement-{short_uid()}"
         subject = "[Subject] Test subject"
-        message = "Hello world."
+        message_fail = "Should not be received"
+        message_success = "Should be received"
         topic_name = f"test-topic-{short_uid()}"
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
         parsed_arn = parse_arn(topic_arn)
@@ -4229,7 +4260,6 @@ class TestSNSPublishDelivery:
         policy_name = f"SNSSuccessFeedback-policy-{short_uid()}"
 
         # enable Success Feedback from SNS to be sent to CloudWatch
-        # TODO: this is enabled by default in LS
         trust_policy = {
             "Version": "2012-10-17",
             "Statement": [
@@ -4269,18 +4299,6 @@ class TestSNSPublishDelivery:
             # wait for the policy to be properly attached
             time.sleep(20)
 
-        aws_client.sns.set_topic_attributes(
-            TopicArn=topic_arn,
-            AttributeName="LambdaSuccessFeedbackRoleArn",
-            AttributeValue=role_arn,
-        )
-
-        aws_client.sns.set_topic_attributes(
-            TopicArn=topic_arn,
-            AttributeName="LambdaSuccessFeedbackSampleRate",
-            AttributeValue="100",
-        )
-
         topic_attributes = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
         snapshot.match("get-topic-attrs", topic_attributes)
 
@@ -4314,7 +4332,32 @@ class TestSNSPublishDelivery:
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        aws_client.sns.publish(TopicArn=topic_arn, Subject=subject, Message=message)
+        publish_no_logs = aws_client.sns.publish(
+            TopicArn=topic_arn, Subject=subject, Message=message_fail
+        )
+        snapshot.match("publish-no-logs", publish_no_logs)
+
+        # Then enable the SNS Delivery Logs for Lambda on the topic
+        aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackRoleArn",
+            AttributeValue=role_arn,
+        )
+
+        aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackSampleRate",
+            AttributeValue="100",
+        )
+
+        topic_attributes = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attrs-with-success-feedback", topic_attributes)
+
+        publish_logs = aws_client.sns.publish(
+            TopicArn=topic_arn, Subject=subject, Message=message_success
+        )
+        # we snapshot the publish call to match the messageId to the events
+        snapshot.match("publish-logs", publish_logs)
 
         # TODO: Wait until Lambda function actually executes and not only for SNS logs
         log_group_name = f"sns/{region}/{account_id}/{topic_name}"

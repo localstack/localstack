@@ -147,7 +147,7 @@ def custom_path_addressing_rules(path: str) -> Optional[str]:
     """
 
     if is_sqs_queue_url(path):
-        return "sqs"
+        return "sqs-query"
 
     if path.startswith("/2015-03-31/functions/"):
         return "lambda"
@@ -285,6 +285,9 @@ def resolve_conflicts(candidates: Set[str], request: Request):
         return "timestream-query"
     if candidates == {"docdb", "neptune", "rds"}:
         return "rds"
+    if candidates == {"sqs-query", "sqs"}:
+        content_type = request.headers.get("Content-Type")
+        return "sqs" if content_type == "application/x-amz-json-1.0" else "sqs-query"
 
 
 def determine_aws_service_name(request: Request, services: ServiceCatalog = None) -> Optional[str]:
@@ -354,7 +357,7 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
                 if len(services_per_prefix) == 1:
                     return services_per_prefix[0]
                 candidates.update(services_per_prefix)
-
+        print(f"{candidates=}")
         custom_host_match = custom_host_addressing_rules(host)
         if custom_host_match:
             return custom_host_match

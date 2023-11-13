@@ -14,7 +14,6 @@ from werkzeug.exceptions import NotFound
 from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Resource, Response, Router
-from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.services.infra import exit_infra, signal_supervisor_restart
 from localstack.utils.analytics.metadata import (
@@ -27,6 +26,7 @@ from localstack.utils.config_listener import update_config_variable
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.numbers import is_number
 from localstack.utils.objects import singleton_factory
 from localstack.utils.server.http2_server import HTTP_METHODS
 
@@ -297,12 +297,19 @@ class InitScriptsStageResource:
 
 
 class ConfigResource:
+    def on_get(self, request):
+        from localstack.utils import diagnose
+
+        return call_safe(diagnose.get_localstack_config)
+
     def on_post(self, request: Request):
         data = request.get_json(force=True)
         variable = data.get("variable", "")
         if not re.match(r"^[_a-zA-Z0-9]+$", variable):
             return Response("{}", mimetype="application/json", status=400)
         new_value = data.get("value")
+        if is_number(new_value):
+            new_value = float(new_value)
         update_config_variable(variable, new_value)
         value = getattr(config, variable, None)
         return {
@@ -325,20 +332,7 @@ class LocalstackResources(Router):
         from localstack.services.plugins import SERVICE_PLUGINS
 
         health_resource = HealthResource(SERVICE_PLUGINS)
-        # special route for legacy support (before `/_localstack` was introduced)
-        self.add(
-            Resource(
-                "/health",
-                DeprecatedResource(
-                    health_resource,
-                    previous_path="/health",
-                    deprecation_version="1.3.0",
-                    new_path="/_localstack/health",
-                ),
-            ),
-        )
         self.add(Resource("/_localstack/health", health_resource))
-
         self.add(Resource("/_localstack/info", InfoResource()))
         self.add(Resource("/_localstack/plugins", PluginsResource()))
         self.add(Resource("/_localstack/init", InitScriptsResource()))
@@ -346,6 +340,10 @@ class LocalstackResources(Router):
         self.add(Resource("/_localstack/cloudformation/deploy", CloudFormationUi()))
 
         if config.ENABLE_CONFIG_UPDATES:
+            LOG.warning(
+                "Enabling config endpoint, "
+                "please be aware that this can expose sensitive information via your network."
+            )
             self.add(Resource("/_localstack/config", ConfigResource()))
 
         if config.DEBUG:
@@ -355,28 +353,6 @@ class LocalstackResources(Router):
             )
             self.add(Resource("/_localstack/diagnose", DiagnoseResource()))
             self.add(Resource("/_localstack/usage", UsageResource()))
-
-
-class LocalstackResourceHandler(RouterListener):
-    """
-    Adapter to serve LocalstackResources through the edge proxy.
-    """
-
-    resources: LocalstackResources
-
-    def __init__(self, resources: LocalstackResources = None) -> None:
-        super().__init__(resources or get_internal_apis(), fall_through=False)
-
-    def forward_request(self, method, path, data, headers):
-        try:
-            return super().forward_request(method, path, data, headers)
-        except NotFound:
-            if not path.startswith(constants.INTERNAL_RESOURCE_PATH + "/"):
-                # only return 404 if we're accessing an internal resource, otherwise fall back to the other listeners
-                return True
-            else:
-                LOG.warning("Unable to find handler for path: %s", path)
-                return 404
 
 
 @singleton_factory

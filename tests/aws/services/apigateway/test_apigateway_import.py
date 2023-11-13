@@ -124,7 +124,7 @@ def apigw_snapshot_transformer(request, snapshot):
     if is_aws_cloud():
         model_base_url = "https://apigateway.amazonaws.com"
     else:
-        host_definition = localstack_host(use_localhost_cloud=True)
+        host_definition = localstack_host()
         model_base_url = f"{config.get_protocol()}://apigateway.{host_definition.host_and_port()}"
 
     snapshot.add_transformer(snapshot.transform.regex(model_base_url, "<model-base-url>"))

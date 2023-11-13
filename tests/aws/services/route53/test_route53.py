@@ -5,15 +5,23 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
-# TODO: add proper cleanup
-class TestRoute53:
-    @markers.aws.unknown
-    def test_create_hosted_zone(self, aws_client):
-        response = aws_client.route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
+@pytest.fixture(autouse=True)
+def route53_snapshot_transformer(snapshot):
+    snapshot.add_transformer(snapshot.transform.route53_api())
 
-        response = aws_client.route53.get_change(Id="string")
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+class TestRoute53:
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..DelegationSet.Id", "$..HostedZone.CallerReference"]
+    )
+    def test_create_hosted_zone(self, aws_client, hosted_zone, snapshot):
+        response = hosted_zone(Name=f"zone-{short_uid()}.com")
+        zone_id = response["HostedZone"]["Id"]
+        snapshot.match("create_hosted_zone_response", response)
+
+        response = aws_client.route53.get_hosted_zone(Id=zone_id)
+        snapshot.match("get_hosted_zone", response)
 
     @markers.aws.unknown
     def test_crud_health_check(self, aws_client):

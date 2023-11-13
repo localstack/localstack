@@ -16,7 +16,6 @@ from aws_cdk.aws_lambda_event_sources import SqsEventSource
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -30,9 +29,6 @@ if TYPE_CHECKING:
 
 class TestLambdaDLQ:
     @markers.snapshot.skip_snapshot_verify(paths=["$..DeadLetterConfig", "$..result"])
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-    )
     @markers.aws.validated
     def test_dead_letter_queue(
         self,
@@ -126,18 +122,6 @@ def wait_until_log_group_exists(fn_name: str, logs_client: "CloudWatchLogsClient
 
 
 class TestLambdaDestinationSqs:
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..context",
-            "$..MessageId",
-            "$..functionArn",
-            "$..FunctionArn",
-            "$..approximateInvokeCount",
-            "$..stackTrace",
-            "$..Messages..Body.responsePayload.requestId",
-        ],
-    )
     @pytest.mark.parametrize(
         "payload",
         [
@@ -199,9 +183,6 @@ class TestLambdaDestinationSqs:
         receive_message_result = retry(receive_message, retries=120, sleep=1)
         snapshot.match("receive_message_result", receive_message_result)
 
-    @pytest.mark.skipif(
-        condition=is_old_provider(), reason="config variable only supported in new provider"
-    )
     @markers.aws.validated
     def test_lambda_destination_default_retries(
         self,
@@ -259,7 +240,6 @@ class TestLambdaDestinationSqs:
         snapshot.match("receive_message_result", receive_message_result)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..Body.requestContext.functionArn"])
-    @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
     @markers.aws.validated
     def test_retries(
         self,
@@ -379,7 +359,6 @@ class TestLambdaDestinationSqs:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..SenderId", "$..Body.requestContext.functionArn"]
     )
-    @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
     @markers.aws.validated
     def test_maxeventage(
         self,

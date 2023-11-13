@@ -4,8 +4,7 @@ import threading
 
 import pytest
 
-from localstack import config
-from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.packages.terraform import terraform_package
 from localstack.testing.pytest import markers
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
@@ -43,8 +42,6 @@ def check_terraform_version():
 @pytest.fixture(scope="module", autouse=True)
 def setup_test():
     with INIT_LOCK:
-        if config.DEFAULT_REGION != "us-east-1":
-            pytest.skip("Currently only support us-east-1")
         available, version = check_terraform_version()
 
         if not available:
@@ -129,18 +126,19 @@ class TestTerraform:
     @markers.skip_offline
     @markers.aws.needs_fixing
     def test_lambda(self, aws_client):
-        account_id = get_aws_account_id()
         response = aws_client.lambda_.get_function(FunctionName=LAMBDA_NAME)
         assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
         assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
         assert response["Configuration"]["Runtime"] == LAMBDA_RUNTIME
-        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(account_id=account_id)
+        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(
+            account_id=TEST_AWS_ACCOUNT_ID
+        )
 
     @markers.skip_offline
     @markers.aws.needs_fixing
     def test_event_source_mapping(self, aws_client):
-        queue_arn = QUEUE_ARN.format(account_id=get_aws_account_id())
-        lambda_arn = LAMBDA_ARN.format(account_id=get_aws_account_id(), lambda_name=LAMBDA_NAME)
+        queue_arn = QUEUE_ARN.format(account_id=TEST_AWS_ACCOUNT_ID)
+        lambda_arn = LAMBDA_ARN.format(account_id=TEST_AWS_ACCOUNT_ID, lambda_name=LAMBDA_NAME)
         all_mappings = aws_client.lambda_.list_event_source_mappings(
             EventSourceArn=queue_arn, FunctionName=LAMBDA_NAME
         )

@@ -1860,7 +1860,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
-    "recorded-date": "03-08-2023, 04:19:13",
+    "recorded-date": "06-11-2023, 16:32:57",
     "recorded-content": {
       "create_bucket": {
         "Location": "/<bucket-name:1>",
@@ -1885,7 +1885,7 @@
       "head_bucket_filtered_header": {
         "content-type": "application/xml",
         "x-amz-access-point-alias": "false",
-        "x-amz-bucket-region": "<region>",
+        "x-amz-bucket-region": "<x-amz-bucket-region:1>",
         "x-amz-id-2": "x-amz-id-2",
         "x-amz-request-id": "x-amz-request-id"
       },
@@ -1898,7 +1898,7 @@
       "head_bucket_2_filtered_header": {
         "content-type": "application/xml",
         "x-amz-access-point-alias": "false",
-        "x-amz-bucket-region": "us-west-1",
+        "x-amz-bucket-region": "<x-amz-bucket-region:2>",
         "x-amz-id-2": "x-amz-id-2",
         "x-amz-request-id": "x-amz-request-id"
       },
@@ -4267,11 +4267,11 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key": {
-    "recorded-date": "03-08-2023, 04:23:56",
+    "recorded-date": "08-11-2023, 14:59:10",
     "recorded-content": {
       "create-kms-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "Arn": "arn:aws:kms:<region_2>:111111111111:key/<uuid:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "<description:1>",
@@ -4290,7 +4290,7 @@
       "put-obj-wrong-kms-key": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Invalid keyId fake-key-id"
+          "Message": "Invalid keyId 'fake-key-id'"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4300,7 +4300,7 @@
       "put-obj-wrong-kms-key-real-uuid": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Key 'arn:aws:kms:us-west-2:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
+          "Message": "Key 'arn:aws:kms:<region_1>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4310,7 +4310,7 @@
       "put-obj-wrong-kms-key-real-uuid-arn": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Key 'arn:aws:kms:us-west-2:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
+          "Message": "Key 'arn:aws:kms:<region_1>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4320,7 +4320,7 @@
       "put-obj-different-region-kms-key": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Invalid arn <region>"
+          "Message": "Invalid arn <region_2>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4330,7 +4330,7 @@
       "put-obj-different-region-kms-key-no-arn": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Key 'arn:aws:kms:us-west-2:111111111111:key/<uuid:1>' does not exist"
+          "Message": "Key 'arn:aws:kms:<region_1>:111111111111:key/<uuid:1>' does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4340,7 +4340,7 @@
       "create-multipart-wrong-kms-key": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Invalid keyId fake-key-id"
+          "Message": "Invalid keyId 'fake-key-id'"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4350,7 +4350,7 @@
       "copy-obj-wrong-kms-key": {
         "Error": {
           "Code": "KMS.NotFoundException",
-          "Message": "Invalid keyId fake-key-id"
+          "Message": "Invalid keyId 'fake-key-id'"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -10497,46 +10497,6 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_url_encoded_key": {
-    "recorded-date": "14-09-2023, 00:01:41",
-    "recorded-content": {
-      "list-object-encoded-char": {
-        "Contents": [
-          {
-            "ETag": "\"03dc4443b5f395b54d011fdb7d9e0ae1\"",
-            "Key": "test%40key",
-            "LastModified": "datetime",
-            "Size": 24,
-            "StorageClass": "STANDARD"
-          },
-          {
-            "ETag": "\"51a6065890415b4b299dec1aa33d712c\"",
-            "Key": "test%40key/",
-            "LastModified": "datetime",
-            "Size": 12,
-            "StorageClass": "STANDARD"
-          },
-          {
-            "ETag": "\"b792145c4a8e8d9ac95d3c2f9f0ac42d\"",
-            "Key": "test@key/",
-            "LastModified": "datetime",
-            "Size": 16,
-            "StorageClass": "STANDARD"
-          }
-        ],
-        "EncodingType": "url",
-        "IsTruncated": false,
-        "KeyCount": 3,
-        "MaxKeys": 1000,
-        "Name": "<name:1>",
-        "Prefix": "",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_overwrite_key": {
     "recorded-date": "18-10-2023, 17:40:12",
     "recorded-content": {
@@ -12190,6 +12150,86 @@
         "MaxKeys": 1000,
         "Name": "<bucket-name:1>",
         "Prefix": "test/foo/bar",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_url_encoded_key[True]": {
+    "recorded-date": "11-11-2023, 02:20:59",
+    "recorded-content": {
+      "list-object-encoded-char": {
+        "Contents": [
+          {
+            "ETag": "\"03dc4443b5f395b54d011fdb7d9e0ae1\"",
+            "Key": "test%40key",
+            "LastModified": "datetime",
+            "Size": 24,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"51a6065890415b4b299dec1aa33d712c\"",
+            "Key": "test%40key/",
+            "LastModified": "datetime",
+            "Size": 12,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"b792145c4a8e8d9ac95d3c2f9f0ac42d\"",
+            "Key": "test@key/",
+            "LastModified": "datetime",
+            "Size": 16,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 3,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_url_encoded_key[False]": {
+    "recorded-date": "11-11-2023, 02:21:02",
+    "recorded-content": {
+      "list-object-encoded-char": {
+        "Contents": [
+          {
+            "ETag": "\"03dc4443b5f395b54d011fdb7d9e0ae1\"",
+            "Key": "test%40key",
+            "LastModified": "datetime",
+            "Size": 24,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"51a6065890415b4b299dec1aa33d712c\"",
+            "Key": "test%40key/",
+            "LastModified": "datetime",
+            "Size": 12,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"b792145c4a8e8d9ac95d3c2f9f0ac42d\"",
+            "Key": "test@key/",
+            "LastModified": "datetime",
+            "Size": 16,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 3,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

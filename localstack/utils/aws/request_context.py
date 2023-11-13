@@ -8,19 +8,13 @@ from flask import request
 from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
-from localstack import config
 from localstack.constants import (
-    APPLICATION_JSON,
-    APPLICATION_XML,
     AWS_REGION_US_EAST_1,
     DEFAULT_AWS_ACCOUNT_ID,
-    HEADER_CONTENT_TYPE,
 )
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
-    is_json_request,
     requests_error_response,
-    requests_response,
     requests_to_flask_response,
 )
 from localstack.utils.coverage_docs import get_coverage_link_for_service
@@ -80,13 +74,7 @@ def extract_region_from_headers(headers):
     if region:
         return region
 
-    region = extract_region_from_auth_header(headers)
-
-    if not region:
-        # fall back to local region
-        region = aws_stack.get_local_region()
-
-    return region
+    return extract_region_from_auth_header(headers) or AWS_REGION_US_EAST_1
 
 
 def get_request_context():
@@ -112,9 +100,6 @@ class RequestContextManager:
 
 def get_region_from_request_context():
     """look up region from request context"""
-
-    if config.USE_SINGLE_REGION:
-        return
 
     request_context = get_request_context()
     if not request_context:
@@ -198,19 +183,9 @@ def patch_moto_request_handling():
             exception_message: str | None = e.args[0] if e.args else None
             msg = exception_message or get_coverage_link_for_service(service, action)
             response = requests_error_response(request.headers, msg, code=501)
-            if config.MOCK_UNIMPLEMENTED:
-                is_json = is_json_request(request.headers)
-                headers = {HEADER_CONTENT_TYPE: APPLICATION_JSON if is_json else APPLICATION_XML}
-                content = "{}" if is_json else "<Response />"  # TODO: return proper mocked response
-                response = requests_response(content, headers=headers)
-                LOG.info(f"{msg}. Returning mocked response due to MOCK_UNIMPLEMENTED=1")
-            else:
-                LOG.info(msg)
+            LOG.info(msg)
             # TODO: publish analytics event ...
             return requests_to_flask_response(response)
-
-    if config.USE_SINGLE_REGION:
-        return
 
     # make sure that we inherit THREAD_LOCAL request contexts to spawned sub-threads
     @patch(FuncThread.__init__)

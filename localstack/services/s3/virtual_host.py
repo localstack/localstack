@@ -6,6 +6,7 @@ from localstack import config
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.http import Request, Response
 from localstack.http.proxy import Proxy
+from localstack.http.request import get_raw_path
 from localstack.runtime import hooks
 from localstack.services.edge import ROUTER
 from localstack.services.s3.utils import S3_VIRTUAL_HOST_FORWARDED_HEADER
@@ -34,7 +35,7 @@ class S3VirtualHostProxyHandler:
 
     def __call__(self, request: Request, **kwargs) -> Response:
         # TODO region pattern currently not working -> removing it from url
-        rewritten_url = self._rewrite_url(url=request.url, **kwargs)
+        rewritten_url = self._rewrite_url(request=request, **kwargs)
 
         LOG.debug(f"Rewritten original host url: {request.url} to path-style url: {rewritten_url}")
 
@@ -58,13 +59,14 @@ class S3VirtualHostProxyHandler:
         :return: a proxy instance
         """
         return Proxy(
-            forward_base_url=config.get_edge_url(),
+            # Just use localhost for proxying, do not rely on external - potentially dangerous - configuration
+            forward_base_url=config.internal_service_url(),
             # do not preserve the Host when forwarding (to avoid an endless loop)
             preserve_host=False,
         )
 
     @staticmethod
-    def _rewrite_url(url: str, domain: str, bucket: str, region: str, **kwargs) -> str:
+    def _rewrite_url(request: Request, domain: str, bucket: str, region: str, **kwargs) -> str:
         """
         Rewrites the url so that it can be forwarded to moto. Used for vhost-style and for any url that contains the region.
 
@@ -80,14 +82,15 @@ class S3VirtualHostProxyHandler:
         :param region: the region name (includes the '.' at the end)
         :return: re-written url as string
         """
-        splitted = urlsplit(url)
+        splitted = urlsplit(request.url)
+        raw_path = get_raw_path(request)
         if splitted.netloc.startswith(f"{bucket}."):
             netloc = splitted.netloc.replace(f"{bucket}.", "")
-            path = f"{bucket}{splitted.path}"
+            path = f"{bucket}{raw_path}"
         else:
             # we already have a path-style addressing, only need to remove the region
             netloc = splitted.netloc
-            path = splitted.path
+            path = raw_path
         # TODO region currently ignored
         if region:
             netloc = netloc.replace(f"{region}", "")
@@ -95,7 +98,7 @@ class S3VirtualHostProxyHandler:
         # the user can specify whatever domain & port he wants in the Host header
         # we need to make sure we're redirecting the request to our edge URL, possibly s3.localhost.localstack.cloud
         host = domain
-        edge_host = f"{LOCALHOST_HOSTNAME}:{config.get_edge_port_http()}"
+        edge_host = f"{LOCALHOST_HOSTNAME}:{config.GATEWAY_LISTEN[0].port}"
         if host != edge_host:
             netloc = netloc.replace(host, edge_host)
 
@@ -130,7 +133,7 @@ def add_s3_vhost_rules(router, s3_proxy_handler):
     )
 
 
-@hooks.on_infra_ready(should_load=(not config.LEGACY_S3_PROVIDER and not config.NATIVE_S3_PROVIDER))
+@hooks.on_infra_ready(should_load=config.LEGACY_V2_S3_PROVIDER)
 def register_virtual_host_routes():
     """
     Registers the S3 virtual host handler into the edge router.

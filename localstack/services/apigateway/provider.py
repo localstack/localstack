@@ -178,6 +178,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         invocation_context.method = request.get("httpMethod")
         invocation_context.api_id = request.get("restApiId")
         invocation_context.path_with_query_string = request.get("pathWithQueryString")
+        invocation_context.region_name = context.region
+        invocation_context.account_id = context.account_id
 
         moto_rest_api = get_moto_rest_api(context=context, rest_api_id=invocation_context.api_id)
         resource = moto_rest_api.resources.get(request["resourceId"])

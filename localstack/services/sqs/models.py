@@ -20,7 +20,6 @@ from localstack.aws.api.sqs import (
     ReceiptHandleIsInvalid,
     TagMap,
 )
-from localstack.config import get_protocol
 from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import (
     InvalidAttributeValue,
@@ -226,9 +225,15 @@ class SqsQueue:
 
     def default_attributes(self) -> QueueAttributeMap:
         return {
-            QueueAttributeName.ApproximateNumberOfMessages: lambda: self.approx_number_of_messages,
-            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: self.approx_number_of_messages_not_visible,
-            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: self.approx_number_of_messages_delayed,
+            QueueAttributeName.ApproximateNumberOfMessages: lambda: str(
+                self.approx_number_of_messages
+            ),
+            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: str(
+                self.approx_number_of_messages_not_visible
+            ),
+            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: str(
+                self.approx_number_of_messages_delayed
+            ),
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),
@@ -265,13 +270,14 @@ class SqsQueue:
         """Return queue URL using either SQS_PORT_EXTERNAL (if configured), the SQS_ENDPOINT_STRATEGY (if configured)
         or based on the 'Host' request header"""
 
-        host_url = context.request.host_url
+        scheme = context.request.scheme
+        host_definition = localstack_host()
 
         if config.SQS_ENDPOINT_STRATEGY == "standard":
             # Region is always part of the queue URL
             # sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/my-queue
             scheme = context.request.scheme
-            host_definition = localstack_host(use_localhost_cloud=True)
+            host_definition = localstack_host()
             host_url = f"{scheme}://sqs.{self.region}.{host_definition.host_and_port()}"
 
         elif config.SQS_ENDPOINT_STRATEGY == "domain":
@@ -279,19 +285,13 @@ class SqsQueue:
             # queue.localhost.localstack.cloud:4566/000000000000/my-queue (us-east-1)
             # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
             region = "" if self.region == "us-east-1" else self.region + "."
-            scheme = context.request.scheme
 
-            host_definition = localstack_host(use_localhost_cloud=True)
             host_url = f"{scheme}://{region}queue.{host_definition.host_and_port()}"
         elif config.SQS_ENDPOINT_STRATEGY == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
-            host_url = f"{context.request.host_url}queue/{self.region}"
+            host_url = f"{scheme}://{host_definition.host_and_port()}/queue/{self.region}"
         else:
-            if config.SQS_PORT_EXTERNAL:
-                host_definition = localstack_host(
-                    use_hostname_external=True, custom_port=config.SQS_PORT_EXTERNAL
-                )
-                host_url = f"{get_protocol()}://{host_definition.host_and_port()}"
+            host_url = f"{scheme}://{host_definition.host_and_port()}"
 
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),

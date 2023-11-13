@@ -13,7 +13,6 @@ import zipfile
 
 import pytest
 
-from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
@@ -47,10 +46,6 @@ def snapshot_transformers(snapshot):
     )
 
 
-@pytest.mark.skipif(
-    condition=is_old_provider(),
-    reason="Local executor does not support the majority of the runtimes",
-)
 @pytest.mark.skipif(
     condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
 )
@@ -251,10 +246,6 @@ class TestLambdaRuntimesCommon:
 
 
 # TODO: Split this and move to PRO
-@pytest.mark.skipif(
-    condition=is_old_provider(),
-    reason="Local executor does not support the majority of the runtimes",
-)
 @pytest.mark.skipif(
     condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
 )

@@ -3,57 +3,14 @@ from typing import List
 import pytest
 import requests
 from pytest_httpserver.httpserver import HTTPServer
-from werkzeug.datastructures import Headers
 
-from localstack import config, constants
 from localstack.config import HostAndPort
-from localstack.services.edge import get_auth_string, start_proxy
+from localstack.services.edge import start_proxy
 from localstack.utils.net import get_free_tcp_port
 
 
 def gateway_listen_value(httpserver: HTTPServer) -> List[HostAndPort]:
     return [HostAndPort(host=httpserver.host, port=httpserver.port)]
-
-
-def test_get_auth_string():
-    # Typical Header with Authorization
-    headers_with_auth = Headers(
-        [
-            ("X-Amz-Date", "20210313T160953Z"),
-            (
-                "Authorization",
-                (
-                    "AWS4-HMAC-SHA256 Credential="
-                    "test/20210313/us-east-1/sqs/aws4_request, "
-                    "SignedHeaders=content-type;host;x-amz-date, "
-                    "Signature="
-                    "3cba88ae6cbb8036126d2ba18ba8ded5"
-                    "eea9e5484d70822affce9dad03be5993"
-                ),
-            ),
-        ]
-    )
-
-    body_with_auth = (
-        b"X-Amz-Algorithm=AWS4-HMAC-SHA256&"
-        + b"X-Amz-Credential="
-        + b"test%2F20210313%2Fus-east-1%2Fsqs%2Faws4_request&"
-        + b"X-Amz-Date=20210313T011059Z&"
-        + b"X-Amz-Expires=86400000&"
-        + b"X-Amz-SignedHeaders=content-type%3Bhost%3Bx-amz-date&"
-        + b"X-Amz-Signature="
-        + b"3cba88ae6cbb8036126d2ba18ba8ded5eea9e5484d70822affce9dad03be5993"
-    )
-
-    # check getting auth string from header with Authorization header
-    assert headers_with_auth.get("authorization") == get_auth_string(
-        "POST", "/", headers_with_auth, b""
-    )
-
-    # check getting auth string from body with authorization params
-    assert headers_with_auth.get("authorization") == get_auth_string(
-        "POST", "/", Headers(), body_with_auth
-    )
 
 
 def test_edge_tcp_proxy(httpserver):
@@ -78,54 +35,6 @@ def test_edge_tcp_proxy(httpserver):
         response = requests.get(f"http://localhost:{port}")
         assert response.status_code == 200
         assert response.text == "Target Server Response"
-    finally:
-        proxy_server.stop()
-
-
-def test_edge_tcp_proxy_raises_exception_on_invalid_url(monkeypatch):
-    # Point the Edge TCP proxy towards the target server
-    monkeypatch.setattr(config, "EDGE_FORWARD_URL", "this-is-no-url")
-
-    # Start the TCP proxy
-    port = get_free_tcp_port()
-    with pytest.raises(ValueError):
-        start_proxy(
-            listen_str=f"127.0.0.1:{port}",
-            target_address=HostAndPort(host="127.0.0.1", port=constants.DEFAULT_PORT_EDGE),
-            asynchronous=True,
-        ).stop()
-
-
-def test_edge_tcp_proxy_raises_exception_on_url_without_port(monkeypatch):
-    # Point the Edge TCP proxy towards the target server
-    monkeypatch.setattr(config, "EDGE_FORWARD_URL", "http://url-without-port/")
-
-    # Start the TCP proxy
-    port = get_free_tcp_port()
-    with pytest.raises(ValueError):
-        start_proxy(
-            listen_str=f"127.0.0.1:{port}",
-            asynchronous=True,
-            target_address=HostAndPort(host="127.0.0.1", port=constants.DEFAULT_PORT_EDGE),
-        ).stop()
-
-
-def test_edge_tcp_proxy_raises_connection_refused_on_missing_target_server(monkeypatch):
-    # Point the Edge TCP proxy towards a port which is not bound to any server
-    dst_port = get_free_tcp_port()
-    monkeypatch.setattr(config, "EDGE_FORWARD_URL", f"http://unused-host-part:{dst_port}/")
-
-    # Start the TCP proxy
-    port = get_free_tcp_port()
-    proxy_server = start_proxy(
-        listen_str=f"127.0.0.1:{port}",
-        target_address=HostAndPort(host="127.0.0.1", port=dst_port),
-        asynchronous=True,
-    )
-    try:
-        # Start the proxy server and send a request (which is proxied towards a non-bound port)
-        with pytest.raises(requests.exceptions.ConnectionError):
-            requests.get(f"http://localhost:{port}")
     finally:
         proxy_server.stop()
 

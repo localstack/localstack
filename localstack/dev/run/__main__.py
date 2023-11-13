@@ -252,9 +252,9 @@ def run(
     # replicate pro startup
     if pro:
         try:
-            from localstack_ext.plugins import modify_edge_port_config
+            from localstack_ext.plugins import modify_gateway_listen_config
 
-            modify_edge_port_config(config)
+            modify_gateway_listen_config(config)
         except ImportError:
             pass
 
