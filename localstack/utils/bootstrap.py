@@ -46,8 +46,7 @@ API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
     "dynamodbstreams": ["kinesis"],
     "es": ["opensearch"],
-    "lambda": ["logs", "cloudwatch", "s3", "sqs"],
-    "kinesis": ["dynamodb"],
+    "lambda": ["s3", "sqs", "sts"],
     "firehose": ["kinesis"],
 }
 # composites define an abstract name like "serverless" that maps to a set of services
