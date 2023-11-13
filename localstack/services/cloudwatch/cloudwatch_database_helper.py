@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from localstack import config
-from localstack.aws.api.cloudwatch import MetricData, MetricStat, ScanBy
+from localstack.aws.api.cloudwatch import MetricData, MetricDataQuery, ScanBy
 from localstack.utils.files import mkdir
 
 LOG = logging.getLogger(__name__)
@@ -159,7 +159,7 @@ class CloudwatchDatabase:
         self,
         account_id: str,
         region: str,
-        query: MetricStat,
+        query: MetricDataQuery,
         start_time: datetime,
         end_time: datetime,
         scan_by: str,
@@ -232,7 +232,7 @@ class CloudwatchDatabase:
                     ),
                 )
                 single_result = cur.fetchone()[0]
-                if single_result is not None:
+                if single_result or (single_result == 0 and stat != "SampleCount"):
                     datapoints[str(start_time_unix)]["values"].append(single_result)
 
                 cur.execute(

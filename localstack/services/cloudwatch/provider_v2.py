@@ -18,9 +18,12 @@ from localstack.aws.api.cloudwatch import (
     DeleteDashboardsOutput,
     DescribeAlarmsOutput,
     DimensionFilters,
+    Dimensions,
+    ExtendedStatistics,
     GetDashboardOutput,
     GetMetricDataMaxDatapoints,
     GetMetricDataOutput,
+    GetMetricStatisticsOutput,
     IncludeLinkedAccounts,
     InvalidParameterCombinationException,
     InvalidParameterValueException,
@@ -31,16 +34,21 @@ from localstack.aws.api.cloudwatch import (
     MaxRecords,
     MetricData,
     MetricDataQueries,
+    MetricDataQuery,
     MetricDataResultMessages,
     MetricDataResults,
     MetricName,
+    MetricStat,
     Namespace,
     NextToken,
+    Period,
     PutDashboardOutput,
     PutMetricAlarmInput,
     RecentlyActive,
     ScanBy,
+    StandardUnit,
     StateValue,
+    Statistics,
     TagKeyList,
     TagList,
     TagResourceOutput,
@@ -414,3 +422,59 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             for metric in result.get("metrics", [])
         ]
         return ListMetricsOutput(Metrics=metrics, NextToken=None)
+
+    def get_metric_statistics(
+        self,
+        context: RequestContext,
+        namespace: Namespace,
+        metric_name: MetricName,
+        start_time: Timestamp,
+        end_time: Timestamp,
+        period: Period,
+        dimensions: Dimensions = None,
+        statistics: Statistics = None,
+        extended_statistics: ExtendedStatistics = None,
+        unit: StandardUnit = None,
+    ) -> GetMetricStatisticsOutput:
+        stat_datapoints = {}
+        for stat in statistics:
+            query_result = self.cloudwatch_database.get_metric_data_stat(
+                account_id=context.account_id,
+                region=context.region,
+                start_time=start_time,
+                end_time=end_time,
+                scan_by="TimestampDescending",
+                query=MetricDataQuery(
+                    MetricStat=MetricStat(
+                        Metric={
+                            "MetricName": metric_name,
+                            "Namespace": namespace,
+                            "Dimensions": dimensions or [],
+                        },
+                        Period=period,
+                        Stat=stat,
+                        Unit=unit,
+                    )
+                ),
+            )
+
+            datapoints = query_result.get("datapoints", {})
+            for timestamp, datapoint_result in datapoints.items():
+                stat_datapoints.setdefault(timestamp, {})
+                stat_datapoints[timestamp][stat] = datapoint_result
+
+        datapoints = []
+        for timestamp, stats in stat_datapoints.items():
+            datapoints.append(
+                {
+                    "Timestamp": timestamp,
+                    "SampleCount": stats.get("SampleCount"),
+                    "Average": stats.get("Average"),
+                    "Sum": stats.get("Sum"),
+                    "Minimum": stats.get("Minimum"),
+                    "Maximum": stats.get("Maximum"),
+                    "Unit": unit,
+                }
+            )
+
+        return GetMetricStatisticsOutput(Datapoints=datapoints, Label=metric_name)

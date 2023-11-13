@@ -1665,6 +1665,40 @@ class TestCloudwatch:
         assert max_["StatusCode"] == "Complete"
         assert [int(val) for val in max_["Values"]] == [100]
 
+    @markers.aws.validated
+    def test_get_metric_statistics(self, aws_client):
+        utc_now = datetime.now(tz=timezone.utc)
+        namespace = f"test/{short_uid()}"
+
+        for i in range(10):
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    dict(MetricName="metric", Value=i, Timestamp=utc_now + timedelta(seconds=1))
+                ],
+            )
+
+        if is_aws_cloud():
+            time.sleep(2)
+
+        stats = aws_client.cloudwatch.get_metric_statistics(
+            Namespace=namespace,
+            MetricName="metric",
+            StartTime=utc_now - timedelta(seconds=60),
+            EndTime=utc_now + timedelta(seconds=60),
+            Period=60,
+            Statistics=["Average", "Sum", "Minimum", "Maximum", "SampleCount"],
+        )
+
+        assert len(stats["Datapoints"]) == 1
+        assert stats["Label"] == "metric"
+        datapoint = stats["Datapoints"][0]
+        assert datapoint["SampleCount"] == 10.0
+        assert datapoint["Sum"] == 45
+        assert datapoint["Minimum"] == 0
+        assert datapoint["Maximum"] == 9
+        assert datapoint["Average"] == 4.5
+
 
 def _check_alarm_triggered(
     expected_state,
