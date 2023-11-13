@@ -11,7 +11,6 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProvider,
     ResourceRequest,
 )
-from localstack.utils.strings import short_uid
 
 
 class LambdaLayerVersionPermissionProperties(TypedDict):
@@ -59,17 +58,18 @@ class LambdaLayerVersionPermissionProvider(
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
 
+        model["Id"] = util.generate_default_name(
+            stack_name=request.stack_name, logical_resource_id=request.logical_resource_id
+        )
         layer_name, version_number = self.layer_name_and_version(model)
+
         params = util.select_attributes(model, ["Action", "Principal"])
-        params["StatementId"] = short_uid()
+        params["StatementId"] = model["Id"].split("-")[-1]
         params["LayerName"] = layer_name
         params["VersionNumber"] = version_number
 
         lambda_client.add_layer_version_permission(**params)
-        model["Id"] = util.generate_default_name(
-            stack_name=request.stack_name, logical_resource_id=request.logical_resource_id
-        )
-        request.custom_context["StatementId"] = params["StatementId"]
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
@@ -109,7 +109,7 @@ class LambdaLayerVersionPermissionProvider(
 
         layer_name, version_number = self.layer_name_and_version(model)
         params = {
-            "StatementId": request.custom_context["StatementId"],
+            "StatementId": model["Id"].split("-")[-1],
             "LayerName": layer_name,
             "VersionNumber": version_number,
         }

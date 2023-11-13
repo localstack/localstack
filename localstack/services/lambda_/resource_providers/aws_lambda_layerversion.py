@@ -71,8 +71,6 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         response = lambda_client.publish_layer_version(**model)
         model["Id"] = response["LayerVersionArn"]
 
-        request.custom_context["Version"] = response["Version"]
-
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
@@ -101,7 +99,7 @@ class LambdaLayerVersionProvider(ResourceProvider[LambdaLayerVersionProperties])
         """
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
-        version = request.custom_context["Version"]
+        version = int(model["Id"].split(":")[-1])
 
         lambda_client.delete_layer_version(LayerName=model["LayerName"], VersionNumber=version)
         return ProgressEvent(
