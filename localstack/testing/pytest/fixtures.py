@@ -1900,7 +1900,7 @@ def appsync_create_api(aws_client):
 def assert_host_customisation(monkeypatch):
     localstack_host = "foo.bar"
     monkeypatch.setattr(
-        config, "LOCALSTACK_HOST", config.HostAndPort(host=localstack_host, port=config.EDGE_PORT)
+        config, "LOCALSTACK_HOST", config.HostAndPort(host=localstack_host, port=8888)
     )
 
     def asserter(
