@@ -593,7 +593,7 @@ def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
 
 
-def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str = None) -> Optional[str]:
+def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str) -> Optional[str]:
     """
     In S3, the KMS key can be passed as a KeyId or a KeyArn. This method allows to always get the KeyArn from either.
     It can also validate if the key is in the same region, and raise an exception.

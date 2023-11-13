@@ -838,7 +838,7 @@ class TestS3:
         snapshot.match("list-objects-marker-empty", resp)
 
     @markers.aws.validated
-    @pytest.mark.xfail(condition=is_v2_provider, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=is_v2_provider(), reason="not implemented in moto")
     def test_list_multiparts_next_marker(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformers_list(
@@ -944,7 +944,7 @@ class TestS3:
         snapshot.match("list-multiparts-next-key-empty", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(condition=is_v2_provider, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=is_v2_provider(), reason="not implemented in moto")
     def test_list_multiparts_with_prefix_and_delimiter(
         self, s3_bucket, snapshot, aws_client, aws_http_client_factory
     ):
@@ -990,7 +990,7 @@ class TestS3:
         resp_dict["ListMultipartUploadsResult"].pop("@xmlns", None)
         snapshot.match("list-multiparts-no-encoding", resp_dict)
 
-    @pytest.mark.xfail(condition=is_v2_provider, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=is_v2_provider(), reason="not implemented in moto")
     @markers.aws.validated
     def test_list_parts_pagination(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
@@ -1045,6 +1045,44 @@ class TestS3:
             PartNumberMarker=10,
         )
         snapshot.match("list-parts-wrong-part", response)
+
+    @pytest.mark.xfail(
+        condition=is_v2_provider(), reason="moto does not handle empty query string parameters"
+    )
+    @markers.aws.validated
+    def test_list_parts_empty_part_number_marker(self, s3_bucket, snapshot, aws_client_factory):
+        # we need to disable validation for this test
+        s3_client = aws_client_factory(config=Config(parameter_validation=False)).s3
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+        object_key = "test-list-part-empty-marker"
+        response = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=object_key)
+        upload_id = response["UploadId"]
+
+        s3_client.upload_part(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body=BytesIO(b"data"),
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        # it seems S3 does not care about empty string for integer query string parameters
+        response = s3_client.list_parts(
+            Bucket=s3_bucket, UploadId=upload_id, Key=object_key, PartNumberMarker=""
+        )
+        snapshot.match("list-parts-empty-marker", response)
+
+        response = s3_client.list_parts(
+            Bucket=s3_bucket, UploadId=upload_id, Key=object_key, MaxParts=""
+        )
+        snapshot.match("list-parts-empty-max-parts", response)
 
     @markers.aws.validated
     def test_get_object_no_such_bucket(self, snapshot, aws_client):
@@ -9912,7 +9950,7 @@ class TestS3PresignedPost:
         assert "PostResponse" in json_response
         json_response = json_response["PostResponse"]
 
-        location = f"{_bucket_url_vhost(s3_bucket, aws_stack.get_region())}/key-my-file"
+        location = f"{_bucket_url_vhost(s3_bucket, TEST_AWS_REGION_NAME)}/key-my-file"
         etag = '"43281e21fce675ac3bcb3524b38ca4ed"'
         assert response.headers["ETag"] == etag
         assert response.headers["Location"] == location

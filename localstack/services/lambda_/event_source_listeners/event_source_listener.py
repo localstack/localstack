@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Optional, Type
 
 from localstack.services.lambda_.event_source_listeners.adapters import (
@@ -5,7 +6,10 @@ from localstack.services.lambda_.event_source_listeners.adapters import (
     EventSourceAsfAdapter,
 )
 from localstack.services.lambda_.invocation.lambda_service import LambdaService
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.objects import SubtypesInstanceManager
+
+LOG = logging.getLogger(__name__)
 
 
 class EventSourceListener(SubtypesInstanceManager):
@@ -40,6 +44,12 @@ class EventSourceListener(SubtypesInstanceManager):
             )
             if self_managed_endpoints.get("KAFKA_BOOTSTRAP_SERVERS"):
                 service_type = "kafka"
+        elif not is_api_enabled(service_type):
+            LOG.info(
+                "Service %s is not enabled, cannot enable event-source-mapping. Please check your 'SERVICES' configuration variable.",
+                service_type,
+            )
+            return
         instance = EventSourceListener.get(service_type, raise_if_missing=False)
         if instance:
             instance.start(EventSourceAsfAdapter(lambda_service))

@@ -188,6 +188,7 @@ from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import extract_service_from_arn
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
@@ -393,7 +394,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         region_name: str,
         vpc_config: Optional[dict] = None,
     ) -> VpcConfig | None:
-        if not vpc_config:
+        if not vpc_config or not is_api_enabled("ec2"):
             return None
 
         subnet_ids = vpc_config.get("SubnetIds", [])

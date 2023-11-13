@@ -5,8 +5,8 @@ from typing import Optional
 
 from werkzeug import Response as WerkzeugResponse
 
-from localstack import config
 from localstack.aws.connect import connect_to
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import to_str
 from localstack.utils.time import now_utc
 
@@ -25,7 +25,7 @@ def dimension_lambda(kwargs):
 
 def publish_lambda_metric(metric, value, kwargs, region_name: Optional[str] = None):
     # publish metric only if CloudWatch service is available
-    if not config.service_port("cloudwatch"):
+    if not is_api_enabled("cloudwatch"):
         return
     cw_client = connect_to(region_name=region_name).cloudwatch
     try:
@@ -62,6 +62,8 @@ def publish_sqs_metric(
     :param value The value of the metric data, default: 1
     :param unit The unit of the metric data, default: "Count"
     """
+    if not is_api_enabled("cloudwatch"):
+        return
     cw_client = connect_to(region_name=region, aws_access_key_id=account_id).cloudwatch
     try:
         cw_client.put_metric_data(
@@ -104,6 +106,8 @@ def store_cloudwatch_logs(
     start_time=None,
     auto_create_group: Optional[bool] = True,
 ):
+    if not is_api_enabled("logs"):
+        return
     start_time = start_time or int(time.time() * 1000)
     log_output = to_str(log_output)
 
