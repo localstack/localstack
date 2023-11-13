@@ -1111,7 +1111,7 @@ class TestSqsProvider:
 
         queue_name = f"queue-{short_uid()}"
 
-        edge_url = config.get_edge_url()
+        edge_url = config.internal_service_url()
         headers = aws_stack.mock_aws_request_headers(
             "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
@@ -2795,7 +2795,7 @@ class TestSqsProvider:
         if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
             endpoint_url = "https://queue.amazonaws.com"
         else:
-            endpoint_url = config.get_edge_url()
+            endpoint_url = config.internal_service_url()
 
         # assert that AWS has some sort of content negotiation for query GET requests, even if not `json` protocol
         response = client.get(

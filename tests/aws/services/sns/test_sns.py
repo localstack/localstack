@@ -262,7 +262,7 @@ class TestSNSPublishCrud:
         if is_aws_cloud():
             endpoint_url = f"https://sns.{TEST_AWS_REGION_NAME}.amazonaws.com"
         else:
-            endpoint_url = config.get_edge_url()
+            endpoint_url = config.internal_service_url()
 
         response = client.post(
             endpoint_url,
@@ -4466,7 +4466,7 @@ class TestSNSRetrospectionEndpoints:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        msgs_url = config.get_edge_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
+        msgs_url = config.internal_service_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
         api_contents = requests.get(
             msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
         ).json()
@@ -4568,7 +4568,7 @@ class TestSNSRetrospectionEndpoints:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        msgs_url = config.get_edge_url() + SMS_MSGS_ENDPOINT
+        msgs_url = config.internal_service_url() + SMS_MSGS_ENDPOINT
         api_contents = requests.get(
             msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
         ).json()
@@ -4655,7 +4655,7 @@ class TestSNSRetrospectionEndpoints:
 
         # we won't confirm the subscription, to simulate an external provider that wouldn't be able to access LocalStack
         # try to access the internal to confirm the Token is there
-        tokens_base_url = config.get_edge_url() + SUBSCRIPTION_TOKENS_ENDPOINT
+        tokens_base_url = config.internal_service_url() + SUBSCRIPTION_TOKENS_ENDPOINT
         api_contents = requests.get(f"{tokens_base_url}/{subscription_arn}").json()
         assert api_contents["subscription_token"] == token
         assert api_contents["subscription_arn"] == subscription_arn

@@ -5440,7 +5440,7 @@ class TestS3TerraformRawRequests:
             req, _, headers = header.strip().partition("\n")
             headers = {h.split(":")[0]: h.partition(":")[2].strip() for h in headers.split("\n")}
             method, path, _ = req.split(" ")
-            url = f"{config.get_edge_url()}{path}"
+            url = f"{config.internal_service_url()}{path}"
             result = requests.request(method=method, url=url, data=body, headers=headers)
             assert result.status_code < 400
 
@@ -7445,7 +7445,7 @@ class TestS3Routing:
         aws_client.s3.head_object(Bucket=s3_bucket, Key=s3_key)
 
         path = s3_key if use_virtual_address else f"{s3_bucket}/{s3_key}"
-        url = f"{config.get_edge_url()}/{path}"
+        url = f"{config.internal_service_url()}/{path}"
         headers = aws_stack.mock_aws_request_headers(
             "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )

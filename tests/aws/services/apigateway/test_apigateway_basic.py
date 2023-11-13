@@ -15,7 +15,6 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
-from localstack.config import get_edge_url
 from localstack.constants import (
     APPLICATION_JSON,
     LOCALHOST_HOSTNAME,
@@ -1668,7 +1667,7 @@ def test_apigw_call_api_with_aws_endpoint_url(aws_client):
         "apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
     )
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
-    url = f"{get_edge_url()}/apikeys?includeValues=true&name=test%40example.org"
+    url = f"{config.internal_service_url()}/apikeys?includeValues=true&name=test%40example.org"
     response = requests.get(url, headers=headers)
     assert response.ok
     content = json.loads(to_str(response.content))

@@ -902,7 +902,7 @@ class TestSESRetrospection:
         assert "Body" not in contents2
 
         # Ensure all sent messages can be retrieved using the API endpoint
-        emails_url = config.get_edge_url() + EMAILS_ENDPOINT
+        emails_url = config.internal_service_url() + EMAILS_ENDPOINT
         api_contents = []
         api_contents.extend(requests.get(emails_url + f"?id={message1_id}").json()["messages"])
         api_contents.extend(requests.get(emails_url + f"?id={message2_id}").json()["messages"])
@@ -914,12 +914,12 @@ class TestSESRetrospection:
         assert api_contents[message2_id] == contents2
 
         # Ensure messages can be filtered by email source via the REST endpoint
-        emails_url = config.get_edge_url() + EMAILS_ENDPOINT + "?email=none@example.com"
+        emails_url = config.internal_service_url() + EMAILS_ENDPOINT + "?email=none@example.com"
         assert len(requests.get(emails_url).json()["messages"]) == 0
-        emails_url = config.get_edge_url() + EMAILS_ENDPOINT + f"?email={email}"
+        emails_url = config.internal_service_url() + EMAILS_ENDPOINT + f"?email={email}"
         assert len(requests.get(emails_url).json()["messages"]) == 2
 
-        emails_url = config.get_edge_url() + EMAILS_ENDPOINT
+        emails_url = config.internal_service_url() + EMAILS_ENDPOINT
         assert requests.delete(emails_url + f"?id={message1_id}").status_code == 204
         assert requests.delete(emails_url + f"?id={message2_id}").status_code == 204
         assert requests.get(emails_url).json() == {"messages": []}

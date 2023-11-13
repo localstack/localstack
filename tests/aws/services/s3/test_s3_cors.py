@@ -172,7 +172,7 @@ class TestS3Cors:
         # ListBuckets is an operation outside S3 CORS configuration management
         # it should follow the default rules of LocalStack
 
-        url = f"{config.get_edge_url()}/"
+        url = f"{config.internal_service_url()}/"
         origin = ALLOWED_CORS_ORIGINS[0]
         # we need to "sign" the request so that our service name parser recognize ListBuckets as an S3 operation
         # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
