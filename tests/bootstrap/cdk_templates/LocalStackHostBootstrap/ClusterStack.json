@@ -18,7 +18,7 @@
           "EnforceHTTPS": false,
           "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07"
         },
-        "DomainName": "domain-65913c6b",
+        "DomainName": "domain-cf686810",
         "EBSOptions": {
           "EBSEnabled": true,
           "VolumeSize": 10,
@@ -137,7 +137,7 @@
         },
         "Environment": {
           "Variables": {
-            "CUSTOM_LOCALSTACK_HOSTNAME": "5c00fc80",
+            "CUSTOM_LOCALSTACK_HOSTNAME": "foo.invalid",
             "TOPIC_ARN": {
               "Ref": "TopicBFC7AF6E"
             }
@@ -444,7 +444,7 @@
         },
         "Environment": {
           "Variables": {
-            "CUSTOM_LOCALSTACK_HOSTNAME": "5c00fc80",
+            "CUSTOM_LOCALSTACK_HOSTNAME": "foo.invalid",
             "DOMAIN_ENDPOINT": {
               "Fn::GetAtt": [
                 "Domain66AC69E0",

@@ -34,8 +34,13 @@ def port() -> int:
 
 
 @pytest.fixture(scope="class")
-def random_localstack_host() -> str:
-    return short_uid()
+def chosen_localstack_host() -> str:
+    """
+    Choose a domain name that is guaranteed never to resolve, except by the LocalStack DNS server
+
+    https://www.rfc-editor.org/rfc/rfc6761.html#section-6.4
+    """
+    return "foo.invalid"
 
 
 # these fixtures have been copied from the pre-existing fixtures
@@ -59,7 +64,7 @@ def container(
     class_container_factory: ContainerFactory,
     class_stream_container_logs,
     wait_for_localstack_ready,
-    random_localstack_host,
+    chosen_localstack_host,
 ):
     ls_container = class_container_factory(
         configurators=[
@@ -69,7 +74,7 @@ def container(
             ContainerConfigurators.gateway_listen(port),
             ContainerConfigurators.env_vars(
                 {
-                    "LOCALSTACK_HOST": random_localstack_host,
+                    "LOCALSTACK_HOST": chosen_localstack_host,
                 }
             ),
         ]
@@ -117,13 +122,14 @@ class TestLocalStackHost:
 
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(
-        self, aws_client_factory, infrastructure_setup, port, random_localstack_host
+        self, aws_client_factory, infrastructure_setup, port, chosen_localstack_host
     ):
         aws_client = aws_client_factory(endpoint_url=f"http://localhost:{port}")
 
         infra: InfraProvisioner = infrastructure_setup(
             namespace="LocalStackHostBootstrap",
             port=port,
+            # force_synth=True,
         )
 
         stack = cdk.Stack(infra.cdk_app, STACK_NAME)
@@ -166,7 +172,7 @@ class TestLocalStackHost:
             )
 
             given_environment = environment or {}
-            base_environment = {"CUSTOM_LOCALSTACK_HOSTNAME": random_localstack_host}
+            base_environment = {"CUSTOM_LOCALSTACK_HOSTNAME": chosen_localstack_host}
             full_environment = {**base_environment, **given_environment}
             return cdk.aws_lambda.Function(
                 stack,
@@ -226,7 +232,7 @@ class TestLocalStackHost:
         with infra.provisioner() as prov:
             yield prov
 
-    def test_scenario(self, port, infrastructure, aws_client_factory, random_localstack_host):
+    def test_scenario(self, port, infrastructure, aws_client_factory, chosen_localstack_host):
         """
         Scenario:
             * API Gateway handles web request
@@ -240,9 +246,9 @@ class TestLocalStackHost:
         )
 
         stack_outputs = infrastructure.get_stack_outputs(STACK_NAME)
-        assert random_localstack_host in stack_outputs["DomainEndpoint"]
+        assert chosen_localstack_host in stack_outputs["DomainEndpoint"]
         health_url = stack_outputs["DomainEndpoint"].replace(
-            random_localstack_host, constants.LOCALHOST_HOSTNAME
+            chosen_localstack_host, constants.LOCALHOST_HOSTNAME
         )
         r = requests.get(f"http://{health_url}/_cluster/health")
         r.raise_for_status()
