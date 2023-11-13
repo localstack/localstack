@@ -5,6 +5,7 @@ import socket
 import subprocess
 import tempfile
 import time
+import warnings
 from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
@@ -1262,6 +1263,10 @@ populate_config_env_var_names()
 
 def service_port(service_key: str, external: bool = False) -> int:
     """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use."""
+    warnings.warn(
+        "Deprecated: use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use.",
+        DeprecationWarning,
+    )
     if external:
         return LOCALSTACK_HOST.port
     return GATEWAY_LISTEN[0].port
@@ -1297,6 +1302,12 @@ def service_url(service_key, host=None, port=None):
     """@deprecated: Use `internal_service_url()` instead.
     We assume that most usages are internal but really need to check and update each usage accordingly.
     """
+    warnings.warn(
+        """@deprecated: Use `internal_service_url()` instead.
+        We assume that most usages are internal but really need to check and update each usage accordingly.
+        """,
+        DeprecationWarning,
+    )
     return internal_service_url(host=host, port=port)
 
 
@@ -1305,6 +1316,12 @@ def get_edge_port_http():
     """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use.
     This function is also not needed anymore because we don't separate between HTTP and HTTP ports anymore since
     LocalStack listens to both."""
+    warnings.warn(
+        """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use.
+        This function is also not needed anymore because we don't separate between HTTP and HTTP ports anymore since
+        LocalStack listens to both.""",
+        DeprecationWarning,
+    )
     return GATEWAY_LISTEN[0].port
 
 
@@ -1313,6 +1330,12 @@ def get_edge_url(localstack_hostname=None, protocol=None):
     """@deprecated: Use `internal_service_url()` instead.
     We assume that most usages are internal but really need to check and update each usage accordingly.
     """
+    warnings.warn(
+        """@deprecated: Use `internal_service_url()` instead.
+    We assume that most usages are internal but really need to check and update each usage accordingly.
+    """,
+        DeprecationWarning,
+    )
     return internal_service_url(host=localstack_hostname, protocol=protocol)
 
 
