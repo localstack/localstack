@@ -223,6 +223,11 @@ class ChangeType(str):
     Resource = "Resource"
 
 
+class ConcurrencyMode(str):
+    STRICT_FAILURE_TOLERANCE = "STRICT_FAILURE_TOLERANCE"
+    SOFT_FAILURE_TOLERANCE = "SOFT_FAILURE_TOLERANCE"
+
+
 class DeprecatedStatus(str):
     LIVE = "LIVE"
     DEPRECATED = "DEPRECATED"
@@ -988,6 +993,7 @@ class StackSetOperationPreferences(TypedDict, total=False):
     FailureTolerancePercentage: Optional[FailureTolerancePercentage]
     MaxConcurrentCount: Optional[MaxConcurrentCount]
     MaxConcurrentPercentage: Optional[MaxConcurrentPercentage]
+    ConcurrencyMode: Optional[ConcurrencyMode]
 
 
 OrganizationalUnitIdList = List[OrganizationalUnitId]

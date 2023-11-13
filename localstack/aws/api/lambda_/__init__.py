@@ -231,6 +231,8 @@ class Runtime(str):
     java17 = "java17"
     ruby3_2 = "ruby3.2"
     python3_11 = "python3.11"
+    nodejs20_x = "nodejs20.x"
+    provided_al2023 = "provided.al2023"
 
 
 class SnapStartApplyOn(str):

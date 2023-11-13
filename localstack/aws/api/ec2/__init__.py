@@ -2690,6 +2690,12 @@ class SnapshotAttributeName(str):
     createVolumePermission = "createVolumePermission"
 
 
+class SnapshotBlockPublicAccessState(str):
+    block_all_sharing = "block-all-sharing"
+    block_new_sharing = "block-new-sharing"
+    unblocked = "unblocked"
+
+
 class SnapshotState(str):
     pending = "pending"
     completed = "completed"
@@ -6549,6 +6555,15 @@ class LaunchTemplatesMonitoringRequest(TypedDict, total=False):
     Enabled: Optional[Boolean]
 
 
+class EnaSrdUdpSpecificationRequest(TypedDict, total=False):
+    EnaSrdUdpEnabled: Optional[Boolean]
+
+
+class EnaSrdSpecificationRequest(TypedDict, total=False):
+    EnaSrdEnabled: Optional[Boolean]
+    EnaSrdUdpSpecification: Optional[EnaSrdUdpSpecificationRequest]
+
+
 class Ipv6PrefixSpecificationRequest(TypedDict, total=False):
     Ipv6Prefix: Optional[String]
 
@@ -6599,6 +6614,7 @@ class LaunchTemplateInstanceNetworkInterfaceSpecificationRequest(TypedDict, tota
     Ipv6Prefixes: Optional[Ipv6PrefixList]
     Ipv6PrefixCount: Optional[Integer]
     PrimaryIpv6: Optional[Boolean]
+    EnaSrdSpecification: Optional[EnaSrdSpecificationRequest]
 
 
 LaunchTemplateInstanceNetworkInterfaceSpecificationRequestList = List[
@@ -6818,6 +6834,15 @@ class LaunchTemplatesMonitoring(TypedDict, total=False):
     Enabled: Optional[Boolean]
 
 
+class LaunchTemplateEnaSrdUdpSpecification(TypedDict, total=False):
+    EnaSrdUdpEnabled: Optional[Boolean]
+
+
+class LaunchTemplateEnaSrdSpecification(TypedDict, total=False):
+    EnaSrdEnabled: Optional[Boolean]
+    EnaSrdUdpSpecification: Optional[LaunchTemplateEnaSrdUdpSpecification]
+
+
 class Ipv6PrefixSpecificationResponse(TypedDict, total=False):
     Ipv6Prefix: Optional[String]
 
@@ -6861,6 +6886,7 @@ class LaunchTemplateInstanceNetworkInterfaceSpecification(TypedDict, total=False
     Ipv6Prefixes: Optional[Ipv6PrefixListResponse]
     Ipv6PrefixCount: Optional[Integer]
     PrimaryIpv6: Optional[Boolean]
+    EnaSrdSpecification: Optional[LaunchTemplateEnaSrdSpecification]
 
 
 LaunchTemplateInstanceNetworkInterfaceSpecificationList = List[
@@ -11232,6 +11258,15 @@ class InstancePrivateIpAddress(TypedDict, total=False):
 InstancePrivateIpAddressList = List[InstancePrivateIpAddress]
 
 
+class InstanceAttachmentEnaSrdUdpSpecification(TypedDict, total=False):
+    EnaSrdUdpEnabled: Optional[Boolean]
+
+
+class InstanceAttachmentEnaSrdSpecification(TypedDict, total=False):
+    EnaSrdEnabled: Optional[Boolean]
+    EnaSrdUdpSpecification: Optional[InstanceAttachmentEnaSrdUdpSpecification]
+
+
 class InstanceNetworkInterfaceAttachment(TypedDict, total=False):
     AttachTime: Optional[DateTime]
     AttachmentId: Optional[String]
@@ -11239,6 +11274,7 @@ class InstanceNetworkInterfaceAttachment(TypedDict, total=False):
     DeviceIndex: Optional[Integer]
     Status: Optional[AttachmentStatus]
     NetworkCardIndex: Optional[Integer]
+    EnaSrdSpecification: Optional[InstanceAttachmentEnaSrdSpecification]
 
 
 class InstanceNetworkInterface(TypedDict, total=False):
@@ -12690,6 +12726,7 @@ class InstanceNetworkInterfaceSpecification(TypedDict, total=False):
     Ipv6Prefixes: Optional[Ipv6PrefixList]
     Ipv6PrefixCount: Optional[Integer]
     PrimaryIpv6: Optional[Boolean]
+    EnaSrdSpecification: Optional[EnaSrdSpecificationRequest]
 
 
 InstanceNetworkInterfaceSpecificationList = List[InstanceNetworkInterfaceSpecification]
@@ -13994,6 +14031,14 @@ class DisableSerialConsoleAccessResult(TypedDict, total=False):
     SerialConsoleAccessEnabled: Optional[Boolean]
 
 
+class DisableSnapshotBlockPublicAccessRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class DisableSnapshotBlockPublicAccessResult(TypedDict, total=False):
+    State: Optional[SnapshotBlockPublicAccessState]
+
+
 class DisableTransitGatewayRouteTablePropagationRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
@@ -14379,6 +14424,15 @@ class EnableSerialConsoleAccessRequest(ServiceRequest):
 
 class EnableSerialConsoleAccessResult(TypedDict, total=False):
     SerialConsoleAccessEnabled: Optional[Boolean]
+
+
+class EnableSnapshotBlockPublicAccessRequest(ServiceRequest):
+    State: SnapshotBlockPublicAccessState
+    DryRun: Optional[Boolean]
+
+
+class EnableSnapshotBlockPublicAccessResult(TypedDict, total=False):
+    State: Optional[SnapshotBlockPublicAccessState]
 
 
 class EnableTransitGatewayRouteTablePropagationRequest(ServiceRequest):
@@ -15042,6 +15096,14 @@ class GetSerialConsoleAccessStatusRequest(ServiceRequest):
 
 class GetSerialConsoleAccessStatusResult(TypedDict, total=False):
     SerialConsoleAccessEnabled: Optional[Boolean]
+
+
+class GetSnapshotBlockPublicAccessStateRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class GetSnapshotBlockPublicAccessStateResult(TypedDict, total=False):
+    State: Optional[SnapshotBlockPublicAccessState]
 
 
 class InstanceRequirementsWithMetadataRequest(TypedDict, total=False):
@@ -21856,6 +21918,12 @@ class Ec2Api:
     ) -> DisableSerialConsoleAccessResult:
         raise NotImplementedError
 
+    @handler("DisableSnapshotBlockPublicAccess")
+    def disable_snapshot_block_public_access(
+        self, context: RequestContext, dry_run: Boolean = None
+    ) -> DisableSnapshotBlockPublicAccessResult:
+        raise NotImplementedError
+
     @handler("DisableTransitGatewayRouteTablePropagation")
     def disable_transit_gateway_route_table_propagation(
         self,
@@ -22109,6 +22177,15 @@ class Ec2Api:
     def enable_serial_console_access(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> EnableSerialConsoleAccessResult:
+        raise NotImplementedError
+
+    @handler("EnableSnapshotBlockPublicAccess")
+    def enable_snapshot_block_public_access(
+        self,
+        context: RequestContext,
+        state: SnapshotBlockPublicAccessState,
+        dry_run: Boolean = None,
+    ) -> EnableSnapshotBlockPublicAccessResult:
         raise NotImplementedError
 
     @handler("EnableTransitGatewayRouteTablePropagation")
@@ -22505,6 +22582,12 @@ class Ec2Api:
     def get_serial_console_access_status(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> GetSerialConsoleAccessStatusResult:
+        raise NotImplementedError
+
+    @handler("GetSnapshotBlockPublicAccessState")
+    def get_snapshot_block_public_access_state(
+        self, context: RequestContext, dry_run: Boolean = None
+    ) -> GetSnapshotBlockPublicAccessStateResult:
         raise NotImplementedError
 
     @handler("GetSpotPlacementScores")

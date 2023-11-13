@@ -359,7 +359,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_different_attributes_raises_exception": {
-    "recorded-date": "10-11-2023, 13:44:56",
+    "recorded-date": "13-11-2023, 12:00:43",
     "recorded-content": {
       "create_queue_01": {
         "Error": {
@@ -463,9 +463,20 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_successive_purge_calls_fail": {
-    "recorded-date": "29-08-2023, 11:03:34",
+    "recorded-date": "13-11-2023, 13:25:23",
     "recorded-content": {
       "purge_queue_error": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.PurgeQueueInProgress",
+          "Message": "Only one PurgeQueue operation on <queue-name> is allowed every 60 seconds.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "purge-error-code-query": {
         "Error": {
           "Code": "AWS.SimpleQueueService.PurgeQueueInProgress",
           "Detail": null,
@@ -480,12 +491,11 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message": {
-    "recorded-date": "29-08-2023, 11:09:40",
+    "recorded-date": "13-11-2023, 13:21:52",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "One or more parameters are invalid. Reason: Message must be shorter than 262144 bytes.",
           "Type": "Sender"
         },
@@ -513,12 +523,11 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents": {
-    "recorded-date": "29-08-2023, 11:15:03",
+    "recorded-date": "13-11-2023, 11:11:39",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Error": {
           "Code": "AWS.SimpleQueueService.BatchRequestTooLong",
-          "Detail": null,
           "Message": "Batch requests cannot be longer than 262144 bytes. You have sent 262145 bytes.",
           "Type": "Sender"
         },
@@ -555,7 +564,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[]": {
-    "recorded-date": "29-08-2023, 11:14:55",
+    "recorded-date": "13-11-2023, 12:01:12",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -571,7 +580,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[testLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongIdtestLongId]": {
-    "recorded-date": "29-08-2023, 11:14:56",
+    "recorded-date": "13-11-2023, 12:01:12",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -587,7 +596,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[invalid:id]": {
-    "recorded-date": "29-08-2023, 11:14:57",
+    "recorded-date": "13-11-2023, 12:01:13",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -603,12 +612,11 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_too_many_entries_in_batch_request": {
-    "recorded-date": "29-08-2023, 11:02:09",
+    "recorded-date": "13-11-2023, 12:00:50",
     "recorded-content": {
       "test_too_many_entries_in_batch_request": {
         "Error": {
           "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
-          "Detail": null,
           "Message": "Maximum number of entries per request are 10. You have sent 20.",
           "Type": "Sender"
         },
@@ -620,12 +628,11 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_batch_id": {
-    "recorded-date": "12-12-2022, 21:57:35",
+    "recorded-date": "13-11-2023, 12:01:00",
     "recorded-content": {
       "test_invalid_batch_id": {
         "Error": {
           "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
-          "Detail": null,
           "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
           "Type": "Sender"
         },
@@ -887,7 +894,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle": {
-    "recorded-date": "10-11-2023, 16:41:27",
+    "recorded-date": "13-11-2023, 12:00:14",
     "recorded-content": {
       "add-permission-response": {
         "ResponseMetadata": {
@@ -1044,7 +1051,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_with_too_large_batch": {
-    "recorded-date": "24-06-2023, 17:14:03",
+    "recorded-date": "13-11-2023, 12:01:26",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1060,7 +1067,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_batch_with_too_large_batch": {
-    "recorded-date": "24-06-2023, 17:14:36",
+    "recorded-date": "13-11-2023, 12:01:39",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -1076,12 +1083,11 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_message_group_id_for_fifo_queue": {
-    "recorded-date": "02-08-2023, 12:36:06",
+    "recorded-date": "13-11-2023, 13:23:27",
     "recorded-content": {
       "test_missing_message_group_id_for_fifo_queue": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "The request must contain the parameter MessageGroupId.",
           "Type": "Sender"
         },
@@ -1093,12 +1099,11 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_missing_deduplication_id_for_fifo_queue": {
-    "recorded-date": "02-08-2023, 12:37:36",
+    "recorded-date": "13-11-2023, 13:23:06",
     "recorded-content": {
       "test_missing_deduplication_id_for_fifo_queue": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "The queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
           "Type": "Sender"
         },
@@ -1142,7 +1147,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_fifo_queue_with_different_attributes_raises_error": {
-    "recorded-date": "10-11-2023, 13:43:32",
+    "recorded-date": "13-11-2023, 12:00:32",
     "recorded-content": {
       "queue-already-exists": {
         "Error": {
