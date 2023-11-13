@@ -262,24 +262,20 @@ def register_cluster(
             )
         )
     elif strategy == "domain":
-        host_pattern = (
-            "<regex('.*'):domain-name>.<regex('.*'):region>.opensearch.<regex('.*'):host>"
-        )
-
         LOG.debug(f"Registering route from {host} to {endpoint.proxy.forward_base_url}")
+        assert not host == localstack_host().host, "trying to register an illegal catch all route"
         rules.append(
             ROUTER.add(
                 "/",
                 endpoint=endpoint,
-                host=host_pattern,
-                defaults={"path": "/"},
+                host=f"{host}<port:port>",
             )
         )
         rules.append(
             ROUTER.add(
                 "/<path:path>",
                 endpoint=endpoint,
-                host=host_pattern,
+                host=f"{host}<port:port>",
             )
         )
     elif strategy == "path":
