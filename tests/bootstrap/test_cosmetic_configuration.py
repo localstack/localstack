@@ -1,6 +1,7 @@
 import io
 import os
 from typing import Generator, Type
+from urllib.parse import urlparse
 
 import aws_cdk as cdk
 import pytest
@@ -249,7 +250,11 @@ class TestLocalStackHost:
         health_url = stack_outputs["DomainEndpoint"].replace(
             chosen_localstack_host, constants.LOCALHOST_HOSTNAME
         )
-        r = requests.get(f"http://{health_url}/_cluster/health")
+        # we only have a route matcher for the domain with localstack_host in the URL,
+        # but have to make the request against localhost so set the host header to the custom
+        # domain and make the request against the rewritten domain
+        host = urlparse(f"http://{stack_outputs['DomainEndpoint']}").hostname
+        r = requests.get(f"http://{health_url}/_cluster/health", headers={"Host": host})
         r.raise_for_status()
 
         assert chosen_localstack_host in stack_outputs["ApiUrl"]
