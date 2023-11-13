@@ -46,12 +46,12 @@ class TestGetPreloadedServices:
         assert result == set(SERVICE_PLUGINS.list_available())
 
     def test_with_service_subset(self):
-        with temporary_env({"SERVICES": "s3,sqs", "EAGER_SERVICE_LOADING": "1"}):
+        with temporary_env({"SERVICES": "s3,sns", "EAGER_SERVICE_LOADING": "1"}):
             result = get_preloaded_services()
 
         assert len(result) == 2
         assert "s3" in result
-        assert "sqs" in result
+        assert "sns" in result
 
     def test_custom_service_without_port(self):
         with temporary_env({"SERVICES": "foobar", "EAGER_SERVICE_LOADING": "1"}):
@@ -111,20 +111,20 @@ class TestGetEnabledApis:
         assert result == set(SERVICE_PLUGINS.list_available())
 
     def test_strict_service_loading_enabled_by_default(self):
-        with temporary_env({"SERVICES": "s3,sqs"}):
+        with temporary_env({"SERVICES": "s3,sns"}):
             result = get_enabled_apis()
 
         assert len(result) == 2
         assert "s3" in result
-        assert "sqs" in result
+        assert "sns" in result
 
     def test_with_service_subset(self):
-        with temporary_env({"SERVICES": "s3,sqs", "STRICT_SERVICE_LOADING": "1"}):
+        with temporary_env({"SERVICES": "s3,sns", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
         assert len(result) == 2
         assert "s3" in result
-        assert "sqs" in result
+        assert "sns" in result
 
     def test_custom_service_not_supported(self):
         with temporary_env({"SERVICES": "foobar", "STRICT_SERVICE_LOADING": "1"}):
@@ -156,7 +156,7 @@ class TestGetEnabledApis:
         with temporary_env({"SERVICES": "es,lambda", "STRICT_SERVICE_LOADING": "1"}):
             result = get_enabled_apis()
 
-        assert len(result) == 6
+        assert len(result) == 7
         assert result == {
             # directly given
             "lambda",
@@ -167,6 +167,8 @@ class TestGetEnabledApis:
             "s3",
             "sqs",
             "sts",
+            # secondary dependency from sqs, which is a dependency from lambda
+            "sqs-query",
         }
 
 
