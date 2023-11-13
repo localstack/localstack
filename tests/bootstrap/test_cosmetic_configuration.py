@@ -1,10 +1,13 @@
+import io
 import os
-from typing import Generator
+from typing import Generator, Type
 
 import aws_cdk as cdk
 import pytest
 import requests
+from botocore.exceptions import ClientError
 
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.config import in_docker
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.container import ContainerFactory, LogStreamFactory
@@ -74,6 +77,34 @@ def container(
         class_stream_container_logs(ls_container)
         wait_for_localstack_ready(running_container)
         yield running_container
+
+
+def raise_exception_with_cloudwatch_logs(
+    aws_client: ServiceLevelClientFactory, exc_class: Type[Exception] = AssertionError
+):
+    out = io.StringIO()
+
+    log_group_names = [
+        every["logGroupName"]
+        for every in aws_client.logs.describe_log_groups(logGroupNamePrefix="/aws/lambda")[
+            "logGroups"
+        ]
+    ]
+    for name in log_group_names:
+        print(f"Logs for {name}:", file=out)
+        streams = [
+            every["logStreamName"]
+            for every in aws_client.logs.describe_log_streams(logGroupName=name)["logStreams"]
+        ]
+        for stream in streams:
+            records = aws_client.logs.get_log_events(
+                logGroupName=name,
+                logStreamName=stream,
+            )["events"]
+            for record in records:
+                print(record["message"], file=out)
+
+    raise exc_class(out.getvalue())
 
 
 class TestLocalStackHost:
@@ -219,7 +250,15 @@ class TestLocalStackHost:
             )
 
         # wait a maximum of 10 seconds
-        retry(_is_result_file_ready, retries=10)
+        try:
+            retry(_is_result_file_ready, retries=10)
+        except ClientError as e:
+            if "Not Found" not in str(e):
+                raise
+
+            # we could not find the file in S3 after the retry period, so fail the test with some
+            # useful information
+            raise_exception_with_cloudwatch_logs(aws_client)
 
         body = (
             aws_client.s3.get_object(Bucket=result_bucket, Key=RESULT_KEY)["Body"]
