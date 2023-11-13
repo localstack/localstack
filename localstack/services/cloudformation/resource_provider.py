@@ -53,6 +53,7 @@ PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 # by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
 # add your new provider here when you want it to be the default
 PROVIDER_DEFAULTS = {
+    "AWS::Amplify::App": "ResourceProvider",
     "AWS::ApiGateway::Account": "ResourceProvider",
     "AWS::ApiGateway::ApiKey": "ResourceProvider",
     "AWS::ApiGateway::Authorizer": "ResourceProvider",
