@@ -129,7 +129,6 @@ class TestLocalStackHost:
         infra: InfraProvisioner = infrastructure_setup(
             namespace="LocalStackHostBootstrap",
             port=port,
-            # force_synth=True,
         )
 
         stack = cdk.Stack(infra.cdk_app, STACK_NAME)
@@ -253,7 +252,12 @@ class TestLocalStackHost:
         r = requests.get(f"http://{health_url}/_cluster/health")
         r.raise_for_status()
 
-        api_url = stack_outputs["ApiUrl"].rstrip("/")
+        assert chosen_localstack_host in stack_outputs["ApiUrl"]
+        api_url = (
+            stack_outputs["ApiUrl"]
+            .rstrip("/")
+            .replace(chosen_localstack_host, constants.LOCALHOST_HOSTNAME)
+        )
 
         url = f"{api_url}/upload"
 
