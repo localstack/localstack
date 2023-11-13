@@ -1076,6 +1076,14 @@ class S3RequestParser(RestXMLRequestParser):
             uri_params["Key"] = uri_params["Key"] + "/"
         return super()._parse_shape(request, shape, node, uri_params)
 
+    @_text_content
+    def _parse_integer(self, _, shape, node: str, ___) -> int | None:
+        # S3 accepts empty query string parameters that should be integer
+        # to not break other cases, validate that the shape is in the querystring
+        if node == "" and shape.serialization.get("location") == "querystring":
+            return None
+        return int(node)
+
 
 class SQSQueryRequestParser(QueryRequestParser):
     def _get_serialized_name(self, shape: Shape, default_name: str, node: dict) -> str:
