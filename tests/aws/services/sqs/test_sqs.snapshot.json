@@ -1323,5 +1323,17 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsQueryApi::test_send_message_via_queue_url_with_json_protocol": {
+    "recorded-date": "14-11-2023, 21:27:28",
+    "recorded-content": {
+      "receive-json-on-queue-url": {
+        "Messages": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

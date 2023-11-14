@@ -4173,6 +4173,27 @@ class TestSqsQueryApi:
     # TODO: write tests for making POST requests (not clear how signing would work without custom code)
     #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-making-api-requests.html#structure-post-request
 
+    @markers.aws.validated
+    def test_send_message_via_queue_url_with_json_protocol(
+        self,
+        sqs_create_queue,
+        aws_client_factory,
+        snapshot,
+    ):
+        queue_url = sqs_create_queue()
+        # that is what the PHP SDK is doing in a way, sending the request against the queue URL directly when `json`
+        # protocol should target the root path
+        sqs_client = aws_client_factory(
+            endpoint_url=queue_url,
+        ).sqs
+
+        response = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert (
+            response["ResponseMetadata"]["HTTPHeaders"]["content-type"]
+            == "application/x-amz-json-1.0"
+        )
+        snapshot.match("receive-json-on-queue-url", response)
+
 
 class TestSQSMultiAccounts:
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
