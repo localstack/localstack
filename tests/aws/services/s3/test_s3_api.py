@@ -624,7 +624,7 @@ class TestS3Multipart:
                 )
             snapshot.match(f"upload-part-copy-range-exc-{src_range}", e.value.response)
 
-    @markers.aws.validated()
+    @markers.aws.validated
     @pytest.mark.xfail(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto does not handle the exceptions properly",
