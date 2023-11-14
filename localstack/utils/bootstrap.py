@@ -359,7 +359,7 @@ def validate_localstack_config(name: str):
     docker_env = dict(
         (env.split("=")[0], env.split("=")[1]) for env in ls_service_details.get("environment", {})
     )
-    edge_port = str(docker_env.get("EDGE_PORT") or config.GATEWAY_LISTEN[0].port)
+    edge_port = config.GATEWAY_LISTEN[0].port
     main_container = config.MAIN_CONTAINER_NAME
 
     # docker-compose file validation cases
