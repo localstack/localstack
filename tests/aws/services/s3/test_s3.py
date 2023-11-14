@@ -10,6 +10,7 @@ import os
 import shutil
 import tempfile
 import time
+from importlib.util import find_spec
 from io import BytesIO
 from operator import itemgetter
 from typing import TYPE_CHECKING
@@ -6570,22 +6571,34 @@ class TestS3PresignedUrl:
 
     @markers.aws.validated
     def test_s3_ignored_special_headers(
-        self, s3_bucket, snapshot, patch_s3_skip_signature_validation_false
+        self,
+        s3_bucket,
+        snapshot,
+        patch_s3_skip_signature_validation_false,
+        monkeypatch,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
+        # if the crt.auth is not available, not need to patch as it will use it by default
+        if find_spec("botocore.crt.auth"):
+            # the CRT client does not allow us to pass a protected header, it will trigger an exception, so we need
+            # to patch the Signer selection to the Python implementation which does not have this check
+            from botocore.auth import AUTH_TYPE_MAPS, S3SigV4QueryAuth
+
+            monkeypatch.setitem(AUTH_TYPE_MAPS, "s3v4-query", S3SigV4QueryAuth)
+
         key = "my-key"
         presigned_client = _s3_client_custom_config(
-            Config(signature_version="s3v4"),
+            Config(signature_version="s3v4", s3={"payload_signing_enabled": True}),
             endpoint_url=_endpoint_url(),
         )
 
         def add_content_sha_header(request, **kwargs):
             request.headers["x-amz-content-sha256"] = "UNSIGNED-PAYLOAD"
 
-        presigned_client.meta.events.register_last(
+        presigned_client.meta.events.register(
             "before-sign.s3.PutObject",
-            add_content_sha_header,
+            handler=add_content_sha_header,
         )
         try:
             url = presigned_client.generate_presigned_url(
