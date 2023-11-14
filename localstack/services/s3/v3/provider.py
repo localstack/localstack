@@ -6,7 +6,7 @@ import logging
 from collections import defaultdict
 from operator import itemgetter
 from secrets import token_urlsafe
-from typing import IO, Union
+from typing import IO, Optional, Union
 from urllib import parse as urlparse
 
 from localstack import config
@@ -1965,7 +1965,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         source_range = request.get("CopySourceRange")
         # TODO implement copy source IF (done in ASF provider)
 
-        range_data: Union[ObjectRange, None] = None
+        range_data: Optional[ObjectRange] = None
         if source_range:
             range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
