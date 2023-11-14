@@ -71,7 +71,6 @@ class TestCloudwatch:
         bytes_data = bytes(data, encoding="utf-8")
         encoded_data = gzip.compress(bytes_data)
 
-        url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers(
             "cloudwatch",
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
@@ -91,6 +90,7 @@ class TestCloudwatch:
                 "Authorization": authorization,
             }
         )
+        url = config.external_service_url()
         request = Request(url, encoded_data, headers, method="POST")
         urlopen(request)
 
@@ -201,10 +201,10 @@ class TestCloudwatch:
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=23)]
         )
-        url = f"{config.get_edge_url()}{PATH_GET_RAW_METRICS}"
         headers = aws_stack.mock_aws_request_headers(
             "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
+        url = f"{config.external_service_url()}{PATH_GET_RAW_METRICS}"
         result = requests.get(url, headers=headers)
         assert 200 == result.status_code
         result = json.loads(to_str(result.content))

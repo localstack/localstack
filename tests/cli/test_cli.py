@@ -11,7 +11,7 @@ from click.testing import CliRunner
 import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
-from localstack.config import Directories, get_edge_url, in_docker
+from localstack.config import Directories, in_docker
 from localstack.constants import LOCALHOST_HOSTNAME, LOCALHOST_IP, MODULE_MAIN_PATH, TRUE_STRINGS
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import in_ci
@@ -67,14 +67,16 @@ class TestCliContainerLifecycle:
             config.MAIN_CONTAINER_NAME
         ), "container name was not running after wait"
 
-        health = requests.get(get_edge_url() + "/_localstack/health")
+        # Note: if `LOCALSTACK_HOST` is set to a domain that does not resolve to `127.0.0.1` then
+        # this test will fail
+        health = requests.get(config.external_service_url() + "/_localstack/health")
         assert health.ok, "health request did not return OK: %s" % health.text
 
         result = runner.invoke(cli, ["stop"])
         assert result.exit_code == 0
 
         with pytest.raises(requests.ConnectionError):
-            requests.get(get_edge_url() + "/_localstack/health")
+            requests.get(config.external_service_url() + "/_localstack/health")
 
     def test_start_already_running(self, runner, container_client):
         runner.invoke(cli, ["start", "-d"])

@@ -34,7 +34,7 @@ def test_config_endpoint(config_endpoint):
     # test the Route
     body = {"variable": "FOO", "value": "BAZ"}
     # test the ProxyListener
-    url = f"{config.get_edge_url()}/_localstack/config"
+    url = f"{config.internal_service_url()}/_localstack/config"
     response = requests.post(url, json=body)
     assert response.ok
     response_body = response.json()

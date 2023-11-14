@@ -30,7 +30,7 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
     host = localstack_host or (
         f"s3.{region}.{LOCALHOST_HOSTNAME}" if region != "us-east-1" else S3_VIRTUAL_HOSTNAME
     )
-    s3_edge_url = config.internal_service_url(host=host)
+    s3_edge_url = config.external_service_url(host=host)
     # TODO might add the region here
     return s3_edge_url.replace(f"://{host}", f"://{bucket_name}.{host}")
 
@@ -172,7 +172,7 @@ class TestS3Cors:
         # ListBuckets is an operation outside S3 CORS configuration management
         # it should follow the default rules of LocalStack
 
-        url = f"{config.get_edge_url()}/"
+        url = f"{config.internal_service_url()}/"
         origin = ALLOWED_CORS_ORIGINS[0]
         # we need to "sign" the request so that our service name parser recognize ListBuckets as an S3 operation
         # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
