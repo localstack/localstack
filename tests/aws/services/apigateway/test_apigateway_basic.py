@@ -17,7 +17,6 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.constants import (
     APPLICATION_JSON,
-    LOCALHOST,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
@@ -1220,7 +1219,7 @@ class TestAPIGateway:
         if use_hostname:
             host = f"{api_id}.execute-api.{localstack_host().host}"
             return f"{config.external_service_url(host=host)}/{stage}{path}"
-        return f"{config.internal_service_url(host=LOCALHOST)}/restapis/{api_id}/{stage}/_user_request_{path}"
+        return f"{config.internal_service_url()}/restapis/{api_id}/{stage}/_user_request_{path}"
 
     @markers.aws.unknown
     def test_api_mock_integration_response_params(self, aws_client):
