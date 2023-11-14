@@ -1785,8 +1785,9 @@ def pytest_collection_modifyitems(config: Config, items: list[Item]):
         reason="test only applicable if run against localstack",
     )
     for item in items:
-        if "only_localstack" in item.keywords:
-            item.add_marker(only_localstack)
+        for mark in item.iter_markers():
+            if mark.name.endswith("only_localstack"):
+                item.add_marker(only_localstack)
 
 
 @pytest.fixture
