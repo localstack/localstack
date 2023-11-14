@@ -149,7 +149,7 @@ class S3StoredMultipart(abc.ABC):
         s3_part: S3Part,
         src_bucket: BucketName,
         src_s3_object: S3Object,
-        range_data: Union[ObjectRange, None],
+        range_data: Optional[ObjectRange],
     ) -> None:
         pass
 
