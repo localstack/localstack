@@ -536,6 +536,7 @@ class TestS3ObjectCRUD:
             aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=100-200")
         snapshot.match("get-100-200", e.value.response)
 
+
 @markers.snapshot.skip_snapshot_verify(
     condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
 )
@@ -627,10 +628,6 @@ class TestS3Multipart:
             snapshot.match(f"upload-part-copy-range-exc-{src_range}", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
-        condition=config.LEGACY_V2_S3_PROVIDER,
-        reason="Moto does not handle the exceptions properly",
-    )
     @markers.snapshot.skip_snapshot_verify(
         # Not always present depending on the region
         paths=["$..Owner.DisplayName"],
