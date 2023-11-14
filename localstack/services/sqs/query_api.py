@@ -23,7 +23,7 @@ from localstack.constants import (
 )
 from localstack.http import Request, Response, Router, route
 from localstack.http.dispatcher import Handler
-from localstack.services.sqs.exceptions import MissingParameter
+from localstack.services.sqs.exceptions import MissingRequiredParameterException
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.strings import long_uid
@@ -182,7 +182,9 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
     except OperationNotFoundParserError:
         raise InvalidAction(action)
     except MissingRequiredField as e:
-        raise MissingParameter(f"The request must contain the parameter {e.required_name}.")
+        raise MissingRequiredParameterException(
+            f"The request must contain the parameter {e.required_name}."
+        )
 
     # Extract from auth header to allow cross-account operations
     # TODO: permissions encoded in URL as AUTHPARAMS cannot be accounted for in this method, which is not a big

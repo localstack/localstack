@@ -1607,6 +1607,8 @@ class SqsQueryResponseSerializer(QueryResponseSerializer):
 
     # Some error code changed between JSON and query, and we need to have a way to map it for legacy reason
     JSON_TO_QUERY_ERROR_CODES = {
+        "InvalidParameterValueException": "InvalidParameterValue",
+        "MissingRequiredParameterException": "MissingParameter",
         "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
         "QueueNameExists": "QueueAlreadyExists",
     }
@@ -1682,6 +1684,8 @@ class SqsResponseSerializer(JSONResponseSerializer):
 
     # Some error code changed between JSON and query, and we need to have a way to map it for legacy reason
     JSON_TO_QUERY_ERROR_CODES = {
+        "InvalidParameterValueException": "InvalidParameterValue",
+        "MissingRequiredParameterException": "MissingParameter",
         "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
         "QueueNameExists": "QueueAlreadyExists",
     }

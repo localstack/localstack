@@ -2267,19 +2267,14 @@ class TestSqsProvider:
         assert receive_result["Messages"][0]["MessageAttributes"] == attributes
 
     @markers.aws.validated
-    def test_send_message_with_empty_string_attribute(self, sqs_queue, aws_client):
+    def test_send_message_with_empty_string_attribute(self, sqs_queue, aws_client, snapshot):
         with pytest.raises(ClientError) as e:
             aws_client.sqs.send_message(
                 QueueUrl=sqs_queue,
                 MessageBody="test",
                 MessageAttributes={"ErrorDetails": {"StringValue": "", "DataType": "String"}},
             )
-
-        assert e.value.response["Error"] == {
-            "Type": "Sender",
-            "Code": "InvalidParameterValue",
-            "Message": "Message (user) attribute 'ErrorDetails' must contain a non-empty value of type 'String'.",
-        }
+        snapshot.match("empty-string-attr", e.value.response)
 
     @markers.aws.validated
     def test_send_message_with_invalid_string_attributes(self, sqs_create_queue, aws_client):
@@ -2611,15 +2606,15 @@ class TestSqsProvider:
 
     @pytest.mark.xfail
     @markers.aws.validated
-    def test_set_unsupported_attribute_fifo(self, sqs_create_queue, aws_client):
+    def test_set_unsupported_attribute_fifo(self, sqs_create_queue, aws_client, snapshot):
         # TODO: behaviour diverges from AWS
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        with pytest.raises(Exception) as e:
+        with pytest.raises(ClientError) as e:
             aws_client.sqs.set_queue_attributes(
                 QueueUrl=queue_url, Attributes={"FifoQueue": "true"}
             )
-        e.match("InvalidAttributeName")
+        snapshot.match("invalid-attr-name-1", e.value.response)
 
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         fifo_queue_url = sqs_create_queue(
@@ -2628,11 +2623,11 @@ class TestSqsProvider:
         aws_client.sqs.set_queue_attributes(
             QueueUrl=fifo_queue_url, Attributes={"FifoQueue": "true"}
         )
-        with pytest.raises(Exception) as e:
+        with pytest.raises(ClientError) as e:
             aws_client.sqs.set_queue_attributes(
                 QueueUrl=fifo_queue_url, Attributes={"FifoQueue": "false"}
             )
-        e.match("InvalidAttributeValue")
+        snapshot.match("invalid-attr-name-2", e.value.response)
 
     @markers.aws.validated
     def test_fifo_queue_send_multiple_messages_multiple_single_receives(
@@ -2924,24 +2919,43 @@ class TestSqsProvider:
         assert int(send_result_2["SequenceNumber"]) < int(send_result_3["SequenceNumber"])
 
     @markers.aws.validated
-    def test_posting_to_fifo_requires_deduplicationid_group_id(self, sqs_create_queue, aws_client):
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_posting_to_fifo_requires_deduplicationid_group_id(
+        self, sqs_create_queue, aws_client, snapshot
+    ):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
         message_content = f"test{short_uid()}"
         dedup_id = f"fifo_dedup-{short_uid()}"
         group_id = f"fifo_group-{short_uid()}"
 
-        with pytest.raises(Exception) as e:
+        with pytest.raises(ClientError) as e:
             aws_client.sqs.send_message(
                 QueueUrl=queue_url, MessageBody=message_content, MessageGroupId=group_id
             )
-        e.match("InvalidParameterValue")
+        snapshot.match("invalid-parameter-value", e.value.response)
 
-        with pytest.raises(Exception) as e:
+        with pytest.raises(ClientError) as e:
             aws_client.sqs.send_message(
                 QueueUrl=queue_url, MessageBody=message_content, MessageDeduplicationId=dedup_id
             )
-        e.match("MissingParameter")
+        snapshot.match("missing-parameter", e.value.response)
+
+        # TODO: maybe create a special test, but these 2 exceptions are special in JSON protocol with QueryErrorCode
+        # they append 'Exception' at the end of the error code
+        # validate that the `query` protocol does not do that
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs_query.send_message(
+                QueueUrl=queue_url, MessageBody=message_content, MessageGroupId=group_id
+            )
+        snapshot.match("invalid-parameter-value-query", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs_query.send_message(
+                QueueUrl=queue_url, MessageBody=message_content, MessageDeduplicationId=dedup_id
+            )
+        snapshot.match("missing-parameter-query", e.value.response)
 
     @markers.aws.validated
     def test_posting_to_queue_via_queue_name(self, sqs_create_queue, aws_client):

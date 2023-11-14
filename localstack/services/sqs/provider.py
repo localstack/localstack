@@ -67,7 +67,7 @@ from localstack.http import Request, route
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sqs import constants as sqs_constants
-from localstack.services.sqs.exceptions import InvalidParameterValue
+from localstack.services.sqs.exceptions import InvalidParameterValueException
 from localstack.services.sqs.models import (
     FifoQueue,
     SqsMessage,
@@ -109,7 +109,7 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
     if queue_name.endswith(".fifo"):
         if not fifo:
             # Standard queues with .fifo suffix are not allowed
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
             )
         # The .fifo suffix counts towards the 80-character queue name quota.
@@ -117,7 +117,7 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
 
     # slashes are actually not allowed, but we've allowed it explicitly in localstack
     if not re.match(r"^[a-zA-Z0-9/_-]{1,80}$", queue_name):
-        raise InvalidParameterValue(
+        raise InvalidParameterValueException(
             "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
         )
 
@@ -133,7 +133,7 @@ def check_message_size(
         _message_body_size(message_body) + _message_attributes_size(message_attributes)
         > max_message_size
     ):
-        raise InvalidParameterValue(error)
+        raise InvalidParameterValueException(error)
 
 
 def _message_body_size(body: str):
@@ -386,16 +386,16 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
         return
     for attribute_name in message_attributes:
         if len(attribute_name) >= 256:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "Message (user) attribute names must be shorter than 256 Bytes"
             )
         if not re.match(sqs_constants.ATTR_NAME_CHAR_REGEX, attribute_name.lower()):
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "Message (user) attributes name can only contain upper and lower score characters, digits, periods, "
                 "hyphens and underscores. "
             )
         if not re.match(sqs_constants.ATTR_NAME_PREFIX_SUFFIX_REGEX, attribute_name.lower()):
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "You can't use message attribute names beginning with 'AWS.' or 'Amazon.'. "
                 "These strings are reserved for internal use. Additionally, they cannot start or end with '.'."
             )
@@ -403,14 +403,14 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
         attribute = message_attributes[attribute_name]
         attribute_type = attribute.get("DataType")
         if not attribute_type:
-            raise InvalidParameterValue("Missing required parameter DataType")
+            raise InvalidParameterValueException("Missing required parameter DataType")
         if not re.match(sqs_constants.ATTR_TYPE_REGEX, attribute_type):
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 f"Type for parameter MessageAttributes.Attribute_name.DataType must be prefixed"
                 f'with "String", "Binary", or "Number", but was: {attribute_type}'
             )
         if len(attribute_type) >= 256:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "Message (user) attribute types must be shorter than 256 Bytes"
             )
 
@@ -419,25 +419,25 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
                 attribute_value = attribute.get("StringValue")
 
                 if not attribute_value:
-                    raise InvalidParameterValue(
+                    raise InvalidParameterValueException(
                         f"Message (user) attribute '{attribute_name}' must contain a non-empty value of type 'String'."
                     )
 
                 check_message_content(attribute_value)
             except InvalidMessageContents as e:
                 # AWS throws a different exception here
-                raise InvalidParameterValue(e.args[0])
+                raise InvalidParameterValueException(e.args[0])
 
 
 def check_fifo_id(fifo_id):
     if not fifo_id:
         return
     if len(fifo_id) >= 128:
-        raise InvalidParameterValue(
+        raise InvalidParameterValueException(
             "Message deduplication ID and group ID must be shorter than 128 bytes"
         )
     if not re.match(sqs_constants.FIFO_MSG_REGEX, fifo_id):
-        raise InvalidParameterValue(
+        raise InvalidParameterValueException(
             "Invalid characters found. Deduplication ID and group ID can only contain"
             "alphanumeric characters as well as TODO"
         )
@@ -1011,7 +1011,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         elif (
             num < 1 or num > MAX_NUMBER_OF_MESSAGES
         ) and not SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 f"Value {num} for parameter MaxNumberOfMessages is invalid. "
                 f"Reason: Must be between 1 and 10, if provided."
             )
@@ -1153,18 +1153,20 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             max_receive_count = _redrive_policy.get("maxReceiveCount")
             # TODO: use the actual AWS responses
             if not dl_target_arn:
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     "The required parameter 'deadLetterTargetArn' is missing"
                 )
             if max_receive_count is None:
-                raise InvalidParameterValue("The required parameter 'maxReceiveCount' is missing")
+                raise InvalidParameterValueException(
+                    "The required parameter 'maxReceiveCount' is missing"
+                )
             try:
                 max_receive_count = int(max_receive_count)
                 valid_count = 1 <= max_receive_count <= 1000
             except ValueError:
                 valid_count = False
             if not valid_count:
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     f"Value {redrive_policy} for parameter RedrivePolicy is invalid. Reason: Invalid value for "
                     f"maxReceiveCount: {max_receive_count}, valid values are from 1 to 1000 both inclusive."
                 )
@@ -1233,7 +1235,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         for action in actions:
             if action not in valid:
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     f"Value SQS:{action} for parameter ActionName is invalid. Reason: Please refer to the appropriate "
                     "WSDL for a list of valid actions. "
                 )
@@ -1260,12 +1262,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     "It can be at most 80 letters long."
                 )
             if require_message_deduplication_id and not entry.get("MessageDeduplicationId"):
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     "The queue should either have ContentBasedDeduplication enabled or "
                     "MessageDeduplicationId provided explicitly"
                 )
             if require_fifo_queue_params and not entry.get("MessageGroupId"):
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     "The request must contain the parameter MessageGroupId."
                 )
             if entry_id in visited:
