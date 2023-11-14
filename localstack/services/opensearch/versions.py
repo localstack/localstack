@@ -214,13 +214,15 @@ compatible_versions = [
     ),
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_1.3",
-        TargetVersions=["OpenSearch_2.3", "OpenSearch_2.5"],
+        TargetVersions=["OpenSearch_2.3", "OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9"],
     ),
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_2.3",
-        TargetVersions=["OpenSearch_2.5"],
+        TargetVersions=["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9"],
     ),
-    CompatibleVersionsMap(SourceVersion="OpenSearch_2.5", TargetVersions=["OpenSearch_2.7"]),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_2.5", TargetVersions=["OpenSearch_2.7", "OpenSearch_2.9"]
+    ),
     CompatibleVersionsMap(SourceVersion="OpenSearch_2.7", TargetVersions=["OpenSearch_2.9"]),
 ]
 
