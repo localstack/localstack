@@ -10,7 +10,7 @@ def get_coverage_link_for_service(service_name: str, action_name: str) -> str:
 
     available_services = SERVICE_PLUGINS.list_available()
 
-    # TODO remove this once the sqs-query API has been phased out
+    # TODO we could maybe find a better way of handling this service alias (or maybe we can phase it out at some point)
     if service_name == "sqs-query":
         service_name = "sqs"
 

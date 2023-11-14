@@ -89,7 +89,7 @@ jobs:
 
       - name: "Determine Companion Ref"
         id: determine-companion-ref
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
           result-encoding: string

@@ -215,7 +215,6 @@ class TestSqsProvider:
         assert message["MD5OfBody"] == send_result["MD5OfMessageBody"]
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_receive_max_number_of_messages(self, sqs_queue, snapshot, aws_client):
         queue_url = sqs_queue
         send_result = aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message")
@@ -328,7 +327,6 @@ class TestSqsProvider:
             assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_oversized_message(self, sqs_queue, snapshot, aws_client):
         with pytest.raises(ClientError) as e:
             message_attributes = {"k": {"DataType": "String", "StringValue": "x"}}
@@ -343,7 +341,6 @@ class TestSqsProvider:
         snapshot.match("send_oversized_message", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_message_with_updated_maximum_message_size(self, sqs_queue, snapshot, aws_client):
         new_max_message_size = 1024
         aws_client.sqs.set_queue_attributes(
@@ -368,7 +365,6 @@ class TestSqsProvider:
         snapshot.match("send_oversized_message", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_message_batch_with_oversized_contents(self, sqs_queue, snapshot, aws_client):
         # Send two messages, one of max message size and a second with
         # message body of size 1
@@ -391,7 +387,6 @@ class TestSqsProvider:
         snapshot.match("send_oversized_message_batch", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size(
         self, sqs_queue, snapshot, aws_client
     ):
@@ -1795,7 +1790,6 @@ class TestSqsProvider:
         assert result_follow_up["Messages"] == []
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_too_many_entries_in_batch_request(self, sqs_create_queue, snapshot, aws_client):
         message_count = 20
         queue_name = f"queue-{short_uid()}"
@@ -1813,7 +1807,6 @@ class TestSqsProvider:
         snapshot.match("test_too_many_entries_in_batch_request", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_invalid_batch_id(self, sqs_create_queue, snapshot, aws_client):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1828,7 +1821,6 @@ class TestSqsProvider:
         snapshot.match("test_invalid_batch_id", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_batch_missing_deduplication_id_for_fifo_queue(
         self, sqs_create_queue, snapshot, aws_client
     ):
@@ -1857,7 +1849,6 @@ class TestSqsProvider:
         snapshot.match("test_missing_deduplication_id_for_fifo_queue", e.value.response)
 
     @markers.parity.aws_validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_batch_missing_message_group_id_for_fifo_queue(
         self, sqs_create_queue, snapshot, aws_client
     ):
@@ -3166,7 +3157,7 @@ class TestSqsProvider:
         assert message["Body"] == "message-2"
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$.purge-error-code-query.Error.Detail"])
     def test_successive_purge_calls_fail(self, sqs_create_queue, monkeypatch, snapshot, aws_client):
         monkeypatch.setattr(config, "SQS_DELAY_PURGE_RETRY", True)
         queue_name = f"test-queue-{short_uid()}"
@@ -3180,6 +3171,12 @@ class TestSqsProvider:
             aws_client.sqs.purge_queue(QueueUrl=queue_url)
 
         snapshot.match("purge_queue_error", e.value.response)
+
+        # PurgeQueueInProgress has had its status code removed from the specs, validate that we still return it
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs_query.purge_queue(QueueUrl=queue_url)
+
+        snapshot.match("purge-error-code-query", e.value.response)
 
     @markers.aws.validated
     def test_remove_message_with_old_receipt_handle(self, sqs_create_queue, aws_client):
@@ -3611,7 +3608,6 @@ class TestSqsProvider:
         snapshot.add_transformer(GenericTransformer(_remove_error_details))
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_sqs_permission_lifecycle(self, sqs_queue, aws_client, snapshot, account_id):
         add_permission_response = aws_client.sqs.add_permission(
             QueueUrl=sqs_queue,

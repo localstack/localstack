@@ -157,10 +157,17 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
         try:
             queue_url = sqs.get_queue_url(QueueName=request.desired_state["QueueName"])["QueueUrl"]
             sqs.delete_queue(QueueUrl=queue_url)
-        except sqs.exceptions.QueueDoesNotExist:
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS, resource_model=request.desired_state
-            )
+
+        # FIXME: following a regression in botocore, fixed by
+        #  https://github.com/boto/botocore/commit/50861b96f9d51632d6ddd8bafac8d50f4e8b027a
+        # boto does not model the error properly and will not catch it. Manually assert until 1.31.85 is released
+        # except sqs.exceptions.QueueDoesNotExist:
+        except sqs.exceptions.ClientError as e:
+            if "NonExistentQueue" in e.response["Error"]["Code"]:
+                return ProgressEvent(
+                    status=OperationStatus.SUCCESS, resource_model=request.desired_state
+                )
+            raise
 
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.desired_state)
 
