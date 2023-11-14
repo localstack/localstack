@@ -10,7 +10,7 @@ from localstack.utils.bootstrap import LocalstackContainerServer
 class TestLocalstackContainerServer:
     def test_lifecycle(self):
         server = LocalstackContainerServer()
-        server.container.config.ports.add(config.EDGE_PORT)
+        server.container.config.ports.add(config.GATEWAY_LISTEN[0].port)
 
         assert not server.is_up()
         try:

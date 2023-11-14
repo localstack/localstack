@@ -13,7 +13,7 @@ import (
 func getConfig() *aws.Config {
 	shouldConfigure := os.Getenv("CONFIGURE_CLIENT")
 	if shouldConfigure == "1" {
-	    endpointUrl := "http://" + os.Getenv("LOCALSTACK_HOSTNAME") + ":" + os.Getenv("EDGE_PORT")
+	    endpointUrl := os.Getenv("AWS_ENDPOINT_URL")
 		return &aws.Config{
 			Region:      aws.String("us-east-1"),
 			Credentials: credentials.NewStaticCredentials("test", "test", ""),

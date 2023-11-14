@@ -3331,7 +3331,7 @@ class TestS3:
         monkeypatch.setattr(
             config,
             "LOCALSTACK_HOST",
-            config.HostAndPort(host=custom_hostname, port=config.EDGE_PORT),
+            config.HostAndPort(host=custom_hostname, port=config.GATEWAY_LISTEN[0].port),
         )
         key = "test.file"
         content = "test content 123"
@@ -5483,7 +5483,7 @@ class TestS3PresignedUrl:
     def test_presign_check_signature_validation_for_port_permutation(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
-        host = f"{S3_VIRTUAL_HOSTNAME}:{config.EDGE_PORT}"
+        host = f"{S3_VIRTUAL_HOSTNAME}:{config.GATEWAY_LISTEN[0].port}"
         s3_presign = _s3_client_custom_config(
             Config(signature_version="s3v4"),
             endpoint_url=f"http://{host}",
@@ -5496,9 +5496,9 @@ class TestS3PresignedUrl:
             Params={"Bucket": s3_bucket, "Key": "test"},
             ExpiresIn=86400,
         )
-        assert f":{config.EDGE_PORT}" in presign_url
+        assert f":{config.GATEWAY_LISTEN[0].port}" in presign_url
 
-        host_443 = host.replace(f":{config.EDGE_PORT}", ":443")
+        host_443 = host.replace(f":{config.GATEWAY_LISTEN[0].port}", ":443")
         response = requests.get(presign_url, headers={"host": host_443})
         assert b"test-value" == response._content
 

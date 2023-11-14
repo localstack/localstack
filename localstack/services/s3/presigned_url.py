@@ -84,7 +84,7 @@ IGNORED_SIGV4_HEADERS = [
 FAKE_HOST_ID = "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
 
 HOST_COMBINATION_REGEX = r"^(.*)(:[\d]{0,6})"
-PORT_REPLACEMENT = [":80", ":443", ":%s" % config.EDGE_PORT, ""]
+PORT_REPLACEMENT = [":80", ":443", f":{config.GATEWAY_LISTEN[0].port}", ""]
 
 # STS policy expiration date format
 POLICY_EXPIRATION_FORMAT1 = "%Y-%m-%dT%H:%M:%SZ"

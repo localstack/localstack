@@ -15,6 +15,7 @@ from localstack.aws.connect import connect_externally_to, connect_to
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_utils
+from localstack.utils.urls import localstack_host
 
 try:
     from typing import Literal
@@ -27,7 +28,6 @@ import requests
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
-    LOCALHOST_HOSTNAME,
     LOCALSTACK_ROOT_FOLDER,
     LOCALSTACK_VENV_FOLDER,
     TEST_AWS_ACCESS_KEY_ID,
@@ -686,7 +686,7 @@ def upload_file_to_bucket(s3_client, bucket_name, file_path, file_name=None):
         Key=key,
     )
 
-    domain = "amazonaws.com" if is_aws_cloud() else f"{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    domain = "amazonaws.com" if is_aws_cloud() else localstack_host().host_and_port()
     url = f"https://{bucket_name}.s3.{domain}/{key}"
 
     return {"Bucket": bucket_name, "Key": key, "Url": url}

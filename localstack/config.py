@@ -1248,7 +1248,7 @@ def populate_config_env_var_names():
         and key != "LOCALSTACK_CLI"
     ]
 
-    # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
+    # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOST)
     CONFIG_ENV_VARS += [
         "LOCALSTACK_" + v for v in CONFIG_ENV_VARS if not v.startswith("LOCALSTACK_")
     ]
