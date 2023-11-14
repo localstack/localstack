@@ -18,7 +18,6 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     ENV_DEV,
     HEADER_LOCALSTACK_ACCOUNT_ID,
-    INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
     REGION_LOCAL,
 )
@@ -161,20 +160,6 @@ def get_local_region():
 def get_boto3_region() -> str:
     """Return the region name, as determined from the environment when creating a new boto3 session"""
     return boto3.session.Session().region_name
-
-
-# TODO: remove this and use the `is_internal_call` property of RequestContext
-def is_internal_call_context(headers) -> bool:
-    """Return whether we are executing in the context of an internal API call, i.e.,
-    the case where one API uses a boto3 client to call another API internally."""
-    if HEADER_LOCALSTACK_ACCOUNT_ID in headers.keys():
-        # TODO: Used by the old client, marked for removal
-        return True
-
-    if INTERNAL_AWS_ACCESS_KEY_ID in headers.get("Authorization", ""):
-        return True
-
-    return False
 
 
 def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
