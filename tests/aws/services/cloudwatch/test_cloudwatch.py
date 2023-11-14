@@ -23,7 +23,7 @@ PUBLICATION_RETRIES = 5
 
 
 def is_old_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2"
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") == "v2"
 
 
 class TestCloudwatch:
@@ -105,6 +105,7 @@ class TestCloudwatch:
         assert namespace == rs["Metrics"][0]["Namespace"]
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_put_metric_data_validation(self, aws_client):
         namespace = f"ns-{short_uid()}"
         utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)
@@ -1612,6 +1613,7 @@ class TestCloudwatch:
         snapshot.match("describe_minimal_metric_alarm", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_get_metric_data_with_zero_and_labels(self, aws_client):
         utc_now = datetime.now(tz=timezone.utc)
 
