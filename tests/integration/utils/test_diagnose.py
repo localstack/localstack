@@ -10,7 +10,6 @@ def test_diagnose_resource():
 
     assert "/tmp" in result["file-tree"]
     assert "/var/lib/localstack" in result["file-tree"]
-    assert result["config"]["EDGE_PORT"] == config.EDGE_PORT
     assert result["config"]["DATA_DIR"] == config.DATA_DIR
     assert result["config"]["GATEWAY_LISTEN"] == [config.HostAndPort("0.0.0.0", 4566)]
     assert result["important-endpoints"]["localhost.localstack.cloud"].startswith("127.0.")

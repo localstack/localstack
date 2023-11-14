@@ -594,7 +594,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
 def populate_edge_configuration(
     environment: Mapping[str, str]
-) -> Tuple[HostAndPort, UniqueHostAndPortList, int]:
+) -> Tuple[HostAndPort, UniqueHostAndPortList]:
     """Populate the LocalStack edge configuration from environment variables."""
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
@@ -629,13 +629,9 @@ def populate_edge_configuration(
     assert gateway_listen is not None
     assert localstack_host is not None
 
-    # derive legacy variables from GATEWAY_LISTEN
-    edge_port = gateway_listen[0].port
-
     return (
         localstack_host,
         UniqueHostAndPortList(gateway_listen),
-        edge_port,
     )
 
 
@@ -647,8 +643,6 @@ def populate_edge_configuration(
     # Main configuration of the listen address of the hypercorn proxy. Of the form
     # <ip_address>:<port>(,<ip_address>:port>)*
     GATEWAY_LISTEN,
-    # -- Legacy variables
-    EDGE_PORT,
 ) = populate_edge_configuration(os.environ)
 
 # IP of the docker bridge used to enable access between containers
