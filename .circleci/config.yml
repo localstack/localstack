@@ -194,7 +194,6 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-
   docker-build:
     parameters:
       platform:
@@ -510,9 +509,6 @@ workflows:
           requires:
             - preflight
       - itest-s3-v2-legacy-provider:
-          requires:
-            - preflight
-      - itest-cloudwatch-v2-provider:
           requires:
             - preflight
       - itest-cloudwatch-v2-provider:
