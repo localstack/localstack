@@ -539,6 +539,7 @@ class TestS3ObjectCRUD:
 
 class TestS3Multipart:
     # TODO: write a validated test for UploadPartCopy preconditions
+
     @markers.aws.validated
     @pytest.mark.xfail(
         condition=config.LEGACY_V2_S3_PROVIDER,
@@ -622,6 +623,47 @@ class TestS3Multipart:
                     CopySourceRange=f"bytes={src_range}",
                 )
             snapshot.match(f"upload-part-copy-range-exc-{src_range}", e.value.response)
+
+    @markers.aws.validated()
+    @pytest.mark.xfail(
+        condition=config.LEGACY_V2_S3_PROVIDER,
+        reason="Moto does not handle the exceptions properly",
+    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PartNumberMarker"])  # TODO: invetigate this
+    def test_upload_part_copy_no_copy_source_range(self, aws_client, s3_bucket, snapshot):
+        """
+        upload_part_copy should not require CopySourceRange to be populated
+        """
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+
+        src_key = "src-key"
+        content = "0123456789"
+        put_src_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body=content)
+        snapshot.match("put-src-object", put_src_object)
+        key = "test-upload-part-copy"
+        create_multipart = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
+        snapshot.match("create-multipart", create_multipart)
+        upload_id = create_multipart["UploadId"]
+
+        copy_source_key = f"{s3_bucket}/{src_key}"
+        parts = []
+        upload_part_copy = aws_client.s3.upload_part_copy(
+            Bucket=s3_bucket, UploadId=upload_id, Key=key, PartNumber=1, CopySource=copy_source_key
+        )
+        snapshot.match("upload-part-copy", upload_part_copy)
+        parts.append({"ETag": upload_part_copy["CopyPartResult"]["ETag"], "PartNumber": 1})
+
+        list_parts = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key, UploadId=upload_id)
+        snapshot.match("list-parts", list_parts)
 
 
 class TestS3BucketVersioning:

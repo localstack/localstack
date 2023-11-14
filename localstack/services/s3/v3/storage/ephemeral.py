@@ -8,7 +8,7 @@ from io import BytesIO
 from shutil import rmtree
 from tempfile import SpooledTemporaryFile, mkdtemp
 from threading import RLock
-from typing import IO, Iterator, Optional, TypedDict
+from typing import IO, Iterator, Optional, TypedDict, Union
 
 from readerwriterlock import rwlock
 
@@ -290,7 +290,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         s3_part: S3Part,
         src_bucket: BucketName,
         src_s3_object: S3Object,
-        range_data: ObjectRange,
+        range_data: Union[ObjectRange, None],
     ) -> None:
         """
         Create and add an EphemeralS3StoredObject to the Multipart collection, with an S3Object as input. This will
@@ -303,6 +303,10 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         """
         src_stored_object = self._s3_store.open(src_bucket, src_s3_object)
         stored_part = self.open(s3_part)
+
+        if not range_data:
+            stored_part.write(src_stored_object)
+            return
 
         object_slice = LimitedStream(src_stored_object, range_data=range_data)
         stored_part.write(object_slice)

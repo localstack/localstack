@@ -1964,7 +1964,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         source_range = request.get("CopySourceRange")
         # TODO implement copy source IF (done in ASF provider)
-        range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
+
+        range_data: Union[ObjectRange, None] = None
+        if source_range:
+            range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
         s3_part = S3Part(part_number=part_number)
 

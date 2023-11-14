@@ -1,6 +1,6 @@
 import abc
 from io import RawIOBase
-from typing import IO, Iterable, Iterator, Optional
+from typing import IO, Iterable, Iterator, Optional, Union
 
 from localstack.aws.api.s3 import BucketName, MultipartUploadId, PartNumber
 from localstack.services.s3.utils import ObjectRange
@@ -149,7 +149,7 @@ class S3StoredMultipart(abc.ABC):
         s3_part: S3Part,
         src_bucket: BucketName,
         src_s3_object: S3Object,
-        range_data: ObjectRange,
+        range_data: Union[ObjectRange, None],
     ) -> None:
         pass
 
