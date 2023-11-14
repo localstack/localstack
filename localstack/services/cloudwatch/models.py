@@ -30,8 +30,7 @@ class LocalStackMetricAlarm:
         self.set_default_attributes()
 
     def set_default_attributes(self):
-        # TODO: check timestamp format, moto  has a nanosecond function
-        current_time = datetime.datetime.now()
+        current_time = datetime.datetime.utcnow()
         self.alarm["AlarmArn"] = arns.cloudwatch_alarm_arn(
             self.alarm["AlarmName"], account_id=self.account_id, region_name=self.region
         )
