@@ -560,14 +560,11 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-<<<<<<< HEAD
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
-=======
             - itest-lambda-legacy-local
             - itest-sfn-v2-provider
             - itest-s3-v3-provider
->>>>>>> 8170a0daf (add test suite for CW v2 provider (#9465))
             - itest-cloudwatch-v2-provider
             - acceptance-tests
             - docker-test-amd64
@@ -579,14 +576,11 @@ workflows:
             branches:
               only: master
           requires:
-<<<<<<< HEAD
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
-=======
             - itest-lambda-legacy-local
             - itest-sfn-v2-provider
             - itest-s3-v3-provider
->>>>>>> 8170a0daf (add test suite for CW v2 provider (#9465))
             - itest-cloudwatch-v2-provider
             - acceptance-tests
             - docker-test-amd64
