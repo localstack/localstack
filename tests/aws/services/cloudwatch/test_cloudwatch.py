@@ -23,7 +23,7 @@ PUBLICATION_RETRIES = 5
 
 
 def is_old_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") == "v2"
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2"
 
 
 class TestCloudwatch:
