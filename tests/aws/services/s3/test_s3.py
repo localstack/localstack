@@ -6573,12 +6573,9 @@ class TestS3PresignedUrl:
     def test_s3_ignored_special_headers(
         self,
         s3_bucket,
-        snapshot,
         patch_s3_skip_signature_validation_false,
         monkeypatch,
     ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-
         # if the crt.auth is not available, not need to patch as it will use it by default
         if find_spec("botocore.crt.auth"):
             # the CRT client does not allow us to pass a protected header, it will trigger an exception, so we need
