@@ -1,7 +1,6 @@
 import json
 import os
 
-# import requests
 import boto3
 import requests
 

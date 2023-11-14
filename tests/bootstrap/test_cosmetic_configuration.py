@@ -237,7 +237,7 @@ class TestLocalStackHost:
         Scenario:
             * API Gateway handles web request
             * Broadcasts message onto SNS topic
-            * Lambda subscribes via SQS and inserts message into OpenSearch
+            * Lambda subscribes via SQS and queries the OpenSearch domain health endpoint
         """
         # check cluster health endpoint
 

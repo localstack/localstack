@@ -23,7 +23,6 @@ from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from localstack.utils.threads import TMP_THREADS
 from localstack.utils.time import now
-from localstack.utils.urls import localstack_host
 
 EVENTS_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.fifo")
 LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.log")
@@ -306,7 +305,7 @@ def get_stream_info(
     if aws_stack.is_local_env(env):
         stream_info["conn_kwargs"] = {
             "host": LOCALHOST,
-            "port": localstack_host().port,
+            "port": config.GATEWAY_LISTEN[0].port,
             "is_secure": bool(config.USE_SSL),
         }
     if endpoint_url:

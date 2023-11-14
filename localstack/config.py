@@ -417,8 +417,7 @@ DEVELOP_PORT = int(os.environ.get("DEVELOP_PORT", "").strip() or DEFAULT_DEVELOP
 # whether to make debugpy wait for a debbuger client
 WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 
-# whether to use SSL encryption for the services
-# TODO: this is deprecated and should be removed (edge port supports HTTP/HTTPS multiplexing)
+# whether to assume http or https for `get_protocol`
 USE_SSL = is_env_true("USE_SSL")
 
 # whether the S3 legacy V2/ASF provider is enabled
@@ -1261,18 +1260,8 @@ def populate_config_env_var_names():
 populate_config_env_var_names()
 
 
-def service_port(service_key: str, external: bool = False) -> int:
-    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use."""
-    warnings.warn(
-        "Deprecated: use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use.",
-        DeprecationWarning,
-    )
-    if external:
-        return LOCALSTACK_HOST.port
-    return GATEWAY_LISTEN[0].port
-
-
-def get_protocol():
+# helpers to build urls
+def get_protocol() -> str:
     return "https" if USE_SSL else "http"
 
 
@@ -1292,8 +1281,8 @@ def external_service_url(
 def internal_service_url(
     host: Optional[str] = None, port: Optional[int] = None, protocol: Optional[str] = None
 ) -> str:
-    """Returns a service URL for internal use within where LocalStack runs.
-    Cannot be customized through LOCALSTACK_HOST because we assume LocalStack runs on the same host (i.e., localhost).
+    """Returns a service URL for internal use within where LocalStack runs. Cannot be customized
+    through LOCALSTACK_HOST because we assume LocalStack runs on the same host (i.e., localhost).
     """
     protocol = protocol or get_protocol()
     host = host or LOCALHOST
@@ -1301,35 +1290,47 @@ def internal_service_url(
     return f"{protocol}://{host}:{port}"
 
 
-# TODO: Go over all usages and decide whether it's an internal or external usage
+# DEPRECATED: old helpers for building URLs
+
+
 def service_url(service_key, host=None, port=None):
-    """@deprecated: Use `internal_service_url()` instead.
-    We assume that most usages are internal but really need to check and update each usage accordingly.
+    """@deprecated: Use `internal_service_url()` instead. We assume that most usages are internal
+    but really need to check and update each usage accordingly.
     """
     warnings.warn(
-        """@deprecated: Use `internal_service_url()` instead.
-        We assume that most usages are internal but really need to check and update each usage accordingly.
-        """,
+        """@deprecated: Use `internal_service_url()` instead. We assume that most usages are
+        internal but really need to check and update each usage accordingly.""",
         DeprecationWarning,
     )
     return internal_service_url(host=host, port=port)
 
 
-# TODO: go over all usages and replace depending on internal or external usage
-def get_edge_port_http():
-    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use.
-    This function is also not needed anymore because we don't separate between HTTP and HTTP ports anymore since
-    LocalStack listens to both."""
+def service_port(service_key: str, external: bool = False) -> int:
+    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for
+    internal use."""
     warnings.warn(
-        """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use.
-        This function is also not needed anymore because we don't separate between HTTP and HTTP ports anymore since
-        LocalStack listens to both.""",
+        "Deprecated: use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for "
+        "internal use.",
+        DeprecationWarning,
+    )
+    if external:
+        return LOCALSTACK_HOST.port
+    return GATEWAY_LISTEN[0].port
+
+
+def get_edge_port_http():
+    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for
+    internal use. This function is also not needed anymore because we don't separate between HTTP
+    and HTTP ports anymore since LocalStack listens to both."""
+    warnings.warn(
+        """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port`
+        for internal use. This function is also not needed anymore because we don't separate
+        between HTTP and HTTP ports anymore since LocalStack listens to both.""",
         DeprecationWarning,
     )
     return GATEWAY_LISTEN[0].port
 
 
-# TODO: Go over all usages and decide whether it's an internal or external usage
 def get_edge_url(localstack_hostname=None, protocol=None):
     """@deprecated: Use `internal_service_url()` instead.
     We assume that most usages are internal but really need to check and update each usage accordingly.
@@ -1341,12 +1342,6 @@ def get_edge_url(localstack_hostname=None, protocol=None):
         DeprecationWarning,
     )
     return internal_service_url(host=localstack_hostname, protocol=protocol)
-
-
-def gateway_listen_ports_info() -> str:
-    """Example: http port [4566,443]"""
-    gateway_listen_ports = [gw_listen.port for gw_listen in GATEWAY_LISTEN]
-    return f"{get_protocol()} port {gateway_listen_ports}"
 
 
 class ServiceProviderConfig(Mapping[str, str]):
