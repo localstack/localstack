@@ -1609,6 +1609,7 @@ class SqsQueryResponseSerializer(QueryResponseSerializer):
     JSON_TO_QUERY_ERROR_CODES = {
         "InvalidParameterValueException": "InvalidParameterValue",
         "MissingRequiredParameterException": "MissingParameter",
+        "AccessDeniedException": "AccessDenied",
         "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
         "QueueNameExists": "QueueAlreadyExists",
     }
@@ -1686,6 +1687,7 @@ class SqsResponseSerializer(JSONResponseSerializer):
     JSON_TO_QUERY_ERROR_CODES = {
         "InvalidParameterValueException": "InvalidParameterValue",
         "MissingRequiredParameterException": "MissingParameter",
+        "AccessDeniedException": "AccessDenied",
         "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
         "QueueNameExists": "QueueAlreadyExists",
     }
