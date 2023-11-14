@@ -6583,8 +6583,9 @@ class TestS3PresignedUrl:
         def add_content_sha_header(request, **kwargs):
             request.headers["x-amz-content-sha256"] = "UNSIGNED-PAYLOAD"
 
-        presigned_client.meta.events.register(
-            "before-sign.s3.PutObject", add_content_sha_header, unique_id="1"
+        presigned_client.meta.events.register_last(
+            "before-sign.s3.PutObject",
+            add_content_sha_header,
         )
         try:
             url = presigned_client.generate_presigned_url(
@@ -6606,7 +6607,8 @@ class TestS3PresignedUrl:
 
         finally:
             presigned_client.meta.events.unregister(
-                "before-sign.s3.PutObject", add_content_sha_header, unique_id="1"
+                "before-sign.s3.PutObject",
+                add_content_sha_header,
             )
 
         # recreate the request, without the signed header
