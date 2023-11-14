@@ -64,20 +64,7 @@ SIGNATURE_V4_POST_FIELDS = [
 # headers to blacklist from request_dict.signed_headers
 BLACKLISTED_HEADERS = ["X-Amz-Security-Token"]
 
-# query params overrides for multipart upload and node sdk
-# TODO: this will depends on query/post v2/v4. Manage independently
-ALLOWED_QUERY_PARAMS = [
-    "x-id",
-    "x-amz-user-agent",
-    "x-amz-content-sha256",
-    "versionid",
-    "uploadid",
-    "partnumber",
-]
-
 IGNORED_SIGV4_HEADERS = [
-    "x-id",
-    "x-amz-user-agent",
     "x-amz-content-sha256",
 ]
 
@@ -578,11 +565,10 @@ class S3SigV4SignatureContext:
         not_signed_headers = []
         for header, value in headers.items():
             header_low = header.lower()
-            if header_low.startswith("x-amz-"):
+            if header_low.startswith("x-amz-") and header_low not in signed_headers.lower():
                 if header_low in IGNORED_SIGV4_HEADERS:
                     continue
-                if header_low not in signed_headers.lower():
-                    not_signed_headers.append(header_low)
+                not_signed_headers.append(header_low)
             if header_low in signed_headers:
                 signature_headers[header_low] = value
 
