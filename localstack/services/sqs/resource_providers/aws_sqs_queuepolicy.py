@@ -83,9 +83,8 @@ class SQSQueuePolicyProvider(ResourceProvider[SQSQueuePolicyProperties]):
             try:
                 sqs.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": ""})
 
-            except sqs.exceptions.ClientError as err:
-                if "AWS.SimpleQueueService.NonExistentQueue" != err.response["Error"]["Code"]:
-                    return ProgressEvent(status=OperationStatus.FAILED, resource_model={})
+            except sqs.exceptions.QueueDoesNotExist:
+                return ProgressEvent(status=OperationStatus.FAILED, resource_model={})
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,

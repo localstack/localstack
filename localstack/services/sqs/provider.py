@@ -618,25 +618,37 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._stop_cloudwatch_metrics_reporting()
 
     @staticmethod
-    def _require_queue(account_id: str, region_name: str, name: str) -> SqsQueue:
+    def _require_queue(
+        account_id: str, region_name: str, name: str, is_query: bool = False
+    ) -> SqsQueue:
         """
         Returns the queue for the given name, or raises QueueDoesNotExist if it does not exist.
 
         :param: context: the request context
         :param name: the name to look for
+        :param is_query: whether the request is using query protocol (error message is different)
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
         store = SqsProvider.get_store(account_id, region_name)
         with _STORE_LOCK:
             if name not in store.queues.keys():
-                raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
+                if is_query:
+                    message = "The specified queue does not exist for this wsdl version."
+                else:
+                    message = "The specified queue does not exist."
+                raise QueueDoesNotExist(message)
 
             return store.queues[name]
 
     def _require_queue_by_arn(self, context: RequestContext, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
-        return self._require_queue(arn["account"], arn["region"], arn["resource"])
+        return self._require_queue(
+            arn["account"],
+            arn["region"],
+            arn["resource"],
+            is_query=context.service.service_name == "sqs-query",
+        )
 
     def _resolve_queue(
         self,
@@ -655,7 +667,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :raises QueueDoesNotExist: if the queue does not exist
         """
         account_id, region_name, name = resolve_queue_location(context, queue_name, queue_url)
-        return self._require_queue(account_id, region_name or context.region, name)
+        is_query = context.service.service_name == "sqs-query"
+        return self._require_queue(
+            account_id, region_name or context.region, name, is_query=is_query
+        )
 
     def create_queue(
         self,
@@ -722,11 +737,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        store = self.get_store(queue_owner_aws_account_id or context.account_id, context.region)
-        if queue_name not in store.queues.keys():
-            raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
-
-        queue = store.queues[queue_name]
+        queue = self._require_queue(
+            queue_owner_aws_account_id or context.account_id,
+            context.region,
+            queue_name,
+            is_query=context.service.service_name == "sqs-query",
+        )
 
         return GetQueueUrlResult(QueueUrl=queue.url(context))
 

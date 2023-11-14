@@ -3710,6 +3710,27 @@ class TestSqsProvider:
             aws_client.sqs.remove_permission(QueueUrl=sqs_queue, Label="crossaccountpermission2")
         snapshot.match("get-queue-policy-attribute-delete-non-existent-label", e.value.response)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_non_existent_queue(self, aws_client, sqs_create_queue, sqs_queue_exists, snapshot):
+        queue_name = f"test-queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        aws_client.sqs.delete_queue(QueueUrl=queue_url)
+        assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.get_queue_attributes(QueueUrl=queue_url)
+        snapshot.match("queue-does-not-exist", e.value.response)
+
+        # validate both the client exception handling in boto and GetQueueUrl
+        with pytest.raises(aws_client.sqs.exceptions.QueueDoesNotExist) as e:
+            aws_client.sqs.get_queue_url(QueueName=queue_name)
+        snapshot.match("queue-does-not-exist-url", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs_query.get_queue_attributes(QueueUrl=queue_url)
+        snapshot.match("queue-does-not-exist-query", e.value.response)
+
 
 @pytest.fixture()
 def sqs_http_client(aws_http_client_factory):

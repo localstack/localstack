@@ -1282,5 +1282,46 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_non_existent_queue": {
+    "recorded-date": "14-11-2023, 13:04:10",
+    "recorded-content": {
+      "queue-does-not-exist": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.NonExistentQueue",
+          "Message": "The specified queue does not exist.",
+          "QueryErrorCode": "QueueDoesNotExist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "queue-does-not-exist-url": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.NonExistentQueue",
+          "Message": "The specified queue does not exist.",
+          "QueryErrorCode": "QueueDoesNotExist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "queue-does-not-exist-query": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.NonExistentQueue",
+          "Detail": null,
+          "Message": "The specified queue does not exist for this wsdl version.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
