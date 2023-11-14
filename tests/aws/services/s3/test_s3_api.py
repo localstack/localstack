@@ -536,7 +536,9 @@ class TestS3ObjectCRUD:
             aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=100-200")
         snapshot.match("get-100-200", e.value.response)
 
-
+@markers.snapshot.skip_snapshot_verify(
+    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
+)
 class TestS3Multipart:
     # TODO: write a validated test for UploadPartCopy preconditions
 
