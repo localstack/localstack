@@ -631,7 +631,10 @@ class TestS3Multipart:
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto does not handle the exceptions properly",
     )
-    @markers.snapshot.skip_snapshot_verify(paths=["$..PartNumberMarker"])  # TODO: invetigate this
+    @markers.snapshot.skip_snapshot_verify(
+        # Not always present depending on the region
+        paths=["$..Owner.DisplayName"],
+    )
     def test_upload_part_copy_no_copy_source_range(self, aws_client, s3_bucket, snapshot):
         """
         upload_part_copy should not require CopySourceRange to be populated
