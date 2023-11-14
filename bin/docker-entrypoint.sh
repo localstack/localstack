@@ -18,9 +18,10 @@ if [[ $LOCALSTACK_API_KEY ]] && ! compgen -G /usr/lib/localstack/.*pro-version >
     echo ""
 fi
 
-# Strip `LOCALSTACK_` prefix in environment variables name (except LOCALSTACK_HOST)
+# Strip `LOCALSTACK_` prefix in environment variables name; except LOCALSTACK_HOST and LOCALSTACK_HOSTNAME (deprecated)
 source <(
   env |
+  grep -v -e '^LOCALSTACK_HOSTNAME' |
   grep -v -e '^LOCALSTACK_HOST' |
   grep -v -e '^LOCALSTACK_[[:digit:]]' | # See issue #1387
   sed -ne 's/^LOCALSTACK_\([^=]\+\)=.*/export \1=${LOCALSTACK_\1}/p'
