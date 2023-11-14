@@ -138,7 +138,7 @@ def handle_request(request: Request, region: str) -> Response:
     # some SDK (PHP) still send requests to the Queue URL even though the JSON spec does not allow it in the
     # documentation. If the request is `json`, raise `NotFound` so that we continue the handler chain and the provider
     # can handle the request
-    if request.headers.get("Content-Type").lower() == "application/x-amz-json-1.0":
+    if request.headers.get("Content-Type", "").lower() == "application/x-amz-json-1.0":
         raise NotFound
 
     request_id = long_uid()
