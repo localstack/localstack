@@ -697,7 +697,7 @@ class TestEdgeProxiedOpensearchCluster:
     @markers.aws.unknown
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
-        cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
+        cluster_url = f"{config.internal_service_url()}/{cluster_id}"
         arn = f"arn:aws:es:us-east-1:000000000000:domain/{cluster_id}"
         cluster = EdgeProxiedOpensearchCluster(cluster_url, arn, CustomEndpoint(True, cluster_url))
 

@@ -9,7 +9,7 @@ exports.handler = async (event, context, callback) => {
 
     const BUCKET_NAME = process.env.AWS_LAMBDA_FUNCTION_NAME;
     let s3;
-    if (process.env.LOCALSTACK_HOSTNAME) {
+    if (process.env.AWS_ENDPOINT_URL) {
         const CREDENTIALS = {
             secretAccessKey: 'test',
             accessKeyId: 'test',

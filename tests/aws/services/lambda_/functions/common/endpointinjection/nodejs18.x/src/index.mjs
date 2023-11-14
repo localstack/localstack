@@ -6,7 +6,7 @@ let sqsClient;
 if (shouldConfigureClient) {
     sqsClient = new SQSClient({
         region: "us-east-1",
-        endpoint: `http://${process.env.LOCALSTACK_HOSTNAME}:${process.env.EDGE_PORT}`
+        endpoint: process.env.AWS_ENDPOINT_URL
     });
 } else {
     sqsClient = new SQSClient({region: "us-east-1"});

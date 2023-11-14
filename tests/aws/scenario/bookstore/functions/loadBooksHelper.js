@@ -7,9 +7,9 @@ const url = require("url");
 var AWS = require("aws-sdk");
 let documentClient;
 let s3Client;
-if (process.env.LOCALSTACK_HOSTNAME) {
+if (process.env.AWS_ENDPOINT_URL) {
   const localStackS3Config = {
-      endpoint: `http://${process.env.LOCALSTACK_HOSTNAME}:${process.env.EDGE_PORT}`,
+      endpoint: process.env.AWS_ENDPOINT_URL,
       s3ForcePathStyle: true,
       accessKeyId: 'test',
       secretAccessKey: 'test',
@@ -18,7 +18,7 @@ if (process.env.LOCALSTACK_HOSTNAME) {
   s3Client = new AWS.S3(localStackS3Config);
 
   documentClient = new AWS.DynamoDB.DocumentClient({
-        endpoint: `http://${process.env.LOCALSTACK_HOSTNAME}:${process.env.EDGE_PORT}`,
+        endpoint: process.env.AWS_ENDPOINT_URL,
         region: 'us-east-1', // Change the region as per your setup
       }
   );
