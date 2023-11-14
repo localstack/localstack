@@ -54,6 +54,7 @@ PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 # add your new provider here when you want it to be the default
 PROVIDER_DEFAULTS = {
     "AWS::Amplify::App": "ResourceProvider",
+    "AWS::Amplify::Branch": "ResourceProvider",
     "AWS::ApiGateway::Account": "ResourceProvider",
     "AWS::ApiGateway::ApiKey": "ResourceProvider",
     "AWS::ApiGateway::Authorizer": "ResourceProvider",
