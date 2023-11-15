@@ -70,6 +70,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::UsagePlan": "ResourceProvider",
     "AWS::ApiGateway::UsagePlanKey": "ResourceProvider",
     "AWS::ApiGatewayV2::VpcLink": "ResourceProvider",
+    "AWS::ApiGatewayV2::DomainName": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
