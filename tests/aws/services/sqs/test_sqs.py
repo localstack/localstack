@@ -933,6 +933,21 @@ class TestSqsProvider:
         assert len(messages) == 1
 
     @markers.aws.validated
+    def test_change_message_visibility_after_visibility_timeout_expiration(
+        self, snapshot, sqs_create_queue, aws_client
+    ):
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "1"})
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="test")
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        receipt = response["Messages"][0]["ReceiptHandle"]
+        time.sleep(2)
+        # VisibiltyTimeout was 1 and has now expired
+        response = aws_client.sqs.change_message_visibility(
+            QueueUrl=queue_url, ReceiptHandle=receipt, VisibilityTimeout=2
+        )
+        snapshot.match("visibility_timeout_expired", response)
+
+    @markers.aws.validated
     def test_receive_message_with_visibility_timeout_updates_timeout(
         self, sqs_create_queue, aws_client
     ):

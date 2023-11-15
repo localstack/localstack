@@ -1335,5 +1335,16 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_after_visibility_timeout_expiration": {
+    "recorded-date": "14-11-2023, 17:51:55",
+    "recorded-content": {
+      "visibility_timeout_expired": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
