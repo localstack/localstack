@@ -353,7 +353,6 @@ class LocalstackResources(Router):
         self.add(Resource("/_localstack/init", InitScriptsResource()))
         self.add(Resource("/_localstack/init/<stage>", InitScriptsStageResource()))
         self.add(Resource("/_localstack/cloudformation/deploy", CloudFormationUi()))
-        self.add(Resource("/_localstack/routes", RoutesResource()))
 
         if config.ENABLE_CONFIG_UPDATES:
             LOG.warning(
@@ -369,6 +368,7 @@ class LocalstackResources(Router):
             )
             self.add(Resource("/_localstack/diagnose", DiagnoseResource()))
             self.add(Resource("/_localstack/usage", UsageResource()))
+            self.add(Resource("/_localstack/routes", RoutesResource()))
 
 
 @singleton_factory
