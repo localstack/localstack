@@ -4547,12 +4547,13 @@ class TestS3:
         )
         list_buckets_dict = xmltodict.parse(list_buckets_resp.content)
 
-        buckets = list_buckets_dict["ListAllMyBucketsResult"]["Buckets"]
+        buckets = list_buckets_dict["ListAllMyBucketsResult"]["Buckets"]["Bucket"]
         # because of XML parsing, it can either be a list or a dict
+
         if isinstance(buckets, list):
             bucket = buckets[0]
         else:
-            bucket = buckets["Bucket"]
+            bucket = buckets
         bucket_timestamp: str = bucket["CreationDate"]
         assert_timestamp_is_iso8061_s3_format(bucket_timestamp)
 
