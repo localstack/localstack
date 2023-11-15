@@ -138,30 +138,26 @@ class TestEdgeVariablesDerivedCorrectly:
         (
             actual_ls_host,
             actual_gateway_listen,
-            actual_edge_port,
         ) = config.populate_edge_configuration(environment)
 
         assert actual_ls_host == expected_localstack_host
         assert actual_gateway_listen == expected_gateway_listen
-        assert actual_edge_port == expected_edge_port
 
     def test_gateway_listen_multiple_addresses(self):
         environment = {"GATEWAY_LISTEN": "0.0.0.0:9999,0.0.0.0:443"}
         (
             _,
             gateway_listen,
-            edge_port,
         ) = config.populate_edge_configuration(environment)
 
         assert gateway_listen == [
             HostAndPort(host="0.0.0.0", port=9999),
             HostAndPort(host="0.0.0.0", port=443),
         ]
-        # take the first value
-        assert edge_port == 9999
 
     def test_legacy_variables_ignored_if_given(self):
-        """Providing legacy variables removed in 3.0 should not affect the default configuration"""
+        """Providing legacy variables removed in 3.0 should not affect the default configuration.
+        This test can be removed around >3.1-4.0."""
         environment = {
             "EDGE_BIND_HOST": "192.168.0.1",
             "EDGE_PORT": "10101",
@@ -170,14 +166,12 @@ class TestEdgeVariablesDerivedCorrectly:
         (
             localstack_host,
             gateway_listen,
-            edge_port,
         ) = config.populate_edge_configuration(environment)
 
         assert localstack_host == "localhost.localstack.cloud:4566"
         assert gateway_listen == [
             HostAndPort(host=ip(), port=4566),
         ]
-        assert edge_port == 4566
 
 
 class TestUniquePortList:
