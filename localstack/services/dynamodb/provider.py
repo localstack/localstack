@@ -103,6 +103,7 @@ from localstack.aws.connect import connect_to
 from localstack.constants import (
     AUTH_CREDENTIAL_REGEX,
     AWS_REGION_US_EAST_1,
+    DEFAULT_AWS_ACCOUNT_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.http import Response
@@ -441,7 +442,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
         return self.server.proxy(context, service_request)
 
-    def get_forward_url(self) -> str:
+    def get_forward_url(self, account_id: str, region_name: str) -> str:
         """Return the URL of the backend DynamoDBLocal server to forward requests to"""
         return self.server.url
 
@@ -455,7 +456,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         #  -> keeping this for now, to allow configuring custom installs; should consider removing it in the future
         # https://repost.aws/questions/QUHyIzoEDqQ3iOKlUEp1LPWQ#ANdBm9Nz9TRf6VqR3jZtcA1g
         req_path = f"/{req_path}" if not req_path.startswith("/") else req_path
-        url = f"{self.get_forward_url()}/shell{req_path}"
+        url = (
+            f"{self.get_forward_url(DEFAULT_AWS_ACCOUNT_ID, AWS_REGION_US_EAST_1)}/shell{req_path}"
+        )
         result = requests.request(
             method=request.method, url=url, headers=request.headers, data=request.data
         )
