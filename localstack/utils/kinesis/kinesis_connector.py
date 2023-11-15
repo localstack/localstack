@@ -8,6 +8,9 @@ import threading
 from dataclasses import field
 from urllib.parse import urlparse
 
+from amazon_kclpy import kcl
+from amazon_kclpy.v2 import processor
+
 from localstack import config
 from localstack.constants import LOCALHOST, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.utils.aws import arns
@@ -16,7 +19,9 @@ from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
 from localstack.utils.run import ShellCommandThread, run
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 from localstack.utils.threads import TMP_THREADS
+from localstack.utils.time import now
 
 EVENTS_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.fifo")
 LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.log")
@@ -56,6 +61,73 @@ CHECKPOINT_FREQ_SECS = 60
 class KinesisStream:
     id: str
     stream_info: dict = field(default_factory=dict)
+
+
+# needed by the processor script farther down
+class KinesisProcessor(processor.RecordProcessorBase):
+    def __init__(self, log_file=None, processor_func=None, auto_checkpoint=True):
+        self.log_file = log_file
+        self.processor_func = processor_func
+        self.shard_id = None
+        self.auto_checkpoint = auto_checkpoint
+        self.last_checkpoint_time = 0
+        self._largest_seq = (None, None)
+
+    def initialize(self, initialize_input):
+        self.shard_id = initialize_input.shard_id
+        if self.log_file:
+            self.log(f"initialize '{self.shard_id}'")
+        self.shard_id = initialize_input.shard_id
+
+    def process_records(self, process_records_input):
+        if self.processor_func:
+            records = process_records_input.records
+            checkpointer = process_records_input.checkpointer
+            self.processor_func(records=records, checkpointer=checkpointer, shard_id=self.shard_id)
+            for record in records:
+                seq = int(record.sequence_number)
+                sub_seq = record.sub_sequence_number
+                if self.should_update_sequence(seq, sub_seq):
+                    self._largest_seq = (seq, sub_seq)
+            if self.auto_checkpoint:
+                time_now = now()
+                if (time_now - CHECKPOINT_FREQ_SECS) > self.last_checkpoint_time:
+                    self.checkpoint(checkpointer, str(self._largest_seq[0]), self._largest_seq[1])
+                    self.last_checkpoint_time = time_now
+
+    def shutdown_requested(self, shutdown_requested_input):
+        if self.log_file:
+            self.log("Shutdown processor for shard '%s'" % self.shard_id)
+        if shutdown_requested_input.action == "TERMINATE":
+            self.checkpoint(shutdown_requested_input.checkpointer)
+
+    def checkpoint(self, checkpointer, sequence_number=None, sub_sequence_number=None):
+        def do_checkpoint():
+            checkpointer.checkpoint(sequence_number, sub_sequence_number)
+
+        try:
+            retry(do_checkpoint, retries=CHECKPOINT_RETRIES, sleep=CHECKPOINT_SLEEP_SECS)
+        except Exception as e:
+            LOGGER.warning("Unable to checkpoint Kinesis after retries: %s", e)
+
+    def should_update_sequence(self, sequence_number, sub_sequence_number):
+        return (
+            self._largest_seq == (None, None)
+            or sequence_number > self._largest_seq[0]
+            or (
+                sequence_number == self._largest_seq[0]
+                and sub_sequence_number > self._largest_seq[1]
+            )
+        )
+
+    def log(self, s):
+        if self.log_file:
+            save_file(self.log_file, f"{s}\n", append=True)
+
+    @staticmethod
+    def run_processor(log_file=None, processor_func=None):
+        proc = kcl.KCLProcess(KinesisProcessor(log_file, processor_func))
+        proc.run()
 
 
 class KinesisProcessorThread(ShellCommandThread):
