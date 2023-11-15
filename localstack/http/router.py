@@ -392,9 +392,12 @@ class Router(Generic[E]):
         else:
             self._remove_rules(rules)
 
-    def list_route_mapping(self) -> Map:
+    def list_route_mapping(self) -> List[Rule]:
+        rules = []
         with self._mutex:
-            return self.url_map
+            for rule in self.url_map.iter_rules():
+                rules.append(rule)
+        return rules
 
     def _remove_rules(self, rules: Iterable[Rule]):
         """

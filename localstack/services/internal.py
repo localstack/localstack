@@ -322,17 +322,13 @@ class RoutesResource:
     def on_get(self, request):
         from localstack.services.edge import ROUTER
 
-        mapping = ROUTER.list_route_mapping()
-
-        routes = []
-
-        for rule in mapping.iter_rules():
-            routes.append(
-                {
-                    "host": rule.host,
-                    "path": rule.rule,
-                }
-            )
+        routes = [
+            {
+                "host": rule.host,
+                "path": rule.rule,
+            }
+            for rule in ROUTER.list_route_mapping()
+        ]
 
         return {"routes": routes}
 
