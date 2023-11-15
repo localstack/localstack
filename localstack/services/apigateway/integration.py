@@ -136,7 +136,7 @@ def get_service_factory(region_name: str, role_arn: str):
 
 @lru_cache(maxsize=64)
 def get_internal_mocked_headers(
-    service_name: str, region_name: str, source_arn: str, role_arn: str | None
+    service_name: str, account_id: str, region_name: str, source_arn: str, role_arn: str | None,
 ) -> dict[str, str]:
     if role_arn:
         access_key_id = (
@@ -147,7 +147,7 @@ def get_internal_mocked_headers(
             ]["AccessKeyId"]
         )
     else:
-        access_key_id = None
+        access_key_id = account_id
     headers = aws_stack.mock_aws_request_headers(
         service=service_name, aws_access_key_id=access_key_id, region_name=region_name
     )
@@ -480,6 +480,7 @@ class KinesisIntegration(BackendIntegration):
         # forward records to target kinesis stream
         headers = get_internal_mocked_headers(
             service_name="kinesis",
+            account_id=invocation_context.account_id,
             region_name=invocation_context.region_name,
             role_arn=invocation_context.integration.get("credentials"),
             source_arn=get_source_arn(invocation_context),
@@ -669,6 +670,7 @@ class SQSIntegration(BackendIntegration):
 
         headers = get_internal_mocked_headers(
             service_name="sqs",
+            account_id=invocation_context.account_id,
             region_name=region_name,
             role_arn=invocation_context.integration.get("credentials"),
             source_arn=get_source_arn(invocation_context),
@@ -920,6 +922,7 @@ class EventBridgeIntegration(BackendIntegration):
         region_name = uri.split(":")[3]
         headers = get_internal_mocked_headers(
             service_name="events",
+            account_id=invocation_context.account_id,
             region_name=region_name,
             role_arn=invocation_context.integration.get("credentials"),
             source_arn=get_source_arn(invocation_context),
