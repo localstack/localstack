@@ -103,7 +103,6 @@ from localstack.aws.connect import connect_to
 from localstack.constants import (
     AUTH_CREDENTIAL_REGEX,
     AWS_REGION_US_EAST_1,
-    DEFAULT_AWS_ACCOUNT_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.http import Response
@@ -126,6 +125,10 @@ from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
+from localstack.utils.aws.request_context import (
+    extract_account_id_from_headers,
+    extract_region_from_headers,
+)
 from localstack.utils.collections import select_attributes, select_from_typed_dict
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
@@ -456,9 +459,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         #  -> keeping this for now, to allow configuring custom installs; should consider removing it in the future
         # https://repost.aws/questions/QUHyIzoEDqQ3iOKlUEp1LPWQ#ANdBm9Nz9TRf6VqR3jZtcA1g
         req_path = f"/{req_path}" if not req_path.startswith("/") else req_path
-        url = (
-            f"{self.get_forward_url(DEFAULT_AWS_ACCOUNT_ID, AWS_REGION_US_EAST_1)}/shell{req_path}"
-        )
+        account_id = extract_account_id_from_headers(request.headers)
+        region_name = extract_region_from_headers(request.headers)
+        url = f"{self.get_forward_url(account_id, region_name)}/shell{req_path}"
         result = requests.request(
             method=request.method, url=url, headers=request.headers, data=request.data
         )
