@@ -17,6 +17,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::Events::Rule": "/properties/Name",
     "AWS::ApiGateway::RequestValidator": "/properties/RequestValidatorId",
     "AWS::ApiGateway::Authorizer": "/properties/AuthorizerId",
+    "AWS::ApiGatewayV2::Authorizer": "/properties/AuthorizerId",
     "AWS::ApiGateway::Deployment": "/properties/DeploymentId",
     "AWS::ApiGateway::Resource": "/properties/ResourceId",
     "AWS::ApiGateway::Stage": "/properties/StageName",
