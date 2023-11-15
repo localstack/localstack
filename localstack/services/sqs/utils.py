@@ -20,14 +20,19 @@ from localstack.utils.common import clone
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
 
+STANDARD_ENDPOINT = re.compile(STANDARD_STRATEGY_URL_REGEX)
+DOMAIN_ENDPOINT = re.compile(DOMAIN_STRATEGY_URL_REGEX)
+PATH_ENDPOINT = re.compile(PATH_STRATEGY_URL_REGEX)
+LEGACY_ENDPOINT = re.compile(LEGACY_STRATEGY_URL_REGEX)
+
 
 def is_sqs_queue_url(url: str) -> bool:
     return any(
         [
-            re.search(STANDARD_STRATEGY_URL_REGEX, url),
-            re.search(DOMAIN_STRATEGY_URL_REGEX, url),
-            re.search(PATH_STRATEGY_URL_REGEX, url),
-            re.search(LEGACY_STRATEGY_URL_REGEX, url),
+            STANDARD_ENDPOINT.search(url),
+            DOMAIN_ENDPOINT.search(url),
+            PATH_ENDPOINT.search(url),
+            LEGACY_ENDPOINT.search(url),
         ]
     )
 
