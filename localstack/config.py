@@ -1260,28 +1260,43 @@ def get_protocol() -> str:
 
 
 def external_service_url(
-    host: Optional[str] = None, port: Optional[int] = None, protocol: Optional[str] = None
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    protocol: Optional[str] = None,
+    subdomains: Optional[str] = None,
 ) -> str:
-    """Returns a service URL to an external client used outside where LocalStack runs.
-    The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.
-    `host` can be used to overwrite the default for subdomains.
+    """Returns a service URL (e.g., SQS queue URL) to an external client (e.g., boto3) potentially running on another
+    machine than LocalStack. The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.
+    The optional parameters can be used to customize the defaults.
+    Examples with default configuration:
+    * external_service_url() == http://localhost.localstack.cloud:4566
+    * external_service_url(subdomains="s3") == http://s3.localhost.localstack.cloud:4566
     """
     protocol = protocol or get_protocol()
+    subdomains = f"{subdomains}." if subdomains else ""
     host = host or LOCALSTACK_HOST.host
     port = port or LOCALSTACK_HOST.port
-    return f"{protocol}://{host}:{port}"
+    return f"{protocol}://{subdomains}{host}:{port}"
 
 
 def internal_service_url(
-    host: Optional[str] = None, port: Optional[int] = None, protocol: Optional[str] = None
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    protocol: Optional[str] = None,
+    subdomains: Optional[str] = None,
 ) -> str:
-    """Returns a service URL for internal use within where LocalStack runs. Cannot be customized
-    through LOCALSTACK_HOST because we assume LocalStack runs on the same host (i.e., localhost).
+    """Returns a service URL for internal use within LocalStack (i.e., same host).
+    The configuration USE_SSL can customize these returned URLs but LOCALSTACK_HOST has no effect.
+    The optional parameters can be used to customize the defaults.
+    Examples with default configuration:
+    * internal_service_url() == http://localhost:4566
+    * internal_service_url(port=8080) == http://localhost:8080
     """
     protocol = protocol or get_protocol()
+    subdomains = f"{subdomains}." if subdomains else ""
     host = host or LOCALHOST
     port = port or GATEWAY_LISTEN[0].port
-    return f"{protocol}://{host}:{port}"
+    return f"{protocol}://{subdomains}{host}:{port}"
 
 
 # DEPRECATED: old helpers for building URLs
