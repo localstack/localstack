@@ -144,11 +144,13 @@ def _wrap_with_fallthrough(
     return _call
 
 
-def HttpFallbackDispatcher(provider: object, forward_url_getter: Callable[[], str]):
+def HttpFallbackDispatcher(provider: object, forward_url_getter: Callable[[str, str], str]):
     return ForwardingFallbackDispatcher(provider, get_request_forwarder_http(forward_url_getter))
 
 
-def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> ServiceRequestHandler:
+def get_request_forwarder_http(
+    forward_url_getter: Callable[[str, str], str]
+) -> ServiceRequestHandler:
     """
     Returns a ServiceRequestHandler that creates for each invocation a new AwsRequestProxy with the result of
     forward_url_getter. Note that this is an inefficient method of proxying, since for every call a new client
@@ -161,7 +163,9 @@ def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> Service
     def _forward_request(
         context: RequestContext, service_request: ServiceRequest = None
     ) -> ServiceResponse:
-        return AwsRequestProxy(forward_url_getter()).forward(context, service_request)
+        return AwsRequestProxy(forward_url_getter(context.account_id, context.region)).forward(
+            context, service_request
+        )
 
     return _forward_request
 

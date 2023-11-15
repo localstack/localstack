@@ -174,8 +174,14 @@ def cleanup_resources():
             )
 
 
+def gateway_listen_ports_info() -> str:
+    """Example: http port [4566,443]"""
+    gateway_listen_ports = [gw_listen.port for gw_listen in config.GATEWAY_LISTEN]
+    return f"{config.get_protocol()} port {gateway_listen_ports}"
+
+
 def log_startup_message(service):
-    LOG.info("Starting mock %s service on %s ...", service, config.gateway_listen_ports_info())
+    LOG.info("Starting mock %s service on %s ...", service, gateway_listen_ports_info())
 
 
 def check_aws_credentials():

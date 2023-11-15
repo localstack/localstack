@@ -376,7 +376,7 @@ def cmd_status_services(format_: str) -> None:
     """
     import requests
 
-    url = config.get_edge_url()
+    url = config.external_service_url()
 
     try:
         health = requests.get(f"{url}/_localstack/health", timeout=2)

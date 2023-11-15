@@ -282,11 +282,16 @@ def sns():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-# TODO fix this ugly hack to reuse a single provider instance
 sqs_provider = None
 
 
 def get_sqs_provider():
+    """
+    Creates the SQS provider instance (and registers the query API routes) in a singleton fashion, such that the
+    same instance of the provider can be used by multiple services (i.e. the `sqs` as well as the `sqs-query` service).
+
+    TODO it would be great if we could find a better solution to use a single provider for multiple services
+    """
     global sqs_provider
 
     if not sqs_provider:

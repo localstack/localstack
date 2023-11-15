@@ -3,7 +3,6 @@ import os
 import threading
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.stepfunctions import (
     CreateStateMachineInput,
@@ -21,7 +20,6 @@ from localstack.services.stepfunctions.legacy.stepfunctions_starter import (
     StepFunctionsServerManager,
 )
 from localstack.state import AssetDirectory, StateVisitor
-from localstack.utils.aws import aws_stack
 
 # lock to avoid concurrency issues when creating state machines in parallel (required for StepFunctions-Local)
 CREATION_LOCK = threading.RLock()
@@ -41,10 +39,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             "Remove 'PROVIDER_OVERRIDE_STEPFUNCTIONS' to switch to the new StepFunctions default (v2) provider."
         )
 
-    def get_forward_url(self) -> str:
+    def get_forward_url(self, account_id: str, region_name: str) -> str:
         """Return the URL of the backend StepFunctions server to forward requests to"""
-        account_id = get_aws_account_id()
-        region_name = aws_stack.get_region()
         server = self.server_manager.get_server_for_account_region(account_id, region_name)
         return f"http://{LOCALHOST}:{server.port}"
 

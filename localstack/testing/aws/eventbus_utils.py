@@ -2,7 +2,7 @@ import json
 
 import requests
 
-from localstack.config import get_edge_url
+from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws.client_types import TypedServiceClientFactory
 
@@ -18,7 +18,7 @@ def trigger_scheduled_rule(rule_arn: str):
     if is_aws_cloud():
         return
 
-    url = get_edge_url() + f"/_aws/events/rules/{rule_arn}/trigger"
+    url = config.internal_service_url() + f"/_aws/events/rules/{rule_arn}/trigger"
     response = requests.get(url)
     if not response.ok:
         raise ValueError(

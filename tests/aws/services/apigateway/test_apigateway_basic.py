@@ -15,10 +15,8 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
-from localstack.config import get_edge_url
 from localstack.constants import (
     APPLICATION_JSON,
-    LOCALHOST_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
@@ -42,6 +40,7 @@ from localstack.utils.json import clone
 from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
+from localstack.utils.urls import localstack_host
 from tests.aws.services.apigateway.apigateway_fixtures import (
     UrlType,
     api_invoke_url,
@@ -1217,15 +1216,10 @@ class TestAPIGateway:
     ):
         path = path or "/"
         path = path if path.startswith(path) else f"/{path}"
-        proto = "https" if use_ssl else "http"
         if use_hostname:
-            return (
-                f"{proto}://{api_id}.execute-api.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}/"
-                f"{stage}{path}"
-            )
-        return (
-            f"{proto}://localhost:{config.EDGE_PORT}/restapis/{api_id}/{stage}/_user_request_{path}"
-        )
+            host = f"{api_id}.execute-api.{localstack_host().host}"
+            return f"{config.external_service_url(host=host)}/{stage}{path}"
+        return f"{config.internal_service_url()}/restapis/{api_id}/{stage}/_user_request_{path}"
 
     @markers.aws.unknown
     def test_api_mock_integration_response_params(self, aws_client):
@@ -1668,7 +1662,7 @@ def test_apigw_call_api_with_aws_endpoint_url(aws_client):
         "apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
     )
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
-    url = f"{get_edge_url()}/apikeys?includeValues=true&name=test%40example.org"
+    url = f"{config.internal_service_url()}/apikeys?includeValues=true&name=test%40example.org"
     response = requests.get(url, headers=headers)
     assert response.ok
     content = json.loads(to_str(response.content))

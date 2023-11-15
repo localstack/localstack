@@ -10,6 +10,7 @@ import os
 import shutil
 import tempfile
 import time
+from importlib.util import find_spec
 from io import BytesIO
 from operator import itemgetter
 from typing import TYPE_CHECKING
@@ -542,546 +543,6 @@ class TestS3:
 
         resp = s3_client.list_objects_v2(Bucket=s3_bucket)
         snapshot.match("list-object-encoded-char", resp)
-
-    @markers.aws.validated
-    @pytest.mark.parametrize("delimiter", ["", "/", "%2F"])
-    def test_list_objects_with_prefix(
-        self, s3_bucket, delimiter, snapshot, aws_client, aws_http_client_factory
-    ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        key = "test/foo/bar/123"
-        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
-
-        response = aws_client.s3.list_objects(
-            Bucket=s3_bucket, Prefix="test/", Delimiter=delimiter, MaxKeys=1, EncodingType="url"
-        )
-        snapshot.match("list-objects", response)
-
-        # Boto always add `EncodingType=url` in the request, so we need to bypass it to see the proper result, but only
-        # if %2F is already encoded
-        # change the prefix to `test` because it has a `/` in it which wouldn't work in the URL
-        # see https://github.com/boto/boto3/issues/816
-        if delimiter == "%2F":
-            bucket_url = f"{_bucket_url(s3_bucket)}?prefix=test&delimiter={delimiter}"
-            s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
-            resp = s3_http_client.get(
-                bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
-            )
-            resp_dict = xmltodict.parse(resp.content)
-            resp_dict["ListBucketResult"].pop("@xmlns", None)
-            snapshot.match("list-objects-no-encoding", resp_dict)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_provider,
-        paths=["$..EncodingType", "$..VersionIdMarker"],
-    )
-    def test_list_objects_versions_with_prefix(
-        self, s3_bucket, snapshot, aws_client, aws_http_client_factory
-    ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        objects = [
-            {"Key": "dir/test", "Content": b"content key1-v1"},
-            {"Key": "dir/test", "Content": b"content key-1v2"},
-            {"Key": "dir/subdir/test2", "Content": b"content key2-v1"},
-            {"Key": "dir/subdir/test2", "Content": b"content key2-v2"},
-        ]
-        params = [
-            {"Prefix": "dir/", "Delimiter": "/", "Id": 1},
-            {"Prefix": "dir/s", "Delimiter": "/", "Id": 2},
-            {"Prefix": "dir/test", "Delimiter": "/", "Id": 3},
-            {"Prefix": "dir/subdir", "Delimiter": "/", "Id": 4},
-            {"Prefix": "dir/subdir/", "Delimiter": "/", "Id": 5},
-            {"Prefix": "dir/subdir/test2", "Delimiter": "/", "Id": 6},
-        ]
-
-        aws_client.s3.put_bucket_versioning(
-            Bucket=s3_bucket,
-            VersioningConfiguration={"Status": "Enabled"},
-        )
-
-        for obj in objects:
-            aws_client.s3.put_object(Bucket=s3_bucket, Key=obj["Key"], Body=obj["Content"])
-
-        for param in params:
-            response = aws_client.s3.list_object_versions(
-                Bucket=s3_bucket, Delimiter=param["Delimiter"], Prefix=param["Prefix"]
-            )
-            snapshot.match(f"list-object-version-{param['Id']}", response)
-
-        # test without EncodingUrl, manually encode parameters
-        bucket_url = f"{_bucket_url(s3_bucket)}?versions&prefix=dir%2Fsubdir&delimiter=%2F"
-        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
-        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
-        resp_dict = xmltodict.parse(resp.content)
-        resp_dict["ListVersionsResult"].pop("@xmlns", None)
-        snapshot.match("list-objects-versions-no-encoding", resp_dict)
-
-    @markers.aws.validated
-    def test_list_objects_v2_with_prefix(
-        self, s3_bucket, snapshot, aws_client, aws_http_client_factory
-    ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        keys = ["test/foo/bar/123", "test/foo/bar/456", "test/bar/foo/123"]
-        for key in keys:
-            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
-
-        response = aws_client.s3.list_objects_v2(
-            Bucket=s3_bucket, Prefix="test/", EncodingType="url"
-        )
-        snapshot.match("list-objects-v2-1", response)
-
-        response = aws_client.s3.list_objects_v2(
-            Bucket=s3_bucket, Prefix="test/foo", EncodingType="url"
-        )
-        snapshot.match("list-objects-v2-2", response)
-
-        response = aws_client.s3.list_objects_v2(
-            Bucket=s3_bucket, Prefix="test/foo/bar", EncodingType="url"
-        )
-        snapshot.match("list-objects-v2-3", response)
-
-        # test without EncodingUrl, manually encode parameters
-        bucket_url = f"{_bucket_url(s3_bucket)}?list-type=2&prefix=test%2Ffoo"
-        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
-        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
-        resp_dict = xmltodict.parse(resp.content)
-        resp_dict["ListBucketResult"].pop("@xmlns", None)
-        snapshot.match("list-objects-v2-no-encoding", resp_dict)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_provider,
-        paths=["$..Prefix"],
-    )
-    def test_list_objects_v2_with_prefix_and_delimiter(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(snapshot.transform.key_value("NextContinuationToken"))
-        keys = ["test/foo/bar/123", "test/foo/bar/456", "test/bar/foo/123"]
-        for key in keys:
-            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
-
-        response = aws_client.s3.list_objects_v2(
-            Bucket=s3_bucket, Prefix="test/", EncodingType="url", Delimiter="/"
-        )
-        snapshot.match("list-objects-v2-1", response)
-
-        response = aws_client.s3.list_objects_v2(
-            Bucket=s3_bucket,
-            Prefix="test/",
-            EncodingType="url",
-            Delimiter="/",
-            MaxKeys=1,
-        )
-        snapshot.match("list-objects-v2-1-with-max-keys", response)
-
-        response = aws_client.s3.list_objects_v2(
-            Bucket=s3_bucket, Prefix="test/foo", EncodingType="url", Delimiter="/"
-        )
-        snapshot.match("list-objects-v2-2", response)
-
-        response = aws_client.s3.list_objects_v2(
-            Bucket=s3_bucket, Prefix="test/foo/bar", EncodingType="url", Delimiter="/"
-        )
-        snapshot.match("list-objects-v2-3", response)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_provider,
-        paths=[
-            "$..Error.ArgumentName",
-            "$..ContinuationToken",
-            "list-objects-v2-max-5.Contents[4].Key",
-            # this is because moto returns a Cont.Token equal to Key
-        ],
-    )
-    def test_list_objects_v2_continuation_start_after(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(snapshot.transform.key_value("NextContinuationToken"))
-        keys = [f"test_{i}" for i in range(12)]
-        for key in keys:
-            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
-
-        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket, MaxKeys=5)
-        snapshot.match("list-objects-v2-max-5", response)
-
-        continuation_token = response["NextContinuationToken"]
-
-        response = aws_client.s3.list_objects_v2(
-            Bucket=s3_bucket, ContinuationToken=continuation_token
-        )
-        snapshot.match("list-objects-v2-rest", response)
-
-        # verify isTruncated behaviour
-        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket, StartAfter="test_7", MaxKeys=2)
-        snapshot.match("list-objects-start-after", response)
-
-        response = aws_client.s3.list_objects_v2(
-            Bucket=s3_bucket,
-            StartAfter="test_7",
-            ContinuationToken=continuation_token,
-        )
-        snapshot.match("list-objects-start-after-token", response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.list_objects_v2(Bucket=s3_bucket, ContinuationToken="")
-        snapshot.match("exc-continuation-token", e.value.response)
-
-    @markers.aws.validated
-    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
-    def test_list_objects_versions_markers(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        # snapshot.add_transformer(snapshot.transform.key_value("NextContinuationToken"))
-        aws_client.s3.put_bucket_versioning(
-            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
-        )
-        keys = [f"test_{i}" for i in range(3)]
-        # we need to snapshot the version ids in order of creation to understand better the ordering in snapshots
-        versions_ids = []
-        for key in keys:
-            resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"version 1")
-            versions_ids.append(resp["VersionId"])
-
-        # add versions on top
-        resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=keys[2], Body=b"version 2")
-        versions_ids.append(resp["VersionId"])
-
-        # put DeleteMarkers to change a bit the ordering
-        for key in keys:
-            resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
-            versions_ids.append(resp["VersionId"])
-        # re-add versions for some
-        for key in keys[:2]:
-            resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"version 2")
-            versions_ids.append(resp["VersionId"])
-
-        snapshot.match(
-            "version-order",
-            {"Versions": [{"VersionId": version_id} for version_id in versions_ids]},
-        )
-        # get everything to check default order
-        response = aws_client.s3.list_object_versions(Bucket=s3_bucket)
-        snapshot.match("list-objects-versions-all", response)
-
-        response = aws_client.s3.list_object_versions(Bucket=s3_bucket, MaxKeys=5)
-        snapshot.match("list-objects-versions-5", response)
-
-        next_key_marker = response["NextKeyMarker"]
-        next_version_id_marker = response["NextVersionIdMarker"]
-
-        # try to see what's next when specifying only one
-        response = aws_client.s3.list_object_versions(
-            Bucket=s3_bucket, MaxKeys=1, KeyMarker=next_key_marker
-        )
-        snapshot.match("list-objects-next-key-only", response)
-
-        # try with last key
-        response = aws_client.s3.list_object_versions(
-            Bucket=s3_bucket, MaxKeys=1, KeyMarker=keys[-1]
-        )
-        snapshot.match("list-objects-next-key-last", response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.list_object_versions(
-                Bucket=s3_bucket, MaxKeys=1, VersionIdMarker=next_version_id_marker
-            )
-        snapshot.match("list-objects-next-version-only", e.value.response)
-
-        response = aws_client.s3.list_object_versions(
-            Bucket=s3_bucket,
-            MaxKeys=1,
-            KeyMarker=next_key_marker,
-            VersionIdMarker=next_version_id_marker,
-        )
-        snapshot.match("list-objects-both-markers", response)
-
-        response = aws_client.s3.list_object_versions(
-            Bucket=s3_bucket,
-            MaxKeys=1,
-            KeyMarker=keys[-1],
-            VersionIdMarker=versions_ids[3],
-        )
-        snapshot.match("list-objects-last-key-last-version", response)
-
-        response = aws_client.s3.list_object_versions(Bucket=s3_bucket, MaxKeys=1, KeyMarker="")
-        snapshot.match("list-objects-next-key-empty", response)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_provider,
-        paths=[
-            "$..Prefix",
-            "$..NextMarker",
-        ],
-    )
-    def test_list_objects_next_marker(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(snapshot.transform.key_value("NextMarker"))
-        snapshot.add_transformer(snapshot.transform.key_value("Key"), priority=-1)
-        keys = [f"test_{i}" for i in range(3)]
-        for key in keys:
-            aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
-
-        response = aws_client.s3.list_objects(Bucket=s3_bucket)
-        snapshot.match("list-objects-all", response)
-
-        response = aws_client.s3.list_objects(Bucket=s3_bucket, MaxKeys=1, Delimiter="/")
-        snapshot.match("list-objects-max-1", response)
-        # next marker is not there by default, you need a delimiter or you need to use the last key
-        next_marker = response["NextMarker"]
-
-        response = aws_client.s3.list_objects(Bucket=s3_bucket, Marker=next_marker, MaxKeys=1)
-        snapshot.match("list-objects-rest", response)
-
-        resp = aws_client.s3.list_objects(Bucket=s3_bucket, Marker="", MaxKeys=1)
-        snapshot.match("list-objects-marker-empty", resp)
-
-    @markers.aws.validated
-    @pytest.mark.xfail(condition=is_v2_provider(), reason="not implemented in moto")
-    def test_list_multiparts_next_marker(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("UploadId"),
-                snapshot.transform.key_value("Bucket"),
-                snapshot.transform.key_value("DisplayName", reference_replacement=False),
-                snapshot.transform.key_value(
-                    "ID", value_replacement="owner-id", reference_replacement=False
-                ),
-            ]
-        )
-        snapshot.add_transformer(snapshot.transform.key_value("Key"), priority=-1)
-
-        response = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket)
-        snapshot.match("list-multiparts-empty", response)
-
-        keys = ["test_c", "test_b", "test_a"]
-        uploads_ids = []
-        for key in keys:
-            # create 1 upload per key, except for the last one
-            resp = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
-            uploads_ids.append(resp["UploadId"])
-            if key == "test_a":
-                for _ in range(2):
-                    # add more upload for the last key to test UploadId ordering
-                    resp = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
-                    uploads_ids.append(resp["UploadId"])
-
-        # snapshot the upload ids ordering to compare with listing
-        snapshot.match(
-            "upload-ids-order",
-            {"UploadIds": [{"UploadId": upload_id} for upload_id in uploads_ids]},
-        )
-
-        # AWS is saying on the doc that `UploadId` are sorted lexicographically, however tests shows that it's sorted
-        # by the Initiated time of the multipart
-        response = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket)
-        snapshot.match("list-multiparts-all", response)
-
-        response = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket, MaxUploads=1)
-        snapshot.match("list-multiparts-max-1", response)
-
-        next_key_marker = response["NextKeyMarker"]
-        next_upload_id_marker = response["NextUploadIdMarker"]
-
-        # try to see what's next when specifying only one
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket, MaxUploads=1, KeyMarker=next_key_marker
-        )
-        snapshot.match("list-multiparts-next-key-only", response)
-
-        # try with last key lexicographically
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket, MaxUploads=1, KeyMarker=keys[0]
-        )
-        snapshot.match("list-multiparts-next-key-last", response)
-
-        # UploadIdMarker is ignored if KeyMarker is not specified
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket,
-            MaxUploads=1,
-            UploadIdMarker=next_upload_id_marker,
-        )
-        snapshot.match("list-multiparts-next-upload-only", response)
-
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket,
-            MaxUploads=1,
-            KeyMarker=next_key_marker,
-            UploadIdMarker=next_upload_id_marker,
-        )
-        snapshot.match("list-multiparts-both-markers", response)
-
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket,
-            MaxUploads=1,
-            KeyMarker=next_key_marker,
-            UploadIdMarker=uploads_ids[-1],
-        )
-        snapshot.match("list-multiparts-both-markers-2", response)
-
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket,
-            MaxUploads=1,
-            KeyMarker=keys[1],
-            UploadIdMarker=uploads_ids[1],
-        )
-        snapshot.match("list-multiparts-get-last-upload-no-truncate", response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.list_multipart_uploads(
-                Bucket=s3_bucket,
-                MaxUploads=1,
-                KeyMarker=keys[0],
-                UploadIdMarker=uploads_ids[1],
-            )
-        snapshot.match("list-multiparts-wrong-id-for-key", e.value.response)
-
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket, MaxUploads=1, KeyMarker=""
-        )
-        snapshot.match("list-multiparts-next-key-empty", response)
-
-    @markers.aws.validated
-    @pytest.mark.xfail(condition=is_v2_provider(), reason="not implemented in moto")
-    def test_list_multiparts_with_prefix_and_delimiter(
-        self, s3_bucket, snapshot, aws_client, aws_http_client_factory
-    ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("UploadId"),
-                snapshot.transform.key_value("Bucket"),
-                snapshot.transform.key_value("DisplayName", reference_replacement=False),
-                snapshot.transform.key_value(
-                    "ID", value_replacement="owner-id", reference_replacement=False
-                ),
-            ]
-        )
-        snapshot.add_transformer(snapshot.transform.key_value("Key"), priority=-1)
-        keys = ["test/foo/bar/123", "test/foo/bar/456", "test/bar/foo/123"]
-        for key in keys:
-            aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key)
-
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket,
-            Prefix="test/",
-            EncodingType="url",
-            Delimiter="/",
-        )
-        snapshot.match("list-multiparts-1", response)
-
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket, Prefix="test/foo/", EncodingType="url", Delimiter="/"
-        )
-        snapshot.match("list-multiparts-2", response)
-
-        response = aws_client.s3.list_multipart_uploads(
-            Bucket=s3_bucket, Prefix="test/foo/bar", EncodingType="url", Delimiter="/"
-        )
-        snapshot.match("list-multiparts-3", response)
-
-        # test without EncodingUrl, manually encode parameters
-        bucket_url = f"{_bucket_url(s3_bucket)}?uploads&prefix=test%2Ffoo"
-        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
-        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
-        resp_dict = xmltodict.parse(resp.content)
-        resp_dict["ListMultipartUploadsResult"].pop("@xmlns", None)
-        snapshot.match("list-multiparts-no-encoding", resp_dict)
-
-    @pytest.mark.xfail(condition=is_v2_provider(), reason="not implemented in moto")
-    @markers.aws.validated
-    def test_list_parts_pagination(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("Bucket", reference_replacement=False),
-                snapshot.transform.key_value("Location"),
-                snapshot.transform.key_value("UploadId"),
-                snapshot.transform.key_value("DisplayName", reference_replacement=False),
-                snapshot.transform.key_value("ID", reference_replacement=False),
-            ]
-        )
-        object_key = "test-list-part-pagination"
-        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=object_key)
-        upload_id = response["UploadId"]
-
-        response = aws_client.s3.list_parts(Bucket=s3_bucket, UploadId=upload_id, Key=object_key)
-        snapshot.match("list-parts-empty", response)
-
-        for i in range(1, 3):
-            aws_client.s3.upload_part(
-                Bucket=s3_bucket,
-                Key=object_key,
-                Body=BytesIO(b"data"),
-                PartNumber=i,
-                UploadId=upload_id,
-            )
-
-        response = aws_client.s3.list_parts(Bucket=s3_bucket, UploadId=upload_id, Key=object_key)
-        snapshot.match("list-parts-all", response)
-
-        response = aws_client.s3.list_parts(
-            Bucket=s3_bucket, UploadId=upload_id, Key=object_key, MaxParts=1
-        )
-        next_part_number_marker = response["NextPartNumberMarker"]
-        snapshot.match("list-parts-1", response)
-
-        response = aws_client.s3.list_parts(
-            Bucket=s3_bucket,
-            UploadId=upload_id,
-            Key=object_key,
-            MaxParts=1,
-            PartNumberMarker=next_part_number_marker,
-        )
-
-        snapshot.match("list-parts-next", response)
-
-        response = aws_client.s3.list_parts(
-            Bucket=s3_bucket,
-            UploadId=upload_id,
-            Key=object_key,
-            MaxParts=1,
-            PartNumberMarker=10,
-        )
-        snapshot.match("list-parts-wrong-part", response)
-
-    @pytest.mark.xfail(
-        condition=is_v2_provider(), reason="moto does not handle empty query string parameters"
-    )
-    @markers.aws.validated
-    def test_list_parts_empty_part_number_marker(self, s3_bucket, snapshot, aws_client_factory):
-        # we need to disable validation for this test
-        s3_client = aws_client_factory(config=Config(parameter_validation=False)).s3
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("Bucket", reference_replacement=False),
-                snapshot.transform.key_value("Location"),
-                snapshot.transform.key_value("UploadId"),
-                snapshot.transform.key_value("DisplayName", reference_replacement=False),
-                snapshot.transform.key_value("ID", reference_replacement=False),
-            ]
-        )
-        object_key = "test-list-part-empty-marker"
-        response = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=object_key)
-        upload_id = response["UploadId"]
-
-        s3_client.upload_part(
-            Bucket=s3_bucket,
-            Key=object_key,
-            Body=BytesIO(b"data"),
-            PartNumber=1,
-            UploadId=upload_id,
-        )
-        # it seems S3 does not care about empty string for integer query string parameters
-        response = s3_client.list_parts(
-            Bucket=s3_bucket, UploadId=upload_id, Key=object_key, PartNumberMarker=""
-        )
-        snapshot.match("list-parts-empty-marker", response)
-
-        response = s3_client.list_parts(
-            Bucket=s3_bucket, UploadId=upload_id, Key=object_key, MaxParts=""
-        )
-        snapshot.match("list-parts-empty-max-parts", response)
 
     @markers.aws.validated
     def test_get_object_no_such_bucket(self, snapshot, aws_client):
@@ -3151,7 +2612,7 @@ class TestS3:
             f"{body}\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
         )
         # put object
-        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
         requests.put(url, data, headers=headers, verify=False)
         # get object and assert content length
         downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
@@ -3193,7 +2654,7 @@ class TestS3:
                 "x-amz-trailer-signature:712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c\r\n\r\n"
             )
 
-        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
 
         # test with wrong checksum
         wrong_data = get_data(body, "wrongchecksum")
@@ -3248,9 +2709,7 @@ class TestS3:
         upload_id = response["UploadId"]
 
         # # upload the part 1
-        url = (
-            f"{config.service_url('s3')}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
-        )
+        url = f"{config.internal_service_url()}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
         response = requests.put(url, data, headers=headers, verify=False)
         assert response.ok
         part_etag = response.headers.get("ETag")
@@ -3873,7 +3332,7 @@ class TestS3:
         monkeypatch.setattr(
             config,
             "LOCALSTACK_HOST",
-            config.HostAndPort(host=custom_hostname, port=config.EDGE_PORT),
+            config.HostAndPort(host=custom_hostname, port=config.GATEWAY_LISTEN[0].port),
         )
         key = "test.file"
         content = "test content 123"
@@ -4205,15 +3664,6 @@ class TestS3:
         resp = aws_client.s3.list_objects(Bucket=s3_bucket, Marker=next_marker)
         snapshot.match("list-objects-next_marker", resp)
         assert 10 == len(resp["Contents"])
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Prefix"])
-    def test_s3_list_objects_empty_marker(self, s3_create_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = "test" + short_uid()
-        s3_create_bucket(Bucket=bucket_name)
-        resp = aws_client.s3.list_objects(Bucket=bucket_name, Marker="")
-        snapshot.match("list-objects", resp)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -5268,52 +4718,6 @@ class TestS3:
         snapshot.match("upload-part-no-checksum-exc", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_provider,
-        paths=[
-            "$..ServerSideEncryption",
-            "$..NextKeyMarker",
-            "$..NextUploadIdMarker",
-        ],
-    )
-    def test_list_multipart_uploads_parameters(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("Bucket", reference_replacement=False),
-                snapshot.transform.key_value("UploadId"),
-                snapshot.transform.key_value("DisplayName", reference_replacement=False),
-                snapshot.transform.key_value("ID", reference_replacement=False),
-            ]
-        )
-        key_name = "test-multipart-uploads-parameters"
-        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
-        snapshot.match("create-multipart", response)
-        upload_id = response["UploadId"]
-
-        # Write contents to memory rather than a file.
-        upload_file_object = BytesIO(to_bytes("test"))
-
-        upload_resp = aws_client.s3.upload_part(
-            Bucket=s3_bucket,
-            Key=key_name,
-            Body=upload_file_object,
-            PartNumber=1,
-            UploadId=upload_id,
-        )
-        snapshot.match("upload-part", upload_resp)
-
-        response = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket)
-        snapshot.match("list-uploads-basic", response)
-
-        # TODO: not applied yet, just check that the status is the same (not raising NotImplemented)
-        response = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket, MaxUploads=1)
-        snapshot.match("list-uploads-max-uploads", response)
-
-        # TODO: not applied yet, just check that the status is the same (not raising NotImplemented)
-        response = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket, Delimiter="/")
-        snapshot.match("list-uploads-delimiter", response)
-
-    @markers.aws.validated
     @pytest.mark.xfail(
         condition=is_v2_provider,
         reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882",
@@ -6037,7 +5441,7 @@ class TestS3TerraformRawRequests:
             req, _, headers = header.strip().partition("\n")
             headers = {h.split(":")[0]: h.partition(":")[2].strip() for h in headers.split("\n")}
             method, path, _ = req.split(" ")
-            url = f"{config.get_edge_url()}{path}"
+            url = f"{config.internal_service_url()}{path}"
             result = requests.request(method=method, url=url, data=body, headers=headers)
             assert result.status_code < 400
 
@@ -6080,7 +5484,7 @@ class TestS3PresignedUrl:
     def test_presign_check_signature_validation_for_port_permutation(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
-        host = f"{S3_VIRTUAL_HOSTNAME}:{config.EDGE_PORT}"
+        host = f"{S3_VIRTUAL_HOSTNAME}:{config.GATEWAY_LISTEN[0].port}"
         s3_presign = _s3_client_custom_config(
             Config(signature_version="s3v4"),
             endpoint_url=f"http://{host}",
@@ -6093,9 +5497,9 @@ class TestS3PresignedUrl:
             Params={"Bucket": s3_bucket, "Key": "test"},
             ExpiresIn=86400,
         )
-        assert f":{config.EDGE_PORT}" in presign_url
+        assert f":{config.GATEWAY_LISTEN[0].port}" in presign_url
 
-        host_443 = host.replace(f":{config.EDGE_PORT}", ":443")
+        host_443 = host.replace(f":{config.GATEWAY_LISTEN[0].port}", ":443")
         response = requests.get(presign_url, headers={"host": host_443})
         assert b"test-value" == response._content
 
@@ -7143,7 +6547,7 @@ class TestS3PresignedUrl:
         "signature_version",
         ["s3", "s3v4"],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_s3_presign_url_encoding(
         self, aws_client, s3_bucket, signature_version, patch_s3_skip_signature_validation_false
     ):
@@ -7164,6 +6568,86 @@ class TestS3PresignedUrl:
         req = requests.get(url)
         assert req.ok
         assert req.content == b"123"
+
+    @markers.aws.validated
+    def test_s3_ignored_special_headers(
+        self,
+        s3_bucket,
+        patch_s3_skip_signature_validation_false,
+        monkeypatch,
+    ):
+        # if the crt.auth is not available, not need to patch as it will use it by default
+        if find_spec("botocore.crt.auth"):
+            # the CRT client does not allow us to pass a protected header, it will trigger an exception, so we need
+            # to patch the Signer selection to the Python implementation which does not have this check
+            from botocore.auth import AUTH_TYPE_MAPS, S3SigV4QueryAuth
+
+            monkeypatch.setitem(AUTH_TYPE_MAPS, "s3v4-query", S3SigV4QueryAuth)
+
+        key = "my-key"
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version="s3v4", s3={"payload_signing_enabled": True}),
+            endpoint_url=_endpoint_url(),
+        )
+
+        def add_content_sha_header(request, **kwargs):
+            request.headers["x-amz-content-sha256"] = "UNSIGNED-PAYLOAD"
+
+        presigned_client.meta.events.register(
+            "before-sign.s3.PutObject",
+            handler=add_content_sha_header,
+        )
+        try:
+            url = presigned_client.generate_presigned_url(
+                "put_object", Params={"Bucket": s3_bucket, "Key": key}
+            )
+            assert "x-amz-content-sha256" in url
+            # somehow, it's possible to add "x-amz-content-sha256" to signed headers, the AWS Go SDK does it
+            resp = requests.put(
+                url,
+                data="something",
+                verify=False,
+                headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"},
+            )
+            assert resp.ok
+
+            # if signed but not provided, AWS will raise an exception
+            resp = requests.put(url, data="something", verify=False)
+            assert resp.status_code == 403
+
+        finally:
+            presigned_client.meta.events.unregister(
+                "before-sign.s3.PutObject",
+                add_content_sha_header,
+            )
+
+        # recreate the request, without the signed header
+        url = presigned_client.generate_presigned_url(
+            "put_object", Params={"Bucket": s3_bucket, "Key": key}
+        )
+        assert "x-amz-content-sha256" not in url
+
+        # assert that if provided and not signed, AWS will ignore it even if it starts with `x-amz`
+        resp = requests.put(
+            url,
+            data="something",
+            verify=False,
+            headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"},
+        )
+        assert resp.ok
+
+        # assert that x-amz-user-agent is not ignored, it must be set in SignedHeaders
+        resp = requests.put(
+            url, data="something", verify=False, headers={"x-amz-user-agent": "test"}
+        )
+        assert resp.status_code == 403
+
+        # X-Amz-Signature needs to be the last query string parameter: insert x-id before like the Go SDK
+        index = url.find("&X-Amz-Signature")
+        rewritten_url = url[:index] + "&x-id=PutObject" + url[index:]
+        # however, the x-id query string parameter is not ignored
+        resp = requests.put(rewritten_url, data="something", verify=False)
+        assert resp.status_code == 403
 
 
 class TestS3DeepArchive:
@@ -8042,7 +7526,7 @@ class TestS3Routing:
         aws_client.s3.head_object(Bucket=s3_bucket, Key=s3_key)
 
         path = s3_key if use_virtual_address else f"{s3_bucket}/{s3_key}"
-        url = f"{config.get_edge_url()}/{path}"
+        url = f"{config.internal_service_url()}/{path}"
         headers = aws_stack.mock_aws_request_headers(
             "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )

@@ -8,6 +8,7 @@ from flask import request
 from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
+from localstack.aws.accounts import get_account_id_from_access_key_id
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     DEFAULT_AWS_ACCOUNT_ID,
@@ -17,6 +18,7 @@ from localstack.utils.aws.aws_responses import (
     requests_error_response,
     requests_to_flask_response,
 )
+from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.coverage_docs import get_coverage_link_for_service
 from localstack.utils.patch import patch
 from localstack.utils.strings import snake_to_camel_case
@@ -58,7 +60,7 @@ def get_flask_request_for_thread():
         raise
 
 
-def extract_region_from_auth_header(headers):
+def extract_region_from_auth_header(headers) -> Optional[str]:
     auth = headers.get("Authorization") or ""
     region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
     if region == auth:
@@ -66,7 +68,16 @@ def extract_region_from_auth_header(headers):
     return region
 
 
-def extract_region_from_headers(headers):
+def extract_account_id_from_auth_header(headers) -> Optional[str]:
+    if access_key_id := extract_access_key_id_from_auth_header(headers):
+        return get_account_id_from_access_key_id(access_key_id)
+
+
+def extract_account_id_from_headers(headers) -> str:
+    return extract_account_id_from_auth_header(headers) or DEFAULT_AWS_ACCOUNT_ID
+
+
+def extract_region_from_headers(headers) -> str:
     region = headers.get(MARKER_APIGW_REQUEST_REGION)
     # Fix region lookup for certain requests, e.g., API gateway invocations
     #  that do not contain region details in the Authorization header.

@@ -6,7 +6,7 @@ import websocket
 from werkzeug import Response
 from werkzeug.exceptions import Forbidden
 
-from localstack.config import get_edge_url
+from localstack import config
 from localstack.http import route
 from localstack.http.websocket import WebSocketRequest
 from localstack.services.edge import ROUTER
@@ -14,7 +14,7 @@ from localstack.services.edge import ROUTER
 
 class TestExceptionHandlers:
     def test_internal_failure_handler_http_errors(self):
-        response = requests.delete(get_edge_url() + "/_localstack/health")
+        response = requests.delete(config.internal_service_url() + "/_localstack/health")
         assert response.status_code == 405
         assert response.json() == {
             "error": "Method Not Allowed",
@@ -32,7 +32,7 @@ class TestExceptionHandlers:
         rule = ROUTER.add("/_raise_error", _raise_error)
         cleanups.append(lambda: ROUTER.remove(rule))
 
-        response = requests.get(get_edge_url() + "/_raise_error")
+        response = requests.get(config.internal_service_url() + "/_raise_error")
         assert response.status_code == 403
         assert response.json() == {
             "error": "Forbidden",
@@ -48,7 +48,7 @@ class TestExceptionHandlers:
         rule = ROUTER.add("/_raise_error", _raise_error, methods=["PATCH"])
         cleanups.append(lambda: ROUTER.remove(rule))
 
-        response = requests.patch(get_edge_url() + "/_raise_error")
+        response = requests.patch(config.internal_service_url() + "/_raise_error")
         assert response.status_code == 403
         assert response.json() == {
             "error": "Forbidden",
@@ -66,7 +66,7 @@ class TestExceptionHandlers:
         rule = ROUTER.add("/_raise_error", _raise_error)
         cleanups.append(lambda: ROUTER.remove(rule))
 
-        response = requests.get(get_edge_url() + "/_raise_error")
+        response = requests.get(config.internal_service_url() + "/_raise_error")
         assert response.status_code == 500
         assert response.json() == {
             "error": "Unexpected exception",
@@ -76,7 +76,7 @@ class TestExceptionHandlers:
 
     def test_404_unfortunately_detected_as_s3_request(self):
         # FIXME: this is because unknown routes have to be interpreted as s3 requests
-        response = requests.get(get_edge_url() + "/_raise_error")
+        response = requests.get(config.internal_service_url() + "/_raise_error")
         assert response.status_code == 404
         assert "<Error><Code>NoSuchBucket</Code>" in response.text
 
@@ -93,7 +93,7 @@ class TestWerkzeugIntegration:
         rule = ROUTER.add("/_test/test_route", _test_route)
         cleanups.append(lambda: ROUTER.remove(rule))
 
-        response = requests.get(get_edge_url() + "/_test/test_route")
+        response = requests.get(config.internal_service_url() + "/_test/test_route")
         assert response.status_code == 200, response.text
         assert response.text == "ok"
 
@@ -118,7 +118,7 @@ class TestWebSocketIntegration:
         rule = ROUTER.add(_echo_websocket_handler)
         cleanups.append(lambda: ROUTER.remove(rule))
 
-        url = get_edge_url(protocol="ws") + "/_ws/world"
+        url = config.internal_service_url(protocol="ws") + "/_ws/world"
 
         socket = websocket.WebSocket()
         socket.connect(url)
@@ -140,7 +140,7 @@ class TestWebSocketIntegration:
         rule = ROUTER.add(_echo_websocket_handler)
         cleanups.append(lambda: ROUTER.remove(rule))
 
-        url = get_edge_url(protocol="ws") + "/_ws/world"
+        url = config.internal_service_url(protocol="ws") + "/_ws/world"
 
         socket = websocket.WebSocket()
         with pytest.raises(websocket.WebSocketBadStatusException) as e:
@@ -157,7 +157,7 @@ class TestWebSocketIntegration:
         rule = ROUTER.add(_echo_websocket_handler)
         cleanups.append(lambda: ROUTER.remove(rule))
 
-        url = get_edge_url(protocol="ws") + "/_ws/world"
+        url = config.internal_service_url(protocol="ws") + "/_ws/world"
 
         socket = websocket.WebSocket()
         with pytest.raises(websocket.WebSocketBadStatusException) as e:
@@ -175,7 +175,10 @@ class TestWebSocketIntegration:
         rule = ROUTER.add(_echo_websocket_handler)
         cleanups.append(lambda: ROUTER.remove(rule))
 
-        url = get_edge_url("localhost.localstack.cloud", protocol="wss") + "/_ws/world"
+        url = (
+            config.internal_service_url(host="localhost.localstack.cloud", protocol="wss")
+            + "/_ws/world"
+        )
         socket = websocket.WebSocket()
         socket.connect(url)
         assert socket.connected

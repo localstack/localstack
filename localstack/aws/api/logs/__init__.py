@@ -11,6 +11,10 @@ ClientToken = str
 DataProtectionPolicyDocument = str
 Days = int
 DefaultValue = float
+DeliveryDestinationName = str
+DeliveryDestinationPolicy = str
+DeliveryId = str
+DeliverySourceName = str
 Descending = bool
 DescribeLimit = int
 DescribeQueriesMaxResults = int
@@ -42,6 +46,7 @@ LogGroupNamePattern = str
 LogRecordPointer = str
 LogStreamName = str
 LogStreamSearchedCompletely = bool
+LogType = str
 Message = str
 MetricName = str
 MetricNamespace = str
@@ -59,6 +64,7 @@ QueryString = str
 ResourceIdentifier = str
 RoleArn = str
 SequenceToken = str
+Service = str
 StartFromHead = bool
 StatsValue = float
 Success = bool
@@ -75,6 +81,12 @@ class DataProtectionStatus(str):
     DELETED = "DELETED"
     ARCHIVED = "ARCHIVED"
     DISABLED = "DISABLED"
+
+
+class DeliveryDestinationType(str):
+    S3 = "S3"
+    CWL = "CWL"
+    FH = "FH"
 
 
 class Distribution(str):
@@ -98,6 +110,14 @@ class InheritedProperty(str):
 class OrderBy(str):
     LogStreamName = "LogStreamName"
     LastEventTime = "LastEventTime"
+
+
+class OutputFormat(str):
+    json = "json"
+    plain = "plain"
+    w3c = "w3c"
+    raw = "raw"
+    parquet = "parquet"
 
 
 class PolicyType(str):
@@ -146,6 +166,18 @@ class StandardUnit(str):
     Terabits_Second = "Terabits/Second"
     Count_Second = "Count/Second"
     None_ = "None"
+
+
+class AccessDeniedException(ServiceException):
+    code: str = "AccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ConflictException(ServiceException):
+    code: str = "ConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class DataAlreadyAcceptedException(ServiceException):
@@ -215,8 +247,20 @@ class ResourceNotFoundException(ServiceException):
     status_code: int = 400
 
 
+class ServiceQuotaExceededException(ServiceException):
+    code: str = "ServiceQuotaExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ServiceUnavailableException(ServiceException):
     code: str = "ServiceUnavailableException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ThrottlingException(ServiceException):
+    code: str = "ThrottlingException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -230,6 +274,12 @@ class TooManyTagsException(ServiceException):
 
 class UnrecognizedClientException(ServiceException):
     code: str = "UnrecognizedClientException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -260,6 +310,28 @@ class CancelExportTaskRequest(ServiceRequest):
     taskId: ExportTaskId
 
 
+Tags = Dict[TagKey, TagValue]
+
+
+class CreateDeliveryRequest(ServiceRequest):
+    deliverySourceName: DeliverySourceName
+    deliveryDestinationArn: Arn
+    tags: Optional[Tags]
+
+
+class Delivery(TypedDict, total=False):
+    id: Optional[DeliveryId]
+    arn: Optional[Arn]
+    deliverySourceName: Optional[DeliverySourceName]
+    deliveryDestinationArn: Optional[Arn]
+    deliveryDestinationType: Optional[DeliveryDestinationType]
+    tags: Optional[Tags]
+
+
+class CreateDeliveryResponse(TypedDict, total=False):
+    delivery: Optional[Delivery]
+
+
 CreateExportTaskRequest = TypedDict(
     "CreateExportTaskRequest",
     {
@@ -277,9 +349,6 @@ CreateExportTaskRequest = TypedDict(
 
 class CreateExportTaskResponse(TypedDict, total=False):
     taskId: Optional[ExportTaskId]
-
-
-Tags = Dict[TagKey, TagValue]
 
 
 class CreateLogGroupRequest(ServiceRequest):
@@ -300,6 +369,22 @@ class DeleteAccountPolicyRequest(ServiceRequest):
 
 class DeleteDataProtectionPolicyRequest(ServiceRequest):
     logGroupIdentifier: LogGroupIdentifier
+
+
+class DeleteDeliveryDestinationPolicyRequest(ServiceRequest):
+    deliveryDestinationName: DeliveryDestinationName
+
+
+class DeleteDeliveryDestinationRequest(ServiceRequest):
+    name: DeliveryDestinationName
+
+
+class DeleteDeliveryRequest(ServiceRequest):
+    id: DeliveryId
+
+
+class DeleteDeliverySourceRequest(ServiceRequest):
+    name: DeliverySourceName
 
 
 class DeleteDestinationRequest(ServiceRequest):
@@ -341,6 +426,38 @@ class DeleteSubscriptionFilterRequest(ServiceRequest):
     filterName: FilterName
 
 
+Deliveries = List[Delivery]
+
+
+class DeliveryDestinationConfiguration(TypedDict, total=False):
+    destinationResourceArn: Arn
+
+
+class DeliveryDestination(TypedDict, total=False):
+    name: Optional[DeliveryDestinationName]
+    arn: Optional[Arn]
+    deliveryDestinationType: Optional[DeliveryDestinationType]
+    outputFormat: Optional[OutputFormat]
+    deliveryDestinationConfiguration: Optional[DeliveryDestinationConfiguration]
+    tags: Optional[Tags]
+
+
+DeliveryDestinations = List[DeliveryDestination]
+ResourceArns = List[Arn]
+
+
+class DeliverySource(TypedDict, total=False):
+    name: Optional[DeliverySourceName]
+    arn: Optional[Arn]
+    resourceArns: Optional[ResourceArns]
+    service: Optional[Service]
+    logType: Optional[LogType]
+    tags: Optional[Tags]
+
+
+DeliverySources = List[DeliverySource]
+
+
 class DescribeAccountPoliciesRequest(ServiceRequest):
     policyType: PolicyType
     policyName: Optional[PolicyName]
@@ -349,6 +466,36 @@ class DescribeAccountPoliciesRequest(ServiceRequest):
 
 class DescribeAccountPoliciesResponse(TypedDict, total=False):
     accountPolicies: Optional[AccountPolicies]
+
+
+class DescribeDeliveriesRequest(ServiceRequest):
+    nextToken: Optional[NextToken]
+    limit: Optional[DescribeLimit]
+
+
+class DescribeDeliveriesResponse(TypedDict, total=False):
+    deliveries: Optional[Deliveries]
+    nextToken: Optional[NextToken]
+
+
+class DescribeDeliveryDestinationsRequest(ServiceRequest):
+    nextToken: Optional[NextToken]
+    limit: Optional[DescribeLimit]
+
+
+class DescribeDeliveryDestinationsResponse(TypedDict, total=False):
+    deliveryDestinations: Optional[DeliveryDestinations]
+    nextToken: Optional[NextToken]
+
+
+class DescribeDeliverySourcesRequest(ServiceRequest):
+    nextToken: Optional[NextToken]
+    limit: Optional[DescribeLimit]
+
+
+class DescribeDeliverySourcesResponse(TypedDict, total=False):
+    deliverySources: Optional[DeliverySources]
+    nextToken: Optional[NextToken]
 
 
 class DescribeDestinationsRequest(ServiceRequest):
@@ -667,6 +814,42 @@ class GetDataProtectionPolicyResponse(TypedDict, total=False):
     lastUpdatedTime: Optional[Timestamp]
 
 
+class GetDeliveryDestinationPolicyRequest(ServiceRequest):
+    deliveryDestinationName: DeliveryDestinationName
+
+
+class Policy(TypedDict, total=False):
+    deliveryDestinationPolicy: Optional[DeliveryDestinationPolicy]
+
+
+class GetDeliveryDestinationPolicyResponse(TypedDict, total=False):
+    policy: Optional[Policy]
+
+
+class GetDeliveryDestinationRequest(ServiceRequest):
+    name: DeliveryDestinationName
+
+
+class GetDeliveryDestinationResponse(TypedDict, total=False):
+    deliveryDestination: Optional[DeliveryDestination]
+
+
+class GetDeliveryRequest(ServiceRequest):
+    id: DeliveryId
+
+
+class GetDeliveryResponse(TypedDict, total=False):
+    delivery: Optional[Delivery]
+
+
+class GetDeliverySourceRequest(ServiceRequest):
+    name: DeliverySourceName
+
+
+class GetDeliverySourceResponse(TypedDict, total=False):
+    deliverySource: Optional[DeliverySource]
+
+
 class GetLogEventsRequest(ServiceRequest):
     logGroupName: Optional[LogGroupName]
     logGroupIdentifier: Optional[LogGroupIdentifier]
@@ -806,6 +989,37 @@ class PutDataProtectionPolicyResponse(TypedDict, total=False):
     logGroupIdentifier: Optional[LogGroupIdentifier]
     policyDocument: Optional[DataProtectionPolicyDocument]
     lastUpdatedTime: Optional[Timestamp]
+
+
+class PutDeliveryDestinationPolicyRequest(ServiceRequest):
+    deliveryDestinationName: DeliveryDestinationName
+    deliveryDestinationPolicy: DeliveryDestinationPolicy
+
+
+class PutDeliveryDestinationPolicyResponse(TypedDict, total=False):
+    policy: Optional[Policy]
+
+
+class PutDeliveryDestinationRequest(ServiceRequest):
+    name: DeliveryDestinationName
+    outputFormat: Optional[OutputFormat]
+    deliveryDestinationConfiguration: DeliveryDestinationConfiguration
+    tags: Optional[Tags]
+
+
+class PutDeliveryDestinationResponse(TypedDict, total=False):
+    deliveryDestination: Optional[DeliveryDestination]
+
+
+class PutDeliverySourceRequest(ServiceRequest):
+    name: DeliverySourceName
+    resourceArn: Arn
+    logType: LogType
+    tags: Optional[Tags]
+
+
+class PutDeliverySourceResponse(TypedDict, total=False):
+    deliverySource: Optional[DeliverySource]
 
 
 class PutDestinationPolicyRequest(ServiceRequest):
@@ -961,6 +1175,16 @@ class LogsApi:
     def cancel_export_task(self, context: RequestContext, task_id: ExportTaskId) -> None:
         raise NotImplementedError
 
+    @handler("CreateDelivery")
+    def create_delivery(
+        self,
+        context: RequestContext,
+        delivery_source_name: DeliverySourceName,
+        delivery_destination_arn: Arn,
+        tags: Tags = None,
+    ) -> CreateDeliveryResponse:
+        raise NotImplementedError
+
     @handler("CreateExportTask", expand=False)
     def create_export_task(
         self, context: RequestContext, request: CreateExportTaskRequest
@@ -993,6 +1217,26 @@ class LogsApi:
     def delete_data_protection_policy(
         self, context: RequestContext, log_group_identifier: LogGroupIdentifier
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteDelivery")
+    def delete_delivery(self, context: RequestContext, id: DeliveryId) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteDeliveryDestination")
+    def delete_delivery_destination(
+        self, context: RequestContext, name: DeliveryDestinationName
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteDeliveryDestinationPolicy")
+    def delete_delivery_destination_policy(
+        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteDeliverySource")
+    def delete_delivery_source(self, context: RequestContext, name: DeliverySourceName) -> None:
         raise NotImplementedError
 
     @handler("DeleteDestination")
@@ -1049,6 +1293,24 @@ class LogsApi:
         policy_name: PolicyName = None,
         account_identifiers: AccountIds = None,
     ) -> DescribeAccountPoliciesResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDeliveries")
+    def describe_deliveries(
+        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+    ) -> DescribeDeliveriesResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDeliveryDestinations")
+    def describe_delivery_destinations(
+        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+    ) -> DescribeDeliveryDestinationsResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDeliverySources")
+    def describe_delivery_sources(
+        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+    ) -> DescribeDeliverySourcesResponse:
         raise NotImplementedError
 
     @handler("DescribeDestinations")
@@ -1183,6 +1445,28 @@ class LogsApi:
     ) -> GetDataProtectionPolicyResponse:
         raise NotImplementedError
 
+    @handler("GetDelivery")
+    def get_delivery(self, context: RequestContext, id: DeliveryId) -> GetDeliveryResponse:
+        raise NotImplementedError
+
+    @handler("GetDeliveryDestination")
+    def get_delivery_destination(
+        self, context: RequestContext, name: DeliveryDestinationName
+    ) -> GetDeliveryDestinationResponse:
+        raise NotImplementedError
+
+    @handler("GetDeliveryDestinationPolicy")
+    def get_delivery_destination_policy(
+        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName
+    ) -> GetDeliveryDestinationPolicyResponse:
+        raise NotImplementedError
+
+    @handler("GetDeliverySource")
+    def get_delivery_source(
+        self, context: RequestContext, name: DeliverySourceName
+    ) -> GetDeliverySourceResponse:
+        raise NotImplementedError
+
     @handler("GetLogEvents")
     def get_log_events(
         self,
@@ -1251,6 +1535,37 @@ class LogsApi:
         log_group_identifier: LogGroupIdentifier,
         policy_document: DataProtectionPolicyDocument,
     ) -> PutDataProtectionPolicyResponse:
+        raise NotImplementedError
+
+    @handler("PutDeliveryDestination")
+    def put_delivery_destination(
+        self,
+        context: RequestContext,
+        name: DeliveryDestinationName,
+        delivery_destination_configuration: DeliveryDestinationConfiguration,
+        output_format: OutputFormat = None,
+        tags: Tags = None,
+    ) -> PutDeliveryDestinationResponse:
+        raise NotImplementedError
+
+    @handler("PutDeliveryDestinationPolicy")
+    def put_delivery_destination_policy(
+        self,
+        context: RequestContext,
+        delivery_destination_name: DeliveryDestinationName,
+        delivery_destination_policy: DeliveryDestinationPolicy,
+    ) -> PutDeliveryDestinationPolicyResponse:
+        raise NotImplementedError
+
+    @handler("PutDeliverySource")
+    def put_delivery_source(
+        self,
+        context: RequestContext,
+        name: DeliverySourceName,
+        resource_arn: Arn,
+        log_type: LogType,
+        tags: Tags = None,
+    ) -> PutDeliverySourceResponse:
         raise NotImplementedError
 
     @handler("PutDestination")

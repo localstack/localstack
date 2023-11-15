@@ -116,10 +116,12 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):latest-$(PLATFORM) && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
-			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):stable-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
+				docker push $(TARGET_IMAGE_NAME):stable-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
@@ -146,6 +148,9 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):stable \
+			--amend $(MANIFEST_IMAGE_NAME):stable-amd64 \
+			--amend $(MANIFEST_IMAGE_NAME):stable-arm64 && \
 			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION) \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION)-arm64 && \
@@ -155,6 +160,7 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION) \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-arm64 && \
+				docker manifest push $(MANIFEST_IMAGE_NAME):stable && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) && \

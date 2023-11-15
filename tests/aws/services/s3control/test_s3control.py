@@ -1,16 +1,15 @@
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.config import EDGE_PORT
+from localstack import config
 from localstack.constants import (
-    LOCALHOST_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.testing.pytest import markers
 
-remote_endpoint = "https://%s:%s" % (LOCALHOST_HOSTNAME, EDGE_PORT)
+remote_endpoint = config.external_service_url(protocol="https")
 
 
 @pytest.fixture

@@ -63,10 +63,7 @@ def test_patching_loaders():
 
 
 def test_loading_own_specs():
-    """
-    This test ensures that the Patching
-    :return:
-    """
+    """Ensure that the internalized specifications (f.e. the sqs-query spec) can be handled by the CustomLoader."""
     loader = CustomLoader({})
     # first test that specs remain intact
     sqs_query_description = loader.load_service_model("sqs-query", "service-2")

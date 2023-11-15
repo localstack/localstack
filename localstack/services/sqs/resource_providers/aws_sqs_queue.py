@@ -157,6 +157,7 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
         try:
             queue_url = sqs.get_queue_url(QueueName=request.desired_state["QueueName"])["QueueUrl"]
             sqs.delete_queue(QueueUrl=queue_url)
+
         except sqs.exceptions.QueueDoesNotExist:
             return ProgressEvent(
                 status=OperationStatus.SUCCESS, resource_model=request.desired_state

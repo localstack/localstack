@@ -143,14 +143,6 @@ class SourceVolumeMountConfigurator:
         # postgresql-proxy code if available
         self.try_mount_to_site_packages(cfg, self.host_paths.postgresql_proxy / "postgresql_proxy")
 
-        # persistence plugin
-        self.try_mount_to_site_packages(
-            cfg,
-            self.host_paths.workspace_dir
-            / "localstack-plugin-persistence"
-            / "localstack_persistence",
-        )
-
         # plux
         self.try_mount_to_site_packages(cfg, self.host_paths.workspace_dir / "plux" / "plugin")
 

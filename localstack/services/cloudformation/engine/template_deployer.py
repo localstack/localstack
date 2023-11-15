@@ -44,7 +44,7 @@ from localstack.utils.urls import localstack_host
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
-AWS_URL_SUFFIX = "localhost.localstack.cloud"  # value is "amazonaws.com" in real AWS
+AWS_URL_SUFFIX = localstack_host().host  # value is "amazonaws.com" in real AWS
 
 REGEX_OUTPUT_APIGATEWAY = re.compile(
     rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
