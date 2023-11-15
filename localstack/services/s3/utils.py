@@ -685,12 +685,6 @@ def str_to_rfc_1123_datetime(value: str) -> datetime.datetime:
     return datetime.datetime.strptime(value, RFC1123).replace(tzinfo=_gmt_zone_info)
 
 
-def iso_8601_datetime_without_milliseconds_s3(
-    value: datetime,
-) -> Optional[str]:
-    return value.strftime("%Y-%m-%dT%H:%M:%S.000Z") if value else None
-
-
 def add_expiration_days_to_datetime(user_datatime: datetime.datetime, exp_days: int) -> str:
     """
     This adds expiration days to a datetime, rounding to the next day at midnight UTC.

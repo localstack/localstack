@@ -1692,6 +1692,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["VersionId"] = s3_object.version_id
 
         if s3_object.parts:
+            # TODO: implements ObjectParts, this is basically a simplified `ListParts` call on the object, we might
+            #  need to store more data about the Parts once we implement checksums for them
             response["ObjectParts"] = GetObjectAttributesParts(TotalPartsCount=len(s3_object.parts))
 
         return response

@@ -68,10 +68,7 @@ from localstack.services.s3.constants import (
     DEFAULT_PUBLIC_BLOCK_ACCESS,
     S3_UPLOAD_PART_MIN_SIZE,
 )
-from localstack.services.s3.utils import (
-    iso_8601_datetime_without_milliseconds_s3,
-    rfc_1123_datetime,
-)
+from localstack.services.s3.utils import rfc_1123_datetime
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -81,9 +78,6 @@ from localstack.services.stores import (
 )
 from localstack.utils.aws import arns
 from localstack.utils.tagging import TaggingService
-
-# TODO: beware of timestamp data, we need the snapshot to be more precise for S3, with the different types
-# moto had a lot of issue with it? not sure about our parser/serializer
 
 LOG = logging.getLogger(__name__)
 
@@ -345,11 +339,6 @@ class S3Object:
             headers["StorageClass"] = self.storage_class
 
         return headers
-
-    @property
-    def last_modified_iso8601(self) -> str:
-        # TODO: verify if we need them with proper snapshot testing, for now it's copied from moto
-        return iso_8601_datetime_without_milliseconds_s3(self.last_modified)  # type: ignore
 
     @property
     def last_modified_rfc1123(self) -> str:
