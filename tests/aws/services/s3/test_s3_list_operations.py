@@ -2,6 +2,7 @@
 This file is to test specific behaviour of List* operations of S3, especially pagination, which is pretty specific to
 each implementation. They all have subtle differences which make it difficult to test.
 """
+import datetime
 import os
 from io import BytesIO
 
@@ -99,7 +100,10 @@ class TestS3ListObjects:
         snapshot.match("list-objects-marker-empty", resp)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Prefix"])
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..Prefix"],
+    )
     def test_s3_list_objects_empty_marker(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         resp = aws_client.s3.list_objects(Bucket=s3_bucket, Marker="")
@@ -159,6 +163,29 @@ class TestS3ListObjects:
             Marker="folder/aSubfolder/subFile1",
         )
         snapshot.match("list-objects-manual-first-file", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "querystring", ["", "?list-type=2"], ids=["ListObjects", "ListObjectsV2"]
+    )
+    def test_s3_list_objects_timestamp_precision(
+        self, s3_bucket, aws_client, aws_http_client_factory, querystring
+    ):
+        # behaviour is shared with ListObjectsV2 so we can do it in the same test
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="test-key", Body="test-body")
+        bucket_url = f"{_bucket_url(s3_bucket)}{querystring}"
+        # Boto automatically parses the timestamp to ISO8601 with no precision, but AWS returns a different format
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
+        resp_dict = xmltodict.parse(resp.content)
+        timestamp: str = resp_dict["ListBucketResult"]["Contents"]["LastModified"]
+        # the timestamp should be looking like the following
+        # 2023-11-15T12:02:40.000Z
+        assert timestamp.endswith(".000Z")
+        assert len(timestamp) == 24
+        # assert that it follows the right format and it does not raise an exception during parsing
+        parsed_ts = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
+        assert parsed_ts.microsecond == 0
 
 
 class TestS3ListObjectsV2:
