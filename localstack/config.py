@@ -825,9 +825,7 @@ SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL = int(
     os.environ.get("SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL") or 60
 )
 
-# DEPRECATED: deprecated since 2.0.0 but added back upon customer request for the new Lambda provider
-# Keep a bit longer until we are sure that LOCALSTACK_HOST covers the special scenario but do not advertise publicly.
-# Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
+# PUBLIC: Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
 HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
 
 # PUBLIC: hot-reload (default v2), __local__ (default v1)
@@ -1046,12 +1044,13 @@ DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONF
 # if `DISABLE_BOTO_RETRIES=1` is set, all our created boto clients will have retries disabled
 DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
-# HINT: Please add deprecated environment variables to deprecations.py
-
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
-# Make sure to keep this in sync with the above!
-# Do *not* include any internal developer configurations that apply to host-mode only in this list.
-# Note: do *not* include DATA_DIR in this list, as it is treated separately
+# => Synchronize this list with the above and the configuration docs:
+# https://docs.localstack.cloud/references/configuration/
+# => Sort this list alphabetically
+# => Add deprecated environment variables to deprecations.py and add a comment in this list
+# => Move removed legacy variables to the section grouped by release (still relevant for deprecation warnings)
+# => Do *not* include any internal developer configurations that apply to host-mode only in this list.
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BOTO_WAITER_DELAY",
@@ -1064,7 +1063,6 @@ CONFIG_ENV_VARS = [
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
-    "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "DEVELOP",
     "DEVELOP_PORT",
     "DISABLE_BOTO_RETRIES",
@@ -1090,24 +1088,17 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
-    "EDGE_FORWARD_URL",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "ENABLE_CONFIG_UPDATES",
-    "ES_CUSTOM_BACKEND",
-    "ES_ENDPOINT_STRATEGY",
-    "ES_MULTI_CLUSTER",
     "EXTRA_CORS_ALLOWED_HEADERS",
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",
     "GATEWAY_LISTEN",
     "HOSTNAME",
-    "HOSTNAME_EXTERNAL",
-    "HOSTNAME_FROM_LAMBDA",  # deprecated since 2.0.0 but added to new Lambda provider
+    "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
-    "KINESIS_INITIALIZE_STREAMS",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
-    "KMS_PROVIDER",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",
@@ -1121,7 +1112,6 @@ CONFIG_ENV_VARS = [
     "LAMBDA_INIT_RELEASE_VERSION",
     "LAMBDA_KEEPALIVE_MS",
     "LAMBDA_RUNTIME_IMAGE_MAPPING",
-    "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
@@ -1135,14 +1125,11 @@ CONFIG_ENV_VARS = [
     "LAMBDA_LIMITS_CODE_SIZE_UNZIPPED",
     "LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE",
     "LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES",
-    "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
-    "LEGACY_EDGE_PROXY",  # Not functional; Deprecated in 1.0.0, removed in 3.0.0
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_AUTH_TOKEN",
     "LOCALSTACK_HOST",
-    "LOCALSTACK_HOSTNAME",
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
@@ -1171,29 +1158,43 @@ CONFIG_ENV_VARS = [
     "STRICT_SERVICE_LOADING",
     "TEST_AWS_ACCOUNT_ID",
     "TF_COMPAT_MODE",
-    "USE_SINGLE_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
-    # Removed in 3.0.0
+    # Removed legacy variables in 2.0.0
+    # DATA_DIR => do *not* include in this list, as it is treated separately.  # deprecated since 1.0.0
+    "LEGACY_DIRECTORIES",  # deprecated since 1.0.0
+    "SYNCHRONOUS_API_GATEWAY_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_DYNAMODB_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_SNS_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_SQS_EVENTS",  # deprecated since 1.3.0
+    # Removed legacy variables in 3.0.0
+    "DEFAULT_REGION",  # deprecated since 0.12.7
     "EDGE_BIND_HOST",  # deprecated since 2.0.0
+    "EDGE_FORWARD_URL",  # deprecated since 1.4.0
     "EDGE_PORT",  # deprecated since 2.0.0
     "EDGE_PORT_HTTP",  # deprecated since 2.0.0
+    "ES_CUSTOM_BACKEND",  # deprecated since 0.14.0
+    "ES_ENDPOINT_STRATEGY",  # deprecated since 0.14.0
+    "ES_MULTI_CLUSTER",  # deprecated since 0.14.0
+    "HOSTNAME_EXTERNAL",  # deprecated since 2.0.0
+    "KINESIS_INITIALIZE_STREAMS",  # deprecated since 1.4.0
+    "KINESIS_PROVIDER",  # deprecated since 1.3.0
+    "KMS_PROVIDER",  # deprecated since 1.4.0
     "LAMBDA_XRAY_INIT",  # deprecated since 2.0.0
     "LAMBDA_CODE_EXTRACT_TIME",  # deprecated since 2.0.0
     "LAMBDA_CONTAINER_REGISTRY",  # deprecated since 2.0.0
     "LAMBDA_EXECUTOR",  # deprecated since 2.0.0
     "LAMBDA_FALLBACK_URL",  # deprecated since 2.0.0
     "LAMBDA_FORWARD_URL",  # deprecated since 2.0.0
+    "LAMBDA_JAVA_OPTS",  # currently only supported in old Lambda provider but not officially deprecated
     "LAMBDA_REMOTE_DOCKER",  # deprecated since 2.0.0
     "LAMBDA_STAY_OPEN_MODE",  # deprecated since 2.0.0
-    "SQS_PORT_EXTERNAL",  # deprecated in docs since 2022-07-13
+    "LEGACY_EDGE_PROXY",  # deprecated since 1.0.0
+    "LOCALSTACK_HOSTNAME",  # deprecated since 2.0.0
+    "SQS_PORT_EXTERNAL",  # deprecated only in docs since 2022-07-13
     "SYNCHRONOUS_KINESIS_EVENTS",  # deprecated since 1.3.0
-    "SYNCHRONOUS_SNS_EVENTS",  # deprecated since 1.3.0
-    "SYNCHRONOUS_DYNAMODB_EVENTS",  # deprecated since 1.3.0
-    "SYNCHRONOUS_API_GATEWAY_EVENTS",  # deprecated since 1.3.0
-    "SYNCHRONOUS_SQS_EVENTS",  # deprecated since 1.3.0
-    "KINESIS_PROVIDER",  # deprecated since 1.3.0
+    "USE_SINGLE_REGION",  # deprecated since 0.12.7
     "MOCK_UNIMPLEMENTED",  # deprecated since 1.3.0
 ]
 
