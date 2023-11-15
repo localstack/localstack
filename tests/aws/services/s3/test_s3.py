@@ -4540,8 +4540,6 @@ class TestS3:
             parsed_ts = datetime.datetime.strptime(_timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
             assert parsed_ts.microsecond == 0
 
-            return True
-
         s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
         list_buckets_endpoint = _endpoint_url()
         list_buckets_resp = s3_http_client.get(
@@ -4556,7 +4554,7 @@ class TestS3:
         else:
             bucket = buckets["Bucket"]
         bucket_timestamp: str = bucket["CreationDate"]
-        assert assert_timestamp_is_iso8061_s3_format(bucket_timestamp)
+        assert_timestamp_is_iso8061_s3_format(bucket_timestamp)
 
         bucket_url = _bucket_url(s3_bucket)
         object_url = f"{bucket_url}/{object_key}"
@@ -4593,7 +4591,7 @@ class TestS3:
         )
         copy_resp_dict = xmltodict.parse(copy_resp.content)
         copy_timestamp: str = copy_resp_dict["CopyObjectResult"]["LastModified"]
-        assert assert_timestamp_is_iso8061_s3_format(copy_timestamp)
+        assert_timestamp_is_iso8061_s3_format(copy_timestamp)
 
     # This test doesn't work against AWS anymore because of some authorization error.
     @markers.aws.only_localstack

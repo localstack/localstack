@@ -49,8 +49,6 @@ def assert_timestamp_is_iso8061_s3_format(timestamp: str):
     parsed_ts = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
     assert parsed_ts.microsecond == 0
 
-    return True
-
 
 class TestS3ListObjects:
     @markers.aws.validated
@@ -193,7 +191,7 @@ class TestS3ListObjects:
         timestamp: str = resp_dict["ListBucketResult"]["Contents"]["LastModified"]
 
         # the timestamp should be looking like the following: 2023-11-15T12:02:40.000Z
-        assert assert_timestamp_is_iso8061_s3_format(timestamp)
+        assert_timestamp_is_iso8061_s3_format(timestamp)
 
 
 class TestS3ListObjectsV2:
@@ -557,7 +555,7 @@ class TestS3ListObjectVersions:
 
         for timestamp in (timestamp_obj, timestamp_marker):
             # the timestamp should be looking like the following: 2023-11-15T12:02:40.000Z
-            assert assert_timestamp_is_iso8061_s3_format(timestamp)
+            assert_timestamp_is_iso8061_s3_format(timestamp)
 
 
 class TestS3ListMultipartUploads:
@@ -843,7 +841,7 @@ class TestS3ListMultipartUploads:
 
         timestamp: str = resp_dict["ListMultipartUploadsResult"]["Upload"]["Initiated"]
         # the timestamp should be looking like the following: 2023-11-15T12:02:40.000Z
-        assert assert_timestamp_is_iso8061_s3_format(timestamp)
+        assert_timestamp_is_iso8061_s3_format(timestamp)
 
 
 class TestS3ListParts:
@@ -965,4 +963,4 @@ class TestS3ListParts:
 
         timestamp: str = resp_dict["ListPartsResult"]["Part"]["LastModified"]
         # the timestamp should be looking like the following: 2023-11-15T12:02:40.000Z
-        assert assert_timestamp_is_iso8061_s3_format(timestamp)
+        assert_timestamp_is_iso8061_s3_format(timestamp)
