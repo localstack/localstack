@@ -56,6 +56,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::Account": "ResourceProvider",
     "AWS::ApiGateway::ApiKey": "ResourceProvider",
     "AWS::ApiGateway::Authorizer": "ResourceProvider",
+    "AWS::ApiGateway::VpcLink": "ResourceProvider",
     "AWS::ApiGateway::BasePathMapping": "ResourceProvider",
     "AWS::ApiGateway::Deployment": "ResourceProvider",
     "AWS::ApiGateway::DomainName": "ResourceProvider",
