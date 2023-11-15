@@ -352,7 +352,7 @@ class KmsKey:
                 kwargs["padding"] = padding.PKCS1v15()
             elif "PSS" in signing_algorithm:
                 kwargs["padding"] = padding.PSS(
-                    mgf=padding.MGF1(hasher), salt_length=padding.PSS.MAX_LENGTH
+                    mgf=padding.MGF1(hasher), salt_length=padding.PSS.DIGEST_LENGTH
                 )
             else:
                 LOG.warning("Unsupported padding in SigningAlgorithm '%s'", signing_algorithm)

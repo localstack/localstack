@@ -8,6 +8,8 @@ from random import getrandbits
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec, padding, utils
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
@@ -60,6 +62,37 @@ def _get_alias(kms_client, alias_name, key_id=None):
             break
         next_token = response["nextToken"]
     return None
+
+
+def enforce_salt_length(signing_algorithm, message_type):
+    kwargs = {}
+
+    if "SHA_256" in signing_algorithm:
+        hasher = hashes.SHA256()
+        salt = 32
+    elif "SHA_384" in signing_algorithm:
+        hasher = hashes.SHA384()
+        salt = 48
+    elif "SHA_512" in signing_algorithm:
+        hasher = hashes.SHA512()
+        salt = 64
+
+    if message_type == "DIGEST":
+        kwargs["algorithm"] = utils.Prehashed(hasher)
+    else:
+        kwargs["algorithm"] = hasher
+
+    if signing_algorithm.startswith("ECDSA"):
+        kwargs["signature_algorithm"] = ec.ECDSA(algorithm=kwargs.pop("algorithm", None))
+        return kwargs
+
+    if signing_algorithm.startswith("RSA"):
+        if "PKCS" in signing_algorithm:
+            kwargs["padding"] = padding.PKCS1v15()
+        elif "PSS" in signing_algorithm:
+            print("Adding padding")
+            kwargs["padding"] = padding.PSS(mgf=padding.MGF1(hasher), salt_length=salt)
+    return kwargs
 
 
 class TestKMS:
@@ -435,8 +468,17 @@ class TestKMS:
         verification = aws_client.kms.verify(
             MessageType="RAW", Signature=signature["Signature"], Message=plaintext, **kwargs
         )
+
         snapshot.match("verification", verification)
         assert verification["SignatureValid"]
+
+        response = aws_client.kms.get_public_key(KeyId=key_id)
+        public_key_bytes = response.get("PublicKey")
+        key = load_der_public_key(public_key_bytes)
+
+        raw_vargs = enforce_salt_length(sign_algo, "RAW")
+
+        key.verify(signature=signature["Signature"], data=plaintext, **raw_vargs)
 
         # Ensure pre-hashed messages can be signed and verified
         signature = aws_client.kms.sign(MessageType="DIGEST", Message=digest, **kwargs)
