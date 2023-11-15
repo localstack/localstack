@@ -305,7 +305,7 @@ def get_stream_info(
     if aws_stack.is_local_env(env):
         stream_info["conn_kwargs"] = {
             "host": LOCALHOST,
-            "port": config.service_port("kinesis"),
+            "port": config.GATEWAY_LISTEN[0].port,
             "is_secure": bool(config.USE_SSL),
         }
     if endpoint_url:
@@ -375,8 +375,8 @@ def start_kcl_client_process(
     kwargs = {"metricsLevel": "NONE", "initialPositionInStream": "LATEST"}
     # set parameters for local connection
     if aws_stack.is_local_env(env):
-        kwargs["kinesisEndpoint"] = config.get_edge_url(protocol="http")
-        kwargs["dynamoDBEndpoint"] = config.get_edge_url(protocol="http")
+        kwargs["kinesisEndpoint"] = config.internal_service_url(protocol="http")
+        kwargs["dynamoDBEndpoint"] = config.internal_service_url(protocol="http")
         kwargs["disableCertChecking"] = "true"
     kwargs.update(configs)
     # create config file

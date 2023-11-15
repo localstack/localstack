@@ -22,10 +22,9 @@ namespace dotnet6
         {
             AmazonSQSClient sqsClient;
             if (Environment.GetEnvironmentVariable("CONFIGURE_CLIENT") == "1") {
-                var endpoint = Environment.GetEnvironmentVariable("LOCALSTACK_HOSTNAME");
                 sqsClient = new AmazonSQSClient(new AmazonSQSConfig()
                     {
-                        ServiceURL = $"http://{endpoint}:4566",
+                        ServiceURL = Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL"),
                         AuthenticationRegion = "us-east-1",
                     }
                 );

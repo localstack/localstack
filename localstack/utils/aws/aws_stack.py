@@ -18,7 +18,6 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     ENV_DEV,
     HEADER_LOCALSTACK_ACCOUNT_ID,
-    INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
     REGION_LOCAL,
 )
@@ -163,30 +162,12 @@ def get_boto3_region() -> str:
     return boto3.session.Session().region_name
 
 
-# TODO: remove this and use the `is_internal_call` property of RequestContext
-def is_internal_call_context(headers) -> bool:
-    """Return whether we are executing in the context of an internal API call, i.e.,
-    the case where one API uses a boto3 client to call another API internally."""
-    if HEADER_LOCALSTACK_ACCOUNT_ID in headers.keys():
-        # TODO: Used by the old client, marked for removal
-        return True
-
-    if INTERNAL_AWS_ACCESS_KEY_ID in headers.get("Authorization", ""):
-        return True
-
-    return False
-
-
 def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
     """Return the local service URL for the given service name or port."""
+    # TODO(srw): we don't need to differentiate on service name any more, so remove the argument
     if isinstance(service_name_or_port, int):
         return f"{config.get_protocol()}://{LOCALHOST}:{service_name_or_port}"
-    service_name = service_name_or_port
-    if service_name == "s3api":
-        service_name = "s3"
-    elif service_name == "runtime.sagemaker":
-        service_name = "sagemaker-runtime"
-    return config.service_url(service_name)
+    return config.internal_service_url()
 
 
 def get_s3_hostname():

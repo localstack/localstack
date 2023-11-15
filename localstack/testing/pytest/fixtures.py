@@ -98,7 +98,7 @@ def aws_http_client_factory(aws_session):
                 resolver: EndpointResolver = aws_session._session.get_component("endpoint_resolver")
                 endpoint_url = "https://" + resolver.construct_endpoint(service, region)["hostname"]
             else:
-                endpoint_url = config.get_edge_url()
+                endpoint_url = config.internal_service_url()
 
         return SigningHttpClient(signer_factory(creds, service, region), endpoint_url=endpoint_url)
 
@@ -1785,8 +1785,9 @@ def pytest_collection_modifyitems(config: Config, items: list[Item]):
         reason="test only applicable if run against localstack",
     )
     for item in items:
-        if "only_localstack" in item.keywords:
-            item.add_marker(only_localstack)
+        for mark in item.iter_markers():
+            if mark.name.endswith("only_localstack"):
+                item.add_marker(only_localstack)
 
 
 @pytest.fixture
@@ -1899,7 +1900,7 @@ def appsync_create_api(aws_client):
 def assert_host_customisation(monkeypatch):
     localstack_host = "foo.bar"
     monkeypatch.setattr(
-        config, "LOCALSTACK_HOST", config.HostAndPort(host=localstack_host, port=config.EDGE_PORT)
+        config, "LOCALSTACK_HOST", config.HostAndPort(host=localstack_host, port=8888)
     )
 
     def asserter(

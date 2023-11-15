@@ -97,7 +97,7 @@ def convert_s3_to_local_url(url: str) -> str:
 
     # note: make sure to normalize the bucket name here!
     bucket_name = normalize_bucket_name(bucket_name)
-    local_url = f"{config.service_url('s3')}/{bucket_name}/{key_name}"
+    local_url = f"{config.internal_service_url()}/{bucket_name}/{key_name}"
     return local_url
 
 

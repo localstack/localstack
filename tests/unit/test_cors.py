@@ -68,7 +68,7 @@ def test_dynamic_allowed_cors_origins_different_domains(monkeypatch):
     monkeypatch.setattr(
         config,
         "LOCALSTACK_HOST",
-        config.HostAndPort(host="my-custom-domain.com", port=config.EDGE_PORT),
+        config.HostAndPort(host="my-custom-domain.com", port=config.GATEWAY_LISTEN[0].port),
     )
 
     monkeypatch.setattr(

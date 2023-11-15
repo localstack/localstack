@@ -11,7 +11,6 @@ from localstack.utils.analytics.service_request_aggregator import (
     ServiceRequestAggregator,
     ServiceRequestInfo,
 )
-from localstack.utils.aws.aws_stack import is_internal_call_context
 
 LOG = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ class ServiceRequestCounter:
             return
         if config.DISABLE_EVENTS:
             return
-        if is_internal_call_context(context.request.headers):
+        if context.is_internal_call:
             # don't count internal requests
             return
 

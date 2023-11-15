@@ -58,9 +58,9 @@ Resources:
 
 
           def create_client(svc_name: str):
-              if "LOCALSTACK_HOSTNAME" in os.environ:
+              if "AWS_ENDPOINT_URL" in os.environ:
                   return boto3.client(
-                      svc_name, endpoint_url=f"http://{os.environ['LOCALSTACK_HOSTNAME']}:{os.environ['EDGE_PORT']}"
+                      svc_name, endpoint_url=os.environ["AWS_ENDPOINT_URL"]
                   )
               else:
                   return boto3.client(svc_name)

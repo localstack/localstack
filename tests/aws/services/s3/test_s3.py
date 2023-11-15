@@ -10,6 +10,7 @@ import os
 import shutil
 import tempfile
 import time
+from importlib.util import find_spec
 from io import BytesIO
 from operator import itemgetter
 from typing import TYPE_CHECKING
@@ -2611,7 +2612,7 @@ class TestS3:
             f"{body}\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
         )
         # put object
-        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
         requests.put(url, data, headers=headers, verify=False)
         # get object and assert content length
         downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
@@ -2653,7 +2654,7 @@ class TestS3:
                 "x-amz-trailer-signature:712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c\r\n\r\n"
             )
 
-        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
 
         # test with wrong checksum
         wrong_data = get_data(body, "wrongchecksum")
@@ -2708,9 +2709,7 @@ class TestS3:
         upload_id = response["UploadId"]
 
         # # upload the part 1
-        url = (
-            f"{config.service_url('s3')}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
-        )
+        url = f"{config.internal_service_url()}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
         response = requests.put(url, data, headers=headers, verify=False)
         assert response.ok
         part_etag = response.headers.get("ETag")
@@ -3333,7 +3332,7 @@ class TestS3:
         monkeypatch.setattr(
             config,
             "LOCALSTACK_HOST",
-            config.HostAndPort(host=custom_hostname, port=config.EDGE_PORT),
+            config.HostAndPort(host=custom_hostname, port=config.GATEWAY_LISTEN[0].port),
         )
         key = "test.file"
         content = "test content 123"
@@ -5442,7 +5441,7 @@ class TestS3TerraformRawRequests:
             req, _, headers = header.strip().partition("\n")
             headers = {h.split(":")[0]: h.partition(":")[2].strip() for h in headers.split("\n")}
             method, path, _ = req.split(" ")
-            url = f"{config.get_edge_url()}{path}"
+            url = f"{config.internal_service_url()}{path}"
             result = requests.request(method=method, url=url, data=body, headers=headers)
             assert result.status_code < 400
 
@@ -5485,7 +5484,7 @@ class TestS3PresignedUrl:
     def test_presign_check_signature_validation_for_port_permutation(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
-        host = f"{S3_VIRTUAL_HOSTNAME}:{config.EDGE_PORT}"
+        host = f"{S3_VIRTUAL_HOSTNAME}:{config.GATEWAY_LISTEN[0].port}"
         s3_presign = _s3_client_custom_config(
             Config(signature_version="s3v4"),
             endpoint_url=f"http://{host}",
@@ -5498,9 +5497,9 @@ class TestS3PresignedUrl:
             Params={"Bucket": s3_bucket, "Key": "test"},
             ExpiresIn=86400,
         )
-        assert f":{config.EDGE_PORT}" in presign_url
+        assert f":{config.GATEWAY_LISTEN[0].port}" in presign_url
 
-        host_443 = host.replace(f":{config.EDGE_PORT}", ":443")
+        host_443 = host.replace(f":{config.GATEWAY_LISTEN[0].port}", ":443")
         response = requests.get(presign_url, headers={"host": host_443})
         assert b"test-value" == response._content
 
@@ -6548,7 +6547,7 @@ class TestS3PresignedUrl:
         "signature_version",
         ["s3", "s3v4"],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_s3_presign_url_encoding(
         self, aws_client, s3_bucket, signature_version, patch_s3_skip_signature_validation_false
     ):
@@ -6569,6 +6568,86 @@ class TestS3PresignedUrl:
         req = requests.get(url)
         assert req.ok
         assert req.content == b"123"
+
+    @markers.aws.validated
+    def test_s3_ignored_special_headers(
+        self,
+        s3_bucket,
+        patch_s3_skip_signature_validation_false,
+        monkeypatch,
+    ):
+        # if the crt.auth is not available, not need to patch as it will use it by default
+        if find_spec("botocore.crt.auth"):
+            # the CRT client does not allow us to pass a protected header, it will trigger an exception, so we need
+            # to patch the Signer selection to the Python implementation which does not have this check
+            from botocore.auth import AUTH_TYPE_MAPS, S3SigV4QueryAuth
+
+            monkeypatch.setitem(AUTH_TYPE_MAPS, "s3v4-query", S3SigV4QueryAuth)
+
+        key = "my-key"
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version="s3v4", s3={"payload_signing_enabled": True}),
+            endpoint_url=_endpoint_url(),
+        )
+
+        def add_content_sha_header(request, **kwargs):
+            request.headers["x-amz-content-sha256"] = "UNSIGNED-PAYLOAD"
+
+        presigned_client.meta.events.register(
+            "before-sign.s3.PutObject",
+            handler=add_content_sha_header,
+        )
+        try:
+            url = presigned_client.generate_presigned_url(
+                "put_object", Params={"Bucket": s3_bucket, "Key": key}
+            )
+            assert "x-amz-content-sha256" in url
+            # somehow, it's possible to add "x-amz-content-sha256" to signed headers, the AWS Go SDK does it
+            resp = requests.put(
+                url,
+                data="something",
+                verify=False,
+                headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"},
+            )
+            assert resp.ok
+
+            # if signed but not provided, AWS will raise an exception
+            resp = requests.put(url, data="something", verify=False)
+            assert resp.status_code == 403
+
+        finally:
+            presigned_client.meta.events.unregister(
+                "before-sign.s3.PutObject",
+                add_content_sha_header,
+            )
+
+        # recreate the request, without the signed header
+        url = presigned_client.generate_presigned_url(
+            "put_object", Params={"Bucket": s3_bucket, "Key": key}
+        )
+        assert "x-amz-content-sha256" not in url
+
+        # assert that if provided and not signed, AWS will ignore it even if it starts with `x-amz`
+        resp = requests.put(
+            url,
+            data="something",
+            verify=False,
+            headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"},
+        )
+        assert resp.ok
+
+        # assert that x-amz-user-agent is not ignored, it must be set in SignedHeaders
+        resp = requests.put(
+            url, data="something", verify=False, headers={"x-amz-user-agent": "test"}
+        )
+        assert resp.status_code == 403
+
+        # X-Amz-Signature needs to be the last query string parameter: insert x-id before like the Go SDK
+        index = url.find("&X-Amz-Signature")
+        rewritten_url = url[:index] + "&x-id=PutObject" + url[index:]
+        # however, the x-id query string parameter is not ignored
+        resp = requests.put(rewritten_url, data="something", verify=False)
+        assert resp.status_code == 403
 
 
 class TestS3DeepArchive:
@@ -7447,7 +7526,7 @@ class TestS3Routing:
         aws_client.s3.head_object(Bucket=s3_bucket, Key=s3_key)
 
         path = s3_key if use_virtual_address else f"{s3_bucket}/{s3_key}"
-        url = f"{config.get_edge_url()}/{path}"
+        url = f"{config.internal_service_url()}/{path}"
         headers = aws_stack.mock_aws_request_headers(
             "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
