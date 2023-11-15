@@ -9,7 +9,6 @@ import time
 from typing import IO, Optional, Tuple
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.api.lambda_ import (
     AccountLimit,
@@ -636,7 +635,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             layer_version = None
             if layer is not None:
                 layer_version = layer.layer_versions.get(layer_version_str)
-            if layer_account_id == get_aws_account_id():
+            if layer_account_id == account_id:
                 if region and layer_region != region:
                     raise InvalidParameterValueException(
                         f"Layers are not in the same region as the function. "

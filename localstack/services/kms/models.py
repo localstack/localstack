@@ -19,7 +19,6 @@ from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.kms import (
     CreateAliasRequest,
     CreateGrantRequest,
@@ -402,7 +401,7 @@ class KmsKey:
         )
 
         # Metadata fields AWS introduces automatically
-        self.metadata["AWSAccountId"] = account_id or get_aws_account_id()
+        self.metadata["AWSAccountId"] = account_id
         self.metadata["CreationDate"] = datetime.datetime.now()
         self.metadata["Enabled"] = create_key_request.get("Origin") != OriginType.EXTERNAL
         self.metadata["KeyManager"] = "CUSTOMER"

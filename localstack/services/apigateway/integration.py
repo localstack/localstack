@@ -14,7 +14,6 @@ from moto.apigatewayv2.exceptions import BadRequestException
 from requests import Response
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.connect import (
     INTERNAL_REQUEST_PARAMS_HEADER,
     InternalRequestParameters,
@@ -689,7 +688,7 @@ class SQSIntegration(BackendIntegration):
             queue_url = f"{config.internal_service_url()}/{account_id}/{queue}"
             new_request = f"{payload}&QueueUrl={queue_url}"
 
-        url = urljoin(config.internal_service_url(), f"{get_aws_account_id()}/{queue}")
+        url = urljoin(config.internal_service_url(), f"{account_id}/{queue}")
         response = common.make_http_request(url, method="POST", headers=headers, data=new_request)
 
         # apply response template

@@ -11,7 +11,6 @@ from moto.logs.models import LogEvent, LogsBackend
 from moto.logs.models import LogGroup as MotoLogGroup
 from moto.logs.models import LogStream as MotoLogStream
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.logs import (
     AmazonResourceName,
@@ -329,7 +328,7 @@ def moto_put_log_events(self: "MotoLogStream", log_events):
 
             data = {
                 "messageType": "DATA_MESSAGE",
-                "owner": get_aws_account_id(),
+                "owner": self.log_group.account_id,
                 "logGroup": self.log_group.name,
                 "logStream": self.log_stream_name,
                 "subscriptionFilters": [subscription_filter.name],

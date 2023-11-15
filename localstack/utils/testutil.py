@@ -26,7 +26,6 @@ import boto3
 import requests
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     LOCALSTACK_ROOT_FOLDER,
     LOCALSTACK_VENV_FOLDER,
@@ -253,7 +252,7 @@ def create_lambda_function(
         "FunctionName": func_name,
         "Runtime": runtime,
         "Handler": handler,
-        "Role": role or LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
+        "Role": role or LAMBDA_TEST_ROLE.format(account_id=client.meta.account_id),
         "Code": lambda_code,
         "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
