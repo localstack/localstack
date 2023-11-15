@@ -148,6 +148,9 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):stable \
+			--amend $(MANIFEST_IMAGE_NAME):stable-amd64 \
+			--amend $(MANIFEST_IMAGE_NAME):stable-arm64 && \
 			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION) \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION)-arm64 && \
@@ -157,6 +160,7 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION) \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-arm64 && \
+				docker manifest push $(MANIFEST_IMAGE_NAME):stable && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) && \
