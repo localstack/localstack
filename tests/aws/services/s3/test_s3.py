@@ -4527,7 +4527,9 @@ class TestS3:
         assert not resp.content, resp.content
 
     @markers.aws.validated
-    def test_s3_timestamp_precision(self, s3_bucket, aws_client, aws_http_client_factory):
+    def test_s3_timestamp_precision(
+        self, s3_bucket, aws_client, aws_http_client_factory, s3_create_bucket
+    ):
         object_key = "test-key"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test-body")
 
@@ -4547,12 +4549,13 @@ class TestS3:
         )
         list_buckets_dict = xmltodict.parse(list_buckets_resp.content)
 
-        buckets = list_buckets_dict["ListAllMyBucketsResult"]["Buckets"]
+        buckets = list_buckets_dict["ListAllMyBucketsResult"]["Buckets"]["Bucket"]
         # because of XML parsing, it can either be a list or a dict
+
         if isinstance(buckets, list):
             bucket = buckets[0]
         else:
-            bucket = buckets["Bucket"]
+            bucket = buckets
         bucket_timestamp: str = bucket["CreationDate"]
         assert_timestamp_is_iso8061_s3_format(bucket_timestamp)
 
