@@ -177,15 +177,12 @@ def test_is_sqs_queue_url():
     assert is_sqs_queue_url("http://localhost:4566/111111111111/bar") is True
 
     # Path strategy uses any domain name
-    assert (
-        is_sqs_queue_url("foo.bar:4566/queue/ap-south-1/222222222222/bar") is True
-    )
+    assert is_sqs_queue_url("foo.bar:4566/queue/ap-south-1/222222222222/bar") is True
     # Domain strategy may omit region
     assert is_sqs_queue_url("http://queue.localhost.localstack.cloud:4566/111111111111/foo") is True
-    
+
     # Custom domain name
     assert is_sqs_queue_url("http://foo.bar:4566/queue/us-east-1/111111111111/foo") is True
     assert is_sqs_queue_url("http://us-east-1.queue.foo.bar:4566/111111111111/foo") is True
     assert is_sqs_queue_url("http://queue.foo.bar:4566/111111111111/foo") is True
     assert is_sqs_queue_url("http://sqs.us-east-1.foo.bar:4566/111111111111/foo") is True
-    
