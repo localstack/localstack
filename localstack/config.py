@@ -1269,8 +1269,8 @@ def external_service_url(
     machine than LocalStack. The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.
     The optional parameters can be used to customize the defaults.
     Examples with default configuration:
-    * external_service_url() == http:localhost.localstack.cloud:4566
-    * external_service_url(subdomains="s3") == http:s3.localhost.localstack.cloud:4566
+    * external_service_url() == http://localhost.localstack.cloud:4566
+    * external_service_url(subdomains="s3") == http://s3.localhost.localstack.cloud:4566
     """
     protocol = protocol or get_protocol()
     subdomains = f"{subdomains}." if subdomains else ""
@@ -1289,8 +1289,8 @@ def internal_service_url(
     The configuration USE_SSL can customize these returned URLs but LOCALSTACK_HOST has no effect.
     The optional parameters can be used to customize the defaults.
     Examples with default configuration:
-    * internal_service_url() == http:localhost:4566
-    * internal_service_url(port=8080) == http:localhost:8080
+    * internal_service_url() == http://localhost:4566
+    * internal_service_url(port=8080) == http://localhost:8080
     """
     protocol = protocol or get_protocol()
     subdomains = f"{subdomains}." if subdomains else ""
