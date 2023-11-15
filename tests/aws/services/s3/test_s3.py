@@ -4527,9 +4527,7 @@ class TestS3:
         assert not resp.content, resp.content
 
     @markers.aws.validated
-    def test_s3_timestamp_precision(
-        self, s3_bucket, aws_client, aws_http_client_factory, s3_create_bucket
-    ):
+    def test_s3_timestamp_precision(self, s3_bucket, aws_client, aws_http_client_factory):
         object_key = "test-key"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test-body")
 
