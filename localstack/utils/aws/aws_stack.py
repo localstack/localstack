@@ -226,6 +226,7 @@ def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -
     return region
 
 
+# TODO: move to `localstack.utils.aws.request_context`
 def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[str]:
     auth = headers.get("Authorization") or ""
 
