@@ -1,4 +1,5 @@
 """Module for localstack internal resources, such as health, graph, or _localstack/cloudformation/deploy. """
+import html
 import json
 import logging
 import os
@@ -6,10 +7,11 @@ import re
 import time
 from collections import defaultdict
 from datetime import datetime
-from typing import List
+from typing import Iterable, List
 
 import requests
 from werkzeug.exceptions import NotFound
+from werkzeug.routing import Rule
 
 from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
@@ -319,18 +321,71 @@ class ConfigResource:
 
 
 class RoutesResource:
-    def on_get(self, request):
+    def on_get(self, request: Request, format: str | None = None):
+        if format == "html" or format is None:
+            return self._render_html()
+        elif format == "json":
+            return self._render_json()
+        else:
+            raise ValueError(f"Invalid format {format}")
+
+    @staticmethod
+    def _render_html():
+        html = """
+        <redoc spec-url="/_localstack/routes/json"></redoc>
+        <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+        """
+
+        return Response(html, mimetype="text/html", status=200)
+
+    def _render_json(self):
         from localstack.services.edge import ROUTER
 
-        routes = [
-            {
-                "host": rule.host,
-                "path": rule.rule,
-            }
-            for rule in ROUTER.list_route_mapping()
-        ]
+        return self._generate_openapi_spec(ROUTER.list_route_mapping())
 
-        return {"routes": routes}
+    @staticmethod
+    def _generate_openapi_spec(routes: Iterable[Rule]) -> dict:
+        paths = {}
+
+        for rule in routes:
+            res = {}
+            methods = rule.methods or ["get"]
+            for method in methods:
+                res[method] = {
+                    "summary": "route",
+                    "responses": {
+                        "200": {
+                            "description": "ok",
+                        },
+                    },
+                }
+                if rule.host and rule.host != "<__host__>":
+                    res[method]["parameters"] = []
+                    res[method]["parameters"].append(
+                        {
+                            "name": "Host",
+                            "in": "header",
+                            "required": True,
+                            "description": html.escape(rule.host),
+                        }
+                    )
+
+            paths[rule.rule] = res
+
+        return {
+            "openapi": "3.0.2",
+            "info": {
+                "title": "LocalStack registered routes",
+                "description": "Routes registered by LocalStack services",
+            },
+            "servers": [
+                {
+                    "url": "/",
+                }
+            ],
+            "paths": paths,
+            "components": {},
+        }
 
 
 class LocalstackResources(Router):
@@ -368,7 +423,10 @@ class LocalstackResources(Router):
             )
             self.add(Resource("/_localstack/diagnose", DiagnoseResource()))
             self.add(Resource("/_localstack/usage", UsageResource()))
-            self.add(Resource("/_localstack/routes", RoutesResource()))
+
+            routes_resource = RoutesResource()
+            self.add(Resource("/_localstack/routes", routes_resource))
+            self.add(Resource("/_localstack/routes/<format>", routes_resource))
 
 
 @singleton_factory
