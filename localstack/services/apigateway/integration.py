@@ -136,7 +136,11 @@ def get_service_factory(region_name: str, role_arn: str):
 
 @lru_cache(maxsize=64)
 def get_internal_mocked_headers(
-    service_name: str, account_id: str, region_name: str, source_arn: str, role_arn: str | None,
+    service_name: str,
+    account_id: str,
+    region_name: str,
+    source_arn: str,
+    role_arn: str | None,
 ) -> dict[str, str]:
     if role_arn:
         access_key_id = (
