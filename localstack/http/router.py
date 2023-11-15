@@ -392,10 +392,15 @@ class Router(Generic[E]):
         else:
             self._remove_rules(rules)
 
-    def list_route_mapping(self) -> List[Rule]:
+    def list_route_mapping(self, endpoint: Optional[str] = None) -> Iterable[Rule]:
+        """
+        Return the list of currently active rules.
+
+        :param endpoint: optionally only return rules for a specific endpoint
+        """
         rules = []
         with self._mutex:
-            for rule in self.url_map.iter_rules():
+            for rule in self.url_map.iter_rules(endpoint):
                 rules.append(rule)
         return rules
 
