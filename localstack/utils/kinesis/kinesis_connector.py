@@ -1,66 +1,43 @@
 #!/usr/bin/env python
-import dataclasses
 import logging
 import os
 import re
 import tempfile
 import threading
-from dataclasses import field
-from urllib.parse import urlparse
+from typing import Any, Callable
 
 from amazon_kclpy import kcl
 from amazon_kclpy.v2 import processor
 
 from localstack import config
-from localstack.constants import LOCALHOST, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
+from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.utils.aws import arns
-from localstack.utils.files import TMP_FILES, chmod_r, rm_rf, save_file
+from localstack.utils.files import TMP_FILES, chmod_r, save_file
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
-from localstack.utils.run import ShellCommandThread, run
+from localstack.utils.run import ShellCommandThread
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.threads import TMP_THREADS
 from localstack.utils.time import now
 
-EVENTS_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.fifo")
-LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.log")
 DEFAULT_DDB_LEASE_TABLE_SUFFIX = "-kclapp"
 
 # define Java class names
 MULTI_LANG_DAEMON_CLASS = "software.amazon.kinesis.multilang.MultiLangDaemon"
 
-# set up log levels
-logging.SEVERE = 60
-logging.FATAL = 70
-logging.addLevelName(logging.SEVERE, "SEVERE")
-logging.addLevelName(logging.FATAL, "FATAL")
-LOG_LEVELS = [
-    logging.DEBUG,
-    logging.INFO,
-    logging.WARNING,
-    logging.ERROR,
-    logging.CRITICAL,
-    logging.SEVERE,
-]
-
-# default log level for the KCL log output
-DEFAULT_KCL_LOG_LEVEL = logging.INFO
-MAX_KCL_LOG_LEVEL = logging.INFO
-
 # set up local logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
+
+INITIALIZATION_REGEX = re.compile(r".*Initialization complete.*")
+SUBPROCESS_INITIALIZED_REGEX = re.compile(r".*Received response .* for initialize.*")
 
 # checkpointing settings
 CHECKPOINT_RETRIES = 5
 CHECKPOINT_SLEEP_SECS = 5
 CHECKPOINT_FREQ_SECS = 60
 
-
-@dataclasses.dataclass
-class KinesisStream:
-    id: str
-    stream_info: dict = field(default_factory=dict)
+ListenerFunction = Callable[[list], Any]
 
 
 # needed by the processor script farther down
@@ -108,7 +85,7 @@ class KinesisProcessor(processor.RecordProcessorBase):
         try:
             retry(do_checkpoint, retries=CHECKPOINT_RETRIES, sleep=CHECKPOINT_SLEEP_SECS)
         except Exception as e:
-            LOGGER.warning("Unable to checkpoint Kinesis after retries: %s", e)
+            LOG.warning("Unable to checkpoint Kinesis after retries: %s", e)
 
     def should_update_sequence(self, sequence_number, sub_sequence_number):
         return (
@@ -131,256 +108,112 @@ class KinesisProcessor(processor.RecordProcessorBase):
 
 
 class KinesisProcessorThread(ShellCommandThread):
-    def __init__(self, params: dict):
-        props_file = params["properties_file"]
-        env_vars = params["env_vars"]
-        cmd = kclipy_helper.get_kcl_app_command("java", MULTI_LANG_DAEMON_CLASS, props_file)
-        if not params["log_file"]:
-            params["log_file"] = f"{props_file}.log"
-            TMP_FILES.append(params["log_file"])
-        ShellCommandThread.__init__(
-            self,
+    def __init__(
+        self,
+        stream_name: str,
+        properties_file: str,
+        env_vars: dict[str, str],
+        listener_function: ListenerFunction,
+        events_file: str,
+    ):
+        self.initialization_completed = threading.Event()
+        self.subprocesses_initialized = threading.Event()
+        self.event_reader = EventFileReaderThread(events_file, listener_function)
+        self.stream_name = stream_name
+        cmd = kclipy_helper.get_kcl_app_command("java", MULTI_LANG_DAEMON_CLASS, properties_file)
+        super().__init__(
             cmd,
-            outfile=params["log_file"],
+            log_listener=self._startup_listener,
             env_vars=env_vars,
-            quiet=True,
+            quiet=False,
             name="kinesis-processor",
         )
 
-    @staticmethod
-    def start_consumer(kinesis_stream):
-        thread = KinesisProcessorThread(kinesis_stream.stream_info)
-        thread.start()
-        return thread
+    def start(self):
+        self.event_reader.start()
+        # Wait until the event reader thread is ready (to avoid 'Connection refused' error on the UNIX socket)
+        self.event_reader.wait_for_ready()
+        super().start()
 
+    def stop(self, quiet: bool = False):
+        LOG.debug("Stopping kinesis connector for stream %s", self.stream_name)
+        self.event_reader.stop()
+        super().stop(quiet)
 
-class OutputReader(ShellCommandThread):
-    def __init__(
-        self,
-        file: str,
-        log_level: int | None,
-        log_subscribers: list | None,
-        log_prefix: str = "LOG",
-    ):
-        cmd = ["tail", "-f", file]
-        super().__init__(cmd=cmd, log_listener=self.listener)
-        self.log_level = log_level
-        if log_subscribers is None:
-            log_subscribers = []
-        self.log_subscribers = log_subscribers
-        if self.log_level is None:
-            self.log_level = DEFAULT_KCL_LOG_LEVEL
-        if self.log_level > 0:
-            self.log_level = min(self.log_level, MAX_KCL_LOG_LEVEL)
-            levels = self.get_log_level_names(self.log_level)
-            # regular expression to filter the printed output
-            self.filter_regex = rf".*({'|'.join(levels)}):.*"
-            # create prefix and logger
-            self.prefix = log_prefix
-            self.logger = logging.getLogger(self.prefix)
-            self.logger.severe = self.logger.critical
-            self.logger.fatal = self.logger.critical
-            self.logger.setLevel(self.log_level)
-        self.buffer = []
-        self.buffer_size = 2
-
-    @classmethod
-    def get_log_level_names(cls, min_level):
-        return [logging.getLevelName(lvl) for lvl in LOG_LEVELS if lvl >= min_level]
-
-    def get_logger_for_level_in_log_line(self, line):
-        level = self.log_level
-        for lvl in LOG_LEVELS:
-            if lvl >= level:
-                level_name = logging.getLevelName(lvl)
-                if re.match(rf".*({level_name}):.*", line):
-                    level = min(level, MAX_KCL_LOG_LEVEL)
-                    level_name = logging.getLevelName(level)
-                    return getattr(self.logger, level_name.lower())
-        return None
-
-    def notify_subscribers(self, line: str):
-        for subscriber in self.log_subscribers:
-            try:
-                if re.match(subscriber.regex, line):
-                    subscriber.update(line)
-            except Exception as e:
-                LOGGER.warning("Unable to notify log subscriber: %s", e)
-
-    def listener(self, line: str, **kwargs):
+    def _startup_listener(self, line: str, **kwargs):
         line = line.strip()
-        self.notify_subscribers(line)
-        if self.log_level > 0:
-            # add line to buffer
-            self.buffer.append(line)
-            if len(self.buffer) >= self.buffer_size:
-                logger_func = None
-                for line in self.buffer:
-                    if re.match(self.filter_regex, line):
-                        logger_func = self.get_logger_for_level_in_log_line(line)
-                        break
-                if logger_func:
-                    for buffered_line in self.buffer:
-                        logger_func(buffered_line)
-                self.buffer = []
+        # LOG.debug("KCLPY: %s", line)
+        if not self.initialization_completed.is_set() and INITIALIZATION_REGEX.match(line):
+            self.initialization_completed.set()
+        if not self.subprocesses_initialized.is_set() and SUBPROCESS_INITIALIZED_REGEX.match(line):
+            self.subprocesses_initialized.set()
 
+    def wait_is_up(self, timeout: int | None = None) -> bool:
+        return self.initialization_completed.wait(timeout=timeout)
 
-class KclStartedLogListener:
-    def __init__(self):
-        self.regex_init = r".*Initialization complete.*"
-        self.regex_take_shard = r".*Received response .* for initialize.*"
-        # construct combined regex
-        self.regex = r"(%s)|(%s)" % (self.regex_init, self.regex_take_shard)
-        # Semaphore.acquire does not provide timeout parameter, so we
-        # use a Queue here which provides the required functionality
-        self.sync_init = threading.Event()
-        self.sync_take_shard = threading.Event()
-
-    def update(self, log_line):
-        if re.match(self.regex_init, log_line):
-            self.sync_init.set()
-        if re.match(self.regex_take_shard, log_line):
-            self.sync_take_shard.set()
-
-
-# construct a stream info hash
-def get_stream_info(
-    stream_name,
-    region_name,
-    log_file=None,
-    shards=None,
-    env=None,
-    endpoint_url=None,
-    ddb_lease_table_suffix=None,
-    env_vars=None,
-):
-    if env_vars is None:
-        env_vars = {}
-    if not ddb_lease_table_suffix:
-        ddb_lease_table_suffix = DEFAULT_DDB_LEASE_TABLE_SUFFIX
-    # construct stream info
-    props_file = os.path.join(tempfile.gettempdir(), "kclipy.%s.properties" % short_uid())
-    # make sure to convert stream ARN to stream name
-    stream_name = arns.kinesis_stream_name(stream_name)
-    app_name = f"{stream_name}{ddb_lease_table_suffix}"
-    stream_info = {
-        "name": stream_name,
-        "region": region_name,
-        "shards": shards,
-        "properties_file": props_file,
-        "log_file": log_file,
-        "app_name": app_name,
-        "env_vars": env_vars,
-    }
-    # set local connection
-    stream_info["conn_kwargs"] = {
-        "host": LOCALHOST,
-        "port": config.GATEWAY_LISTEN[0].port,
-        "is_secure": False,
-    }
-    if endpoint_url:
-        if "conn_kwargs" not in stream_info:
-            stream_info["conn_kwargs"] = {}
-        url = urlparse(endpoint_url)
-        stream_info["conn_kwargs"]["host"] = url.hostname
-        stream_info["conn_kwargs"]["port"] = url.port
-        stream_info["conn_kwargs"]["is_secure"] = url.scheme == "https"
-    return stream_info
+    def wait_subprocesses_initialized(self, timeout: int | None = None) -> bool:
+        return self.subprocesses_initialized.wait(timeout=timeout)
 
 
 def start_kcl_client_process(
     stream_name: str,
-    listener_script,
     region_name,
-    log_file=None,
-    env=None,
-    configs=None,
-    endpoint_url=None,
+    listener_function: ListenerFunction,
     ddb_lease_table_suffix=None,
-    env_vars=None,
-    kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
-    log_subscribers=None,
 ):
-    if configs is None:
-        configs = {}
-    if env_vars is None:
-        env_vars = {}
-    if log_subscribers is None:
-        log_subscribers = []
     # make sure to convert stream ARN to stream name
     stream_name = arns.kinesis_stream_name(stream_name)
     # disable CBOR protocol, enforce use of plain JSON
-    env_vars["AWS_CBOR_DISABLE"] = "true"
-    if kcl_log_level or (len(log_subscribers) > 0):
-        if not log_file:
-            log_file = LOG_FILE_PATTERN.replace("*", short_uid())
-            TMP_FILES.append(log_file)
-        run(["touch", log_file])
-        # start log output reader thread which will read the KCL log
-        # file and print each line to stdout of this process...
-        reader_thread = OutputReader(
-            file=log_file,
-            log_level=kcl_log_level,
-            log_prefix="KCL",
-            log_subscribers=log_subscribers,
-        )
-        reader_thread.start()
+    # TODO evaluate why?
+    env_vars = {"AWS_CBOR_DISABLE": "true"}
 
-    # construct stream info
-    stream_info = get_stream_info(
-        stream_name,
-        region_name,
-        log_file,
-        env=env,
-        endpoint_url=endpoint_url,
-        ddb_lease_table_suffix=ddb_lease_table_suffix,
-        env_vars=env_vars,
-    )
-    props_file = stream_info["properties_file"]
-    # set kcl config options
-    kwargs = {
-        "metricsLevel": "NONE",
-        "initialPositionInStream": "LATEST",
-        # set parameters for local connection
-        "kinesisEndpoint": config.internal_service_url(protocol="http"),
-        "dynamoDBEndpoint": config.internal_service_url(protocol="http"),
-        "disableCertChecking": "true",
-    }
-    kwargs |= configs
+    events_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.fifo")
+    TMP_FILES.append(events_file)
+    processor_script = generate_processor_script(events_file)
+
+    properties_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.properties")
+    app_name = f"{stream_name}{ddb_lease_table_suffix}"
     # create config file
     kclipy_helper.create_config_file(
-        config_file=props_file,
-        executableName=listener_script,
+        config_file=properties_file,
+        executableName=processor_script,
         streamName=stream_name,
-        applicationName=stream_info["app_name"],
+        applicationName=app_name,
         region_name=region_name,
-        **kwargs,
+        metricsLevel="NONE",
+        initialPositionInStream="LATEST",
+        # set parameters for local connection
+        kinesisEndpoint=config.internal_service_url(protocol="http"),
+        dynamoDBEndpoint=config.internal_service_url(protocol="http"),
+        disableCertChecking="true",
     )
-    TMP_FILES.append(props_file)
+    TMP_FILES.append(properties_file)
     # start stream consumer
-    stream = KinesisStream(id=stream_name, stream_info=stream_info)
-    thread_consumer = KinesisProcessorThread.start_consumer(stream)
-    TMP_THREADS.append(thread_consumer)
-    return thread_consumer
+    kinesis_processor = KinesisProcessorThread(
+        stream_name=stream_name,
+        properties_file=properties_file,
+        env_vars=env_vars,
+        listener_function=listener_function,
+        events_file=events_file,
+    )
+    kinesis_processor.start()
+    TMP_THREADS.append(kinesis_processor)
+    return kinesis_processor
 
 
-def generate_processor_script(events_file, log_file=None):
-    script_file = os.path.join(tempfile.gettempdir(), "kclipy.%s.processor.py" % short_uid())
-    if log_file:
-        log_file = f"'{log_file}'"
-    else:
-        log_file = "None"
-    content = """#!/usr/bin/env python
+def generate_processor_script(events_file: str):
+    script_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.processor.py")
+    content = f"""#!/usr/bin/env python
 import os, sys, glob, json, socket, time, logging, subprocess, tempfile
 logging.basicConfig(level=logging.INFO)
-for path in glob.glob('%s/lib/python*/site-packages'):
+for path in glob.glob('{LOCALSTACK_VENV_FOLDER}/lib/python*/site-packages'):
     sys.path.insert(0, path)
-sys.path.insert(0, '%s')
+sys.path.insert(0, '{LOCALSTACK_ROOT_FOLDER}')
 from localstack.config import DEFAULT_ENCODING
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.time import timestamp
-events_file = '%s'
-log_file = %s
+events_file = '{events_file}'
+log_file = None
 error_log = os.path.join(tempfile.gettempdir(), 'kclipy.error.log')
 if __name__ == '__main__':
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -396,32 +229,27 @@ if __name__ == '__main__':
         except Exception as e:
             error = e
             if i < num_tries:
-                msg = '%%s: Unable to connect to UNIX socket. Retrying.' %% timestamp()
-                subprocess.check_output('echo "%%s" >> %%s' %% (msg, error_log), shell=True)
+                msg = '%s: Unable to connect to UNIX socket. Retrying.' % timestamp()
+                subprocess.check_output('echo "%s" >> %s' % (msg, error_log), shell=True)
                 time.sleep(sleep_time)
     if error:
-        print("WARN: Unable to connect to UNIX socket after retrying: %%s" %% error)
+        print("WARN: Unable to connect to UNIX socket after retrying: %s" % error)
         raise error
 
     def receive_msg(records, checkpointer, shard_id):
         try:
             # records is a list of amazon_kclpy.messages.Record objects -> convert to JSON
             records_dicts = [j._json_dict for j in records]
-            message_to_send = {'shard_id': shard_id, 'records': records_dicts}
-            string_to_send = '%%s\\n' %% json.dumps(message_to_send)
+            message_to_send = {{'shard_id': shard_id, 'records': records_dicts}}
+            string_to_send = '%s\\n' % json.dumps(message_to_send)
             bytes_to_send = string_to_send.encode(DEFAULT_ENCODING)
             sock.send(bytes_to_send)
         except Exception as e:
-            msg = "WARN: Unable to forward event: %%s" %% e
+            msg = "WARN: Unable to forward event: %s" % e
             print(msg)
-            subprocess.check_output('echo "%%s" >> %%s' %% (msg, error_log), shell=True)
+            subprocess.check_output('echo "%s" >> %s' % (msg, error_log), shell=True)
     kinesis_connector.KinesisProcessor.run_processor(log_file=log_file, processor_func=receive_msg)
-    """ % (
-        LOCALSTACK_VENV_FOLDER,
-        LOCALSTACK_ROOT_FOLDER,
-        events_file,
-        log_file,
-    )
+    """
     save_file(script_file, content)
     chmod_r(script_file, 0o755)
     TMP_FILES.append(script_file)
@@ -429,79 +257,30 @@ if __name__ == '__main__':
 
 
 def listen_to_kinesis(
-    stream_name,
-    region_name,
-    listener_func=None,
-    processor_script=None,
-    events_file=None,
-    endpoint_url=None,
-    log_file=None,
-    configs=None,
-    env=None,
-    ddb_lease_table_suffix=None,
-    env_vars=None,
-    kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
-    wait_until_started=False,
-    fh_d_stream=None,
+    stream_name: str,
+    region_name: str,
+    listener_func: ListenerFunction,
+    ddb_lease_table_suffix: str | None = None,
+    wait_until_started: bool = False,
 ):
     """
     High-level function that allows to subscribe to a Kinesis stream
     and receive events in a listener function. A KCL client process is
     automatically started in the background.
     """
-    if configs is None:
-        configs = {}
-    if env_vars is None:
-        env_vars = {}
-    log_subscribers = []
-    if not events_file:
-        events_file = EVENTS_FILE_PATTERN.replace("*", short_uid())
-        TMP_FILES.append(events_file)
-    if not processor_script:
-        processor_script = generate_processor_script(events_file, log_file=log_file)
-
-    rm_rf(events_file)
-    # start event reader thread (this process)
-    ready_mutex = threading.Semaphore(0)
-    thread = EventFileReaderThread(
-        events_file, listener_func, ready_mutex=ready_mutex, fh_d_stream=fh_d_stream
-    )
-    thread.start()
-    # Wait until the event reader thread is ready (to avoid 'Connection refused' error on the UNIX socket)
-    ready_mutex.acquire()
-    # start KCL client (background process)
-    if processor_script[-4:] == ".pyc":
-        processor_script = processor_script[0:-1]
-    # add log listener that notifies when KCL is started
-    if wait_until_started:
-        listener = KclStartedLogListener()
-        log_subscribers.append(listener)
-
     process = start_kcl_client_process(
         stream_name,
-        processor_script,
         region_name,
-        endpoint_url=endpoint_url,
-        log_file=log_file,
-        configs=configs,
-        env=env,
+        listener_function=listener_func,
         ddb_lease_table_suffix=ddb_lease_table_suffix,
-        env_vars=env_vars,
-        kcl_log_level=kcl_log_level,
-        log_subscribers=log_subscribers,
     )
 
     if wait_until_started:
         # Wait at most 90 seconds for initialization. Note that creating the DDB table can take quite a bit
-        try:
-            listener.sync_init.wait(timeout=90)
-        except Exception:
+        success = process.wait_is_up(timeout=90)
+        if not success:
             raise Exception("Timeout when waiting for KCL initialization.")
-        # wait at most 30 seconds for shard lease notification
-        try:
-            listener.sync_take_shard.wait(timeout=30)
-        except Exception:
-            # this merely means that there is no shard available to take. Do nothing.
-            pass
+        # ignore success/failure of wait because a timeout merely means that there is no shard available to take
+        process.wait_subprocesses_initialized(timeout=30)
 
     return process

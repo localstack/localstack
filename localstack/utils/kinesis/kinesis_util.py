@@ -1,8 +1,9 @@
-import inspect
 import json
 import logging
 import socket
+import threading
 import traceback
+from typing import Any, Callable
 
 from localstack.utils.strings import truncate
 from localstack.utils.threads import FuncThread
@@ -12,56 +13,61 @@ LOG = logging.getLogger(__name__)
 
 
 class EventFileReaderThread(FuncThread):
-    def __init__(self, events_file, callback, ready_mutex=None, fh_d_stream=None):
-        FuncThread.__init__(self, self.retrieve_loop, None, name="kinesis-event-file-reader")
+    def __init__(self, events_file, callback: Callable[[list], Any]):
+        FuncThread.__init__(
+            self, self.retrieve_loop, None, name="kinesis-event-file-reader", on_stop=self._on_stop
+        )
         self.events_file = events_file
         self.callback = callback
-        self.ready_mutex = ready_mutex
-        self.fh_d_stream = fh_d_stream
+        self.is_ready = threading.Event()
+        self.sock = None
 
     def retrieve_loop(self, params):
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.bind(self.events_file)
-        sock.listen(1)
-        if self.ready_mutex:
-            self.ready_mutex.release()
-        while self.running:
-            try:
-                conn, client_addr = sock.accept()
-                thread = FuncThread(
-                    self.handle_connection, conn, name="kinesis-event-file-reader-connectionhandler"
-                )
-                thread.start()
-            except Exception as e:
-                LOG.error("Error dispatching client request: %s %s", e, traceback.format_exc())
-        sock.close()
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.bind(self.events_file)
+        self.sock.listen(1)
+        self.is_ready.set()
+        with self.sock as sock:
+            while self.running:
+                try:
+                    conn, client_addr = sock.accept()
+                    if not self.running:
+                        return
+                    thread = FuncThread(
+                        self.handle_connection,
+                        conn,
+                        name="kinesis-event-file-reader-connectionhandler",
+                    )
+                    thread.start()
+                except Exception as e:
+                    LOG.error("Error dispatching client request: %s %s", e, traceback.format_exc())
+
+    def wait_for_ready(self):
+        self.is_ready.wait()
+
+    def _on_stop(self, *args, **kwargs):
+        if self.sock:
+            self.sock.close()
 
     def handle_connection(self, conn: socket):
         socket_file = conn.makefile()
-        while self.running:
-            line = ""
-            try:
-                line = socket_file.readline()
-                line = line.strip()
-                if not line:
-                    # end of socket input stream
-                    break
-                event = json.loads(line)
-                records = event["records"]
-                shard_id = event["shard_id"]
-                method_args = inspect.getfullargspec(self.callback).args
-                if len(method_args) > 2:
-                    self.callback(records, shard_id=shard_id, fh_d_stream=self.fh_d_stream)
-                elif len(method_args) > 1:
-                    self.callback(records, shard_id=shard_id)
-                else:
+        with socket_file as sock:
+            while self.running:
+                line = ""
+                try:
+                    line = sock.readline()
+                    line = line.strip()
+                    if not line:
+                        # end of socket input stream
+                        break
+                    event = json.loads(line)
+                    records = event["records"]
                     self.callback(records)
-            except Exception as e:
-                LOG.warning(
-                    "Unable to process JSON line: '%s': %s %s. Callback: %s",
-                    truncate(line),
-                    e,
-                    traceback.format_exc(),
-                    self.callback,
-                )
-        conn.close()
+                except Exception as e:
+                    LOG.warning(
+                        "Unable to process JSON line: '%s': %s %s. Callback: %s",
+                        truncate(line),
+                        e,
+                        traceback.format_exc(),
+                        self.callback,
+                    )
