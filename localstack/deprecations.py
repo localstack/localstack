@@ -232,12 +232,6 @@ DEPRECATIONS = [
         "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
     ),
     EnvVarDeprecation(
-        "HOSTNAME_FROM_LAMBDA",
-        "2.0.0",
-        "This feature is currently not supported in the new lambda provider "
-        "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
-    ),
-    EnvVarDeprecation(
         "LAMBDA_XRAY_INIT",
         "2.0.0",
         "The X-Ray daemon is always initialized in the new lambda provider "

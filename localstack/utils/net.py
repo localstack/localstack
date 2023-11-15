@@ -441,7 +441,6 @@ def get_docker_host_from_container() -> str:
             # If we're running outside Docker (in host mode), and would like the Lambda containers to be able
             # to access services running on the local machine, return `host.docker.internal` accordingly
             result = "host.docker.internal"
-        # update LOCALSTACK_HOSTNAME if host.docker.internal is available
         if config.is_in_docker:
             try:
                 result = socket.gethostbyname("host.docker.internal")
