@@ -472,6 +472,7 @@ class TestKMS:
         snapshot.match("verification", verification)
         assert verification["SignatureValid"]
 
+        # Ensure signatures can be verified using the public key and specific params
         response = aws_client.kms.get_public_key(KeyId=key_id)
         public_key_bytes = response.get("PublicKey")
         key = load_der_public_key(public_key_bytes)
@@ -486,6 +487,10 @@ class TestKMS:
             MessageType="DIGEST", Signature=signature["Signature"], Message=digest, **kwargs
         )
         assert verification["SignatureValid"]
+
+        digest_vargs = enforce_salt_length(sign_algo, "DIGEST")
+
+        key.verify(signature=signature["Signature"], data=digest, **digest_vargs)
 
         # Ensure bad digest raises during signing
         with pytest.raises(ClientError) as exc:
