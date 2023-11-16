@@ -548,13 +548,15 @@ class TestIntegration:
 
 @markers.aws.unknown
 def test_kinesis_lambda_forward_chain(
-    kinesis_create_stream, create_lambda_function, cleanups, aws_client
+    kinesis_create_stream, s3_create_bucket, create_lambda_function, cleanups, aws_client
 ):
     stream1_name = kinesis_create_stream()
     stream2_name = kinesis_create_stream()
     lambda1_name = f"function-{short_uid()}"
     lambda2_name = f"function-{short_uid()}"
-    aws_client.s3.create_bucket(Bucket=TEST_BUCKET_NAME)
+
+    # create s3 bucket: this bucket is being used in lambda function
+    s3_create_bucket(Bucket=TEST_BUCKET_NAME)
 
     # deploy test lambdas connected to Kinesis streams
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True)
