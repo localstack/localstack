@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+import json
 import logging
 import os
 import re
+import socket
 import tempfile
 import threading
 from typing import Any, Callable
@@ -14,11 +16,10 @@ from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.utils.aws import arns
 from localstack.utils.files import TMP_FILES, chmod_r, save_file
 from localstack.utils.kinesis import kclipy_helper
-from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
 from localstack.utils.run import ShellCommandThread
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, truncate
 from localstack.utils.sync import retry
-from localstack.utils.threads import TMP_THREADS
+from localstack.utils.threads import TMP_THREADS, FuncThread
 from localstack.utils.time import now
 
 DEFAULT_DDB_LEASE_TABLE_SUFFIX = "-kclapp"
@@ -38,6 +39,71 @@ CHECKPOINT_SLEEP_SECS = 5
 CHECKPOINT_FREQ_SECS = 60
 
 ListenerFunction = Callable[[list], Any]
+
+
+class EventFileReaderThread(FuncThread):
+    def __init__(self, events_file, callback: Callable[[list], Any]):
+        super().__init__(
+            self, self.retrieve_loop, None, name="kinesis-event-file-reader", on_stop=self._on_stop
+        )
+        self.events_file = events_file
+        self.callback = callback
+        self.is_ready = threading.Event()
+        self.sock = None
+
+    def retrieve_loop(self, params):
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.bind(self.events_file)
+        self.sock.listen(1)
+        self.is_ready.set()
+        with self.sock as sock:
+            while self.running:
+                try:
+                    conn, client_addr = sock.accept()
+                    if not self.running:
+                        return
+                    thread = FuncThread(
+                        self.handle_connection,
+                        conn,
+                        name="kinesis-event-file-reader-connectionhandler",
+                    )
+                    thread.start()
+                except Exception as e:
+                    LOG.error(
+                        "Error dispatching client request: %s",
+                        e,
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
+
+    def wait_for_ready(self):
+        self.is_ready.wait()
+
+    def _on_stop(self, *args, **kwargs):
+        if self.sock:
+            self.sock.close()
+
+    def handle_connection(self, conn: socket):
+        socket_file = conn.makefile()
+        with socket_file as sock:
+            while self.running:
+                line = ""
+                try:
+                    line = sock.readline()
+                    line = line.strip()
+                    if not line:
+                        # end of socket input stream
+                        break
+                    event = json.loads(line)
+                    records = event["records"]
+                    self.callback(records)
+                except Exception as e:
+                    LOG.warning(
+                        "Unable to process JSON line: '%s': %s. Callback: %s",
+                        truncate(line),
+                        e,
+                        self.callback,
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
 
 
 # needed by the processor script farther down
@@ -74,7 +140,7 @@ class KinesisProcessor(processor.RecordProcessorBase):
 
     def shutdown_requested(self, shutdown_requested_input):
         if self.log_file:
-            self.log("Shutdown processor for shard '%s'" % self.shard_id)
+            self.log(f"Shutdown processor for shard '{self.shard_id}'")
         if shutdown_requested_input.action == "TERMINATE":
             self.checkpoint(shutdown_requested_input.checkpointer)
 
@@ -136,7 +202,7 @@ class KinesisProcessorThread(ShellCommandThread):
         super().start()
 
     def stop(self, quiet: bool = False):
-        LOG.debug("Stopping kinesis connector for stream %s", self.stream_name)
+        LOG.debug("Stopping kinesis connector for stream: %s", self.stream_name)
         self.event_reader.stop()
         super().stop(quiet)
 
@@ -155,7 +221,7 @@ class KinesisProcessorThread(ShellCommandThread):
         return self.subprocesses_initialized.wait(timeout=timeout)
 
 
-def start_kcl_client_process(
+def _start_kcl_client_process(
     stream_name: str,
     region_name,
     listener_function: ListenerFunction,
@@ -169,7 +235,7 @@ def start_kcl_client_process(
 
     events_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.fifo")
     TMP_FILES.append(events_file)
-    processor_script = generate_processor_script(events_file)
+    processor_script = _generate_processor_script(events_file)
 
     properties_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.properties")
     app_name = f"{stream_name}{ddb_lease_table_suffix}"
@@ -201,7 +267,7 @@ def start_kcl_client_process(
     return kinesis_processor
 
 
-def generate_processor_script(events_file: str):
+def _generate_processor_script(events_file: str):
     script_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.processor.py")
     content = f"""#!/usr/bin/env python
 import os, sys, glob, json, socket, time, logging, subprocess, tempfile
@@ -268,7 +334,7 @@ def listen_to_kinesis(
     and receive events in a listener function. A KCL client process is
     automatically started in the background.
     """
-    process = start_kcl_client_process(
+    process = _start_kcl_client_process(
         stream_name,
         region_name,
         listener_function=listener_func,
@@ -281,6 +347,7 @@ def listen_to_kinesis(
         if not success:
             raise Exception("Timeout when waiting for KCL initialization.")
         # ignore success/failure of wait because a timeout merely means that there is no shard available to take
+        # waiting here, since otherwise some messages would be ignored even though the connector reports ready
         process.wait_subprocesses_initialized(timeout=30)
 
     return process
