@@ -99,6 +99,7 @@ RUNTIMES = [
     Runtime.nodejs14_x,
     Runtime.nodejs16_x,
     Runtime.nodejs18_x,
+    Runtime.nodejs20_x,
     Runtime.python3_7,
     Runtime.python3_8,
     Runtime.python3_9,
@@ -629,7 +630,7 @@ def validate_layer_runtimes_and_architectures(
     validations = []
 
     if compatible_runtimes and set(compatible_runtimes).difference(RUNTIMES):
-        constraint = "Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9]"
+        constraint = "Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9, nodejs20.x]"
         validation_msg = f"Value '[{', '.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
         validations.append(validation_msg)
 

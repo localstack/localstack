@@ -233,6 +233,7 @@ class Runtime(str):
     python3_11 = "python3.11"
     nodejs20_x = "nodejs20.x"
     provided_al2023 = "provided.al2023"
+    nodejs20_x = "nodejs20.x"
 
 
 class SnapStartApplyOn(str):

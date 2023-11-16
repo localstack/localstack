@@ -53,6 +53,7 @@ IMAGE_MAPPING = {
     "nodejs14.x": "nodejs:14",
     "nodejs16.x": "nodejs:16",
     "nodejs18.x": "nodejs:18",
+    "nodejs20.x": "nodejs:20",
     "ruby2.7": "ruby:2.7",
     "ruby3.2": "ruby:3.2",
     "java8": "java:8",
