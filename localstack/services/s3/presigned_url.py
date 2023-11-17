@@ -357,15 +357,30 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
     :param context: RequestContext
     :return:
     """
-    sigv4_context, exception = _find_valid_signature_through_ports(context)
-    if exception:
+    try:
+        sigv4_context, exception = _find_valid_signature_through_ports(context)
+        add_headers_to_original_request(context, sigv4_context.signed_headers)
+        if exception:
+            if config.S3_SKIP_SIGNATURE_VALIDATION:
+                LOG.warning(
+                    "Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
+                )
+            else:
+                ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v4(exception)
+                raise ex
+
+    except AccessDenied as e:
+        # we can have missing SignedHeaders which are caught very early and do not necessitate to iterate through ports
+        # if we skip validation, do not raise an exception but log a message that it will result in loss of data for the
+        # request (some headers present and needed in the requests were not given when sending the request)
         if config.S3_SKIP_SIGNATURE_VALIDATION:
             LOG.warning(
-                "Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
+                "There were headers present in the request which were not signed (%s), "
+                "but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1",
+                e.HeadersNotSigned,
             )
         else:
-            ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v4(exception)
-            raise ex
+            raise
 
     # Checking whether the url is expired or not
     query_parameters = context.request.args
@@ -390,8 +405,6 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
                 X_Amz_Expires=x_amz_expires,
             )
 
-    add_headers_to_original_request(context, sigv4_context.signed_headers)
-
 
 def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Result:
     """
@@ -407,7 +420,7 @@ def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Res
     # get the port of the request
     match = re.match(HOST_COMBINATION_REGEX, sigv4_context.host)
     request_port = match.group(2) if match else None
-    # add_headers_to_original_request(context, sigv4_context.signed_headers)
+
     # get the signature from the request
     signature, canonical_request, string_to_sign = sigv4_context.get_signature_data()
     if signature == request_sig:
