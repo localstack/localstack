@@ -73,6 +73,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGatewayV2::DomainName": "ResourceProvider",
     "AWS::ApiGatewayV2::Authorizer": "ResourceProvider",
     "AWS::ApiGatewayV2::Api": "ResourceProvider",
+    "AWS::ApiGatewayV2::RouteResponse": "ResourceProvider",
     "AWS::ApiGatewayV2::IntegrationResponse": "ResourceProvider",
     "AWS::ApiGatewayV2::Integration": "ResourceProvider",
     "AWS::ApiGatewayV2::Deployment": "ResourceProvider",
