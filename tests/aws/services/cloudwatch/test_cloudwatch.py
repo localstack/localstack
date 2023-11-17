@@ -944,7 +944,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..DashboardArn"], condition=is_old_provider()
+        paths=["$..DashboardArn"], condition=is_old_provider
     )  # ARN has a typo in moto
     def test_dashboard_lifecycle(self, aws_client, snapshot):
         dashboard_name = f"test-{short_uid()}"
