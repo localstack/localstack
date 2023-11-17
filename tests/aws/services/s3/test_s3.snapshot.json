@@ -10556,5 +10556,25 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_v4_x_amz_in_qs": {
+    "recorded-date": "17-11-2023, 15:56:39",
+    "recorded-content": {
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 6,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e10adc3949ba59abbe56e057f20f883e\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "foo": "bar-complicated-no-random"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

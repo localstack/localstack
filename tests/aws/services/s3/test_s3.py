@@ -6576,11 +6576,11 @@ class TestS3PresignedUrl:
                 "Bucket": s3_bucket,
                 "Key": object_key,
                 "StorageClass": StorageClass.STANDARD,
-                "Metadata": {"foo": "bar"},
+                "Metadata": {"foo": "bar-complicated-no-random"},
             },
         )
         assert StorageClass.STANDARD not in url
-        assert "x-amz-meta-foo" not in url
+        assert "bar-complicated-no-random" not in url
 
         handler_file = os.path.join(
             os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.js"
@@ -6603,8 +6603,9 @@ class TestS3PresignedUrl:
         response = aws_client.lambda_.invoke(FunctionName=function_name)
         presigned_url = response["Payload"].read()
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
+        # assert that the Javascript SDK hoists it in the URL, unlike Boto
         assert StorageClass.STANDARD in presigned_url
-        assert "x-amz-meta-foo" in presigned_url
+        assert "bar-complicated-no-random" in presigned_url
 
         # missing Content-MD5
         response = requests.put(presigned_url, verify=False, data=b"123456")
@@ -6621,7 +6622,7 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
 
         # verify that we properly saved the data
-        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=function_name, Key=object_key)
         snapshot.match("head-object", head_object)
 
     @markers.aws.validated
