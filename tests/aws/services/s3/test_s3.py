@@ -350,6 +350,9 @@ class TestS3:
         assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
         snapshot.match("list_objects_v2", response)
 
+
+
+
     @markers.aws.validated
     # TODO list-buckets contains other buckets when running in CI
     @markers.snapshot.skip_snapshot_verify(paths=["$..Prefix", "$..list-buckets.Buckets"])
@@ -389,6 +392,22 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=s3_bucket, Key="Ā0Ä")
         snapshot.match("get-object", response)
         assert response["Body"].read() == b"abc123"
+
+    @markers.aws.unknown
+    def test_put_and_get_with_object_tagging(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        key = "SomeKeyWithTagging"
+        expected_tags = {"tag": "value1", "tag2": "value2"}
+        response = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=key, Body=b"abc123", Tagging=urlencode(expected_tags)
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("put-object", response)
+
+        response = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-object-tagging", response)
+        tags = {pair["Key"]: pair["Value"] for pair in response["TagSet"]}
+        assert tags == expected_tags
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..MaxAttemptsReached"])

@@ -10571,5 +10571,34 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_and_get_with_object_tagging": {
+    "recorded-date": "17-11-2023, 23:19:30",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"e99a18c428cb38d5f260853678922e03\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tagging": {
+        "TagSet": [
+          {
+            "Key": "tag",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
