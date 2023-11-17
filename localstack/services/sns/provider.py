@@ -107,12 +107,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return sns_backends[account_id][region_name]
 
     @staticmethod
-    def _get_topic(arn: str, context: RequestContext, multiregion: bool = True) -> Topic:
+    def _get_topic(arn: str, context: RequestContext, multiregion: bool = False) -> Topic:
         arn_data = parse_and_validate_topic_arn(arn)
         try:
             return sns_backends[arn_data["account"]][context.region].topics[arn]
         except KeyError:
-            if multiregion:
+            if multiregion or context.region == arn_data["region"]:
                 raise NotFoundException("Topic does not exist")
             else:
                 raise InvalidParameterException("Invalid parameter: TopicArn")
