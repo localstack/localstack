@@ -1,4 +1,4 @@
-name: Enforce no major on master
+name: Enforce no major or minor on master
 
 on:
   pull_request_target:
@@ -8,10 +8,10 @@ on:
     - master
 
 jobs:
-  enforce-no-major:
+  enforce-no-major-minor:
     permissions:
       issues: write
       pull-requests: write
-    uses: localstack/meta/.github/workflows/pr-enforce-no-major.yml@main
+    uses: localstack/meta/.github/workflows/pr-enforce-no-major-minor.yml@main
     secrets:
       github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
