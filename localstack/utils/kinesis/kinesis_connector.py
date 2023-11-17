@@ -44,7 +44,7 @@ ListenerFunction = Callable[[list], Any]
 class EventFileReaderThread(FuncThread):
     def __init__(self, events_file, callback: Callable[[list], Any]):
         super().__init__(
-            self, self.retrieve_loop, None, name="kinesis-event-file-reader", on_stop=self._on_stop
+            self.retrieve_loop, None, name="kinesis-event-file-reader", on_stop=self._on_stop
         )
         self.events_file = events_file
         self.callback = callback
