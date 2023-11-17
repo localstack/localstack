@@ -505,7 +505,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     raise NotFoundException(
                         "Topic does not exist",
                     )
-                topic_model = moto_sns_backend.topics.get(topic_or_target_arn)
+                topic_model = self._get_topic(topic_or_target_arn, context)
         else:
             # use the store from the request context
             store = self.get_store(account_id=context.account_id, region_name=context.region)
