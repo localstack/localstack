@@ -20,6 +20,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::ApiGatewayV2::Authorizer": "/properties/AuthorizerId",
     "AWS::ApiGatewayV2::IntegrationResponse": "/properties/IntegrationResponseId",
     "AWS::ApiGatewayV2::Deployment": "/properties/DeploymentId",
+    "AWS::ApiGatewayV2::Route": "/properties/RouteId",
     "AWS::ApiGateway::Deployment": "/properties/DeploymentId",
     "AWS::ApiGateway::Resource": "/properties/ResourceId",
     "AWS::ApiGateway::Stage": "/properties/StageName",
