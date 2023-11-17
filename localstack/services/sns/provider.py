@@ -107,7 +107,14 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return sns_backends[account_id][region_name]
 
     @staticmethod
-    def _get_topic(arn: str, context: RequestContext, multiregion: bool = False) -> Topic:
+    def _get_topic(arn: str, context: RequestContext, multiregion: bool = True) -> Topic:
+        """
+        :param arn: the Topic ARN
+        :param context: the RequestContext of the request
+        :param multiregion: if the request can fetch the topic across regions or not (ex. Publish cannot publish to a
+        topic in a different region than the request)
+        :return: the Moto model Topic
+        """
         arn_data = parse_and_validate_topic_arn(arn)
         try:
             return sns_backends[arn_data["account"]][context.region].topics[arn]
