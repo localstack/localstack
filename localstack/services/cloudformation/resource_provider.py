@@ -75,6 +75,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGatewayV2::Api": "ResourceProvider",
     "AWS::ApiGatewayV2::IntegrationResponse": "ResourceProvider",
     "AWS::ApiGatewayV2::Integration": "ResourceProvider",
+    "AWS::ApiGatewayV2::Deployment": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
