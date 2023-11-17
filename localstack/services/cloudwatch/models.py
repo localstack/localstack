@@ -4,7 +4,7 @@ from typing import Dict
 from moto.cloudwatch.models import CloudWatchBackend as MotoCloudWatchBackend
 from moto.cloudwatch.models import cloudwatch_backends as moto_cloudwatch_backend
 
-from localstack.aws.api.cloudwatch import CompositeAlarm, MetricAlarm, StateValue
+from localstack.aws.api.cloudwatch import CompositeAlarm, DashboardBody, MetricAlarm, StateValue
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -70,6 +70,8 @@ class CloudWatchStore(BaseStore):
     Alarms: Dict[str, LocalStackMetricAlarm | LocalStackCompositeAlarm] = LocalAttribute(
         default=dict
     )
+
+    Dashboards: Dict[str, DashboardBody] = LocalAttribute(default=dict)
 
 
 cloudwatch_stores = AccountRegionBundle("cloudwatch", CloudWatchStore)

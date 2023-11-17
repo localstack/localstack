@@ -22,6 +22,10 @@ from localstack.utils.sync import poll_condition
 PUBLICATION_RETRIES = 5
 
 
+def is_old_provider():
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2"
+
+
 class TestCloudwatch:
     @markers.aws.validated
     def test_put_metric_data_values_list(self, snapshot, aws_client):
@@ -939,7 +943,9 @@ class TestCloudwatch:
         snapshot.match("get_metric_data_2", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..DashboardArn"])  # ARN has a typo
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..DashboardArn"], condition=is_old_provider()
+    )  # ARN has a typo in moto
     def test_dashboard_lifecycle(self, aws_client, snapshot):
         dashboard_name = f"test-{short_uid()}"
         dashboard_body = {
