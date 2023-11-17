@@ -14,7 +14,6 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.sqs import (
     InvalidAttributeName,
     Message,
-    MessageNotInflight,
     QueueAttributeMap,
     QueueAttributeName,
     ReceiptHandleIsInvalid,
@@ -267,10 +266,14 @@ class SqsQueue:
         return f"arn:aws:sqs:{self.region}:{self.account_id}:{self.name}"
 
     def url(self, context: RequestContext) -> str:
-        """Return queue URL using either SQS_PORT_EXTERNAL (if configured), the SQS_ENDPOINT_STRATEGY (if configured)
-        or based on the 'Host' request header"""
+        """Return queue URL which depending on the endpoint strategy returns e.g.:
+        * (standard) http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/myqueue
+        * (domain) http://eu-west-1.queue.localhost.localstack.cloud:4566/000000000000/myqueue
+        * (path) http://localhost.localstack.cloud:4566/queue/eu-central-1/000000000000/myqueue
+        * otherwise: http://localhost.localstack.cloud:4566/000000000000/myqueue
+        """
 
-        scheme = context.request.scheme
+        scheme = config.get_protocol()
         host_definition = localstack_host()
 
         if config.SQS_ENDPOINT_STRATEGY == "standard":
@@ -362,7 +365,7 @@ class SqsQueue:
             standard_message = self.receipts[receipt_handle]
 
             if standard_message not in self.inflight:
-                raise MessageNotInflight()
+                return
 
             standard_message.update_visibility_timeout(visibility_timeout)
 

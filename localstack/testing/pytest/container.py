@@ -165,7 +165,7 @@ def container_factory() -> Generator[ContainerFactory, None, None]:
     factory.remove_all_containers()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def wait_for_localstack_ready():
     def _wait_for(container: RunningContainer, timeout: Optional[float] = None):
         container.wait_until_ready(timeout)

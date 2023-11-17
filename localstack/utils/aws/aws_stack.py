@@ -164,14 +164,10 @@ def get_boto3_region() -> str:
 
 def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
     """Return the local service URL for the given service name or port."""
+    # TODO(srw): we don't need to differentiate on service name any more, so remove the argument
     if isinstance(service_name_or_port, int):
         return f"{config.get_protocol()}://{LOCALHOST}:{service_name_or_port}"
-    service_name = service_name_or_port
-    if service_name == "s3api":
-        service_name = "s3"
-    elif service_name == "runtime.sagemaker":
-        service_name = "sagemaker-runtime"
-    return config.service_url(service_name)
+    return config.internal_service_url()
 
 
 def get_s3_hostname():
@@ -230,6 +226,7 @@ def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -
     return region
 
 
+# TODO: move to `localstack.utils.aws.request_context`
 def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[str]:
     auth = headers.get("Authorization") or ""
 

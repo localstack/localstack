@@ -933,6 +933,21 @@ class TestSqsProvider:
         assert len(messages) == 1
 
     @markers.aws.validated
+    def test_change_message_visibility_after_visibility_timeout_expiration(
+        self, snapshot, sqs_create_queue, aws_client
+    ):
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "1"})
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="test")
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        receipt = response["Messages"][0]["ReceiptHandle"]
+        time.sleep(2)
+        # VisibiltyTimeout was 1 and has now expired
+        response = aws_client.sqs.change_message_visibility(
+            QueueUrl=queue_url, ReceiptHandle=receipt, VisibilityTimeout=2
+        )
+        snapshot.match("visibility_timeout_expired", response)
+
+    @markers.aws.validated
     def test_receive_message_with_visibility_timeout_updates_timeout(
         self, sqs_create_queue, aws_client
     ):
@@ -1111,7 +1126,7 @@ class TestSqsProvider:
 
         queue_name = f"queue-{short_uid()}"
 
-        edge_url = config.get_edge_url()
+        edge_url = config.internal_service_url()
         headers = aws_stack.mock_aws_request_headers(
             "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
@@ -2795,7 +2810,7 @@ class TestSqsProvider:
         if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
             endpoint_url = "https://queue.amazonaws.com"
         else:
-            endpoint_url = config.get_edge_url()
+            endpoint_url = config.internal_service_url()
 
         # assert that AWS has some sort of content negotiation for query GET requests, even if not `json` protocol
         response = client.get(
@@ -4172,6 +4187,27 @@ class TestSqsQueryApi:
 
     # TODO: write tests for making POST requests (not clear how signing would work without custom code)
     #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-making-api-requests.html#structure-post-request
+
+    @markers.aws.validated
+    def test_send_message_via_queue_url_with_json_protocol(
+        self,
+        sqs_create_queue,
+        aws_client_factory,
+        snapshot,
+    ):
+        queue_url = sqs_create_queue()
+        # that is what the PHP SDK is doing in a way, sending the request against the queue URL directly when `json`
+        # protocol should target the root path
+        sqs_client = aws_client_factory(
+            endpoint_url=queue_url,
+        ).sqs
+
+        response = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert (
+            response["ResponseMetadata"]["HTTPHeaders"]["content-type"]
+            == "application/x-amz-json-1.0"
+        )
+        snapshot.match("receive-json-on-queue-url", response)
 
 
 class TestSQSMultiAccounts:

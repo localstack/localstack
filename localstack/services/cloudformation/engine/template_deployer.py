@@ -18,6 +18,7 @@ from localstack.services.cloudformation.engine.entities import Stack, StackChang
 from localstack.services.cloudformation.engine.parameters import StackParameter
 from localstack.services.cloudformation.engine.quirks import VALID_GETATT_PROPERTIES
 from localstack.services.cloudformation.engine.template_utils import (
+    AWS_URL_SUFFIX,
     fn_equals_type_conversion,
     get_deps_for_resource,
 )
@@ -44,7 +45,6 @@ from localstack.utils.urls import localstack_host
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
-AWS_URL_SUFFIX = "localhost.localstack.cloud"  # value is "amazonaws.com" in real AWS
 
 REGEX_OUTPUT_APIGATEWAY = re.compile(
     rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"

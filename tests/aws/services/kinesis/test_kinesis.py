@@ -250,7 +250,7 @@ class TestKinesis:
 
         # get records with CBOR encoding
         iterator = get_shard_iterator(stream_name, aws_client.kinesis)
-        url = config.get_edge_url()
+        url = config.internal_service_url()
         headers = aws_stack.mock_aws_request_headers(
             "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
@@ -284,7 +284,7 @@ class TestKinesis:
         assert 0 == len(json_records)
 
         # empty get records with CBOR encoding
-        url = config.get_edge_url()
+        url = config.internal_service_url()
         headers = aws_stack.mock_aws_request_headers(
             "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )

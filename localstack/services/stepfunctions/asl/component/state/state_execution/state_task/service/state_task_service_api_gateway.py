@@ -168,7 +168,7 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
             return api_endpoint
         path_parts = url_path.split(".")
         api_id = path_parts[0]
-        path_based_api_endpoint = f"{config.service_url('apigateway')}/restapis/{api_id}"
+        path_based_api_endpoint = f"{config.internal_service_url()}/restapis/{api_id}"
         return path_based_api_endpoint
 
     @staticmethod

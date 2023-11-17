@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 from botocore.exceptions import ClientError
 from botocore.model import OperationModel
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import NotFound
 
 from localstack.aws.api import CommonServiceException
 from localstack.aws.connect import connect_to
@@ -37,11 +38,16 @@ serializer = create_serializer(service)
 
 @route(
     '/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
-    host='sqs.<regex("([a-z0-9-]+\\.)?"):region>localhost.localstack.cloud<regex("(:[0-9]{2,5})?"):port>',
+    host='sqs.<regex("([a-z0-9-]+\\.)?"):region><regex(".*"):domain><regex("(:[0-9]{2,5})?"):port>',
     methods=["POST", "GET"],
 )
 def standard_strategy_handler(
-    request: Request, account_id: str, queue_name: str, region: str = None, port: int = None
+    request: Request,
+    account_id: str,
+    queue_name: str,
+    region: str = None,
+    domain: str = None,
+    port: int = None,
 ):
     """
     Handler for modern-style endpoints which always have the region encoded.
@@ -60,11 +66,16 @@ def path_strategy_handler(request: Request, region, account_id: str, queue_name:
 
 @route(
     '/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
-    host='<regex("([a-z0-9-]+\\.)?"):region>queue.localhost.localstack.cloud<regex("(:[0-9]{2,5})?"):port>',
+    host='<regex("([a-z0-9-]+\\.)?"):region>queue.<regex(".*"):domain><regex("(:[0-9]{2,5})?"):port>',
     methods=["POST", "GET"],
 )
 def domain_strategy_handler(
-    request: Request, account_id: str, queue_name: str, region: str = None, port: int = None
+    request: Request,
+    account_id: str,
+    queue_name: str,
+    region: str = None,
+    domain: str = None,
+    port: int = None,
 ):
     """Uses the endpoint host to extract the region. See:
     https://docs.aws.amazon.com/general/latest/gr/sqs-service.html"""
@@ -134,6 +145,12 @@ class BotoException(CommonServiceException):
 
 
 def handle_request(request: Request, region: str) -> Response:
+    # some SDK (PHP) still send requests to the Queue URL even though the JSON spec does not allow it in the
+    # documentation. If the request is `json`, raise `NotFound` so that we continue the handler chain and the provider
+    # can handle the request
+    if request.headers.get("Content-Type", "").lower() == "application/x-amz-json-1.0":
+        raise NotFound
+
     request_id = long_uid()
 
     try:

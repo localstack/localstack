@@ -4,9 +4,9 @@
 
 const AWS = require("aws-sdk");
 let dynamoDb;
-if (process.env.LOCALSTACK_HOSTNAME) {
+if (process.env.AWS_ENDPOINT_URL) {
   dynamoDb = new AWS.DynamoDB.DocumentClient({
-        endpoint: `http://${process.env.LOCALSTACK_HOSTNAME}:${process.env.EDGE_PORT}`,
+        endpoint: process.env.AWS_ENDPOINT_URL,
         region: 'us-east-1', // Change the region as per your setup
       }
   );

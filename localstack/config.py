@@ -5,6 +5,7 @@ import socket
 import subprocess
 import tempfile
 import time
+import warnings
 from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
@@ -416,8 +417,7 @@ DEVELOP_PORT = int(os.environ.get("DEVELOP_PORT", "").strip() or DEFAULT_DEVELOP
 # whether to make debugpy wait for a debbuger client
 WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 
-# whether to use SSL encryption for the services
-# TODO: this is deprecated and should be removed (edge port supports HTTP/HTTPS multiplexing)
+# whether to assume http or https for `get_protocol`
 USE_SSL = is_env_true("USE_SSL")
 
 # whether the S3 legacy V2/ASF provider is enabled
@@ -594,7 +594,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
 def populate_edge_configuration(
     environment: Mapping[str, str]
-) -> Tuple[HostAndPort, UniqueHostAndPortList, int]:
+) -> Tuple[HostAndPort, UniqueHostAndPortList]:
     """Populate the LocalStack edge configuration from environment variables."""
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
@@ -629,13 +629,9 @@ def populate_edge_configuration(
     assert gateway_listen is not None
     assert localstack_host is not None
 
-    # derive legacy variables from GATEWAY_LISTEN
-    edge_port = gateway_listen[0].port
-
     return (
         localstack_host,
         UniqueHostAndPortList(gateway_listen),
-        edge_port,
     )
 
 
@@ -647,8 +643,6 @@ def populate_edge_configuration(
     # Main configuration of the listen address of the hypercorn proxy. Of the form
     # <ip_address>:<port>(,<ip_address>:port>)*
     GATEWAY_LISTEN,
-    # -- Legacy variables
-    EDGE_PORT,
 ) = populate_edge_configuration(os.environ)
 
 # IP of the docker bridge used to enable access between containers
@@ -831,9 +825,7 @@ SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL = int(
     os.environ.get("SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL") or 60
 )
 
-# DEPRECATED: deprecated since 2.0.0 but added back upon customer request for the new Lambda provider
-# Keep a bit longer until we are sure that LOCALSTACK_HOST covers the special scenario but do not advertise publicly.
-# Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
+# PUBLIC: Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
 HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
 
 # PUBLIC: hot-reload (default v2), __local__ (default v1)
@@ -1052,12 +1044,13 @@ DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONF
 # if `DISABLE_BOTO_RETRIES=1` is set, all our created boto clients will have retries disabled
 DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
-# HINT: Please add deprecated environment variables to deprecations.py
-
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
-# Make sure to keep this in sync with the above!
-# Do *not* include any internal developer configurations that apply to host-mode only in this list.
-# Note: do *not* include DATA_DIR in this list, as it is treated separately
+# => Synchronize this list with the above and the configuration docs:
+# https://docs.localstack.cloud/references/configuration/
+# => Sort this list alphabetically
+# => Add deprecated environment variables to deprecations.py and add a comment in this list
+# => Move removed legacy variables to the section grouped by release (still relevant for deprecation warnings)
+# => Do *not* include any internal developer configurations that apply to host-mode only in this list.
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BOTO_WAITER_DELAY",
@@ -1070,7 +1063,6 @@ CONFIG_ENV_VARS = [
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
-    "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "DEVELOP",
     "DEVELOP_PORT",
     "DISABLE_BOTO_RETRIES",
@@ -1096,24 +1088,17 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
-    "EDGE_FORWARD_URL",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "ENABLE_CONFIG_UPDATES",
-    "ES_CUSTOM_BACKEND",
-    "ES_ENDPOINT_STRATEGY",
-    "ES_MULTI_CLUSTER",
     "EXTRA_CORS_ALLOWED_HEADERS",
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",
     "GATEWAY_LISTEN",
     "HOSTNAME",
-    "HOSTNAME_EXTERNAL",
-    "HOSTNAME_FROM_LAMBDA",  # deprecated since 2.0.0 but added to new Lambda provider
+    "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
-    "KINESIS_INITIALIZE_STREAMS",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
-    "KMS_PROVIDER",  # Not functional; Deprecated in 1.4.0, removed in 3.0.0
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",
@@ -1127,7 +1112,6 @@ CONFIG_ENV_VARS = [
     "LAMBDA_INIT_RELEASE_VERSION",
     "LAMBDA_KEEPALIVE_MS",
     "LAMBDA_RUNTIME_IMAGE_MAPPING",
-    "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
@@ -1141,14 +1125,11 @@ CONFIG_ENV_VARS = [
     "LAMBDA_LIMITS_CODE_SIZE_UNZIPPED",
     "LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE",
     "LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES",
-    "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
-    "LEGACY_EDGE_PROXY",  # Not functional; Deprecated in 1.0.0, removed in 3.0.0
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_AUTH_TOKEN",
     "LOCALSTACK_HOST",
-    "LOCALSTACK_HOSTNAME",
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
@@ -1177,29 +1158,43 @@ CONFIG_ENV_VARS = [
     "STRICT_SERVICE_LOADING",
     "TEST_AWS_ACCOUNT_ID",
     "TF_COMPAT_MODE",
-    "USE_SINGLE_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
-    # Removed in 3.0.0
+    # Removed legacy variables in 2.0.0
+    # DATA_DIR => do *not* include in this list, as it is treated separately.  # deprecated since 1.0.0
+    "LEGACY_DIRECTORIES",  # deprecated since 1.0.0
+    "SYNCHRONOUS_API_GATEWAY_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_DYNAMODB_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_SNS_EVENTS",  # deprecated since 1.3.0
+    "SYNCHRONOUS_SQS_EVENTS",  # deprecated since 1.3.0
+    # Removed legacy variables in 3.0.0
+    "DEFAULT_REGION",  # deprecated since 0.12.7
     "EDGE_BIND_HOST",  # deprecated since 2.0.0
+    "EDGE_FORWARD_URL",  # deprecated since 1.4.0
     "EDGE_PORT",  # deprecated since 2.0.0
     "EDGE_PORT_HTTP",  # deprecated since 2.0.0
+    "ES_CUSTOM_BACKEND",  # deprecated since 0.14.0
+    "ES_ENDPOINT_STRATEGY",  # deprecated since 0.14.0
+    "ES_MULTI_CLUSTER",  # deprecated since 0.14.0
+    "HOSTNAME_EXTERNAL",  # deprecated since 2.0.0
+    "KINESIS_INITIALIZE_STREAMS",  # deprecated since 1.4.0
+    "KINESIS_PROVIDER",  # deprecated since 1.3.0
+    "KMS_PROVIDER",  # deprecated since 1.4.0
     "LAMBDA_XRAY_INIT",  # deprecated since 2.0.0
     "LAMBDA_CODE_EXTRACT_TIME",  # deprecated since 2.0.0
     "LAMBDA_CONTAINER_REGISTRY",  # deprecated since 2.0.0
     "LAMBDA_EXECUTOR",  # deprecated since 2.0.0
     "LAMBDA_FALLBACK_URL",  # deprecated since 2.0.0
     "LAMBDA_FORWARD_URL",  # deprecated since 2.0.0
+    "LAMBDA_JAVA_OPTS",  # currently only supported in old Lambda provider but not officially deprecated
     "LAMBDA_REMOTE_DOCKER",  # deprecated since 2.0.0
     "LAMBDA_STAY_OPEN_MODE",  # deprecated since 2.0.0
-    "SQS_PORT_EXTERNAL",  # deprecated in docs since 2022-07-13
+    "LEGACY_EDGE_PROXY",  # deprecated since 1.0.0
+    "LOCALSTACK_HOSTNAME",  # deprecated since 2.0.0
+    "SQS_PORT_EXTERNAL",  # deprecated only in docs since 2022-07-13
     "SYNCHRONOUS_KINESIS_EVENTS",  # deprecated since 1.3.0
-    "SYNCHRONOUS_SNS_EVENTS",  # deprecated since 1.3.0
-    "SYNCHRONOUS_DYNAMODB_EVENTS",  # deprecated since 1.3.0
-    "SYNCHRONOUS_API_GATEWAY_EVENTS",  # deprecated since 1.3.0
-    "SYNCHRONOUS_SQS_EVENTS",  # deprecated since 1.3.0
-    "KINESIS_PROVIDER",  # deprecated since 1.3.0
+    "USE_SINGLE_REGION",  # deprecated since 0.12.7
     "MOCK_UNIMPLEMENTED",  # deprecated since 1.3.0
 ]
 
@@ -1248,7 +1243,7 @@ def populate_config_env_var_names():
         and key != "LOCALSTACK_CLI"
     ]
 
-    # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
+    # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOST)
     CONFIG_ENV_VARS += [
         "LOCALSTACK_" + v for v in CONFIG_ENV_VARS if not v.startswith("LOCALSTACK_")
     ]
@@ -1260,67 +1255,103 @@ def populate_config_env_var_names():
 populate_config_env_var_names()
 
 
+# helpers to build urls
+def get_protocol() -> str:
+    return "https" if USE_SSL else "http"
+
+
+def external_service_url(
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    protocol: Optional[str] = None,
+    subdomains: Optional[str] = None,
+) -> str:
+    """Returns a service URL (e.g., SQS queue URL) to an external client (e.g., boto3) potentially running on another
+    machine than LocalStack. The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.
+    The optional parameters can be used to customize the defaults.
+    Examples with default configuration:
+    * external_service_url() == http://localhost.localstack.cloud:4566
+    * external_service_url(subdomains="s3") == http://s3.localhost.localstack.cloud:4566
+    """
+    protocol = protocol or get_protocol()
+    subdomains = f"{subdomains}." if subdomains else ""
+    host = host or LOCALSTACK_HOST.host
+    port = port or LOCALSTACK_HOST.port
+    return f"{protocol}://{subdomains}{host}:{port}"
+
+
+def internal_service_url(
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    protocol: Optional[str] = None,
+    subdomains: Optional[str] = None,
+) -> str:
+    """Returns a service URL for internal use within LocalStack (i.e., same host).
+    The configuration USE_SSL can customize these returned URLs but LOCALSTACK_HOST has no effect.
+    The optional parameters can be used to customize the defaults.
+    Examples with default configuration:
+    * internal_service_url() == http://localhost:4566
+    * internal_service_url(port=8080) == http://localhost:8080
+    """
+    protocol = protocol or get_protocol()
+    subdomains = f"{subdomains}." if subdomains else ""
+    host = host or LOCALHOST
+    port = port or GATEWAY_LISTEN[0].port
+    return f"{protocol}://{subdomains}{host}:{port}"
+
+
+# DEPRECATED: old helpers for building URLs
+
+
+def service_url(service_key, host=None, port=None):
+    """@deprecated: Use `internal_service_url()` instead. We assume that most usages are internal
+    but really need to check and update each usage accordingly.
+    """
+    warnings.warn(
+        """@deprecated: Use `internal_service_url()` instead. We assume that most usages are
+        internal but really need to check and update each usage accordingly.""",
+        DeprecationWarning,
+    )
+    return internal_service_url(host=host, port=port)
+
+
 def service_port(service_key: str, external: bool = False) -> int:
-    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use."""
+    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for
+    internal use."""
+    warnings.warn(
+        "Deprecated: use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for "
+        "internal use.",
+        DeprecationWarning,
+    )
     if external:
         return LOCALSTACK_HOST.port
     return GATEWAY_LISTEN[0].port
 
 
-def get_protocol():
-    return "https" if USE_SSL else "http"
-
-
-# TODO: refactor internal codebase to use external_service_url and internal_service_url
-def external_service_url(host=None, port=None, protocol=None) -> str:
-    """Returns a service URL to an external client used outside where LocalStack runs.
-    The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.
-    `host` can be used to overwrite the default for subdomains.
-    """
-    protocol = protocol or get_protocol()
-    host = host or LOCALSTACK_HOST.host
-    port = port or LOCALSTACK_HOST.port
-    return f"{protocol}://{host}:{port}"
-
-
-def internal_service_url(host=None, port=None, protocol=None) -> str:
-    """Returns a service URL for internal use within where LocalStack runs.
-    Cannot be customized through LOCALSTACK_HOST because we assume LocalStack runs on the same host (i.e., localhost).
-    """
-    protocol = protocol or get_protocol()
-    host = host or LOCALHOST
-    port = port or GATEWAY_LISTEN[0].port
-    return f"{protocol}://{host}:{port}"
-
-
-# TODO: Go over all usages and decide whether it's an internal or external usage
-def service_url(service_key, host=None, port=None):
-    """@deprecated: Use `internal_service_url()` instead.
-    We assume that most usages are internal but really need to check and update each usage accordingly.
-    """
-    return internal_service_url(host=host, port=port)
-
-
-# TODO: go over all usages and replace depending on internal or external usage
 def get_edge_port_http():
-    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for internal use.
-    This function is also not needed anymore because we don't separate between HTTP and HTTP ports anymore since
-    LocalStack listens to both."""
+    """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for
+    internal use. This function is also not needed anymore because we don't separate between HTTP
+    and HTTP ports anymore since LocalStack listens to both."""
+    warnings.warn(
+        """@deprecated: Use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port`
+        for internal use. This function is also not needed anymore because we don't separate
+        between HTTP and HTTP ports anymore since LocalStack listens to both.""",
+        DeprecationWarning,
+    )
     return GATEWAY_LISTEN[0].port
 
 
-# TODO: Go over all usages and decide whether it's an internal or external usage
 def get_edge_url(localstack_hostname=None, protocol=None):
     """@deprecated: Use `internal_service_url()` instead.
     We assume that most usages are internal but really need to check and update each usage accordingly.
     """
+    warnings.warn(
+        """@deprecated: Use `internal_service_url()` instead.
+    We assume that most usages are internal but really need to check and update each usage accordingly.
+    """,
+        DeprecationWarning,
+    )
     return internal_service_url(host=localstack_hostname, protocol=protocol)
-
-
-def gateway_listen_ports_info():
-    """Example: http port [4566,443]"""
-    gateway_listen_ports = [gw_listen.port for gw_listen in GATEWAY_LISTEN]
-    return f"{get_protocol()} port {gateway_listen_ports}"
 
 
 class ServiceProviderConfig(Mapping[str, str]):

@@ -21,7 +21,7 @@ public class Handler implements RequestHandler<Map<String, String>, String> {
 
     private AmazonSQS getSqsClient() {
         if (Objects.equals(System.getenv("CONFIGURE_CLIENT"), "1")) {
-            String endpointUrl = "http://" + System.getenv("LOCALSTACK_HOSTNAME") + ":" + System.getenv("EDGE_PORT");
+            String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
             return AmazonSQSClientBuilder.standard()
                                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpointUrl, "us-east-1"))
                                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("test", "test")))
