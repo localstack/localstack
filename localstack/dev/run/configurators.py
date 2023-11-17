@@ -266,6 +266,9 @@ class DependencyMountConfigurator:
 
     dependency_glob = "/opt/code/localstack/.venv/lib/python3.*/site-packages/*"
 
+    # skip mounting dependencies with incompatible binaries (e.g., on MacOS)
+    skipped_dependencies = ["cryptography", "psutil", "rpds"]
+
     def __init__(
         self,
         *,
@@ -295,6 +298,9 @@ class DependencyMountConfigurator:
             if dep_path.name.endswith(".dist-info"):
                 continue
             if dep_path.name == "__pycache__":
+                continue
+
+            if dep_path.name in self.skipped_dependencies:
                 continue
 
             if dep_path.name in container_path_index:
