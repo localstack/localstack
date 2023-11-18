@@ -13363,7 +13363,8 @@
           "dotnet6",
           "go1.x",
           "provided",
-          "provided.al2"
+          "provided.al2",
+          "java21"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
