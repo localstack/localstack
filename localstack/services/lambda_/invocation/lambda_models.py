@@ -64,7 +64,7 @@ IMAGE_MAPPING = {
     "go1.x": "go:1",
     "provided": "provided:alami",
     "provided.al2": "provided:al2",
-    "java21": "java21"
+    "java21": "java21",
 }
 SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17, Runtime.java21]
 
