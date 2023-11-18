@@ -115,6 +115,7 @@ RUNTIMES = [
     Runtime.go1_x,
     Runtime.provided,
     Runtime.provided_al2,
+    Runtime.java21,
 ]
 
 # An unordered list of all Lambda CPU architectures supported by LocalStack.

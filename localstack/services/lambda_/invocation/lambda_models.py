@@ -64,8 +64,9 @@ IMAGE_MAPPING = {
     "go1.x": "go:1",
     "provided": "provided:alami",
     "provided.al2": "provided:al2",
+    "java21": "java21"
 }
-SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17]
+SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17, Runtime.java21]
 
 
 # TODO: maybe we should make this more "transient" by always initializing to Pending and *not* persisting it?

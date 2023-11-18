@@ -5046,7 +5046,7 @@ class TestLambdaLayer:
 
 class TestLambdaSnapStart:
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17])
+    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17, Runtime.java21])
     def test_snapstart_lifecycle(self, create_lambda_function, snapshot, aws_client, runtime):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
         Slow (~1-2min) against AWS.
@@ -5080,7 +5080,7 @@ class TestLambdaSnapStart:
         snapshot.match("get_function_response_version_1", get_function_response)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17])
+    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17, Runtime.java21])
     def test_snapstart_update_function_configuration(
         self, create_lambda_function, snapshot, aws_client, runtime
     ):

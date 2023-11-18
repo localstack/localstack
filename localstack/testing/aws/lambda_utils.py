@@ -43,7 +43,7 @@ RUNTIMES_AGGREGATED = {
     ],
     "nodejs": [Runtime.nodejs14_x, Runtime.nodejs16_x, Runtime.nodejs18_x],
     "ruby": [Runtime.ruby2_7, Runtime.ruby3_2],
-    "java": [Runtime.java8, Runtime.java8_al2, Runtime.java11, Runtime.java17],
+    "java": [Runtime.java8, Runtime.java8_al2, Runtime.java11, Runtime.java17, Runtime.java21],
     "dotnet": [Runtime.dotnet6],
     "go": [Runtime.go1_x],
     "custom": [Runtime.provided, Runtime.provided_al2],
