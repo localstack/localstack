@@ -357,30 +357,32 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
     :param context: RequestContext
     :return:
     """
-    try:
-        sigv4_context, exception = _find_valid_signature_through_ports(context)
-        add_headers_to_original_request(context, sigv4_context.headers_in_qs)
-        if exception:
-            if config.S3_SKIP_SIGNATURE_VALIDATION:
-                LOG.warning(
-                    "Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
-                )
-            else:
-                ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v4(exception)
-                raise ex
 
-    except AccessDenied as e:
-        # we can have missing SignedHeaders which are caught very early and do not necessitate to iterate through ports
-        # if we skip validation, do not raise an exception but log a message that it will result in loss of data for the
-        # request (some headers present and needed in the requests were not given when sending the request)
+    sigv4_context, exception = _find_valid_signature_through_ports(context)
+    add_headers_to_original_request(context, sigv4_context.headers_in_qs)
+
+    if sigv4_context.missing_signed_headers:
         if config.S3_SKIP_SIGNATURE_VALIDATION:
             LOG.warning(
                 "There were headers present in the request which were not signed (%s), "
                 "but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1",
-                e.HeadersNotSigned,
+                ", ".join(sigv4_context.missing_signed_headers),
             )
         else:
-            raise
+            raise AccessDenied(
+                "There were headers present in the request which were not signed",
+                HostId=FAKE_HOST_ID,
+                HeadersNotSigned=", ".join(sigv4_context.missing_signed_headers),
+            )
+
+    if exception:
+        if config.S3_SKIP_SIGNATURE_VALIDATION:
+            LOG.warning(
+                "Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
+            )
+        else:
+            ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v4(exception)
+            raise ex
 
     # Checking whether the url is expired or not
     query_parameters = context.request.args
@@ -463,6 +465,7 @@ class S3SigV4SignatureContext:
         )
         self._bucket = urlparse.unquote(self._bucket)
         self._request_method = context.request.method
+        self.missing_signed_headers = []
 
         credentials = ReadOnlyCredentials(
             TEST_AWS_ACCESS_KEY_ID,
@@ -582,22 +585,14 @@ class S3SigV4SignatureContext:
             new_query_args[qs_parameter] = qs_value
 
         signature_headers = {}
-        not_signed_headers = []
         for header, value in headers.items():
             header_low = header.lower()
             if header_low.startswith("x-amz-") and header_low not in signed_headers.lower():
                 if header_low in IGNORED_SIGV4_HEADERS:
                     continue
-                not_signed_headers.append(header_low)
+                self.missing_signed_headers.append(header_low)
             if header_low in signed_headers:
                 signature_headers[header_low] = value
-
-        if not_signed_headers:
-            raise AccessDenied(
-                "There were headers present in the request which were not signed",
-                HostId=FAKE_HOST_ID,
-                HeadersNotSigned=", ".join(not_signed_headers),
-            )
 
         new_query_string = percent_encode_sequence(new_query_args)
         return signature_headers, new_query_string, query_args_to_headers

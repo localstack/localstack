@@ -5728,7 +5728,7 @@ class TestS3PresignedUrl:
         assert response.ok
 
         response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
-        assert response.get("Metadata", {}).get("foo") == "bar"
+        assert response["Metadata"]["foo"] == "bar"
         snapshot.match("head_object", response)
 
         # assert with another metadata, should fail if verify_signature is not True
@@ -5741,6 +5741,12 @@ class TestS3PresignedUrl:
             assert response.status_code == 403
             exception = xmltodict.parse(response.content)
             snapshot.match("wrong-meta-headers", exception)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        if not verify_signature and not is_aws_cloud():
+            assert head_object["Metadata"]["wrong"] == "wrong"
+        else:
+            assert "wrong" not in head_object["Metadata"]
 
     @markers.aws.validated
     @pytest.mark.parametrize("verify_signature", (True, False))
@@ -5799,6 +5805,12 @@ class TestS3PresignedUrl:
             assert response.status_code == 403
             exception = xmltodict.parse(response.content)
             snapshot.match("wrong-meta-headers", exception)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        if not verify_signature and not is_aws_cloud():
+            assert head_object["Metadata"]["wrong"] == "wrong"
+        else:
+            assert "wrong" not in head_object["Metadata"]
 
     @markers.aws.validated
     def test_get_object_ignores_request_body(self, s3_bucket, aws_client):
