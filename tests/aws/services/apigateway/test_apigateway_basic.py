@@ -378,6 +378,7 @@ class TestAPIGateway:
         ]
         api_id = self.create_api_gateway_and_deploy(
             aws_client.apigateway,
+            aws_client.dynamodb,
             integration_type="MOCK",
             integration_responses=responses,
             stage_name=TEST_STAGE_NAME,
@@ -889,7 +890,7 @@ class TestAPIGateway:
 
     @markers.aws.unknown
     def test_put_integration_dynamodb_proxy_validation_without_request_template(self, aws_client):
-        api_id = self.create_api_gateway_and_deploy(aws_client.apigateway)
+        api_id = self.create_api_gateway_and_deploy(aws_client.apigateway, aws_client.dynamodb)
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
         response = requests.put(
             url,
@@ -918,7 +919,7 @@ class TestAPIGateway:
             )
         }
         api_id = self.create_api_gateway_and_deploy(
-            aws_client.apigateway, request_templates=request_templates
+            aws_client.apigateway, aws_client.dynamodb, request_templates=request_templates
         )
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
@@ -949,7 +950,10 @@ class TestAPIGateway:
         }
 
         api_id = self.create_api_gateway_and_deploy(
-            aws_client.apigateway, request_templates=request_templates, is_api_key_required=True
+            aws_client.apigateway,
+            aws_client.dynamodb,
+            request_templates=request_templates,
+            is_api_key_required=True,
         )
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
@@ -1250,7 +1254,10 @@ class TestAPIGateway:
             }
         ]
         api_id = self.create_api_gateway_and_deploy(
-            aws_client.apigateway, integration_type="MOCK", integration_responses=resps
+            aws_client.apigateway,
+            aws_client.dynamodb,
+            integration_type="MOCK",
+            integration_responses=resps,
         )
 
         url = path_based_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path="/")
@@ -1534,6 +1541,7 @@ class TestAPIGateway:
     @staticmethod
     def create_api_gateway_and_deploy(
         apigw_client,
+        dynamodb_client,
         request_templates=None,
         response_templates=None,
         is_api_key_required=False,
@@ -1552,7 +1560,9 @@ class TestAPIGateway:
 
         kwargs = {}
         if integration_type == "AWS":
-            resource_util.create_dynamodb_table("MusicCollection", partition_key="id")
+            resource_util.create_dynamodb_table(
+                "MusicCollection", partition_key="id", client=dynamodb_client
+            )
             kwargs[
                 "uri"
             ] = "arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection"
