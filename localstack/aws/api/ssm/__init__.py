@@ -446,6 +446,7 @@ class AutomationExecutionStatus(str):
     ChangeCalendarOverrideRejected = "ChangeCalendarOverrideRejected"
     CompletedWithSuccess = "CompletedWithSuccess"
     CompletedWithFailure = "CompletedWithFailure"
+    Exited = "Exited"
 
 
 class AutomationSubtype(str):
@@ -1001,6 +1002,9 @@ class StepExecutionFilterKey(str):
     StepExecutionId = "StepExecutionId"
     StepName = "StepName"
     Action = "Action"
+    ParentStepExecutionId = "ParentStepExecutionId"
+    ParentStepIteration = "ParentStepIteration"
+    ParentStepIteratorValue = "ParentStepIteratorValue"
 
 
 class StopType(str):
@@ -2140,6 +2144,14 @@ class ResolvedTargets(TypedDict, total=False):
     Truncated: Optional[Boolean]
 
 
+class ParentStepDetails(TypedDict, total=False):
+    StepExecutionId: Optional[String]
+    StepName: Optional[String]
+    Action: Optional[AutomationActionName]
+    Iteration: Optional[Integer]
+    IteratorValue: Optional[String]
+
+
 ValidNextStepList = List[ValidNextStep]
 
 
@@ -2177,6 +2189,7 @@ class StepExecution(TypedDict, total=False):
     Targets: Optional[Targets]
     TargetLocation: Optional[TargetLocation]
     TriggeredAlarms: Optional[AlarmStateInformationList]
+    ParentStepDetails: Optional[ParentStepDetails]
 
 
 StepExecutionList = List[StepExecution]
@@ -2216,6 +2229,7 @@ class AutomationExecution(TypedDict, total=False):
     OpsItemId: Optional[String]
     AssociationId: Optional[String]
     ChangeRequestName: Optional[ChangeRequestName]
+    Variables: Optional[AutomationParameterMap]
 
 
 AutomationExecutionFilterValueList = List[AutomationExecutionFilterValue]
