@@ -43,7 +43,7 @@ from localstack.services.apigateway.templates import (
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.arns import extract_region_from_arn, parse_arn
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
     request_response_stream,
@@ -168,7 +168,9 @@ def call_lambda(
 ) -> str:
     arn_data = parse_arn(function_arn)
     clients = get_service_factory(
-        account_id=arn_data['account'], region_name=arn_data['region'], role_arn=invocation_context.integration.get("credentials")
+        account_id=arn_data["account"],
+        region_name=arn_data["region"],
+        role_arn=invocation_context.integration.get("credentials"),
     )
     inv_result = clients.lambda_.request_metadata(
         service_principal=ServicePrincipal.apigateway, source_arn=get_source_arn(invocation_context)

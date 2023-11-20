@@ -1465,14 +1465,12 @@ class TestAPIGateway:
         )
 
         fn_name = f"test-{short_uid()}"
-        create_lambda_function(
+        response = create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=Runtime.python3_9,
         )
-        lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
-            "FunctionArn"
-        ]
+        lambda_arn = response["CreateFunctionResponse"]["FunctionArn"]
 
         if stage_name == "dev":
             uri = f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/arn:aws:lambda:{region_name}:{aws_account_id}:function:${{stageVariables.lambdaFunction}}/invocations"

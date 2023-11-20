@@ -584,8 +584,10 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     if not context.stage:
         return {}
 
-    _, region_name = get_api_account_id_and_region(context.api_id)
-    api_gateway_client = connect_to(region_name=region_name).apigateway
+    account_id, region_name = get_api_account_id_and_region(context.api_id)
+    api_gateway_client = connect_to(
+        aws_access_key_id=account_id, region_name=region_name
+    ).apigateway
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
         return response.get("variables")
