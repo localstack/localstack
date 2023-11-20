@@ -26,7 +26,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.services.lambda_.api_utils import ARCHITECTURES
-from localstack.services.lambda_.runtimes import RUNTIMES
+from localstack.services.lambda_.runtimes import RUNTIMES, SNAP_START_SUPPORTED_RUNTIMES
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -5047,7 +5047,7 @@ class TestLambdaLayer:
 
 class TestLambdaSnapStart:
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17])
+    @pytest.mark.parametrize("runtime", SNAP_START_SUPPORTED_RUNTIMES)
     def test_snapstart_lifecycle(self, create_lambda_function, snapshot, aws_client, runtime):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
         Slow (~1-2min) against AWS.
