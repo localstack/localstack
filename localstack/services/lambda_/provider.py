@@ -780,6 +780,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if package_type == PackageType.Zip:
                 # TODO verify if correct combination of code is set
                 if zip_file := request_code.get("ZipFile"):
+                    if len(zip_file) > config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED:
+                        raise RequestEntityTooLargeException(
+                            f"Zipped size must be smaller than {config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED} bytes"
+                        )
                     code = store_lambda_archive(
                         archive_file=zip_file,
                         function_name=function_name,
@@ -1797,6 +1801,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # ============ FUNCTION URLS ============
     # =======================================
 
+    @staticmethod
+    def _validate_qualifier(qualifier: str) -> None:
+        if qualifier == "$LATEST" or (qualifier and api_utils.qualifier_is_version(qualifier)):
+            raise ValidationException(
+                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+            )
+
     # TODO: what happens if function state is not active?
     def create_function_url_config(
         self,
@@ -1812,14 +1823,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
-        if qualifier == "$LATEST":
-            raise ValidationException(
-                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
-            )
-        if qualifier and api_utils.qualifier_is_version(qualifier):
-            raise ValidationException(
-                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
-            )
+        self._validate_qualifier(qualifier)
+
         fn = state.functions.get(function_name)
         if fn is None:
             raise ResourceNotFoundException("Function does not exist", Type="User")
@@ -1883,14 +1888,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         fn_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier, context)
 
-        if qualifier == "$LATEST":
-            raise ValidationException(
-                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
-            )
-        if qualifier and api_utils.qualifier_is_version(qualifier):
-            raise ValidationException(
-                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
-            )
+        self._validate_qualifier(qualifier)
 
         resolved_fn = state.functions.get(fn_name)
         if not resolved_fn:
@@ -1921,14 +1919,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
-        if qualifier == "$LATEST":
-            raise ValidationException(
-                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
-            )
-        if qualifier and api_utils.qualifier_is_version(qualifier):
-            raise ValidationException(
-                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
-            )
+        self._validate_qualifier(qualifier)
 
         fn = state.functions.get(function_name)
         if not fn:
@@ -1977,14 +1968,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
-        if qualifier == "$LATEST":
-            raise ValidationException(
-                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
-            )
-        if qualifier and api_utils.qualifier_is_version(qualifier):
-            raise ValidationException(
-                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
-            )
+        self._validate_qualifier(qualifier)
+
         resolved_fn = state.functions.get(function_name)
         if not resolved_fn:
             raise ResourceNotFoundException(
@@ -3544,7 +3529,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def _store_tags(self, function: Function, tags: dict[str, str]):
         if len(tags) > LAMBDA_TAG_LIMIT_PER_RESOURCE:
             raise InvalidParameterValueException(
-                "Number of tags exceeds function tag limit.", Type="User"
+                "Number of tags exceeds resource tag limit.", Type="User"
             )
         with function.lock:
             function.tags = tags
@@ -3566,10 +3551,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "An error occurred and the request cannot be processed.", Type="User"
             )
 
+        # TODO: test layer (added in snapshot update 2023-11)
         pattern_match = api_utils.FULL_FN_ARN_PATTERN.search(resource)
         if not pattern_match:
             raise ValidationException(
-                rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{{2}}((-gov)|(-iso(b?)))?-[a-z]+-\d{{1}}:\d{{12}}:function:[a-zA-Z0-9-_]+(:(\$LATEST|[a-zA-Z0-9-_]+))?"
+                rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{{2}}((-gov)|(-iso(b?)))?-[a-z]+-\d{{1}}:\d{{12}}:(function:[a-zA-Z0-9-_]+(:(\$LATEST|[a-zA-Z0-9-_]+))?|layer:[a-zA-Z0-9-_]+)"
             )
 
         groups = pattern_match.groupdict()
@@ -3577,7 +3563,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if groups.get("qualifier"):
             raise InvalidParameterValueException(
-                "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+                "Tags on function aliases and versions are not supported. Please specify a function ARN.",
                 Type="User",
             )
 

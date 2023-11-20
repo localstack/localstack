@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "recorded-date": "28-07-2023, 10:41:15",
+    "recorded-date": "20-11-2023, 16:46:00",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -303,7 +303,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_redundant_updates": {
-    "recorded-date": "28-07-2023, 10:41:20",
+    "recorded-date": "20-11-2023, 16:46:07",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -574,7 +574,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[delete_function]": {
-    "recorded-date": "28-07-2023, 10:41:20",
+    "recorded-date": "20-11-2023, 16:46:08",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -603,7 +603,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function]": {
-    "recorded-date": "28-07-2023, 10:41:20",
+    "recorded-date": "20-11-2023, 16:46:08",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -632,7 +632,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function_configuration]": {
-    "recorded-date": "28-07-2023, 10:41:20",
+    "recorded-date": "20-11-2023, 16:46:08",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -661,7 +661,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function]": {
-    "recorded-date": "28-07-2023, 10:41:22",
+    "recorded-date": "20-11-2023, 16:46:11",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -678,7 +678,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_configuration]": {
-    "recorded-date": "28-07-2023, 10:41:24",
+    "recorded-date": "20-11-2023, 16:46:14",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -695,7 +695,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_event_invoke_config]": {
-    "recorded-date": "28-07-2023, 10:41:26",
+    "recorded-date": "20-11-2023, 16:46:18",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -712,7 +712,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
-    "recorded-date": "28-07-2023, 10:41:28",
+    "recorded-date": "20-11-2023, 16:46:21",
     "recorded-content": {
       "delete_function_response_non_existent": {
         "Error": {
@@ -741,7 +741,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[delete_function]": {
-    "recorded-date": "28-07-2023, 10:41:28",
+    "recorded-date": "20-11-2023, 16:46:22",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -758,7 +758,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function]": {
-    "recorded-date": "28-07-2023, 10:41:28",
+    "recorded-date": "20-11-2023, 16:46:22",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -775,7 +775,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_configuration]": {
-    "recorded-date": "28-07-2023, 10:41:28",
+    "recorded-date": "20-11-2023, 16:46:22",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -792,7 +792,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_url_config]": {
-    "recorded-date": "28-07-2023, 10:41:29",
+    "recorded-date": "20-11-2023, 16:46:22",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -809,7 +809,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_code_signing_config]": {
-    "recorded-date": "28-07-2023, 10:41:29",
+    "recorded-date": "20-11-2023, 16:46:23",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -826,7 +826,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_event_invoke_config]": {
-    "recorded-date": "28-07-2023, 10:41:29",
+    "recorded-date": "20-11-2023, 16:46:23",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -843,7 +843,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_concurrency]": {
-    "recorded-date": "28-07-2023, 10:41:29",
+    "recorded-date": "20-11-2023, 16:46:23",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -860,7 +860,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function]": {
-    "recorded-date": "28-07-2023, 10:41:31",
+    "recorded-date": "20-11-2023, 16:46:26",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -877,7 +877,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_configuration]": {
-    "recorded-date": "28-07-2023, 10:41:33",
+    "recorded-date": "20-11-2023, 16:46:29",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -894,7 +894,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_url_config]": {
-    "recorded-date": "28-07-2023, 10:41:35",
+    "recorded-date": "20-11-2023, 16:46:32",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -911,7 +911,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_code_signing_config]": {
-    "recorded-date": "28-07-2023, 10:41:36",
+    "recorded-date": "20-11-2023, 16:46:35",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -928,7 +928,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_event_invoke_config]": {
-    "recorded-date": "28-07-2023, 10:41:38",
+    "recorded-date": "20-11-2023, 16:46:38",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -945,7 +945,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_concurrency]": {
-    "recorded-date": "28-07-2023, 10:41:40",
+    "recorded-date": "20-11-2023, 16:46:41",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -962,7 +962,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[delete_function]": {
-    "recorded-date": "28-07-2023, 10:41:44",
+    "recorded-date": "20-11-2023, 16:46:45",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -979,7 +979,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
-    "recorded-date": "28-07-2023, 10:41:46",
+    "recorded-date": "20-11-2023, 16:46:48",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -996,7 +996,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
-    "recorded-date": "28-07-2023, 10:41:48",
+    "recorded-date": "20-11-2023, 16:46:52",
     "recorded-content": {
       "create-response-zip-file": {
         "Architectures": [
@@ -1170,7 +1170,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
-    "recorded-date": "28-07-2023, 10:41:52",
+    "recorded-date": "20-11-2023, 16:46:59",
     "recorded-content": {
       "create_response_s3": {
         "Architectures": [
@@ -1344,7 +1344,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_version_on_create": {
-    "recorded-date": "27-02-2023, 21:39:19",
+    "recorded-date": "20-11-2023, 16:56:44",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1690,7 +1690,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_version_lifecycle": {
-    "recorded-date": "27-02-2023, 21:39:27",
+    "recorded-date": "20-11-2023, 16:56:51",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2391,7 +2391,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_with_wrong_sha256": {
-    "recorded-date": "27-02-2023, 21:39:29",
+    "recorded-date": "20-11-2023, 16:56:54",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2529,7 +2529,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_with_update": {
-    "recorded-date": "27-02-2023, 21:41:30",
+    "recorded-date": "20-11-2023, 16:56:57",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2747,7 +2747,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "21-03-2023, 07:41:08",
+    "recorded-date": "20-11-2023, 16:57:06",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3319,7 +3319,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "27-02-2023, 21:42:10",
+    "recorded-date": "20-11-2023, 16:57:21",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3617,7 +3617,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_create_tag_on_fn_create": {
-    "recorded-date": "17-02-2023, 11:39:18",
+    "recorded-date": "20-11-2023, 16:57:41",
     "recorded-content": {
       "get_function_result": {
         "Code": {
@@ -3681,7 +3681,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle": {
-    "recorded-date": "17-02-2023, 11:39:23",
+    "recorded-date": "20-11-2023, 16:57:46",
     "recorded-content": {
       "tag_single_response": {
         "ResponseMetadata": {
@@ -3796,7 +3796,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_nonexisting_resource": {
-    "recorded-date": "17-02-2023, 11:39:27",
+    "recorded-date": "20-11-2023, 16:57:50",
     "recorded-content": {
       "pre_delete_get_function": {
         "Code": {
@@ -3884,7 +3884,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_exceptions": {
-    "recorded-date": "17-02-2023, 11:39:54",
+    "recorded-date": "20-11-2023, 16:58:16",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -4541,7 +4541,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
-    "recorded-date": "11-08-2023, 11:58:18",
+    "recorded-date": "20-11-2023, 16:58:20",
     "recorded-content": {
       "put_function_concurrency_with_function_name_doesnotexist": {
         "Error": {
@@ -4582,7 +4582,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
-    "recorded-date": "11-08-2023, 12:10:51",
+    "recorded-date": "20-11-2023, 18:04:09",
     "recorded-content": {
       "put_function_concurrency_with_reserved_0": {
         "ReservedConcurrentExecutions": 0,
@@ -4620,7 +4620,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "17-02-2023, 11:40:18",
+    "recorded-date": "20-11-2023, 16:58:43",
     "recorded-content": {
       "create_lambda": {
         "CreateEventSourceMappingResponse": null,
@@ -4717,7 +4717,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
-    "recorded-date": "17-02-2023, 11:40:33",
+    "recorded-date": "20-11-2023, 16:58:58",
     "recorded-content": {
       "add_permission_1": {
         "Statement": {
@@ -4861,7 +4861,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_create_multiple_lambda_permissions": {
-    "recorded-date": "17-02-2023, 11:40:36",
+    "recorded-date": "20-11-2023, 16:59:01",
     "recorded-content": {
       "add_permission_response_1": {
         "Statement": {
@@ -4927,7 +4927,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "recorded-date": "17-02-2023, 11:41:05",
+    "recorded-date": "20-11-2023, 16:59:22",
     "recorded-content": {
       "url_creation": {
         "AuthType": "NONE",
@@ -4956,6 +4956,7 @@
         "CreationTime": "date",
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "lambda-url",
+        "InvokeMode": "BUFFERED",
         "LastModifiedTime": "date",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5005,7 +5006,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_lambda": {
-    "recorded-date": "17-02-2023, 12:42:06",
+    "recorded-date": "20-11-2023, 17:00:14",
     "recorded-content": {
       "create_function_large_zip": {
         "Architectures": [
@@ -5049,7 +5050,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_variables_fails": {
-    "recorded-date": "17-02-2023, 11:42:51",
+    "recorded-date": "20-11-2023, 17:00:32",
     "recorded-content": {
       "failed_create_fn_result": {
         "Error": {
@@ -5066,7 +5067,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_fails_multiple_keys": {
-    "recorded-date": "17-02-2023, 11:43:08",
+    "recorded-date": "20-11-2023, 17:00:49",
     "recorded-content": {
       "failured_create_fn_result_multi_key": {
         "Error": {
@@ -5083,7 +5084,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_lambda_envvars_near_limit_succeeds": {
-    "recorded-date": "17-02-2023, 11:43:11",
+    "recorded-date": "20-11-2023, 17:00:52",
     "recorded-content": {
       "successful_create_fn_result": {
         "CreateEventSourceMappingResponse": null,
@@ -5135,7 +5136,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestCodeSigningConfig::test_function_code_signing_config": {
-    "recorded-date": "17-02-2023, 11:43:16",
+    "recorded-date": "20-11-2023, 17:00:57",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -5259,7 +5260,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestCodeSigningConfig::test_code_signing_not_found_excs": {
-    "recorded-date": "30-09-2022, 15:35:33",
+    "recorded-date": "20-11-2023, 17:01:02",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -5438,7 +5439,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings": {
-    "recorded-date": "17-02-2023, 11:43:17",
+    "recorded-date": "20-11-2023, 17:01:02",
     "recorded-content": {
       "acc_settings_modded": {
         "AccountLimit": [
@@ -5460,7 +5461,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_exceptions": {
-    "recorded-date": "17-02-2023, 11:43:39",
+    "recorded-date": "20-11-2023, 17:01:28",
     "recorded-content": {
       "get_unknown_uuid": {
         "Error": {
@@ -5525,7 +5526,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "recorded-date": "23-11-2022, 10:09:53",
+    "recorded-date": "20-11-2023, 17:01:43",
     "recorded-content": {
       "update_table_response": {
         "TableDescription": {
@@ -5540,6 +5541,7 @@
             "LastUpdateToPayPerRequestDateTime": "datetime"
           },
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -5653,12 +5655,12 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
-    "recorded-date": "30-09-2022, 15:36:19",
+    "recorded-date": "20-11-2023, 17:02:01",
     "recorded-content": {
       "tag_lambda_invalidarn": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'arn:aws:something' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+          "Message": "1 validation error detected: Value 'arn:aws:something' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:(function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?|layer:[a-zA-Z0-9-_]+)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5680,10 +5682,10 @@
       "tag_lambda_qualifier_doesnotexist": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN."
+          "Message": "Tags on function aliases and versions are not supported. Please specify a function ARN."
         },
         "Type": "User",
-        "message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+        "message": "Tags on function aliases and versions are not supported. Please specify a function ARN.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -5727,15 +5729,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_limits": {
-    "recorded-date": "27-02-2023, 21:42:31",
+    "recorded-date": "20-11-2023, 17:02:05",
     "recorded-content": {
       "tag_lambda_too_many_tags": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Number of tags exceeds function tag limit."
+          "Message": "Number of tags exceeds resource tag limit."
         },
         "Type": "User",
-        "message": "Number of tags exceeds function tag limit.",
+        "message": "Number of tags exceeds resource tag limit.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -5907,10 +5909,10 @@
       "tag_lambda_too_many_tags_additional": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Number of tags exceeds function tag limit."
+          "Message": "Number of tags exceeds resource tag limit."
         },
         "Type": "User",
-        "message": "Number of tags exceeds function tag limit.",
+        "message": "Number of tags exceeds resource tag limit.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -5919,7 +5921,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_lifecycle": {
-    "recorded-date": "27-02-2023, 21:42:57",
+    "recorded-date": "20-11-2023, 17:02:14",
     "recorded-content": {
       "list_tags_response_postfncreate": {
         "Tags": {
@@ -6258,7 +6260,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_exceptions": {
-    "recorded-date": "15-03-2023, 15:21:53",
+    "recorded-date": "20-11-2023, 16:58:30",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -6507,7 +6509,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_lambda_provisioned_lifecycle": {
-    "recorded-date": "10-08-2023, 20:09:13",
+    "recorded-date": "20-11-2023, 18:06:43",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -6653,12 +6655,12 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_request_create_lambda": {
-    "recorded-date": "17-02-2023, 11:41:24",
+    "recorded-date": "20-11-2023, 16:59:28",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
           "Code": "RequestEntityTooLargeException",
-          "Message": "Request must be smaller than 69905067 bytes for the CreateFunction operation"
+          "Message": "Zipped size must be smaller than 52428800 bytes"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6668,15 +6670,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_versions": {
-    "recorded-date": "03-10-2022, 20:42:55",
+    "recorded-date": "20-11-2023, 17:02:09",
     "recorded-content": {
       "tag_resource_exception": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN."
+          "Message": "Tags on function aliases and versions are not supported. Please specify a function ARN."
         },
         "Type": "User",
-        "message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+        "message": "Tags on function aliases and versions are not supported. Please specify a function ARN.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -6685,10 +6687,10 @@
       "tag_resource_latest_exception": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN."
+          "Message": "Tags on function aliases and versions are not supported. Please specify a function ARN."
         },
         "Type": "User",
-        "message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+        "message": "Tags on function aliases and versions are not supported. Please specify a function ARN.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -6697,7 +6699,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_list_paging": {
-    "recorded-date": "17-02-2023, 11:41:01",
+    "recorded-date": "20-11-2023, 16:59:17",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -6797,6 +6799,7 @@
             "CreationTime": "date",
             "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
             "FunctionUrl": "lambda-url",
+            "InvokeMode": "BUFFERED",
             "LastModifiedTime": "date"
           },
           {
@@ -6804,6 +6807,7 @@
             "CreationTime": "date",
             "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:urlalias",
             "FunctionUrl": "lambda-url",
+            "InvokeMode": "BUFFERED",
             "LastModifiedTime": "date"
           }
         ],
@@ -6815,7 +6819,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "recorded-date": "17-02-2023, 11:40:55",
+    "recorded-date": "20-11-2023, 16:59:12",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -6896,7 +6900,7 @@
       "create_function_url_config_name_doesnotexist_qualifier": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6906,7 +6910,7 @@
       "create_function_url_config_qualifier_version": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6916,7 +6920,7 @@
       "create_function_url_config_qualifier_version_doesnotexist": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6984,7 +6988,7 @@
       "get_function_url_config_name_doesnotexist_qualifier": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6994,7 +6998,7 @@
       "get_function_url_config_qualifier_version": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7004,7 +7008,7 @@
       "get_function_url_config_qualifier_version_doesnotexist": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7084,7 +7088,7 @@
       "delete_function_url_config_name_doesnotexist_qualifier": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7094,7 +7098,7 @@
       "delete_function_url_config_qualifier_version": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7104,7 +7108,7 @@
       "delete_function_url_config_qualifier_version_doesnotexist": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7173,7 +7177,7 @@
       "update_function_url_config_name_doesnotexist_qualifier": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7183,7 +7187,7 @@
       "update_function_url_config_qualifier_version": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7193,7 +7197,7 @@
       "update_function_url_config_qualifier_version_doesnotexist": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7249,7 +7253,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_permission_exceptions": {
-    "recorded-date": "28-02-2023, 11:08:16",
+    "recorded-date": "20-11-2023, 16:58:39",
     "recorded-content": {
       "add_permission_invalid_statement_id": {
         "Error": {
@@ -7430,7 +7434,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_unzipped_lambda": {
-    "recorded-date": "17-02-2023, 11:42:33",
+    "recorded-date": "20-11-2023, 16:59:47",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -7447,7 +7451,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "20-11-2023, 11:40:44",
+    "recorded-date": "20-11-2023, 16:47:00",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7519,7 +7523,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_update_lambda_exceptions": {
-    "recorded-date": "28-07-2023, 10:41:54",
+    "recorded-date": "20-11-2023, 16:47:02",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7534,10 +7538,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, java21, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, java21, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7546,10 +7550,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, java21, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, java21, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7558,7 +7562,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_list_functions": {
-    "recorded-date": "28-07-2023, 10:42:05",
+    "recorded-date": "20-11-2023, 16:47:16",
     "recorded-content": {
       "create_response_1": {
         "CreateEventSourceMappingResponse": null,
@@ -7831,7 +7835,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "recorded-date": "20-11-2023, 11:47:12",
+    "recorded-date": "20-11-2023, 17:02:39",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8029,7 +8033,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_lifecycle": {
-    "recorded-date": "28-07-2023, 10:49:01",
+    "recorded-date": "20-11-2023, 17:04:38",
     "recorded-content": {
       "get_fn_result": {
         "Code": {
@@ -8433,7 +8437,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_policy_exceptions": {
-    "recorded-date": "28-07-2023, 10:49:12",
+    "recorded-date": "20-11-2023, 17:04:54",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8616,7 +8620,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_policy_lifecycle": {
-    "recorded-date": "28-07-2023, 10:49:17",
+    "recorded-date": "20-11-2023, 17:05:00",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8744,7 +8748,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_s3_content": {
-    "recorded-date": "28-07-2023, 10:49:08",
+    "recorded-date": "20-11-2023, 17:04:46",
     "recorded-content": {
       "publish_layer_result": {
         "Content": {
@@ -8765,7 +8769,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_function_exceptions": {
-    "recorded-date": "28-07-2023, 10:47:55",
+    "recorded-date": "20-11-2023, 17:03:22",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8959,7 +8963,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_image_crud": {
-    "recorded-date": "17-02-2023, 11:36:22",
+    "recorded-date": "20-11-2023, 16:55:07",
     "recorded-content": {
       "create-image-response": {
         "Architectures": [
@@ -9221,7 +9225,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_image_and_image_config_crud": {
-    "recorded-date": "17-02-2023, 11:38:24",
+    "recorded-date": "20-11-2023, 16:55:56",
     "recorded-content": {
       "create-image-with-config-response": {
         "Architectures": [
@@ -9657,7 +9661,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_zip_file_to_image": {
-    "recorded-date": "17-02-2023, 11:36:41",
+    "recorded-date": "20-11-2023, 16:55:22",
     "recorded-content": {
       "create-image-response": {
         "Architectures": [
@@ -9877,7 +9881,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size": {
-    "recorded-date": "17-02-2023, 11:43:31",
+    "recorded-date": "20-11-2023, 17:01:20",
     "recorded-content": {
       "total_code_size_diff_create_function": 276,
       "total_code_size_diff_update_function": 276,
@@ -9886,7 +9890,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size_config_update": {
-    "recorded-date": "17-02-2023, 11:43:37",
+    "recorded-date": "20-11-2023, 17:01:26",
     "recorded-content": {
       "is_total_code_size_diff_create_function_more_than_200": true,
       "total_code_size_diff_update_function_configuration": 0,
@@ -9894,7 +9898,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_lifecycle": {
-    "recorded-date": "22-03-2023, 18:49:13",
+    "recorded-date": "20-11-2023, 16:57:57",
     "recorded-content": {
       "put_invokeconfig_retries_0": {
         "DestinationConfig": {
@@ -10257,7 +10261,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_fields": {
-    "recorded-date": "17-02-2023, 11:40:29",
+    "recorded-date": "20-11-2023, 16:58:54",
     "recorded-content": {
       "add_permission_principal_wildcard": {
         "Statement": {
@@ -10341,9 +10345,9 @@
           "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
           "Condition": {
             "StringEquals": {
-              "AWS:SourceAccount": "111111111111",
               "lambda:FunctionUrlAuthType": "NONE",
-              "aws:PrincipalOrgID": "o-1234567890"
+              "aws:PrincipalOrgID": "o-1234567890",
+              "AWS:SourceAccount": "111111111111"
             },
             "ArnLike": {
               "AWS:SourceArn": "arn:aws:s3:::<resource:3>"
@@ -10376,7 +10380,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_lambda_permission_fn_versioning": {
-    "recorded-date": "14-06-2023, 20:15:52",
+    "recorded-date": "20-11-2023, 16:58:49",
     "recorded-content": {
       "add_permission": {
         "Statement": {
@@ -11009,7 +11013,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_basic": {
-    "recorded-date": "17-02-2023, 11:39:05",
+    "recorded-date": "20-11-2023, 16:57:28",
     "recorded-content": {
       "create_function_response_rev1": {
         "CreateEventSourceMappingResponse": null,
@@ -11310,7 +11314,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_version_and_alias": {
-    "recorded-date": "17-02-2023, 11:39:10",
+    "recorded-date": "20-11-2023, 16:57:33",
     "recorded-content": {
       "create_function_response_rev1": {
         "CreateEventSourceMappingResponse": null,
@@ -11682,7 +11686,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_permissions": {
-    "recorded-date": "17-02-2023, 11:39:14",
+    "recorded-date": "20-11-2023, 16:57:37",
     "recorded-content": {
       "add_permission_revision_exception": {
         "Error": {
@@ -11754,7 +11758,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_function_quota_exception": {
-    "recorded-date": "28-07-2023, 10:48:40",
+    "recorded-date": "20-11-2023, 17:04:11",
     "recorded-content": {
       "create_function_with_six_layers": {
         "Error": {
@@ -11771,7 +11775,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_validation": {
-    "recorded-date": "15-02-2023, 11:03:02",
+    "recorded-date": "20-11-2023, 17:01:56",
     "recorded-content": {
       "error": {
         "Error": {
@@ -11788,7 +11792,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_exceptions": {
-    "recorded-date": "02-05-2023, 18:15:16",
+    "recorded-date": "20-11-2023, 17:08:17",
     "recorded-content": {
       "create_function_unsupported_snapstart_runtime": {
         "Error": {
@@ -11815,7 +11819,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_image_versions": {
-    "recorded-date": "21-04-2023, 17:05:08",
+    "recorded-date": "20-11-2023, 16:56:31",
     "recorded-content": {
       "create_image_response": {
         "Architectures": [
@@ -12234,7 +12238,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java11]": {
-    "recorded-date": "02-05-2023, 18:13:35",
+    "recorded-date": "20-11-2023, 17:53:04",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12378,7 +12382,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java17]": {
-    "recorded-date": "02-05-2023, 18:15:11",
+    "recorded-date": "20-11-2023, 17:54:39",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12522,7 +12526,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java11]": {
-    "recorded-date": "02-05-2023, 18:15:13",
+    "recorded-date": "20-11-2023, 17:08:13",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12615,7 +12619,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java17]": {
-    "recorded-date": "02-05-2023, 18:15:16",
+    "recorded-date": "20-11-2023, 17:08:17",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12708,7 +12712,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_vpc_config": {
-    "recorded-date": "28-07-2023, 10:46:26",
+    "recorded-date": "20-11-2023, 17:50:21",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12750,6 +12754,7 @@
           },
           "Version": "$LATEST",
           "VpcConfig": {
+            "Ipv6AllowedForDualStack": false,
             "SecurityGroupIds": [
               "<security_group_id_1>"
             ],
@@ -12806,6 +12811,7 @@
           },
           "Version": "$LATEST",
           "VpcConfig": {
+            "Ipv6AllowedForDualStack": false,
             "SecurityGroupIds": [
               "<security_group_id_1>"
             ],
@@ -12859,6 +12865,7 @@
         },
         "Version": "$LATEST",
         "VpcConfig": {
+          "Ipv6AllowedForDualStack": false,
           "SecurityGroupIds": [
             "<security_group_id_2>"
           ],
@@ -12914,6 +12921,7 @@
           },
           "Version": "$LATEST",
           "VpcConfig": {
+            "Ipv6AllowedForDualStack": false,
             "SecurityGroupIds": [
               "<security_group_id_2>"
             ],
@@ -12967,6 +12975,7 @@
         },
         "Version": "$LATEST",
         "VpcConfig": {
+          "Ipv6AllowedForDualStack": false,
           "SecurityGroupIds": [],
           "SubnetIds": [],
           "VpcId": ""
@@ -13018,6 +13027,7 @@
           },
           "Version": "$LATEST",
           "VpcConfig": {
+            "Ipv6AllowedForDualStack": false,
             "SecurityGroupIds": [],
             "SubnetIds": [],
             "VpcId": ""
@@ -13072,7 +13082,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "recorded-date": "30-08-2023, 09:59:24",
+    "recorded-date": "20-11-2023, 17:02:20",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13080,20 +13090,20 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "nodejs12.x",
-          "nodejs14.x",
-          "nodejs16.x",
+          "nodejs20.x",
           "nodejs18.x",
-          "python3.7",
-          "python3.8",
-          "python3.9",
-          "python3.10",
+          "nodejs16.x",
+          "nodejs14.x",
+          "python3.12",
           "python3.11",
-          "ruby2.7",
-          "ruby3.2",
-          "java8",
-          "java8.al2",
-          "java11"
+          "python3.10",
+          "python3.9",
+          "python3.8",
+          "python3.7",
+          "java21",
+          "java17",
+          "java11",
+          "java8.al2"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -13113,7 +13123,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "recorded-date": "30-08-2023, 09:59:27",
+    "recorded-date": "20-11-2023, 17:02:26",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13121,12 +13131,14 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "java17",
-          "dotnetcore3.1",
+          "java8",
           "dotnet6",
           "go1.x",
-          "provided",
-          "provided.al2"
+          "ruby3.2",
+          "ruby2.7",
+          "provided.al2023",
+          "provided.al2",
+          "provided"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -13146,7 +13158,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_limits": {
-    "recorded-date": "10-08-2023, 22:35:31",
+    "recorded-date": "20-11-2023, 16:58:33",
     "recorded-content": {
       "put_provisioned_concurrency_account_limit_exceeded": {
         "Error": {
@@ -13173,7 +13185,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_limits": {
-    "recorded-date": "11-08-2023, 12:18:53",
+    "recorded-date": "20-11-2023, 16:58:23",
     "recorded-content": {
       "put_function_concurrency_account_limit_exceeded": {
         "Error": {
@@ -13195,6 +13207,150 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java21]": {
+    "recorded-date": "20-11-2023, 17:56:15",
+    "recorded-content": {
+      "create_function_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java21",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "get_function_response_latest": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java21",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_response_version_1": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "version1",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java21",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "On"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

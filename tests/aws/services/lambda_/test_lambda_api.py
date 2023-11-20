@@ -579,6 +579,7 @@ class TestLambdaFunction:
         snapshot.match("list_all", list_all)
         snapshot.match("list_default", list_default)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Ipv6AllowedForDualStack"])
     @markers.aws.validated
     def test_vpc_config(
         self, create_lambda_function, lambda_su_role, snapshot, aws_client, cleanups
@@ -657,7 +658,14 @@ class TestLambdaFunction:
             },
         )
         snapshot.match("update_vpcconfig_update_response", update_vpcconfig_update_response)
-        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda/waiter/FunctionUpdatedV2.html#Lambda.Waiter.FunctionUpdatedV2.wait
+        waiter_config = {"Delay": 1, "MaxAttempts": 60}
+        # Increase timeouts because it can take longer than 5 minutes against AWS due to VPC.
+        if is_aws_cloud():
+            waiter_config = {"Delay": 5, "MaxAttempts": 90}
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(
+            FunctionName=function_name, WaiterConfig=waiter_config
+        )
 
         update_vpcconfig_get_function_response = aws_client.lambda_.get_function(
             FunctionName=function_name
@@ -3408,6 +3416,7 @@ class TestLambdaUrl:
             AuthType="AWS_IAM",
         )
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..FunctionUrlConfigs..InvokeMode"])
     @markers.aws.validated
     def test_url_config_list_paging(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
@@ -3479,6 +3488,7 @@ class TestLambdaUrl:
             != list_max_1_item["FunctionUrlConfigs"][0]["FunctionUrl"]
         )
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..InvokeMode"])
     @markers.aws.validated
     def test_url_config_lifecycle(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
@@ -4086,6 +4096,7 @@ class TestLambdaEventSourceMappings:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # all dynamodb service issues not related to lambda
+            "$..TableDescription.DeletionProtectionEnabled",
             "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
             "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
             "$..TableDescription.TableStatus",
