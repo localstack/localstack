@@ -105,6 +105,7 @@ PROVIDER_DEFAULTS = {
     "AWS::KMS::Key": "ResourceProvider",
     "AWS::Kinesis::Stream": "ResourceProvider",
     "AWS::Kinesis::StreamConsumer": "ResourceProvider",
+    "AWS::KinesisAnalytics::Application": "ResourceProvider",
     "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
     "AWS::Lambda::Alias": "ResourceProvider",
     "AWS::Logs::LogGroup": "ResourceProvider",

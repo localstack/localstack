@@ -209,9 +209,12 @@ class KinesisProcessorThread(ShellCommandThread):
         super().start()
 
     def stop(self, quiet: bool = False):
-        LOG.debug("Stopping kinesis connector for stream: %s", self.stream_name)
-        self.event_reader.stop()
-        super().stop(quiet)
+        if self.stopped:
+            LOG.debug("Kinesis connector for stream %s already stopped.", self.stream_name)
+        else:
+            LOG.debug("Stopping kinesis connector for stream: %s", self.stream_name)
+            self.event_reader.stop()
+            super().stop(quiet)
 
     def _startup_listener(self, line: str, **kwargs):
         line = line.strip()
