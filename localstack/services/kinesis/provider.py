@@ -151,6 +151,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         sequence_number_for_ordering: SequenceNumber = None,
         stream_arn: StreamARN = None,
     ) -> PutRecordOutput:
+        # TODO: Ensure use of `stream_arn` works. Currently kinesis-mock only works with ctx request account ID and region
         if random() < config.KINESIS_ERROR_PROBABILITY:
             raise ProvisionedThroughputExceededException(
                 "Rate exceeded for shard X in stream Y under account Z."
@@ -166,6 +167,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
     ) -> PutRecordsOutput:
+        # TODO: Ensure use of `stream_arn` works. Currently kinesis-mock only works with ctx request account ID and region
         if random() < config.KINESIS_ERROR_PROBABILITY:
             records_count = len(records) if records is not None else 0
             records = [

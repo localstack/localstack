@@ -12,7 +12,6 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
-    DEFAULT_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -3771,7 +3770,12 @@ class TestSqsQueryApi:
         assert queue_url.split("/")[-1] in response.text
 
     @markers.aws.only_localstack
-    def test_get_queue_attributes_works_without_authparams(self, sqs_create_queue):
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
+    def test_get_queue_attributes_works_without_authparams(
+        self, monkeypatch, sqs_create_queue, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
         response = requests.get(
             queue_url,
@@ -4021,6 +4025,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue_url.split("/")[-1],
+                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
             },
         )
         assert f"<QueueUrl>{queue_url}</QueueUrl>" in response.text
@@ -4042,6 +4047,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue2_url.split("/")[-1],
+                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
             },
         )
         assert f"<QueueUrl>{queue2_url}</QueueUrl>" in response.text
@@ -4254,7 +4260,7 @@ class TestSQSMultiAccounts:
         queue_name = f"test-queue-cross-account-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         account_id, region_name, queue_name_from_url = parse_queue_url(queue_url)
-        assert account_id == DEFAULT_AWS_ACCOUNT_ID
+        assert account_id == TEST_AWS_ACCOUNT_ID
         assert region_name == TEST_AWS_REGION_NAME
         assert queue_name_from_url == queue_name
 
