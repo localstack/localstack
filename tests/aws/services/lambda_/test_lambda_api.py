@@ -25,7 +25,8 @@ from botocore.exceptions import ClientError, ParamValidationError
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
-from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
+from localstack.services.lambda_.api_utils import ARCHITECTURES
+from localstack.services.lambda_.runtimes import RUNTIMES
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers

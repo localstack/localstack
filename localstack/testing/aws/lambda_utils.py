@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Mapping, Optional, Sequence, overload
 
-from localstack.aws.api.lambda_ import Runtime
+from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.utils.common import to_str
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -30,24 +30,6 @@ if TYPE_CHECKING:
     )
 
 LOG = logging.getLogger(__name__)
-
-# Supported Runtimes: https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
-# NOTE: missing support for `dotnet7` (container only)
-RUNTIMES_AGGREGATED = {
-    "python": [
-        Runtime.python3_7,
-        Runtime.python3_8,
-        Runtime.python3_9,
-        Runtime.python3_10,
-        Runtime.python3_11,
-    ],
-    "nodejs": [Runtime.nodejs14_x, Runtime.nodejs16_x, Runtime.nodejs18_x],
-    "ruby": [Runtime.ruby2_7, Runtime.ruby3_2],
-    "java": [Runtime.java8, Runtime.java8_al2, Runtime.java11, Runtime.java17],
-    "dotnet": [Runtime.dotnet6],
-    "go": [Runtime.go1_x],
-    "custom": [Runtime.provided, Runtime.provided_al2],
-}
 
 HANDLERS = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "handler.handler"),

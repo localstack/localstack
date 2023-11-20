@@ -137,7 +137,10 @@ from localstack.aws.connect import connect_to
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
-from localstack.services.lambda_.api_utils import ARCHITECTURES, STATEMENT_ID_REGEX
+from localstack.services.lambda_.api_utils import (
+    ARCHITECTURES,
+    STATEMENT_ID_REGEX,
+)
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
@@ -147,8 +150,6 @@ from localstack.services.lambda_.invocation.execution_environment import (
     EnvironmentStartupTimeoutException,
 )
 from localstack.services.lambda_.invocation.lambda_models import (
-    IMAGE_MAPPING,
-    SNAP_START_SUPPORTED_RUNTIMES,
     AliasRoutingConfig,
     CodeSigningConfig,
     EventInvokeConfig,
@@ -184,6 +185,7 @@ from localstack.services.lambda_.invocation.lambda_service import (
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
+from localstack.services.lambda_.runtimes import IMAGE_MAPPING, SNAP_START_SUPPORTED_RUNTIMES
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor

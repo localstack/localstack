@@ -20,8 +20,8 @@ from botocore.response import StreamingBody
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.testing.aws.lambda_utils import (
-    RUNTIMES_AGGREGATED,
     concurrency_update_done,
     get_invoke_init_type,
     update_done,
