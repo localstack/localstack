@@ -101,11 +101,11 @@
 /tests/aws/services/acm/ @alexrashed
 
 # apigateway
-/localstack/aws/api/apigateway/ @calvernaz @bentsku
-/localstack/services/apigateway/ @calvernaz @bentsku
-/localstack/services/cloudformation/models/apigateway.py @calvernaz @bentsku
-/tests/aws/services/apigateway/ @calvernaz @bentsku
-/tests/unit/test_apigateway.py @calvernaz @bentsku
+/localstack/aws/api/apigateway/ @calvernaz @https://github.com/bentsku
+/localstack/services/apigateway/ @calvernaz @https://github.com/bentsku
+/localstack/services/cloudformation/models/apigateway.py @calvernaz @https://github.com/bentsku
+/tests/aws/services/apigateway/ @calvernaz @https://github.com/bentsku
+/tests/unit/test_apigateway.py @calvernaz @https://github.com/bentsku
 
 # cloudformation
 /localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw
@@ -200,12 +200,12 @@
 /tests/aws/services/route53resolver/ @macnev2013 @sannya-singal
 
 # s3
-/localstack/aws/api/s3/ @bentsku @macnev2013
-/localstack/services/s3/ @bentsku @macnev2013
-/localstack/services/cloudformation/models/s3.py @bentsku @macnev2013
-/tests/aws/services/s3/ @bentsku @macnev2013
-/tests/unit/test_s3.py @bentsku @macnev2013
-/tests/unit/services/s3/ @bentsku @macnev2013
+/localstack/aws/api/s3/ @https://github.com/bentsku @macnev2013
+/localstack/services/s3/ @https://github.com/bentsku @macnev2013
+/localstack/services/cloudformation/models/s3.py @https://github.com/bentsku @macnev2013
+/tests/aws/services/s3/ @https://github.com/bentsku @macnev2013
+/tests/unit/test_s3.py @https://github.com/bentsku @macnev2013
+/tests/unit/services/s3/ @https://github.com/bentsku @macnev2013
 
 # secretsmanager
 /localstack/aws/api/secretsmanager/ @dominikschubert @MEPalma
@@ -219,11 +219,11 @@
 /tests/aws/services/ses/ @viren-nadkarni
 
 # sns
-/localstack/aws/api/sns/ @bentsku @thrau
-/localstack/services/sns/ @bentsku @thrau
-/localstack/services/cloudformation/models/sns.py @bentsku @thrau
-/tests/aws/services/sns/ @bentsku @thrau
-/tests/unit/test_sns.py @bentsku @thrau
+/localstack/aws/api/sns/ @https://github.com/bentsku @thrau
+/localstack/services/sns/ @https://github.com/bentsku @thrau
+/localstack/services/cloudformation/models/sns.py @https://github.com/bentsku @thrau
+/tests/aws/services/sns/ @https://github.com/bentsku @thrau
+/tests/unit/test_sns.py @https://github.com/bentsku @thrau
 
 # sqs
 /localstack/aws/api/sqs/ @thrau @baermat
