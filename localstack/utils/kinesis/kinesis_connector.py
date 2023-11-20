@@ -60,8 +60,6 @@ class EventFileReaderThread(FuncThread):
             while self.running:
                 try:
                     conn, client_addr = sock.accept()
-                    if not self.running:
-                        return
                     thread = FuncThread(
                         self.handle_connection,
                         conn,
@@ -69,17 +67,25 @@ class EventFileReaderThread(FuncThread):
                     )
                     thread.start()
                 except Exception as e:
-                    LOG.error(
-                        "Error dispatching client request: %s",
-                        e,
-                        exc_info=LOG.isEnabledFor(logging.DEBUG),
-                    )
+                    # ignore any errors happening during shutdown
+                    if self.running:
+                        LOG.error(
+                            "Error dispatching client request: %s",
+                            e,
+                            exc_info=LOG.isEnabledFor(logging.DEBUG),
+                        )
+        LOG.debug("Stopping retrieve loop for event file %s", self.events_file)
 
     def wait_for_ready(self):
         self.is_ready.wait()
 
     def _on_stop(self, *args, **kwargs):
         if self.sock:
+            LOG.debug("Shutting down event file reader for event file %s", self.events_file)
+            # shutdown is needed to unblock sock.accept. However, it will raise a OSError: [Errno 22] Invalid argument
+            # in the retrieve loop
+            # still, the easiest way to shut down the accept call without setting socket timeout for now
+            self.sock.shutdown(socket.SHUT_RDWR)
             self.sock.close()
 
     def handle_connection(self, conn: socket):
@@ -104,6 +110,7 @@ class EventFileReaderThread(FuncThread):
                         self.callback,
                         exc_info=LOG.isEnabledFor(logging.DEBUG),
                     )
+        LOG.debug("Shutting down connection handler for events file %s", self.events_file)
 
 
 # needed by the processor script farther down
