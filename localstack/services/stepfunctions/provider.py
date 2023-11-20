@@ -19,6 +19,7 @@ from localstack.aws.api.stepfunctions import (
     DescribeStateMachineOutput,
     ExecutionDoesNotExist,
     ExecutionList,
+    ExecutionRedriveFilter,
     ExecutionStatus,
     GetExecutionHistoryOutput,
     IncludeExecutionDataGetExecutionHistory,
@@ -402,6 +403,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         max_results: PageSize = None,
         next_token: ListExecutionsPageToken = None,
         map_run_arn: LongArn = None,
+        redrive_filter: ExecutionRedriveFilter = None,
     ) -> ListExecutionsOutput:
         # TODO: add support for paging and filtering.
         executions: ExecutionList = [

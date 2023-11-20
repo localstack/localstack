@@ -1,6 +1,6 @@
 {
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[]": {
-    "recorded-date": "12-11-2023, 01:53:30",
+    "recorded-date": "15-11-2023, 12:42:39",
     "recorded-content": {
       "list-objects": {
         "Contents": [
@@ -30,7 +30,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[/]": {
-    "recorded-date": "12-11-2023, 01:53:33",
+    "recorded-date": "15-11-2023, 12:42:41",
     "recorded-content": {
       "list-objects": {
         "CommonPrefixes": [
@@ -53,7 +53,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListObjects::test_list_objects_with_prefix[%2F]": {
-    "recorded-date": "12-11-2023, 01:53:35",
+    "recorded-date": "15-11-2023, 12:42:43",
     "recorded-content": {
       "list-objects": {
         "Contents": [

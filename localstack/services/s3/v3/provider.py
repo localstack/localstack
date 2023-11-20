@@ -6,7 +6,7 @@ import logging
 from collections import defaultdict
 from operator import itemgetter
 from secrets import token_urlsafe
-from typing import IO, Union
+from typing import IO, Optional, Union
 from urllib import parse as urlparse
 
 from localstack import config
@@ -1692,6 +1692,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["VersionId"] = s3_object.version_id
 
         if s3_object.parts:
+            # TODO: implements ObjectParts, this is basically a simplified `ListParts` call on the object, we might
+            #  need to store more data about the Parts once we implement checksums for them
             response["ObjectParts"] = GetObjectAttributesParts(TotalPartsCount=len(s3_object.parts))
 
         return response
@@ -1964,7 +1966,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         source_range = request.get("CopySourceRange")
         # TODO implement copy source IF (done in ASF provider)
-        range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
+
+        range_data: Optional[ObjectRange] = None
+        if source_range:
+            range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
         s3_part = S3Part(part_number=part_number)
 

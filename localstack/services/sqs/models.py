@@ -14,7 +14,6 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.sqs import (
     InvalidAttributeName,
     Message,
-    MessageNotInflight,
     QueueAttributeMap,
     QueueAttributeName,
     ReceiptHandleIsInvalid,
@@ -366,7 +365,7 @@ class SqsQueue:
             standard_message = self.receipts[receipt_handle]
 
             if standard_message not in self.inflight:
-                raise MessageNotInflight()
+                return
 
             standard_message.update_visibility_timeout(visibility_timeout)
 

@@ -1,7 +1,7 @@
 import pytest
 
 from localstack import config
-from localstack.config import HostAndPort
+from localstack.config import HostAndPort, external_service_url, internal_service_url
 
 
 class TestProviderConfig:
@@ -67,15 +67,7 @@ def ip() -> str:
 
 
 class TestEdgeVariablesDerivedCorrectly:
-    """
-    Post-v2 we are deriving
-
-    * EDGE_PORT
-
-    from GATEWAY_LISTEN. We are also ensuring the configuration behaves
-    well with LOCALSTACK_HOST, i.e. if LOCALSTACK_HOST is supplied and
-    GATEWAY_LISTEN is not, then we should propagate LOCALSTACK_HOST configuration
-    into GATEWAY_LISTEN.
+    """We are deriving GATEWAY_LISTEN and LOCALSTACK_HOST from provided environment variables.
 
     Implementation note: monkeypatching the config module is hard, and causes
     tests run after these ones to import the wrong config. Instead, we test the
@@ -96,29 +88,28 @@ class TestEdgeVariablesDerivedCorrectly:
             "localstack_host",
             "expected_gateway_listen",
             "expected_localstack_host",
-            "expected_edge_port",
         ],
         [
             ###
-            (None, None, [f"{ip()}:4566"], "localhost.localstack.cloud:4566", 4566),
-            ("1.1.1.1", None, ["1.1.1.1:4566"], "localhost.localstack.cloud:4566", 4566),
-            (":5555", None, [f"{ip()}:5555"], "localhost.localstack.cloud:5555", 5555),
-            ("1.1.1.1:5555", None, ["1.1.1.1:5555"], "localhost.localstack.cloud:5555", 5555),
+            (None, None, [f"{ip()}:4566"], "localhost.localstack.cloud:4566"),
+            ("1.1.1.1", None, ["1.1.1.1:4566"], "localhost.localstack.cloud:4566"),
+            (":5555", None, [f"{ip()}:5555"], "localhost.localstack.cloud:5555"),
+            ("1.1.1.1:5555", None, ["1.1.1.1:5555"], "localhost.localstack.cloud:5555"),
             ###
-            (None, "foo.bar", [f"{ip()}:4566"], "foo.bar:4566", 4566),
-            ("1.1.1.1", "foo.bar", ["1.1.1.1:4566"], "foo.bar:4566", 4566),
-            (":5555", "foo.bar", [f"{ip()}:5555"], "foo.bar:5555", 5555),
-            ("1.1.1.1:5555", "foo.bar", ["1.1.1.1:5555"], "foo.bar:5555", 5555),
+            (None, "foo.bar", [f"{ip()}:4566"], "foo.bar:4566"),
+            ("1.1.1.1", "foo.bar", ["1.1.1.1:4566"], "foo.bar:4566"),
+            (":5555", "foo.bar", [f"{ip()}:5555"], "foo.bar:5555"),
+            ("1.1.1.1:5555", "foo.bar", ["1.1.1.1:5555"], "foo.bar:5555"),
             ###
-            (None, ":7777", [f"{ip()}:4566"], "localhost.localstack.cloud:7777", 4566),
-            ("1.1.1.1", ":7777", ["1.1.1.1:4566"], "localhost.localstack.cloud:7777", 4566),
-            (":5555", ":7777", [f"{ip()}:5555"], "localhost.localstack.cloud:7777", 5555),
-            ("1.1.1.1:5555", ":7777", ["1.1.1.1:5555"], "localhost.localstack.cloud:7777", 5555),
+            (None, ":7777", [f"{ip()}:4566"], "localhost.localstack.cloud:7777"),
+            ("1.1.1.1", ":7777", ["1.1.1.1:4566"], "localhost.localstack.cloud:7777"),
+            (":5555", ":7777", [f"{ip()}:5555"], "localhost.localstack.cloud:7777"),
+            ("1.1.1.1:5555", ":7777", ["1.1.1.1:5555"], "localhost.localstack.cloud:7777"),
             ###
-            (None, "foo.bar:7777", [f"{ip()}:4566"], "foo.bar:7777", 4566),
-            ("1.1.1.1", "foo.bar:7777", ["1.1.1.1:4566"], "foo.bar:7777", 4566),
-            (":5555", "foo.bar:7777", [f"{ip()}:5555"], "foo.bar:7777", 5555),
-            ("1.1.1.1:5555", "foo.bar:7777", ["1.1.1.1:5555"], "foo.bar:7777", 5555),
+            (None, "foo.bar:7777", [f"{ip()}:4566"], "foo.bar:7777"),
+            ("1.1.1.1", "foo.bar:7777", ["1.1.1.1:4566"], "foo.bar:7777"),
+            (":5555", "foo.bar:7777", [f"{ip()}:5555"], "foo.bar:7777"),
+            ("1.1.1.1:5555", "foo.bar:7777", ["1.1.1.1:5555"], "foo.bar:7777"),
         ],
     )
     def test_edge_configuration(
@@ -127,7 +118,6 @@ class TestEdgeVariablesDerivedCorrectly:
         localstack_host: str | None,
         expected_gateway_listen: list[str],
         expected_localstack_host: str,
-        expected_edge_port: int,
     ):
         environment = {}
         if gateway_listen is not None:
@@ -276,3 +266,53 @@ class TestHostAndPort:
             )
 
         assert "port out of range" in str(exc_info)
+
+
+class TestServiceUrlHelpers:
+    @pytest.mark.parametrize(
+        ["protocol", "subdomains", "host", "port", "expected_service_url"],
+        [
+            # Default
+            (None, None, None, None, "http://localhost.localstack.cloud:4566"),
+            # Customize each part with defaults
+            ("https", None, None, None, "https://localhost.localstack.cloud:4566"),
+            (None, "s3", None, None, "http://s3.localhost.localstack.cloud:4566"),
+            (None, None, "localstack-container", None, "http://localstack-container:4566"),
+            (None, None, None, 5555, "http://localhost.localstack.cloud:5555"),
+            # Multiple subdomains
+            (
+                None,
+                "abc123.execute-api.lambda",
+                None,
+                None,
+                "http://abc123.execute-api.lambda.localhost.localstack.cloud:4566",
+            ),
+            # Customize everything
+            (
+                "https",
+                "abc.execute-api",
+                "localstack-container",
+                5555,
+                "https://abc.execute-api.localstack-container:5555",
+            ),
+        ],
+    )
+    def test_external_service_url(
+        self,
+        protocol: str | None,
+        subdomains: str | None,
+        host: str | None,
+        port: int | None,
+        expected_service_url: str,
+    ):
+        url = external_service_url(host=host, port=port, protocol=protocol, subdomains=subdomains)
+        assert url == expected_service_url
+
+    def test_internal_service_url(self):
+        # defaults
+        assert internal_service_url() == "http://localhost:4566"
+        # subdomains
+        assert (
+            internal_service_url(subdomains="abc.execute-api")
+            == "http://abc.execute-api.localhost:4566"
+        )
