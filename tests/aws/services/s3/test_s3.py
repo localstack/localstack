@@ -5447,18 +5447,19 @@ class TestS3MultiAccounts:
         return secondary_aws_client.s3
 
     @markers.aws.unknown
-    def test_shared_bucket_namespace(self, primary_client, secondary_client):
+    def test_shared_bucket_namespace(self, primary_client, secondary_client, cleanups):
         bucket_name = short_uid()
 
         # Ensure that the bucket name space is shared by all accounts and regions
         create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
+        cleanups.append(lambda: primary_client.delete_bucket(Bucket=bucket_name))
 
         with pytest.raises(ClientError) as exc:
             create_s3_bucket(bucket_name=bucket_name, s3_client=secondary_client)
         exc.match("BucketAlreadyExists")
 
     @markers.aws.unknown
-    def test_cross_account_access(self, primary_client, secondary_client):
+    def test_cross_account_access(self, primary_client, secondary_client, cleanups):
         # Ensure that following operations can be performed across accounts
         # - ListObjects
         # - PutObject
@@ -5471,6 +5472,8 @@ class TestS3MultiAccounts:
 
         # First user creates a bucket and puts an object
         create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
+        cleanups.append(lambda: primary_client.delete_bucket(Bucket=bucket_name))
+
         response = primary_client.list_buckets()
         assert bucket_name in [bucket["Name"] for bucket in response["Buckets"]]
         primary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body1)
