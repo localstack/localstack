@@ -1014,6 +1014,7 @@ class TestAPIGateway:
         create_rest_apigw,
         create_iam_role_with_policy,
         aws_client,
+        account_id,
         snapshot,
     ):
         snapshot.add_transformer(snapshot.transform.key_value("executionArn", "executionArn"))
@@ -1026,7 +1027,6 @@ class TestAPIGateway:
         )
 
         region_name = aws_client.apigateway._client_config.region_name
-        aws_account_id = aws_client.sts.get_caller_identity()["Account"]
 
         # create lambda
         fn_name = f"lambda-sfn-apigw-{short_uid()}"
@@ -1038,7 +1038,7 @@ class TestAPIGateway:
 
         # create state machine and permissions for step function to invoke lambda
         role_name = f"sfn_role-{short_uid()}"
-        role_arn = arns.role_arn(role_name, account_id=aws_account_id)
+        role_arn = arns.role_arn(role_name, account_id)
         create_iam_role_with_policy(
             RoleName=role_name,
             PolicyName=f"sfn-role-policy-{short_uid()}",

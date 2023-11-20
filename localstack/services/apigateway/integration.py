@@ -753,7 +753,12 @@ class StepFunctionIntegration(BackendIntegration):
         else:
             payload = json.loads(invocation_context.data)
 
-        client = connect_to().stepfunctions
+        client = get_service_factory(
+            account_id=invocation_context.account_id,
+            region_name=invocation_context.region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+        ).stepfunctions
+
         if isinstance(payload.get("input"), dict):
             payload["input"] = json.dumps(payload["input"])
 
