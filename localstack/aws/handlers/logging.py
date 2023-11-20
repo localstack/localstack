@@ -9,7 +9,6 @@ from localstack.http import Response
 from localstack.http.request import restore_payload
 from localstack.logging.format import AwsTraceLoggingFormatter, TraceLoggingFormatter
 from localstack.logging.setup import create_default_handler
-from localstack.utils.aws.aws_stack import is_internal_call_context
 
 LOG = logging.getLogger(__name__)
 
@@ -82,10 +81,7 @@ class ResponseLogger:
     def _log(self, context: RequestContext, response: Response):
         aws_logger = self.aws_logger
         http_logger = self.http_logger
-        is_internal_call = (
-            is_internal_call_context(context.request.headers) or context.is_internal_call
-        )
-        if is_internal_call:
+        if context.is_internal_call:
             aws_logger = self.internal_aws_logger
             http_logger = self.internal_http_logger
         if context.operation:

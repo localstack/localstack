@@ -53,7 +53,7 @@ class TestCdkInit:
             headers = aws_stack.mock_aws_request_headers(
                 "cloudformation", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
             )
-            base_url = config.get_edge_url()
+            base_url = config.internal_service_url()
             for op in operations:
                 url = f"{base_url}{op['path']}"
                 data = op["data"]

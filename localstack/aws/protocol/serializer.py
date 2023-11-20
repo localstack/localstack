@@ -1577,6 +1577,14 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         if root and not root.tail:
             root.tail = "\n"
 
+    @staticmethod
+    def _timestamp_iso8601(value: datetime) -> str:
+        """
+        This is very specific to S3, S3 returns an ISO8601 timestamp but with milliseconds always set to 000
+        Some SDKs are very picky about the length
+        """
+        return value.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
 
 class SqsQueryResponseSerializer(QueryResponseSerializer):
     """
@@ -1607,6 +1615,9 @@ class SqsQueryResponseSerializer(QueryResponseSerializer):
 
     # Some error code changed between JSON and query, and we need to have a way to map it for legacy reason
     JSON_TO_QUERY_ERROR_CODES = {
+        "InvalidParameterValueException": "InvalidParameterValue",
+        "MissingRequiredParameterException": "MissingParameter",
+        "AccessDeniedException": "AccessDenied",
         "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
         "QueueNameExists": "QueueAlreadyExists",
     }
@@ -1682,6 +1693,9 @@ class SqsResponseSerializer(JSONResponseSerializer):
 
     # Some error code changed between JSON and query, and we need to have a way to map it for legacy reason
     JSON_TO_QUERY_ERROR_CODES = {
+        "InvalidParameterValueException": "InvalidParameterValue",
+        "MissingRequiredParameterException": "MissingParameter",
+        "AccessDeniedException": "AccessDenied",
         "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
         "QueueNameExists": "QueueAlreadyExists",
     }

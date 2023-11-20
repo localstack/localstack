@@ -168,11 +168,11 @@ def test_arn_partition_rewriting_url_encoding(httpserver, monkeypatch):
     # httpserver matches on the URL-decoded path
     httpserver.expect_request("/query:encoded/path/").respond_with_handler(echo_path)
 
-    def mock_get_edge_url() -> str:
+    def mock_internal_service_url() -> str:
         # Set the forwarding URL to the mock HTTP server
         return httpserver.url_for("/")
 
-    monkeypatch.setattr(config, "get_edge_url", mock_get_edge_url)
+    monkeypatch.setattr(config, "internal_service_url", mock_internal_service_url)
 
     request = Request(
         method="POST",
@@ -337,11 +337,11 @@ def test_arn_partition_rewriting_in_request_and_response(
 
     httpserver.expect_request("").respond_with_handler(echo)
 
-    def mock_get_edge_url() -> str:
+    def mock_internal_service_url() -> str:
         # Set the forwarding URL to the mock HTTP server
         return httpserver.url_for("/")
 
-    monkeypatch.setattr(config, "get_edge_url", mock_get_edge_url)
+    monkeypatch.setattr(config, "internal_service_url", mock_internal_service_url)
     data = encoding(
         json.dumps(
             {

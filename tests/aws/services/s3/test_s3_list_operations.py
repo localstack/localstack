@@ -2,6 +2,7 @@
 This file is to test specific behaviour of List* operations of S3, especially pagination, which is pretty specific to
 each implementation. They all have subtle differences which make it difficult to test.
 """
+import datetime
 import os
 from io import BytesIO
 
@@ -37,6 +38,16 @@ def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
     if region == "us-east-1":
         return f"{config.internal_service_url(host=localstack_host or S3_VIRTUAL_HOSTNAME)}"
     return config.internal_service_url(host=f"s3.{region}.{LOCALHOST_HOSTNAME}")
+
+
+def assert_timestamp_is_iso8061_s3_format(timestamp: str):
+    # the timestamp should be looking like the following
+    # 2023-11-15T12:02:40.000Z
+    assert timestamp.endswith(".000Z")
+    assert len(timestamp) == 24
+    # assert that it follows the right format and it does not raise an exception during parsing
+    parsed_ts = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
+    assert parsed_ts.microsecond == 0
 
 
 class TestS3ListObjects:
@@ -99,7 +110,10 @@ class TestS3ListObjects:
         snapshot.match("list-objects-marker-empty", resp)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Prefix"])
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..Prefix"],
+    )
     def test_s3_list_objects_empty_marker(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         resp = aws_client.s3.list_objects(Bucket=s3_bucket, Marker="")
@@ -159,6 +173,25 @@ class TestS3ListObjects:
             Marker="folder/aSubfolder/subFile1",
         )
         snapshot.match("list-objects-manual-first-file", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "querystring", ["", "?list-type=2"], ids=["ListObjects", "ListObjectsV2"]
+    )
+    def test_s3_list_objects_timestamp_precision(
+        self, s3_bucket, aws_client, aws_http_client_factory, querystring
+    ):
+        # behaviour is shared with ListObjectsV2 so we can do it in the same test
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="test-key", Body="test-body")
+        bucket_url = f"{_bucket_url(s3_bucket)}{querystring}"
+        # Boto automatically parses the timestamp to ISO8601 with no precision, but AWS returns a different format
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
+        resp_dict = xmltodict.parse(resp.content)
+        timestamp: str = resp_dict["ListBucketResult"]["Contents"]["LastModified"]
+
+        # the timestamp should be looking like the following: 2023-11-15T12:02:40.000Z
+        assert_timestamp_is_iso8061_s3_format(timestamp)
 
 
 class TestS3ListObjectsV2:
@@ -499,6 +532,31 @@ class TestS3ListObjectVersions:
         resp_dict["ListVersionsResult"].pop("@xmlns", None)
         snapshot.match("list-objects-versions-no-encoding", resp_dict)
 
+    @markers.aws.validated
+    def test_s3_list_object_versions_timestamp_precision(
+        self, s3_bucket, aws_client, aws_http_client_factory
+    ):
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket,
+            VersioningConfiguration={"Status": "Enabled"},
+        )
+        # put Objects and DeleteMarker
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="test-key", Body="test-body")
+        aws_client.s3.delete_object(Bucket=s3_bucket, Key="test-key")
+
+        bucket_url = f"{_bucket_url(s3_bucket)}?versions"
+        # Boto automatically parses the timestamp to ISO8601 with no precision, but AWS returns a different format
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
+        resp_dict = xmltodict.parse(resp.content)
+
+        timestamp_obj: str = resp_dict["ListVersionsResult"]["Version"]["LastModified"]
+        timestamp_marker: str = resp_dict["ListVersionsResult"]["DeleteMarker"]["LastModified"]
+
+        for timestamp in (timestamp_obj, timestamp_marker):
+            # the timestamp should be looking like the following: 2023-11-15T12:02:40.000Z
+            assert_timestamp_is_iso8061_s3_format(timestamp)
+
 
 class TestS3ListMultipartUploads:
     @markers.aws.validated
@@ -767,9 +825,27 @@ class TestS3ListMultipartUploads:
         )
         snapshot.match("list-multiparts-manual-first-file", response)
 
+    @markers.aws.validated
+    def test_s3_list_multiparts_timestamp_precision(
+        self, s3_bucket, aws_client, aws_http_client_factory
+    ):
+        object_key = "test-list-part-empty-marker"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=object_key)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        bucket_url = f"{_bucket_url(s3_bucket)}?uploads"
+        # Boto automatically parses the timestamp to ISO8601 with no precision, but AWS returns a different format
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
+        resp_dict = xmltodict.parse(resp.content)
+
+        timestamp: str = resp_dict["ListMultipartUploadsResult"]["Upload"]["Initiated"]
+        # the timestamp should be looking like the following: 2023-11-15T12:02:40.000Z
+        assert_timestamp_is_iso8061_s3_format(timestamp)
+
 
 class TestS3ListParts:
-    @pytest.mark.xfail(condition=is_v2_provider, reason="not implemented in moto")
+    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     @markers.aws.validated
     def test_list_parts_pagination(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
@@ -826,7 +902,7 @@ class TestS3ListParts:
         snapshot.match("list-parts-wrong-part", response)
 
     @pytest.mark.xfail(
-        condition=is_v2_provider(), reason="moto does not handle empty query string parameters"
+        condition=LEGACY_V2_S3_PROVIDER, reason="moto does not handle empty query string parameters"
     )
     @markers.aws.validated
     def test_list_parts_empty_part_number_marker(self, s3_bucket, snapshot, aws_client_factory):
@@ -862,3 +938,29 @@ class TestS3ListParts:
             Bucket=s3_bucket, UploadId=upload_id, Key=object_key, MaxParts=""
         )
         snapshot.match("list-parts-empty-max-parts", response)
+
+    @markers.aws.validated
+    def test_s3_list_parts_timestamp_precision(
+        self, s3_bucket, aws_client, aws_http_client_factory
+    ):
+        object_key = "test-list-part-empty-marker"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=object_key)
+        upload_id = response["UploadId"]
+
+        aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body=BytesIO(b"data"),
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+
+        bucket_url = f"{_bucket_url(s3_bucket)}/{object_key}?uploadId={upload_id}"
+        # Boto automatically parses the timestamp to ISO8601 with no precision, but AWS returns a different format
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        resp = s3_http_client.get(bucket_url, headers={"x-amz-content-sha256": "UNSIGNED-PAYLOAD"})
+        resp_dict = xmltodict.parse(resp.content)
+
+        timestamp: str = resp_dict["ListPartsResult"]["Part"]["LastModified"]
+        # the timestamp should be looking like the following: 2023-11-15T12:02:40.000Z
+        assert_timestamp_is_iso8061_s3_format(timestamp)

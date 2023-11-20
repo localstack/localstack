@@ -5,7 +5,7 @@ exports.handler = async (event, context, callback) => {
     const bodyMd5AsBase64 = '4QrcOUm6Wau+VuBX8g+IPg=='; // body should be '123456'
 
     let s3;
-    if (process.env.LOCALSTACK_HOSTNAME) {
+    if (process.env.AWS_ENDPOINT_URL) {
         const CREDENTIALS = {
             secretAccessKey: 'test',
             accessKeyId: 'test',
@@ -18,7 +18,7 @@ exports.handler = async (event, context, callback) => {
           });
 
     } else {
-        s3 = new AWS.S3()
+        s3 = new AWS.S3({ signatureVersion: 'v4' })
     }
 
   const url = s3.getSignedUrl('putObject', {

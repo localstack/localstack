@@ -155,7 +155,7 @@ def container_ports_can_be_bound(
             remove=True,
         )
     except Exception as e:
-        if "port is already allocated" not in str(e):
+        if "port is already allocated" not in str(e) and "address already in use" not in str(e):
             LOG.warning(
                 "Unexpected error when attempting to determine container port status: %s", e
             )

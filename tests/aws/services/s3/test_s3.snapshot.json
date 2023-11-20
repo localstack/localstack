@@ -2396,26 +2396,6 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_url_metadata": {
-    "recorded-date": "04-08-2023, 23:59:04",
-    "recorded-content": {
-      "head_object": {
-        "AcceptRanges": "bytes",
-        "ContentLength": 11,
-        "ContentType": "binary/octet-stream",
-        "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
-        "LastModified": "datetime",
-        "Metadata": {
-          "foo": "bar"
-        },
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_s3_copy_md5": {
     "recorded-date": "05-08-2023, 00:08:47",
     "recorded-content": {
@@ -10427,144 +10407,169 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_url_encoded_key[True]": {
-    "recorded-date": "11-11-2023, 02:20:59",
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_url_metadata_with_sig_s3v4[True]": {
+    "recorded-date": "19-11-2023, 23:56:36",
     "recorded-content": {
-      "list-object-encoded-char": {
-        "Contents": [
-          {
-            "ETag": "\"03dc4443b5f395b54d011fdb7d9e0ae1\"",
-            "Key": "test%40key",
-            "LastModified": "datetime",
-            "Size": 24,
-            "StorageClass": "STANDARD"
-          },
-          {
-            "ETag": "\"51a6065890415b4b299dec1aa33d712c\"",
-            "Key": "test%40key/",
-            "LastModified": "datetime",
-            "Size": 12,
-            "StorageClass": "STANDARD"
-          },
-          {
-            "ETag": "\"b792145c4a8e8d9ac95d3c2f9f0ac42d\"",
-            "Key": "test@key/",
-            "LastModified": "datetime",
-            "Size": 16,
-            "StorageClass": "STANDARD"
-          }
-        ],
-        "EncodingType": "url",
-        "IsTruncated": false,
-        "KeyCount": 3,
-        "MaxKeys": 1000,
-        "Name": "<name:1>",
-        "Prefix": "",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+      "no-meta-headers": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "<host-id:1>",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
         }
-      }
-    }
-  },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_url_encoded_key[False]": {
-    "recorded-date": "11-11-2023, 02:21:02",
-    "recorded-content": {
-      "list-object-encoded-char": {
-        "Contents": [
-          {
-            "ETag": "\"03dc4443b5f395b54d011fdb7d9e0ae1\"",
-            "Key": "test%40key",
-            "LastModified": "datetime",
-            "Size": 24,
-            "StorageClass": "STANDARD"
-          },
-          {
-            "ETag": "\"51a6065890415b4b299dec1aa33d712c\"",
-            "Key": "test%40key/",
-            "LastModified": "datetime",
-            "Size": 12,
-            "StorageClass": "STANDARD"
-          },
-          {
-            "ETag": "\"b792145c4a8e8d9ac95d3c2f9f0ac42d\"",
-            "Key": "test@key/",
-            "LastModified": "datetime",
-            "Size": 16,
-            "StorageClass": "STANDARD"
-          }
-        ],
-        "EncodingType": "url",
-        "IsTruncated": false,
-        "KeyCount": 3,
-        "MaxKeys": 1000,
-        "Name": "<name:1>",
-        "Prefix": "",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_list_parts_empty_part_number_marker": {
-    "recorded-date": "11-11-2023, 00:20:09",
-    "recorded-content": {
-      "list-parts-empty-marker": {
-        "Bucket": "bucket",
-        "Initiator": {
-          "DisplayName": "display-name",
-          "ID": "i-d"
+      },
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "foo": "bar"
         },
-        "IsTruncated": false,
-        "Key": "test-list-part-empty-marker",
-        "MaxParts": 1000,
-        "NextPartNumberMarker": 1,
-        "Owner": {
-          "DisplayName": "display-name",
-          "ID": "i-d"
-        },
-        "PartNumberMarker": 0,
-        "Parts": [
-          {
-            "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
-            "LastModified": "datetime",
-            "PartNumber": 1,
-            "Size": 4
-          }
-        ],
-        "StorageClass": "STANDARD",
-        "UploadId": "<upload-id:1>",
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
-      "list-parts-empty-max-parts": {
-        "Bucket": "bucket",
-        "Initiator": {
-          "DisplayName": "display-name",
-          "ID": "i-d"
+      "wrong-meta-headers": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HeadersNotSigned": "x-amz-meta-wrong",
+          "HostId": "<host-id:1>",
+          "Message": "There were headers present in the request which were not signed",
+          "RequestId": "<request-id:3>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_url_metadata_with_sig_s3v4[False]": {
+    "recorded-date": "19-11-2023, 23:56:39",
+    "recorded-content": {
+      "no-meta-headers": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "<host-id:1>",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        }
+      },
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "foo": "bar"
         },
-        "IsTruncated": false,
-        "Key": "test-list-part-empty-marker",
-        "MaxParts": 1000,
-        "NextPartNumberMarker": 1,
-        "Owner": {
-          "DisplayName": "display-name",
-          "ID": "i-d"
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "wrong-meta-headers": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HeadersNotSigned": "x-amz-meta-wrong",
+          "HostId": "<host-id:1>",
+          "Message": "There were headers present in the request which were not signed",
+          "RequestId": "<request-id:3>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_url_metadata_with_sig_s3[True]": {
+    "recorded-date": "19-11-2023, 23:57:52",
+    "recorded-content": {
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "foo": "bar"
         },
-        "PartNumberMarker": 0,
-        "Parts": [
-          {
-            "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
-            "LastModified": "datetime",
-            "PartNumber": 1,
-            "Size": 4
-          }
-        ],
-        "StorageClass": "STANDARD",
-        "UploadId": "<upload-id:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "wrong-meta-headers": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:2>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_url_metadata_with_sig_s3[False]": {
+    "recorded-date": "19-11-2023, 23:57:55",
+    "recorded-content": {
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "foo": "bar"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "wrong-meta-headers": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:2>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_v4_x_amz_in_qs": {
+    "recorded-date": "17-11-2023, 15:56:39",
+    "recorded-content": {
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 6,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e10adc3949ba59abbe56e057f20f883e\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "foo": "bar-complicated-no-random"
+        },
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -144,8 +144,16 @@ class TestOpensearchProvider:
         assert len(compatible_versions) >= 20
         expected_compatible_versions = [
             {
+                "SourceVersion": "OpenSearch_2.7",
+                "TargetVersions": ["OpenSearch_2.9"],
+            },
+            {
+                "SourceVersion": "OpenSearch_2.5",
+                "TargetVersions": ["OpenSearch_2.7", "OpenSearch_2.9"],
+            },
+            {
                 "SourceVersion": "OpenSearch_2.3",
-                "TargetVersions": ["OpenSearch_2.5"],
+                "TargetVersions": ["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9"],
             },
             {
                 "SourceVersion": "OpenSearch_1.0",
@@ -161,7 +169,12 @@ class TestOpensearchProvider:
             },
             {
                 "SourceVersion": "OpenSearch_1.3",
-                "TargetVersions": ["OpenSearch_2.3", "OpenSearch_2.5"],
+                "TargetVersions": [
+                    "OpenSearch_2.3",
+                    "OpenSearch_2.5",
+                    "OpenSearch_2.7",
+                    "OpenSearch_2.9",
+                ],
             },
             {
                 "SourceVersion": "Elasticsearch_7.10",
@@ -684,7 +697,7 @@ class TestEdgeProxiedOpensearchCluster:
     @markers.aws.unknown
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
-        cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
+        cluster_url = f"{config.internal_service_url()}/{cluster_id}"
         arn = f"arn:aws:es:us-east-1:000000000000:domain/{cluster_id}"
         cluster = EdgeProxiedOpensearchCluster(cluster_url, arn, CustomEndpoint(True, cluster_url))
 
@@ -694,7 +707,7 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "2.5.0"
+            assert response.json()["version"]["number"] == "2.9.0"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"

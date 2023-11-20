@@ -1,9 +1,9 @@
 from localstack.aws.api import CommonServiceException
 
 
-class InvalidParameterValue(CommonServiceException):
+class InvalidParameterValueException(CommonServiceException):
     def __init__(self, message):
-        super().__init__("InvalidParameterValue", message, 400, True)
+        super().__init__("InvalidParameterValueException", message, 400, True)
 
 
 class InvalidAttributeValue(CommonServiceException):
@@ -11,6 +11,6 @@ class InvalidAttributeValue(CommonServiceException):
         super().__init__("InvalidAttributeValue", message, 400, True)
 
 
-class MissingParameter(CommonServiceException):
+class MissingRequiredParameterException(CommonServiceException):
     def __init__(self, message):
-        super().__init__("MissingParameter", message, 400, True)
+        super().__init__("MissingRequiredParameterException", message, 400, True)

@@ -111,8 +111,15 @@ def test_start_host(runner, monkeypatch):
 
 
 def test_status_services(runner, httpserver, monkeypatch):
+    # configure LOCALSTACK_HOST because the services endpoint makes a request against the
+    # external URL of LocalStack, which may be different to the edge port
     monkeypatch.setattr(
-        config, "GATEWAY_LISTEN", [HostAndPort(host="0.0.0.0", port=httpserver.port)]
+        config,
+        "LOCALSTACK_HOST",
+        HostAndPort(
+            host="localhost.localstack.cloud",
+            port=httpserver.port,
+        ),
     )
 
     services = {"dynamodb": "starting", "s3": "running"}
@@ -122,7 +129,7 @@ def test_status_services(runner, httpserver, monkeypatch):
 
     result = runner.invoke(cli, ["status", "services"])
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result
 
     assert "dynamodb" in result.output
     assert "s3" in result.output

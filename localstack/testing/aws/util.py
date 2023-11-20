@@ -93,7 +93,7 @@ def create_client_with_keys(
         aws_secret_access_key=keys["SecretAccessKey"],
         aws_session_token=keys.get("SessionToken"),
         config=client_config,
-        endpoint_url=config.get_edge_url()
+        endpoint_url=config.internal_service_url()
         if os.environ.get("TEST_TARGET") != "AWS_CLOUD"
         else None,
     )
