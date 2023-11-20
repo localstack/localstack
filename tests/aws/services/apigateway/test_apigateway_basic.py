@@ -399,20 +399,27 @@ class TestAPIGateway:
             assert "http://test.com" in response.headers["Access-Control-Allow-Origin"]
 
     @markers.aws.unknown
-    def test_api_gateway_lambda_proxy_integration(self, integration_lambda):
+    def test_api_gateway_lambda_proxy_integration(self, integration_lambda, aws_client):
         self._test_api_gateway_lambda_proxy_integration(
-            integration_lambda, self.API_PATH_LAMBDA_PROXY_BACKEND
+            integration_lambda,
+            self.API_PATH_LAMBDA_PROXY_BACKEND,
+            aws_client.apigateway,
         )
 
     @markers.aws.unknown
-    def test_api_gateway_lambda_proxy_integration_with_path_param(self, integration_lambda):
+    def test_api_gateway_lambda_proxy_integration_with_path_param(
+        self, integration_lambda, aws_client
+    ):
         self._test_api_gateway_lambda_proxy_integration(
             integration_lambda,
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
+            aws_client.apigateway,
         )
 
     @markers.aws.unknown
-    def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(self, integration_lambda):
+    def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(
+        self, integration_lambda, aws_client
+    ):
         # Test the case where `isBase64Encoded` is enabled.
         content = b"hello, please base64 encode me"
 
@@ -423,6 +430,7 @@ class TestAPIGateway:
         test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
             integration_lambda,
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
+            aws_client.apigateway,
             data_mutator_fn=_mutate_data,
         )
 
@@ -434,6 +442,7 @@ class TestAPIGateway:
         self,
         fn_name: str,
         path: str,
+        apigw_client,
         data_mutator_fn: Optional[Callable] = None,
     ) -> ApiGatewayLambdaProxyIntegrationTestResult:
         """
@@ -449,7 +458,11 @@ class TestAPIGateway:
         target_uri = invocation_uri % (TEST_AWS_REGION_NAME, lambda_uri)
 
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
-            "test_gateway2", target_uri, path=path, stage_name=TEST_STAGE_NAME
+            "test_gateway2",
+            target_uri,
+            path=path,
+            stage_name=TEST_STAGE_NAME,
+            client=apigw_client,
         )
 
         api_id = result["id"]
@@ -487,8 +500,11 @@ class TestAPIGateway:
         self,
         fn_name: str,
         path: str,
+        apigw_client,
     ) -> None:
-        test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(fn_name, path)
+        test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
+            fn_name, path, apigw_client
+        )
         data, resource, result, url, path_with_replace = test_result
 
         assert result.status_code == 203
