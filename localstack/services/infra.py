@@ -13,7 +13,6 @@ from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
-    ENV_DEV,
     LOCALSTACK_INFRA_PROCESS,
 )
 from localstack.http.duplex_socket import enable_duplex_socket
@@ -304,7 +303,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
         # set environment
         os.environ["AWS_REGION"] = AWS_REGION_US_EAST_1
-        os.environ["ENV"] = ENV_DEV
 
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
