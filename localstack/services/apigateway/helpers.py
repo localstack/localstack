@@ -828,11 +828,6 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                 path = operation["path"]
                 common.assign_to_path(subject, path, value={}, delimiter="/")
 
-            # minimum_compression_size is a unique path as it's a nullable integer,
-            # it would throw an error if it's an empty string
-            if operation["path"] == "/minimum_compression_size" and operation.get("value") == "":
-                operation["value"] = None
-
             result = apply_patch(subject, [operation], in_place=in_place)
             if not in_place:
                 subject = result
