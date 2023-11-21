@@ -973,23 +973,17 @@ class TestCloudwatch:
         snapshot.match("get_dashboard", response)
 
         dashboards_list = aws_client.cloudwatch.list_dashboards()
-        dashboards_names = [
-            dashboard["DashboardName"] for dashboard in dashboards_list["DashboardEntries"]
-        ]
-        assert dashboard_name in dashboards_names
+        snapshot.match("list_dashboards", dashboards_list)
 
         # assert prefix filtering working
         dashboards_list = aws_client.cloudwatch.list_dashboards(DashboardNamePrefix="no-valid")
-        assert not dashboards_list["DashboardEntries"]
+        snapshot.match("list_dashboards_prefix_empty", dashboards_list)
         dashboards_list = aws_client.cloudwatch.list_dashboards(DashboardNamePrefix="test")
-        assert dashboards_list["DashboardEntries"]
+        snapshot.match("list_dashboards_prefix", dashboards_list)
 
         aws_client.cloudwatch.delete_dashboards(DashboardNames=[dashboard_name])
         dashboards_list = aws_client.cloudwatch.list_dashboards()
-        dashboards = [
-            dashboard["DashboardName"] for dashboard in dashboards_list["DashboardEntries"]
-        ]
-        assert dashboard_name not in dashboards
+        snapshot.match("list_dashboards_empty", dashboards_list)
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
