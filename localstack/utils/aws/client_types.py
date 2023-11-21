@@ -240,6 +240,7 @@ class ServicePrincipal(str):
     events = "events"
     firehose = "firehose"
     lambda_ = "lambda"
+    logs = "logs"
     s3 = "s3"
     sns = "sns"
     sqs = "sqs"

@@ -12,7 +12,6 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
-    DEFAULT_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -931,6 +930,21 @@ class TestSqsProvider:
         messages = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)["Messages"]
         assert messages[0]["Body"] == "test"
         assert len(messages) == 1
+
+    @markers.aws.validated
+    def test_change_message_visibility_after_visibility_timeout_expiration(
+        self, snapshot, sqs_create_queue, aws_client
+    ):
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "1"})
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="test")
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        receipt = response["Messages"][0]["ReceiptHandle"]
+        time.sleep(2)
+        # VisibiltyTimeout was 1 and has now expired
+        response = aws_client.sqs.change_message_visibility(
+            QueueUrl=queue_url, ReceiptHandle=receipt, VisibilityTimeout=2
+        )
+        snapshot.match("visibility_timeout_expired", response)
 
     @markers.aws.validated
     def test_receive_message_with_visibility_timeout_updates_timeout(
@@ -3756,7 +3770,12 @@ class TestSqsQueryApi:
         assert queue_url.split("/")[-1] in response.text
 
     @markers.aws.only_localstack
-    def test_get_queue_attributes_works_without_authparams(self, sqs_create_queue):
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
+    def test_get_queue_attributes_works_without_authparams(
+        self, monkeypatch, sqs_create_queue, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
         response = requests.get(
             queue_url,
@@ -4006,6 +4025,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue_url.split("/")[-1],
+                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
             },
         )
         assert f"<QueueUrl>{queue_url}</QueueUrl>" in response.text
@@ -4027,6 +4047,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue2_url.split("/")[-1],
+                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
             },
         )
         assert f"<QueueUrl>{queue2_url}</QueueUrl>" in response.text
@@ -4239,7 +4260,7 @@ class TestSQSMultiAccounts:
         queue_name = f"test-queue-cross-account-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         account_id, region_name, queue_name_from_url = parse_queue_url(queue_url)
-        assert account_id == DEFAULT_AWS_ACCOUNT_ID
+        assert account_id == TEST_AWS_ACCOUNT_ID
         assert region_name == TEST_AWS_REGION_NAME
         assert queue_name_from_url == queue_name
 

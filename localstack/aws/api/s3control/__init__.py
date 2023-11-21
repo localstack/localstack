@@ -55,6 +55,7 @@ NonEmptyMaxLength2048String = str
 NonEmptyMaxLength256String = str
 NonEmptyMaxLength64String = str
 NoncurrentVersionCount = int
+ObjectAgeValue = int
 ObjectLambdaAccessPointAliasValue = str
 ObjectLambdaAccessPointArn = str
 ObjectLambdaAccessPointName = str
@@ -76,12 +77,16 @@ S3ExpirationInDays = int
 S3KeyArnString = str
 S3ObjectVersionId = str
 S3RegionalBucketArn = str
+S3ResourceArn = str
 SSEKMSKeyId = str
 Setting = bool
 StorageLensArn = str
+StorageLensGroupArn = str
+StorageLensGroupName = str
 StorageLensPrefixLevelDelimiter = str
 StorageLensPrefixLevelMaxDepth = int
 StringForNextToken = str
+Suffix = str
 SuspendedCause = str
 TagKeyString = str
 TagValueString = str
@@ -468,6 +473,17 @@ class AccessPoint(TypedDict, total=False):
 
 
 AccessPointList = List[AccessPoint]
+StorageLensGroupLevelExclude = List[StorageLensGroupArn]
+StorageLensGroupLevelInclude = List[StorageLensGroupArn]
+
+
+class StorageLensGroupLevelSelectionCriteria(TypedDict, total=False):
+    Include: Optional[StorageLensGroupLevelInclude]
+    Exclude: Optional[StorageLensGroupLevelExclude]
+
+
+class StorageLensGroupLevel(TypedDict, total=False):
+    SelectionCriteria: Optional[StorageLensGroupLevelSelectionCriteria]
 
 
 class DetailedStatusCodesMetrics(TypedDict, total=False):
@@ -515,6 +531,7 @@ class AccountLevel(TypedDict, total=False):
     AdvancedCostOptimizationMetrics: Optional[AdvancedCostOptimizationMetrics]
     AdvancedDataProtectionMetrics: Optional[AdvancedDataProtectionMetrics]
     DetailedStatusCodesMetrics: Optional[DetailedStatusCodesMetrics]
+    StorageLensGroupLevel: Optional[StorageLensGroupLevel]
 
 
 AsyncCreationTimestamp = datetime
@@ -911,6 +928,68 @@ class CreateMultiRegionAccessPointResult(TypedDict, total=False):
     RequestTokenARN: Optional[AsyncRequestTokenARN]
 
 
+class Tag(TypedDict, total=False):
+    Key: TagKeyString
+    Value: TagValueString
+
+
+TagList = List[Tag]
+ObjectSizeValue = int
+
+
+class MatchObjectSize(TypedDict, total=False):
+    BytesGreaterThan: Optional[ObjectSizeValue]
+    BytesLessThan: Optional[ObjectSizeValue]
+
+
+class MatchObjectAge(TypedDict, total=False):
+    DaysGreaterThan: Optional[ObjectAgeValue]
+    DaysLessThan: Optional[ObjectAgeValue]
+
+
+MatchAnyTag = List[S3Tag]
+MatchAnySuffix = List[Suffix]
+MatchAnyPrefix = List[Prefix]
+
+
+class StorageLensGroupOrOperator(TypedDict, total=False):
+    MatchAnyPrefix: Optional[MatchAnyPrefix]
+    MatchAnySuffix: Optional[MatchAnySuffix]
+    MatchAnyTag: Optional[MatchAnyTag]
+    MatchObjectAge: Optional[MatchObjectAge]
+    MatchObjectSize: Optional[MatchObjectSize]
+
+
+class StorageLensGroupAndOperator(TypedDict, total=False):
+    MatchAnyPrefix: Optional[MatchAnyPrefix]
+    MatchAnySuffix: Optional[MatchAnySuffix]
+    MatchAnyTag: Optional[MatchAnyTag]
+    MatchObjectAge: Optional[MatchObjectAge]
+    MatchObjectSize: Optional[MatchObjectSize]
+
+
+class StorageLensGroupFilter(TypedDict, total=False):
+    MatchAnyPrefix: Optional[MatchAnyPrefix]
+    MatchAnySuffix: Optional[MatchAnySuffix]
+    MatchAnyTag: Optional[MatchAnyTag]
+    MatchObjectAge: Optional[MatchObjectAge]
+    MatchObjectSize: Optional[MatchObjectSize]
+    And: Optional[StorageLensGroupAndOperator]
+    Or: Optional[StorageLensGroupOrOperator]
+
+
+class StorageLensGroup(TypedDict, total=False):
+    Name: StorageLensGroupName
+    Filter: StorageLensGroupFilter
+    StorageLensGroupArn: Optional[StorageLensGroupArn]
+
+
+class CreateStorageLensGroupRequest(ServiceRequest):
+    AccountId: AccountId
+    StorageLensGroup: StorageLensGroup
+    Tags: Optional[TagList]
+
+
 CreationDate = datetime
 CreationTimestamp = datetime
 Date = datetime
@@ -1000,6 +1079,11 @@ class DeleteStorageLensConfigurationTaggingRequest(ServiceRequest):
 
 class DeleteStorageLensConfigurationTaggingResult(TypedDict, total=False):
     pass
+
+
+class DeleteStorageLensGroupRequest(ServiceRequest):
+    Name: StorageLensGroupName
+    AccountId: AccountId
 
 
 class DescribeJobRequest(ServiceRequest):
@@ -1527,6 +1611,15 @@ class GetStorageLensConfigurationTaggingResult(TypedDict, total=False):
     Tags: Optional[StorageLensTags]
 
 
+class GetStorageLensGroupRequest(ServiceRequest):
+    Name: StorageLensGroupName
+    AccountId: AccountId
+
+
+class GetStorageLensGroupResult(TypedDict, total=False):
+    StorageLensGroup: Optional[StorageLensGroup]
+
+
 class JobListDescriptor(TypedDict, total=False):
     JobId: Optional[JobId]
     Description: Optional[NonEmptyMaxLength256String]
@@ -1647,6 +1740,34 @@ class ListStorageLensConfigurationsResult(TypedDict, total=False):
     StorageLensConfigurationList: Optional[StorageLensConfigurationList]
 
 
+class ListStorageLensGroupEntry(TypedDict, total=False):
+    Name: StorageLensGroupName
+    StorageLensGroupArn: StorageLensGroupArn
+    HomeRegion: S3AWSRegion
+
+
+class ListStorageLensGroupsRequest(ServiceRequest):
+    AccountId: AccountId
+    NextToken: Optional[ContinuationToken]
+
+
+StorageLensGroupList = List[ListStorageLensGroupEntry]
+
+
+class ListStorageLensGroupsResult(TypedDict, total=False):
+    NextToken: Optional[ContinuationToken]
+    StorageLensGroupList: Optional[StorageLensGroupList]
+
+
+class ListTagsForResourceRequest(ServiceRequest):
+    AccountId: AccountId
+    ResourceArn: S3ResourceArn
+
+
+class ListTagsForResourceResult(TypedDict, total=False):
+    Tags: Optional[TagList]
+
+
 class PutAccessPointConfigurationForObjectLambdaRequest(ServiceRequest):
     AccountId: AccountId
     Name: ObjectLambdaAccessPointName
@@ -1758,6 +1879,29 @@ class SubmitMultiRegionAccessPointRoutesResult(TypedDict, total=False):
     pass
 
 
+TagKeyList = List[TagKeyString]
+
+
+class TagResourceRequest(ServiceRequest):
+    AccountId: AccountId
+    ResourceArn: S3ResourceArn
+    Tags: TagList
+
+
+class TagResourceResult(TypedDict, total=False):
+    pass
+
+
+class UntagResourceRequest(ServiceRequest):
+    AccountId: AccountId
+    ResourceArn: S3ResourceArn
+    TagKeys: TagKeyList
+
+
+class UntagResourceResult(TypedDict, total=False):
+    pass
+
+
 class UpdateJobPriorityRequest(ServiceRequest):
     AccountId: AccountId
     JobId: JobId
@@ -1780,6 +1924,12 @@ class UpdateJobStatusResult(TypedDict, total=False):
     JobId: Optional[JobId]
     Status: Optional[JobStatus]
     StatusUpdateReason: Optional[JobStatusUpdateReason]
+
+
+class UpdateStorageLensGroupRequest(ServiceRequest):
+    Name: StorageLensGroupName
+    AccountId: AccountId
+    StorageLensGroup: StorageLensGroup
 
 
 class S3ControlApi:
@@ -1852,6 +2002,16 @@ class S3ControlApi:
         client_token: MultiRegionAccessPointClientToken,
         details: CreateMultiRegionAccessPointInput,
     ) -> CreateMultiRegionAccessPointResult:
+        raise NotImplementedError
+
+    @handler("CreateStorageLensGroup")
+    def create_storage_lens_group(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        storage_lens_group: StorageLensGroup,
+        tags: TagList = None,
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccessPoint")
@@ -1938,6 +2098,12 @@ class S3ControlApi:
     def delete_storage_lens_configuration_tagging(
         self, context: RequestContext, config_id: ConfigId, account_id: AccountId
     ) -> DeleteStorageLensConfigurationTaggingResult:
+        raise NotImplementedError
+
+    @handler("DeleteStorageLensGroup")
+    def delete_storage_lens_group(
+        self, context: RequestContext, name: StorageLensGroupName, account_id: AccountId
+    ) -> None:
         raise NotImplementedError
 
     @handler("DescribeJob")
@@ -2081,6 +2247,12 @@ class S3ControlApi:
     ) -> GetStorageLensConfigurationTaggingResult:
         raise NotImplementedError
 
+    @handler("GetStorageLensGroup")
+    def get_storage_lens_group(
+        self, context: RequestContext, name: StorageLensGroupName, account_id: AccountId
+    ) -> GetStorageLensGroupResult:
+        raise NotImplementedError
+
     @handler("ListAccessPoints")
     def list_access_points(
         self,
@@ -2138,6 +2310,18 @@ class S3ControlApi:
     def list_storage_lens_configurations(
         self, context: RequestContext, account_id: AccountId, next_token: ContinuationToken = None
     ) -> ListStorageLensConfigurationsResult:
+        raise NotImplementedError
+
+    @handler("ListStorageLensGroups")
+    def list_storage_lens_groups(
+        self, context: RequestContext, account_id: AccountId, next_token: ContinuationToken = None
+    ) -> ListStorageLensGroupsResult:
+        raise NotImplementedError
+
+    @handler("ListTagsForResource")
+    def list_tags_for_resource(
+        self, context: RequestContext, account_id: AccountId, resource_arn: S3ResourceArn
+    ) -> ListTagsForResourceResult:
         raise NotImplementedError
 
     @handler("PutAccessPointConfigurationForObjectLambda")
@@ -2270,6 +2454,26 @@ class S3ControlApi:
     ) -> SubmitMultiRegionAccessPointRoutesResult:
         raise NotImplementedError
 
+    @handler("TagResource")
+    def tag_resource(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        resource_arn: S3ResourceArn,
+        tags: TagList,
+    ) -> TagResourceResult:
+        raise NotImplementedError
+
+    @handler("UntagResource")
+    def untag_resource(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        resource_arn: S3ResourceArn,
+        tag_keys: TagKeyList,
+    ) -> UntagResourceResult:
+        raise NotImplementedError
+
     @handler("UpdateJobPriority")
     def update_job_priority(
         self, context: RequestContext, account_id: AccountId, job_id: JobId, priority: JobPriority
@@ -2285,4 +2489,14 @@ class S3ControlApi:
         requested_job_status: RequestedJobStatus,
         status_update_reason: JobStatusUpdateReason = None,
     ) -> UpdateJobStatusResult:
+        raise NotImplementedError
+
+    @handler("UpdateStorageLensGroup")
+    def update_storage_lens_group(
+        self,
+        context: RequestContext,
+        name: StorageLensGroupName,
+        account_id: AccountId,
+        storage_lens_group: StorageLensGroup,
+    ) -> None:
         raise NotImplementedError

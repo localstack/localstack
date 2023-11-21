@@ -102,7 +102,7 @@ class TestIntegration:
         assert TEST_TAGS == tags["Tags"]
 
         # create target S3 bucket
-        aws_client.s3.create_bucket(Bucket=bucket_name)
+        s3_create_bucket(Bucket=bucket_name)
 
         # put records
         aws_client.firehose.put_record(
@@ -154,7 +154,7 @@ class TestIntegration:
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
     @markers.aws.unknown
-    def test_firehose_kinesis_to_s3(self, kinesis_create_stream, aws_client):
+    def test_firehose_kinesis_to_s3(self, kinesis_create_stream, s3_create_bucket, aws_client):
         stream_name = f"fh-stream-{short_uid()}"
 
         kinesis_stream_name = kinesis_create_stream()
@@ -191,7 +191,7 @@ class TestIntegration:
         retry(_assert_active, sleep=1, retries=30)
 
         # create target S3 bucket
-        aws_client.s3.create_bucket(Bucket=TEST_BUCKET_NAME)
+        s3_create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
         aws_client.kinesis.put_record(
@@ -548,13 +548,13 @@ class TestIntegration:
 
 @markers.aws.unknown
 def test_kinesis_lambda_forward_chain(
-    kinesis_create_stream, create_lambda_function, cleanups, aws_client
+    kinesis_create_stream, s3_create_bucket, create_lambda_function, cleanups, aws_client
 ):
     stream1_name = kinesis_create_stream()
     stream2_name = kinesis_create_stream()
     lambda1_name = f"function-{short_uid()}"
     lambda2_name = f"function-{short_uid()}"
-    aws_client.s3.create_bucket(Bucket=TEST_BUCKET_NAME)
+    s3_create_bucket(Bucket=TEST_BUCKET_NAME)
 
     # deploy test lambdas connected to Kinesis streams
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True)

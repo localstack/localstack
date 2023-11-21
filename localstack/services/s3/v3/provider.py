@@ -1692,6 +1692,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["VersionId"] = s3_object.version_id
 
         if s3_object.parts:
+            # TODO: implements ObjectParts, this is basically a simplified `ListParts` call on the object, we might
+            #  need to store more data about the Parts once we implement checksums for them
             response["ObjectParts"] = GetObjectAttributesParts(TotalPartsCount=len(s3_object.parts))
 
         return response
@@ -2516,7 +2518,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         validate_tag_set(tagging["TagSet"], type_set="object")
 
-        key_id = get_unique_key_id(bucket, key, version_id)
+        key_id = get_unique_key_id(bucket, key, s3_object.version_id)
         # remove the previous tags before setting the new ones, it overwrites the whole TagSet
         store.TAGS.tags.pop(key_id, None)
         store.TAGS.tag_resource(key_id, tags=tagging["TagSet"])
@@ -2551,9 +2553,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             e.Key = f"{bucket}/{key}"
             raise e
 
-        tag_set = store.TAGS.list_tags_for_resource(get_unique_key_id(bucket, key, version_id))[
-            "Tags"
-        ]
+        tag_set = store.TAGS.list_tags_for_resource(
+            get_unique_key_id(bucket, key, s3_object.version_id)
+        )["Tags"]
         response = GetObjectTaggingOutput(TagSet=tag_set)
         if s3_object.version_id:
             response["VersionId"] = s3_object.version_id
