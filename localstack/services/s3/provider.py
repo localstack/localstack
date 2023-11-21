@@ -188,8 +188,8 @@ from localstack.utils.urls import localstack_host
 if config.LEGACY_V2_S3_PROVIDER:
     from localstack.services.s3.utils_moto import (
         get_bucket_from_moto,
-        is_moto_key_expired,
         get_key_from_moto_bucket,
+        is_moto_key_expired,
     )
 
 LOG = logging.getLogger(__name__)

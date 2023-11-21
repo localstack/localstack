@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, TypedDict, Union
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
+
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import PutEventsRequestEntry
@@ -43,11 +44,12 @@ from localstack.utils.time import parse_timestamp, timestamp_millis
 
 if config.LEGACY_V2_S3_PROVIDER:
     from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
+
+    from localstack.services.s3.models import get_moto_s3_backend
     from localstack.services.s3.utils_moto import (
         get_bucket_from_moto,
         get_key_from_moto_bucket,
     )
-    from localstack.services.s3.models import get_moto_s3_backend
 
 LOG = logging.getLogger(__name__)
 
@@ -821,7 +823,9 @@ class NotificationDispatcher:
                 configurations if isinstance(configurations, list) else [configurations]
             )
             for configuration in configurations:
-                if notifier.should_notify(ctx, configuration):  # we check before sending it to the thread
+                if notifier.should_notify(
+                    ctx, configuration
+                ):  # we check before sending it to the thread
                     LOG.debug("Submitting task to the executor for notifier %s", notifier)
                     self.executor.submit(notifier.notify, ctx, configuration)
 

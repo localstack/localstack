@@ -5,7 +5,6 @@ import time
 from typing import Optional, Tuple
 from urllib.parse import urlparse
 
-
 from localstack.aws.api.sqs import QueueAttributeName, ReceiptHandleIsInvalid
 from localstack.services.sqs.constants import (
     DOMAIN_STRATEGY_URL_REGEX,

@@ -1,12 +1,11 @@
 import datetime
-from typing import Union, Literal
+from typing import Literal, Union
 
 import moto.s3.models as moto_s3_models
-
 from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
-from localstack.aws.api.s3 import NoSuchBucket, BucketName, ObjectKey, NoSuchKey, MethodNotAllowed
+from localstack.aws.api.s3 import BucketName, MethodNotAllowed, NoSuchBucket, NoSuchKey, ObjectKey
 
 
 def is_moto_key_expired(key_object: Union[FakeKey, FakeDeleteMarker]) -> bool:

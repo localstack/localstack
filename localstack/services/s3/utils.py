@@ -8,11 +8,9 @@ import zlib
 from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
 
-
 import xmltodict
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
-
 from zoneinfo import ZoneInfo
 
 from localstack import config, constants
@@ -36,9 +34,6 @@ from localstack.aws.api.s3 import (
     LifecycleRule,
     LifecycleRules,
     Metadata,
-    MethodNotAllowed,
-    NoSuchBucket,
-    NoSuchKey,
     ObjectCannedACL,
     ObjectKey,
     ObjectSize,
