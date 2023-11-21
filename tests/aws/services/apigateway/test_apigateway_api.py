@@ -416,6 +416,12 @@ class TestApiGatewayApi:
         )
         snapshot.match("enable-compression", response)
 
+        # check that listing is not exploding after update, null -> 10
+        try:
+            aws_client.apigateway.get_rest_api(restApiId=api_id)
+        except ClientError:
+            assert False
+
         # from the docs: to disable compression, apply a replace operation with the value property set to null or
         # omit the value property.
         # it seems an empty string is accepted as well
@@ -427,6 +433,12 @@ class TestApiGatewayApi:
         )
         snapshot.match("disable-compression", response)
 
+        # check that listing is not exploding after update, 10 -> null
+        try:
+            aws_client.apigateway.get_rest_api(restApiId=api_id)
+        except ClientError:
+            assert False
+
         patch_operations = [
             {"op": "replace", "path": "/minimumCompressionSize", "value": "0"},
         ]
@@ -434,6 +446,12 @@ class TestApiGatewayApi:
             restApiId=api_id, patchOperations=patch_operations
         )
         snapshot.match("set-compression-zero", response)
+
+        # check that listing is not exploding after update, null -> 0
+        try:
+            aws_client.apigateway.get_rest_api(restApiId=api_id)
+        except ClientError:
+            assert False
 
         with pytest.raises(ClientError) as e:
             patch_operations = [
