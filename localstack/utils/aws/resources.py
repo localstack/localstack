@@ -159,6 +159,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=No
             uri=integration["uri"],
             requestTemplates=req_templates,
             requestParameters=request_parameters,
+            credentials=integration.get("credentials"),
         )
         response_configs = [
             {"pattern": "^2.*", "code": success_code, "res_templates": res_templates},
