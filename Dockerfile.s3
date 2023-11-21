@@ -78,6 +78,7 @@ RUN --mount=type=cache,target=/root/.cache \
 RUN . .venv/bin/activate && pip3 freeze -l > requirements-runtime.txt
 
 # delete the botocore specs for other services (>80mb)
+# TODO: well now it's compressed and it's much lighter: 20mb maybe not worth it
 RUN find .venv/lib/python3.11/site-packages/botocore/data/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
 
 
@@ -96,8 +97,10 @@ ADD localstack/ localstack/
 
 # delete the API specs stubs for other services
 # delete the providers implementations for other services
-RUN find localstack/aws/api/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \; && \
-    find localstack/services/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
+# TODO: remove the SQS ones, it depends on 'is_sqs_queue_url' in service_router.py
+RUN find localstack/aws/api/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -not -name sqs -exec rm -rf '{}' \;
+    # \ && \
+    # find localstack/services/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
 
 # Generate the plugin entrypoints
 RUN make entrypoints
@@ -106,7 +109,7 @@ RUN make entrypoints
 RUN apt-get remove -y make
 
 # remove the other services from the entrypoints
-RUN sed -i '/\[localstack\.aws\.provider\]/,/^$/ { /^\[localstack\.aws\.provider\]/ b; /^$/ b; /localstack.services.providers:s3_v3/!d; }' ./localstack_core.egg-info/entry_points.txt
+# RUN sed -i '/\[localstack\.aws\.provider\]/,/^$/ { /^\[localstack\.aws\.provider\]/ b; /^$/ b; /localstack.services.providers:s3/!d; }' ./localstack_core.egg-info/entry_points.txt
 
 
 # link the python package installer virtual environments into the localstack venv

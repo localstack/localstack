@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import json
 import logging
@@ -8,10 +10,7 @@ from urllib.parse import quote
 
 from botocore.exceptions import ClientError
 
-from localstack import config
 from localstack.aws.api import RequestContext
-from localstack.aws.api.events import PutEventsRequestEntry
-from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.s3 import (
     AccountId,
     BucketName,
@@ -33,6 +32,7 @@ from localstack.aws.api.s3 import (
     TopicConfiguration,
 )
 from localstack.aws.connect import connect_to
+from localstack.config import LEGACY_V2_S3_PROVIDER
 from localstack.services.s3.utils import _create_invalid_argument_exc
 from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.utils.aws import arns
@@ -42,7 +42,7 @@ from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import short_uid
 from localstack.utils.time import parse_timestamp, timestamp_millis
 
-if config.LEGACY_V2_S3_PROVIDER:
+if LEGACY_V2_S3_PROVIDER:
     from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
     from localstack.services.s3.models import get_moto_s3_backend
@@ -50,6 +50,13 @@ if config.LEGACY_V2_S3_PROVIDER:
         get_bucket_from_moto,
         get_key_from_moto_bucket,
     )
+
+try:
+    from localstack.aws.api.events import PutEventsRequestEntry
+    from localstack.aws.api.lambda_ import InvocationType
+except ImportError:
+    # if we can't import it, we are in the S3-only image, where we don't need those, so we can safely skip
+    pass
 
 LOG = logging.getLogger(__name__)
 
@@ -681,7 +688,7 @@ class EventBridgeNotifier(BaseNotifier):
     @staticmethod
     def _get_event_payload(
         ctx: S3EventNotificationContext, config_id: NotificationId = None
-    ) -> PutEventsRequestEntry:
+    ) -> "PutEventsRequestEntry":
         # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html
         # see also https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
         entry: PutEventsRequestEntry = {
@@ -822,12 +829,10 @@ class NotificationDispatcher:
             configurations = (
                 configurations if isinstance(configurations, list) else [configurations]
             )
-            for configuration in configurations:
-                if notifier.should_notify(
-                    ctx, configuration
-                ):  # we check before sending it to the thread
+            for config in configurations:
+                if notifier.should_notify(ctx, config):  # we check before sending it to the thread
                     LOG.debug("Submitting task to the executor for notifier %s", notifier)
-                    self.executor.submit(notifier.notify, ctx, configuration)
+                    self.executor.submit(notifier.notify, ctx, config)
 
     def verify_configuration(
         self,
