@@ -872,7 +872,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_dashboard_lifecycle": {
-    "recorded-date": "25-10-2023, 13:16:20",
+    "recorded-date": "21-11-2023, 13:38:11",
     "recorded-content": {
       "get_dashboard": {
         "DashboardArn": "arn:aws:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
@@ -901,6 +901,48 @@
           ]
         },
         "DashboardName": "<dashboard-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_dashboards": {
+        "DashboardEntries": [
+          {
+            "DashboardArn": "arn:aws:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
+            "DashboardName": "<dashboard-name:1>",
+            "LastModified": "datetime",
+            "Size": 225
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_dashboards_prefix_empty": {
+        "DashboardEntries": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_dashboards_prefix": {
+        "DashboardEntries": [
+          {
+            "DashboardArn": "arn:aws:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
+            "DashboardName": "<dashboard-name:1>",
+            "LastModified": "datetime",
+            "Size": 225
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_dashboards_empty": {
+        "DashboardEntries": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
