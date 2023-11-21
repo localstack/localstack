@@ -294,7 +294,14 @@ class CloudwatchDatabase:
                 "label": f"{metric.get('MetricName')} {stat}",
             }
 
-    def list_metrics(self, account_id, region, namespace, metric_name, dimensions) -> dict:
+    def list_metrics(
+        self,
+        account_id: str,
+        region: str,
+        namespace: str,
+        metric_name: str,
+        dimensions: list[dict[str, str]],
+    ) -> dict:
         with sqlite3.connect(self.METRICS_DB) as conn:
             cur = conn.cursor()
 
@@ -317,26 +324,13 @@ class CloudwatchDatabase:
 
             query = f"""
                 SELECT DISTINCT metric_name, namespace, dimensions
-                FROM {self.TABLE_SINGLE_METRICS}
-                WHERE account_id = ? AND region = ? {namespace_filter} {metric_name_filter} {dimension_filter}
-                ORDER BY timestamp DESC
-            """
-
-            cur.execute(
-                query,
-                data,
-            )
-            single_metrics_result = [
-                {
-                    "metric_name": r[0],
-                    "namespace": r[1],
-                    "dimensions": self._restore_dimensions_from_string(r[2]),
-                }
-                for r in cur.fetchall()
-            ]
-
-            query = f"""
-                SELECT DISTINCT metric_name, namespace ,dimensions FROM {self.TABLE_AGGREGATED_METRICS}
+                FROM (
+                    SELECT metric_name, namespace, dimensions, account_id, region, timestamp
+                    FROM SINGLE_METRICS
+                    UNION
+                    SELECT metric_name, namespace, dimensions, account_id, region, timestamp
+                    FROM AGGREGATED_METRICS
+                ) AS combined
                 WHERE account_id = ? AND region = ?
                 {namespace_filter}
                 {metric_name_filter}
@@ -348,7 +342,7 @@ class CloudwatchDatabase:
                 query,
                 data,
             )
-            aggregated_metrics_result = [
+            metrics_result = [
                 {
                     "metric_name": r[0],
                     "namespace": r[1],
@@ -357,7 +351,12 @@ class CloudwatchDatabase:
                 for r in cur.fetchall()
             ]
 
-            return {"metrics": (single_metrics_result + aggregated_metrics_result)}
+            cur.execute(
+                query,
+                data,
+            )
+
+            return {"metrics": metrics_result}
 
     def clear_tables(self):
         # TODO clear tables for reset calls on cloudwatch
