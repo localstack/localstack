@@ -978,6 +978,12 @@ class TestCloudwatch:
         ]
         assert dashboard_name in dashboards_names
 
+        # assert prefix filtering working
+        dashboards_list = aws_client.cloudwatch.list_dashboards(DashboardNamePrefix="no-valid")
+        assert not dashboards_list["DashboardEntries"]
+        dashboards_list = aws_client.cloudwatch.list_dashboards(DashboardNamePrefix="test")
+        assert dashboards_list["DashboardEntries"]
+
         aws_client.cloudwatch.delete_dashboards(DashboardNames=[dashboard_name])
         dashboards_list = aws_client.cloudwatch.list_dashboards()
         dashboards = [
