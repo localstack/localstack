@@ -5,10 +5,10 @@ import localstack.services.sqs.models
 from localstack.services.sqs import provider
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.utils import (
-    get_message_attributes_md5,
     is_sqs_queue_url,
     parse_queue_url,
 )
+from localstack.services.sqs.provider import _create_message_attribute_hash
 from localstack.utils.common import convert_to_printable_chars
 
 
@@ -18,7 +18,7 @@ def test_sqs_message_attrs_md5():
         "MessageAttribute.1.Value.StringValue": "1493147359900",
         "MessageAttribute.1.Value.DataType": "Number",
     }
-    md5 = get_message_attributes_md5(msg_attrs)
+    md5 = _create_message_attribute_hash(msg_attrs)
     assert md5 == "235c5c510d26fb653d073faed50ae77c"
 
 

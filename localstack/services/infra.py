@@ -6,8 +6,6 @@ import threading
 import traceback
 
 import boto3
-from moto.core import BaseModel
-from moto.core.base_backend import InstanceTrackerMeta
 
 from localstack import config, constants
 from localstack.constants import (
@@ -90,6 +88,8 @@ def patch_urllib3_connection_pool(**constructor_kwargs):
 
 def patch_instance_tracker_meta():
     """Avoid instance collection for moto dashboard"""
+    from moto.core import BaseModel
+    from moto.core.base_backend import InstanceTrackerMeta
 
     if hasattr(InstanceTrackerMeta, "_ls_patch_applied"):
         return  # ensure we're not applying the patch multiple times

@@ -8,12 +8,11 @@ import zlib
 from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
 
-import moto.s3.models as moto_s3_models
+
 import xmltodict
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
-from moto.s3.exceptions import MissingBucket
-from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
+
 from zoneinfo import ZoneInfo
 
 from localstack import config, constants
@@ -408,12 +407,6 @@ def is_presigned_url_request(context: RequestContext) -> bool:
     )
 
 
-def is_key_expired(key_object: Union[FakeKey, FakeDeleteMarker]) -> bool:
-    if not key_object or isinstance(key_object, FakeDeleteMarker) or not key_object._expiry:
-        return False
-    return key_object._expiry <= datetime.datetime.now(key_object._expiry.tzinfo)
-
-
 def is_bucket_name_valid(bucket_name: str) -> bool:
     """
     ref. https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
@@ -508,52 +501,6 @@ def extract_bucket_name_and_key_from_headers_and_path(
     return bucket_name, object_key
 
 
-def get_bucket_from_moto(
-    moto_backend: moto_s3_models.S3Backend, bucket: BucketName
-) -> moto_s3_models.FakeBucket:
-    # TODO: check authorization for buckets as well?
-    try:
-        return moto_backend.get_bucket(bucket_name=bucket)
-    except MissingBucket:
-        raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
-
-
-def get_key_from_moto_bucket(
-    moto_bucket: FakeBucket,
-    key: ObjectKey,
-    version_id: str = None,
-    raise_if_delete_marker_method: Literal["GET", "PUT"] = None,
-) -> FakeKey | FakeDeleteMarker:
-    # TODO: rework the delete marker handling
-    # we basically need to re-implement moto `get_object` to account for FakeDeleteMarker
-    if version_id is None:
-        fake_key = moto_bucket.keys.get(key)
-    else:
-        for key_version in moto_bucket.keys.getlist(key, default=[]):
-            if str(key_version.version_id) == str(version_id):
-                fake_key = key_version
-                break
-        else:
-            fake_key = None
-
-    if not fake_key:
-        raise NoSuchKey("The specified key does not exist.", Key=key)
-
-    if isinstance(fake_key, FakeDeleteMarker) and raise_if_delete_marker_method:
-        # TODO: validate method, but should be PUT in most cases (updating a DeleteMarker)
-        match raise_if_delete_marker_method:
-            case "GET":
-                raise NoSuchKey("The specified key does not exist.", Key=key)
-            case "PUT":
-                raise MethodNotAllowed(
-                    "The specified method is not allowed against this resource.",
-                    Method="PUT",
-                    ResourceType="DeleteMarker",
-                )
-
-    return fake_key
-
-
 def normalize_bucket_name(bucket_name):
     bucket_name = bucket_name or ""
     bucket_name = bucket_name.lower()
@@ -625,7 +572,7 @@ def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str) -> Option
 
 
 # TODO: replace Any by a replacement for S3Bucket, some kind of defined type?
-def validate_kms_key_id(kms_key: str, bucket: FakeBucket | Any) -> None:
+def validate_kms_key_id(kms_key: str, bucket: Any) -> None:
     """
     Validate that the KMS key used to encrypt the object is valid
     :param kms_key: the KMS key id or ARN

@@ -7,7 +7,6 @@ from operator import itemgetter
 from typing import IO, Dict, List, Optional
 from urllib.parse import quote, urlparse
 
-import moto.s3.responses as moto_s3_responses
 from zoneinfo import ZoneInfo
 
 from localstack import config
@@ -157,14 +156,11 @@ from localstack.services.s3.utils import (
     create_redirect_for_post_request,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
-    get_bucket_from_moto,
     get_failed_precondition_copy_source,
     get_full_default_bucket_location,
-    get_key_from_moto_bucket,
     get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
     get_permission_from_header,
-    is_key_expired,
     serialize_expiration_header,
     validate_kms_key_id,
     verify_checksum,
@@ -188,6 +184,13 @@ from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 from localstack.utils.time import parse_timestamp
 from localstack.utils.urls import localstack_host
+
+if config.LEGACY_V2_S3_PROVIDER:
+    from localstack.services.s3.utils_moto import (
+        get_bucket_from_moto,
+        is_moto_key_expired,
+        get_key_from_moto_bucket,
+    )
 
 LOG = logging.getLogger(__name__)
 
@@ -1785,12 +1788,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
 def is_object_expired(moto_bucket, key: ObjectKey, version_id: str = None) -> bool:
     key_object = get_key_from_moto_bucket(moto_bucket, key, version_id=version_id)
-    return is_key_expired(key_object=key_object)
+    return is_moto_key_expired(key_object=key_object)
 
 
 def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
     import moto.s3.models as moto_s3_models
+    import moto.s3.responses as moto_s3_responses
     from moto.iam.access_control import PermissionResult
     from moto.s3.exceptions import InvalidObjectState
 

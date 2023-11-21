@@ -51,6 +51,9 @@ install-dev: venv         ## Install developer requirements into venv
 install-dev-types: venv   ## Install developer requirements incl. type hints into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev,typehint]"
 
+install-s3: venv     ## Install dependencies for the localstack runtime for s3-only into venv
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,s3]"
+
 install: install-dev entrypoints  ## Install full dependencies into venv
 
 entrypoints:              ## Run setup.py develop to build entry points
