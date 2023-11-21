@@ -22,6 +22,10 @@ from localstack.utils.sync import poll_condition
 PUBLICATION_RETRIES = 5
 
 
+def is_old_provider():
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2"
+
+
 class TestCloudwatch:
     @markers.aws.validated
     def test_put_metric_data_values_list(self, snapshot, aws_client):
@@ -939,7 +943,9 @@ class TestCloudwatch:
         snapshot.match("get_metric_data_2", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..DashboardArn"])  # ARN has a typo
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..DashboardArn"], condition=is_old_provider
+    )  # ARN has a typo in moto
     def test_dashboard_lifecycle(self, aws_client, snapshot):
         dashboard_name = f"test-{short_uid()}"
         dashboard_body = {
@@ -967,17 +973,17 @@ class TestCloudwatch:
         snapshot.match("get_dashboard", response)
 
         dashboards_list = aws_client.cloudwatch.list_dashboards()
-        dashboards_names = [
-            dashboard["DashboardName"] for dashboard in dashboards_list["DashboardEntries"]
-        ]
-        assert dashboard_name in dashboards_names
+        snapshot.match("list_dashboards", dashboards_list)
+
+        # assert prefix filtering working
+        dashboards_list = aws_client.cloudwatch.list_dashboards(DashboardNamePrefix="no-valid")
+        snapshot.match("list_dashboards_prefix_empty", dashboards_list)
+        dashboards_list = aws_client.cloudwatch.list_dashboards(DashboardNamePrefix="test")
+        snapshot.match("list_dashboards_prefix", dashboards_list)
 
         aws_client.cloudwatch.delete_dashboards(DashboardNames=[dashboard_name])
         dashboards_list = aws_client.cloudwatch.list_dashboards()
-        dashboards = [
-            dashboard["DashboardName"] for dashboard in dashboards_list["DashboardEntries"]
-        ]
-        assert dashboard_name not in dashboards
+        snapshot.match("list_dashboards_empty", dashboards_list)
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")

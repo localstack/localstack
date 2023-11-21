@@ -4,7 +4,7 @@ from typing import Dict
 from moto.cloudwatch.models import CloudWatchBackend as MotoCloudWatchBackend
 from moto.cloudwatch.models import cloudwatch_backends as moto_cloudwatch_backend
 
-from localstack.aws.api.cloudwatch import CompositeAlarm, MetricAlarm, StateValue
+from localstack.aws.api.cloudwatch import CompositeAlarm, DashboardBody, MetricAlarm, StateValue
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -62,6 +62,27 @@ class LocalStackCompositeAlarm:
         pass
 
 
+class LocalStackDashboard:
+    region: str
+    account_id: str
+    dashboard_name: str
+    dashboard_arn: str
+    dashboard_body: DashboardBody
+
+    def __init__(
+        self, account_id: str, region: str, dashboard_name: str, dashboard_body: DashboardBody
+    ):
+        self.account_id = account_id
+        self.region = region
+        self.dashboard_name = dashboard_name
+        self.dashboard_arn = arns.cloudwatch_dashboard_arn(
+            self.dashboard_name, account_id=self.account_id, region_name=self.region
+        )
+        self.dashboard_body = dashboard_body
+        self.last_modified = datetime.datetime.now()
+        self.size = 225  # TODO: calculate size
+
+
 class CloudWatchStore(BaseStore):
     # maps resource ARN to tags
     TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
@@ -70,6 +91,8 @@ class CloudWatchStore(BaseStore):
     Alarms: Dict[str, LocalStackMetricAlarm | LocalStackCompositeAlarm] = LocalAttribute(
         default=dict
     )
+
+    Dashboards: Dict[str, LocalStackDashboard] = LocalAttribute(default=dict)
 
 
 cloudwatch_stores = AccountRegionBundle("cloudwatch", CloudWatchStore)
