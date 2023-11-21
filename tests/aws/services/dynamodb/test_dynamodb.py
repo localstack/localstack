@@ -16,7 +16,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack, queries, resources
+from localstack.utils.aws import arns, queries, resources
 from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.sync import poll_condition, wait_until
@@ -218,7 +218,7 @@ class TestDynamoDB:
         table = aws_client.dynamodb.describe_table(TableName=table_name)["Table"]
 
         # assert ARN formats
-        expected_arn_prefix = "arn:aws:dynamodb:" + aws_stack.get_local_region()
+        expected_arn_prefix = "arn:aws:dynamodb:" + TEST_AWS_REGION_NAME
         assert table["TableArn"].startswith(expected_arn_prefix)
         assert table["LatestStreamArn"].startswith(expected_arn_prefix)
 
