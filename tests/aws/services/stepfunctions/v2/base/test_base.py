@@ -231,9 +231,7 @@ class TestSnfBase:
 
         # check that date format conforms to AWS spec e.g. "2023-11-21T06:27:31.545Z"
         date_regex = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z"
-        context_start_time = json.loads(execution_done["output"])[
-            "out1"
-        ]  # "2023-11-21T06:27:31.545Z" => ISO 8601
+        context_start_time = json.loads(execution_done["output"])["out1"]
         assert re.match(date_regex, context_start_time)
 
         # make sure execution start time on the API side is the same as the one returned internally when accessing the context object
