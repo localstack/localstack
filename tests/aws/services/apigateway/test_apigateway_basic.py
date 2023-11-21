@@ -1038,7 +1038,7 @@ class TestAPIGateway:
 
         # create state machine and permissions for step function to invoke lambda
         role_name = f"sfn_role-{short_uid()}"
-        role_arn = arns.role_arn(role_name, account_id)
+        role_arn = arns.iam_role_arn(role_name, account_id)
         create_iam_role_with_policy(
             RoleName=role_name,
             PolicyName=f"sfn-role-policy-{short_uid()}",
@@ -2040,7 +2040,7 @@ class TestIntegrations:
         )
 
         test_role = "test-s3-role"
-        role_arn = arns.role_arn(role_name=test_role, account_id=TEST_AWS_ACCOUNT_ID)
+        role_arn = arns.iam_role_arn(role_name=test_role, account_id=TEST_AWS_ACCOUNT_ID)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]
