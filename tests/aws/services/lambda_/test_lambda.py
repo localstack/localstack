@@ -42,8 +42,6 @@ from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
 
 LOG = logging.getLogger(__name__)
-FUNCTION_MAX_UNZIPPED_SIZE = 262144000
-
 
 # TODO: find a better way to manage these handler files
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))

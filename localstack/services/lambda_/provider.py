@@ -185,7 +185,11 @@ from localstack.services.lambda_.invocation.lambda_service import (
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
-from localstack.services.lambda_.runtimes import IMAGE_MAPPING, SNAP_START_SUPPORTED_RUNTIMES
+from localstack.services.lambda_.runtimes import (
+    IMAGE_MAPPING,
+    SNAP_START_SUPPORTED_RUNTIMES,
+    VALID_RUNTIMES,
+)
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
@@ -711,6 +715,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateFunctionRequest,
     ) -> FunctionConfiguration:
+        zip_file = request.get("Code", {}).get("ZipFile")
+        if zip_file and len(zip_file) > config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED:
+            raise RequestEntityTooLargeException(
+                f"Zipped size must be smaller than {config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED} bytes"
+            )
+
         if context.request.content_length > config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE:
             raise RequestEntityTooLargeException(
                 f"Request must be smaller than {config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE} bytes for the CreateFunction operation"
@@ -749,7 +759,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         runtime = request.get("Runtime")
         if package_type == PackageType.Zip and runtime not in IMAGE_MAPPING:
             raise InvalidParameterValueException(
-                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
+                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                 Type="User",
             )
         if snap_start := request.get("SnapStart"):
@@ -780,10 +790,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if package_type == PackageType.Zip:
                 # TODO verify if correct combination of code is set
                 if zip_file := request_code.get("ZipFile"):
-                    if len(zip_file) > config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED:
-                        raise RequestEntityTooLargeException(
-                            f"Zipped size must be smaller than {config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED} bytes"
-                        )
                     code = store_lambda_archive(
                         archive_file=zip_file,
                         function_name=function_name,
@@ -950,7 +956,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "Runtime" in request:
             if request["Runtime"] not in IMAGE_MAPPING:
                 raise InvalidParameterValueException(
-                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
+                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                     Type="User",
                 )
             replace_kwargs["runtime"] = request["Runtime"]

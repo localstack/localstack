@@ -5006,7 +5006,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_lambda": {
-    "recorded-date": "20-11-2023, 17:00:14",
+    "recorded-date": "21-11-2023, 10:44:33",
     "recorded-content": {
       "create_function_large_zip": {
         "Architectures": [
@@ -6655,12 +6655,12 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_request_create_lambda": {
-    "recorded-date": "20-11-2023, 16:59:28",
+    "recorded-date": "21-11-2023, 10:41:36",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
           "Code": "RequestEntityTooLargeException",
-          "Message": "Zipped size must be smaller than 52428800 bytes"
+          "Message": "Request must be smaller than 70167211 bytes for the CreateFunction operation"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7434,7 +7434,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_unzipped_lambda": {
-    "recorded-date": "20-11-2023, 16:59:47",
+    "recorded-date": "21-11-2023, 10:43:40",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -13351,6 +13351,21 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_zipped_create_lambda": {
+    "recorded-date": "21-11-2023, 10:43:03",
+    "recorded-content": {
+      "invalid_param_exc": {
+        "Error": {
+          "Code": "RequestEntityTooLargeException",
+          "Message": "Zipped size must be smaller than 52428800 bytes"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 413
         }
       }
     }

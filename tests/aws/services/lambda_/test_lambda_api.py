@@ -40,7 +40,6 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import (
-    FUNCTION_MAX_UNZIPPED_SIZE,
     TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON_ECHO,
@@ -3542,7 +3541,43 @@ class TestLambdaSizeLimits:
     @markers.aws.validated
     def test_oversized_request_create_lambda(self, lambda_su_role, snapshot, aws_client):
         function_name = f"test_lambda_{short_uid()}"
-        code_str = self._generate_sized_python_str(TEST_LAMBDA_PYTHON_ECHO, 50 * 1024 * 1024)
+        # ensure that we are slightly below the zipped size limit because it is checked before the request limit
+        code_str = self._generate_sized_python_str(
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED - 1024
+        )
+
+        # upload zip file to S3
+        zip_file = testutil.create_lambda_archive(
+            code_str, get_content=True, runtime=Runtime.python3_9
+        )
+
+        # enlarge the request beyond its limit while accounting for the zip file size
+        delta = (
+            config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE
+            - config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED
+        )
+        large_env = self._generate_sized_python_str(TEST_LAMBDA_PYTHON_ECHO, delta + 1024 * 1024)
+
+        # create lambda function
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Runtime=Runtime.python3_9,
+                Handler="handler.handler",
+                Role=lambda_su_role,
+                Code={"ZipFile": zip_file},
+                Timeout=10,
+                Environment={"Variables": {"largeKey": large_env}},
+            )
+        snapshot.match("invalid_param_exc", e.value.response)
+
+    @markers.aws.validated
+    def test_oversized_zipped_create_lambda(self, lambda_su_role, snapshot, aws_client):
+        function_name = f"test_lambda_{short_uid()}"
+        # use the highest boundary to test that the zipped size is checked before the request size
+        code_str = self._generate_sized_python_str(
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED
+        )
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
@@ -3566,7 +3601,7 @@ class TestLambdaSizeLimits:
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
         code_str = self._generate_sized_python_str(
-            TEST_LAMBDA_PYTHON_ECHO, FUNCTION_MAX_UNZIPPED_SIZE
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED
         )
 
         # upload zip file to S3
@@ -3593,7 +3628,7 @@ class TestLambdaSizeLimits:
         cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
         bucket_key = "test_lambda.zip"
         code_str = self._generate_sized_python_str(
-            TEST_LAMBDA_PYTHON_ECHO, FUNCTION_MAX_UNZIPPED_SIZE - 1000
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED - 1000
         )
 
         # upload zip file to S3
