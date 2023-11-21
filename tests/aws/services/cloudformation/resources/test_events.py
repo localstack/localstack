@@ -244,7 +244,7 @@ def test_cfn_handle_events_rule_without_name(deploy_cfn_template, aws_client):
     rule_names = [rule["Name"] for rule in rs["Rules"]]
 
     stack = deploy_cfn_template(
-        template=TEST_TEMPLATE_18 % arns.role_arn("sfn_role", account_id=TEST_AWS_ACCOUNT_ID),
+        template=TEST_TEMPLATE_18 % arns.iam_role_arn("sfn_role", account_id=TEST_AWS_ACCOUNT_ID),
     )
 
     rs = aws_client.events.list_rules()

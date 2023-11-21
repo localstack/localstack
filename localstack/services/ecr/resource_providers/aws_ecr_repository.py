@@ -97,7 +97,7 @@ class ECRRepositoryProvider(ResourceProvider[ECRRepositoryProperties]):
         )
         model.update(
             {
-                "Arn": arns.get_ecr_repository_arn(
+                "Arn": arns.ecr_repository_arn(
                     model["RepositoryName"], DEFAULT_AWS_ACCOUNT_ID, AWS_REGION_US_EAST_1
                 ),
                 "RepositoryUri": "http://localhost:4566",
