@@ -4,9 +4,10 @@ from localstack.services.lambda_.api_utils import (
     qualifier_is_version,
 )
 from localstack.services.lambda_.runtimes import (
+    ALL_RUNTIMES,
     IMAGE_MAPPING,
-    RUNTIMES,
-    RUNTIMES_AGGREGATED,
+    SUPPORTED_RUNTIMES,
+    TESTED_RUNTIMES,
     VALID_LAYER_RUNTIMES,
     VALID_RUNTIMES,
 )
@@ -18,27 +19,24 @@ class TestApiUtils:
         Ensure that we keep the runtime lists consistent. The supported runtimes through image mappings
         should not diverge from the API-validated inputs nor the tested runtimes.
         """
-        # Ensure that we have image mappings for all supported runtimes (motivated by #9020)
-        assert set(RUNTIMES) == set(IMAGE_MAPPING.keys())
+        # Ensure that we have image mappings for all runtimes used in LocalStack (motivated by #9020)
+        assert set(ALL_RUNTIMES) == set(IMAGE_MAPPING.keys())
 
         # Ensure that we test all supported runtimes
-        tested_runtimes = [
-            runtime for runtime_group in RUNTIMES_AGGREGATED.values() for runtime in runtime_group
-        ]
-        assert set(RUNTIMES) == set(
-            tested_runtimes
+        assert set(SUPPORTED_RUNTIMES) == set(
+            TESTED_RUNTIMES
         ), "mismatch between supported and tested runtimes"
 
         # Ensure that valid runtimes (i.e., API-level validation) match the actually supported runtimes
         # HINT: Update your botocore version if this check fails
         valid_runtimes = VALID_RUNTIMES[1:-1].split(", ")
-        assert set(RUNTIMES) == set(
+        assert set(SUPPORTED_RUNTIMES) == set(
             valid_runtimes
         ), "mismatch between supported and API-valid runtimes"
 
         # Ensure that valid layer runtimes (includes some extra runtimes) contain the actually supported runtimes
         valid_layer_runtimes = VALID_LAYER_RUNTIMES[1:-1].split(", ")
-        assert set(RUNTIMES).issubset(
+        assert set(ALL_RUNTIMES).issubset(
             set(valid_layer_runtimes)
         ), "supported runtimes not part of compatible runtimes for layers"
 

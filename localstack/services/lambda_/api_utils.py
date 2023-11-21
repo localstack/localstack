@@ -26,7 +26,7 @@ from localstack.aws.api.lambda_ import (
     TracingConfig,
     VpcConfigResponse,
 )
-from localstack.services.lambda_.runtimes import RUNTIMES, VALID_LAYER_RUNTIMES, VALID_RUNTIMES
+from localstack.services.lambda_.runtimes import ALL_RUNTIMES, VALID_LAYER_RUNTIMES, VALID_RUNTIMES
 from localstack.utils.collections import merge_recursive
 
 if TYPE_CHECKING:
@@ -585,7 +585,7 @@ def parse_layer_arn(layer_version_arn: str) -> Tuple[str, str, str, str]:
 
 
 def validate_layer_runtime(compatible_runtime: str) -> str | None:
-    if compatible_runtime is not None and compatible_runtime not in RUNTIMES:
+    if compatible_runtime is not None and compatible_runtime not in ALL_RUNTIMES:
         return f"Value '{compatible_runtime}' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_LAYER_RUNTIMES}"
     return None
 
@@ -601,7 +601,7 @@ def validate_layer_runtimes_and_architectures(
 ):
     validations = []
 
-    if compatible_runtimes and set(compatible_runtimes).difference(RUNTIMES):
+    if compatible_runtimes and set(compatible_runtimes).difference(ALL_RUNTIMES):
         constraint = f"Member must satisfy enum value set: {VALID_RUNTIMES}"
         validation_msg = f"Value '[{', '.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
         validations.append(validation_msg)

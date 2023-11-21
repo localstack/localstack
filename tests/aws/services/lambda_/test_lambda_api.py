@@ -26,7 +26,10 @@ from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.services.lambda_.api_utils import ARCHITECTURES
-from localstack.services.lambda_.runtimes import RUNTIMES, SNAP_START_SUPPORTED_RUNTIMES
+from localstack.services.lambda_.runtimes import (
+    ALL_RUNTIMES,
+    SNAP_START_SUPPORTED_RUNTIMES,
+)
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -401,6 +404,7 @@ class TestLambdaFunction:
             == get_function_response_updated["Configuration"]["CodeSize"]
         )
 
+    @markers.lambda_runtime_update
     @markers.aws.validated
     def test_create_lambda_exceptions(self, lambda_su_role, snapshot, aws_client):
         function_name = f"invalid-function-{short_uid()}"
@@ -489,6 +493,7 @@ class TestLambdaFunction:
             )
         snapshot.match("invalid_zip_exc", e.value.response)
 
+    @markers.lambda_runtime_update
     @markers.aws.validated
     def test_update_lambda_exceptions(
         self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
@@ -4436,9 +4441,10 @@ class TestLambdaTags:
 # TODO: add more tests where layername can be an ARN
 # TODO: test if function has to be in same region as layer
 class TestLambdaLayer:
+    @markers.lambda_runtime_update
     @markers.aws.validated
     # AWS only allows a max of 15 compatible runtimes, split runtimes and run two tests
-    @pytest.mark.parametrize("runtimes", [RUNTIMES[:14], RUNTIMES[14:]])
+    @pytest.mark.parametrize("runtimes", [ALL_RUNTIMES[:14], ALL_RUNTIMES[14:]])
     def test_layer_compatibilities(self, snapshot, dummylayer, cleanups, aws_client, runtimes):
         """Creates a single layer which is compatible with all"""
         layer_name = f"testlayer-{short_uid()}"
@@ -4456,6 +4462,7 @@ class TestLambdaLayer:
         )
         snapshot.match("publish_result", publish_result)
 
+    @markers.lambda_runtime_update
     @markers.aws.validated
     def test_layer_exceptions(self, snapshot, dummylayer, cleanups, aws_client):
         """

@@ -13082,7 +13082,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "recorded-date": "20-11-2023, 17:02:20",
+    "recorded-date": "21-11-2023, 17:59:36",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13094,6 +13094,7 @@
           "nodejs18.x",
           "nodejs16.x",
           "nodejs14.x",
+          "nodejs12.x",
           "python3.12",
           "python3.11",
           "python3.10",
@@ -13102,8 +13103,7 @@
           "python3.7",
           "java21",
           "java17",
-          "java11",
-          "java8.al2"
+          "java11"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -13123,7 +13123,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "recorded-date": "20-11-2023, 17:02:26",
+    "recorded-date": "21-11-2023, 17:59:41",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13131,8 +13131,10 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
+          "java8.al2",
           "java8",
           "dotnet6",
+          "dotnetcore3.1",
           "go1.x",
           "ruby3.2",
           "ruby2.7",
