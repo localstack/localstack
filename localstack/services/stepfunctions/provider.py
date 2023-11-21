@@ -75,6 +75,7 @@ from localstack.aws.api.stepfunctions import (
     ValidationException,
     VersionDescription,
 )
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
     MapRunRecord,
 )
@@ -102,13 +103,20 @@ from localstack.utils.strings import long_uid
 LOG = logging.getLogger(__name__)
 
 
-class StepFunctionsProvider(StepfunctionsApi):
+class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     @staticmethod
     def get_store(context: RequestContext) -> SFNStore:
         return sfn_stores[context.account_id][context.region]
 
+    # def on_before_state_save(self):
+    #     # abort all running executions
+    #     ...
+
     def accept_state_visitor(self, visitor: StateVisitor):
-        visitor.visit(sfn_stores)
+        try:
+            visitor.visit(sfn_stores)
+        except Exception as e:
+            print(e)
 
     def _get_execution(self, context: RequestContext, execution_arn: Arn) -> Execution:
         execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
@@ -380,7 +388,7 @@ class StepFunctionsProvider(StepfunctionsApi):
             account_id=context.account_id,
             region_name=context.region,
             state_machine=state_machine_clone,
-            start_date=datetime.datetime.now(),
+            start_date=datetime.datetime.now(tz=datetime.UTC),
             input_data=input_data,
             trace_header=trace_header,
         )
@@ -498,7 +506,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         cause: SensitiveCause = None,
     ) -> StopExecutionOutput:
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
-        stop_date = datetime.datetime.now()
+        stop_date = datetime.datetime.now(tz=datetime.UTC)
         execution.stop(stop_date=stop_date, cause=cause, error=error)
         return StopExecutionOutput(stopDate=stop_date)
 
@@ -539,7 +547,7 @@ class StepFunctionsProvider(StepfunctionsApi):
                 target_revision_id = revision_id or state_machine.revision_id
                 version_arn = state_machine.versions[target_revision_id]
 
-        update_output = UpdateStateMachineOutput(updateDate=datetime.datetime.now())
+        update_output = UpdateStateMachineOutput(updateDate=datetime.datetime.now(tz=datetime.UTC))
         if revision_id is not None:
             update_output["revisionId"] = revision_id
         if version_arn is not None:

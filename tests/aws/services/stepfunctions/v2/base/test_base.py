@@ -1,12 +1,16 @@
+import datetime
 import json
+import re
 
 import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer
+from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.utils import (
+    await_execution_success,
     create_and_record_events,
     create_and_record_execution,
 )
@@ -191,3 +195,48 @@ class TestSnfBase:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    def test_execution_dateformat(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+    ):
+        """
+        When returning timestamps as strings, StepFunctions uses a format like this:
+        "2023-11-21T06:27:31.545Z"
+
+        It's similar to the one used for Wait and Choice states but with the small difference of including milliseconds.
+
+        It has 3-digit precision on the second (i.e. millisecond precision) and is *always* terminated by a Z.
+        When testing, it seems to always return a UTC time zone (signaled by the Z character at the end).
+        """
+        template = BaseTemplate.load_sfn_template(BaseTemplate.PASS_START_TIME)
+        definition = json.dumps(template)
+
+        sm_name = f"test-dateformat-machine-{short_uid()}"
+        sm = create_state_machine(
+            name=sm_name, definition=definition, roleArn=create_iam_role_for_sfn()
+        )
+
+        sm_arn = sm["stateMachineArn"]
+        execution = aws_client.stepfunctions.start_execution(stateMachineArn=sm_arn, input="{}")
+        execution_arn = execution["executionArn"]
+        await_execution_success(aws_client.stepfunctions, execution_arn)
+        execution_done = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
+
+        # Since snapshots currently transform any timestamp-like value to a generic token,
+        # we handle the assertions here manually
+
+        # check that date format conforms to AWS spec e.g. "2023-11-21T06:27:31.545Z"
+        date_regex = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z"
+        context_start_time = json.loads(execution_done["output"])[
+            "out1"
+        ]  # "2023-11-21T06:27:31.545Z" => ISO 8601
+        assert re.match(date_regex, context_start_time)
+
+        # make sure execution start time on the API side is the same as the one returned internally when accessing the context object
+        d = execution_done["startDate"].astimezone(datetime.UTC)
+        serialized_date = f'{d.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
+        assert context_start_time == serialized_date

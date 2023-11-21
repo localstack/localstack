@@ -19,3 +19,6 @@ class BaseTemplate(TemplateLoader):
     QUERY_CONTEXT_OBJECT_VALUES: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/query_context_object_values.json5"
     )
+    PASS_START_TIME: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/pass_start_time_format.json5"
+    )

@@ -74,7 +74,7 @@ class EventHistory:
             history_event["id"] = event_id
             history_event["previousEventId"] = context.source_event_id
             history_event["type"] = hist_type_event
-            history_event["timestamp"] = timestamp or datetime.datetime.now()
+            history_event["timestamp"] = timestamp or datetime.datetime.now(tz=datetime.UTC)
             self._history_event_list.append(history_event)
             context.last_published_event_id = event_id
             if update_source_event_id:

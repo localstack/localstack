@@ -115,7 +115,7 @@ class MapRunRecord:
         self.max_concurrency = max_concurrency
         self.execution_counter = ExecutionCounter()
         self.item_counter = ItemCounter()
-        self.start_date = datetime.datetime.now()
+        self.start_date = datetime.datetime.now(tz=datetime.UTC)
         self.status = MapRunStatus.RUNNING
         self.stop_date = None
         self.tolerated_failure_count = 0
@@ -134,7 +134,7 @@ class MapRunRecord:
 
     def set_stop(self, status: MapRunStatus):
         self.status = status
-        self.stop_date = datetime.datetime.now()
+        self.stop_date = datetime.datetime.now(tz=datetime.UTC)
 
     def describe(self) -> DescribeMapRunOutput:
         describe_output = DescribeMapRunOutput(
