@@ -404,7 +404,7 @@ class TestLambdaBehavior:
         monkeypatch.setattr(
             config,
             "LAMBDA_DOCKER_FLAGS",
-            "--ulimit nofile=1024:1024 --ulimit nproc=735:735 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
+            "--ulimit nofile=1024:1024 --ulimit nproc=1024:1024 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
         )
 
         func_name = f"test_lambda_ulimits_{short_uid()}"
