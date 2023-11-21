@@ -417,10 +417,8 @@ class TestApiGatewayApi:
         snapshot.match("enable-compression", response)
 
         # check that listing is not exploding after update, null -> 10
-        try:
-            aws_client.apigateway.get_rest_api(restApiId=api_id)
-        except ClientError:
-            assert False
+        response = aws_client.apigateway.get_rest_api(restApiId=api_id)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         # from the docs: to disable compression, apply a replace operation with the value property set to null or
         # omit the value property.
@@ -434,10 +432,8 @@ class TestApiGatewayApi:
         snapshot.match("disable-compression", response)
 
         # check that listing is not exploding after update, 10 -> null
-        try:
-            aws_client.apigateway.get_rest_api(restApiId=api_id)
-        except ClientError:
-            assert False
+        response = aws_client.apigateway.get_rest_api(restApiId=api_id)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         patch_operations = [
             {"op": "replace", "path": "/minimumCompressionSize", "value": "0"},
@@ -448,10 +444,8 @@ class TestApiGatewayApi:
         snapshot.match("set-compression-zero", response)
 
         # check that listing is not exploding after update, null -> 0
-        try:
-            aws_client.apigateway.get_rest_api(restApiId=api_id)
-        except ClientError:
-            assert False
+        response = aws_client.apigateway.get_rest_api(restApiId=api_id)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         with pytest.raises(ClientError) as e:
             patch_operations = [
