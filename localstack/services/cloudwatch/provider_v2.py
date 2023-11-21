@@ -9,11 +9,19 @@ from localstack.aws.api.cloudwatch import (
     AlarmTypes,
     AmazonResourceName,
     CloudwatchApi,
+    DashboardBody,
+    DashboardName,
+    DashboardNamePrefix,
+    DashboardNames,
+    DeleteDashboardsOutput,
     DescribeAlarmsOutput,
+    GetDashboardOutput,
     InvalidParameterValueException,
+    ListDashboardsOutput,
     ListTagsForResourceOutput,
     MaxRecords,
     NextToken,
+    PutDashboardOutput,
     PutMetricAlarmInput,
     StateValue,
     TagKeyList,
@@ -25,6 +33,7 @@ from localstack.http import Request
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.cloudwatch.models import (
     CloudWatchStore,
+    LocalStackDashboard,
     LocalStackMetricAlarm,
     cloudwatch_stores,
 )
@@ -214,3 +223,59 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     ) -> TagResourceOutput:
         self.tags.tag_resource(resource_arn, tags)
         return TagResourceOutput()
+
+    def put_dashboard(
+        self, context: RequestContext, dashboard_name: DashboardName, dashboard_body: DashboardBody
+    ) -> PutDashboardOutput:
+        store = self.get_store(context.account_id, context.region)
+        store.Dashboards[dashboard_name] = LocalStackDashboard(
+            context.account_id, context.region, dashboard_name, dashboard_body
+        )
+        return PutDashboardOutput()
+
+    def get_dashboard(
+        self, context: RequestContext, dashboard_name: DashboardName
+    ) -> GetDashboardOutput:
+        store = self.get_store(context.account_id, context.region)
+        dashboard = store.Dashboards.get(dashboard_name)
+        if not dashboard:
+            raise InvalidParameterValueException(f"Dashboard {dashboard_name} does not exist.")
+
+        return GetDashboardOutput(
+            DashboardName=dashboard_name,
+            DashboardBody=dashboard.dashboard_body,
+            DashboardArn=dashboard.dashboard_arn,
+        )
+
+    def delete_dashboards(
+        self, context: RequestContext, dashboard_names: DashboardNames
+    ) -> DeleteDashboardsOutput:
+        store = self.get_store(context.account_id, context.region)
+        for dashboard_name in dashboard_names:
+            store.Dashboards.pop(dashboard_name, None)
+        return DeleteDashboardsOutput()
+
+    def list_dashboards(
+        self,
+        context: RequestContext,
+        dashboard_name_prefix: DashboardNamePrefix = None,
+        next_token: NextToken = None,
+    ) -> ListDashboardsOutput:
+        store = self.get_store(context.account_id, context.region)
+        dashboard_names = list(store.Dashboards.keys())
+        dashboard_names = [
+            name for name in dashboard_names if name.startswith(dashboard_name_prefix or "")
+        ]
+
+        entries = [
+            {
+                "DashboardName": name,
+                "DashboardArn": store.Dashboards[name].dashboard_arn,
+                "LastModified": store.Dashboards[name].last_modified,
+                "Size": store.Dashboards[name].size,
+            }
+            for name in dashboard_names
+        ]
+        return ListDashboardsOutput(
+            DashboardEntries=entries,
+        )
