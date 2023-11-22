@@ -186,7 +186,8 @@ from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.runtimes import (
-    IMAGE_MAPPING,
+    ALL_RUNTIMES,
+    DEPRECATED_RUNTIMES,
     SNAP_START_SUPPORTED_RUNTIMES,
     VALID_RUNTIMES,
 )
@@ -757,16 +758,22 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         package_type = request.get("PackageType", PackageType.Zip)
         runtime = request.get("Runtime")
-        if package_type == PackageType.Zip and runtime not in IMAGE_MAPPING:
+        if package_type == PackageType.Zip and runtime not in ALL_RUNTIMES:
             raise InvalidParameterValueException(
                 f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                 Type="User",
+            )
+        function_name = request["FunctionName"]
+        if runtime in DEPRECATED_RUNTIMES:
+            LOG.warning(
+                f"The Lambda runtime {runtime} is deprecated. "
+                f"Please upgrade the runtime for the function {function_name}: "
+                f"https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html"
             )
         if snap_start := request.get("SnapStart"):
             self._validate_snapstart(snap_start, runtime)
         state = lambda_stores[context.account_id][context.region]
 
-        function_name = request["FunctionName"]
         with self.create_fn_lock:
             if function_name in state.functions:
                 raise ResourceConflictException(f"Function already exist: {function_name}")
@@ -954,10 +961,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         if "Runtime" in request:
-            if request["Runtime"] not in IMAGE_MAPPING:
+            runtime = request["Runtime"]
+            if runtime not in ALL_RUNTIMES:
                 raise InvalidParameterValueException(
-                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
+                    f"Value {runtime} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                     Type="User",
+                )
+            if runtime in DEPRECATED_RUNTIMES:
+                LOG.warning(
+                    f"The Lambda runtime {runtime} is deprecated. "
+                    f"Please upgrade the runtime for the function {function_name}: "
+                    f"https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html"
                 )
             replace_kwargs["runtime"] = request["Runtime"]
 
