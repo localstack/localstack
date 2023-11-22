@@ -68,8 +68,9 @@ jobs:
         env:
           PLATFORM: "amd64"
           IMAGE_NAME: "localstack/localstack-s3"
-        working-directory: localstack
+          DOCKERFILE: "./Dockerfile.s3"
         run: |
+          mkdir target
           make docker-build
           make docker-save-image
 
@@ -77,13 +78,14 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: localstack-s3-docker-image-amd64
-          path: localstack/localstack-docker-image-amd64.tar.gz
+          path: target/localstack-docker-image-amd64.tar
           retention-days: 1
 
 
   tests-s3-image:
     name: "S3 Image Tests"
     runs-on: ubuntu-latest
+    needs: build-amd64
     env:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
@@ -92,44 +94,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsnappy-dev jq
-
-      - name: Set up Python 3.11
-        id: setup-python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: make install-ci
-
       - name: Download Docker Image
         uses: actions/download-artifact@v3
         with:
           name: localstack-s3-docker-image-amd64
 
       - name: Load Docker Image
-        run: docker load --input localstack-docker-image-amd64.tar.gz
+        run: docker load --input localstack-docker-image-amd64.tar
 
       - name: Run S3 Image tests
         timeout-minutes: 15
         env:
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy --junitxml=target/pytest-junit-s3-image.xml"
           TEST_PATH: "tests/aws/services/s3"
-          JUNIT_REPORTS_FILE: "pytest-junit-s3-image.xml"
           DEBUG: 1
 
-        run: make docker-run-tests
+        run: |
+          mkdir target
+          make docker-run-tests
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
           name: test-results-s3-image
-          path: pytest-junit-s3-image.xml
+          path: target/pytest-junit-s3-image.xml
           retention-days: 30
 
   publish-test-results:
