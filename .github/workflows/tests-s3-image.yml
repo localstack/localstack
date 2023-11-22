@@ -120,8 +120,6 @@ jobs:
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy"
           TEST_PATH: "tests/aws/services/s3"
           JUNIT_REPORTS_FILE: "pytest-junit-s3-image.xml"
-          # TODO: check this, do we need coverage? don't store the artefact
-          COVERAGE_FILE: "target/coverage/.coverage-s3.amd64"
           DEBUG: 1
 
         run: make docker-run-tests

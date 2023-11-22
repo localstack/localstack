@@ -64,6 +64,7 @@ def cdk_template_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "cdk_templates"))
 
 
+# TODO: enable this back, it has a dependency on Node which I'm not sure how to resolve yet
 # Note: Don't move this into testing lib
 # @pytest.fixture(scope="session")
 # def infrastructure_setup(cdk_template_path, aws_client):
