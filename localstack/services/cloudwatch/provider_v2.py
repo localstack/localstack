@@ -1,7 +1,9 @@
 import logging
+from typing import List
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
+    AccountId,
     ActionPrefix,
     AlarmName,
     AlarmNamePrefix,
@@ -15,22 +17,48 @@ from localstack.aws.api.cloudwatch import (
     DashboardNames,
     DeleteDashboardsOutput,
     DescribeAlarmsOutput,
+    DimensionFilters,
+    Dimensions,
+    ExtendedStatistics,
     GetDashboardOutput,
+    GetMetricDataMaxDatapoints,
+    GetMetricDataOutput,
+    GetMetricStatisticsOutput,
+    IncludeLinkedAccounts,
+    InvalidParameterCombinationException,
     InvalidParameterValueException,
+    LabelOptions,
     ListDashboardsOutput,
+    ListMetricsOutput,
     ListTagsForResourceOutput,
     MaxRecords,
+    MetricData,
+    MetricDataQueries,
+    MetricDataQuery,
+    MetricDataResult,
+    MetricDataResultMessages,
+    MetricDataResults,
+    MetricName,
+    MetricStat,
+    Namespace,
     NextToken,
+    Period,
     PutDashboardOutput,
     PutMetricAlarmInput,
+    RecentlyActive,
+    ScanBy,
+    StandardUnit,
     StateValue,
+    Statistics,
     TagKeyList,
     TagList,
     TagResourceOutput,
+    Timestamp,
     UntagResourceOutput,
 )
 from localstack.http import Request
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
+from localstack.services.cloudwatch.cloudwatch_database_helper import CloudwatchDatabase
 from localstack.services.cloudwatch.models import (
     CloudWatchStore,
     LocalStackDashboard,
@@ -40,12 +68,12 @@ from localstack.services.cloudwatch.models import (
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import arns
+from localstack.utils.collections import PaginatedList
 from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
 from localstack.utils.threads import start_worker_thread
 
 PATH_GET_RAW_METRICS = "/_aws/cloudwatch/metrics/raw"
-DEPRECATED_PATH_GET_RAW_METRICS = "/cloudwatch/metrics/raw"
 MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 
 LOG = logging.getLogger(__name__)
@@ -55,6 +83,24 @@ class ValidationError(CommonServiceException):
     # TODO: check this error against AWS (doesn't exist in the API)
     def __init__(self, message: str):
         super().__init__("ValidationError", message, 400, True)
+
+
+def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
+    for index, metric_item in enumerate(metric_data):
+        indexplusone = index + 1
+        if metric_item.get("Value") and metric_item.get("Values"):
+            raise InvalidParameterCombinationException(
+                f"The parameters MetricData.member.{indexplusone}.Value and MetricData.member.{indexplusone}.Values are mutually exclusive and you have specified both."
+            )
+
+        if values := metric_item.get("Values"):
+            counts = metric_item.get("Counts", [])
+            if len(values) != len(counts) and len(counts) != 0:
+                raise InvalidParameterValueException(
+                    f"The parameters MetricData.member.{indexplusone}.Values and MetricData.member.{indexplusone}.Counts must be of the same size."
+                )
+
+        # TODO: check for other validations
 
 
 class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
@@ -69,6 +115,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self.tags = TaggingService()
         self.alarm_scheduler: AlarmScheduler = None
         self.store = None
+        self.cloudwatch_database = CloudwatchDatabase()
 
     @staticmethod
     def get_store(account_id: str, region: str) -> CloudWatchStore:
@@ -80,6 +127,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_before_state_reset(self):
         self.shutdown_alarm_scheduler()
+        self.cloudwatch_database.clear_tables()
 
     def on_after_state_reset(self):
         self.start_alarm_scheduler()
@@ -98,6 +146,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_before_stop(self):
         self.shutdown_alarm_scheduler()
+        self.cloudwatch_database.shutdown()
 
     def start_alarm_scheduler(self):
         if not self.alarm_scheduler:
@@ -117,6 +166,72 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         for alarm_name in alarm_names:
             alarm_arn = arns.cloudwatch_alarm_arn(alarm_name)  # obtain alarm ARN from alarm name
             self.alarm_scheduler.delete_scheduler_for_alarm(alarm_arn)
+
+    def put_metric_data(
+        self, context: RequestContext, namespace: Namespace, metric_data: MetricData
+    ) -> None:
+        _validate_parameters_for_put_metric_data(metric_data)
+
+        self.cloudwatch_database.add_metric_data(
+            context.account_id, context.region, namespace, metric_data
+        )
+
+    def get_metric_data(
+        self,
+        context: RequestContext,
+        metric_data_queries: MetricDataQueries,
+        start_time: Timestamp,
+        end_time: Timestamp,
+        next_token: NextToken = None,
+        scan_by: ScanBy = None,
+        max_datapoints: GetMetricDataMaxDatapoints = None,
+        label_options: LabelOptions = None,
+    ) -> GetMetricDataOutput:
+        results: List[MetricDataResults] = []
+        limit = max_datapoints or 100_800
+        messages: MetricDataResultMessages = []
+        nxt = None
+        for query in metric_data_queries:
+            query_result = self.cloudwatch_database.get_metric_data_stat(
+                account_id=context.account_id,
+                region=context.region,
+                query=query,
+                start_time=start_time,
+                end_time=end_time,
+                scan_by=scan_by,
+            )
+            if query_result.get("messages"):
+                messages.extend(query_result.get("messages"))
+
+            # Paginate
+            aliases_list = PaginatedList(query_result.get("datapoints", {}).items())
+            page, nxt = aliases_list.get_page(
+                lambda metric_result: metric_result.get("Id"),
+                next_token=next_token,
+                page_size=limit,
+            )
+            query_result["datapoints"] = dict(page)
+            results.append(query_result)
+
+        formatted_results = []
+        for result in results:
+            formatted_result = {
+                "Id": result.get("id"),
+                "Label": result.get("label"),
+                "StatusCode": "Complete",
+                "Timestamps": [],
+                "Values": [],
+            }
+            datapoints = result.get("datapoints", {})
+            for timestamp, datapoint_result in datapoints.items():
+                formatted_result["Timestamps"].append(int(timestamp))
+                formatted_result["Values"].append(datapoint_result)
+
+            formatted_results.append(MetricDataResult(**formatted_result))
+
+        return GetMetricDataOutput(
+            MetricDataResults=formatted_results, NextToken=nxt, Messages=messages
+        )
 
     def get_raw_metrics(self, request: Request):
         # TODO this needs to be read from the database
@@ -279,3 +394,88 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         return ListDashboardsOutput(
             DashboardEntries=entries,
         )
+
+    def list_metrics(
+        self,
+        context: RequestContext,
+        namespace: Namespace = None,
+        metric_name: MetricName = None,
+        dimensions: DimensionFilters = None,
+        next_token: NextToken = None,
+        recently_active: RecentlyActive = None,
+        include_linked_accounts: IncludeLinkedAccounts = None,
+        owning_account: AccountId = None,
+    ) -> ListMetricsOutput:
+        result = self.cloudwatch_database.list_metrics(
+            context.account_id,
+            context.region,
+            namespace,
+            metric_name,
+            dimensions or [],
+        )
+
+        metrics = [
+            {
+                "Namespace": metric.get("namespace"),
+                "MetricName": metric.get("metric_name"),
+                "Dimensions": metric.get("dimensions"),
+            }
+            for metric in result.get("metrics", [])
+        ]
+        return ListMetricsOutput(Metrics=metrics, NextToken=None)
+
+    def get_metric_statistics(
+        self,
+        context: RequestContext,
+        namespace: Namespace,
+        metric_name: MetricName,
+        start_time: Timestamp,
+        end_time: Timestamp,
+        period: Period,
+        dimensions: Dimensions = None,
+        statistics: Statistics = None,
+        extended_statistics: ExtendedStatistics = None,
+        unit: StandardUnit = None,
+    ) -> GetMetricStatisticsOutput:
+        stat_datapoints = {}
+        for stat in statistics:
+            query_result = self.cloudwatch_database.get_metric_data_stat(
+                account_id=context.account_id,
+                region=context.region,
+                start_time=start_time,
+                end_time=end_time,
+                scan_by="TimestampDescending",
+                query=MetricDataQuery(
+                    MetricStat=MetricStat(
+                        Metric={
+                            "MetricName": metric_name,
+                            "Namespace": namespace,
+                            "Dimensions": dimensions or [],
+                        },
+                        Period=period,
+                        Stat=stat,
+                        Unit=unit,
+                    )
+                ),
+            )
+
+            datapoints = query_result.get("datapoints", {})
+            for timestamp, datapoint_result in datapoints.items():
+                stat_datapoints.setdefault(timestamp, {})
+                stat_datapoints[timestamp][stat] = datapoint_result
+
+        datapoints = []
+        for timestamp, stats in stat_datapoints.items():
+            datapoints.append(
+                {
+                    "Timestamp": timestamp,
+                    "SampleCount": stats.get("SampleCount"),
+                    "Average": stats.get("Average"),
+                    "Sum": stats.get("Sum"),
+                    "Minimum": stats.get("Minimum"),
+                    "Maximum": stats.get("Maximum"),
+                    "Unit": unit,
+                }
+            )
+
+        return GetMetricStatisticsOutput(Datapoints=datapoints, Label=metric_name)
