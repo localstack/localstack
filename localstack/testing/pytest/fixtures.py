@@ -16,12 +16,15 @@ from _pytest.config import Config
 from _pytest.nodes import Item
 from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
-from moto.core import BackendDict, BaseBackend
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.constants import AWS_REGION_US_EAST_1
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    SECONDARY_TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -34,6 +37,7 @@ from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
@@ -1770,12 +1774,18 @@ def cleanups():
 
 @pytest.fixture(scope="session")
 def account_id(aws_client):
-    return aws_client.sts.get_caller_identity()["Account"]
+    if is_aws_cloud() or is_api_enabled("sts"):
+        return aws_client.sts.get_caller_identity()["Account"]
+    else:
+        return TEST_AWS_ACCOUNT_ID
 
 
 @pytest.fixture(scope="session")
 def secondary_account_id(secondary_aws_client):
-    return secondary_aws_client.sts.get_caller_identity()["Account"]
+    if is_aws_cloud() or is_api_enabled("sts"):
+        return secondary_aws_client.sts.get_caller_identity()["Account"]
+    else:
+        return SECONDARY_TEST_AWS_ACCOUNT_ID
 
 
 @pytest.hookimpl
@@ -1798,16 +1808,6 @@ def sample_stores() -> AccountRegionBundle:
         region_specific_attr = LocalAttribute(default=list)
 
     return AccountRegionBundle("zzz", SampleStore, validate=False)
-
-
-@pytest.fixture()
-def sample_backend_dict() -> BackendDict:
-    class SampleBackend(BaseBackend):
-        def __init__(self, region_name, account_id):
-            super().__init__(region_name, account_id)
-            self.attributes = {}
-
-    return BackendDict(SampleBackend, "sns")
 
 
 @pytest.fixture

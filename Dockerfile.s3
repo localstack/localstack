@@ -98,7 +98,11 @@ ADD localstack/ localstack/
 # delete the API specs stubs for other services
 # delete the providers implementations for other services
 # TODO: remove the SQS ones, it depends on 'is_sqs_queue_url' in service_router.py
-RUN find localstack/aws/api/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -not -name sqs -exec rm -rf '{}' \;
+# TODO: remove lambda one, testutil.py depends on it for fixtures
+# TODO: we also need dynamodb, don't remove the API for now, until we find a way for tests...
+# and now we need node for CDK... what a mess omg
+# Maybe we need a bit of an heavier image for tests?
+# RUN find localstack/aws/api/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -not -name sqs -not -name lambda_ -exec rm -rf '{}' \;
     # \ && \
     # find localstack/services/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
 
@@ -106,9 +110,10 @@ RUN find localstack/aws/api/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -not 
 RUN make entrypoints
 
 # Remove dependecies
-RUN apt-get remove -y make
+# RUN apt-get remove -y make
+# TODO: we need make to run tests, maybe we could have 2 steps: one for tests and one for push?
 
-# remove the other services from the entrypoints
+# remove the other services from the entrypoints / TODO: not needed anymore with SERVICES
 # RUN sed -i '/\[localstack\.aws\.provider\]/,/^$/ { /^\[localstack\.aws\.provider\]/ b; /^$/ b; /localstack.services.providers:s3/!d; }' ./localstack_core.egg-info/entry_points.txt
 
 
@@ -131,7 +136,7 @@ RUN touch /usr/lib/localstack/.s3-version
 
 LABEL authors="LocalStack Contributors"
 LABEL maintainer="LocalStack Team (info@localstack.cloud)"
-LABEL description="LocalStack Docker image"
+LABEL description="LocalStack S3 Docker image"
 
 # Add the build date and git hash at last (changes everytime)
 ARG LOCALSTACK_BUILD_DATE

@@ -1,0 +1,158 @@
+name: S3 Image Integration Tests
+
+on:
+  push:
+    paths:
+      - .github/workflows/tests-s3-image.yml
+      - localstack/aws/*.py
+      - localstack/aws/handlers/*¨
+      - localstack/aws/protocol/**
+      - localstack/aws/serving/**
+      - localstack/aws/api/s3/**
+      - localstack/http/**
+      - localstack/runtime/**
+      - localstack/services/s3/**
+      - localstack/*.py
+      - tests/aws/services/s3/**
+      - Dockerfile.s3
+      - setup.cfg
+      - Makefile
+    branches:
+      - master
+  pull_request:
+    paths:
+      - .github/workflows/tests-s3-image.yml
+      - localstack/aws/*.py
+      - localstack/aws/handlers/*¨
+      - localstack/aws/protocol/**
+      - localstack/aws/serving/**
+      - localstack/aws/api/s3/**
+      - localstack/http/**
+      - localstack/runtime/**
+      - localstack/services/s3/**
+      - localstack/*.py
+      - tests/aws/services/s3/**
+      - Dockerfile.s3
+      - setup.cfg
+      - Makefile
+  workflow_dispatch:
+
+# Only one pull-request triggered run should be executed at a time
+# (head_ref is only set for PR events, otherwise fallback to run_id which differs for every run).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  # Set non-job-specific environment variables for pytest-tinybird
+  TINYBIRD_URL: https://api.tinybird.co
+  TINYBIRD_DATASOURCE: ${{ github.event.repository.name }}-tests-ext
+  TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_SHA: ${{ github.sha }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  # report to tinybird if executed on master
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  IMAGE_NAME: "localstack/localstack-s3"
+
+
+jobs:
+  build-amd64:
+    name: "Build S3 Docker AMD64"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        env:
+          PLATFORM: "amd64"
+          IMAGE_NAME: "localstack/localstack-s3"
+        working-directory: localstack
+        run: |
+          make docker-build
+          make docker-save-image
+
+      - name: Store Docker Image as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: localstack-s3-docker-image-amd64
+          path: localstack/localstack-docker-image-amd64.tar.gz
+          retention-days: 1
+
+
+  tests-s3-image:
+    name: "S3 Image Tests"
+    runs-on: ubuntu-latest
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}
+      CI_JOB_ID: ${{ github.job }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsnappy-dev jq
+
+      - name: Set up Python 3.11
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: make install-ci
+
+      - name: Download Docker Image
+        uses: actions/download-artifact@v3
+        with:
+          name: localstack-s3-docker-image-amd64
+
+      - name: Load Docker Image
+        run: docker load --input localstack-docker-image-amd64.tar.gz
+
+      - name: Run S3 Image tests
+        timeout-minutes: 15
+        env:
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy"
+          TEST_PATH: "tests/aws/services/s3"
+          JUNIT_REPORTS_FILE: "pytest-junit-s3-image.xml"
+          # TODO: check this, do we need coverage? don't store the artefact
+          COVERAGE_FILE: "target/coverage/.coverage-s3.amd64"
+          DEBUG: 1
+
+        run: make docker-run-tests
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: test-results-s3-image
+          path: pytest-junit-s3-image.xml
+          retention-days: 30
+
+  publish-test-results:
+    name: "Publish S3 Image Test Results"
+    needs: tests-s3-image
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    if: success() || failure()
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: test-results-s3-image
+
+      - name: Publish S3 Image Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: "pytest-junit-s3-image.xml"
+          check_name: "S3 Image Test Results"
+          action_fail_on_inconclusive: true
