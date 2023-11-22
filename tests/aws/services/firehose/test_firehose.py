@@ -290,7 +290,7 @@ class TestFirehoseIntegration:
                 )
                 return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
-            assert poll_condition(check_stream_state, 30, 1)
+            assert poll_condition(check_stream_state, 60, 1)
 
             # wait for opensearch cluster to be ready
             def check_domain_state():

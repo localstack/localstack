@@ -1,4 +1,3 @@
-import logging
 import time
 from unittest.mock import patch
 
@@ -445,7 +444,6 @@ class TestKinesisPythonClient:
             stream_name=stream_name,
             region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
-            kcl_log_level=logging.INFO,
             wait_until_started=True,
         )
 

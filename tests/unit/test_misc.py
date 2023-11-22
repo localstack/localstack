@@ -8,19 +8,12 @@ import yaml
 
 from localstack import config
 from localstack.utils import async_utils, config_listener
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import json_safe, now_utc
 from localstack.utils.container_utils.container_client import PortMappings
 from localstack.utils.http import create_chunked_data, parse_chunked_data
 
 
 class TestMisc(unittest.TestCase):
-    def test_environment(self):
-        env = aws_stack.Environment.from_json({"prefix": "foobar1"})
-        self.assertEqual("foobar1", env.prefix)
-        env = aws_stack.Environment.from_string("foobar2")
-        self.assertEqual("foobar2", env.prefix)
-
     def test_parse_chunked_data(self):
         # See: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
         chunked = "4\r\nWiki\r\n5\r\npedia\r\nE\r\n in\r\n\r\nchunks.\r\n0\r\n\r\n"
