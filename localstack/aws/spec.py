@@ -70,6 +70,10 @@ def load_service(service: ServiceName, version: str = None, model_type="service-
     For example: load_service("sqs", "2012-11-05")
     """
     service_description = loader.load_service_model(service, model_type, version)
+    # if the service name is sqs-query, we just loaded our internalized SQS query spec,
+    # the service name needs to be set to standard sqs
+    if service == "sqs-query":
+        service = "sqs"
     return ServiceModel(service_description, service)
 
 
@@ -92,10 +96,10 @@ class ServiceCatalogIndex:
     """
 
     service_names: List[ServiceName]
-    target_prefix_index: Dict[str, List[ServiceName]]
-    signing_name_index: Dict[str, List[ServiceName]]
-    operations_index: Dict[str, List[ServiceName]]
-    endpoint_prefix_index: Dict[str, List[ServiceName]]
+    target_prefix_index: Dict[str, List[ServiceModel]]
+    signing_name_index: Dict[str, List[ServiceModel]]
+    operations_index: Dict[str, List[ServiceModel]]
+    endpoint_prefix_index: Dict[str, List[ServiceModel]]
 
 
 class LazyServiceCatalogIndex:
@@ -108,41 +112,48 @@ class LazyServiceCatalogIndex:
         return list(self._services.keys())
 
     @cached_property
-    def target_prefix_index(self) -> Dict[str, List[ServiceName]]:
+    def target_prefix_index(self) -> Dict[str, List[ServiceModel]]:
         result = defaultdict(list)
-        for service in self._services.values():
-            target_prefix = service.metadata.get("targetPrefix")
-            if target_prefix:
-                result[target_prefix].append(service.service_name)
+        for service_models in self._services.values():
+            for service_model in service_models:
+                target_prefix = service_model.metadata.get("targetPrefix")
+                if target_prefix:
+                    result[target_prefix].append(service_model)
         return dict(result)
 
     @cached_property
-    def signing_name_index(self) -> Dict[str, List[ServiceName]]:
+    def signing_name_index(self) -> Dict[str, List[ServiceModel]]:
         result = defaultdict(list)
-        for service in self._services.values():
-            result[service.signing_name].append(service.service_name)
+        for service_models in self._services.values():
+            for service_model in service_models:
+                result[service_model.signing_name].append(service_model)
         return dict(result)
 
     @cached_property
-    def operations_index(self) -> Dict[str, List[ServiceName]]:
+    def operations_index(self) -> Dict[str, List[ServiceModel]]:
         result = defaultdict(list)
-        for service in self._services.values():
-            operations = service.operation_names
-            if operations:
-                for operation in operations:
-                    result[operation].append(service.service_name)
+        for service_models in self._services.values():
+            for service_model in service_models:
+                operations = service_model.operation_names
+                if operations:
+                    for operation in operations:
+                        result[operation].append(service_model)
         return dict(result)
 
     @cached_property
-    def endpoint_prefix_index(self) -> Dict[str, List[ServiceName]]:
+    def endpoint_prefix_index(self) -> Dict[str, List[ServiceModel]]:
         result = defaultdict(list)
-        for service in self._services.values():
-            result[service.endpoint_prefix].append(service.service_name)
+        for service_models in self._services.values():
+            for service_model in service_models:
+                result[service_model.endpoint_prefix].append(service_model)
         return dict(result)
 
     @cached_property
-    def _services(self) -> Dict[ServiceName, ServiceModel]:
-        return {service.service_name: service for service in list_services()}
+    def _services(self) -> Dict[ServiceName, List[ServiceModel]]:
+        services = defaultdict(list)
+        for service in list_services():
+            services[service.service_name].append(service)
+        return services
 
 
 class ServiceCatalog:
@@ -160,28 +171,28 @@ class ServiceCatalog:
         return self.index.service_names
 
     @property
-    def target_prefix_index(self) -> Dict[str, List[ServiceName]]:
+    def target_prefix_index(self) -> Dict[str, List[ServiceModel]]:
         return self.index.target_prefix_index
 
     @property
-    def signing_name_index(self) -> Dict[str, List[ServiceName]]:
+    def signing_name_index(self) -> Dict[str, List[ServiceModel]]:
         return self.index.signing_name_index
 
     @property
-    def operations_index(self) -> Dict[str, List[ServiceName]]:
+    def operations_index(self) -> Dict[str, List[ServiceModel]]:
         return self.index.operations_index
 
     @property
-    def endpoint_prefix_index(self) -> Dict[str, List[ServiceName]]:
+    def endpoint_prefix_index(self) -> Dict[str, List[ServiceModel]]:
         return self.index.endpoint_prefix_index
 
-    def by_target_prefix(self, target_prefix: str) -> List[ServiceName]:
+    def by_target_prefix(self, target_prefix: str) -> List[ServiceModel]:
         return self.target_prefix_index.get(target_prefix, [])
 
-    def by_signing_name(self, signing_name: str) -> List[ServiceName]:
+    def by_signing_name(self, signing_name: str) -> List[ServiceModel]:
         return self.signing_name_index.get(signing_name, [])
 
-    def by_operation(self, operation_name: str) -> List[ServiceName]:
+    def by_operation(self, operation_name: str) -> List[ServiceModel]:
         return self.operations_index.get(operation_name, [])
 
 

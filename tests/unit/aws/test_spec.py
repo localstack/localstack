@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 from botocore.model import ServiceModel, StringShape
 
 from localstack.aws.spec import (
@@ -17,10 +19,25 @@ def test_pickled_index_equals_lazy_index(tmp_path):
     cached_index = load_service_index_cache(str(file_path))
 
     assert cached_index.service_names == lazy_index.service_names
-    assert cached_index.target_prefix_index == lazy_index.target_prefix_index
-    assert cached_index.signing_name_index == lazy_index.signing_name_index
-    assert cached_index.operations_index == lazy_index.operations_index
-    assert cached_index.endpoint_prefix_index == lazy_index.endpoint_prefix_index
+
+    def _compare_index(
+        expected: Dict[str, List[ServiceModel]], actual: Dict[str, List[ServiceModel]]
+    ):
+        """simple function to deep compare two indices <key>:<service model>"""
+        assert len(expected) == len(actual)
+        for key, expected_service_models in expected.items():
+            actual_service_models = actual.get(key)
+            assert len(expected_service_models) == len(actual_service_models)
+            for index in range(0, len(expected_service_models)):
+                expected_service_model = expected_service_models[index]
+                actual_service_model = actual_service_models[index]
+                assert expected_service_model.service_name == actual_service_model.service_name
+                assert expected_service_model.protocol == actual_service_model.protocol
+
+    _compare_index(lazy_index.target_prefix_index, cached_index.target_prefix_index)
+    _compare_index(lazy_index.signing_name_index, cached_index.signing_name_index)
+    _compare_index(lazy_index.operations_index, cached_index.operations_index)
+    _compare_index(lazy_index.endpoint_prefix_index, cached_index.endpoint_prefix_index)
 
 
 def test_patching_loaders():

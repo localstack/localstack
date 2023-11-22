@@ -112,7 +112,7 @@ def _botocore_serializer_integration_test(
 
 
 def _botocore_error_serializer_integration_test(
-    service: str,
+    service_model_name: str,
     action: str,
     exception: ServiceException,
     code: str,
@@ -127,10 +127,10 @@ def _botocore_error_serializer_integration_test(
     - Load the given service (f.e. "sqs")
     - Serialize the _error_ response with the appropriate serializer from the AWS Serivce Framework
     - Parse the serialized error response using the botocore parser
-    - Checks if the the metadata is correct (status code, requestID,...)
+    - Checks if the metadata is correct (status code, requestID,...)
     - Checks if the parsed error response content is correct
 
-    :param service: to load the correct service specification, serializer, and parser
+    :param service_model_name: to load the correct service specification, serializer, and parser
     :param action: to load the correct service specification, serializer, and parser
     :param exception: which should be serialized and tested against
     :param code: expected "code" of the exception (i.e. the AWS specific exception ID, f.e.
@@ -143,7 +143,7 @@ def _botocore_error_serializer_integration_test(
     """
 
     # Load the appropriate service
-    service = load_service(service)
+    service = load_service(service_model_name)
 
     # Use our serializer to serialize the response
     response_serializer = create_serializer(service)

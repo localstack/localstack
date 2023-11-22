@@ -7,7 +7,7 @@ from botocore.awsrequest import AWSRequest, create_request_object
 from botocore.config import Config
 from botocore.model import OperationModel, ServiceModel, Shape, StructureShape
 
-from localstack.aws.protocol.service_router import determine_aws_service_name, get_service_catalog
+from localstack.aws.protocol.service_router import determine_aws_service_model, get_service_catalog
 from localstack.http import Request
 from localstack.utils.run import to_str
 
@@ -180,52 +180,56 @@ def test_service_router_works_for_every_service(
     request: Request = _botocore_request_to_localstack_request(request_object)
 
     # Execute the service router
-    detected_service_name = determine_aws_service_name(request)
+    detected_service_model = determine_aws_service_model(request)
 
     # Make sure the detected service is the same as the one we generated the request for
-    assert detected_service_name == service.service_name
+    assert detected_service_model.service_name == service.service_name
+    assert detected_service_model.protocol == service.protocol
 
 
 def test_endpoint_prefix_based_routing():
     # TODO could be generalized using endpoint resolvers and replacing "amazonaws.com" with "localhost.localstack.cloud"
-    detected_service_name = determine_aws_service_name(
+    detected_service_model = determine_aws_service_model(
         Request(method="GET", path="/", headers={"Host": "kms.localhost.localstack.cloud"})
     )
-    assert detected_service_name == "kms"
+    assert detected_service_model.service_name == "kms"
 
-    detected_service_name = determine_aws_service_name(
+    detected_service_model = determine_aws_service_model(
         Request(
             method="POST",
             path="/app-instances",
             headers={"Host": "identity-chime.localhost.localstack.cloud"},
         )
     )
-    assert detected_service_name == "chime-sdk-identity"
+    assert detected_service_model.service_name == "chime-sdk-identity"
 
 
 def test_endpoint_prefix_based_routing_s3_virtual_host():
-    detected_service_name = determine_aws_service_name(
+    detected_service_model = determine_aws_service_model(
         Request(method="GET", path="/", headers={"Host": "pictures.s3.localhost.localstack.cloud"})
     )
-    assert detected_service_name == "s3"
+    assert detected_service_model.service_name == "s3"
 
-    detected_service_name = determine_aws_service_name(
+    detected_service_model = determine_aws_service_model(
         Request(
             method="POST",
             path="/app-instances",
             headers={"Host": "kms.s3.localhost.localstack.cloud"},
         )
     )
-    assert detected_service_name == "s3"
+    assert detected_service_model.service_name == "s3"
 
 
-def test_endpoint_prefix_based_not_short_circuit_for_sqs():
-    detected_service_name = determine_aws_service_name(
+def test_endpoint_prefix_based_routing_for_sqs():
+    # test without content type
+    detected_service_model = determine_aws_service_model(
         Request(method="GET", path="/", headers={"Host": "sqs.localhost.localstack.cloud"})
     )
-    assert detected_service_name == "sqs-query"
+    assert detected_service_model.service_name == "sqs"
+    assert detected_service_model.protocol == "query"
 
-    detected_service_name = determine_aws_service_name(
+    # test explicitly with JSON
+    detected_service_model = determine_aws_service_model(
         Request(
             method="GET",
             path="/",
@@ -235,4 +239,5 @@ def test_endpoint_prefix_based_not_short_circuit_for_sqs():
             },
         )
     )
-    assert detected_service_name == "sqs"
+    assert detected_service_model.service_name == "sqs"
+    assert detected_service_model.protocol == "json"

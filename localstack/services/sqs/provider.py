@@ -791,7 +791,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             arn["account"],
             arn["region"],
             arn["resource"],
-            is_query=context.service.service_name == "sqs-query",
+            is_query=context.service.protocol == "query",
         )
 
     def _resolve_queue(
@@ -811,7 +811,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :raises QueueDoesNotExist: if the queue does not exist
         """
         account_id, region_name, name = resolve_queue_location(context, queue_name, queue_url)
-        is_query = context.service.service_name == "sqs-query"
+        is_query = context.service.protocol == "query"
         return self._require_queue(
             account_id, region_name or context.region, name, is_query=is_query
         )
@@ -885,7 +885,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             queue_owner_aws_account_id or context.account_id,
             context.region,
             queue_name,
-            is_query=context.service.service_name == "sqs-query",
+            is_query=context.service.protocol == "query",
         )
 
         return GetQueueUrlResult(QueueUrl=queue.url(context))

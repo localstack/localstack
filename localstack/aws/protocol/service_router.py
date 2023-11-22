@@ -3,6 +3,7 @@ import os
 from typing import NamedTuple, Optional, Set
 
 import botocore
+from botocore.model import ServiceModel
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.http import parse_dict_header
 
@@ -276,17 +277,18 @@ def get_service_catalog() -> ServiceCatalog:
         return ServiceCatalog()
 
 
-def resolve_conflicts(candidates: Set[str], request: Request):
+def resolve_conflicts(candidates: Set[ServiceModel], request: Request):
     """
     Some service definitions are overlapping to a point where they are _not_ distinguishable at all
     (f.e. ``DescribeEndpints`` in timestream-query and timestream-write).
     These conflicts need to be resolved manually.
     """
-    if candidates == {"timestream-query", "timestream-write"}:
+    service_name_candidates = {service.service_name for service in candidates}
+    if service_name_candidates == {"timestream-query", "timestream-write"}:
         return "timestream-query"
-    if candidates == {"docdb", "neptune", "rds"}:
+    if service_name_candidates == {"docdb", "neptune", "rds"}:
         return "rds"
-    if candidates == {"sqs-query", "sqs"}:
+    if service_name_candidates == {"sqs"}:
         # SQS now have 2 different specs for `query` and `json` protocol. From our current implementation with the
         # parser and serializer, we need to have 2 different service names for them, but they share one provider
         # implementation. `sqs-query` represents the legacy `query` protocol spec, and `sqs` the new `json` spec,
@@ -297,7 +299,9 @@ def resolve_conflicts(candidates: Set[str], request: Request):
         return "sqs" if content_type == "application/x-amz-json-1.0" else "sqs-query"
 
 
-def determine_aws_service_name(request: Request, services: ServiceCatalog = None) -> Optional[str]:
+def determine_aws_service_model(
+    request: Request, services: ServiceCatalog = None
+) -> Optional[ServiceModel]:
     """
     Tries to determine the name of the AWS service an incoming request is targeting.
     :param request: to determine the target service name of
@@ -318,7 +322,7 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
         # try to find a match with the custom signing name rules
         custom_match = custom_signing_name_rules(signing_name, path)
         if custom_match:
-            return custom_match
+            return services.get(custom_match)
 
         # still ambiguous - add the services to the list of candidates
         candidates.update(signing_name_candidates)
@@ -334,16 +338,14 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
         candidates.update(target_candidates)
 
         # exclude services where the operation is not contained in the service spec
-        for service_name in list(candidates):
-            service = services.get(service_name)
+        for service in list(candidates):
             if operation not in service.operation_names:
-                candidates.remove(service_name)
+                candidates.remove(service)
     else:
         # exclude services which have a target prefix (the current request does not have one)
-        for service_name in list(candidates):
-            service = services.get(service_name)
+        for service in list(candidates):
             if service.metadata.get("targetPrefix") is not None:
-                candidates.remove(service_name)
+                candidates.remove(service)
 
     if len(candidates) == 1:
         return candidates.pop()
@@ -353,7 +355,7 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
         # try to find a match with the custom path rules
         custom_path_match = custom_path_addressing_rules(path)
         if custom_path_match:
-            return custom_path_match
+            return services.get(custom_path_match)
 
     # 4. check the host (custom host addressing rules)
     if host:
@@ -367,7 +369,7 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
 
         custom_host_match = custom_host_addressing_rules(host)
         if custom_host_match:
-            return custom_host_match
+            return services.get(custom_host_match)
 
     if request.shallow:
         # from here on we would need access to the request body, which doesn't exist for shallow requests like
@@ -382,18 +384,17 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
             query_candidates = [
                 service
                 for service in services.by_operation(values["Action"])
-                if services.get(service).protocol in ("ec2", "query")
+                if service.protocol in ("ec2", "query")
             ]
 
             if len(query_candidates) == 1:
                 return query_candidates[0]
 
             if "Version" in values:
-                for service in list(query_candidates):
-                    service_model = services.get(service)
+                for service_model in list(query_candidates):
                     if values["Version"] != service_model.api_version:
                         # the combination of Version and Action is not unique, add matches to the candidates
-                        query_candidates.remove(service)
+                        query_candidates.remove(service_model)
 
             if len(query_candidates) == 1:
                 return query_candidates[0]
@@ -412,15 +413,15 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
     # 6. resolve service spec conflicts
     resolved_conflict = resolve_conflicts(candidates, request)
     if resolved_conflict:
-        return resolved_conflict
+        return services.get(resolved_conflict)
 
     # 7. check the legacy rules in the end
     legacy_match = legacy_rules(request)
     if legacy_match:
-        return legacy_match
+        return services.get(legacy_match)
 
     if signing_name:
-        return signing_name
+        return services.get(signing_name)
     if candidates:
         return candidates.pop()
     return None

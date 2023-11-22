@@ -1747,6 +1747,7 @@ def gen_amzn_requestid():
     return long_uid()
 
 
+@functools.cache
 def create_serializer(service: ServiceModel) -> ResponseSerializer:
     """
     Creates the right serializer for the given service model.
@@ -1762,9 +1763,8 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
     # Therefore, the service-specific serializer implementations (basically the implicit / informally more specific
     # protocol implementation) has precedence over the more general protocol-specific serializers.
     service_specific_serializers = {
-        "sqs-query": SqsQueryResponseSerializer,
-        "sqs": SqsResponseSerializer,
-        "s3": S3ResponseSerializer,
+        "sqs": {"json": SqsResponseSerializer, "query": SqsQueryResponseSerializer},
+        "s3": {"rest-xml": S3ResponseSerializer},
     }
     protocol_specific_serializers = {
         "query": QueryResponseSerializer,
@@ -1774,15 +1774,18 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
         "ec2": EC2ResponseSerializer,
     }
 
-    # Try to select a service-specific serializer implementation
-    if service.service_name in service_specific_serializers:
-        return service_specific_serializers[service.service_name]()
+    # Try to select a service- and protocol-specific serializer implementation
+    if (
+        service.service_name in service_specific_serializers
+        and service.protocol in service_specific_serializers[service.service_name]
+    ):
+        return service_specific_serializers[service.service_name][service.protocol]()
     else:
         # Otherwise, pick the protocol-specific serializer for the protocol of the service
         return protocol_specific_serializers[service.protocol]()
 
 
-def aws_response_serializer(service: str, operation: str):
+def aws_response_serializer(service_model_name: str, operation: str):
     """
     A decorator for an HTTP route that can serialize return values or exceptions into AWS responses.
     This can be used to create AWS request handlers in a convenient way. Example usage::
@@ -1798,13 +1801,13 @@ def aws_response_serializer(service: str, operation: str):
 
             return ListQueuesResult(QueueUrls=...)  # <- object from the SQS API will be serialized
 
-    :param service: the AWS service (e.g., "sqs", "lambda")
+    :param service_model_name: the AWS service model name (e.g., "sqs", "lambda", "sqs-query")
     :param operation: the operation name (e.g., "ReceiveMessage", "ListFunctions")
     :returns: a decorator
     """
 
     def _decorate(fn):
-        service_model = load_service(service)
+        service_model = load_service(service_model_name)
         operation_model = service_model.operation_model(operation)
         serializer = create_serializer(service_model)
 
