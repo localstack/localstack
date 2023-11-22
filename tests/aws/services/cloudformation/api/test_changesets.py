@@ -12,6 +12,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
+from tests.aws.services.cloudformation.api.test_stacks import MINIMAL_TEMPLATE
 
 
 @markers.aws.validated
@@ -744,3 +745,148 @@ def test_autoexpand_capability_requirement(cleanups, aws_client):
     aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
         ChangeSetName=create_changeset_result["Id"]
     )
+
+
+@markers.aws.validated
+def test_create_while_in_review(aws_client, snapshot, cleanups):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    stack_name = f"stack-{short_uid()}"
+    changeset_name = f"changeset-{short_uid()}"
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+
+    changeset = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=changeset_name,
+        ChangeSetType="CREATE",
+        TemplateBody=MINIMAL_TEMPLATE,
+    )
+    stack_id = changeset["StackId"]
+    changeset_id = changeset["Id"]
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name, ChangeSetName=changeset_name
+    )
+
+    # I would have actually expected this to throw, but it doesn't
+    create_stack_while_in_review = aws_client.cloudformation.create_stack(
+        StackName=stack_name, TemplateBody=MINIMAL_TEMPLATE
+    )
+    snapshot.match("create_stack_while_in_review", create_stack_while_in_review)
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+    # describe change set and stack (change set is now obsolete)
+    describe_stack = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    snapshot.match("describe_stack", describe_stack)
+    describe_change_set = aws_client.cloudformation.describe_change_set(ChangeSetName=changeset_id)
+    snapshot.match("describe_change_set", describe_change_set)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..EnableTerminationProtection", "$..LastUpdatedTime"]
+)
+@markers.aws.validated
+def test_name_conflicts(aws_client, snapshot, cleanups):
+    """
+    changeset-based equivalent to tests.aws.services.cloudformation.api.test_stacks.test_name_conflicts
+
+    Tests behavior of creating a stack and changeset with the same names of ones that were previously deleted
+
+    1. Create ChangeSet
+    2. Overwrite ChangeSet
+    3. Execute ChangeSet / Create Stack
+    4. Creating a new ChangeSet (CREATE) for this stack should fail since it already exists & is running/active
+    5. Delete Stack
+    6. Create ChangeSet / re-use ChangeSet and Stack names from 1.
+
+    """
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    stack_name = f"repeated-stack-{short_uid()}"
+    initial_changeset_name = f"initial-changeset-{short_uid()}"
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+
+    initial_changeset = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=initial_changeset_name,
+        ChangeSetType="CREATE",
+        TemplateBody=MINIMAL_TEMPLATE,
+    )
+    initial_stack_id = initial_changeset["StackId"]
+    initial_changeset_id = initial_changeset["Id"]
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name, ChangeSetName=initial_changeset_name
+    )
+
+    # even though only one changeset can be active at a time, the last one always overwrites the previous one
+    overwriting_changeset_name = f"overwritechangeset-{short_uid()}"
+    overwriting_changeset = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=overwriting_changeset_name,
+        ChangeSetType="CREATE",
+        TemplateBody=MINIMAL_TEMPLATE,
+    )
+    snapshot.match("overwriting_changeset", overwriting_changeset)
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name, ChangeSetName=overwriting_changeset_name
+    )
+
+    # actually create the stack
+    aws_client.cloudformation.execute_change_set(
+        StackName=stack_name, ChangeSetName=overwriting_changeset_name
+    )
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+    # creating should now fail (stack is created & active)
+    with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+        aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=overwriting_changeset_name,
+            ChangeSetType="CREATE",
+            TemplateBody=MINIMAL_TEMPLATE,
+        )
+    snapshot.match("create_changeset_existingstack_exc", e.value.response)
+
+    # delete stack
+    aws_client.cloudformation.delete_stack(StackName=stack_name)
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+
+    # creating for stack name with same name should work again
+    # re-using the changset name should also not matter :)
+    second_initial_changeset = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=initial_changeset_name,
+        ChangeSetType="CREATE",
+        TemplateBody=MINIMAL_TEMPLATE,
+    )
+    second_initial_stack_id = second_initial_changeset["StackId"]
+    second_initial_changeset_id = second_initial_changeset["Id"]
+    assert second_initial_changeset_id != initial_changeset_id
+    assert initial_stack_id != second_initial_stack_id
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=second_initial_changeset_id
+    )
+
+    # only one should be active, and this one is in review state right now
+    new_stack_desc = aws_client.cloudformation.describe_stacks(StackName=stack_name)
+    snapshot.match("new_stack_desc", new_stack_desc)
+    assert len(new_stack_desc["Stacks"]) == 1
+    assert new_stack_desc["Stacks"][0]["StackId"] == second_initial_stack_id
+
+    # can still access both by using the ARN (stack id)
+    # and they should be different from each other
+    stack_id_desc = aws_client.cloudformation.describe_stacks(StackName=initial_stack_id)
+    new_stack_id_desc = aws_client.cloudformation.describe_stacks(StackName=second_initial_stack_id)
+    snapshot.match("stack_id_desc", stack_id_desc)
+    snapshot.match("new_stack_id_desc", new_stack_id_desc)
+
+    # can still access all change sets by their ID
+    initial_changeset_id_desc = aws_client.cloudformation.describe_change_set(
+        ChangeSetName=initial_changeset_id
+    )
+    snapshot.match("initial_changeset_id_desc", initial_changeset_id_desc)
+    overwriting_changeset_id_desc = aws_client.cloudformation.describe_change_set(
+        ChangeSetName=overwriting_changeset["Id"]
+    )
+    snapshot.match("overwriting_changeset_id_desc", overwriting_changeset_id_desc)
+    second_initial_changeset_id_desc = aws_client.cloudformation.describe_change_set(
+        ChangeSetName=second_initial_changeset_id
+    )
+    snapshot.match("second_initial_changeset_id_desc", second_initial_changeset_id_desc)
