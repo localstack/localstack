@@ -1,0 +1,118 @@
+{
+  "typeName": "AWS::EC2::TransitGateway",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-transitgateway",
+  "description": "Resource Type definition for AWS::EC2::TransitGateway",
+  "additionalProperties": false,
+  "properties": {
+    "DefaultRouteTablePropagation": {
+      "type": "string"
+    },
+    "Description": {
+      "type": "string"
+    },
+    "AutoAcceptSharedAttachments": {
+      "type": "string"
+    },
+    "DefaultRouteTableAssociation": {
+      "type": "string"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "VpnEcmpSupport": {
+      "type": "string"
+    },
+    "DnsSupport": {
+      "type": "string"
+    },
+    "MulticastSupport": {
+      "type": "string"
+    },
+    "AmazonSideAsn": {
+      "type": "integer",
+      "format": "int64"
+    },
+    "TransitGatewayCidrBlocks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "AssociationDefaultRouteTableId": {
+      "type": "string"
+    },
+    "PropagationDefaultRouteTableId": {
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Value": {
+          "type": "string"
+        },
+        "Key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ],
+  "createOnlyProperties": [
+    "/properties/AmazonSideAsn",
+    "/properties/MulticastSupport"
+  ],
+  "taggable": true,
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:CreateTransitGateway",
+        "ec2:CreateTags"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeTransitGateways",
+        "ec2:DescribeTags"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DeleteTransitGateway",
+        "ec2:DeleteTags"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ec2:ModifyTransitGateway",
+        "ec2:DeleteTags",
+        "ec2:CreateTags",
+        "ec2:ModifyTransitGatewayOptions"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeTransitGateways",
+        "ec2:DescribeTags"
+      ]
+    }
+  }
+}
