@@ -1734,6 +1734,72 @@ class TestCloudwatch:
         assert datapoint["Maximum"] == 9
         assert datapoint["Average"] == 4.5
 
+    def test_list_metrics_pagination(self, aws_client):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        max_metrics = 500  # max metrics per page according to AWS docs
+        for i in range(0, max_metrics + 1):
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": f"{metric_name}-{i}",
+                        "Value": 21,
+                        "Unit": "Seconds",
+                    }
+                ],
+            )
+
+        def assert_metrics_count():
+            response = aws_client.cloudwatch.list_metrics(Namespace=namespace)
+            assert len(response["Metrics"]) == max_metrics and response.get("NextToken") is not None
+
+        retry(assert_metrics_count, retries=10, sleep=1.0, sleep_before=1.0)
+
+    @markers.aws.validated
+    def test_get_metric_data_pagination(self, aws_client):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        max_data_points = 10  # default is 100,800 according to AWS docs
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        for i in range(0, max_data_points * 2):
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": metric_name,
+                        "Timestamp": now + timedelta(seconds=(i * 60)),
+                        "Value": i,
+                        "Unit": "Seconds",
+                    }
+                ],
+            )
+
+        def assert_data_points_count():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=(max_data_points * 60 * 2)),
+                MaxDatapoints=max_data_points,
+            )
+            assert (len(response["MetricDataResults"][0]["Values"]) == 10) and (
+                response.get("NextToken") is not None
+            )
+
+        retry(assert_data_points_count, retries=10, sleep=1.0, sleep_before=2.0)
+
 
 def _check_alarm_triggered(
     expected_state,

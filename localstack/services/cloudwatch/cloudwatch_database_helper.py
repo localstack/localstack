@@ -118,7 +118,9 @@ class CloudwatchDatabase:
                 for insert in inserts:
                     for _ in range(insert.get("TimesToInsert")):
                         cur.execute(
-                            self._get_insert_single_metric_query(),
+                            f"""INSERT INTO {self.TABLE_SINGLE_METRICS}
+                    ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "value")
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                             (
                                 account_id,
                                 region,
@@ -136,7 +138,9 @@ class CloudwatchDatabase:
 
                 if statistic_values := metric.get("StatisticValues"):
                     cur.execute(
-                        self._get_insert_aggregated_metric_query(),
+                        f"""INSERT INTO {self.TABLE_AGGREGATED_METRICS}
+                    ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "sample_count", "sum", "min", "max")
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         (
                             account_id,
                             region,
@@ -393,13 +397,3 @@ class CloudwatchDatabase:
         self, timestamp: datetime
     ):  # TODO verify if this is the standard format, might need to convert
         return int(timestamp.timestamp())
-
-    def _get_insert_single_metric_query(self) -> str:
-        return f"""INSERT INTO {self.TABLE_SINGLE_METRICS}
-                    ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "value")
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-
-    def _get_insert_aggregated_metric_query(self) -> str:
-        return f"""INSERT INTO {self.TABLE_AGGREGATED_METRICS}
-                    ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "sample_count", "sum", "min", "max")
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
