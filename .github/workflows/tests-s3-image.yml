@@ -41,7 +41,7 @@ on:
         description: 'Publish S3-only images on Dockerhub'
         required: false
         type: boolean
-        default: false
+        default: true
 
 # Only one pull-request triggered run should be executed at a time
 # (head_ref is only set for PR events, otherwise fallback to run_id which differs for every run).
