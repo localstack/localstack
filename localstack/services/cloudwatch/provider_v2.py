@@ -26,9 +26,9 @@ from localstack.aws.api.cloudwatch import (
     GetMetricDataMaxDatapoints,
     GetMetricDataOutput,
     GetMetricStatisticsOutput,
+    HistoryItemType,
     IncludeLinkedAccounts,
     InvalidParameterCombinationException,
-    HistoryItemType,
     InvalidParameterValueException,
     LabelOptions,
     ListDashboardsOutput,
@@ -67,8 +67,8 @@ from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.cloudwatch.cloudwatch_database_helper import CloudwatchDatabase
 from localstack.services.cloudwatch.models import (
     CloudWatchStore,
-    LocalStackDashboard,
     LocalStackAlarm,
+    LocalStackDashboard,
     LocalStackMetricAlarm,
     cloudwatch_stores,
 )
@@ -244,6 +244,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         return GetMetricDataOutput(
             MetricDataResults=formatted_results, NextToken=nxt, Messages=messages
         )
+
     def set_alarm_state(
         self,
         context: RequestContext,
@@ -254,10 +255,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     ) -> None:
         try:
             if state_reason_data:
-                state_reason_data = json.loads(state_reason_data)
+                json.loads(state_reason_data)
         except ValueError:
             raise InvalidParameterValueException(
-                "TODO: right error message: Json was not correctly formatted"
+                "TODO: check right error message: Json was not correctly formatted"
             )
 
         store = self.get_store(context.account_id, context.region)
@@ -556,7 +557,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         alarm: LocalStackAlarm,
         state_value: str,
         state_reason: str,
-        state_reason_data: dict = None,
+        state_reason_data: str = None,
     ):
         old_state = alarm.alarm["StateValue"]
         store = self.get_store(context.account_id, context.region)
