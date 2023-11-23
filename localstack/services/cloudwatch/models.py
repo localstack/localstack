@@ -62,7 +62,6 @@ class LocalStackCompositeAlarm:
         pass
 
 
-<<<<<<< HEAD
 class LocalStackDashboard:
     region: str
     account_id: str
@@ -82,9 +81,9 @@ class LocalStackDashboard:
         self.dashboard_body = dashboard_body
         self.last_modified = datetime.datetime.now()
         self.size = 225  # TODO: calculate size
-=======
+
+
 LocalStackAlarm = LocalStackMetricAlarm | LocalStackCompositeAlarm
->>>>>>> 97da25511 (WIP: add set_state_alarm and history)
 
 
 class CloudWatchStore(BaseStore):
