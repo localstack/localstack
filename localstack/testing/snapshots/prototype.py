@@ -218,9 +218,10 @@ class SnapshotSession:
                 original[k] = v = v.read().decode(
                     "utf-8"
                 )  # TODO: patch boto client so this doesn't break any further read() calls
-            if isinstance(v, list) and v and isinstance(v[0], dict):
+            if isinstance(v, list) and v:
                 for item in v:
-                    self._transform_dict_to_parseable_values(item)
+                    if isinstance(item, dict):
+                        self._transform_dict_to_parseable_values(item)
             if isinstance(v, Dict):
                 self._transform_dict_to_parseable_values(v)
 
