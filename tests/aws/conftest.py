@@ -1,11 +1,12 @@
 import os
+from typing import Optional
 
 import pytest
 from _pytest.config import Config
 
-# from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack import config as localstack_config
 from localstack import constants
+from localstack.testing.scenario.provisioning import InfraProvisioner
 
 
 def pytest_configure(config: Config):
@@ -64,25 +65,24 @@ def cdk_template_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "cdk_templates"))
 
 
-# TODO: enable this back, it has a dependency on Node which I'm not sure how to resolve yet
 # Note: Don't move this into testing lib
-# @pytest.fixture(scope="session")
-# def infrastructure_setup(cdk_template_path, aws_client):
-#     def _infrastructure_setup(
-#         namespace: str, force_synth: Optional[bool] = False
-#     ) -> InfraProvisioner:
-#         """
-#         :param namespace: repo-unique identifier for this CDK app.
-#             A directory with this name will be created at `tests/aws/cdk_templates/<namespace>/`
-#         :param force_synth: set to True to always re-synth the CDK app
-#         :return: an instantiated CDK InfraProvisioner which can be used to deploy a CDK app
-#         """
-#         return InfraProvisioner(
-#             base_path=cdk_template_path,
-#             aws_client=aws_client,
-#             namespace=namespace,
-#             force_synth=force_synth,
-#             persist_output=True,
-#         )
-#
-#     return _infrastructure_setup
+@pytest.fixture(scope="session")
+def infrastructure_setup(cdk_template_path, aws_client):
+    def _infrastructure_setup(
+        namespace: str, force_synth: Optional[bool] = False
+    ) -> InfraProvisioner:
+        """
+        :param namespace: repo-unique identifier for this CDK app.
+            A directory with this name will be created at `tests/aws/cdk_templates/<namespace>/`
+        :param force_synth: set to True to always re-synth the CDK app
+        :return: an instantiated CDK InfraProvisioner which can be used to deploy a CDK app
+        """
+        return InfraProvisioner(
+            base_path=cdk_template_path,
+            aws_client=aws_client,
+            namespace=namespace,
+            force_synth=force_synth,
+            persist_output=True,
+        )
+
+    return _infrastructure_setup
