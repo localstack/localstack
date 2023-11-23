@@ -11,6 +11,8 @@ from urllib.parse import quote
 from botocore.exceptions import ClientError
 
 from localstack.aws.api import RequestContext
+from localstack.aws.api.events import PutEventsRequestEntry
+from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.s3 import (
     AccountId,
     BucketName,
@@ -50,13 +52,6 @@ if LEGACY_V2_S3_PROVIDER:
         get_bucket_from_moto,
         get_key_from_moto_bucket,
     )
-
-try:
-    from localstack.aws.api.events import PutEventsRequestEntry
-    from localstack.aws.api.lambda_ import InvocationType
-except ImportError:
-    # if we can't import it, we are in the S3-only image, where we don't need those, so we can safely skip
-    pass
 
 LOG = logging.getLogger(__name__)
 
