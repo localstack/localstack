@@ -68,6 +68,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::UsagePlan": "ResourceProvider",
     "AWS::ApiGateway::UsagePlanKey": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
+    "AWS::CloudFormation::Stack": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
     "AWS::DynamoDB::Table": "ResourceProvider",
