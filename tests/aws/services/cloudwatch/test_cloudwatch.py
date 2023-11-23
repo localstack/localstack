@@ -24,7 +24,7 @@ PUBLICATION_RETRIES = 5
 
 
 def is_old_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2"
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2" and not is_aws_cloud()
 
 
 class TestCloudwatch:
@@ -151,6 +151,51 @@ class TestCloudwatch:
         assert (
             err["Message"]
             == "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size."
+        )
+
+        # test invalid due to inserting both value and statistic values
+        with pytest.raises(Exception) as ex:
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": "mymetric",
+                        "Timestamp": utc_now,
+                        "Value": 1.5,
+                        "StatisticValues": {
+                            "SampleCount": 10,
+                            "Sum": 55,
+                            "Minimum": 1,
+                            "Maximum": 10,
+                        },
+                        "Unit": "Count",
+                    }
+                ],
+            )
+        err = ex.value.response["Error"]
+        assert err["Code"] == "InvalidParameterCombination"
+        assert (
+            err["Message"]
+            == "The parameters MetricData.member.1.Value and MetricData.member.1.StatisticValues are mutually exclusive and you have specified both."
+        )
+
+        # For some strange reason the AWS implementation allows this
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "mymetric",
+                    "Timestamp": utc_now,
+                    "Values": [1.0, 10.0],
+                    "StatisticValues": {
+                        "SampleCount": 10,
+                        "Sum": 55,
+                        "Minimum": 1,
+                        "Maximum": 10,
+                    },
+                    "Unit": "Count",
+                }
+            ],
         )
 
     @markers.aws.validated
@@ -1799,6 +1844,46 @@ class TestCloudwatch:
             )
 
         retry(assert_data_points_count, retries=10, sleep=1.0, sleep_before=2.0)
+
+    @markers.aws.validated
+    def test_put_metric_uses_utc(self, aws_client):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        now_local = datetime.now()
+        now_utc = datetime.utcnow()
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Value": 1,
+                    "Unit": "Seconds",
+                }
+            ],
+        )
+
+        def assert_found_in_utc():
+            response = aws_client.cloudwatch.get_metric_statistics(
+                Namespace=namespace,
+                MetricName=metric_name,
+                StartTime=now_local - timedelta(seconds=60),
+                EndTime=now_local + timedelta(seconds=60),
+                Period=60,
+                Statistics=["Average"],
+            )
+            assert len(response["Datapoints"]) == 0
+
+            response = aws_client.cloudwatch.get_metric_statistics(
+                Namespace=namespace,
+                MetricName=metric_name,
+                StartTime=now_utc - timedelta(seconds=60),
+                EndTime=now_utc + timedelta(seconds=60),
+                Period=60,
+                Statistics=["Average"],
+            )
+            assert len(response["Datapoints"]) == 1
+
+        retry(assert_found_in_utc, retries=10, sleep=1.0)
 
 
 def _check_alarm_triggered(
