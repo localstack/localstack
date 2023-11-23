@@ -7,7 +7,7 @@ from typing import Dict, List, Union
 from localstack import config
 from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.services.lambda_.invocation.docker_runtime_executor import IMAGE_PREFIX
-from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING
+from localstack.services.lambda_.runtimes import IMAGE_MAPPING
 from localstack.utils import bootstrap
 from localstack.utils.analytics import usage
 from localstack.utils.container_networking import get_main_container_name

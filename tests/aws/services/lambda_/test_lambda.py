@@ -20,8 +20,8 @@ from botocore.response import StreamingBody
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.testing.aws.lambda_utils import (
-    RUNTIMES_AGGREGATED,
     concurrency_update_done,
     get_invoke_init_type,
     update_done,
@@ -42,8 +42,6 @@ from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
 
 LOG = logging.getLogger(__name__)
-FUNCTION_MAX_UNZIPPED_SIZE = 262144000
-
 
 # TODO: find a better way to manage these handler files
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -406,7 +404,7 @@ class TestLambdaBehavior:
         monkeypatch.setattr(
             config,
             "LAMBDA_DOCKER_FLAGS",
-            "--ulimit nofile=1024:1024 --ulimit nproc=735:735 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
+            "--ulimit nofile=1024:1024 --ulimit nproc=1024:1024 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
         )
 
         func_name = f"test_lambda_ulimits_{short_uid()}"
@@ -506,7 +504,7 @@ class TestLambdaBehavior:
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
         [
-            (TEST_LAMBDA_CACHE_NODEJS, Runtime.nodejs12_x),
+            (TEST_LAMBDA_CACHE_NODEJS, Runtime.nodejs18_x),
             (TEST_LAMBDA_CACHE_PYTHON, Runtime.python3_10),
         ],
         ids=["nodejs", "python"],

@@ -49,6 +49,7 @@ def snapshot_transformers(snapshot):
 @pytest.mark.skipif(
     condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
 )
+@markers.lambda_runtime_update
 class TestLambdaRuntimesCommon:
     # TODO: refactor builds:
     # * Remove specific hashes and `touch -t` since we're not actually checking size & hash of the zip files anymore

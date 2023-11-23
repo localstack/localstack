@@ -32,7 +32,7 @@ Resources:
           - LsFnServiceRoleFE24FAB1
           - Arn
       Handler: index.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
     DependsOn:
       - LsFnServiceRoleFE24FAB1
   LsApi42D61DD0:
