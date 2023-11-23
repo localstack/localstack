@@ -111,7 +111,7 @@ jobs:
 
         run: |
           mkdir target
-          make docker-run-tests
+          make docker-run-tests-s3-only
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
