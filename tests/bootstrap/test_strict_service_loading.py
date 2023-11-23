@@ -39,7 +39,6 @@ def test_strict_service_loading(
     assert services.pop("sqs") == "available"
     assert services.pop("s3") == "available"
     assert services.pop("sns") == "available"
-    assert services.pop("sqs-query") == "available"  # dependency of SQS
 
     assert services
     assert all(services.get(key) == "disabled" for key in services.keys())
