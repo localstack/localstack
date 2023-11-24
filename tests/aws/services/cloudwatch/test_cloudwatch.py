@@ -72,10 +72,7 @@ class TestCloudwatch:
         encoded_data = gzip.compress(bytes_data)
 
         headers = aws_stack.mock_aws_request_headers(
-            "cloudwatch",
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            region_name=TEST_AWS_REGION_NAME,
-            internal=True,
+            "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         authorization = aws_stack.mock_aws_request_headers(
             "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME

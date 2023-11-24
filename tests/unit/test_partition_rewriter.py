@@ -58,10 +58,7 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
     # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
     if internal_call:
         headers = mock_aws_request_headers(
-            "dummy",
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            region_name=origin_partition,
-            internal=True,
+            "dummy", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=origin_partition
         )
     else:
         headers = {}
@@ -354,10 +351,7 @@ def test_arn_partition_rewriting_in_request_and_response(
     # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
     if internal_call:
         headers = mock_aws_request_headers(
-            "dummy",
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            region_name=origin_partition,
-            internal=True,
+            "dummy", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=origin_partition
         )
     else:
         headers = {"Host": f"{httpserver.host}:{httpserver.port}"}
