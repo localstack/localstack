@@ -1,0 +1,94 @@
+{
+  "tests/aws/services/cloudwatch/test_cloudwatch_metrics.py::TestCloudWatchLambdaMetrics::test_lambda_invoke_successful": {
+    "recorded-date": "15-11-2023, 19:46:04",
+    "recorded-content": {
+      "invoke": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "success": "ok"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-metric-data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "m1",
+            "Label": "Invocations",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch_metrics.py::TestCloudWatchLambdaMetrics::test_lambda_invoke_error": {
+    "recorded-date": "15-11-2023, 19:49:06",
+    "recorded-content": {
+      "invoke": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "fail on purpose",
+          "errorType": "Exception",
+          "requestId": "<uuid:1>",
+          "stackTrace": [
+            "  File \"/var/task/handler.py\", line 3, in handler\n    raise Exception('fail on purpose')\n"
+          ]
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-metric-data-invocations": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "m1",
+            "Label": "Invocations",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-metric-data-errors": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "m1",
+            "Label": "Errors",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
