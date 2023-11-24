@@ -1610,7 +1610,7 @@ class TestCloudwatch:
         response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("describe_minimal_metric_alarm", response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_set_alarm_invalid_input(self, aws_client, snapshot, cleanups):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         alarm_name = f"a-{short_uid()}"
