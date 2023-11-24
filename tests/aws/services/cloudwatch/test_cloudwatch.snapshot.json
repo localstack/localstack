@@ -1283,5 +1283,31 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input": {
+    "recorded-date": "24-11-2023, 12:23:16",
+    "recorded-content": {
+      "error-invalid-state": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-resource-not-found": {
+        "Error": {
+          "Code": "ResourceNotFound",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
