@@ -551,7 +551,6 @@ def test_kinesis_lambda_forward_chain(
     lambda1_name = f"function-{short_uid()}"
     lambda2_name = f"function-{short_uid()}"
 
-
     # create s3 bucket: this bucket is being used in lambda function
     s3_create_bucket(Bucket=TEST_BUCKET_NAME)
 
