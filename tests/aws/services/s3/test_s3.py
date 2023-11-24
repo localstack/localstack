@@ -432,24 +432,41 @@ class TestS3:
         assert response["Body"].read() == b"abc123"
 
     @markers.aws.validated
-    def test_resource_object_with_slashes_in_key(self, s3_bucket, aws_client):
-        aws_client.s3.put_object(Bucket=s3_bucket, Key="/foo", Body=b"foobar")
-        aws_client.s3.put_object(Bucket=s3_bucket, Key="bar", Body=b"barfoo")
-        aws_client.s3.put_object(Bucket=s3_bucket, Key="/bar/foo/", Body=b"test")
+    @pytest.mark.parametrize(
+        "use_virtual_address",
+        [True, False],
+    )
+    def test_object_with_slashes_in_key(
+        self, s3_bucket, aws_client_factory, use_virtual_address, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        s3_client = aws_client_factory(
+            config=Config(s3=s3_config),
+            endpoint_url=_endpoint_url(),
+        ).s3
 
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_object(Bucket=s3_bucket, Key="foo")
-        e.match("NoSuchKey")
+        s3_client.put_object(Bucket=s3_bucket, Key="/foo", Body=b"foobar")
+        s3_client.put_object(Bucket=s3_bucket, Key="bar", Body=b"barfoo")
+        s3_client.put_object(Bucket=s3_bucket, Key="/bar/foo/", Body=b"test")
 
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_object(Bucket=s3_bucket, Key="/bar")
-        e.match("NoSuchKey")
+        list_objects = s3_client.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects-slashes", list_objects)
 
-        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="/foo")
+        with pytest.raises(ClientError, match="NoSuchKey"):
+            s3_client.get_object(Bucket=s3_bucket, Key="foo")
+
+        with pytest.raises(ClientError, match="NoSuchKey"):
+            s3_client.get_object(Bucket=s3_bucket, Key="//foo")
+
+        with pytest.raises(ClientError, match="NoSuchKey"):
+            s3_client.get_object(Bucket=s3_bucket, Key="/bar")
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key="/foo")
         assert response["Body"].read() == b"foobar"
-        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="bar")
+        response = s3_client.get_object(Bucket=s3_bucket, Key="bar")
         assert response["Body"].read() == b"barfoo"
-        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="/bar/foo/")
+        response = s3_client.get_object(Bucket=s3_bucket, Key="/bar/foo/")
         assert response["Body"].read() == b"test"
 
     @markers.aws.validated
