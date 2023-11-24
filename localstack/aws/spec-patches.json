@@ -1173,6 +1173,28 @@
       "value": {
         "shape": "AccountId"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchAccessPoint",
+      "value": {
+        "type": "structure",
+        "members": {
+          "AccessPointName": {
+            "shape": "AccessPointName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The specified accesspoint does not exist</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/operations/DeleteAccessPoint/http/responseCode",
+      "value": 204
     }
   ]
 }

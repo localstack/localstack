@@ -75,5 +75,91 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_lifecycle": {
+    "recorded-date": "24-11-2023, 22:23:01",
+    "recorded-content": {
+      "list-access-points-start": {
+        "AccessPointList": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-access-point": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+        "Alias": "<name:1>-<alias-random-part>-s3alias",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-access-point": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+        "Alias": "<name:1>-<alias-random-part>-s3alias",
+        "Bucket": "<bucket:1>",
+        "BucketAccountId": "111111111111",
+        "CreationDate": "datetime",
+        "Endpoints": {
+          "dualstack": "s3-accesspoint.dualstack.<region>.<endpoint-host>",
+          "fips": "s3-accesspoint-fips.<region>.<endpoint-host>",
+          "fips_dualstack": "s3-accesspoint-fips.dualstack.<region>.<endpoint-host>",
+          "ipv4": "s3-accesspoint.<region>.<endpoint-host>"
+        },
+        "Name": "<name:1>",
+        "NetworkOrigin": "Internet",
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-access-points-after-create": {
+        "AccessPointList": [
+          {
+            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+            "Alias": "<name:1>-<alias-random-part>-s3alias",
+            "Bucket": "<bucket:1>",
+            "BucketAccountId": "111111111111",
+            "Name": "<name:1>",
+            "NetworkOrigin": "Internet"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-access-point": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-access-points-after-delete": {
+        "AccessPointList": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-delete-access-point": {
+        "Error": {
+          "AccessPointName": "<name:1>",
+          "Code": "NoSuchAccessPoint",
+          "Message": "The specified accesspoint does not exist"
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

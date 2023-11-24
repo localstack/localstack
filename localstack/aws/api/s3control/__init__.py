@@ -452,6 +452,13 @@ class TooManyTagsException(ServiceException):
     status_code: int = 400
 
 
+class NoSuchAccessPoint(ServiceException):
+    code: str = "NoSuchAccessPoint"
+    sender_fault: bool = False
+    status_code: int = 404
+    AccessPointName: Optional[AccessPointName]
+
+
 class AbortIncompleteMultipartUpload(TypedDict, total=False):
     DaysAfterInitiation: Optional[DaysAfterInitiation]
 
