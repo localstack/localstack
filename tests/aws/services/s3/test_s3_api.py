@@ -1,5 +1,6 @@
 import json
 from operator import itemgetter
+from urllib.parse import urlencode
 
 import pytest
 from botocore.exceptions import ClientError
@@ -1113,8 +1114,16 @@ class TestS3BucketObjectTagging:
         )
         object_key = "test-version-tagging"
         version_ids = []
+        v1_tags = {"test_tag": "tagv1"}
         for i in range(2):
-            put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body=f"test-{i}")
+            if i == 0:
+                put_obj = aws_client.s3.put_object(
+                    Bucket=s3_bucket, Key=object_key, Body=f"test-{i}", Tagging=urlencode(v1_tags)
+                )
+            else:
+                put_obj = aws_client.s3.put_object(
+                    Bucket=s3_bucket, Key=object_key, Body=f"test-{i}"
+                )
             snapshot.match(f"put-obj-{i}", put_obj)
             version_ids.append(put_obj["VersionId"])
 
@@ -1132,6 +1141,11 @@ class TestS3BucketObjectTagging:
         get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
         snapshot.match("get-object-tags-current-version", get_bucket_tags)
 
+        get_bucket_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
+        )
+        snapshot.match("get-object-tags-previous-version", get_bucket_tags)
+
         tag_set_2 = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
         # test by specifying a VersionId to Version1
         put_bucket_tags = aws_client.s3.put_object_tagging(
@@ -1143,7 +1157,7 @@ class TestS3BucketObjectTagging:
         get_bucket_tags = aws_client.s3.get_object_tagging(
             Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
         )
-        snapshot.match("get-object-tags-previous-version", get_bucket_tags)
+        snapshot.match("get-object-tags-previous-version-again", get_bucket_tags)
 
         # Put a DeleteMarker on top of the stack
         delete_current = aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)

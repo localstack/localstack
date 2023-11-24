@@ -136,7 +136,10 @@ from localstack.aws.connect import connect_to
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
-from localstack.services.lambda_.api_utils import ARCHITECTURES, STATEMENT_ID_REGEX
+from localstack.services.lambda_.api_utils import (
+    ARCHITECTURES,
+    STATEMENT_ID_REGEX,
+)
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
@@ -146,8 +149,6 @@ from localstack.services.lambda_.invocation.execution_environment import (
     EnvironmentStartupTimeoutException,
 )
 from localstack.services.lambda_.invocation.lambda_models import (
-    IMAGE_MAPPING,
-    SNAP_START_SUPPORTED_RUNTIMES,
     AliasRoutingConfig,
     CodeSigningConfig,
     EventInvokeConfig,
@@ -183,6 +184,12 @@ from localstack.services.lambda_.invocation.lambda_service import (
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
+from localstack.services.lambda_.runtimes import (
+    ALL_RUNTIMES,
+    DEPRECATED_RUNTIMES,
+    SNAP_START_SUPPORTED_RUNTIMES,
+    VALID_RUNTIMES,
+)
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
@@ -708,6 +715,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateFunctionRequest,
     ) -> FunctionConfiguration:
+        zip_file = request.get("Code", {}).get("ZipFile")
+        if zip_file and len(zip_file) > config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED:
+            raise RequestEntityTooLargeException(
+                f"Zipped size must be smaller than {config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED} bytes"
+            )
+
         if context.request.content_length > config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE:
             raise RequestEntityTooLargeException(
                 f"Request must be smaller than {config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE} bytes for the CreateFunction operation"
@@ -744,16 +757,22 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         package_type = request.get("PackageType", PackageType.Zip)
         runtime = request.get("Runtime")
-        if package_type == PackageType.Zip and runtime not in IMAGE_MAPPING:
+        if package_type == PackageType.Zip and runtime not in ALL_RUNTIMES:
             raise InvalidParameterValueException(
-                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
+                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                 Type="User",
+            )
+        function_name = request["FunctionName"]
+        if runtime in DEPRECATED_RUNTIMES:
+            LOG.warning(
+                f"The Lambda runtime {runtime} is deprecated. "
+                f"Please upgrade the runtime for the function {function_name}: "
+                f"https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html"
             )
         if snap_start := request.get("SnapStart"):
             self._validate_snapstart(snap_start, runtime)
         state = lambda_stores[context.account_id][context.region]
 
-        function_name = request["FunctionName"]
         with self.create_fn_lock:
             if function_name in state.functions:
                 raise ResourceConflictException(f"Function already exist: {function_name}")
@@ -941,10 +960,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         if "Runtime" in request:
-            if request["Runtime"] not in IMAGE_MAPPING:
+            runtime = request["Runtime"]
+            if runtime not in ALL_RUNTIMES:
                 raise InvalidParameterValueException(
-                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
+                    f"Value {runtime} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                     Type="User",
+                )
+            if runtime in DEPRECATED_RUNTIMES:
+                LOG.warning(
+                    f"The Lambda runtime {runtime} is deprecated. "
+                    f"Please upgrade the runtime for the function {function_name}: "
+                    f"https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html"
                 )
             replace_kwargs["runtime"] = request["Runtime"]
 
@@ -1794,6 +1820,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # ============ FUNCTION URLS ============
     # =======================================
 
+    @staticmethod
+    def _validate_qualifier(qualifier: str) -> None:
+        if qualifier == "$LATEST" or (qualifier and api_utils.qualifier_is_version(qualifier)):
+            raise ValidationException(
+                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+            )
+
     # TODO: what happens if function state is not active?
     def create_function_url_config(
         self,
@@ -1809,14 +1842,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
-        if qualifier == "$LATEST":
-            raise ValidationException(
-                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
-            )
-        if qualifier and api_utils.qualifier_is_version(qualifier):
-            raise ValidationException(
-                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
-            )
+        self._validate_qualifier(qualifier)
+
         fn = state.functions.get(function_name)
         if fn is None:
             raise ResourceNotFoundException("Function does not exist", Type="User")
@@ -1880,14 +1907,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         fn_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier, context)
 
-        if qualifier == "$LATEST":
-            raise ValidationException(
-                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
-            )
-        if qualifier and api_utils.qualifier_is_version(qualifier):
-            raise ValidationException(
-                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
-            )
+        self._validate_qualifier(qualifier)
 
         resolved_fn = state.functions.get(fn_name)
         if not resolved_fn:
@@ -1918,14 +1938,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
-        if qualifier == "$LATEST":
-            raise ValidationException(
-                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
-            )
-        if qualifier and api_utils.qualifier_is_version(qualifier):
-            raise ValidationException(
-                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
-            )
+        self._validate_qualifier(qualifier)
 
         fn = state.functions.get(function_name)
         if not fn:
@@ -1974,14 +1987,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
-        if qualifier == "$LATEST":
-            raise ValidationException(
-                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
-            )
-        if qualifier and api_utils.qualifier_is_version(qualifier):
-            raise ValidationException(
-                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
-            )
+        self._validate_qualifier(qualifier)
+
         resolved_fn = state.functions.get(function_name)
         if not resolved_fn:
             raise ResourceNotFoundException(
@@ -3541,7 +3548,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def _store_tags(self, function: Function, tags: dict[str, str]):
         if len(tags) > LAMBDA_TAG_LIMIT_PER_RESOURCE:
             raise InvalidParameterValueException(
-                "Number of tags exceeds function tag limit.", Type="User"
+                "Number of tags exceeds resource tag limit.", Type="User"
             )
         with function.lock:
             function.tags = tags
@@ -3563,10 +3570,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "An error occurred and the request cannot be processed.", Type="User"
             )
 
+        # TODO: test layer (added in snapshot update 2023-11)
         pattern_match = api_utils.FULL_FN_ARN_PATTERN.search(resource)
         if not pattern_match:
             raise ValidationException(
-                rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{{2}}((-gov)|(-iso(b?)))?-[a-z]+-\d{{1}}:\d{{12}}:function:[a-zA-Z0-9-_]+(:(\$LATEST|[a-zA-Z0-9-_]+))?"
+                rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{{2}}((-gov)|(-iso(b?)))?-[a-z]+-\d{{1}}:\d{{12}}:(function:[a-zA-Z0-9-_]+(:(\$LATEST|[a-zA-Z0-9-_]+))?|layer:[a-zA-Z0-9-_]+)"
             )
 
         groups = pattern_match.groupdict()
@@ -3574,7 +3582,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if groups.get("qualifier"):
             raise InvalidParameterValueException(
-                "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+                "Tags on function aliases and versions are not supported. Please specify a function ARN.",
                 Type="User",
             )
 

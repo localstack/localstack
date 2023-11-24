@@ -538,10 +538,12 @@ class SdkDockerClient(ContainerClient):
                 # start listener thread
                 start_worker_thread(wait_for_result)
                 thread_started.wait()
-                # start container
-                container.start()
-                # start awaiting container result
-                start_waiting.set()
+                try:
+                    # start container
+                    container.start()
+                finally:
+                    # start awaiting container result
+                    start_waiting.set()
 
                 # handle container input/output
                 # under windows, the socket has no __enter__ / cannot be used as context manager

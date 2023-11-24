@@ -13,7 +13,7 @@ from localstack.services.lambda_.invocation.executor_endpoint import (
     INVOCATION_PORT,
     ExecutorEndpoint,
 )
-from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
+from localstack.services.lambda_.invocation.lambda_models import FunctionVersion
 from localstack.services.lambda_.invocation.runtime_executor import (
     LambdaRuntimeException,
     RuntimeExecutor,
@@ -24,6 +24,7 @@ from localstack.services.lambda_.networking import (
     get_main_endpoint_from_container,
 )
 from localstack.services.lambda_.packages import lambda_runtime_package
+from localstack.services.lambda_.runtimes import IMAGE_MAPPING
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,

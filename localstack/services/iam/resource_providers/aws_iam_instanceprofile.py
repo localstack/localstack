@@ -118,7 +118,7 @@ class IAMInstanceProfileProvider(ResourceProvider[IAMInstanceProfileProperties])
         iam.delete_instance_profile(
             InstanceProfileName=request.previous_state["InstanceProfileName"]
         )
-        return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model={})
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
         self,

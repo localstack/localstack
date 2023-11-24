@@ -33,7 +33,7 @@ Resources:
               };
               return response;
           };
-      Runtime: nodejs12.x
+      Runtime: nodejs20.x
       TracingConfig:
         Mode: Active
   version:

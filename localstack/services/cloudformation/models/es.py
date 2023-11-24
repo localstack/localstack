@@ -16,7 +16,7 @@ def es_add_tags_params(
     resource: dict,
     stack_name: str,
 ):
-    es_arn = arns.es_domain_arn(properties.get("DomainName"), account_id, region_name)
+    es_arn = arns.elasticsearch_domain_arn(properties.get("DomainName"), account_id, region_name)
     tags = properties.get("Tags", [])
     return {"ARN": es_arn, "TagList": tags}
 

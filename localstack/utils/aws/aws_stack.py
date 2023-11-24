@@ -1,6 +1,4 @@
-import json
 import logging
-import os
 import re
 import socket
 from functools import lru_cache
@@ -16,12 +14,10 @@ from localstack.constants import (
     APPLICATION_AMZ_JSON_1_1,
     APPLICATION_X_WWW_FORM_URLENCODED,
     AWS_REGION_US_EAST_1,
-    ENV_DEV,
     HEADER_LOCALSTACK_ACCOUNT_ID,
     LOCALHOST,
-    REGION_LOCAL,
 )
-from localstack.utils.strings import is_string, is_string_or_bytes, to_str
+from localstack.utils.strings import is_string_or_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -52,83 +48,6 @@ def get_valid_regions_for_service(service_name):
     regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-us-gov"))
     regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-cn"))
     return regions
-
-
-# TODO: Remove, this is super legacy functionality
-class Environment:
-    def __init__(self, region=None, prefix=None):
-        # target is the runtime environment to use, e.g.,
-        # 'local' for local mode
-        self.region = region or get_local_region()
-        # prefix can be 'prod', 'stg', 'uat-1', etc.
-        self.prefix = prefix
-
-    def apply_json(self, j):
-        if isinstance(j, str):
-            j = json.loads(j)
-        self.__dict__.update(j)
-
-    @staticmethod
-    def from_string(s):
-        parts = s.split(":")
-        if len(parts) == 1:
-            if s in PREDEFINED_ENVIRONMENTS:
-                return PREDEFINED_ENVIRONMENTS[s]
-            parts = [get_local_region(), s]
-        if len(parts) > 2:
-            raise Exception('Invalid environment string "%s"' % s)
-        region = parts[0]
-        prefix = parts[1]
-        return Environment(region=region, prefix=prefix)
-
-    @staticmethod
-    def from_json(j):
-        if not isinstance(j, dict):
-            j = j.to_dict()
-        result = Environment()
-        result.apply_json(j)
-        return result
-
-    def __str__(self):
-        return "%s:%s" % (self.region, self.prefix)
-
-
-PREDEFINED_ENVIRONMENTS = {ENV_DEV: Environment(region=REGION_LOCAL, prefix=ENV_DEV)}
-
-
-# TODO: Remove
-def get_environment(env=None, region_name=None):
-    """
-    Return an Environment object based on the input arguments.
-
-    Parameter `env` can be either of:
-        * None (or empty), in which case the rules below are applied to (env = os.environ['ENV'] or ENV_DEV)
-        * an Environment object (then this object is returned)
-        * a string '<region>:<name>', which corresponds to Environment(region='<region>', prefix='<prefix>')
-        * the predefined string 'dev' (ENV_DEV), which implies Environment(region='local', prefix='dev')
-        * a string '<name>', which implies Environment(region=DEFAULT_REGION, prefix='<name>')
-
-    Additionally, parameter `region_name` can be used to override DEFAULT_REGION.
-    """
-    if not env:
-        if "ENV" in os.environ:
-            env = os.environ["ENV"]
-        else:
-            env = ENV_DEV
-    elif not is_string(env) and not isinstance(env, Environment):
-        raise Exception("Invalid environment: %s" % env)
-
-    if is_string(env):
-        env = Environment.from_string(env)
-    if region_name:
-        env.region = region_name
-    if not env.region:
-        raise Exception('Invalid region in environment: "%s"' % env)
-    return env
-
-
-def is_local_env(env):
-    return not env or env.region == REGION_LOCAL or env.prefix == ENV_DEV
 
 
 # NOTE: This method should not be used as it is not guaranteed to return the correct region
@@ -209,11 +128,6 @@ def inject_test_credentials_into_env(env):
     if "AWS_ACCESS_KEY_ID" not in env and "AWS_SECRET_ACCESS_KEY" not in env:
         env["AWS_ACCESS_KEY_ID"] = "test"
         env["AWS_SECRET_ACCESS_KEY"] = "test"
-
-
-# TODO: remove
-def inject_region_into_env(env, region):
-    env["AWS_REGION"] = region
 
 
 def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -> str:
