@@ -95,7 +95,6 @@ class CloudWatchStore(BaseStore):
 
     # Contains all the Alarm Histories. Per documentation, an alarm history is retained even if the alarm is deleted,
     # making it necessary to save this at store level
-    # TODO: check if list of dicts over all alarm is suitable datastructure
     Histories: List[Dict] = LocalAttribute(default=list)
 
     Dashboards: Dict[str, LocalStackDashboard] = LocalAttribute(default=dict)

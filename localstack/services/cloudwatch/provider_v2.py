@@ -91,7 +91,6 @@ LOG = logging.getLogger(__name__)
 
 
 class ValidationError(CommonServiceException):
-    # TODO: check this error against AWS (doesn't exist in the API)
     def __init__(self, message: str):
         super().__init__("ValidationError", message, 400, True)
 
