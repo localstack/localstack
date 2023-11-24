@@ -145,7 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-test-s3
-#    if: inputs.publishDockerImage
+    if: inputs.publishDockerImage
     env:
       LOCAL_IMAGE_NAME: "localstack-s3"
       DOCKERHUB_IMAGE_NAME: "localstack/localstack:s3-latest"
