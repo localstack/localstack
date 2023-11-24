@@ -1611,6 +1611,7 @@ class TestCloudwatch:
         snapshot.match("describe_minimal_metric_alarm", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
     def test_set_alarm_invalid_input(self, aws_client, snapshot, cleanups):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         alarm_name = f"a-{short_uid()}"
@@ -1634,17 +1635,14 @@ class TestCloudwatch:
                 AlarmName=alarm_name, StateValue="INVALID", StateReason="test"
             )
 
-        err = ex.value.response["Error"]
-        assert err["Code"] == "ValidationError"
+        snapshot.match("error-invalid-state", ex.value.response)
 
         with pytest.raises(Exception) as ex:
             aws_client.cloudwatch.set_alarm_state(
                 AlarmName=f"{alarm_name}-nonexistent", StateValue="OK", StateReason="test"
             )
 
-        err = ex.value.response["Error"]
-        assert err["Code"] == "ResourceNotFound"
-        assert not err.get("Message")
+        snapshot.match("error-resource-not-found", ex.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")

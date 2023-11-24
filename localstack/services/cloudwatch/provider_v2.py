@@ -290,10 +290,12 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             data = arns.parse_arn(action)
             # test for sns - can this be done in a more generic way?
             if data["service"] == "sns":
-                service = connect_to.get_client(data["service"])
+                sns_client = connect_to(
+                    aws_access_key_id=data["account"], region_name=data["region"]
+                ).sns
                 subject = f"""{state_value}: "{alarm_name}" in {context.region}"""
                 message = self.create_message_response_update_state(context, alarm, old_state)
-                service.publish(TopicArn=action, Subject=subject, Message=message)
+                sns_client.publish(TopicArn=action, Subject=subject, Message=message)
             else:
                 # TODO: support other actions
                 LOG.warning(
@@ -565,7 +567,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 "Timestamp": timestamp_millis(alarm.alarm["StateUpdatedTimestamp"]),
                 "HistoryItemType": HistoryItemType.StateUpdate,
                 "AlarmName": alarm.alarm["AlarmName"],
-                "HistoryData": alarm.alarm.get("StateReasonData"),  # FIXME
+                "HistoryData": alarm.alarm.get(
+                    "StateReasonData"
+                ),  # FIXME general formatting and data content not on par with AWS at the moment
                 "HistorySummary": f"Alarm updated from {old_state} to {state_value}",
             }
         )
