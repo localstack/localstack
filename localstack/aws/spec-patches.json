@@ -1153,5 +1153,26 @@
         "exception": true
       }
     }
+  ],
+  "s3control/2018-08-20/service-2": [
+    {
+      "op": "add",
+      "path": "/operations/DeletePublicAccessBlock/http/responseCode",
+      "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/shapes/HostId",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchPublicAccessBlockConfiguration/members/AccountId",
+      "value": {
+        "shape": "AccountId"
+      }
+    }
   ]
 }

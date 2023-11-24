@@ -92,6 +92,7 @@ TagKeyString = str
 TagValueString = str
 TrafficDialPercentage = int
 VpcId = str
+HostId = str
 
 
 class AsyncOperationName(str):
@@ -430,6 +431,7 @@ class NoSuchPublicAccessBlockConfiguration(ServiceException):
     code: str = "NoSuchPublicAccessBlockConfiguration"
     sender_fault: bool = False
     status_code: int = 404
+    AccountId: Optional[AccountId]
 
 
 class NotFoundException(ServiceException):

@@ -423,6 +423,13 @@ USE_SSL = is_env_true("USE_SSL")
 # whether the S3 legacy V2/ASF provider is enabled
 LEGACY_V2_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") in ("v2", "legacy_v2", "asf")
 
+# force the native provider for tests
+if not os.environ.get("PROVIDER_OVERRIDE_S3CONTROL"):
+    os.environ["PROVIDER_OVERRIDE_S3CONTROL"] = "v2"
+
+# whether the S3 Control native provider is enabled
+NATIVE_S3_CONTROL_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3CONTROL", "") == "v2"
+
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 

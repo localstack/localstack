@@ -1,0 +1,79 @@
+{
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlPublicAccessBlock::test_crud_public_access_block": {
+    "recorded-date": "24-11-2023, 21:36:06",
+    "recorded-content": {
+      "get-default-public-access-block": {
+        "Error": {
+          "AccountId": "111111111111",
+          "Code": "NoSuchPublicAccessBlockConfiguration",
+          "Message": "The public access block configuration was not found"
+        },
+        "HostId": "host-id",
+        "Message": "The public access block configuration was not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-public-access-block": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-public-access-block": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": false,
+          "BlockPublicPolicy": false,
+          "IgnorePublicAcls": false,
+          "RestrictPublicBuckets": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-public-access-block": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-public-access-block-after-delete": {
+        "Error": {
+          "AccountId": "111111111111",
+          "Code": "NoSuchPublicAccessBlockConfiguration",
+          "Message": "The public access block configuration was not found"
+        },
+        "HostId": "host-id",
+        "Message": "The public access block configuration was not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "idempotent-delete-public-access-block": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlPublicAccessBlock::test_empty_public_access_block": {
+    "recorded-date": "24-11-2023, 22:02:08",
+    "recorded-content": {
+      "put-public-access-block-empty": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Must specify at least one configuration."
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

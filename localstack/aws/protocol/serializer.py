@@ -619,7 +619,6 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         request_id_element.text = request_id
 
         self._add_additional_error_tags(vars(error), root, shape, mime_type)
-
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
 
     def _add_error_tags(
@@ -627,6 +626,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
     ) -> None:
         code_tag = ETree.SubElement(error_tag, "Code")
         code_tag.text = error.code
+
         message = self._get_error_message(error)
         if message:
             self._default_serialize(error_tag, message, None, "Message", mime_type)
@@ -1586,6 +1586,77 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         return value.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
+class S3ControlResponseSerializer(RestXMLResponseSerializer):
+    """
+    The ``S3ResponseSerializer`` adds some minor logic to handle S3 specific peculiarities with the error response
+    serialization and the root node tag.
+    """
+
+    def _serialize_error(
+        self,
+        error: ServiceException,
+        response: HttpResponse,
+        shape: StructureShape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        # Check if we need to add a namespace
+        attr = (
+            {"xmlns": operation_model.metadata.get("xmlNamespace")}
+            if "xmlNamespace" in operation_model.metadata
+            else {}
+        )
+        root = ETree.Element("ErrorResponse", attr)
+
+        error_tag = ETree.SubElement(root, "Error")
+        self._add_error_tags(error, error_tag, mime_type)
+        request_id_element = ETree.SubElement(root, "RequestId")
+        request_id_element.text = request_id
+
+        host_id_element = ETree.SubElement(root, "HostId")
+        host_id_element.text = (
+            "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
+        )
+
+        self._add_additional_error_tags(vars(error), root, shape, mime_type)
+        p = self._encode_payload(self._node_to_string(root, mime_type))
+        print(f"{p=}")
+        response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
+
+    def _add_error_tags(
+        self, error: ServiceException, error_tag: ETree.Element, mime_type: str
+    ) -> None:
+        super()._add_error_tags(error, error_tag, mime_type)
+
+        if hasattr(error, "AccountId"):
+            account_id_tag = ETree.SubElement(error_tag, "AccountId")
+            account_id_tag.text = error.AccountId
+
+    def _add_additional_error_tags(
+        self, parameters: dict, node: ETree, shape: StructureShape, mime_type: str
+    ):
+        if shape:
+            params = {}
+            # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
+            for member in shape.members:
+                # XML protocols do not add modeled default fields to the root node
+                # (tested for cloudfront, route53, cloudwatch, iam)
+                if member.lower() not in ["code", "message", "accountid"] and member in parameters:
+                    params[member] = parameters[member]
+
+            # If there is an error shape with members which should be set, they need to be added to the node
+            if params:
+                # Serialize the remaining params
+                root_name = shape.serialization.get("name", shape.name)
+                pseudo_root = ETree.Element("")
+                self._serialize(shape, params, pseudo_root, root_name, mime_type)
+                real_root = list(pseudo_root)[0]
+                # Add the child elements to the already created root error element
+                for child in list(real_root):
+                    node.append(child)
+
+
 class SqsQueryResponseSerializer(QueryResponseSerializer):
     """
     Unfortunately, SQS uses a rare interpretation of the XML protocol: It uses HTML entities within XML tag text nodes.
@@ -1761,6 +1832,7 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
         "sqs-query": SqsQueryResponseSerializer,
         "sqs": SqsResponseSerializer,
         "s3": S3ResponseSerializer,
+        "s3control": S3ControlResponseSerializer,
     }
     protocol_specific_serializers = {
         "query": QueryResponseSerializer,

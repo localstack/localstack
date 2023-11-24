@@ -262,6 +262,14 @@ def s3control():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+@aws_provider(api="s3control", name="v2")
+def s3control_v2():
+    from localstack.services.s3control.v2.provider import S3ControlProvider
+
+    provider = S3ControlProvider()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def scheduler():
     from localstack.services.moto import MotoFallbackDispatcher
