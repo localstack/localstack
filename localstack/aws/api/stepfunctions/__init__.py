@@ -6,6 +6,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 AliasDescription = str
 Arn = str
 CharacterRestrictedName = str
+ClientToken = str
 ConnectorParameters = str
 Definition = str
 Enabled = bool
@@ -21,6 +22,7 @@ Name = str
 PageSize = int
 PageToken = str
 Publish = bool
+RedriveCount = int
 ReverseOrder = bool
 RevisionId = str
 SensitiveCause = str
@@ -39,12 +41,24 @@ includedDetails = bool
 truncated = bool
 
 
+class ExecutionRedriveFilter(str):
+    REDRIVEN = "REDRIVEN"
+    NOT_REDRIVEN = "NOT_REDRIVEN"
+
+
+class ExecutionRedriveStatus(str):
+    REDRIVABLE = "REDRIVABLE"
+    NOT_REDRIVABLE = "NOT_REDRIVABLE"
+    REDRIVABLE_BY_MAP_RUN = "REDRIVABLE_BY_MAP_RUN"
+
+
 class ExecutionStatus(str):
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     TIMED_OUT = "TIMED_OUT"
     ABORTED = "ABORTED"
+    PENDING_REDRIVE = "PENDING_REDRIVE"
 
 
 class HistoryEventType(str):
@@ -107,6 +121,8 @@ class HistoryEventType(str):
     MapRunFailed = "MapRunFailed"
     MapRunStarted = "MapRunStarted"
     MapRunSucceeded = "MapRunSucceeded"
+    ExecutionRedriven = "ExecutionRedriven"
+    MapRunRedriven = "MapRunRedriven"
 
 
 class LogLevel(str):
@@ -184,6 +200,12 @@ class ExecutionDoesNotExist(ServiceException):
 
 class ExecutionLimitExceeded(ServiceException):
     code: str = "ExecutionLimitExceeded"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ExecutionNotRedrivable(ServiceException):
+    code: str = "ExecutionNotRedrivable"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -519,12 +541,17 @@ class DescribeExecutionOutput(TypedDict, total=False):
     cause: Optional[SensitiveCause]
     stateMachineVersionArn: Optional[Arn]
     stateMachineAliasArn: Optional[Arn]
+    redriveCount: Optional[RedriveCount]
+    redriveDate: Optional[Timestamp]
+    redriveStatus: Optional[ExecutionRedriveStatus]
+    redriveStatusReason: Optional[SensitiveData]
 
 
 class DescribeMapRunInput(ServiceRequest):
     mapRunArn: LongArn
 
 
+LongObject = int
 UnsignedLong = int
 
 
@@ -537,6 +564,8 @@ class MapRunExecutionCounts(TypedDict, total=False):
     aborted: UnsignedLong
     total: UnsignedLong
     resultsWritten: UnsignedLong
+    failuresNotRedrivable: Optional[LongObject]
+    pendingRedrive: Optional[LongObject]
 
 
 class MapRunItemCounts(TypedDict, total=False):
@@ -548,6 +577,8 @@ class MapRunItemCounts(TypedDict, total=False):
     aborted: UnsignedLong
     total: UnsignedLong
     resultsWritten: UnsignedLong
+    failuresNotRedrivable: Optional[LongObject]
+    pendingRedrive: Optional[LongObject]
 
 
 ToleratedFailureCount = int
@@ -564,6 +595,8 @@ class DescribeMapRunOutput(TypedDict, total=False):
     toleratedFailureCount: ToleratedFailureCount
     itemCounts: MapRunItemCounts
     executionCounts: MapRunExecutionCounts
+    redriveCount: Optional[RedriveCount]
+    redriveDate: Optional[Timestamp]
 
 
 class DescribeStateMachineAliasInput(ServiceRequest):
@@ -642,9 +675,15 @@ class ExecutionListItem(TypedDict, total=False):
     itemCount: Optional[UnsignedInteger]
     stateMachineVersionArn: Optional[Arn]
     stateMachineAliasArn: Optional[Arn]
+    redriveCount: Optional[RedriveCount]
+    redriveDate: Optional[Timestamp]
 
 
 ExecutionList = List[ExecutionListItem]
+
+
+class ExecutionRedrivenEventDetails(TypedDict, total=False):
+    redriveCount: Optional[RedriveCount]
 
 
 class ExecutionStartedEventDetails(TypedDict, total=False):
@@ -681,6 +720,11 @@ class GetExecutionHistoryInput(ServiceRequest):
     reverseOrder: Optional[ReverseOrder]
     nextToken: Optional[PageToken]
     includeExecutionData: Optional[IncludeExecutionDataGetExecutionHistory]
+
+
+class MapRunRedrivenEventDetails(TypedDict, total=False):
+    mapRunArn: Optional[LongArn]
+    redriveCount: Optional[RedriveCount]
 
 
 class MapRunFailedEventDetails(TypedDict, total=False):
@@ -833,6 +877,7 @@ HistoryEvent = TypedDict(
         "executionSucceededEventDetails": Optional[ExecutionSucceededEventDetails],
         "executionAbortedEventDetails": Optional[ExecutionAbortedEventDetails],
         "executionTimedOutEventDetails": Optional[ExecutionTimedOutEventDetails],
+        "executionRedrivenEventDetails": Optional[ExecutionRedrivenEventDetails],
         "mapStateStartedEventDetails": Optional[MapStateStartedEventDetails],
         "mapIterationStartedEventDetails": Optional[MapIterationEventDetails],
         "mapIterationSucceededEventDetails": Optional[MapIterationEventDetails],
@@ -850,6 +895,7 @@ HistoryEvent = TypedDict(
         "stateExitedEventDetails": Optional[StateExitedEventDetails],
         "mapRunStartedEventDetails": Optional[MapRunStartedEventDetails],
         "mapRunFailedEventDetails": Optional[MapRunFailedEventDetails],
+        "mapRunRedrivenEventDetails": Optional[MapRunRedrivenEventDetails],
     },
     total=False,
 )
@@ -877,6 +923,7 @@ class ListExecutionsInput(ServiceRequest):
     maxResults: Optional[PageSize]
     nextToken: Optional[ListExecutionsPageToken]
     mapRunArn: Optional[LongArn]
+    redriveFilter: Optional[ExecutionRedriveFilter]
 
 
 class ListExecutionsOutput(TypedDict, total=False):
@@ -984,6 +1031,15 @@ class PublishStateMachineVersionInput(ServiceRequest):
 class PublishStateMachineVersionOutput(TypedDict, total=False):
     creationDate: Timestamp
     stateMachineVersionArn: Arn
+
+
+class RedriveExecutionInput(ServiceRequest):
+    executionArn: Arn
+    clientToken: Optional[ClientToken]
+
+
+class RedriveExecutionOutput(TypedDict, total=False):
+    redriveDate: Timestamp
 
 
 class SendTaskFailureInput(ServiceRequest):
@@ -1234,6 +1290,7 @@ class StepfunctionsApi:
         max_results: PageSize = None,
         next_token: ListExecutionsPageToken = None,
         map_run_arn: LongArn = None,
+        redrive_filter: ExecutionRedriveFilter = None,
     ) -> ListExecutionsOutput:
         raise NotImplementedError
 
@@ -1287,6 +1344,12 @@ class StepfunctionsApi:
         revision_id: RevisionId = None,
         description: VersionDescription = None,
     ) -> PublishStateMachineVersionOutput:
+        raise NotImplementedError
+
+    @handler("RedriveExecution")
+    def redrive_execution(
+        self, context: RequestContext, execution_arn: Arn, client_token: ClientToken = None
+    ) -> RedriveExecutionOutput:
         raise NotImplementedError
 
     @handler("SendTaskFailure")

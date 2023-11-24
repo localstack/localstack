@@ -30,8 +30,9 @@ exports.handler = async (event, context, callback) => {
         s3,
         new PutObjectCommand({
             Bucket: BUCKET_NAME,
-            Key: 'key.txt',
+            Key: 'temp.txt',
             StorageClass: 'STANDARD',
+            Metadata: {"foo": "bar-complicated-no-random"},
             ContentMD5: bodyMd5AsBase64
         }),
         {

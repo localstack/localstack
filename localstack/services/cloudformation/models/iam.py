@@ -574,7 +574,9 @@ class IAMPolicy(GenericBaseModel):
             resource: dict,
             stack_name: str,
         ) -> dict:
-            return {"PolicyArn": arns.policy_arn(properties["PolicyName"], account_id=account_id)}
+            return {
+                "PolicyArn": arns.iam_policy_arn(properties["PolicyName"], account_id=account_id)
+            }
 
         return {
             "create": {
@@ -601,7 +603,7 @@ class IAMPolicy(GenericBaseModel):
         groups = props.get("Groups", [])
         if managed_policy:
             result["policy"] = iam.get_policy(
-                PolicyArn=arns.policy_arn(policy_name, account_id=account_id)
+                PolicyArn=arns.iam_policy_arn(policy_name, account_id=account_id)
             )
         for role in roles:
             policies = (

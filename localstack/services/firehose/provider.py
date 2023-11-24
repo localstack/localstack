@@ -305,13 +305,16 @@ class FirehoseProvider(FirehoseApi):
             def _startup():
                 stream["DeliveryStreamStatus"] = DeliveryStreamStatus.CREATING
                 try:
+                    listener_function = functools.partial(
+                        self._process_records,
+                        context.account_id,
+                        context.region,
+                        delivery_stream_name,
+                    )
                     process = kinesis_connector.listen_to_kinesis(
                         stream_name=kinesis_stream_name,
                         region_name=context.region,
-                        fh_d_stream=delivery_stream_name,
-                        listener_func=functools.partial(
-                            self._process_records, context.account_id, context.region
-                        ),
+                        listener_func=listener_function,
                         wait_until_started=True,
                         ddb_lease_table_suffix="-firehose",
                     )
@@ -514,9 +517,8 @@ class FirehoseProvider(FirehoseApi):
         self,
         account_id: str,
         region_name: str,
-        records: List[Record],
-        shard_id: str,
         fh_d_stream: str,
+        records: List[Record],
     ):
         """Process the given records from the underlying Kinesis stream"""
         return self._put_records(account_id, region_name, fh_d_stream, records)

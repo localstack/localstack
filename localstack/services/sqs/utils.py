@@ -8,18 +8,33 @@ from urllib.parse import urlparse
 from moto.sqs.exceptions import MessageAttributesInvalid
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.sqs import QueueAttributeName, ReceiptHandleIsInvalid
+from localstack.services.sqs.constants import (
+    DOMAIN_STRATEGY_URL_REGEX,
+    LEGACY_STRATEGY_URL_REGEX,
+    PATH_STRATEGY_URL_REGEX,
+    STANDARD_STRATEGY_URL_REGEX,
+)
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import clone
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
-from localstack.utils.urls import path_from_url
+
+STANDARD_ENDPOINT = re.compile(STANDARD_STRATEGY_URL_REGEX)
+DOMAIN_ENDPOINT = re.compile(DOMAIN_STRATEGY_URL_REGEX)
+PATH_ENDPOINT = re.compile(PATH_STRATEGY_URL_REGEX)
+LEGACY_ENDPOINT = re.compile(LEGACY_STRATEGY_URL_REGEX)
 
 
-def is_sqs_queue_url(url):
-    path = path_from_url(url).partition("?")[0]
-    return re.match(r"^/(queue|%s)/[a-zA-Z0-9_-]+(.fifo)?$" % get_aws_account_id(), path)
+def is_sqs_queue_url(url: str) -> bool:
+    return any(
+        [
+            STANDARD_ENDPOINT.search(url),
+            DOMAIN_ENDPOINT.search(url),
+            PATH_ENDPOINT.search(url),
+            LEGACY_ENDPOINT.search(url),
+        ]
+    )
 
 
 def is_message_deduplication_id_required(queue):

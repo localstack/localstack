@@ -10,6 +10,8 @@ CustomDomainCertificateArnString = str
 CustomDomainNameString = str
 Double = float
 DoubleOptional = float
+IdcDisplayNameString = str
+IdentityNamespaceString = str
 Integer = int
 IntegerOptional = int
 PartnerIntegrationAccountId = str
@@ -17,6 +19,7 @@ PartnerIntegrationClusterIdentifier = str
 PartnerIntegrationDatabaseName = str
 PartnerIntegrationPartnerName = str
 PartnerIntegrationStatusMessage = str
+RedshiftIdcApplicationName = str
 SensitiveString = str
 String = str
 
@@ -144,6 +147,11 @@ class ScheduledActionTypeValues(str):
     ResizeCluster = "ResizeCluster"
     PauseCluster = "PauseCluster"
     ResumeCluster = "ResumeCluster"
+
+
+class ServiceAuthorization(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
 
 
 class SnapshotAttributeToSortBy(str):
@@ -396,6 +404,12 @@ class CustomDomainAssociationNotFoundFault(ServiceException):
     code: str = "CustomDomainAssociationNotFoundFault"
     sender_fault: bool = True
     status_code: int = 404
+
+
+class DependentServiceAccessDeniedFault(ServiceException):
+    code: str = "DependentServiceAccessDenied"
+    sender_fault: bool = True
+    status_code: int = 403
 
 
 class DependentServiceRequestThrottlingFault(ServiceException):
@@ -738,6 +752,24 @@ class PartnerNotFoundFault(ServiceException):
     code: str = "PartnerNotFound"
     sender_fault: bool = True
     status_code: int = 404
+
+
+class RedshiftIdcApplicationAlreadyExistsFault(ServiceException):
+    code: str = "RedshiftIdcApplicationAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class RedshiftIdcApplicationNotExistsFault(ServiceException):
+    code: str = "RedshiftIdcApplicationNotExists"
+    sender_fault: bool = True
+    status_code: int = 404
+
+
+class RedshiftIdcApplicationQuotaExceededFault(ServiceException):
+    code: str = "RedshiftIdcApplicationQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ReservedNodeAlreadyExistsFault(ServiceException):
@@ -1217,6 +1249,17 @@ class Snapshot(TypedDict, total=False):
 
 class AuthorizeSnapshotAccessResult(TypedDict, total=False):
     Snapshot: Optional[Snapshot]
+
+
+AuthorizedAudienceList = List[String]
+
+
+class AuthorizedTokenIssuer(TypedDict, total=False):
+    TrustedTokenIssuerArn: Optional[String]
+    AuthorizedAudiencesList: Optional[AuthorizedAudienceList]
+
+
+AuthorizedTokenIssuerList = List[AuthorizedTokenIssuer]
 
 
 class SupportedPlatform(TypedDict, total=False):
@@ -1707,6 +1750,7 @@ class CreateClusterMessage(ServiceRequest):
     MasterPasswordSecretKmsKeyId: Optional[String]
     IpAddressType: Optional[String]
     MultiAZ: Optional[BooleanOptional]
+    RedshiftIdcApplicationArn: Optional[String]
 
 
 class CreateClusterParameterGroupMessage(ServiceRequest):
@@ -1848,6 +1892,51 @@ class HsmConfiguration(TypedDict, total=False):
 
 class CreateHsmConfigurationResult(TypedDict, total=False):
     HsmConfiguration: Optional[HsmConfiguration]
+
+
+class LakeFormationQuery(TypedDict, total=False):
+    Authorization: ServiceAuthorization
+
+
+class LakeFormationScopeUnion(TypedDict, total=False):
+    LakeFormationQuery: Optional[LakeFormationQuery]
+
+
+LakeFormationServiceIntegrations = List[LakeFormationScopeUnion]
+
+
+class ServiceIntegrationsUnion(TypedDict, total=False):
+    LakeFormation: Optional[LakeFormationServiceIntegrations]
+
+
+ServiceIntegrationList = List[ServiceIntegrationsUnion]
+
+
+class CreateRedshiftIdcApplicationMessage(ServiceRequest):
+    IdcInstanceArn: String
+    RedshiftIdcApplicationName: RedshiftIdcApplicationName
+    IdentityNamespace: Optional[IdentityNamespaceString]
+    IdcDisplayName: IdcDisplayNameString
+    IamRoleArn: String
+    AuthorizedTokenIssuerList: Optional[AuthorizedTokenIssuerList]
+    ServiceIntegrations: Optional[ServiceIntegrationList]
+
+
+class RedshiftIdcApplication(TypedDict, total=False):
+    IdcInstanceArn: Optional[String]
+    RedshiftIdcApplicationName: Optional[RedshiftIdcApplicationName]
+    RedshiftIdcApplicationArn: Optional[String]
+    IdentityNamespace: Optional[IdentityNamespaceString]
+    IdcDisplayName: Optional[IdcDisplayNameString]
+    IamRoleArn: Optional[String]
+    IdcManagedApplicationArn: Optional[String]
+    IdcOnboardStatus: Optional[String]
+    AuthorizedTokenIssuerList: Optional[AuthorizedTokenIssuerList]
+    ServiceIntegrations: Optional[ServiceIntegrationList]
+
+
+class CreateRedshiftIdcApplicationResult(TypedDict, total=False):
+    RedshiftIdcApplication: Optional[RedshiftIdcApplication]
 
 
 class ResumeClusterMessage(ServiceRequest):
@@ -2009,6 +2098,7 @@ class DeleteClusterSubnetGroupMessage(ServiceRequest):
 
 class DeleteCustomDomainAssociationMessage(ServiceRequest):
     ClusterIdentifier: String
+    CustomDomainName: CustomDomainNameString
 
 
 class DeleteEndpointAccessMessage(ServiceRequest):
@@ -2025,6 +2115,10 @@ class DeleteHsmClientCertificateMessage(ServiceRequest):
 
 class DeleteHsmConfigurationMessage(ServiceRequest):
     HsmConfigurationIdentifier: String
+
+
+class DeleteRedshiftIdcApplicationMessage(ServiceRequest):
+    RedshiftIdcApplicationArn: String
 
 
 class DeleteResourcePolicyMessage(ServiceRequest):
@@ -2318,6 +2412,20 @@ PartnerIntegrationInfoList = List[PartnerIntegrationInfo]
 
 class DescribePartnersOutputMessage(TypedDict, total=False):
     PartnerIntegrationInfoList: Optional[PartnerIntegrationInfoList]
+
+
+class DescribeRedshiftIdcApplicationsMessage(ServiceRequest):
+    RedshiftIdcApplicationArn: Optional[String]
+    MaxRecords: Optional[IntegerOptional]
+    Marker: Optional[String]
+
+
+RedshiftIdcApplicationList = List[RedshiftIdcApplication]
+
+
+class DescribeRedshiftIdcApplicationsResult(TypedDict, total=False):
+    RedshiftIdcApplications: Optional[RedshiftIdcApplicationList]
+    Marker: Optional[String]
 
 
 class DescribeReservedNodeExchangeStatusInputMessage(ServiceRequest):
@@ -2846,8 +2954,8 @@ class ModifyClusterSubnetGroupResult(TypedDict, total=False):
 
 
 class ModifyCustomDomainAssociationMessage(ServiceRequest):
-    CustomDomainName: Optional[CustomDomainNameString]
-    CustomDomainCertificateArn: Optional[CustomDomainCertificateArnString]
+    CustomDomainName: CustomDomainNameString
+    CustomDomainCertificateArn: CustomDomainCertificateArnString
     ClusterIdentifier: String
 
 
@@ -2875,6 +2983,19 @@ class ModifyEventSubscriptionMessage(ServiceRequest):
 
 class ModifyEventSubscriptionResult(TypedDict, total=False):
     EventSubscription: Optional[EventSubscription]
+
+
+class ModifyRedshiftIdcApplicationMessage(ServiceRequest):
+    RedshiftIdcApplicationArn: String
+    IdentityNamespace: Optional[IdentityNamespaceString]
+    IamRoleArn: Optional[String]
+    IdcDisplayName: Optional[IdcDisplayNameString]
+    AuthorizedTokenIssuerList: Optional[AuthorizedTokenIssuerList]
+    ServiceIntegrations: Optional[ServiceIntegrationList]
+
+
+class ModifyRedshiftIdcApplicationResult(TypedDict, total=False):
+    RedshiftIdcApplication: Optional[RedshiftIdcApplication]
 
 
 class ModifyScheduledActionMessage(ServiceRequest):
@@ -3399,6 +3520,7 @@ class RedshiftApi:
         master_password_secret_kms_key_id: String = None,
         ip_address_type: String = None,
         multi_az: BooleanOptional = None,
+        redshift_idc_application_arn: String = None,
     ) -> CreateClusterResult:
         raise NotImplementedError
 
@@ -3503,6 +3625,20 @@ class RedshiftApi:
         hsm_server_public_certificate: String,
         tags: TagList = None,
     ) -> CreateHsmConfigurationResult:
+        raise NotImplementedError
+
+    @handler("CreateRedshiftIdcApplication")
+    def create_redshift_idc_application(
+        self,
+        context: RequestContext,
+        idc_instance_arn: String,
+        redshift_idc_application_name: RedshiftIdcApplicationName,
+        idc_display_name: IdcDisplayNameString,
+        iam_role_arn: String,
+        identity_namespace: IdentityNamespaceString = None,
+        authorized_token_issuer_list: AuthorizedTokenIssuerList = None,
+        service_integrations: ServiceIntegrationList = None,
+    ) -> CreateRedshiftIdcApplicationResult:
         raise NotImplementedError
 
     @handler("CreateScheduledAction")
@@ -3613,7 +3749,10 @@ class RedshiftApi:
 
     @handler("DeleteCustomDomainAssociation")
     def delete_custom_domain_association(
-        self, context: RequestContext, cluster_identifier: String
+        self,
+        context: RequestContext,
+        cluster_identifier: String,
+        custom_domain_name: CustomDomainNameString,
     ) -> None:
         raise NotImplementedError
 
@@ -3648,6 +3787,12 @@ class RedshiftApi:
         database_name: PartnerIntegrationDatabaseName,
         partner_name: PartnerIntegrationPartnerName,
     ) -> PartnerIntegrationOutputMessage:
+        raise NotImplementedError
+
+    @handler("DeleteRedshiftIdcApplication")
+    def delete_redshift_idc_application(
+        self, context: RequestContext, redshift_idc_application_arn: String
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteResourcePolicy")
@@ -3992,6 +4137,16 @@ class RedshiftApi:
         database_name: PartnerIntegrationDatabaseName = None,
         partner_name: PartnerIntegrationPartnerName = None,
     ) -> DescribePartnersOutputMessage:
+        raise NotImplementedError
+
+    @handler("DescribeRedshiftIdcApplications")
+    def describe_redshift_idc_applications(
+        self,
+        context: RequestContext,
+        redshift_idc_application_arn: String = None,
+        max_records: IntegerOptional = None,
+        marker: String = None,
+    ) -> DescribeRedshiftIdcApplicationsResult:
         raise NotImplementedError
 
     @handler("DescribeReservedNodeExchangeStatus")
@@ -4344,9 +4499,9 @@ class RedshiftApi:
     def modify_custom_domain_association(
         self,
         context: RequestContext,
+        custom_domain_name: CustomDomainNameString,
+        custom_domain_certificate_arn: CustomDomainCertificateArnString,
         cluster_identifier: String,
-        custom_domain_name: CustomDomainNameString = None,
-        custom_domain_certificate_arn: CustomDomainCertificateArnString = None,
     ) -> ModifyCustomDomainAssociationResult:
         raise NotImplementedError
 
@@ -4371,6 +4526,19 @@ class RedshiftApi:
         severity: String = None,
         enabled: BooleanOptional = None,
     ) -> ModifyEventSubscriptionResult:
+        raise NotImplementedError
+
+    @handler("ModifyRedshiftIdcApplication")
+    def modify_redshift_idc_application(
+        self,
+        context: RequestContext,
+        redshift_idc_application_arn: String,
+        identity_namespace: IdentityNamespaceString = None,
+        iam_role_arn: String = None,
+        idc_display_name: IdcDisplayNameString = None,
+        authorized_token_issuer_list: AuthorizedTokenIssuerList = None,
+        service_integrations: ServiceIntegrationList = None,
+    ) -> ModifyRedshiftIdcApplicationResult:
         raise NotImplementedError
 
     @handler("ModifyScheduledAction")

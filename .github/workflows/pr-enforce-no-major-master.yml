@@ -6,19 +6,12 @@ on:
     # only enforce for PRs targeting the master branch
     branches:
     - master
+
 jobs:
-  # make sure no PRs with major label are merged
-  enforce-no-major-label:
-    runs-on: ubuntu-latest
+  enforce-no-major:
     permissions:
       issues: write
       pull-requests: write
-    steps:
-      - uses: mheap/github-action-required-labels@v5
-        with:
-          mode: exactly
-          count: 0
-          labels: "semver: major"
-          add_comment: true
-          token: ${{ secrets.PRO_ACCESS_TOKEN }}
-          message: "Currently, only minor and patch changes are allowed on master. Your PR labels ({{ applied }}) indicate that it cannot be merged into the master at this time."
+    uses: localstack/meta/.github/workflows/pr-enforce-no-major.yml@main
+    secrets:
+      github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
