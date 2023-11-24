@@ -49,6 +49,7 @@ from localstack.aws.api.cloudwatch import (
     PutDashboardOutput,
     PutMetricAlarmInput,
     RecentlyActive,
+    ResourceNotFound,
     ScanBy,
     StandardUnit,
     StateReason,
@@ -267,15 +268,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 alarm_name, account_id=context.account_id, region_name=context.region
             )
         )
-        old_state = alarm.alarm["StateValue"]
         if not alarm:
-            raise InvalidParameterValueException(
-                f"TODO: proper exception: Alarm with name {alarm_name} could not be found"
-            )
+            raise ResourceNotFound()
 
+        old_state = alarm.alarm["StateValue"]
         if state_value not in ("OK", "ALARM", "INSUFFICIENT_DATA"):
             raise ValidationError(
-                f"TODO: right error message: '{state_value}' must be one of INSUFFICIENT_DATA, ALARM, OK"
+                f"1 validation error detected: Value '{state_value}' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
             )
 
         self._update_state(context, alarm, state_value, state_reason, state_reason_data)
@@ -612,7 +611,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             "EvaluateLowSampleCountPercentile": alarm.get("EvaluateLowSampleCountPercentile", ""),
         }
 
-        # Dimensions not serializable # TODO: check
+        # Dimensions not serializable
         dimensions = []
         alarm_dimensions = alarm.get("Dimensions", [])
         if alarm_dimensions:
