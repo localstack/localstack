@@ -96,7 +96,7 @@ class Environment:
 PREDEFINED_ENVIRONMENTS = {ENV_DEV: Environment(region=REGION_LOCAL, prefix=ENV_DEV)}
 
 
-# TODO: Remove
+# TODO@viren: Remove
 def get_environment(env=None, region_name=None):
     """
     Return an Environment object based on the input arguments.
@@ -127,6 +127,7 @@ def get_environment(env=None, region_name=None):
     return env
 
 
+# TODO@viren: remove
 def is_local_env(env):
     return not env or env.region == REGION_LOCAL or env.prefix == ENV_DEV
 

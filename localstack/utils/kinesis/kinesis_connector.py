@@ -12,9 +12,8 @@ from urllib.parse import urlparse
 from amazon_kclpy import kcl
 from amazon_kclpy.v2 import processor
 
-from localstack import config
-from localstack.constants import LOCALHOST, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
-from localstack.utils.aws import arns, aws_stack
+from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
+from localstack.utils.aws import arns
 from localstack.utils.files import TMP_FILES, chmod_r, rm_rf, save_file
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
@@ -138,14 +137,12 @@ class KinesisProcessorThread(ShellCommandThread):
         if not params["log_file"]:
             params["log_file"] = f"{props_file}.log"
             TMP_FILES.append(params["log_file"])
-        env = aws_stack.get_environment()
-        quiet = aws_stack.is_local_env(env)
         ShellCommandThread.__init__(
             self,
             cmd,
             outfile=params["log_file"],
             env_vars=env_vars,
-            quiet=quiet,
+            quiet=False,
             name="kinesis-processor",
         )
 
@@ -287,7 +284,6 @@ def get_stream_info(
     if not ddb_lease_table_suffix:
         ddb_lease_table_suffix = DEFAULT_DDB_LEASE_TABLE_SUFFIX
     # construct stream info
-    env = aws_stack.get_environment(env)
     props_file = os.path.join(tempfile.gettempdir(), "kclipy.%s.properties" % short_uid())
     # make sure to convert stream ARN to stream name
     stream_name = arns.kinesis_stream_name(stream_name)
@@ -301,13 +297,6 @@ def get_stream_info(
         "app_name": app_name,
         "env_vars": env_vars,
     }
-    # set local connection
-    if aws_stack.is_local_env(env):
-        stream_info["conn_kwargs"] = {
-            "host": LOCALHOST,
-            "port": config.GATEWAY_LISTEN[0].port,
-            "is_secure": bool(config.USE_SSL),
-        }
     if endpoint_url:
         if "conn_kwargs" not in stream_info:
             stream_info["conn_kwargs"] = {}
@@ -323,7 +312,7 @@ def start_kcl_client_process(
     listener_script,
     region_name,
     log_file=None,
-    env=None,
+    env=None,  # TODO@viren: remove
     configs=None,
     endpoint_url=None,
     ddb_lease_table_suffix=None,
@@ -337,12 +326,8 @@ def start_kcl_client_process(
         env_vars = {}
     if log_subscribers is None:
         log_subscribers = []
-    env = aws_stack.get_environment(env)
     # make sure to convert stream ARN to stream name
     stream_name = arns.kinesis_stream_name(stream_name)
-    if aws_stack.is_local_env(env):
-        # disable CBOR protocol, enforce use of plain JSON
-        env_vars["AWS_CBOR_DISABLE"] = "true"
     if kcl_log_level or (len(log_subscribers) > 0):
         if not log_file:
             log_file = LOG_FILE_PATTERN.replace("*", short_uid())
@@ -365,7 +350,7 @@ def start_kcl_client_process(
         stream_name,
         region_name,
         log_file,
-        env=env,
+        env=env,  # TODO@viren: remove
         endpoint_url=endpoint_url,
         ddb_lease_table_suffix=ddb_lease_table_suffix,
         env_vars=env_vars,
@@ -374,10 +359,6 @@ def start_kcl_client_process(
     # set kcl config options
     kwargs = {"metricsLevel": "NONE", "initialPositionInStream": "LATEST"}
     # set parameters for local connection
-    if aws_stack.is_local_env(env):
-        kwargs["kinesisEndpoint"] = config.internal_service_url(protocol="http")
-        kwargs["dynamoDBEndpoint"] = config.internal_service_url(protocol="http")
-        kwargs["disableCertChecking"] = "true"
     kwargs.update(configs)
     # create config file
     kclipy_helper.create_config_file(
@@ -469,7 +450,7 @@ def listen_to_kinesis(
     endpoint_url=None,
     log_file=None,
     configs=None,
-    env=None,
+    env=None,  # TODO@viren: remove
     ddb_lease_table_suffix=None,
     env_vars=None,
     kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
@@ -488,7 +469,6 @@ def listen_to_kinesis(
         env_vars = {}
     if log_subscribers is None:
         log_subscribers = []
-    env = aws_stack.get_environment(env)
     if not events_file:
         events_file = EVENTS_FILE_PATTERN.replace("*", short_uid())
         TMP_FILES.append(events_file)
@@ -519,7 +499,6 @@ def listen_to_kinesis(
         endpoint_url=endpoint_url,
         log_file=log_file,
         configs=configs,
-        env=env,
         ddb_lease_table_suffix=ddb_lease_table_suffix,
         env_vars=env_vars,
         kcl_log_level=kcl_log_level,
