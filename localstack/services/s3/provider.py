@@ -165,6 +165,11 @@ from localstack.services.s3.utils import (
     validate_kms_key_id,
     verify_checksum,
 )
+from localstack.services.s3.utils_moto import (
+    get_bucket_from_moto,
+    get_key_from_moto_bucket,
+    is_moto_key_expired,
+)
 from localstack.services.s3.validation import (
     parse_grants_in_headers,
     validate_acl_acp,
@@ -184,13 +189,6 @@ from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 from localstack.utils.time import parse_timestamp
 from localstack.utils.urls import localstack_host
-
-if config.LEGACY_V2_S3_PROVIDER:
-    from localstack.services.s3.utils_moto import (
-        get_bucket_from_moto,
-        get_key_from_moto_bucket,
-        is_moto_key_expired,
-    )
 
 LOG = logging.getLogger(__name__)
 

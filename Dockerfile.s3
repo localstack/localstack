@@ -13,10 +13,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
              ca-certificates curl make openssl
-# do we need the dns server?
-#             ca-certificates curl make openssl iputils-ping iproute2
-# default under
-#             ca-certificates curl gnupg make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2 xz-utils
+# TODO: add this if we need the DNS server: iputils-ping iproute2
 
 SHELL [ "/bin/bash", "-c" ]
 
@@ -45,10 +42,6 @@ ADD bin/hosts /etc/hosts
 # set library path and default LocalStack hostname
 ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
-
-# Install the latest version of awslocal globally
-# RUN --mount=type=cache,target=/root/.cache \
-#     pip3 install --upgrade awscli awscli-local requests
 
 
 # builder: Stage which installs the dependencies of LocalStack Community
@@ -95,26 +88,8 @@ ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 # add the code as late as possible
 ADD localstack/ localstack/
 
-# delete the API specs stubs for other services
-# delete the providers implementations for other services
-# TODO: remove the SQS ones, it depends on 'is_sqs_queue_url' in service_router.py
-# TODO: remove lambda one, testutil.py depends on it for fixtures
-# TODO: we also need dynamodb, don't remove the API for now, until we find a way for tests...
-# and now we need node for CDK... what a mess omg
-# Maybe we need a bit of an heavier image for tests?
-# RUN find localstack/aws/api/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -not -name sqs -not -name lambda_ -exec rm -rf '{}' \;
-    # \ && \
-    # find localstack/services/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
-
 # Generate the plugin entrypoints
 RUN make entrypoints
-
-# Remove dependecies
-# RUN apt-get remove -y make
-# TODO: we need make to run tests, maybe we could have 2 steps: one for tests and one for push?
-
-# remove the other services from the entrypoints / TODO: not needed anymore with SERVICES
-# RUN sed -i '/\[localstack\.aws\.provider\]/,/^$/ { /^\[localstack\.aws\.provider\]/ b; /^$/ b; /localstack.services.providers:s3/!d; }' ./localstack_core.egg-info/entry_points.txt
 
 
 # link the python package installer virtual environments into the localstack venv
