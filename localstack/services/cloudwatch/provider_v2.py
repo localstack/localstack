@@ -564,7 +564,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         current_time = datetime.datetime.now()
         store.Histories.append(
             {
-                # TODO: check time format
                 "Timestamp": timestamp_millis(alarm.alarm["StateUpdatedTimestamp"]),
                 "HistoryItemType": HistoryItemType.StateUpdate,
                 "AlarmName": alarm.alarm["AlarmName"],
