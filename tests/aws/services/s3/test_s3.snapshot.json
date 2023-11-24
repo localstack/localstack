@@ -10576,5 +10576,85 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_object_with_slashes_in_key[True]": {
+    "recorded-date": "24-11-2023, 11:11:00",
+    "recorded-content": {
+      "list-objects-slashes": {
+        "Contents": [
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "/bar/foo/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"3858f62230ac3c915f300c664312c63f\"",
+            "Key": "/foo",
+            "LastModified": "datetime",
+            "Size": 6,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"96948aad3fcae80c08a35c9b5958cd89\"",
+            "Key": "bar",
+            "LastModified": "datetime",
+            "Size": 6,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 3,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_object_with_slashes_in_key[False]": {
+    "recorded-date": "24-11-2023, 11:11:04",
+    "recorded-content": {
+      "list-objects-slashes": {
+        "Contents": [
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "/bar/foo/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"3858f62230ac3c915f300c664312c63f\"",
+            "Key": "/foo",
+            "LastModified": "datetime",
+            "Size": 6,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"96948aad3fcae80c08a35c9b5958cd89\"",
+            "Key": "bar",
+            "LastModified": "datetime",
+            "Size": 6,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 3,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
