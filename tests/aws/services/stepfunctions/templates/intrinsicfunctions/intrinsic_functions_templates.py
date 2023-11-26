@@ -68,3 +68,6 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     # Generic.
     FORMAT_1: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_1.json5")
     FORMAT_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_2.json5")
+    FORMAT_CONTEXT_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/generic/format_context_path.json5"
+    )

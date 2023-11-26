@@ -49,6 +49,11 @@ class ASLIntrinsicParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLIntrinsicParser#func_arg_context_path.
+    def visitFunc_arg_context_path(self, ctx:ASLIntrinsicParser.Func_arg_context_pathContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLIntrinsicParser#func_arg_json_path.
     def visitFunc_arg_json_path(self, ctx:ASLIntrinsicParser.Func_arg_json_pathContext):
         return self.visitChildren(ctx)
@@ -56,6 +61,11 @@ class ASLIntrinsicParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLIntrinsicParser#func_arg_func_decl.
     def visitFunc_arg_func_decl(self, ctx:ASLIntrinsicParser.Func_arg_func_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLIntrinsicParser#context_path.
+    def visitContext_path(self, ctx:ASLIntrinsicParser.Context_pathContext):
         return self.visitChildren(ctx)
 
 
