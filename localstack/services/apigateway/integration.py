@@ -43,7 +43,7 @@ from localstack.services.apigateway.templates import (
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
     request_response_stream,
@@ -122,7 +122,7 @@ class BackendIntegration(ABC):
 
 
 @lru_cache(maxsize=64)
-def get_service_factory(account_id: str, region_name: str, role_arn: str):
+def get_service_factory(region_name: str, role_arn: str):
     if role_arn:
         return connect_to.with_assumed_role(
             role_arn=role_arn,
@@ -131,8 +131,7 @@ def get_service_factory(account_id: str, region_name: str, role_arn: str):
             session_name="BackplaneAssumeRoleSession",
         )
     else:
-        # TODO@viren revert this change
-        return connect_to(aws_access_key_id=account_id, region_name=region_name)
+        return connect_to(region_name=region_name)
 
 
 @lru_cache(maxsize=64)
@@ -170,10 +169,8 @@ def get_source_arn(invocation_context: ApiInvocationContext):
 def call_lambda(
     function_arn: str, event: bytes, asynchronous: bool, invocation_context: ApiInvocationContext
 ) -> str:
-    arn_data = parse_arn(function_arn)
     clients = get_service_factory(
-        account_id=arn_data["account"],
-        region_name=arn_data["region"],
+        region_name=extract_region_from_arn(function_arn),
         role_arn=invocation_context.integration.get("credentials"),
     )
     inv_result = clients.lambda_.request_metadata(
@@ -517,7 +514,6 @@ class DynamoDBIntegration(BackendIntegration):
 
         # determine target method via reflection
         clients = get_service_factory(
-            account_id=invocation_context.account_id,
             region_name=invocation_context.region_name,
             role_arn=invocation_context.integration.get("credentials"),
         )
@@ -760,7 +756,6 @@ class StepFunctionIntegration(BackendIntegration):
             payload = json.loads(invocation_context.data)
 
         client = get_service_factory(
-            account_id=invocation_context.account_id,
             region_name=invocation_context.region_name,
             role_arn=invocation_context.integration.get("credentials"),
         ).stepfunctions
