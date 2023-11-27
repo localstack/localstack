@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 from typing import Optional, TypedDict
@@ -129,14 +130,20 @@ class StepFunctionsStateMachineProvider(ResourceProvider[StepFunctionsStateMachi
         )
 
     def _get_definition(self, model, s3_client):
-        definition_str = model.get("DefinitionString")
-        s3_location = model.get("DefinitionS3Location")
-        if not definition_str and s3_location:
+        if "DefinitionString" in model:
+            definition_str = model.get("DefinitionString")
+        elif "DefinitionS3Location" in model:
             # TODO: currently not covered by tests - add a test to mimick the behavior of "sam deploy ..."
-
+            s3_location = model.get("DefinitionS3Location")
             LOG.debug("Fetching state machine definition from S3: %s", s3_location)
             result = s3_client.get_object(Bucket=s3_location["Bucket"], Key=s3_location["Key"])
             definition_str = to_str(result["Body"].read())
+        elif "Definition" in model:
+            definition = model.get("Definition")
+            definition_str = json.dumps(definition)
+        else:
+            definition_str = None
+
         substitutions = model.get("DefinitionSubstitutions")
         if substitutions is not None:
             definition_str = _apply_substitutions(definition_str, substitutions)
