@@ -58,6 +58,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
 )
 from tests.aws.services.apigateway.conftest import (
     APIGATEWAY_ASSUME_ROLE_POLICY,
+    APIGATEWAY_DYNAMODB_POLICY,
     APIGATEWAY_KINESIS_POLICY,
     APIGATEWAY_LAMBDA_POLICY,
     APIGATEWAY_S3_POLICY,
@@ -115,6 +116,12 @@ APIGATEWAY_DATA_INBOUND_TEMPLATE = """{
     ]
 }"""
 
+API_PATH_LAMBDA_PROXY_BACKEND = "/lambda/foo1"
+API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = "/lambda/{test_param1}"
+API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD = "/lambda-any-method/foo1"
+API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = "/lambda-any-method/{test_param1}"
+API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64 = "/lambda-is-base64/foo1"
+
 
 @pytest.fixture
 def integration_lambda(create_lambda_function):
@@ -125,11 +132,6 @@ def integration_lambda(create_lambda_function):
 
 class TestAPIGateway:
     # endpoint paths
-    API_PATH_LAMBDA_PROXY_BACKEND = "/lambda/foo1"
-    API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = "/lambda/{test_param1}"
-    API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD = "/lambda-any-method/foo1"
-    API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = "/lambda-any-method/{test_param1}"
-    API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64 = "/lambda-is-base64/foo1"
 
     TEST_API_GATEWAY_AUTHORIZER = {
         "name": "test",
@@ -401,10 +403,12 @@ class TestAPIGateway:
             assert response.status_code == 200
             assert "http://test.com" in response.headers["Access-Control-Allow-Origin"]
 
-    # TODO@viren parametrise the foll 2 tests
     @markers.aws.unknown
+    @pytest.mark.parametrize(
+        "api_path", [API_PATH_LAMBDA_PROXY_BACKEND, API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM]
+    )
     def test_api_gateway_lambda_proxy_integration(
-        self, integration_lambda, aws_client, create_iam_role_with_policy
+        self, api_path, integration_lambda, aws_client, create_iam_role_with_policy
     ):
         role_arn = create_iam_role_with_policy(
             RoleName=f"role-apigw-lambda-{short_uid()}",
@@ -415,25 +419,7 @@ class TestAPIGateway:
 
         self._test_api_gateway_lambda_proxy_integration(
             integration_lambda,
-            self.API_PATH_LAMBDA_PROXY_BACKEND,
-            role_arn,
-            aws_client.apigateway,
-        )
-
-    @markers.aws.unknown
-    def test_api_gateway_lambda_proxy_integration_with_path_param(
-        self, integration_lambda, aws_client, create_iam_role_with_policy
-    ):
-        role_arn = create_iam_role_with_policy(
-            RoleName=f"role-apigw-lambda-{short_uid()}",
-            PolicyName=f"policy-apigw-lambda-{short_uid()}",
-            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
-            PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
-        )
-
-        self._test_api_gateway_lambda_proxy_integration(
-            integration_lambda,
-            self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
+            api_path,
             role_arn,
             aws_client.apigateway,
         )
@@ -458,7 +444,7 @@ class TestAPIGateway:
 
         test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
             integration_lambda,
-            self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
+            API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
             role_arn,
             aws_client.apigateway,
             data_mutator_fn=_mutate_data,
@@ -597,7 +583,7 @@ class TestAPIGateway:
     @markers.aws.unknown
     def test_api_gateway_lambda_proxy_integration_any_method(self, integration_lambda):
         self._test_api_gateway_lambda_proxy_integration_any_method(
-            integration_lambda, self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD
+            integration_lambda, API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD
         )
 
     @markers.aws.unknown
@@ -606,7 +592,7 @@ class TestAPIGateway:
     ):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             integration_lambda,
-            self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
+            API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
         )
 
     @markers.aws.unknown
@@ -968,7 +954,7 @@ class TestAPIGateway:
         assert result["Item"]["data"] == {"S": "foobar123"}
 
     @markers.aws.unknown
-    def test_multiple_api_keys_validate(self, aws_client):
+    def test_multiple_api_keys_validate(self, aws_client, create_iam_role_with_policy):
         request_templates = {
             "application/json": json.dumps(
                 {
@@ -981,11 +967,19 @@ class TestAPIGateway:
             )
         }
 
+        role_arn = create_iam_role_with_policy(
+            RoleName=f"role-apigw-dynamodb-{short_uid()}",
+            PolicyName=f"policy-apigw-dynamodb-{short_uid()}",
+            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_DYNAMODB_POLICY,
+        )
+
         api_id = self.create_api_gateway_and_deploy(
             aws_client.apigateway,
             aws_client.dynamodb,
             request_templates=request_templates,
             is_api_key_required=True,
+            role_arn=role_arn,
         )
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
@@ -1578,6 +1572,7 @@ class TestAPIGateway:
         integration_type=None,
         integration_responses=None,
         stage_name="staging",
+        role_arn: str = None,
     ):
         response_templates = response_templates or {}
         request_templates = request_templates or {}
@@ -1595,7 +1590,10 @@ class TestAPIGateway:
             )
             kwargs[
                 "uri"
-            ] = "arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection"
+            ] = f"arn:aws:apigateway:{apigw_client.meta.region_name}:dynamodb:action/PutItem&Table=MusicCollection"
+
+        if role_arn:
+            kwargs["credentials"] = role_arn
 
         if not integration_responses:
             integration_responses = [{"httpMethod": "PUT", "statusCode": "200"}]
