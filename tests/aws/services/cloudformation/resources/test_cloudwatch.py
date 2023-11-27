@@ -77,3 +77,21 @@ def test_composite_alarm_creation(aws_client, deploy_cfn_template, snapshot):
     assert not response["CompositeAlarms"]
     response = aws_client.cloudwatch.describe_alarms(AlarmNames=[metric_alarm_name])
     assert not response["MetricAlarms"]
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..StateTransitionedTimestamp"])
+def test_alarm_ext_statistic(aws_client, deploy_cfn_template, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_cw_simple_alarm.yml"
+        ),
+    )
+    alarm_name = stack.outputs["MetricAlarmName"]
+    response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+    snapshot.match("simple_alarm", response["MetricAlarms"])
+
+    stack.destroy()
+    response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+    assert not response["MetricAlarms"]
