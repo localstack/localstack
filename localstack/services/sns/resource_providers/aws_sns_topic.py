@@ -11,7 +11,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProvider,
     ResourceRequest,
 )
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import canonicalize_bool_to_str, short_uid
 
 
 class SNSTopicProperties(TypedDict):
@@ -79,13 +79,11 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
         attributes = {k: v for k, v in model.items() if v is not None if k != "TopicName"}
 
         # following attributes need to be str instead of bool for boto to work
-        if attributes.get("FifoTopic") is not None:
-            attributes["FifoTopic"] = str(attributes.get("FifoTopic"))
+        if (fifo_topic := attributes.get("FifoTopic")) is not None:
+            attributes["FifoTopic"] = canonicalize_bool_to_str(fifo_topic)
 
-        if attributes.get("ContentBasedDeduplication") is not None:
-            attributes["ContentBasedDeduplication"] = str(
-                attributes.get("ContentBasedDeduplication")
-            )
+        if (content_based_dedup := attributes.get("ContentBasedDeduplication")) is not None:
+            attributes["ContentBasedDeduplication"] = canonicalize_bool_to_str(content_based_dedup)
 
         subscriptions = []
         if attributes.get("Subscription") is not None:
@@ -99,7 +97,8 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
 
         # in case cloudformation didn't provide topic name
         if model.get("TopicName") is None:
-            model["TopicName"] = f"topic-{short_uid()}"
+            name = f"topic-{short_uid()}" if not fifo_topic else f"topic-{short_uid()}.fifo"
+            model["TopicName"] = name
 
         create_sns_response = sns.create_topic(Name=model["TopicName"], Attributes=attributes)
         request.custom_context[REPEATED_INVOCATION] = True
