@@ -99,24 +99,50 @@ class CloudWatchAlarmProvider(ResourceProvider[CloudWatchAlarmProperties]):
 
         """
         model = request.desired_state
-        cloud_watch = request.aws_client_factory.cloudwatch
+        cloudwatch = request.aws_client_factory.cloudwatch
 
         if not model.get("AlarmName"):
             model["AlarmName"] = util.generate_default_name(
                 stack_name=request.stack_name, logical_resource_id=request.logical_resource_id
             )
 
-        cloud_watch.put_metric_alarm(
-            AlarmName=model["AlarmName"],
-            ComparisonOperator=model["ComparisonOperator"],
-            EvaluationPeriods=model["EvaluationPeriods"],
-            Period=model["Period"],
-            MetricName=model["MetricName"],
-            Namespace=model["Namespace"],
-            Statistic=model["Statistic"],
-            Threshold=model["Threshold"],
+        create_params = util.select_attributes(
+            model,
+            [
+                "AlarmName",
+                "ComparisonOperator",
+                "EvaluationPeriods",
+                "Period",
+                "MetricName",
+                "Namespace",
+                "Statistic",
+                "Threshold",
+                "ActionsEnabled",
+                "AlarmActions",
+                "AlarmDescription",
+                "DatapointsToAlarm",
+                "Dimensions",
+                "EvaluateLowSampleCountPercentile",
+                "ExtendedStatistic",
+                "InsufficientDataActions",
+                "Metrics",
+                "OKActions",
+                "ThresholdMetricId",
+                "TreatMissingData",
+                "Unit",
+            ],
         )
-        alarm = cloud_watch.describe_alarms(AlarmNames=[model["AlarmName"]])["MetricAlarms"][0]
+
+        cloudwatch.put_metric_alarm(**create_params)
+        alarms = cloudwatch.describe_alarms(AlarmNames=[model["AlarmName"]])["MetricAlarms"]
+        if not alarms:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                resource_model=model,
+                message="Alarm not found",
+            )
+
+        alarm = alarms[0]
         model["Arn"] = alarm["AlarmArn"]
         model["Id"] = alarm["AlarmName"]
 

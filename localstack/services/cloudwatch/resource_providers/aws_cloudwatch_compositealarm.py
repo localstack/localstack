@@ -86,9 +86,34 @@ class CloudWatchCompositeAlarmProvider(ResourceProvider[CloudWatchCompositeAlarm
         if "ActionsEnabled" in params:
             params["ActionsEnabled"] = str_to_bool(params["ActionsEnabled"])
 
-        cloud_watch.put_composite_alarm(AlarmName=model["AlarmName"], AlarmRule=model["AlarmRule"])
-        alarm = cloud_watch.describe_alarms(AlarmNames=[model["AlarmName"]])["MetricAlarms"][0]
-        model["Arn"] = alarm["AlarmArn"]
+        create_params = util.select_attributes(
+            model,
+            [
+                "AlarmName",
+                "AlarmRule",
+                "ActionsEnabled",
+                "ActionsSuppressor",
+                "ActionsSuppressorExtensionPeriod",
+                "ActionsSuppressorWaitPeriod",
+                "AlarmActions",
+                "AlarmDescription",
+                "InsufficientDataActions",
+                "OKActions",
+            ],
+        )
+
+        cloud_watch.put_composite_alarm(**create_params)
+        alarms = cloud_watch.describe_alarms(
+            AlarmNames=[model["AlarmName"]], AlarmTypes=["CompositeAlarm"]
+        )["CompositeAlarms"]
+
+        if not alarms:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                resource_model=model,
+                message="Composite Alarm not found",
+            )
+        model["Arn"] = alarms[0]["AlarmArn"]
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,

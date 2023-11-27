@@ -1,0 +1,50 @@
+Resources:
+  SNS:
+    Type: AWS::SNS::Topic
+  HighResourceUsage:
+    Type: AWS::CloudWatch::CompositeAlarm
+    Properties:
+      AlarmName: HighResourceUsage
+      AlarmRule: (ALARM(HighCPUUsage) OR ALARM(HighMemoryUsage))
+      AlarmActions:
+      - Ref: SNS
+      AlarmDescription: Indicates that the system resource usage is high while no known deployment is in progress
+    DependsOn:
+    - HighCPUUsage
+    - HighMemoryUsage
+  HighCPUUsage:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: CPU usage is high
+      AlarmName: HighCPUUsage
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+      MetricName: CPUUsage
+      Namespace: CustomNamespace
+      Period: 60
+      Statistic: Average
+      Threshold: 70
+      TreatMissingData: notBreaching
+  HighMemoryUsage:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Memory usage is high
+      AlarmName: HighMemoryUsage
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+      MetricName: MemoryUsage
+      Namespace: CustomNamespace
+      Period: 60
+      Statistic: Average
+      Threshold: 65
+      TreatMissingData: breaching
+
+Outputs:
+  CompositeAlarmName:
+    Description: Composite Alarm
+    Value:
+      Ref: HighResourceUsage
+  MetricAlarmName:
+    Description: Memory Alarm
+    Value:
+      Ref: HighMemoryUsage
