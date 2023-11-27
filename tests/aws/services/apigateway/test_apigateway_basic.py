@@ -60,6 +60,7 @@ from tests.aws.services.apigateway.conftest import (
     APIGATEWAY_ASSUME_ROLE_POLICY,
     APIGATEWAY_KINESIS_POLICY,
     APIGATEWAY_LAMBDA_POLICY,
+    APIGATEWAY_S3_POLICY,
     APIGATEWAY_STEPFUNCTIONS_POLICY,
     STEPFUNCTIONS_ASSUME_ROLE_POLICY,
 )
@@ -1793,7 +1794,9 @@ def test_rest_api_multi_region(
 
 class TestIntegrations:
     @markers.aws.unknown
-    def test_api_gateway_s3_get_integration(self, create_rest_apigw, aws_client):
+    def test_api_gateway_s3_get_integration(
+        self, create_rest_apigw, aws_client, create_iam_role_with_policy
+    ):
         s3_client = aws_client.s3
 
         bucket_name = f"test-bucket-{short_uid()}"
@@ -1813,8 +1816,15 @@ class TestIntegrations:
                 ContentType=object_content_type,
             )
 
+            role_arn = create_iam_role_with_policy(
+                RoleName=f"role-apigw-s3-{short_uid()}",
+                PolicyName=f"policy-apigw-s3-{short_uid()}",
+                RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+                PolicyDefinition=APIGATEWAY_S3_POLICY,
+            )
+
             self.connect_api_gateway_to_s3(
-                aws_client.apigateway, bucket_name, object_name, api_id, "GET"
+                aws_client.apigateway, bucket_name, object_name, api_id, "GET", role_arn
             )
 
             aws_client.apigateway.create_deployment(restApiId=api_id, stageName="test")
@@ -2048,14 +2058,20 @@ class TestIntegrations:
     # TODO: replace with fixtures, to allow passing aws_client and enable snapshot testing
     # ==================
 
-    def connect_api_gateway_to_s3(self, apigw_client, bucket_name, file_name, api_id, method):
+    def connect_api_gateway_to_s3(
+        self,
+        apigw_client,
+        bucket_name: str,
+        file_name: str,
+        api_id: str,
+        method: str,
+        role_arn: str,
+    ):
         """Connects the root resource of an api gateway to the given object of an s3 bucket."""
         s3_uri = "arn:aws:apigateway:{}:s3:path/{}/{{proxy}}".format(
             TEST_AWS_REGION_NAME, bucket_name
         )
 
-        test_role = "test-s3-role"
-        role_arn = arns.iam_role_arn(role_name=test_role, account_id=TEST_AWS_ACCOUNT_ID)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]
