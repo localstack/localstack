@@ -1063,10 +1063,8 @@ class TestAPIGateway:
         )["CreateFunctionResponse"]["FunctionArn"]
 
         # create state machine and permissions for step function to invoke lambda
-        role_name = f"sfn_role-{short_uid()}"
-        role_arn = arns.iam_role_arn(role_name, account_id)
-        create_iam_role_with_policy(
-            RoleName=role_name,
+        role_arn = create_iam_role_with_policy(
+            RoleName=f"sfn_role-{short_uid()}",
             PolicyName=f"sfn-role-policy-{short_uid()}",
             RoleDefinition=STEPFUNCTIONS_ASSUME_ROLE_POLICY,
             PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
