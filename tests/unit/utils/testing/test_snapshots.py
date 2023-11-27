@@ -139,6 +139,12 @@ class TestSnapshotManager:
         skip_path_escaped = ["$..aab", "$..b.'a.aa'"]
         sm._assert_all(skip_verification_paths=skip_path_escaped)
 
+    def test_non_homogeneous_list(self):
+        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm.recorded_state = {"key1": [{"key2": "value1"}, "value2", 3]}
+        sm.match("key1", [{"key2": "value1"}, "value2", 3])
+        sm._assert_all()
+
 
 def test_json_diff_format():
     path = ["Records", 1]

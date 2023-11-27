@@ -1,20 +1,44 @@
 from localstack.services.lambda_.api_utils import (
-    RUNTIMES,
     is_qualifier_expression,
     qualifier_is_alias,
     qualifier_is_version,
 )
-from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING
+from localstack.services.lambda_.runtimes import (
+    ALL_RUNTIMES,
+    IMAGE_MAPPING,
+    SUPPORTED_RUNTIMES,
+    TESTED_RUNTIMES,
+    VALID_LAYER_RUNTIMES,
+    VALID_RUNTIMES,
+)
 
 
 class TestApiUtils:
     def test_check_runtime(self):
         """
-        Make sure that the list of runtimes to test at least contains all mapped runtime images.
-        This is a test which ensures that runtimes considered for validation do not diverge from the supported runtimes.
-        See #9020 for more details.
+        Ensure that we keep the runtime lists consistent. The supported runtimes through image mappings
+        should not diverge from the API-validated inputs nor the tested runtimes.
         """
-        assert set(RUNTIMES) == set(IMAGE_MAPPING.keys())
+        # Ensure that we have image mappings for all runtimes used in LocalStack (motivated by #9020)
+        assert set(ALL_RUNTIMES) == set(IMAGE_MAPPING.keys())
+
+        # Ensure that we test all supported runtimes
+        assert set(SUPPORTED_RUNTIMES) == set(
+            TESTED_RUNTIMES
+        ), "mismatch between supported and tested runtimes"
+
+        # Ensure that valid runtimes (i.e., API-level validation) match the actually supported runtimes
+        # HINT: Update your botocore version if this check fails
+        valid_runtimes = VALID_RUNTIMES[1:-1].split(", ")
+        assert set(SUPPORTED_RUNTIMES) == set(
+            valid_runtimes
+        ), "mismatch between supported and API-valid runtimes"
+
+        # Ensure that valid layer runtimes (includes some extra runtimes) contain the actually supported runtimes
+        valid_layer_runtimes = VALID_LAYER_RUNTIMES[1:-1].split(", ")
+        assert set(ALL_RUNTIMES).issubset(
+            set(valid_layer_runtimes)
+        ), "supported runtimes not part of compatible runtimes for layers"
 
     def test_is_qualifier_expression(self):
         assert is_qualifier_expression("abczABCZ")

@@ -622,7 +622,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_event_invoke_config": {
-    "recorded-date": "27-02-2023, 17:30:14",
+    "recorded-date": "21-11-2023, 11:00:12",
     "recorded-content": {
       "event_invoke_config": {
         "DestinationConfig": {

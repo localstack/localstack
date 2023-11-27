@@ -62,6 +62,8 @@ class Markers:
     only_on_amd64 = pytest.mark.only_on_amd64
     resource_heavy = pytest.mark.resource_heavy
     only_in_docker = pytest.mark.only_in_docker
+    # Tests to execute when updating snapshots for a new Lambda runtime
+    lambda_runtime_update = pytest.mark.lambda_runtime_update
 
 
 # pytest plugin

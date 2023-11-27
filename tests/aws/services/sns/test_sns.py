@@ -388,6 +388,44 @@ class TestSNSPublishCrud:
         snapshot.match("error", e.value.response)
 
     @markers.aws.validated
+    def test_topic_publish_another_region(
+        self, sns_create_topic, snapshot, aws_client, aws_client_factory
+    ):
+        # create the topic in the default region, so that it's easier to clean up with the fixture
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        # create a client in another region
+        sns_client_region_2 = aws_client_factory.get_client(
+            service_name="sns", region_name=SECONDARY_TEST_AWS_REGION_NAME
+        )
+
+        message = "This is a test message"
+
+        # test to send a message with the client from the same region
+        response = aws_client.sns.publish(TopicArn=topic_arn, Message=message)
+        snapshot.match("success", response)
+
+        # test to send from the second region client
+        with pytest.raises(ClientError) as e:
+            sns_client_region_2.publish(TopicArn=topic_arn, Message=message)
+
+        snapshot.match("error", e.value.response)
+
+        # test to send batch from the second region client
+        with pytest.raises(ClientError) as e:
+            sns_client_region_2.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": message,
+                    }
+                ],
+            )
+
+        snapshot.match("error-batch", e.value.response)
+
+    @markers.aws.validated
     def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         account_id = parse_arn(topic_arn)["account"]

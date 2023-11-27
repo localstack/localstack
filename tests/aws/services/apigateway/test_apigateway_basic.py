@@ -58,6 +58,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
 )
 from tests.aws.services.apigateway.conftest import (
     APIGATEWAY_ASSUME_ROLE_POLICY,
+    APIGATEWAY_KINESIS_POLICY,
     APIGATEWAY_LAMBDA_POLICY,
     APIGATEWAY_STEPFUNCTIONS_POLICY,
     STEPFUNCTIONS_ASSUME_ROLE_POLICY,
@@ -1943,7 +1944,12 @@ class TestIntegrations:
 
     @markers.aws.unknown
     def test_api_gateway_kinesis_integration(
-        self, aws_client, kinesis_create_stream, wait_for_stream_ready, aws_client_factory
+        self,
+        aws_client,
+        create_iam_role_with_policy,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        aws_client_factory,
     ):
         # create target Kinesis stream
         stream_name = kinesis_create_stream()
@@ -1954,11 +1960,20 @@ class TestIntegrations:
         client = aws_client_factory(
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         ).apigateway
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=f"role-apigw-{short_uid()}",
+            PolicyName=f"policy-apigw-{short_uid()}",
+            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_KINESIS_POLICY,
+        )
+
         result = self.connect_api_gateway_to_kinesis(
             client,
             api_name,
             stream_name,
             TEST_AWS_REGION_NAME,
+            role_arn,
         )
 
         # generate test data
@@ -2072,6 +2087,7 @@ class TestIntegrations:
         gateway_name: str,
         kinesis_stream: str,
         region_name: str,
+        role_arn: str,
     ):
         template = APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
         resources = {
@@ -2085,6 +2101,7 @@ class TestIntegrations:
                             "type": "AWS",
                             "uri": f"arn:aws:apigateway:{region_name}:kinesis:action/PutRecords",
                             "requestTemplates": {"application/json": template},
+                            "credentials": role_arn,
                         }
                     ],
                 },
@@ -2097,6 +2114,7 @@ class TestIntegrations:
                             "type": "AWS",
                             "uri": f"arn:aws:apigateway:{region_name}:kinesis:action/ListStreams",
                             "requestTemplates": {"application/json": "{}"},
+                            "credentials": role_arn,
                         }
                     ],
                 },

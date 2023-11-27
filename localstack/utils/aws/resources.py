@@ -148,6 +148,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=No
         client_error_code = integration.get("clientErrorCode") or "400"
         server_error_code = integration.get("serverErrorCode") or "500"
         request_parameters = integration.get("requestParameters") or {}
+        credentials = integration.get("credentials") or ""
 
         # create integration
         client.put_integration(
@@ -159,6 +160,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=No
             uri=integration["uri"],
             requestTemplates=req_templates,
             requestParameters=request_parameters,
+            credentials=credentials,
         )
         response_configs = [
             {"pattern": "^2.*", "code": success_code, "res_templates": res_templates},

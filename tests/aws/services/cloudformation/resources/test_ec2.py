@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 
@@ -137,3 +138,55 @@ def test_dhcp_options(aws_client, deploy_cfn_template, snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("DhcpOptionsId", "dhcp-options-id"))
     snapshot.add_transformer(SortingTransformer("DhcpConfigurations", lambda x: x["Key"]))
     snapshot.match("description", response["DhcpOptions"][0])
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..Tags",
+        "$..Options.AssociationDefaultRouteTableId",
+        "$..Options.PropagationDefaultRouteTableId",
+    ]
+)
+def test_transit_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(THIS_FOLDER, "../../../templates/transit_gateway_attachment.yml")
+    )
+
+    gateway_description = aws_client.ec2.describe_transit_gateways(
+        TransitGatewayIds=[stack.outputs["TransitGateway"]]
+    )
+    attachment_description = aws_client.ec2.describe_transit_gateway_attachments(
+        TransitGatewayAttachmentIds=[stack.outputs["Attachment"]]
+    )
+
+    snapshot.add_transformer(snapshot.transform.key_value("TransitGatewayRouteTableId"))
+    snapshot.add_transformer(snapshot.transform.key_value("AssociationDefaultRouteTableId"))
+    snapshot.add_transformer(snapshot.transform.key_value("PropagatioDefaultRouteTableId"))
+    snapshot.add_transformer(snapshot.transform.key_value("ResourceId"))
+    snapshot.add_transformer(snapshot.transform.key_value("TransitGatewayAttachmentId"))
+    snapshot.add_transformer(snapshot.transform.key_value("TransitGatewayId"))
+
+    snapshot.match("attachment", attachment_description["TransitGatewayAttachments"][0])
+    snapshot.match("gateway", gateway_description["TransitGateways"][0])
+
+    stack.destroy()
+
+    descriptions = aws_client.ec2.describe_transit_gateways(
+        TransitGatewayIds=[stack.outputs["TransitGateway"]]
+    )
+    if is_aws_cloud():
+        # aws changes the state to deleted
+        descriptions = descriptions["TransitGateways"][0]
+        assert descriptions["State"] == "deleted"
+    else:
+        # moto directly deletes the transit gateway
+        transit_gateways_ids = [
+            tgateway["TransitGatewayId"] for tgateway in descriptions["TransitGateways"]
+        ]
+        assert stack.outputs["TransitGateway"] not in transit_gateways_ids
+
+    attachment_description = aws_client.ec2.describe_transit_gateway_attachments(
+        TransitGatewayAttachmentIds=[stack.outputs["Attachment"]]
+    )["TransitGatewayAttachments"]
+    assert attachment_description[0]["State"] == "deleted"

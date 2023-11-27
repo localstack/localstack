@@ -107,12 +107,22 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return sns_backends[account_id][region_name]
 
     @staticmethod
-    def _get_topic(arn: str, context: RequestContext) -> Topic:
+    def _get_topic(arn: str, context: RequestContext, multiregion: bool = True) -> Topic:
+        """
+        :param arn: the Topic ARN
+        :param context: the RequestContext of the request
+        :param multiregion: if the request can fetch the topic across regions or not (ex. Publish cannot publish to a
+        topic in a different region than the request)
+        :return: the Moto model Topic
+        """
         arn_data = parse_and_validate_topic_arn(arn)
         try:
             return sns_backends[arn_data["account"]][context.region].topics[arn]
         except KeyError:
-            raise NotFoundException("Topic does not exist")
+            if multiregion or context.region == arn_data["region"]:
+                raise NotFoundException("Topic does not exist")
+            else:
+                raise InvalidParameterException("Invalid parameter: TopicArn")
 
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
@@ -149,10 +159,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         parsed_arn = parse_and_validate_topic_arn(topic_arn)
         store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
-        if topic_arn not in store.topic_subscriptions:
-            raise NotFoundException(
-                "Topic does not exist",
-            )
+        moto_topic = self._get_topic(topic_arn, context, multiregion=False)
 
         ids = [entry["Id"] for entry in publish_batch_request_entries]
         if len(set(ids)) != len(publish_batch_request_entries):
@@ -199,8 +206,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     raise InvalidParameterException(
                         "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                     )
-                topic = self._get_topic(topic_arn, context)
-                if topic.content_based_deduplication == "false":
+                if moto_topic.content_based_deduplication == "false":
                     if not all(
                         [
                             "MessageDeduplicationId" in entry
@@ -221,7 +227,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 success["SequenceNumber"] = msg_ctx.sequencer_number
             response["Successful"].append(success)
 
-        moto_topic = self._get_topic(topic_arn, context)
         publish_ctx = SnsBatchPublishContext(
             messages=message_contexts,
             store=store,
@@ -451,7 +456,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
-            topic_model = self._get_topic(topic_or_target_arn, context)
+            topic_model = self._get_topic(topic_or_target_arn, context, multiregion=False)
             if topic_model.content_based_deduplication == "false":
                 if not message_deduplication_id:
                     raise InvalidParameterException(
@@ -501,11 +506,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 elif not platform_endpoint.enabled:
                     raise EndpointDisabledException("Endpoint is disabled")
             else:
-                if topic_or_target_arn not in store.topic_subscriptions:
-                    raise NotFoundException(
-                        "Topic does not exist",
-                    )
-                topic_model = moto_sns_backend.topics.get(topic_or_target_arn)
+                topic_model = self._get_topic(topic_or_target_arn, context, multiregion=False)
         else:
             # use the store from the request context
             store = self.get_store(account_id=context.account_id, region_name=context.region)
