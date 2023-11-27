@@ -919,10 +919,20 @@ class TestAPIGateway:
 
     @markers.aws.unknown
     def test_put_integration_dynamodb_proxy_validation_with_request_template(
-        self, aws_client, dynamodb_create_table
+        self,
+        aws_client,
+        dynamodb_create_table,
+        create_iam_role_with_policy,
     ):
         table = dynamodb_create_table()
         table_name = table["TableDescription"]["TableName"]
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=f"role-apigw-dynamodb-{short_uid()}",
+            PolicyName=f"policy-apigw-dynamodb-{short_uid()}",
+            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_DYNAMODB_POLICY,
+        )
 
         # create API GW with DynamoDB integration
         request_templates = {
@@ -937,7 +947,10 @@ class TestAPIGateway:
             )
         }
         api_id = self.create_api_gateway_and_deploy(
-            aws_client.apigateway, aws_client.dynamodb, request_templates=request_templates
+            aws_client.apigateway,
+            aws_client.dynamodb,
+            request_templates=request_templates,
+            role_arn=role_arn,
         )
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
