@@ -7,6 +7,7 @@ from _pytest.config import Config
 from localstack import config as localstack_config
 from localstack import constants
 from localstack.testing.scenario.provisioning import InfraProvisioner
+from tests.aws.test_terraform import TestTerraform
 
 
 def pytest_configure(config: Config):
@@ -27,7 +28,7 @@ def pytest_runtestloop(session):
     test_classes = set()
     for item in session.items:
         if item.parent and item.parent.cls:
-            test_classes.add(item.parent.cls.__name__)
+            test_classes.add(item.parent.cls)
         # OpenSearch/Elasticsearch are pytests, not unit test classes, so we check based on the item parent's name.
         # Any pytests that rely on opensearch/elasticsearch must be special-cased by adding them to the list below
         parent_name = str(item.parent).lower()
@@ -43,11 +44,11 @@ def pytest_runtestloop(session):
             test_init_functions.add(es_install_async)
 
     # add init functions for certain tests that download/install things
-    # set flag that terraform will be used
-    if "TestTerraform" in test_classes:
-        from tests.aws.test_terraform import TestTerraform
-
-        test_init_functions.add(TestTerraform.init_async)
+    for test_class in test_classes:
+        # set flag that terraform will be used
+        if TestTerraform is test_class:
+            test_init_functions.add(TestTerraform.init_async)
+            continue
 
     if not session.items:
         return

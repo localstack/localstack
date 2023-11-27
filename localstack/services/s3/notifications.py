@@ -683,7 +683,7 @@ class EventBridgeNotifier(BaseNotifier):
     @staticmethod
     def _get_event_payload(
         ctx: S3EventNotificationContext, config_id: NotificationId = None
-    ) -> "PutEventsRequestEntry":
+    ) -> PutEventsRequestEntry:
         # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html
         # see also https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
         entry: PutEventsRequestEntry = {

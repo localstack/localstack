@@ -87,16 +87,6 @@ jobs:
           DOCKERFILE: "./Dockerfile.s3"
         run: make docker-build
 
-      - name: Save the S3 image
-        run: docker save ${{ env.IMAGE_NAME }} | gzip > ${{ env.IMAGE_NAME }}.tar.gz
-
-      - name: Store Docker image as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.IMAGE_NAME }}
-          path: ${{ env.IMAGE_NAME }}.tar.gz
-          retention-days: 1
-
       - name: Run S3 Image tests
         timeout-minutes: 10
         env:
@@ -113,11 +103,20 @@ jobs:
         if: success() || failure()
         with:
           name: test-results-s3-image-${{ matrix.arch }}
-          path: target/pytest-junit-s3-image.xml
+          path: target/pytest-junit-s3-image-${{ matrix.arch }}.xml
           retention-days: 30
 
+      - name: Save the S3 image
+        run: docker save ${{ env.IMAGE_NAME }} | gzip > ${{ env.IMAGE_NAME }}.tar.gz
+
+      - name: Store Docker image as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.IMAGE_NAME }}
+          path: ${{ env.IMAGE_NAME }}.tar.gz
+          retention-days: 1
+
   publish-test-results:
-    # TODO: do we need to publish ARM results? that would be duplicated?
     name: "Publish S3 Image Test Results"
     needs: build-test-s3
     runs-on: ubuntu-latest
@@ -128,16 +127,21 @@ jobs:
       issues: read
     if: success() || failure()
     steps:
-      - name: Download Artifacts
+      - name: Download AMD64 Results
         uses: actions/download-artifact@v3
         with:
           name: test-results-s3-image-amd64
 
+      - name: Download ARM64 Results
+        uses: actions/download-artifact@v3
+        with:
+          name: test-results-s3-image-arm64
+
       - name: Publish S3 Image Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: "pytest-junit-s3-image.xml"
-          check_name: "S3 Image Test Results"
+          files: pytest-junit-*.xml
+          check_name: "S3 Image Test Results (AMD64 / ARM64)"
           action_fail_on_inconclusive: true
 
   push-s3-image:
