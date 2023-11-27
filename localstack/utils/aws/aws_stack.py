@@ -8,16 +8,8 @@ import boto3
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.connect import (
-    INTERNAL_REQUEST_PARAMS_HEADER,
-    InternalRequestParameters,
-    dump_dto,
-)
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
-    APPLICATION_AMZ_JSON_1_0,
-    APPLICATION_AMZ_JSON_1_1,
-    APPLICATION_X_WWW_FORM_URLENCODED,
     AWS_REGION_US_EAST_1,
     LOCALHOST,
 )
@@ -159,34 +151,3 @@ def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[
         access_id = auth.removeprefix("AWS ").split(":")
         if len(access_id):
             return access_id[0]
-
-
-def mock_aws_request_headers(
-    service: str, aws_access_key_id: str, region_name: str, internal: bool = False
-) -> Dict[str, str]:
-    """
-    Returns a mock set of headers that resemble SigV4 signing method.
-    """
-    ctype = APPLICATION_AMZ_JSON_1_0
-    if service == "kinesis":
-        ctype = APPLICATION_AMZ_JSON_1_1
-    elif service in ["sns", "sqs", "sts", "cloudformation"]:
-        ctype = APPLICATION_X_WWW_FORM_URLENCODED
-
-    # For S3 presigned URLs, we require that the client and server use the same
-    # access key ID to sign requests. So try to use the access key ID for the
-    # current request if available
-    headers = {
-        "Content-Type": ctype,
-        "Accept-Encoding": "identity",
-        "X-Amz-Date": "20160623T103251Z",  # TODO: Use current date
-        "Authorization": (
-            "AWS4-HMAC-SHA256 "
-            + f"Credential={aws_access_key_id}/20160623/{region_name}/{service}/aws4_request, "
-            + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
-        ),
-    }
-    if internal:
-        dto = InternalRequestParameters()
-        headers[INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
-    return headers

@@ -13,7 +13,7 @@ from localstack.aws.handlers.partition_rewriter import ArnPartitionRewriteHandle
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.http import Request, Response
 from localstack.http.request import get_full_raw_path, get_raw_path
-from localstack.utils.aws.aws_stack import mock_aws_request_headers
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import to_bytes, to_str
 
 # Define the callables used to convert the payload to the appropriate encoding for the tests

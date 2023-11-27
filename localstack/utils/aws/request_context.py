@@ -1,3 +1,7 @@
+"""
+This module has utilities relating to creating/parsing AWS requests.
+"""
+
 import logging
 import re
 import threading
@@ -10,10 +14,12 @@ from requests.structures import CaseInsensitiveDict
 
 from localstack.aws.accounts import get_account_id_from_access_key_id
 from localstack.constants import (
+    APPLICATION_AMZ_JSON_1_0,
+    APPLICATION_AMZ_JSON_1_1,
+    APPLICATION_X_WWW_FORM_URLENCODED,
     AWS_REGION_US_EAST_1,
     DEFAULT_AWS_ACCOUNT_ID,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     requests_error_response,
     requests_to_flask_response,
@@ -141,7 +147,7 @@ def configure_region_for_current_request(region_name: str, service_name: str):
     auth_header = headers.get("Authorization")
     auth_header = (
         auth_header
-        or aws_stack.mock_aws_request_headers(
+        or mock_aws_request_headers(
             service_name, aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID, region_name=AWS_REGION_US_EAST_1
         )["Authorization"]
     )
@@ -157,7 +163,7 @@ def configure_region_for_current_request(region_name: str, service_name: str):
 
 def mock_request_for_region(service_name: str, account_id: str, region_name: str) -> Request:
     result = Request()
-    result.headers["Authorization"] = aws_stack.mock_aws_request_headers(
+    result.headers["Authorization"] = mock_aws_request_headers(
         service_name, aws_access_key_id=account_id, region_name=region_name
     )["Authorization"]
     return result
@@ -213,3 +219,42 @@ def patch_moto_request_handling():
             # sometimes there is a race condition where the previous patch has not been applied yet
             pass
         return fn(self, *args, **kwargs)
+
+
+def mock_aws_request_headers(
+    service: str, aws_access_key_id: str, region_name: str, internal: bool = False
+) -> Dict[str, str]:
+    """
+    Returns a mock set of headers that resemble SigV4 signing method.
+    """
+    from localstack.aws.connect import (
+        INTERNAL_REQUEST_PARAMS_HEADER,
+        InternalRequestParameters,
+        dump_dto,
+    )
+
+    ctype = APPLICATION_AMZ_JSON_1_0
+    if service == "kinesis":
+        ctype = APPLICATION_AMZ_JSON_1_1
+    elif service in ["sns", "sqs", "sts", "cloudformation"]:
+        ctype = APPLICATION_X_WWW_FORM_URLENCODED
+
+    # For S3 presigned URLs, we require that the client and server use the same
+    # access key ID to sign requests. So try to use the access key ID for the
+    # current request if available
+    headers = {
+        "Content-Type": ctype,
+        "Accept-Encoding": "identity",
+        "X-Amz-Date": "20160623T103251Z",  # TODO: Use current date
+        "Authorization": (
+            "AWS4-HMAC-SHA256 "
+            + f"Credential={aws_access_key_id}/20160623/{region_name}/{service}/aws4_request, "
+            + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
+        ),
+    }
+
+    if internal:
+        dto = InternalRequestParameters()
+        headers[INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
+
+    return headers

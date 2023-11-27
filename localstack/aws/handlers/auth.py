@@ -11,6 +11,7 @@ from localstack.constants import (
 )
 from localstack.http import Response
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
+from localstack.utils.aws.request_context import mock_aws_request_headers
 
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
@@ -25,13 +26,12 @@ class MissingAuthHeaderInjector(Handler):
         #  (that allows access to restricted resources by default)
         if not context.service:
             return
-        from localstack.utils.aws import aws_stack
 
         api = context.service.service_name
         headers = context.request.headers
 
         if not headers.get("Authorization"):
-            headers["Authorization"] = aws_stack.mock_aws_request_headers(
+            headers["Authorization"] = mock_aws_request_headers(
                 api, aws_access_key_id="injectedaccesskey", region_name=AWS_REGION_US_EAST_1
             )["Authorization"]
 

@@ -26,7 +26,8 @@ from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
 from localstack.services.sqs.utils import parse_queue_url
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import GenericTransformer
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
@@ -1106,7 +1107,7 @@ class TestSqsProvider:
         queue_name = f"queue-{short_uid()}"
         sqs_create_queue(QueueName=queue_name)
 
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         payload = f"Action=GetQueueUrl&QueueName={queue_name}"
@@ -1126,7 +1127,7 @@ class TestSqsProvider:
         queue_name = f"queue-{short_uid()}"
 
         edge_url = config.internal_service_url()
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         port = 12345
