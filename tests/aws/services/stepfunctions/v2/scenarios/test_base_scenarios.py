@@ -14,6 +14,9 @@ from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_tem
 from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
     ScenariosTemplate as ST,
 )
+from tests.aws.services.stepfunctions.templates.services.services_templates import (
+    ServicesTemplates as SerT,
+)
 from tests.aws.services.stepfunctions.utils import (
     await_execution_terminated,
     create,
@@ -23,6 +26,71 @@ from tests.aws.services.stepfunctions.utils import (
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestBaseScenarios:
+    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
+    @markers.aws.validated
+    def test_catch_states_runtime(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        create_res = create_lambda_function(
+            func_name=function_name,
+            handler_file=SerT.LAMBDA_ID_FUNCTION,
+            runtime="python3.9",
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
+
+        template = ST.load_sfn_template(ST.CATCH_STATES_RUNTIME)
+        template["States"]["RaiseRuntime"]["Resource"] = function_arn
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_catch_empty(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        create_res = create_lambda_function(
+            func_name=function_name,
+            handler_file=SerT.LAMBDA_ID_FUNCTION,
+            runtime="python3.9",
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
+
+        template = ST.load_sfn_template(ST.CATCH_EMPTY)
+        template["States"]["StartTask"]["Resource"] = function_arn
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @markers.aws.validated
     def test_parallel_state(
         self,
@@ -385,6 +453,26 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    def test_choice_singleton_composite(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.CHOICE_STATE_SINGLETON_COMPOSITE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"type": "Public", "value": 22})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_map_item_reader_base_list_objects_v2(
         self,
         aws_client,
@@ -731,6 +819,39 @@ class TestBaseScenarios:
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Cause"])
+    @markers.aws.validated
+    def test_lambda_empty_retry(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        create_res = create_lambda_function(
+            func_name=function_name,
+            handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
+            runtime="python3.9",
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
+
+        template = ST.load_sfn_template(ST.LAMBDA_EMPTY_RETRY)
+        template["States"]["LambdaTask"]["Resource"] = function_arn
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

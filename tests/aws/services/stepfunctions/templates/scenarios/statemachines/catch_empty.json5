@@ -1,0 +1,16 @@
+{
+  "Comment": "CATCH_EMPTY",
+  "StartAt": "StartTask",
+  "States": {
+    "StartTask": {
+      "Type": "Task",
+      "Resource": "_tbd_",
+      "Catch": [],
+      "Next": "Final",
+    },
+    "Final": {
+      "Type": "Pass",
+      "End": true
+    }
+  },
+}
