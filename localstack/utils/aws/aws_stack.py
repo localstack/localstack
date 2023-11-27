@@ -8,6 +8,11 @@ import boto3
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.connect import (
+    INTERNAL_REQUEST_PARAMS_HEADER,
+    InternalRequestParameters,
+    dump_dto,
+)
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
@@ -157,7 +162,7 @@ def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[
 
 
 def mock_aws_request_headers(
-    service: str, aws_access_key_id: str, region_name: str
+    service: str, aws_access_key_id: str, region_name: str, internal: bool = False
 ) -> Dict[str, str]:
     """
     Returns a mock set of headers that resemble SigV4 signing method.
@@ -171,7 +176,7 @@ def mock_aws_request_headers(
     # For S3 presigned URLs, we require that the client and server use the same
     # access key ID to sign requests. So try to use the access key ID for the
     # current request if available
-    return {
+    headers = {
         "Content-Type": ctype,
         "Accept-Encoding": "identity",
         "X-Amz-Date": "20160623T103251Z",  # TODO: Use current date
@@ -181,3 +186,7 @@ def mock_aws_request_headers(
             + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
         ),
     }
+    if internal:
+        dto = InternalRequestParameters()
+        headers[INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
+    return headers
