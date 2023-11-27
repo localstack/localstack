@@ -401,27 +401,46 @@ class TestAPIGateway:
             assert response.status_code == 200
             assert "http://test.com" in response.headers["Access-Control-Allow-Origin"]
 
+    # TODO@viren parametrise the foll 2 tests
     @markers.aws.unknown
-    def test_api_gateway_lambda_proxy_integration(self, integration_lambda, aws_client):
+    def test_api_gateway_lambda_proxy_integration(
+        self, integration_lambda, aws_client, create_iam_role_with_policy
+    ):
+        role_arn = create_iam_role_with_policy(
+            RoleName=f"role-apigw-lambda-{short_uid()}",
+            PolicyName=f"policy-apigw-lambda-{short_uid()}",
+            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_KINESIS_POLICY,
+        )
+
         self._test_api_gateway_lambda_proxy_integration(
             integration_lambda,
             self.API_PATH_LAMBDA_PROXY_BACKEND,
+            role_arn,
             aws_client.apigateway,
         )
 
     @markers.aws.unknown
     def test_api_gateway_lambda_proxy_integration_with_path_param(
-        self, integration_lambda, aws_client
+        self, integration_lambda, aws_client, create_iam_role_with_policy
     ):
+        role_arn = create_iam_role_with_policy(
+            RoleName=f"role-apigw-lambda-{short_uid()}",
+            PolicyName=f"policy-apigw-lambda-{short_uid()}",
+            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
+        )
+
         self._test_api_gateway_lambda_proxy_integration(
             integration_lambda,
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
+            role_arn,
             aws_client.apigateway,
         )
 
     @markers.aws.unknown
     def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(
-        self, integration_lambda, aws_client
+        self, integration_lambda, aws_client, create_iam_role_with_policy
     ):
         # Test the case where `isBase64Encoded` is enabled.
         content = b"hello, please base64 encode me"
@@ -430,9 +449,17 @@ class TestAPIGateway:
             data["return_is_base_64_encoded"] = True
             data["return_raw_body"] = base64.b64encode(content).decode("utf8")
 
+        role_arn = create_iam_role_with_policy(
+            RoleName=f"role-apigw-lambda-{short_uid()}",
+            PolicyName=f"policy-apigw-lambda-{short_uid()}",
+            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
+        )
+
         test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
             integration_lambda,
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
+            role_arn,
             aws_client.apigateway,
             data_mutator_fn=_mutate_data,
         )
@@ -445,6 +472,7 @@ class TestAPIGateway:
         self,
         fn_name: str,
         path: str,
+        role_arn: str,
         apigw_client,
         data_mutator_fn: Optional[Callable] = None,
     ) -> ApiGatewayLambdaProxyIntegrationTestResult:
@@ -466,6 +494,7 @@ class TestAPIGateway:
             path=path,
             stage_name=TEST_STAGE_NAME,
             client=apigw_client,
+            role_arn=role_arn,
         )
 
         api_id = result["id"]
@@ -503,10 +532,11 @@ class TestAPIGateway:
         self,
         fn_name: str,
         path: str,
+        role_arn: str,
         apigw_client,
     ) -> None:
         test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
-            fn_name, path, apigw_client
+            fn_name, path, role_arn, apigw_client
         )
         data, resource, result, url, path_with_replace = test_result
 
