@@ -1,4 +1,5 @@
 import json
+import os
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -35,3 +36,44 @@ def test_alarm_creation(deploy_cfn_template, snapshot):
 
     outputs = deploy_cfn_template(template=template).outputs
     snapshot.match("alarm_outputs", outputs)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..StateReason",
+        "$..StateReasonData",
+        "$..StateTransitionedTimestamp",
+        "$..StateValue",
+        "$..AlarmActions",
+        "$..AlarmRule",
+        "$..StateReason",
+        "$..StateReasonData",
+        "$..StateTransitionedTimestamp",
+        "$..StateValue",
+    ]
+)
+def test_composite_alarm_creation(aws_client, deploy_cfn_template, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_cw_composite_alarm.yml"
+        ),
+    )
+    composite_alarm_name = stack.outputs["CompositeAlarmName"]
+    response = aws_client.cloudwatch.describe_alarms(
+        AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+    )
+    snapshot.match("composite_alarm", response["CompositeAlarms"])
+
+    metric_alarm_name = stack.outputs["MetricAlarmName"]
+    response = aws_client.cloudwatch.describe_alarms(AlarmNames=[metric_alarm_name])
+    snapshot.match("metric_alarm", response["MetricAlarms"])
+
+    stack.destroy()
+    response = aws_client.cloudwatch.describe_alarms(
+        AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+    )
+    assert not response["CompositeAlarms"]
+    response = aws_client.cloudwatch.describe_alarms(AlarmNames=[metric_alarm_name])
+    assert not response["MetricAlarms"]
