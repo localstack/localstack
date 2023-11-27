@@ -9217,25 +9217,26 @@ class TestS3BucketLogging:
     def test_put_bucket_logging_wrong_target(
         self,
         aws_client,
-        aws_client_factory,
         s3_create_bucket,
-        s3_create_bucket_with_client,
+        # aws_client_factory,
+        # s3_create_bucket_with_client,
         snapshot,
     ):
         snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
 
-        region_1 = "us-east-1"
+        region_1 = "us-east-2"
+        # region_1 = "us-east-2"
         region_2 = "us-west-2"
 
         snapshot.add_transformer(RegexTransformer(region_1, "<region_1>"))
         snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
 
-        bucket_name = f"bucket-{short_uid()}"
-        client = aws_client_factory(region_name=region_1).s3
-        s3_create_bucket_with_client(
-            client,
-            Bucket=bucket_name,
-        )
+        bucket_name = s3_create_bucket(CreateBucketConfiguration={"LocationConstraint": region_1})
+        # bucket_name = f"bucket-{short_uid()}"
+        # client = aws_client_factory(region_name=region_1).s3
+        # s3_create_bucket_with_client(
+        #     client,
+        #     Bucket=bucket_name)
         target_bucket = s3_create_bucket(CreateBucketConfiguration={"LocationConstraint": region_2})
 
         with pytest.raises(ClientError) as e:
@@ -9245,7 +9246,10 @@ class TestS3BucketLogging:
                     "TargetPrefix": "log",
                 },
             }
-            client.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status)
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+            )
+            # client.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status)
         snapshot.match("put-bucket-logging-different-regions", e.value.response)
 
         nonexistent_target_bucket = f"target-bucket-{long_uid()}"
@@ -9256,7 +9260,10 @@ class TestS3BucketLogging:
                     "TargetPrefix": "log",
                 },
             }
-            client.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status)
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+            )
+            # client.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status)
         snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
         assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
 

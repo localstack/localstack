@@ -7407,12 +7407,13 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_wrong_target": {
-    "recorded-date": "23-11-2023, 12:50:13",
+    "recorded-date": "23-11-2023, 16:58:08",
     "recorded-content": {
       "put-bucket-logging-different-regions": {
         "Error": {
           "Code": "CrossLocationLoggingProhibitted",
           "Message": "Cross S3 location logging not allowed. ",
+          "SourceBucketLocation": "<region_1>",
           "TargetBucketLocation": "<region_2>"
         },
         "ResponseMetadata": {
