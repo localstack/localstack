@@ -17,6 +17,9 @@ from localstack.services.stepfunctions.asl.component.intrinsic.argument.function
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_bool import (
     FunctionArgumentBool,
 )
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_context_path import (
+    FunctionArgumentContextPath,
+)
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_float import (
     FunctionArgumentFloat,
 )
@@ -73,6 +76,12 @@ class Preprocessor(ASLIntrinsicParserVisitor):
     ) -> FunctionArgumentString:
         text: str = self._text_of_str(ctx.STRING())
         return FunctionArgumentString(string=text)
+
+    def visitContext_path(
+        self, ctx: ASLIntrinsicParser.Context_pathContext
+    ) -> FunctionArgumentContextPath:
+        json_path: str = ctx.json_path().getText()
+        return FunctionArgumentContextPath(json_path=json_path)
 
     def visitFunc_arg_json_path(
         self, ctx: ASLIntrinsicParser.Func_arg_json_pathContext

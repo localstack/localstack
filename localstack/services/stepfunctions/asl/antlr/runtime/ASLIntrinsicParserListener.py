@@ -80,6 +80,15 @@ class ASLIntrinsicParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLIntrinsicParser#func_arg_context_path.
+    def enterFunc_arg_context_path(self, ctx:ASLIntrinsicParser.Func_arg_context_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLIntrinsicParser#func_arg_context_path.
+    def exitFunc_arg_context_path(self, ctx:ASLIntrinsicParser.Func_arg_context_pathContext):
+        pass
+
+
     # Enter a parse tree produced by ASLIntrinsicParser#func_arg_json_path.
     def enterFunc_arg_json_path(self, ctx:ASLIntrinsicParser.Func_arg_json_pathContext):
         pass
@@ -95,6 +104,15 @@ class ASLIntrinsicParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLIntrinsicParser#func_arg_func_decl.
     def exitFunc_arg_func_decl(self, ctx:ASLIntrinsicParser.Func_arg_func_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLIntrinsicParser#context_path.
+    def enterContext_path(self, ctx:ASLIntrinsicParser.Context_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLIntrinsicParser#context_path.
+    def exitContext_path(self, ctx:ASLIntrinsicParser.Context_pathContext):
         pass
 
 

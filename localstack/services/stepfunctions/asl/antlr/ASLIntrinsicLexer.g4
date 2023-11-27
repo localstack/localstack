@@ -1,6 +1,6 @@
 lexer grammar ASLIntrinsicLexer;
 
-DOLLARDOT: '$.';
+DOLLAR: '$';
 DOT: '.';
 STAR: '*';
 COMMA: ',';

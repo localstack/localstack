@@ -1,4 +1,4 @@
-DOLLARDOT=1
+DOLLAR=1
 DOT=2
 STAR=3
 COMMA=4
@@ -40,7 +40,7 @@ INT=39
 NUMBER=40
 IDENTIFIER=41
 WS=42
-'$.'=1
+'$'=1
 '.'=2
 '*'=3
 ','=4
