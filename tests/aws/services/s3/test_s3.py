@@ -9256,7 +9256,8 @@ class TestS3BucketLogging:
         s3_create_bucket_with_client,
         snapshot,
     ):
-        # The aim of the test is to check the behavior of the CrossLocationLoggingProhibitions exception for us-east-1 and regions other than us-east-1.
+        # The aim of the test is to check the behavior of the CrossLocationLoggingProhibitions
+        # exception for us-east-1 and regions other than us-east-1.
         snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
         region_1 = "us-east-1"
         region_2 = "us-east-2"
