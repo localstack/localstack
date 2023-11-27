@@ -7407,7 +7407,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_wrong_target": {
-    "recorded-date": "03-08-2023, 04:26:14",
+    "recorded-date": "27-11-2023, 16:26:34",
     "recorded-content": {
       "put-bucket-logging-different-regions": {
         "Error": {
