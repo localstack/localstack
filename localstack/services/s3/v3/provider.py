@@ -198,8 +198,8 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
 )
 from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
-from localstack.services.edge import ROUTER
 from localstack.constants import AWS_REGION_US_EAST_1
+from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import (
@@ -3289,7 +3289,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise CrossLocationLoggingProhibitted(
                 "Cross S3 location logging not allowed. ",
                 TargetBucketLocation=target_s3_bucket.bucket_region,
-            ) if source_bucket_region != AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
+            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
                 "Cross S3 location logging not allowed. ",
                 SourceBucketLocation=source_bucket_region,
                 TargetBucketLocation=target_s3_bucket.bucket_region,

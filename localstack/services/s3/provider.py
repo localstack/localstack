@@ -1658,7 +1658,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise CrossLocationLoggingProhibitted(
                 "Cross S3 location logging not allowed. ",
                 TargetBucketLocation=target_bucket.region_name,
-            ) if source_bucket_region != AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
+            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
                 "Cross S3 location logging not allowed. ",
                 SourceBucketLocation=source_bucket_region,
                 TargetBucketLocation=target_bucket.region_name,
