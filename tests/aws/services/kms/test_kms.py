@@ -80,7 +80,6 @@ class TestKMS:
     def test_create_key(
         self, kms_client_for_region, kms_create_key, snapshot, aws_client, account_id
     ):
-        aws_client.sns.create_topic(Name="foo")
         kms_client = kms_client_for_region(TEST_AWS_REGION_NAME)
 
         key_ids_before = _get_all_key_ids(kms_client)
