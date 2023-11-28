@@ -749,7 +749,7 @@ def test_autoexpand_capability_requirement(cleanups, aws_client):
     )
 
 
-# TODO: a CreateStack operation should work with an existing stack if its in REVIEW_IN_PROGRESS
+# FIXME: a CreateStack operation should work with an existing stack if its in REVIEW_IN_PROGRESS
 @pytest.mark.skip(reason="not implemented correctly yet")
 @markers.aws.validated
 def test_create_while_in_review(aws_client, snapshot, cleanups):

@@ -157,9 +157,6 @@ class InternalFailure(CommonServiceException):
 
 
 class CloudformationProvider(CloudformationApi):
-    def _get_stack_by_name_or_arn(self, context: RequestContext, stack_name_or_arn: str):
-        ...
-
     def _stack_status_is_active(self, stack_status: str) -> bool:
         return stack_status not in [StackStatus.DELETE_COMPLETE]
 
@@ -173,7 +170,7 @@ class CloudformationProvider(CloudformationApi):
         # get stacks by name
         active_stack_candidates = [
             s
-            for stack_arn, s in state.stacks.items()
+            for s in state.stacks.values()
             if s.stack_name == stack_name and self._stack_status_is_active(s.status)
         ]
 
