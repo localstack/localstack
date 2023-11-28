@@ -9215,12 +9215,12 @@ class TestS3BucketLogging:
 
     @markers.aws.validated
     def test_put_bucket_logging_wrong_target(
-            self,
-            aws_client,
-            aws_client_factory,
-            s3_create_bucket,
-            s3_create_bucket_with_client,
-            snapshot,
+        self,
+        aws_client,
+        aws_client_factory,
+        s3_create_bucket,
+        s3_create_bucket_with_client,
+        snapshot,
     ):
         snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
 
