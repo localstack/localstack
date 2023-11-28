@@ -42,6 +42,9 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     STRING_SPLIT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/string_operations/string_split.json5"
     )
+    STRING_SPLIT_CONTEXT_OBJECT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/string_operations/string_split_context_object.json5"
+    )
 
     # Encode and Decode.
     BASE_64_ENCODE: Final[str] = os.path.join(
