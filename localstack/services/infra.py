@@ -21,6 +21,7 @@ from localstack.utils.bootstrap import (
     should_eager_load_api,
 )
 from localstack.utils.container_networking import get_main_container_id
+from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import is_port_open
 from localstack.utils.patch import patch
@@ -203,6 +204,11 @@ def print_runtime_information(in_docker=False):
         id = get_main_container_id()
         if id:
             print("LocalStack Docker container id: %s" % id[:12])
+
+        inspect_result = DOCKER_CLIENT.inspect_container(id)
+        image_sha = inspect_result.get("Image")
+        if image_sha:
+            print("LocalStack Docker image sha: %s" % image_sha)
 
     if config.LOCALSTACK_BUILD_DATE:
         print("LocalStack build date: %s" % config.LOCALSTACK_BUILD_DATE)
