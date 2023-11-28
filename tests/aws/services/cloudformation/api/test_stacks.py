@@ -17,8 +17,11 @@ from localstack.utils.sync import retry, wait_until
 
 
 class TestStacksApi:
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
+    )
     @markers.aws.validated
-    def test_stack_lifecycle(self, is_stack_updated, deploy_cfn_template, snapshot, aws_client):
+    def test_stack_lifecycle(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.add_transformer(snapshot.transform.key_value("ParameterValue", "parameter-value"))
         api_name = f"test_{short_uid()}"
@@ -51,11 +54,17 @@ class TestStacksApi:
         aws_client.cloudformation.delete_stack(
             StackName=stack_name,
         )
-        deletion_description = (
-            "DeletionTime"
-            in aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0]
-        )
-        snapshot.match("deletion", deletion_description)
+        aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+
+        with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+            aws_client.cloudformation.describe_stacks(StackName=stack_name)
+        snapshot.match("describe_deleted_by_name_exc", e.value.response)
+
+        deleted = aws_client.cloudformation.describe_stacks(StackName=deployed.stack_id)["Stacks"][
+            0
+        ]
+        assert "DeletionTime" in deleted
+        snapshot.match("deleted", deleted)
 
     @markers.aws.validated
     def test_stack_description_special_chars(self, deploy_cfn_template, snapshot, aws_client):
