@@ -1853,6 +1853,75 @@ class TestLambdaConcurrency:
         assert result2 == "on-demand"
 
     @markers.aws.validated
+    def test_lambda_provisioned_concurrency_scheduling(
+        self, snapshot, create_lambda_function, aws_client
+    ):
+        """Tests that invokes should be scheduled to provisioned-concurrency instances rather than on-demand
+        if-and-only-if free provisioned concurrency is available."""
+        func_name = f"fn-concurrency-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INVOCATION_TYPE,
+            runtime=Runtime.python3_10,
+            timeout=10,
+        )
+
+        v1 = aws_client.lambda_.publish_version(FunctionName=func_name)
+
+        aws_client.lambda_.put_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=1
+        )
+        assert wait_until(concurrency_update_done(aws_client.lambda_, func_name, v1["Version"]))
+
+        get_provisioned_postwait = aws_client.lambda_.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"]
+        )
+        snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
+
+        # Schedule Lambda to provisioned concurrency instead of launching a new on-demand instance
+        invoke_result = aws_client.lambda_.invoke(
+            FunctionName=func_name,
+            Qualifier=v1["Version"],
+        )
+        result = json.loads(to_str(invoke_result["Payload"].read()))
+        assert result == "provisioned-concurrency"
+
+        # Send two simultaneous invokes
+        errored = False
+
+        def _invoke_lambda():
+            nonlocal errored
+            try:
+                invoke_result1 = aws_client.lambda_.invoke(
+                    FunctionName=func_name,
+                    Qualifier=v1["Version"],
+                    Payload=json.dumps({"wait": 6}),
+                )
+                result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+                assert result1 == "provisioned-concurrency"
+            except Exception:
+                LOG.exception("Invoking Lambda failed")
+                errored = True
+
+        thread = threading.Thread(target=_invoke_lambda)
+        thread.start()
+
+        # Ensure the first provisioned-concurrency invoke is running before sending the second on-demand invoke
+        time.sleep(2)
+
+        # Invoke while the first invoke is still running
+        invoke_result2 = aws_client.lambda_.invoke(
+            FunctionName=func_name,
+            Qualifier=v1["Version"],
+        )
+        result2 = json.loads(to_str(invoke_result2["Payload"].read()))
+        assert result2 == "on-demand"
+
+        # Wait for the first invoker thread
+        thread.join()
+        assert not errored
+
+    @markers.aws.validated
     def test_reserved_concurrency_async_queue(self, create_lambda_function, snapshot, aws_client):
         min_concurrent_executions = 10 + 2
         check_concurrency_quota(aws_client, min_concurrent_executions)
@@ -2033,10 +2102,9 @@ class TestLambdaConcurrency:
         snapshot.match("reserved_equals_provisioned_latest_invoke_exc", e.value.response)
 
         # passes since the version has a provisioned concurrency config set
-        # TODO: re-add this when implementing it in version manager
-        # invoke_result1 = lambda_client.invoke(FunctionName=func_name, Qualifier=v1["Version"])
-        # result1 = json.loads(to_str(invoke_result1["Payload"].read()))
-        # assert result1 == "provisioned-concurrency"
+        invoke_result1 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier=v1["Version"])
+        result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+        assert result1 == "provisioned-concurrency"
 
         # try to add a new provisioned concurrency config to another qualifier on the same function
         update_func_config = aws_client.lambda_.update_function_configuration(
