@@ -5,6 +5,7 @@ from typing import Optional
 import pytest
 from _pytest.config import Config
 from _pytest.reports import TestReport
+from _pytest.terminal import TerminalReporter
 
 from localstack import config as localstack_config
 from localstack import constants
@@ -110,3 +111,9 @@ def pytest_runtest_logfinish(nodeid: str, location: tuple[str, int | None, str])
     from localstack.aws.handlers import capture_test_resource_lifetimes
 
     capture_test_resource_lifetimes.end_test()
+
+
+def pytest_terminal_summary(terminalreporter: TerminalReporter, exitstatus: int, config: Config):
+    from localstack.aws.handlers import capture_test_resource_lifetimes
+
+    capture_test_resource_lifetimes.terminal_report(terminalreporter)

@@ -48,7 +48,7 @@ pop_request_context = legacy.pop_request_context
 
 # for testing
 if is_env_true("TEST_CAPTURE_RESOURCE_OPERATIONS"):
-    capture_test_resource_lifetimes = testdebugging.TestResourceLifetimesCapture("db.db")
+    capture_test_resource_lifetimes = testdebugging.TestResourceLifetimesCapture()
 else:
     from unittest import mock
 
