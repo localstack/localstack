@@ -248,7 +248,7 @@ class TestLambdaRuntimesCommon:
 
 # TODO: Split this and move to PRO
 @pytest.mark.skipif(
-    condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
+    condition=get_arch() != Arch.amd64, reason="build process doesn't support arm64 right now"
 )
 class TestLambdaCallingLocalstack:
     @markers.multiruntime(
