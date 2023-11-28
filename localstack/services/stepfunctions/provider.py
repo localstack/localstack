@@ -108,15 +108,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def get_store(context: RequestContext) -> SFNStore:
         return sfn_stores[context.account_id][context.region]
 
-    # def on_before_state_save(self):
-    #     # abort all running executions
-    #     ...
-
     def accept_state_visitor(self, visitor: StateVisitor):
-        try:
-            visitor.visit(sfn_stores)
-        except Exception as e:
-            print(e)
+        visitor.visit(sfn_stores)
 
     def _get_execution(self, context: RequestContext, execution_arn: Arn) -> Execution:
         execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
