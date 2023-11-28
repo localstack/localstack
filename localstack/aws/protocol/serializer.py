@@ -619,6 +619,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         request_id_element.text = request_id
 
         self._add_additional_error_tags(vars(error), root, shape, mime_type)
+
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
 
     def _add_error_tags(
@@ -626,7 +627,6 @@ class BaseXMLResponseSerializer(ResponseSerializer):
     ) -> None:
         code_tag = ETree.SubElement(error_tag, "Code")
         code_tag.text = error.code
-
         message = self._get_error_message(error)
         if message:
             self._default_serialize(error_tag, message, None, "Message", mime_type)
@@ -1610,6 +1610,8 @@ class S3ControlResponseSerializer(RestXMLResponseSerializer):
         root = ETree.Element("ErrorResponse", attr)
 
         error_tag = ETree.SubElement(root, "Error")
+        # the difference for S3Control is here: it adds additional error tags inside the Error tags, unlike other
+        # rest-xml services
         self._add_error_tags(error, error_tag, mime_type)
         request_id_element = ETree.SubElement(root, "RequestId")
         request_id_element.text = request_id
@@ -1620,37 +1622,15 @@ class S3ControlResponseSerializer(RestXMLResponseSerializer):
         )
 
         self._add_additional_error_tags(vars(error), error_tag, shape, mime_type)
-        p = self._encode_payload(self._node_to_string(root, mime_type))
-        print(f"{p=}")
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
 
-    def _add_error_tags(
-        self, error: ServiceException, error_tag: ETree.Element, mime_type: str
-    ) -> None:
-        super()._add_error_tags(error, error_tag, mime_type)
-
-    def _add_additional_error_tags(
-        self, parameters: dict, node: ETree, shape: StructureShape, mime_type: str
-    ):
-        if shape:
-            params = {}
-            # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
-            for member in shape.members:
-                # XML protocols do not add modeled default fields to the root node
-                # (tested for cloudfront, route53, cloudwatch, iam)
-                if member.lower() not in ["code", "message"] and member in parameters:
-                    params[member] = parameters[member]
-
-            # If there is an error shape with members which should be set, they need to be added to the node
-            if params:
-                # Serialize the remaining params
-                root_name = shape.serialization.get("name", shape.name)
-                pseudo_root = ETree.Element("")
-                self._serialize(shape, params, pseudo_root, root_name, mime_type)
-                real_root = list(pseudo_root)[0]
-                # Add the child elements to the already created root error element
-                for child in list(real_root):
-                    node.append(child)
+    @staticmethod
+    def _timestamp_iso8601(value: datetime) -> str:
+        """
+        This is very specific to S3, S3 returns an ISO8601 timestamp but with milliseconds always set to 000
+        Some SDKs are very picky about the length
+        """
+        return value.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 class SqsQueryResponseSerializer(QueryResponseSerializer):

@@ -1,4 +1,9 @@
 import datetime
+import re
+from random import choices
+from string import ascii_lowercase, digits
+
+from botocore.exceptions import ClientError
 
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3control import (
@@ -11,6 +16,7 @@ from localstack.aws.api.s3control import (
     GetAccessPointPolicyStatusResult,
     GetAccessPointResult,
     GetPublicAccessBlockOutput,
+    InvalidURI,
     ListAccessPointsResult,
     MaxResults,
     NetworkOrigin,
@@ -22,10 +28,10 @@ from localstack.aws.api.s3control import (
     S3ControlApi,
     VpcConfiguration,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.s3.utils import validate_dict_fields
 from localstack.services.s3control.v2.models import S3ControlStore, s3control_stores
 from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.strings import short_uid
 from localstack.utils.urls import localstack_host
 
 
@@ -55,11 +61,15 @@ DEFAULT_ENDPOINTS = {
     "ipv4": f"s3-accesspoint.<region>.{localstack_host()}",
 }
 
+ACCESS_POINT_REGEX = re.compile(r"^((?!xn--)(?!.*-s3alias$)[a-z0-9][a-z0-9-]{1,48}[a-z0-9])$")
+
 
 class S3ControlProvider(S3ControlApi):
     """
     Lots of S3 Control API methods are related to S3 Outposts (S3 in your own datacenter)
     These are not implemented in this provider
+    Access Points limitations:
+    - https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points-restrictions-limitations.html
     """
 
     @staticmethod
@@ -120,24 +130,52 @@ class S3ControlProvider(S3ControlApi):
         public_access_block_configuration: PublicAccessBlockConfiguration = None,
         bucket_account_id: AccountId = None,
     ) -> CreateAccessPointResult:
+        # Access Point naming rules, see:
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-access-points.html#access-points-names
+
         # TODO: support VpcConfiguration
         # TODO: support PublicAccessBlockConfiguration
         # TODO: check bucket_account_id
-        # TODO: check if Bucket exists?
-        # TODO: validate name, same as bucket with some more validation?
-        # TODO: check if endpoint name already exists
 
         # TODO: access point might be region only?? test it
         store = self.get_store(account_id, context.region)
+        if not ACCESS_POINT_REGEX.match(name):
+            if len(name) < 3 or len(name) > 50 or "_" in name or name.isupper():
+                raise InvalidURI(
+                    "Couldn't parse the specified URI.",
+                    URI=f"accesspoint/{name}",
+                )
 
-        # needs to be 32 long? maybe?
-        # TODO: add to map?
-        alias = f"{name}-{short_uid()}-s3alias"
+            raise InvalidRequest("Your Amazon S3 AccessPoint name is invalid")
 
+        if name in store.access_points:
+            # TODO: implement additional checks if the account id is different than the access point
+            raise CommonServiceException(
+                "AccessPointAlreadyOwnedByYou",
+                "Your previous request to create the named accesspoint succeeded and you already own it.",
+                status_code=409,
+            )
+
+        # TODO: what are the permissions to needed to create an AccessPoint to a bucket?
+        try:
+            connect_to(region_name=context.region).s3.head_bucket(Bucket=bucket)
+        except ClientError as e:
+            if e.response.get("Error", {}).get("Code") == "404":
+                raise InvalidRequest(
+                    "Amazon S3 AccessPoint can only be created for existing bucket",
+                )
+            # TODO: find AccessDenied exception?
+            raise
+
+        alias = create_random_alias(name)
+
+        # if the PublicAccessBlockConfiguration is not set, then every field default to True
+        # else, it's set to False
+        is_pabc_none = public_access_block_configuration is None
         public_access_block_configuration = public_access_block_configuration or {}
         for field in PUBLIC_ACCESS_BLOCK_FIELDS:
             if public_access_block_configuration.get(field) is None:
-                public_access_block_configuration[field] = True
+                public_access_block_configuration[field] = is_pabc_none
 
         regional_endpoints = {
             t: endpoint.replace("<region>", context.region)
@@ -160,6 +198,7 @@ class S3ControlProvider(S3ControlApi):
             access_point["VpcConfiguration"] = vpc_configuration
 
         store.access_points[name] = access_point
+        store.access_point_alias[alias] = bucket
 
         return CreateAccessPointResult(
             AccessPointArn=access_point_arn,
@@ -188,6 +227,7 @@ class S3ControlProvider(S3ControlApi):
     ) -> ListAccessPointsResult:
         # TODO: implement pagination
         # TODO: implement filter with Bucket name
+        # TODO: implement ordering
         store = self.get_store(account_id, context.region)
 
         result = []
@@ -204,7 +244,10 @@ class S3ControlProvider(S3ControlApi):
     ) -> None:
         store = self.get_store(account_id, context.region)
         if not store.access_points.pop(name, None):
-            pass
+            raise NoSuchAccessPoint(
+                "The specified accesspoint does not exist",
+                AccessPointName=name,
+            )
 
     def put_access_point_policy(
         self, context: RequestContext, account_id: AccountId, name: AccessPointName, policy: Policy
@@ -225,3 +268,7 @@ class S3ControlProvider(S3ControlApi):
         self, context: RequestContext, account_id: AccountId, name: AccessPointName
     ) -> GetAccessPointPolicyStatusResult:
         pass
+
+
+def create_random_alias(name: str) -> str:
+    return f"{name}-{''.join(choices(ascii_lowercase + digits, k=34))}-s3alias"

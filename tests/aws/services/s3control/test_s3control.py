@@ -4,7 +4,6 @@ import pytest
 from botocore.client import Config
 from botocore.exceptions import ClientError
 
-from localstack import config
 from localstack.constants import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
@@ -15,14 +14,22 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.urls import localstack_host
 
-remote_endpoint = config.external_service_url(protocol="http")
-s3_control_endpoint = f"http://s3-control.{remote_endpoint.split('://')[1]}"
+s3_control_endpoint = f"http://s3-control.{localstack_host()}"
 
 
 @pytest.fixture(autouse=True)
 def s3control_snapshot(snapshot):
     snapshot.add_transformers_list(
-        [snapshot.transform.key_value("HostId", reference_replacement=False)]
+        [
+            snapshot.transform.key_value("HostId", reference_replacement=False),
+            snapshot.transform.key_value("Name"),
+            snapshot.transform.key_value("Bucket"),
+            snapshot.transform.regex("amazonaws.com", "<endpoint-host>"),
+            snapshot.transform.regex(localstack_host().host_and_port(), "<endpoint-host>"),
+            snapshot.transform.regex(
+                '([a-z0-9]{34})(?=.*-s3alias")', replacement="<alias-random-part>"
+            ),
+        ]
     )
 
 
@@ -41,6 +48,21 @@ def s3control_client(aws_client_factory, aws_client):
         ).s3control
     else:
         return aws_client.s3control
+
+
+@pytest.fixture
+def s3control_client_no_validation(aws_client_factory):
+    if not is_aws_cloud():
+        s3control_client = aws_client_factory(
+            config=Config(parameter_validation=False),
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            endpoint_url=s3_control_endpoint,
+        ).s3control
+    else:
+        s3control_client = aws_client_factory(config=Config(parameter_validation=False)).s3control
+
+    return s3control_client
 
 
 @pytest.fixture
@@ -140,22 +162,11 @@ class TestS3ControlPublicAccessBlock:
         snapshot.match("idempotent-delete-public-access-block", delete_public_access_block)
 
     @markers.aws.validated
-    def test_empty_public_access_block(self, aws_client_factory, account_id, snapshot):
+    def test_empty_public_access_block(self, s3control_client_no_validation, account_id, snapshot):
         # we need to disable validation for this test
-        if not is_aws_cloud():
-            s3control_client = aws_client_factory(
-                config=Config(parameter_validation=False),
-                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-                endpoint_url=s3_control_endpoint,
-            ).s3control
-        else:
-            s3control_client = aws_client_factory(
-                config=Config(parameter_validation=False)
-            ).s3control
 
         with pytest.raises(ClientError) as e:
-            s3control_client.put_public_access_block(
+            s3control_client_no_validation.put_public_access_block(
                 AccountId=account_id,
                 PublicAccessBlockConfiguration={},
             )
@@ -172,7 +183,6 @@ class TestS3ControlAccessPoint:
             [
                 snapshot.transform.key_value("Name"),
                 snapshot.transform.key_value("Bucket"),
-                snapshot.transform.key_value("Bucket"),
                 snapshot.transform.regex("amazonaws.com", "<endpoint-host>"),
                 snapshot.transform.regex(localstack_host().host_and_port(), "<endpoint-host>"),
             ]
@@ -187,16 +197,12 @@ class TestS3ControlAccessPoint:
         )
 
         alias_random_part = create_access_point["Alias"].split("-")[1]
-        # TODO: assert length
-        snapshot.add_transformer(
-            snapshot.transform.regex(alias_random_part, replacement="<alias-random-part>")
-        )
+        assert len(alias_random_part) == 34
 
         snapshot.match("create-access-point", create_access_point)
 
         get_access_point = s3control_client.get_access_point(AccountId=account_id, Name=ap_name)
         snapshot.match("get-access-point", get_access_point)
-        # todo: assert CreationDate format
 
         list_access_points = s3control_client.list_access_points(AccountId=account_id)
         snapshot.match("list-access-points-after-create", list_access_points)
@@ -212,3 +218,148 @@ class TestS3ControlAccessPoint:
         with pytest.raises(ClientError) as e:
             s3control_client.get_access_point(AccountId=account_id, Name=ap_name)
         snapshot.match("get-delete-access-point", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3control_client.delete_access_point(AccountId=account_id, Name=ap_name)
+        snapshot.match("delete-already-deleted-access-point", e.value.response)
+
+    @markers.aws.validated
+    def test_access_point_bucket_not_exists(
+        self, s3control_create_access_point, account_id, snapshot
+    ):
+        ap_name = short_uid()
+        with pytest.raises(ClientError) as e:
+            s3control_create_access_point(
+                AccountId=account_id,
+                Name=ap_name,
+                Bucket=f"fake-bucket-{short_uid()}-{short_uid()}",
+            )
+        snapshot.match("access-point-bucket-not-exists", e.value.response)
+
+    @markers.aws.validated
+    def test_access_point_name_validation(
+        self, s3control_client_no_validation, account_id, snapshot, s3_bucket
+    ):
+        # not using parametrization because that would be a lot of snapshot.
+        # only validate the first one
+        wrong_name = "xn--test-alias"
+        wrong_names = [
+            "-hyphen-start",
+            "cannot-end-s3alias",
+            "cannot-have.dot",
+        ]
+
+        with pytest.raises(ClientError) as e:
+            s3control_client_no_validation.create_access_point(
+                AccountId=account_id,
+                Name=wrong_name,
+                Bucket=s3_bucket,
+            )
+        snapshot.match("access-point-wrong-naming", e.value.response)
+
+        for name in wrong_names:
+            with pytest.raises(ClientError) as e:
+                s3control_client_no_validation.create_access_point(
+                    AccountId=account_id,
+                    Name=name,
+                    Bucket=s3_bucket,
+                )
+            assert e.match("Your Amazon S3 AccessPoint name is invalid"), (name, e.value.response)
+
+        # error is different for too short of a name
+        with pytest.raises(ClientError) as e:
+            s3control_client_no_validation.create_access_point(
+                AccountId=account_id,
+                Name="sa",
+                Bucket=s3_bucket,
+            )
+        snapshot.match("access-point-name-too-short", e.value.response)
+
+        uri_error_names = [
+            "a" * 51,
+            "WRONG-casing",
+            "cannot-have_underscore",
+        ]
+        for name in uri_error_names:
+            with pytest.raises(ClientError) as e:
+                s3control_client_no_validation.create_access_point(
+                    AccountId=account_id,
+                    Name="a" * 51,
+                    Bucket=s3_bucket,
+                )
+            assert e.match("InvalidURI"), (name, e.value.response)
+
+    @markers.aws.validated
+    def test_access_point_already_exists(
+        self, s3control_create_access_point, s3_bucket, account_id, snapshot
+    ):
+        ap_name = short_uid()
+        s3control_create_access_point(AccountId=account_id, Name=ap_name, Bucket=s3_bucket)
+        with pytest.raises(ClientError) as e:
+            s3control_create_access_point(AccountId=account_id, Name=ap_name, Bucket=s3_bucket)
+        snapshot.match("access-point-already-exists", e.value.response)
+
+    @markers.aws.validated
+    def test_access_point_vpc_config(
+        self, s3control_create_access_point, s3control_client, account_id, snapshot, s3_bucket
+    ):
+        pass
+
+    @markers.aws.validated
+    def test_access_point_public_access_block_configuration(
+        self, s3control_client, s3control_create_access_point, account_id, snapshot, s3_bucket
+    ):
+        # set a letter in the name for ordering
+        ap_name_1 = f"a{short_uid()}"
+        response = s3control_create_access_point(
+            AccountId=account_id,
+            Name=ap_name_1,
+            Bucket=s3_bucket,
+            PublicAccessBlockConfiguration={},
+        )
+        snapshot.match("put-ap-empty-pabc", response)
+        get_ap = s3control_client.get_access_point(AccountId=account_id, Name=ap_name_1)
+        snapshot.match("get-ap-empty-pabc", get_ap)
+
+        ap_name_2 = f"b{short_uid()}"
+        response = s3control_create_access_point(
+            AccountId=account_id,
+            Name=ap_name_2,
+            Bucket=s3_bucket,
+            PublicAccessBlockConfiguration={"BlockPublicAcls": False},
+        )
+        snapshot.match("put-ap-partial-pabc", response)
+        get_ap = s3control_client.get_access_point(AccountId=account_id, Name=ap_name_2)
+        snapshot.match("get-ap-partial-pabc", get_ap)
+
+        ap_name_3 = f"c{short_uid()}"
+        response = s3control_create_access_point(
+            AccountId=account_id,
+            Name=ap_name_3,
+            Bucket=s3_bucket,
+            PublicAccessBlockConfiguration={"BlockPublicAcls": True},
+        )
+        snapshot.match("put-ap-partial-true-pabc", response)
+        get_ap = s3control_client.get_access_point(AccountId=account_id, Name=ap_name_3)
+        snapshot.match("get-ap-partial-true-pabc", get_ap)
+
+        ap_name_4 = f"d{short_uid()}"
+        response = s3control_create_access_point(
+            AccountId=account_id,
+            Name=ap_name_4,
+            Bucket=s3_bucket,
+        )
+        snapshot.match("put-ap-pabc-not-set", response)
+        get_ap = s3control_client.get_access_point(AccountId=account_id, Name=ap_name_4)
+        snapshot.match("get-ap-pabc-not-set", get_ap)
+
+        list_access_points = s3control_client.list_access_points(AccountId=account_id)
+        snapshot.match("list-access-points", list_access_points)
+
+    @markers.aws.validated
+    def test_access_point_regions(self):
+        pass
+
+    @markers.aws.validated
+    def test_access_point_pagination(self):
+        pass

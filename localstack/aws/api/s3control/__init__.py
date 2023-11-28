@@ -93,6 +93,7 @@ TagValueString = str
 TrafficDialPercentage = int
 VpcId = str
 HostId = str
+URI = str
 
 
 class AsyncOperationName(str):
@@ -457,6 +458,13 @@ class NoSuchAccessPoint(ServiceException):
     sender_fault: bool = False
     status_code: int = 404
     AccessPointName: Optional[AccessPointName]
+
+
+class InvalidURI(ServiceException):
+    code: str = "InvalidURI"
+    sender_fault: bool = False
+    status_code: int = 400
+    URI: Optional[URI]
 
 
 class AbortIncompleteMultipartUpload(TypedDict, total=False):

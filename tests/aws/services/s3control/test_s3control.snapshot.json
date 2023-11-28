@@ -77,7 +77,7 @@
     }
   },
   "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_lifecycle": {
-    "recorded-date": "24-11-2023, 22:23:01",
+    "recorded-date": "28-11-2023, 22:45:37",
     "recorded-content": {
       "list-access-points-start": {
         "AccessPointList": [],
@@ -158,6 +158,255 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "delete-already-deleted-access-point": {
+        "Error": {
+          "AccessPointName": "<name:1>",
+          "Code": "NoSuchAccessPoint",
+          "Message": "The specified accesspoint does not exist"
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_bucket_not_exists": {
+    "recorded-date": "28-11-2023, 21:39:20",
+    "recorded-content": {
+      "access-point-bucket-not-exists": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Amazon S3 AccessPoint can only be created for existing bucket"
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_name_validation": {
+    "recorded-date": "28-11-2023, 22:16:51",
+    "recorded-content": {
+      "access-point-wrong-naming": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Your Amazon S3 AccessPoint name is invalid"
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "access-point-name-too-short": {
+        "Error": {
+          "Code": "InvalidURI",
+          "Message": "Couldn't parse the specified URI.",
+          "URI": "accesspoint/sa"
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_already_exists": {
+    "recorded-date": "28-11-2023, 22:31:38",
+    "recorded-content": {
+      "access-point-already-exists": {
+        "Error": {
+          "Code": "AccessPointAlreadyOwnedByYou",
+          "Message": "Your previous request to create the named accesspoint succeeded and you already own it."
+        },
+        "HostId": "host-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3control/test_s3control.py::TestS3ControlAccessPoint::test_access_point_public_access_block_configuration": {
+    "recorded-date": "28-11-2023, 23:15:08",
+    "recorded-content": {
+      "put-ap-empty-pabc": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+        "Alias": "<name:1>-<alias-random-part>-s3alias",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-ap-empty-pabc": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+        "Alias": "<name:1>-<alias-random-part>-s3alias",
+        "Bucket": "<bucket:1>",
+        "BucketAccountId": "111111111111",
+        "CreationDate": "datetime",
+        "Endpoints": {
+          "dualstack": "s3-accesspoint.dualstack.<region>.<endpoint-host>",
+          "fips": "s3-accesspoint-fips.<region>.<endpoint-host>",
+          "fips_dualstack": "s3-accesspoint-fips.dualstack.<region>.<endpoint-host>",
+          "ipv4": "s3-accesspoint.<region>.<endpoint-host>"
+        },
+        "Name": "<name:1>",
+        "NetworkOrigin": "Internet",
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": false,
+          "BlockPublicPolicy": false,
+          "IgnorePublicAcls": false,
+          "RestrictPublicBuckets": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-ap-partial-pabc": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+        "Alias": "<name:2>-<alias-random-part>-s3alias",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-ap-partial-pabc": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+        "Alias": "<name:2>-<alias-random-part>-s3alias",
+        "Bucket": "<bucket:1>",
+        "BucketAccountId": "111111111111",
+        "CreationDate": "datetime",
+        "Endpoints": {
+          "dualstack": "s3-accesspoint.dualstack.<region>.<endpoint-host>",
+          "fips": "s3-accesspoint-fips.<region>.<endpoint-host>",
+          "fips_dualstack": "s3-accesspoint-fips.dualstack.<region>.<endpoint-host>",
+          "ipv4": "s3-accesspoint.<region>.<endpoint-host>"
+        },
+        "Name": "<name:2>",
+        "NetworkOrigin": "Internet",
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": false,
+          "BlockPublicPolicy": false,
+          "IgnorePublicAcls": false,
+          "RestrictPublicBuckets": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-ap-partial-true-pabc": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:3>",
+        "Alias": "<name:3>-<alias-random-part>-s3alias",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-ap-partial-true-pabc": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:3>",
+        "Alias": "<name:3>-<alias-random-part>-s3alias",
+        "Bucket": "<bucket:1>",
+        "BucketAccountId": "111111111111",
+        "CreationDate": "datetime",
+        "Endpoints": {
+          "dualstack": "s3-accesspoint.dualstack.<region>.<endpoint-host>",
+          "fips": "s3-accesspoint-fips.<region>.<endpoint-host>",
+          "fips_dualstack": "s3-accesspoint-fips.dualstack.<region>.<endpoint-host>",
+          "ipv4": "s3-accesspoint.<region>.<endpoint-host>"
+        },
+        "Name": "<name:3>",
+        "NetworkOrigin": "Internet",
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": false,
+          "IgnorePublicAcls": false,
+          "RestrictPublicBuckets": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-ap-pabc-not-set": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:4>",
+        "Alias": "<name:4>-<alias-random-part>-s3alias",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-ap-pabc-not-set": {
+        "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:4>",
+        "Alias": "<name:4>-<alias-random-part>-s3alias",
+        "Bucket": "<bucket:1>",
+        "BucketAccountId": "111111111111",
+        "CreationDate": "datetime",
+        "Endpoints": {
+          "dualstack": "s3-accesspoint.dualstack.<region>.<endpoint-host>",
+          "fips": "s3-accesspoint-fips.<region>.<endpoint-host>",
+          "fips_dualstack": "s3-accesspoint-fips.dualstack.<region>.<endpoint-host>",
+          "ipv4": "s3-accesspoint.<region>.<endpoint-host>"
+        },
+        "Name": "<name:4>",
+        "NetworkOrigin": "Internet",
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-access-points": {
+        "AccessPointList": [
+          {
+            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:1>",
+            "Alias": "<name:1>-<alias-random-part>-s3alias",
+            "Bucket": "<bucket:1>",
+            "BucketAccountId": "111111111111",
+            "Name": "<name:1>",
+            "NetworkOrigin": "Internet"
+          },
+          {
+            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:2>",
+            "Alias": "<name:2>-<alias-random-part>-s3alias",
+            "Bucket": "<bucket:1>",
+            "BucketAccountId": "111111111111",
+            "Name": "<name:2>",
+            "NetworkOrigin": "Internet"
+          },
+          {
+            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:3>",
+            "Alias": "<name:3>-<alias-random-part>-s3alias",
+            "Bucket": "<bucket:1>",
+            "BucketAccountId": "111111111111",
+            "Name": "<name:3>",
+            "NetworkOrigin": "Internet"
+          },
+          {
+            "AccessPointArn": "arn:aws:s3:<region>:111111111111:accesspoint/<name:4>",
+            "Alias": "<name:4>-<alias-random-part>-s3alias",
+            "Bucket": "<bucket:1>",
+            "BucketAccountId": "111111111111",
+            "Name": "<name:4>",
+            "NetworkOrigin": "Internet"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
