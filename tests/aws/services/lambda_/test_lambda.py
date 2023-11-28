@@ -1574,7 +1574,6 @@ class TestLambdaMultiAccounts:
         assert secondary_client.delete_function(FunctionName=func_arn)
 
 
-# TODO: add check_concurrency_quota for all these tests
 class TestLambdaConcurrency:
     @markers.aws.validated
     def test_lambda_concurrency_crud(self, snapshot, create_lambda_function, aws_client):
@@ -1615,6 +1614,9 @@ class TestLambdaConcurrency:
         Tests an edge case where reserved concurrency is equal to the sum of all provisioned concurrencies for a function.
         In this case we can't call $LATEST anymore since there's no "free"/unclaimed concurrency left to execute the function with
         """
+        min_concurrent_executions = 10 + 2  # reserved concurrency + provisioned concurrency
+        check_concurrency_quota(aws_client, min_concurrent_executions)
+
         # function
         func_name = f"fn-concurrency-{short_uid()}"
         create_lambda_function(
@@ -1683,6 +1685,10 @@ class TestLambdaConcurrency:
         create fn ⇒ publish version ⇒ create alias for version ⇒ put concurrency on alias
         ⇒ new version with change ⇒ change alias to new version ⇒ concurrency moves with alias? same behavior for calls to alias/version?
         """
+
+        # TODO: validate once implemented
+        min_concurrent_executions = 10 + 2  # for alias and version
+        check_concurrency_quota(aws_client, min_concurrent_executions)
 
         func_name = f"test_lambda_{short_uid()}"
         alias_name = f"test_alias_{short_uid()}"
@@ -1814,6 +1820,9 @@ class TestLambdaConcurrency:
         - it generates 2x provisioned concurrency cloudwatch logstreams with only INIT_START
         - updates while IN_PROGRESS are allowed and overwrite the previous config
         """
+        min_concurrent_executions = 10 + 5
+        check_concurrency_quota(aws_client, min_concurrent_executions)
+
         func_name = f"test_lambda_{short_uid()}"
 
         create_lambda_function(
@@ -1856,6 +1865,9 @@ class TestLambdaConcurrency:
     def test_lambda_provisioned_concurrency_scheduling(
         self, snapshot, create_lambda_function, aws_client
     ):
+        min_concurrent_executions = 10 + 1
+        check_concurrency_quota(aws_client, min_concurrent_executions)
+
         """Tests that invokes should be scheduled to provisioned-concurrency instances rather than on-demand
         if-and-only-if free provisioned concurrency is available."""
         func_name = f"fn-concurrency-{short_uid()}"
@@ -1923,7 +1935,7 @@ class TestLambdaConcurrency:
 
     @markers.aws.validated
     def test_reserved_concurrency_async_queue(self, create_lambda_function, snapshot, aws_client):
-        min_concurrent_executions = 10 + 2
+        min_concurrent_executions = 10 + 3
         check_concurrency_quota(aws_client, min_concurrent_executions)
 
         func_name = f"test_lambda_{short_uid()}"
@@ -2059,8 +2071,10 @@ class TestLambdaConcurrency:
 
     @markers.aws.validated
     def test_reserved_provisioned_overlap(self, create_lambda_function, snapshot, aws_client):
-        func_name = f"test_lambda_{short_uid()}"
+        min_concurrent_executions = 10 + 4  # provisioned concurrency (2) + reserved concurrency (2)
+        check_concurrency_quota(aws_client, min_concurrent_executions)
 
+        func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
