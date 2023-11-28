@@ -213,14 +213,14 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
     return params
 
 
-def fix_account_id_in_arns(params: dict) -> dict:
+def fix_account_id_in_arns(params: dict, replacement_account_id: str) -> dict:
     def fix_ids(o, **kwargs):
         if isinstance(o, dict):
             for k, v in o.items():
                 if is_string(v, exclude_binary=True):
-                    o[k] = aws_stack.fix_account_id_in_arns(v)
+                    o[k] = aws_stack.fix_account_id_in_arns(v, replacement=replacement_account_id)
         elif is_string(o, exclude_binary=True):
-            o = aws_stack.fix_account_id_in_arns(o)
+            o = aws_stack.fix_account_id_in_arns(o, replacement=replacement_account_id)
         return o
 
     result = recurse_object(params, fix_ids)
