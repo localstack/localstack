@@ -7,7 +7,6 @@ import re
 import shutil
 import tempfile
 import time
-from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional
 
 from localstack.aws.api.lambda_ import Runtime
@@ -51,10 +50,8 @@ from localstack.utils.files import (
     rm_rf,
     save_file,
 )
-from localstack.utils.net import get_free_tcp_port, is_port_open
 from localstack.utils.platform import is_debian
 from localstack.utils.strings import short_uid, to_str
-from localstack.utils.sync import poll_condition
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
@@ -596,33 +593,6 @@ def get_lambda_log_events(
             rs.append(raw_message)
 
     return rs
-
-
-@contextmanager
-def http_server(handler, host="127.0.0.1", port=None) -> str:
-    """
-    Create a temporary http server on a random port (or the specified port) with the given handler
-    for the duration of the context manager.
-
-    Example usage:
-
-        def handler(request, data):
-            print(request.method, request.path, data)
-
-        with testutil.http_server(handler) as url:
-            requests.post(url, json={"message": "hello"})
-    """
-    from localstack.utils.server.http2_server import run_server
-
-    host = host
-    port = port or get_free_tcp_port()
-    thread = run_server(port, [host], handler=handler, asynchronous=True)
-    url = f"http://{host}:{port}"
-    assert poll_condition(
-        lambda: is_port_open(port), timeout=5
-    ), f"server on port {port} did not start"
-    yield url
-    thread.stop()
 
 
 def list_all_resources(
