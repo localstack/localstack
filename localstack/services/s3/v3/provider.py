@@ -3653,8 +3653,11 @@ def get_encryption_parameters_from_request_and_bucket(
                 # if not key is provided, AWS will use an AWS managed KMS key
                 # create it if it doesn't already exist, and save it in the store per region
                 if not store.aws_managed_kms_key_id:
+                    # managed_kms_key_id = create_s3_kms_managed_key_for_region(
+                    #     s3_bucket.bucket_account_id, s3_bucket.bucket_region
+                    # )
                     managed_kms_key_id = create_s3_kms_managed_key_for_region(
-                        s3_bucket.bucket_account_id, s3_bucket.bucket_region
+                        s3_bucket.bucket_region
                     )
                     store.aws_managed_kms_key_id = managed_kms_key_id
 
