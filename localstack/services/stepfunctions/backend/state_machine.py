@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import abc
+import datetime
 import json
 from collections import OrderedDict
-from datetime import datetime
 from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
@@ -32,7 +32,7 @@ class StateMachineInstance:
     revision_id: Optional[RevisionId]
     definition: Definition
     role_arn: Arn
-    create_date: datetime
+    create_date: datetime.datetime
     sm_type: StateMachineType
     logging_config: Optional[LoggingConfiguration]
     tags: Optional[TagList]
@@ -44,7 +44,7 @@ class StateMachineInstance:
         arn: Arn,
         definition: Definition,
         role_arn: Arn,
-        create_date: Optional[datetime] = None,
+        create_date: Optional[datetime.datetime] = None,
         sm_type: Optional[StateMachineType] = None,
         logging_config: Optional[LoggingConfiguration] = None,
         tags: Optional[TagList] = None,
@@ -55,7 +55,7 @@ class StateMachineInstance:
         self.revision_id = None
         self.definition = definition
         self.role_arn = role_arn
-        self.create_date = create_date or datetime.now(tz=datetime.timezone.utc)
+        self.create_date = create_date or datetime.datetime.now(tz=datetime.timezone.utc)
         self.sm_type = sm_type or StateMachineType.STANDARD
         self.logging_config = logging_config
         self.tags = tags
@@ -128,7 +128,7 @@ class StateMachineRevision(StateMachineInstance):
         arn: Arn,
         definition: Definition,
         role_arn: Arn,
-        create_date: Optional[datetime] = None,
+        create_date: Optional[datetime.datetime] = None,
         sm_type: Optional[StateMachineType] = None,
         logging_config: Optional[LoggingConfiguration] = None,
         tags: Optional[TagList] = None,
@@ -207,7 +207,7 @@ class StateMachineVersion(StateMachineInstance):
             arn=version_arn,
             definition=state_machine_revision.definition,
             role_arn=state_machine_revision.role_arn,
-            create_date=datetime.now(tz=datetime.timezone.utc),
+            create_date=datetime.datetime.now(tz=datetime.timezone.utc),
             sm_type=state_machine_revision.sm_type,
             logging_config=state_machine_revision.logging_config,
             tags=state_machine_revision.tags,

@@ -206,7 +206,8 @@ class Execution:
         event_history: HistoryEventList = self.exec_worker.env.event_history.get_event_history()
         return GetExecutionHistoryOutput(events=event_history)
 
-    def _to_serialized_date(self, timestamp: datetime.datetime) -> str:
+    @staticmethod
+    def _to_serialized_date(timestamp: datetime.datetime) -> str:
         """See test in tests.aws.services.stepfunctions.v2.base.test_base.TestSnfBase.test_execution_dateformat"""
         return (
             f'{timestamp.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
