@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
-from typing import Generator
 
 from _pytest.reports import TestReport
 from _pytest.terminal import TerminalReporter
@@ -67,12 +65,14 @@ class TestResourceLifetimesCapture:
     """
 
     # TODO: what if there are multiple calls to create the same resource in the same test?
-    results: dict[TestKey, list[Call]]
+    results: list[str]
     current_test_key: TestKey | None
+    current_calls: list[Call]
 
     def __init__(self):
-        self.results = defaultdict(list)
+        self.results = []
         self.current_test_key = None
+        self.current_calls = []
         self.last_report = TestReport
 
     def set_test(self, test_key: TestKey):
@@ -85,68 +85,67 @@ class TestResourceLifetimesCapture:
         # TODO: perhaps these failed tests are leaking resources,
         # and it would be worth capturing the result?
         # TODO: what about repeated tests? The pro tests retry 3 times
-        if not self.last_report.passed:
-            self.results.pop(self.current_test_key, None)
+        if self.last_report.passed:
+            report_lines = self._extract_leaky_calls_lines(
+                self.current_test_key, self.current_calls
+            )
+            if report_lines:
+                self.results.extend(report_lines)
 
+        self.current_calls.clear()
         self.current_test_key = None
 
     def terminal_report(self, reporter: TerminalReporter):
         """
         Method used to present information to the reporter class
         """
-        lines = list(self._extract_leaky_report_lines())
-        if not lines:
+        if not self.results:
             # nothing to say!
             return
 
         reporter.section("Leaky tests", red=True)
-        for line in lines:
+        for line in self.results:
             reporter.write_line(line)
 
-    def _extract_leaky_report_lines(self) -> Generator[str, None, None]:
-        for tests_key, api_calls in self.results.items():
-            services = set(service for (service, operation, _) in api_calls)
-            for tested_service in services:
-                if tested_service not in METHOD_PAIRS:
-                    continue
+    @staticmethod
+    def _extract_leaky_calls_lines(test_key: TestKey, api_calls: list[Call]) -> list[str]:
+        lines = []
+        services = set(service for (service, operation, _) in api_calls)
+        for tested_service in services:
+            if tested_service not in METHOD_PAIRS:
+                continue
 
-                called_methods = [
-                    (service, operation)
-                    for (service, operation, status_code) in api_calls
-                    if service == tested_service and status_code < 400
-                ]
+            called_methods = [
+                (service, operation)
+                for (service, operation, status_code) in api_calls
+                if service == tested_service and status_code < 400
+            ]
 
-                service_methods = METHOD_PAIRS[tested_service]
+            service_methods = METHOD_PAIRS[tested_service]
 
-                created_score = len(
-                    [
-                        method
-                        for (_, method) in called_methods
-                        if method in service_methods["create"]
-                    ]
-                )
-                deleted_score = len(
-                    [
-                        method
-                        for (_, method) in called_methods
-                        if method in service_methods["delete"]
-                    ]
-                )
+            created_score = len(
+                [method for (_, method) in called_methods if method in service_methods["create"]]
+            )
+            deleted_score = len(
+                [method for (_, method) in called_methods if method in service_methods["delete"]]
+            )
 
-                if created_score == deleted_score:
-                    continue
+            if created_score == deleted_score:
+                continue
 
-                # special cases
+            # special cases
 
-                # cloudformation: DeleteStack is idempotent, so it may be called multiple times.
-                if tested_service == "cloudformation" and created_score < deleted_score:
-                    continue
+            # cloudformation: DeleteStack is idempotent, so it may be called multiple times.
+            if tested_service == "cloudformation" and created_score < deleted_score:
+                continue
 
-                outcome = (
-                    "not enough deletes" if created_score > deleted_score else "too many deletes"
-                )
-                operations = [operation for (_, operation) in called_methods]
-                yield f"test {tests_key}; service {tested_service}; operations {operations}; {outcome=}"
+            outcome = "not enough deletes" if created_score > deleted_score else "too many deletes"
+            operations = [operation for (_, operation) in called_methods]
+            lines.append(
+                f"test {test_key}; service {tested_service}; operations {operations}; {outcome=}"
+            )
+
+        return lines
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if not context.service or not context.operation:
@@ -159,4 +158,5 @@ class TestResourceLifetimesCapture:
         if self.current_test_key is None:
             return
 
-        self.results[self.current_test_key].append((service, operation, response.status_code))
+        # self.results[self.current_test_key].append((service, operation, response.status_code))
+        self.current_calls.append((service, operation, response.status_code))
