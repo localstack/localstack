@@ -33,6 +33,7 @@ from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import is_port_open
 from localstack.utils.patch import patch
 from localstack.utils.platform import in_docker
+from localstack.utils.server.http2_server import patch_http2_server
 from localstack.utils.sync import poll_condition
 from localstack.utils.threads import (
     cleanup_threads_and_processes,
@@ -249,6 +250,7 @@ def start_infra(asynchronous=False, apis=None):
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
         patch_instance_tracker_meta()
+        patch_http2_server()
 
         # set up logging
         setup_logging()

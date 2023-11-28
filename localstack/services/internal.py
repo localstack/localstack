@@ -15,6 +15,7 @@ from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Resource, Response, Router
 from localstack.http.dispatcher import handler_dispatcher
+from localstack.http.router import HTTP_METHODS
 from localstack.services.infra import exit_infra, signal_supervisor_restart
 from localstack.utils.analytics.metadata import (
     get_client_metadata,
@@ -28,7 +29,6 @@ from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.numbers import is_number
 from localstack.utils.objects import singleton_factory
-from localstack.utils.server.http2_server import HTTP_METHODS
 
 LOG = logging.getLogger(__name__)
 
