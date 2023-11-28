@@ -27,10 +27,6 @@ RUN chmod 777 . && \
     chmod -R 777 /tmp/localstack && \
     touch /tmp/localstack/.marker
 
-# install basic (global) tools to final image
-RUN --mount=type=cache,target=/root/.cache \
-    pip install --no-cache-dir --upgrade virtualenv
-
 # install the entrypoint script
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 # add the shipped hosts file to prevent performance degredation in windows container mode on windows
@@ -73,7 +69,6 @@ RUN . .venv/bin/activate && pip3 freeze -l > requirements-runtime.txt
 # delete the botocore specs for other services (>80mb)
 # TODO: well now it's compressed and it's much lighter: 20mb maybe not worth it
 RUN find .venv/lib/python3.11/site-packages/botocore/data/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
-
 
 
 # final stage: Builds upon base stage and copies resources from builder stages
