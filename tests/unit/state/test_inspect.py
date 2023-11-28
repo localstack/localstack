@@ -1,7 +1,19 @@
+import pytest
+from moto.core import BackendDict, BaseBackend
 from moto.sns import models as sns_models
 
 from localstack.services.sqs import models as sqs_models
 from localstack.state.inspect import ReflectionStateLocator, ServiceBackendCollectorVisitor
+
+
+@pytest.fixture()
+def sample_backend_dict() -> BackendDict:
+    class SampleBackend(BaseBackend):
+        def __init__(self, region_name, account_id):
+            super().__init__(region_name, account_id)
+            self.attributes = {}
+
+    return BackendDict(SampleBackend, "sns")
 
 
 class TestReflectionStateLocator:

@@ -10,6 +10,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -99,6 +100,7 @@ def sqs_collect_sns_messages(
     return collected_messages
 
 
+@pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="SNS not enabled in S3 image")
 class TestS3NotificationsToSns:
     @markers.aws.validated
     def test_object_created_put(

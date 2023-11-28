@@ -180,6 +180,10 @@ def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
 
 
 def patch_moto_request_handling():
+    from importlib.util import find_spec
+
+    if not find_spec("moto"):
+        return
     # leave here to avoid import issues
     from moto.core import utils as moto_utils
 
