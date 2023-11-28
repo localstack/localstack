@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from localstack.services.lambda_.event_source_listeners.stream_event_source_listener import (
     StreamEventSourceListener,
 )
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.threads import FuncThread
 
 
@@ -48,7 +48,7 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
                 {
                     "eventID": record["eventID"],
                     "eventVersion": "1.0",
-                    "awsRegion": aws_stack.get_region(),
+                    "awsRegion": extract_region_from_arn(stream_arn),
                     "eventName": record["eventName"],
                     "eventSourceARN": stream_arn,
                     "eventSource": "aws:dynamodb",

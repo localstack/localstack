@@ -5,7 +5,7 @@ from xml.sax.saxutils import escape
 from moto.cloudwatch import cloudwatch_backends
 from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm, MetricDatum
 
-from localstack.aws.accounts import get_account_id_from_access_key_id, get_aws_account_id
+from localstack.aws.accounts import get_account_id_from_access_key_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AlarmNames,
@@ -34,6 +34,7 @@ from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws.arns import extract_account_id_from_arn
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.patch import patch
 from localstack.utils.sync import poll_condition
@@ -143,7 +144,7 @@ def put_metric_alarm(
 
 def create_message_response_update_state(alarm, old_state):
     response = {
-        "AWSAccountId": get_aws_account_id(),
+        "AWSAccountId": extract_account_id_from_arn(alarm.alarm_arn),
         "OldStateValue": old_state,
         "AlarmName": alarm.name,
         "AlarmDescription": alarm.description or "",
