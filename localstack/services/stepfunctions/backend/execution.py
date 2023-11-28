@@ -57,7 +57,7 @@ class BaseExecutionWorkerComm(ExecutionWorkerComm):
 
     def terminated(self) -> None:
         exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
-        self.execution.stop_date = datetime.datetime.now(tz=datetime.UTC)
+        self.execution.stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
         if isinstance(exit_program_state, ProgramEnded):
             self.execution.exec_status = ExecutionStatus.SUCCEEDED
             self.execution.output = to_json_str(
@@ -208,7 +208,9 @@ class Execution:
 
     def _to_serialized_date(self, timestamp: datetime.datetime) -> str:
         """See test in tests.aws.services.stepfunctions.v2.base.test_base.TestSnfBase.test_execution_dateformat"""
-        return f'{timestamp.astimezone(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
+        return (
+            f'{timestamp.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
+        )
 
     def start(self) -> None:
         # TODO: checks exec_worker does not exists already?

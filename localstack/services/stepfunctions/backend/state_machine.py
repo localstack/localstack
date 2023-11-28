@@ -55,7 +55,7 @@ class StateMachineInstance:
         self.revision_id = None
         self.definition = definition
         self.role_arn = role_arn
-        self.create_date = create_date or datetime.now(tz=datetime.UTC)
+        self.create_date = create_date or datetime.now(tz=datetime.timezone.utc)
         self.sm_type = sm_type or StateMachineType.STANDARD
         self.logging_config = logging_config
         self.tags = tags
@@ -207,7 +207,7 @@ class StateMachineVersion(StateMachineInstance):
             arn=version_arn,
             definition=state_machine_revision.definition,
             role_arn=state_machine_revision.role_arn,
-            create_date=datetime.now(tz=datetime.UTC),
+            create_date=datetime.now(tz=datetime.timezone.utc),
             sm_type=state_machine_revision.sm_type,
             logging_config=state_machine_revision.logging_config,
             tags=state_machine_revision.tags,

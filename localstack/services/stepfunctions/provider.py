@@ -388,7 +388,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             account_id=context.account_id,
             region_name=context.region,
             state_machine=state_machine_clone,
-            start_date=datetime.datetime.now(tz=datetime.UTC),
+            start_date=datetime.datetime.now(tz=datetime.timezone.utc),
             input_data=input_data,
             trace_header=trace_header,
         )
@@ -506,7 +506,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         cause: SensitiveCause = None,
     ) -> StopExecutionOutput:
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
-        stop_date = datetime.datetime.now(tz=datetime.UTC)
+        stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
         execution.stop(stop_date=stop_date, cause=cause, error=error)
         return StopExecutionOutput(stopDate=stop_date)
 
@@ -547,7 +547,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 target_revision_id = revision_id or state_machine.revision_id
                 version_arn = state_machine.versions[target_revision_id]
 
-        update_output = UpdateStateMachineOutput(updateDate=datetime.datetime.now(tz=datetime.UTC))
+        update_output = UpdateStateMachineOutput(
+            updateDate=datetime.datetime.now(tz=datetime.timezone.utc)
+        )
         if revision_id is not None:
             update_output["revisionId"] = revision_id
         if version_arn is not None:
