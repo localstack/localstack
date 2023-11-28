@@ -2360,3 +2360,26 @@ class TestApiGatewayGatewayResponse:
             snapshot.match(
                 f"update-gateway-replace-invalid-parameter-{index}-none", e.value.response
             )
+
+
+class TestApigatewayIntegration:
+    @markers.aws.validated
+    def test_put_integration_wrong_type(
+        self, aws_client, apigw_create_rest_api, aws_client_factory, snapshot
+    ):
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test PutIntegration Types",
+        )
+        api_id = response["id"]
+
+        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
+
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.put_integration(
+                restApiId=api_id, resourceId=root_id, httpMethod="GET", type="HTTPS_PROXY"
+            )
+        snapshot.match("put-integration-wrong-type", e.value.response)
