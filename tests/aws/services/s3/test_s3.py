@@ -54,7 +54,7 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.run import run
@@ -2617,7 +2617,7 @@ class TestS3:
         object_key = "data"
         body = "Hello\r\n\r\n\r\n\r\n"
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": mock_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2652,7 +2652,7 @@ class TestS3:
         body = "Hello Blob"
         valid_checksum = hash_sha256(body)
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": mock_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2704,7 +2704,7 @@ class TestS3:
         body = "Hello Blob"
         precalculated_etag = hashlib.md5(body.encode()).hexdigest()
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": mock_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -7746,7 +7746,7 @@ class TestS3Routing:
 
         path = s3_key if use_virtual_address else f"{s3_bucket}/{s3_key}"
         url = f"{config.internal_service_url()}/{path}"
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["host"] = f"{s3_bucket}.{domain}" if use_virtual_address else domain

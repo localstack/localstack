@@ -165,11 +165,6 @@ SECONDARY_TEST_AWS_REGION_NAME = os.getenv("SECONDARY_TEST_AWS_REGION") or "ap-s
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
 
-# This header must be set to the AWS Account ID
-# Presence of this header in an incoming request typically means that the request originated within localstack,
-# i.e. it is an internal cross-service call.
-HEADER_LOCALSTACK_ACCOUNT_ID = "x-localstack-account-id"
-
 # trace log levels (excluding/including internal API calls), configurable via $LS_LOG
 LS_LOG_TRACE = "trace"
 LS_LOG_TRACE_INTERNAL = "trace-internal"
