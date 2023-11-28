@@ -21,6 +21,7 @@ from localstack.aws.api.secretsmanager import (
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
@@ -1205,7 +1206,7 @@ class TestSecretsManager:
 
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> dict:
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "secretsmanager",
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=TEST_AWS_REGION_NAME,

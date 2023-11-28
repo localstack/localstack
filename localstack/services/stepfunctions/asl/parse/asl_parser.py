@@ -1,10 +1,8 @@
 import abc
 from typing import Final
 
-import antlr4
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
-from antlr4.error.Errors import ParseCancellationException
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
@@ -53,17 +51,17 @@ class AmazonStateLanguageParser(abc.ABC):
     def parse(src: str) -> Program:
         # Attempt to build the AST and look out for syntax errors.
         syntax_error_listener = SyntaxErrorListener()
-        try:
-            input_stream = InputStream(src)
-            lexer = ASLLexer(input_stream)
-            stream = CommonTokenStream(lexer)
-            parser = ASLParser(stream)
-            parser._errHandler = antlr4.BailErrorStrategy()
-            parser.removeErrorListeners()
-            parser.addErrorListener(syntax_error_listener)
-            tree = parser.program_decl()
-        except ParseCancellationException:
-            errors = syntax_error_listener.errors
+
+        input_stream = InputStream(src)
+        lexer = ASLLexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        parser = ASLParser(stream)
+        parser.removeErrorListeners()
+        parser.addErrorListener(syntax_error_listener)
+        tree = parser.program_decl()
+
+        errors = syntax_error_listener.errors
+        if errors:
             raise ASLParserException(errors=errors)
 
         # Attempt to preprocess the AST into evaluation components.

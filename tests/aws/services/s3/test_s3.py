@@ -54,7 +54,7 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.run import run
@@ -2617,7 +2617,7 @@ class TestS3:
         object_key = "data"
         body = "Hello\r\n\r\n\r\n\r\n"
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": mock_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2652,7 +2652,7 @@ class TestS3:
         body = "Hello Blob"
         valid_checksum = hash_sha256(body)
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": mock_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2704,7 +2704,7 @@ class TestS3:
         body = "Hello Blob"
         precalculated_etag = hashlib.md5(body.encode()).hexdigest()
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": mock_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -7746,7 +7746,7 @@ class TestS3Routing:
 
         path = s3_key if use_virtual_address else f"{s3_bucket}/{s3_key}"
         url = f"{config.internal_service_url()}/{path}"
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["host"] = f"{s3_bucket}.{domain}" if use_virtual_address else domain
@@ -9246,6 +9246,59 @@ class TestS3BucketLogging:
             )
         snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
         assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
+
+    @markers.aws.validated
+    def test_put_bucket_logging_cross_locations(
+        self,
+        aws_client,
+        aws_client_factory,
+        s3_create_bucket,
+        s3_create_bucket_with_client,
+        snapshot,
+    ):
+        # The aim of the test is to check the behavior of the CrossLocationLoggingProhibitions
+        # exception for us-east-1 and regions other than us-east-1.
+        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
+        region_1 = "us-east-1"
+        region_2 = "us-east-2"
+        region_3 = "us-west-2"
+
+        snapshot.add_transformer(RegexTransformer(region_1, "<region_1>"))
+        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
+        snapshot.add_transformer(RegexTransformer(region_3, "<region_3>"))
+
+        bucket_name_region_1 = f"bucket-{short_uid()}"
+        client = aws_client_factory(region_name=region_1).s3
+        s3_create_bucket_with_client(client, Bucket=bucket_name_region_1)
+
+        bucket_name_region_2 = s3_create_bucket(
+            CreateBucketConfiguration={"LocationConstraint": region_2}
+        )
+        target_bucket = s3_create_bucket(CreateBucketConfiguration={"LocationConstraint": region_3})
+
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            client.put_bucket_logging(
+                Bucket=bucket_name_region_1, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-cross-us-east-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name_region_2, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-different-regions", e.value.response)
 
 
 class TestS3BucketReplication:
