@@ -14,7 +14,6 @@ from moto.apigatewayv2.exceptions import BadRequestException
 from requests import Response
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.connect import (
     INTERNAL_REQUEST_PARAMS_HEADER,
     InternalRequestParameters,
@@ -42,7 +41,6 @@ from localstack.services.apigateway.templates import (
 )
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
@@ -50,6 +48,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
@@ -136,7 +135,10 @@ def get_service_factory(region_name: str, role_arn: str):
 
 @lru_cache(maxsize=64)
 def get_internal_mocked_headers(
-    service_name: str, region_name: str, source_arn: str, role_arn: str | None
+    service_name: str,
+    region_name: str,
+    source_arn: str,
+    role_arn: str | None,
 ) -> dict[str, str]:
     if role_arn:
         access_key_id = (
@@ -148,7 +150,7 @@ def get_internal_mocked_headers(
         )
     else:
         access_key_id = None
-    headers = aws_stack.mock_aws_request_headers(
+    headers = mock_aws_request_headers(
         service=service_name, aws_access_key_id=access_key_id, region_name=region_name
     )
 
@@ -586,7 +588,7 @@ class S3Integration(BackendIntegration):
             LOG.debug(msg)
             return make_error_response(msg, 404)
 
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             service="s3",
             aws_access_key_id=invocation_context.account_id,
             region_name=invocation_context.region_name,
@@ -686,10 +688,10 @@ class SQSIntegration(BackendIntegration):
             new_request = f"{payload}&QueueName={queue}"
         else:
             payload = self.request_templates.render(invocation_context)
-            queue_url = f"{config.internal_service_url()}/{account_id}/{queue}"
+            queue_url = f"{config.internal_service_url()}/queue/{region_name}/{account_id}/{queue}"
             new_request = f"{payload}&QueueUrl={queue_url}"
 
-        url = urljoin(config.internal_service_url(), f"{get_aws_account_id()}/{queue}")
+        url = urljoin(config.internal_service_url(), f"/queue/{region_name}/{account_id}/{queue}")
         response = common.make_http_request(url, method="POST", headers=headers, data=new_request)
 
         # apply response template
@@ -712,7 +714,7 @@ class SNSIntegration(BackendIntegration):
             LOG.warning("Failed to apply template for SNS integration", e)
             raise
         region_name = uri.split(":")[3]
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             service="sns", aws_access_key_id=invocation_context.account_id, region_name=region_name
         )
         result = make_http_request(
@@ -777,7 +779,7 @@ class StepFunctionIntegration(BackendIntegration):
         result = json_safe(remove_attributes(result, ["ResponseMetadata"]))
         response = StepFunctionIntegration._create_response(
             HTTPStatus.OK.value,
-            aws_stack.mock_aws_request_headers(
+            mock_aws_request_headers(
                 "stepfunctions",
                 aws_access_key_id=invocation_context.account_id,
                 region_name=invocation_context.region_name,

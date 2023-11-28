@@ -18,7 +18,6 @@ from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.apigateway import (
     Authorizer,
@@ -32,6 +31,8 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.connect import connect_to
 from localstack.constants import (
     APPLICATION_JSON,
+    AWS_REGION_US_EAST_1,
+    DEFAULT_AWS_ACCOUNT_ID,
     HEADER_LOCALSTACK_EDGE_URL,
     PATH_USER_REQUEST,
 )
@@ -42,7 +43,7 @@ from localstack.services.apigateway.models import (
     apigateway_stores,
 )
 from localstack.utils import common
-from localstack.utils.aws import aws_stack, queries
+from localstack.utils.aws import queries
 from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
@@ -134,8 +135,8 @@ def get_apigateway_store(context: RequestContext) -> ApiGatewayStore:
 
 
 def get_apigateway_store_for_invocation(context: ApiInvocationContext) -> ApiGatewayStore:
-    account_id = context.account_id or get_aws_account_id()
-    region_name = context.region_name or aws_stack.get_region()
+    account_id = context.account_id or DEFAULT_AWS_ACCOUNT_ID
+    region_name = context.region_name or AWS_REGION_US_EAST_1
     return apigateway_stores[account_id][region_name]
 
 
@@ -1387,7 +1388,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
-    account_id = account_id or get_aws_account_id()
+    account_id = account_id or DEFAULT_AWS_ACCOUNT_ID
     request_context = {
         "accountId": account_id,
         "apiId": api_id,

@@ -18,7 +18,7 @@ exports.handler = async (event, context, callback) => {
           });
 
     } else {
-        s3 = new AWS.S3()
+        s3 = new AWS.S3({ signatureVersion: 'v4' })
     }
 
   const url = s3.getSignedUrl('putObject', {

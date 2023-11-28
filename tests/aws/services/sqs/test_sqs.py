@@ -12,7 +12,6 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
-    DEFAULT_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -27,7 +26,8 @@ from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
 from localstack.services.sqs.utils import parse_queue_url
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import GenericTransformer
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
@@ -1107,7 +1107,7 @@ class TestSqsProvider:
         queue_name = f"queue-{short_uid()}"
         sqs_create_queue(QueueName=queue_name)
 
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         payload = f"Action=GetQueueUrl&QueueName={queue_name}"
@@ -1127,7 +1127,7 @@ class TestSqsProvider:
         queue_name = f"queue-{short_uid()}"
 
         edge_url = config.internal_service_url()
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         port = 12345
@@ -3771,7 +3771,12 @@ class TestSqsQueryApi:
         assert queue_url.split("/")[-1] in response.text
 
     @markers.aws.only_localstack
-    def test_get_queue_attributes_works_without_authparams(self, sqs_create_queue):
+    @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
+    def test_get_queue_attributes_works_without_authparams(
+        self, monkeypatch, sqs_create_queue, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
         response = requests.get(
             queue_url,
@@ -4021,6 +4026,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue_url.split("/")[-1],
+                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
             },
         )
         assert f"<QueueUrl>{queue_url}</QueueUrl>" in response.text
@@ -4042,6 +4048,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue2_url.split("/")[-1],
+                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
             },
         )
         assert f"<QueueUrl>{queue2_url}</QueueUrl>" in response.text
@@ -4254,7 +4261,7 @@ class TestSQSMultiAccounts:
         queue_name = f"test-queue-cross-account-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         account_id, region_name, queue_name_from_url = parse_queue_url(queue_url)
-        assert account_id == DEFAULT_AWS_ACCOUNT_ID
+        assert account_id == TEST_AWS_ACCOUNT_ID
         assert region_name == TEST_AWS_REGION_NAME
         assert queue_name_from_url == queue_name
 

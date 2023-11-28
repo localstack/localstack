@@ -342,6 +342,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if isinstance(endpoint_configs.get("vpcEndpointIds"), str):
             endpoint_configs["vpcEndpointIds"] = [endpoint_configs["vpcEndpointIds"]]
 
+        # minimum_compression_size is a unique path as it's a nullable integer,
+        # it would throw an error if it stays an empty string
+        if rest_api.minimum_compression_size == "":
+            rest_api.minimum_compression_size = None
+
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response, remove_tags=False)
         store = get_apigateway_store(context=context)

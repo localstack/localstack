@@ -132,9 +132,9 @@ class Execution:
         self.exec_worker = None
         self.error = None
         self.cause = None
-        self._events_client = connect_to(
-            aws_access_key_id=self.account_id, region_name=self.region_name
-        ).events
+
+    def _get_events_client(self):
+        return connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
 
     def to_start_output(self) -> StartExecutionOutput:
         return StartExecutionOutput(executionArn=self.exec_arn, startDate=self.start_date)
@@ -273,7 +273,7 @@ class Execution:
             ),
         )
         try:
-            self._events_client.put_events(Entries=[entry])
+            self._get_events_client().put_events(Entries=[entry])
         except Exception:
             LOG.exception(
                 f"Unable to send notification of Entry='{entry}' for Step Function execution with Arn='{self.exec_arn}' to EventBridge."

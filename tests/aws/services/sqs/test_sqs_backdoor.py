@@ -94,6 +94,8 @@ class TestSqsDeveloperEndpoints:
     def test_fifo_list_messages_as_botocore_endpoint_url(
         self, sqs_create_queue, aws_client, aws_client_factory, monkeypatch, strategy
     ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue(
             QueueName=f"queue-{short_uid()}.fifo",
             Attributes={
@@ -130,6 +132,8 @@ class TestSqsDeveloperEndpoints:
     def test_list_messages_with_invalid_action_raises_error(
         self, sqs_create_queue, aws_client_factory, monkeypatch, strategy
     ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
 
         client = aws_client_factory(
@@ -183,6 +187,8 @@ class TestSqsDeveloperEndpoints:
     def test_list_messages_with_invisible_messages(
         self, sqs_create_queue, aws_client, monkeypatch, strategy
     ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
 
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
@@ -224,6 +230,8 @@ class TestSqsDeveloperEndpoints:
     def test_list_messages_with_delayed_messages(
         self, sqs_create_queue, aws_client, monkeypatch, strategy
     ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
 
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
@@ -259,6 +267,8 @@ class TestSqsDeveloperEndpoints:
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_list_messages_without_queue_url(self, aws_client, monkeypatch, strategy):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         # makes sure the service is loaded when running the test individually
         aws_client.sqs.list_queues()
 
@@ -275,6 +285,8 @@ class TestSqsDeveloperEndpoints:
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_list_messages_with_invalid_queue_url(self, aws_client, monkeypatch, strategy):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         # makes sure the service is loaded when running the test individually
         aws_client.sqs.list_queues()
 
@@ -289,6 +301,8 @@ class TestSqsDeveloperEndpoints:
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_list_messages_with_non_existent_queue(self, aws_client, monkeypatch, strategy):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         # makes sure the service is loaded when running the test individually
         aws_client.sqs.list_queues()
 
@@ -316,6 +330,8 @@ class TestSqsDeveloperEndpoints:
     def test_list_messages_with_queue_url_in_path(
         self, sqs_create_queue, aws_client, monkeypatch, strategy
     ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
 
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")

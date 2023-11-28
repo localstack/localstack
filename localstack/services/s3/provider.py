@@ -1653,9 +1653,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 TargetBucket=target_bucket_name,
             )
 
-        if target_bucket.region_name != moto_bucket.region_name:
+        source_bucket_region = moto_bucket.region_name
+        if target_bucket.region_name != source_bucket_region:
             raise CrossLocationLoggingProhibitted(
                 "Cross S3 location logging not allowed. ",
+                TargetBucketLocation=target_bucket.region_name,
+            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
+                "Cross S3 location logging not allowed. ",
+                SourceBucketLocation=source_bucket_region,
                 TargetBucketLocation=target_bucket.region_name,
             )
 

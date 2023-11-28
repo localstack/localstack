@@ -162,6 +162,7 @@ def sanitize_arn_pattern(pattern: str) -> str:
         "arn:aws.*:*",
         "^arn:aws.*",
         "^arn:.*",
+        "arn:\\S+",
         ".*\\S.*",
         "^[A-Za-z0-9:\\/_-]*$",
         "^arn[\\/\\:\\-\\_\\.a-zA-Z0-9]+$",

@@ -15,6 +15,7 @@ from localstack.aws.connect import connect_externally_to, connect_to
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_utils
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.urls import localstack_host
 
 try:
@@ -26,18 +27,17 @@ import boto3
 import requests
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     LOCALSTACK_ROOT_FOLDER,
     LOCALSTACK_VENV_FOLDER,
     TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
 from localstack.services.lambda_.lambda_utils import (
     get_handler_file_from_name,
 )
 from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
-from localstack.utils.aws import aws_stack
 from localstack.utils.collections import ensure_list
 from localstack.utils.files import (
     TMP_FILES,
@@ -253,7 +253,7 @@ def create_lambda_function(
         "FunctionName": func_name,
         "Runtime": runtime,
         "Handler": handler,
-        "Role": role or LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
+        "Role": role or LAMBDA_TEST_ROLE.format(account_id=TEST_AWS_ACCOUNT_ID),
         "Code": lambda_code,
         "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
@@ -496,7 +496,7 @@ def send_dynamodb_request(path, action, request_body):
     headers = {
         "Host": "dynamodb.amazonaws.com",
         "x-amz-target": "DynamoDB_20120810.{}".format(action),
-        "Authorization": aws_stack.mock_aws_request_headers(
+        "Authorization": mock_aws_request_headers(
             "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )["Authorization"],
     }

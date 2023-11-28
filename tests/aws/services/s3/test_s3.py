@@ -54,7 +54,8 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import mock_aws_request_headers
+from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.run import run
 from localstack.utils.server import http2_server
@@ -431,24 +432,41 @@ class TestS3:
         assert response["Body"].read() == b"abc123"
 
     @markers.aws.validated
-    def test_resource_object_with_slashes_in_key(self, s3_bucket, aws_client):
-        aws_client.s3.put_object(Bucket=s3_bucket, Key="/foo", Body=b"foobar")
-        aws_client.s3.put_object(Bucket=s3_bucket, Key="bar", Body=b"barfoo")
-        aws_client.s3.put_object(Bucket=s3_bucket, Key="/bar/foo/", Body=b"test")
+    @pytest.mark.parametrize(
+        "use_virtual_address",
+        [True, False],
+    )
+    def test_object_with_slashes_in_key(
+        self, s3_bucket, aws_client_factory, use_virtual_address, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        s3_client = aws_client_factory(
+            config=Config(s3=s3_config),
+            endpoint_url=_endpoint_url(),
+        ).s3
 
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_object(Bucket=s3_bucket, Key="foo")
-        e.match("NoSuchKey")
+        s3_client.put_object(Bucket=s3_bucket, Key="/foo", Body=b"foobar")
+        s3_client.put_object(Bucket=s3_bucket, Key="bar", Body=b"barfoo")
+        s3_client.put_object(Bucket=s3_bucket, Key="/bar/foo/", Body=b"test")
 
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_object(Bucket=s3_bucket, Key="/bar")
-        e.match("NoSuchKey")
+        list_objects = s3_client.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects-slashes", list_objects)
 
-        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="/foo")
+        with pytest.raises(ClientError, match="NoSuchKey"):
+            s3_client.get_object(Bucket=s3_bucket, Key="foo")
+
+        with pytest.raises(ClientError, match="NoSuchKey"):
+            s3_client.get_object(Bucket=s3_bucket, Key="//foo")
+
+        with pytest.raises(ClientError, match="NoSuchKey"):
+            s3_client.get_object(Bucket=s3_bucket, Key="/bar")
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key="/foo")
         assert response["Body"].read() == b"foobar"
-        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="bar")
+        response = s3_client.get_object(Bucket=s3_bucket, Key="bar")
         assert response["Body"].read() == b"barfoo"
-        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="/bar/foo/")
+        response = s3_client.get_object(Bucket=s3_bucket, Key="/bar/foo/")
         assert response["Body"].read() == b"test"
 
     @markers.aws.validated
@@ -2599,7 +2617,7 @@ class TestS3:
         object_key = "data"
         body = "Hello\r\n\r\n\r\n\r\n"
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": mock_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2634,7 +2652,7 @@ class TestS3:
         body = "Hello Blob"
         valid_checksum = hash_sha256(body)
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": mock_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2686,7 +2704,7 @@ class TestS3:
         body = "Hello Blob"
         precalculated_etag = hashlib.md5(body.encode()).hexdigest()
         headers = {
-            "Authorization": aws_stack.mock_aws_request_headers(
+            "Authorization": mock_aws_request_headers(
                 "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -5446,31 +5464,33 @@ class TestS3MultiAccounts:
         return secondary_aws_client.s3
 
     @markers.aws.unknown
-    def test_shared_bucket_namespace(self, primary_client, secondary_client):
+    def test_shared_bucket_namespace(self, primary_client, secondary_client, cleanups):
+        bucket_name = short_uid()
+
         # Ensure that the bucket name space is shared by all accounts and regions
-        primary_client.create_bucket(Bucket="foo")
+        create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
+        cleanups.append(lambda: primary_client.delete_bucket(Bucket=bucket_name))
 
         with pytest.raises(ClientError) as exc:
-            secondary_client.create_bucket(
-                Bucket="foo",
-                CreateBucketConfiguration={"LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME},
-            )
+            create_s3_bucket(bucket_name=bucket_name, s3_client=secondary_client)
         exc.match("BucketAlreadyExists")
 
     @markers.aws.unknown
-    def test_cross_account_access(self, primary_client, secondary_client):
+    def test_cross_account_access(self, primary_client, secondary_client, cleanups):
         # Ensure that following operations can be performed across accounts
         # - ListObjects
         # - PutObject
         # - GetObject
 
-        bucket_name = "foo"
+        bucket_name = short_uid()
         key_name = "lorem/ipsum"
         body1 = b"zaphod beeblebrox"
         body2 = b"42"
 
         # First user creates a bucket and puts an object
-        primary_client.create_bucket(Bucket=bucket_name)
+        create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
+        cleanups.append(lambda: primary_client.delete_bucket(Bucket=bucket_name))
+
         response = primary_client.list_buckets()
         assert bucket_name in [bucket["Name"] for bucket in response["Buckets"]]
         primary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body1)
@@ -5670,19 +5690,117 @@ class TestS3PresignedUrl:
         assert response.headers.get("content-length") == str(len(body))
 
     @markers.aws.validated
+    @pytest.mark.parametrize("verify_signature", (True, False))
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    def test_put_url_metadata(self, s3_bucket, snapshot, aws_client):
+    def test_put_url_metadata_with_sig_s3v4(
+        self,
+        s3_bucket,
+        snapshot,
+        aws_client,
+        verify_signature,
+        monkeypatch,
+        presigned_snapshot_transformers,
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("HostId"))
+        snapshot.add_transformer(snapshot.transform.key_value("RequestId"))
+        if verify_signature:
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+        else:
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", True)
+
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version="s3v4"),
+            endpoint_url=_endpoint_url(),
+        )
+
+        # Object metadata should be passed as signed headers when sending the pre-signed URL, the boto signer does not
+        # append it to the URL
+        # https://github.com/localstack/localstack/issues/544
+        metadata = {"foo": "bar"}
+        object_key = "key-by-hostname"
+
+        # put object via presigned URL with metadata
+        url = presigned_client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": s3_bucket, "Key": object_key, "Metadata": metadata},
+        )
+        assert "x-amz-meta-foo=bar" not in url
+
+        # put the request without the headers
+        response = requests.put(url, data="content 123")
+        # if we skip validation, it should work for LocalStack
+        if not verify_signature and not is_aws_cloud():
+            assert response.ok, f"response returned {response.status_code}: {response.text}"
+            # response body should be empty, see https://github.com/localstack/localstack/issues/1317
+            assert not response.text
+        else:
+            assert response.status_code == 403
+            exception = xmltodict.parse(response.content)
+            snapshot.match("no-meta-headers", exception)
+
+        # put it now with the signed headers
+        response = requests.put(url, data="content 123", headers={"x-amz-meta-foo": "bar"})
+        # assert metadata is present
+        assert response.ok
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        assert response["Metadata"]["foo"] == "bar"
+        snapshot.match("head_object", response)
+
+        # assert with another metadata, should fail if verify_signature is not True
+        response = requests.put(url, data="content 123", headers={"x-amz-meta-wrong": "wrong"})
+
+        # if we skip validation, it should work for LocalStack
+        if not verify_signature and not is_aws_cloud():
+            assert response.ok, f"response returned {response.status_code}: {response.text}"
+        else:
+            assert response.status_code == 403
+            exception = xmltodict.parse(response.content)
+            snapshot.match("wrong-meta-headers", exception)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        if not verify_signature and not is_aws_cloud():
+            assert head_object["Metadata"]["wrong"] == "wrong"
+        else:
+            assert "wrong" not in head_object["Metadata"]
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("verify_signature", (True, False))
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..ServerSideEncryption"],
+    )
+    def test_put_url_metadata_with_sig_s3(
+        self,
+        s3_bucket,
+        snapshot,
+        aws_client,
+        verify_signature,
+        monkeypatch,
+        presigned_snapshot_transformers,
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        if verify_signature:
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+        else:
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", True)
+
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version="s3"),
+            endpoint_url=_endpoint_url(),
+        )
+
         # Object metadata should be passed as query params via presigned URL
         # https://github.com/localstack/localstack/issues/544
         metadata = {"foo": "bar"}
         object_key = "key-by-hostname"
 
-        # put object via presigned URL
-        url = aws_client.s3.generate_presigned_url(
+        # put object via presigned URL with metadata
+        url = presigned_client.generate_presigned_url(
             "put_object",
             Params={"Bucket": s3_bucket, "Key": object_key, "Metadata": metadata},
         )
@@ -5697,6 +5815,22 @@ class TestS3PresignedUrl:
         response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         assert response.get("Metadata", {}).get("foo") == "bar"
         snapshot.match("head_object", response)
+
+        # assert with another metadata directly in the headers
+        response = requests.put(url, data="content 123", headers={"x-amz-meta-wrong": "wrong"})
+        # if we skip validation, it should work for LocalStack
+        if not verify_signature and not is_aws_cloud():
+            assert response.ok, f"response returned {response.status_code}: {response.text}"
+        else:
+            assert response.status_code == 403
+            exception = xmltodict.parse(response.content)
+            snapshot.match("wrong-meta-headers", exception)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        if not verify_signature and not is_aws_cloud():
+            assert head_object["Metadata"]["wrong"] == "wrong"
+        else:
+            assert "wrong" not in head_object["Metadata"]
 
     @markers.aws.validated
     def test_get_object_ignores_request_body(self, s3_bucket, aws_client):
@@ -5774,8 +5908,7 @@ class TestS3PresignedUrl:
             exception = xmltodict.parse(result.content)
             snapshot.match("with-decoded-content-length", exception)
 
-        # old provider does not raise the right error message
-        if signature_version == "s3":
+        if signature_version == "s3" or not verify_signature:
             assert b"SignatureDoesNotMatch" in result.content
         # we are either using s3v4 with new provider or whichever signature against AWS
         else:
@@ -5788,7 +5921,7 @@ class TestS3PresignedUrl:
         if snapshotted:
             exception = xmltodict.parse(result.content)
             snapshot.match("without-decoded-content-length", exception)
-        if signature_version == "s3":
+        if signature_version == "s3" or not verify_signature:
             assert b"SignatureDoesNotMatch" in result.content
         else:
             assert b"AccessDenied" in result.content
@@ -6452,6 +6585,10 @@ class TestS3PresignedUrl:
         assert response.content == data
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..ServerSideEncryption"],
+    )
     def test_presigned_url_v4_x_amz_in_qs(
         self,
         s3_bucket,
@@ -6461,6 +6598,7 @@ class TestS3PresignedUrl:
         lambda_su_role,
         create_tmp_folder_lambda,
         aws_client,
+        snapshot,
     ):
         # test that Boto does not hoist x-amz-storage-class in the query string while pre-signing
         object_key = "temp.txt"
@@ -6469,9 +6607,15 @@ class TestS3PresignedUrl:
         )
         url = client.generate_presigned_url(
             "put_object",
-            Params={"Bucket": s3_bucket, "Key": object_key, "StorageClass": StorageClass.STANDARD},
+            Params={
+                "Bucket": s3_bucket,
+                "Key": object_key,
+                "StorageClass": StorageClass.STANDARD,
+                "Metadata": {"foo": "bar-complicated-no-random"},
+            },
         )
         assert StorageClass.STANDARD not in url
+        assert "bar-complicated-no-random" not in url
 
         handler_file = os.path.join(
             os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.js"
@@ -6494,7 +6638,9 @@ class TestS3PresignedUrl:
         response = aws_client.lambda_.invoke(FunctionName=function_name)
         presigned_url = response["Payload"].read()
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
+        # assert that the Javascript SDK hoists it in the URL, unlike Boto
         assert StorageClass.STANDARD in presigned_url
+        assert "bar-complicated-no-random" in presigned_url
 
         # missing Content-MD5
         response = requests.put(presigned_url, verify=False, data=b"123456")
@@ -6509,6 +6655,10 @@ class TestS3PresignedUrl:
             headers={"Content-MD5": "4QrcOUm6Wau+VuBX8g+IPg=="},
         )
         assert response.status_code == 200
+
+        # verify that we properly saved the data
+        head_object = aws_client.s3.head_object(Bucket=function_name, Key=object_key)
+        snapshot.match("head-object", head_object)
 
     @markers.aws.validated
     def test_presigned_url_v4_signed_headers_in_qs(
@@ -7596,7 +7746,7 @@ class TestS3Routing:
 
         path = s3_key if use_virtual_address else f"{s3_bucket}/{s3_key}"
         url = f"{config.internal_service_url()}/{path}"
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["host"] = f"{s3_bucket}.{domain}" if use_virtual_address else domain
@@ -9096,6 +9246,59 @@ class TestS3BucketLogging:
             )
         snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
         assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
+
+    @markers.aws.validated
+    def test_put_bucket_logging_cross_locations(
+        self,
+        aws_client,
+        aws_client_factory,
+        s3_create_bucket,
+        s3_create_bucket_with_client,
+        snapshot,
+    ):
+        # The aim of the test is to check the behavior of the CrossLocationLoggingProhibitions
+        # exception for us-east-1 and regions other than us-east-1.
+        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
+        region_1 = "us-east-1"
+        region_2 = "us-east-2"
+        region_3 = "us-west-2"
+
+        snapshot.add_transformer(RegexTransformer(region_1, "<region_1>"))
+        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
+        snapshot.add_transformer(RegexTransformer(region_3, "<region_3>"))
+
+        bucket_name_region_1 = f"bucket-{short_uid()}"
+        client = aws_client_factory(region_name=region_1).s3
+        s3_create_bucket_with_client(client, Bucket=bucket_name_region_1)
+
+        bucket_name_region_2 = s3_create_bucket(
+            CreateBucketConfiguration={"LocationConstraint": region_2}
+        )
+        target_bucket = s3_create_bucket(CreateBucketConfiguration={"LocationConstraint": region_3})
+
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            client.put_bucket_logging(
+                Bucket=bucket_name_region_1, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-cross-us-east-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name_region_2, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-different-regions", e.value.response)
 
 
 class TestS3BucketReplication:

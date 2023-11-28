@@ -25,7 +25,11 @@ from botocore.exceptions import ClientError, ParamValidationError
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
-from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
+from localstack.services.lambda_.api_utils import ARCHITECTURES
+from localstack.services.lambda_.runtimes import (
+    ALL_RUNTIMES,
+    SNAP_START_SUPPORTED_RUNTIMES,
+)
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -39,7 +43,6 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import (
-    FUNCTION_MAX_UNZIPPED_SIZE,
     TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON_ECHO,
@@ -401,6 +404,7 @@ class TestLambdaFunction:
             == get_function_response_updated["Configuration"]["CodeSize"]
         )
 
+    @markers.lambda_runtime_update
     @markers.aws.validated
     def test_create_lambda_exceptions(self, lambda_su_role, snapshot, aws_client):
         function_name = f"invalid-function-{short_uid()}"
@@ -489,6 +493,7 @@ class TestLambdaFunction:
             )
         snapshot.match("invalid_zip_exc", e.value.response)
 
+    @markers.lambda_runtime_update
     @markers.aws.validated
     def test_update_lambda_exceptions(
         self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
@@ -578,6 +583,7 @@ class TestLambdaFunction:
         snapshot.match("list_all", list_all)
         snapshot.match("list_default", list_default)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Ipv6AllowedForDualStack"])
     @markers.aws.validated
     def test_vpc_config(
         self, create_lambda_function, lambda_su_role, snapshot, aws_client, cleanups
@@ -656,7 +662,14 @@ class TestLambdaFunction:
             },
         )
         snapshot.match("update_vpcconfig_update_response", update_vpcconfig_update_response)
-        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda/waiter/FunctionUpdatedV2.html#Lambda.Waiter.FunctionUpdatedV2.wait
+        waiter_config = {"Delay": 1, "MaxAttempts": 60}
+        # Increase timeouts because it can take longer than 5 minutes against AWS due to VPC.
+        if is_aws_cloud():
+            waiter_config = {"Delay": 5, "MaxAttempts": 90}
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(
+            FunctionName=function_name, WaiterConfig=waiter_config
+        )
 
         update_vpcconfig_get_function_response = aws_client.lambda_.get_function(
             FunctionName=function_name
@@ -3407,6 +3420,7 @@ class TestLambdaUrl:
             AuthType="AWS_IAM",
         )
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..FunctionUrlConfigs..InvokeMode"])
     @markers.aws.validated
     def test_url_config_list_paging(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
@@ -3478,6 +3492,7 @@ class TestLambdaUrl:
             != list_max_1_item["FunctionUrlConfigs"][0]["FunctionUrl"]
         )
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..InvokeMode"])
     @markers.aws.validated
     def test_url_config_lifecycle(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
@@ -3531,7 +3546,43 @@ class TestLambdaSizeLimits:
     @markers.aws.validated
     def test_oversized_request_create_lambda(self, lambda_su_role, snapshot, aws_client):
         function_name = f"test_lambda_{short_uid()}"
-        code_str = self._generate_sized_python_str(TEST_LAMBDA_PYTHON_ECHO, 50 * 1024 * 1024)
+        # ensure that we are slightly below the zipped size limit because it is checked before the request limit
+        code_str = self._generate_sized_python_str(
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED - 1024
+        )
+
+        # upload zip file to S3
+        zip_file = testutil.create_lambda_archive(
+            code_str, get_content=True, runtime=Runtime.python3_9
+        )
+
+        # enlarge the request beyond its limit while accounting for the zip file size
+        delta = (
+            config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE
+            - config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED
+        )
+        large_env = self._generate_sized_python_str(TEST_LAMBDA_PYTHON_ECHO, delta + 1024 * 1024)
+
+        # create lambda function
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Runtime=Runtime.python3_9,
+                Handler="handler.handler",
+                Role=lambda_su_role,
+                Code={"ZipFile": zip_file},
+                Timeout=10,
+                Environment={"Variables": {"largeKey": large_env}},
+            )
+        snapshot.match("invalid_param_exc", e.value.response)
+
+    @markers.aws.validated
+    def test_oversized_zipped_create_lambda(self, lambda_su_role, snapshot, aws_client):
+        function_name = f"test_lambda_{short_uid()}"
+        # use the highest boundary to test that the zipped size is checked before the request size
+        code_str = self._generate_sized_python_str(
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED
+        )
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
@@ -3555,7 +3606,7 @@ class TestLambdaSizeLimits:
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
         code_str = self._generate_sized_python_str(
-            TEST_LAMBDA_PYTHON_ECHO, FUNCTION_MAX_UNZIPPED_SIZE
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED
         )
 
         # upload zip file to S3
@@ -3582,7 +3633,7 @@ class TestLambdaSizeLimits:
         cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
         bucket_key = "test_lambda.zip"
         code_str = self._generate_sized_python_str(
-            TEST_LAMBDA_PYTHON_ECHO, FUNCTION_MAX_UNZIPPED_SIZE - 1000
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED - 1000
         )
 
         # upload zip file to S3
@@ -4085,6 +4136,7 @@ class TestLambdaEventSourceMappings:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # all dynamodb service issues not related to lambda
+            "$..TableDescription.DeletionProtectionEnabled",
             "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
             "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
             "$..TableDescription.TableStatus",
@@ -4389,9 +4441,10 @@ class TestLambdaTags:
 # TODO: add more tests where layername can be an ARN
 # TODO: test if function has to be in same region as layer
 class TestLambdaLayer:
+    @markers.lambda_runtime_update
     @markers.aws.validated
     # AWS only allows a max of 15 compatible runtimes, split runtimes and run two tests
-    @pytest.mark.parametrize("runtimes", [RUNTIMES[:14], RUNTIMES[14:]])
+    @pytest.mark.parametrize("runtimes", [ALL_RUNTIMES[:14], ALL_RUNTIMES[14:]])
     def test_layer_compatibilities(self, snapshot, dummylayer, cleanups, aws_client, runtimes):
         """Creates a single layer which is compatible with all"""
         layer_name = f"testlayer-{short_uid()}"
@@ -4409,6 +4462,7 @@ class TestLambdaLayer:
         )
         snapshot.match("publish_result", publish_result)
 
+    @markers.lambda_runtime_update
     @markers.aws.validated
     def test_layer_exceptions(self, snapshot, dummylayer, cleanups, aws_client):
         """
@@ -5046,7 +5100,7 @@ class TestLambdaLayer:
 
 class TestLambdaSnapStart:
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17])
+    @pytest.mark.parametrize("runtime", SNAP_START_SUPPORTED_RUNTIMES)
     def test_snapstart_lifecycle(self, create_lambda_function, snapshot, aws_client, runtime):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
         Slow (~1-2min) against AWS.

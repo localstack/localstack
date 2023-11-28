@@ -130,7 +130,7 @@
             "Arn"
           ]
         },
-        "Runtime": "nodejs12.x",
+        "Runtime": "nodejs14.x",
         "Environment": {
           "Variables": {
             "TABLE_NAME": {
@@ -168,7 +168,7 @@
             "Arn"
           ]
         },
-        "Runtime": "nodejs12.x",
+        "Runtime": "nodejs14.x",
         "Environment": {
           "Variables": {
             "TABLE_NAME": {
