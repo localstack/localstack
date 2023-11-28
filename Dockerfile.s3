@@ -52,7 +52,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
-    (venv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
+    (python3 -m venv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
 
 # add files necessary to install all dependencies
 ADD Makefile setup.py setup.cfg pyproject.toml ./
