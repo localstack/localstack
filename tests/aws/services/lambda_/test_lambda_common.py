@@ -47,7 +47,7 @@ def snapshot_transformers(snapshot):
 
 
 @pytest.mark.skipif(
-    condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
+    condition=get_arch() != "amd64", reason="build process doesn't support arm64 right now"
 )
 @markers.lambda_runtime_update
 class TestLambdaRuntimesCommon:
