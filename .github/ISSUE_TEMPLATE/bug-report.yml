@@ -55,7 +55,6 @@ body:
   attributes:
     label: Environment
     description: |
-
       examples:
         - **OS**: Ubuntu 20.04
         - **LocalStack**:
@@ -65,9 +64,6 @@ body:
           LocalStack Docker image sha: sha256:f7c3a25c88a7888fafe5029069fc7d093a888abd0bdd9c4303ead58e90d8bc8a
           LocalStack build date: 2023-10-03
           LocalStack build git hash: 1bccf790
-
-          You can find this information by
-
     value: |
         - OS:
         - LocalStack:
