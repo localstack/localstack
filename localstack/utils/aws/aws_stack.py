@@ -8,7 +8,6 @@ import boto3
 from moto.core import DEFAULT_ACCOUNT_ID
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
