@@ -5,7 +5,6 @@ from functools import lru_cache
 from typing import Dict, Optional, Union
 
 import boto3
-from moto.core import DEFAULT_ACCOUNT_ID
 
 from localstack import config
 from localstack.config import S3_VIRTUAL_HOSTNAME
@@ -102,6 +101,8 @@ def fix_account_id_in_arns(
     response, replacement: str, colon_delimiter: str = ":", existing: str | list[str] = None
 ):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
+    from moto.core import DEFAULT_ACCOUNT_ID
+
     existing = existing or ["123456789", "1234567890", DEFAULT_ACCOUNT_ID]
     existing = existing if isinstance(existing, list) else [existing]
     is_str_obj = is_string_or_bytes(response)
