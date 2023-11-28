@@ -6,10 +6,7 @@
       "Type": "Pass",
       "End": true,
       "Parameters": {
-        "FunctionName": "SomeFunction",
-        "Payload": {
-          "FunctionResult.$": "States.StringSplit($$.Execution.Input.FunctionInput, ',')"
-        }
+        "FunctionResult.$": "States.StringSplit($$.Execution.Input.FunctionInput, ',')"
       }
     }
   }
