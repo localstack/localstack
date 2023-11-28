@@ -688,10 +688,10 @@ class SQSIntegration(BackendIntegration):
             new_request = f"{payload}&QueueName={queue}"
         else:
             payload = self.request_templates.render(invocation_context)
-            queue_url = f"{config.internal_service_url()}/{account_id}/{queue}"
+            queue_url = f"{config.internal_service_url()}/queue/{region_name}/{account_id}/{queue}"
             new_request = f"{payload}&QueueUrl={queue_url}"
 
-        url = urljoin(config.internal_service_url(), f"{account_id}/{queue}")
+        url = urljoin(config.internal_service_url(), f"/queue/{region_name}/{account_id}/{queue}")
         response = common.make_http_request(url, method="POST", headers=headers, data=new_request)
 
         # apply response template
