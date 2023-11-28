@@ -18,6 +18,8 @@ from localstack.aws.api.lambda_ import Runtime
 # 6. Review special tests including:
 # a) [ext] tests.aws.services.lambda_.test_lambda_endpoint_injection
 # 7. Before merging, run the ext integration tests to cover transparent endpoint injection testing.
+# 8. Add the new runtime to the K8 image build: https://github.com/localstack/lambda-cve-mitigation
+# 9. Inform the web team to update the resource browser (consider offering an endpoint in the future)
 
 # Mapping from a) AWS Lambda runtime identifier => b) official AWS image on Amazon ECR Public
 # a) AWS Lambda runtimes: https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
