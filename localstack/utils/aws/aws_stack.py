@@ -1,6 +1,7 @@
 import logging
 import re
 import socket
+import warnings
 from functools import lru_cache
 from typing import Dict, Optional, Union
 
@@ -46,9 +47,10 @@ def get_valid_regions_for_service(service_name):
     return regions
 
 
-# NOTE: This method should not be used as it is not guaranteed to return the correct region
-# In the near future it will be deprecated and removed
-def get_region():
+# WARNING: This function is deprecated and must not be used.
+def _get_region():
+    warnings.warn("_get_region() is deprecated and must not be used", DeprecationWarning)
+
     # Note: leave import here to avoid import errors (e.g., "flask") for CLI commands
     from localstack.utils.aws.request_context import get_region_from_request_context
 
@@ -59,8 +61,11 @@ def get_region():
     return get_local_region()
 
 
-def get_partition(region_name: str = None):
-    region_name = region_name or get_region()
+# WARNING: This function is deprecated and must not be used.
+def _get_partition(region_name: str = None):
+    warnings.warn("_get_partition() is deprecated and must not be used", DeprecationWarning)
+
+    region_name = region_name or _get_region()
     return boto3.session.Session().get_partition_for_region(region_name)
 
 
@@ -132,7 +137,7 @@ def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -
     if region == auth:
         region = None
     if use_default:
-        region = region or get_region()
+        region = region or AWS_REGION_US_EAST_1
     return region
 
 

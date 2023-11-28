@@ -125,42 +125,6 @@ def get_region_from_request_context():
     return extract_region_from_headers(request_context.headers)
 
 
-# TODO: Dead code, to be removed
-def configure_region_for_current_request(region_name: str, service_name: str):
-    """Manually configure (potentially overwrite) the region in the current request context. This may be
-    used by API endpoints that are invoked directly by the user (without specifying AWS Authorization
-    headers), to still enable transparent region lookup via aws_stack.get_region() ..."""
-
-    # TODO: leaving import here for now, to avoid circular dependency
-    from localstack.utils.aws import aws_stack
-
-    request_context = get_request_context()
-    if not request_context:
-        LOG.info(
-            "Unable to set region '%s' in undefined request context: %s",
-            region_name,
-            request_context,
-        )
-        return
-
-    headers = request_context.headers
-    auth_header = headers.get("Authorization")
-    auth_header = (
-        auth_header
-        or mock_aws_request_headers(
-            service_name, aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID, region_name=AWS_REGION_US_EAST_1
-        )["Authorization"]
-    )
-    auth_header = auth_header.replace("/%s/" % aws_stack.get_region(), "/%s/" % region_name)
-    try:
-        headers["Authorization"] = auth_header
-    except Exception as e:
-        if "immutable" not in str(e):
-            raise
-        _context_to_update = get_proxy_request_for_thread() or request
-        _context_to_update.headers = CaseInsensitiveDict({**headers, "Authorization": auth_header})
-
-
 def mock_request_for_region(service_name: str, account_id: str, region_name: str) -> Request:
     result = Request()
     result.headers["Authorization"] = mock_aws_request_headers(

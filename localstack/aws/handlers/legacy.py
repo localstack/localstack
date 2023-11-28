@@ -4,7 +4,7 @@ import logging
 
 from localstack.http import Response
 
-from ..accounts import reset_aws_access_key_id, reset_aws_account_id
+from ..accounts import _reset_aws_access_key_id, _reset_aws_account_id
 from ..api import RequestContext
 from ..chain import HandlerChain
 from .routes import RouterHandler
@@ -18,8 +18,8 @@ def push_request_context(_chain: HandlerChain, context: RequestContext, _respons
     # TODO remove request_context.THREAD_LOCAL and accounts.REQUEST_CTX_TLS
     request_context.THREAD_LOCAL.request_context = context.request
     # resetting thread local storage to avoid leakage between requests at all cost
-    reset_aws_access_key_id()
-    reset_aws_account_id()
+    _reset_aws_access_key_id()
+    _reset_aws_account_id()
 
 
 def pop_request_context(_chain: HandlerChain, _context: RequestContext, _response: Response):
