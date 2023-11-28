@@ -254,6 +254,7 @@ jobs:
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
             DEBUG=1 \
+            TEST_CAPTURE_RESOURCE_OPERATIONS=1 \
             make docker-run-tests
       - store_test_results:
           path: target/reports/
