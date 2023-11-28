@@ -247,7 +247,9 @@ class TestLambdaRuntimesCommon:
 
 
 # TODO: Split this and move to PRO
-@pytest.mark.skip(reason="this test is broken and is being worked on")
+@pytest.mark.skipif(
+    condition=get_arch() != "x86_64", reason="build process doesn't support arm64 right now"
+)
 class TestLambdaCallingLocalstack:
     @markers.multiruntime(
         scenario="endpointinjection",
