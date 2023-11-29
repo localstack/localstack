@@ -186,3 +186,11 @@ def base64_decode(data: Union[str, bytes]) -> bytes:
 
 def get_random_hex(length: int) -> str:
     return "".join(random.choices(string.hexdigits[:16], k=length)).lower()
+
+
+def remove_leading_extra_slashes(input: str) -> str:
+    """
+    Remove leading extra slashes from the given input string.
+    Example: '///foo/bar' -> '/foo/bar'
+    """
+    return re.sub(r"^/+", "/", input)
