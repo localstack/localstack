@@ -896,7 +896,7 @@ LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY = int(
 )
 # SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_TOTAL_CODE_SIZE = int(os.environ.get("LAMBDA_LIMITS_TOTAL_CODE_SIZE", 80_530_636_800))
-# SEMI-PUBLIC: not actively communicated
+# PUBLIC: documented after AWS changed validation around 2023-11
 LAMBDA_LIMITS_CODE_SIZE_ZIPPED = int(os.environ.get("LAMBDA_LIMITS_CODE_SIZE_ZIPPED", 52_428_800))
 # SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_CODE_SIZE_UNZIPPED = int(

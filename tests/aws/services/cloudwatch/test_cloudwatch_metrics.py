@@ -1,8 +1,6 @@
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-import pytest
-
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.snapshot import is_aws
 from localstack.utils.strings import short_uid
@@ -56,7 +54,6 @@ class TestCloudWatchLambdaMetrics:
         )
         snapshot.match("get-metric-data", result)
 
-    @pytest.mark.skipif(not is_aws(), reason="'Errors' metrics not reported by LS")
     @markers.aws.validated
     def test_lambda_invoke_error(self, aws_client, create_lambda_function, snapshot):
         """
