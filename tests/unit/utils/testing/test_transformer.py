@@ -235,16 +235,16 @@ class TestTimestampTransformer:
         expected = {
             "lambda_": {
                 "FunctionName": "lambdafn",
-                "LastModified": "<timestamp:2022-06-13T13:48:01.000+0000>",
+                "LastModified": "<timestamp:2022-07-13T13:48:01.000+0000>",
             },
             "cfn": {
                 "StackName": "cfnstack",
-                "CreationTime": "<timestamp:2022-06-13T13:48:01.000000+00:00>",
+                "CreationTime": "<timestamp:2022-07-13T13:48:01.000000+00:00>",
             },
             "sfn": {
                 "name": "statemachine",
-                "creationDate": "<timestamp:2022-06-13T13:48:01.000000+00:00>",
-                "sfninternal": "<timestamp:2022-06-13T13:48:01.000Z>",
+                "creationDate": "<timestamp:2022-07-13T13:48:01.000000+00:00>",
+                "sfninternal": "<timestamp:2022-07-13T13:48:01.000Z>",
             },
         }
 

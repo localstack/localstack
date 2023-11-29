@@ -262,7 +262,7 @@ class RegexMatcher:
 
 
 REFERENCE_DATE = (
-    "2022-06-13T13:48:01Z"  # v1.0.0 commit timestamp cf26bd9199354a9a55e0b65e312ceee4c407f6c0
+    "2022-07-13T13:48:01Z"  # v1.0.0 commit timestamp cf26bd9199354a9a55e0b65e312ceee4c407f6c0
 )
 PATTERN_ISO8601 = re.compile(
     r"(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:?([0-5]\d)?)"
@@ -276,20 +276,20 @@ class TimestampTransformer:
         """
         Create a timestamp transformer which will replace normal datetimes with <datetime> and string timestamps with their representative format.
 
-        The reference date which is used for replacements is "2022-06-13T13:48:01Z", the commit date for the v1.0.0 tag of localstack.
+        The reference date which is used for replacements is "2022-07-13T13:48:01Z", the commit date for the v1.0.0 tag of localstack.
         """
 
         # Add your matcher here
         self.matchers = [
             RegexMatcher(
-                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z", "2022-06-13T13:48:01.000Z"
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z", "2022-07-13T13:48:01.000Z"
             ),  # stepfunctions internal
             RegexMatcher(
-                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}\+\d{4}", "2022-06-13T13:48:01.000+0000"
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}\+\d{4}", "2022-07-13T13:48:01.000+0000"
             ),  # lambda
             RegexMatcher(
                 r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{6}\+\d{2}:\d{2}",
-                "2022-06-13T13:48:01.000000+00:00",
+                "2022-07-13T13:48:01.000000+00:00",
             ),  # stepfunctions external, also cloudformation
             RegexMatcher(
                 PATTERN_ISO8601, "generic-iso8601"
