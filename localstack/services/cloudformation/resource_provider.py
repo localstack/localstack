@@ -69,6 +69,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::UsagePlanKey": "ResourceProvider",
     "AWS::AppConfig::Application": "ResourceProvider",
     "AWS::AppConfig::Environment": "ResourceProvider",
+    "AWS::AppConfig::ConfigurationProfile": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::CloudFormation::Stack": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
