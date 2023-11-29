@@ -98,7 +98,7 @@ def get_s3_hostname():
 
 
 def fix_account_id_in_arns(
-    response, replacement: str, colon_delimiter: str = ":", existing: str | List[str] = None
+    response, replacement: str, colon_delimiter: str = ":", existing: Union[str, List[str]] = None
 ):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
     from moto.core import DEFAULT_ACCOUNT_ID
