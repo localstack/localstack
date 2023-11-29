@@ -1069,14 +1069,14 @@ class TestEvents:
         assert "EventId" in response.get("Entries")[0]
 
     @markers.aws.unknown
-    def test_put_events_with_target_kinesis(self, aws_client):
+    def test_put_events_with_target_kinesis(self, kinesis_create_stream, aws_client):
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
         stream_name = "stream-{}".format(short_uid())
         stream_arn = arns.kinesis_stream_arn(stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
-        aws_client.kinesis.create_stream(StreamName=stream_name, ShardCount=1)
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
 
         aws_client.events.create_event_bus(Name=bus_name)
 

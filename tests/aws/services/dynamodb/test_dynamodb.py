@@ -17,7 +17,6 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, queries, resources
-from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.sync import poll_condition, wait_until
 from tests.aws.services.kinesis.test_kinesis import get_shard_iterator
@@ -1727,7 +1726,7 @@ class TestDynamoDB:
 
         # Create a table in the `us-east-1` region
         client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).dynamodb
-        create_dynamodb_table(table_name, PARTITION_KEY, client=client)
+        dynamodb_create_table(table_name=table_name, partition_key=PARTITION_KEY, client=client)
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
 
