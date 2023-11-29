@@ -173,6 +173,7 @@ class LambdaFunction(GenericBaseModel):
                 "parameters": {
                     "Architectures": "Architectures",
                     "Code": LambdaFunction.get_lambda_code_param,
+                    "DeadLetterConfig": "DeadLetterConfig",
                     "Description": "Description",
                     "Environment": get_environment_params,
                     "FunctionName": "FunctionName",
