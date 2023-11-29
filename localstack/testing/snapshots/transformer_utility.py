@@ -1,7 +1,6 @@
 import json
 import logging
 import re
-from datetime import datetime
 from json import JSONDecodeError
 from typing import Optional, Pattern
 
@@ -13,6 +12,7 @@ from localstack.testing.snapshots.transformer import (
     RegexTransformer,
     ResponseMetaDataTransformer,
     SortingTransformer,
+    TimestampTransformer,
 )
 from localstack.utils.net import IP_REGEX
 
@@ -22,9 +22,7 @@ LOG = logging.getLogger(__name__)
 PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 )
-PATTERN_ISO8601 = re.compile(
-    r"(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:?([0-5]\d)?)"
-)
+
 PATTERN_ARN = re.compile(r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:(.*)")
 PATTERN_ARN_CHANGESET = re.compile(
     r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:changeSet/([^/]+)"
@@ -758,19 +756,20 @@ SNAPSHOT_BASIC_TRANSFORMER = [
         ),
         "uuid",
     ),
-    RegexTransformer(PATTERN_ISO8601, "date"),
-    KeyValueBasedTransformer(
-        lambda k, v: (v if isinstance(v, datetime) else None), "datetime", replace_reference=False
-    ),
-    KeyValueBasedTransformer(
-        lambda k, v: str(v)
-        if (
-            re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k)
-            or k in ("creationTime", "ingestionTime")
-        )
-        and not PATTERN_ISO8601.match(str(v))
-        else None,
-        "timestamp",
-        replace_reference=False,
-    ),
+    TimestampTransformer(),
+    # RegexTransformer(PATTERN_ISO8601, "date"),
+    # KeyValueBasedTransformer(
+    #     lambda k, v: (v if isinstance(v, datetime) else None), "2022-06-13T13:48:01Z", replace_reference=False
+    # ),
+    # KeyValueBasedTransformer(
+    #     lambda k, v: str(v)
+    #     if (
+    #         re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k)
+    #         or k in ("creationTime", "ingestionTime")
+    #     )
+    #     and not PATTERN_ISO8601.match(str(v))
+    #     else None,
+    #     "timestamp",
+    #     replace_reference=False,
+    # ),
 ]
