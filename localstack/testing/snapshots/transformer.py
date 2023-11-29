@@ -292,8 +292,12 @@ class TimestampTransformer:
                 "2022-07-13T13:48:01.000000+00:00",
             ),  # stepfunctions external, also cloudformation
             RegexMatcher(
-                PATTERN_ISO8601, "generic-iso8601"
-            ),  # very generic iso8601, this should technically always be fixed so we could also think about removing it here
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z",
+                "2022-07-13T13:48:01Z",
+            ),  # s3
+            # RegexMatcher(
+            #     PATTERN_ISO8601, "generic-iso8601"
+            # ),  # very generic iso8601, this should technically always be fixed so we could also think about removing it here
         ]
 
     def transform(self, input_data: dict, *, ctx: TransformContext = None) -> dict:
