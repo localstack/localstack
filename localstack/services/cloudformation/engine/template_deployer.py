@@ -613,7 +613,7 @@ def _resolve_refs_recursively(
                 or region_name
             )
             azs = []
-            for az in ("a", "b", "c", "d"):
+            for az in ("a", "b", "c", "d", "e", "f"):
                 azs.append("%s%s" % (region, az))
 
             return azs

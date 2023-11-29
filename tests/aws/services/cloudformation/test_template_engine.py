@@ -235,20 +235,23 @@ class TestIntrinsicFunctions:
         assert deployed.outputs["Address"] == "10.0.0.0/24"
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="function not currently supported")
-    def test_get_azs_function(self, deploy_cfn_template):
+    def test_get_azs_function(self, deploy_cfn_template, snapshot):
+        """
+        TODO parametrize this test.
+        For that we need to be able to parametrize the client region. The docs show the we should be
+        able to put any region in the parameters but it doesn't work. It only accepts the same region from the client config
+        if you put anything else it just returns an empty list.
+        """
+
         template_path = os.path.join(
             os.path.dirname(__file__), "../../templates/functions_get_azs.yml"
         )
-        region = "us-east-1"  # TODO parametrize
 
         deployed = deploy_cfn_template(
             template_path=template_path,
-            parameters={"Region": region},
         )
 
-        zone = "us-east-1a"  # TODO parametrize
-        assert zone in deployed.outputs["Zones"]
+        snapshot.match("azs", deployed.outputs["Zones"].split(";"))
 
     @markers.aws.validated
     def test_sub_not_ready(self, deploy_cfn_template):
