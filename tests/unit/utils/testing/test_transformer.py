@@ -225,7 +225,11 @@ class TestTimestampTransformer:
                 "StackName": "cfnstack",
                 "CreationTime": "2023-11-20T18:39:36.014000+00:00",
             },
-            "sfn": {"name": "statemachine", "creationDate": "2023-11-21T07:14:12.243000+01:00"},
+            "sfn": {
+                "name": "statemachine",
+                "creationDate": "2023-11-21T07:14:12.243000+01:00",
+                "sfninternal": "2023-11-21T07:14:12.243Z",
+            },
         }
 
         expected = {
@@ -240,6 +244,7 @@ class TestTimestampTransformer:
             "sfn": {
                 "name": "statemachine",
                 "creationDate": "<timestamp:2022-06-13T13:48:01.000000+00:00>",
+                "sfninternal": "<timestamp:2022-06-13T13:48:01.000Z>",
             },
         }
 

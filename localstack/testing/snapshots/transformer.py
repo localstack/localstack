@@ -292,8 +292,8 @@ class TimestampTransformer:
                 "2022-06-13T13:48:01.000000+00:00",
             ),  # stepfunctions external, also cloudformation
             RegexMatcher(
-                PATTERN_ISO8601, "<generic-iso8601>"
-            ),  # stepfunctions external, also cloudformation
+                PATTERN_ISO8601, "generic-iso8601"
+            ),  # very generic iso8601, this should technically always be fixed so we could also think about removing it here
         ]
 
     def transform(self, input_data: dict, *, ctx: TransformContext = None) -> dict:
@@ -320,6 +320,5 @@ class TimestampTransformer:
             input_data[k] = self._transform(v, ctx=ctx)
         return input_data
 
-    #
     def _transform_list(self, input_data: list, ctx: TransformContext = None) -> list:
         return list(map(lambda e: self._transform(e, ctx=ctx), input_data))
