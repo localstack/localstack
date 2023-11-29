@@ -2,7 +2,7 @@ import logging
 import re
 import socket
 from functools import lru_cache
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import boto3
 
@@ -98,7 +98,7 @@ def get_s3_hostname():
 
 
 def fix_account_id_in_arns(
-    response, replacement: str, colon_delimiter: str = ":", existing: str | list[str] = None
+    response, replacement: str, colon_delimiter: str = ":", existing: Union[str, List[str]] = None
 ):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
     from moto.core import DEFAULT_ACCOUNT_ID
