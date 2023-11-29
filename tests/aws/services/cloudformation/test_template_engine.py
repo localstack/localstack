@@ -604,7 +604,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
 
-    @pytest.mark.skip(reason="Snippet macros not yet supported")
     @markers.aws.validated
     @pytest.mark.parametrize(
         "template_to_transform",
@@ -662,6 +661,41 @@ class TestMacros:
             StackName=stack.stack_name, TemplateStage="Processed"
         )
         snapshot.match("processed_template", processed_template)
+
+    @markers.aws.validated
+    def test_attribute_uses_macro(self, deploy_cfn_template, create_lambda_function, aws_client):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../../templates/macros/return_random_string.py"
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_10,
+            client=aws_client.lambda_,
+            timeout=1,
+        )
+
+        macro_name = "GenerateRandom"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../templates",
+                "transformation_resource_att.yml",
+            ),
+            parameters={"Input": "test"},
+        )
+
+        resulting_value = stack.outputs["Parameter"]
+        assert "test-" in resulting_value
 
     @pytest.mark.skip(reason="Snippet macros not yet supported")
     @markers.aws.validated
