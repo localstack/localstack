@@ -304,10 +304,11 @@ class TimestampTransformer:
             return self._transform_dict(input_data, ctx=ctx)
         elif isinstance(input_data, list):
             return self._transform_list(input_data, ctx=ctx)
-        if isinstance(input_data, datetime):
+        elif isinstance(input_data, datetime):
             return "<datetime>"
-        else:
+        elif isinstance(input_data, str):
             return self._transform_timestamp(input_data)
+        return input_data
 
     def _transform_timestamp(self, timestamp: str) -> str:
         for matcher in self.matchers:
