@@ -421,16 +421,8 @@ class Preprocessor(ASLParserVisitor):
                     )
                 return ComparisonCompositeNot(rule=rules[0])
             case ComparisonComposite.ChoiceOp.And:
-                if len(rules) <= 1:
-                    raise ValueError(
-                        f"ComparisonCompositeAnd must carry two or more ComparisonCompositeStmt in: '{ctx.getText()}'."
-                    )
                 return ComparisonCompositeAnd(rules=rules)
             case ComparisonComposite.ChoiceOp.Or:
-                if len(rules) <= 1:
-                    raise ValueError(
-                        f"ComparisonCompositeOr must carry two or more ComparisonCompositeStmt in: '{ctx.getText()}'."
-                    )
                 return ComparisonCompositeOr(rules=rules)
 
     def visitChoice_rule_comparison_composite(

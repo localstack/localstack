@@ -9,7 +9,6 @@ from urllib.parse import parse_qs
 
 import xmltodict
 from flask import Response as FlaskResponse
-from moto.core.exceptions import JsonRESTError
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
@@ -24,16 +23,6 @@ REGEX_FLAGS = re.MULTILINE | re.DOTALL
 class ErrorResponse(Exception):
     def __init__(self, response):
         self.response = response
-
-
-class ResourceNotFoundException(JsonRESTError):
-    """Generic ResourceNotFoundException used when processing requests in Flask contexts."""
-
-    code = 404
-
-    def __init__(self, message=None):
-        message = message or "The given resource cannot be found"
-        super(ResourceNotFoundException, self).__init__("ResourceNotFoundException", message)
 
 
 def flask_error_response_json(

@@ -1,0 +1,24 @@
+Resources:
+  MetricAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "uses extended statistic"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      DatapointsToAlarm: 3
+      Dimensions:
+        - Name: FunctionName
+          Value: "my-function"
+      EvaluationPeriods: 3
+      ExtendedStatistic: p99
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: 300
+      Threshold: 10
+      TreatMissingData: ignore
+      Unit: Count
+
+Outputs:
+    MetricAlarmName:
+        Description: Memory Alarm
+        Value:
+          Ref: MetricAlarm

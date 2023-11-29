@@ -1,0 +1,12 @@
+{
+  "Comment": "LAMBDA_EMPTY_RETRY",
+  "StartAt": "LambdaTask",
+  "States": {
+    "LambdaTask": {
+      "Type": "Task",
+      "Resource": "_tbd_",
+      "End": true,
+      "Retry": []
+    }
+  }
+}

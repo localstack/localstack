@@ -43,12 +43,17 @@ func_arg
     | INT             #func_arg_int
     | NUMBER          #func_arg_float
     | (TRUE | FALSE)  #func_arg_bool
+    | context_path    #func_arg_context_path
     | json_path       #func_arg_json_path
     | func_decl       #func_arg_func_decl
     ;
 
+context_path
+    :  DOLLAR json_path
+    ;
+
 json_path
-    : DOLLARDOT json_path_part (DOT json_path_part)*
+    : DOLLAR DOT json_path_part (DOT json_path_part)*
     ;
 
 json_path_part

@@ -7,7 +7,6 @@ from operator import itemgetter
 from typing import IO, Dict, List, Optional
 from urllib.parse import quote, urlparse
 
-import moto.s3.responses as moto_s3_responses
 from zoneinfo import ZoneInfo
 
 from localstack import config
@@ -157,17 +156,19 @@ from localstack.services.s3.utils import (
     create_redirect_for_post_request,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
-    get_bucket_from_moto,
     get_failed_precondition_copy_source,
     get_full_default_bucket_location,
-    get_key_from_moto_bucket,
     get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
     get_permission_from_header,
-    is_key_expired,
     serialize_expiration_header,
     validate_kms_key_id,
     verify_checksum,
+)
+from localstack.services.s3.utils_moto import (
+    get_bucket_from_moto,
+    get_key_from_moto_bucket,
+    is_moto_key_expired,
 )
 from localstack.services.s3.validation import (
     parse_grants_in_headers,
@@ -1653,9 +1654,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 TargetBucket=target_bucket_name,
             )
 
-        if target_bucket.region_name != moto_bucket.region_name:
+        source_bucket_region = moto_bucket.region_name
+        if target_bucket.region_name != source_bucket_region:
             raise CrossLocationLoggingProhibitted(
                 "Cross S3 location logging not allowed. ",
+                TargetBucketLocation=target_bucket.region_name,
+            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
+                "Cross S3 location logging not allowed. ",
+                SourceBucketLocation=source_bucket_region,
                 TargetBucketLocation=target_bucket.region_name,
             )
 
@@ -1780,12 +1786,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
 def is_object_expired(moto_bucket, key: ObjectKey, version_id: str = None) -> bool:
     key_object = get_key_from_moto_bucket(moto_bucket, key, version_id=version_id)
-    return is_key_expired(key_object=key_object)
+    return is_moto_key_expired(key_object=key_object)
 
 
 def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
     import moto.s3.models as moto_s3_models
+    import moto.s3.responses as moto_s3_responses
     from moto.iam.access_control import PermissionResult
     from moto.s3.exceptions import InvalidObjectState
 

@@ -7,8 +7,6 @@ from _pytest.config import Config
 from localstack import config as localstack_config
 from localstack import constants
 from localstack.testing.scenario.provisioning import InfraProvisioner
-from tests.aws.services.es.test_es import install_async as es_install_async
-from tests.aws.services.opensearch.test_opensearch import install_async as opensearch_install_async
 from tests.aws.test_terraform import TestTerraform
 
 
@@ -35,8 +33,14 @@ def pytest_runtestloop(session):
         # Any pytests that rely on opensearch/elasticsearch must be special-cased by adding them to the list below
         parent_name = str(item.parent).lower()
         if any(opensearch_test in parent_name for opensearch_test in ["opensearch", "firehose"]):
+            from tests.aws.services.opensearch.test_opensearch import (
+                install_async as opensearch_install_async,
+            )
+
             test_init_functions.add(opensearch_install_async)
         if any(opensearch_test in parent_name for opensearch_test in ["test_es", "firehose"]):
+            from tests.aws.services.es.test_es import install_async as es_install_async
+
             test_init_functions.add(es_install_async)
 
     # add init functions for certain tests that download/install things

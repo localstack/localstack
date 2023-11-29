@@ -31,8 +31,9 @@ from localstack.services.apigateway.helpers import (
 )
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_util
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests as requests
@@ -1659,9 +1660,7 @@ def test_apigateway_rust_lambda(
 
 @markers.aws.unknown
 def test_apigw_call_api_with_aws_endpoint_url(aws_client):
-    headers = aws_stack.mock_aws_request_headers(
-        "apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
-    )
+    headers = mock_aws_request_headers("apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME)
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
     url = f"{config.internal_service_url()}/apikeys?includeValues=true&name=test%40example.org"
     response = requests.get(url, headers=headers)

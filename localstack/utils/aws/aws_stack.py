@@ -2,19 +2,14 @@ import logging
 import re
 import socket
 from functools import lru_cache
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import boto3
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
-    APPLICATION_AMZ_JSON_1_0,
-    APPLICATION_AMZ_JSON_1_1,
-    APPLICATION_X_WWW_FORM_URLENCODED,
     AWS_REGION_US_EAST_1,
-    HEADER_LOCALSTACK_ACCOUNT_ID,
     LOCALHOST,
 )
 from localstack.utils.strings import is_string_or_bytes, to_str
@@ -102,20 +97,25 @@ def get_s3_hostname():
     return LOCALHOST
 
 
-def fix_account_id_in_arns(response, colon_delimiter=":", existing=None, replace=None):
+def fix_account_id_in_arns(
+    response, replacement: str, colon_delimiter: str = ":", existing: Union[str, List[str]] = None
+):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
-    existing = existing or ["123456789", "1234567890", "123456789012", get_aws_account_id()]
+    from moto.core import DEFAULT_ACCOUNT_ID
+
+    existing = existing or ["123456789", "1234567890", DEFAULT_ACCOUNT_ID]
     existing = existing if isinstance(existing, list) else [existing]
-    replace = replace or get_aws_account_id()
     is_str_obj = is_string_or_bytes(response)
     content = to_str(response if is_str_obj else response._content)
 
-    replace = r"arn{col}aws{col}\1{col}\2{col}{acc}{col}".format(col=colon_delimiter, acc=replace)
+    replacement = r"arn{col}aws{col}\1{col}\2{col}{acc}{col}".format(
+        col=colon_delimiter, acc=replacement
+    )
     for acc_id in existing:
         regex = r"arn{col}aws{col}([^:%]+){col}([^:%]*){col}{acc}{col}".format(
             col=colon_delimiter, acc=acc_id
         )
-        content = re.sub(regex, replace, content)
+        content = re.sub(regex, replacement, content)
 
     if not is_str_obj:
         response._content = content
@@ -155,36 +155,3 @@ def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[
         access_id = auth.removeprefix("AWS ").split(":")
         if len(access_id):
             return access_id[0]
-
-
-# TODO remove the `internal` arg
-def mock_aws_request_headers(
-    service: str, aws_access_key_id: str, region_name: str, internal: bool = False
-) -> Dict[str, str]:
-    """
-    Returns a mock set of headers that resemble SigV4 signing method.
-    """
-    ctype = APPLICATION_AMZ_JSON_1_0
-    if service == "kinesis":
-        ctype = APPLICATION_AMZ_JSON_1_1
-    elif service in ["sns", "sqs", "sts", "cloudformation"]:
-        ctype = APPLICATION_X_WWW_FORM_URLENCODED
-
-    # For S3 presigned URLs, we require that the client and server use the same
-    # access key ID to sign requests. So try to use the access key ID for the
-    # current request if available
-    headers = {
-        "Content-Type": ctype,
-        "Accept-Encoding": "identity",
-        "X-Amz-Date": "20160623T103251Z",  # TODO: Use current date
-        "Authorization": (
-            "AWS4-HMAC-SHA256 "
-            + f"Credential={aws_access_key_id}/20160623/{region_name}/{service}/aws4_request, "
-            + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
-        ),
-    }
-    if internal:
-        # TODO: This method of detecting internal calls is no longer valid
-        # We now use the `INTERNAL_REQUEST_PARAMS_HEADER` header which is set to the DTO
-        headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_aws_account_id()
-    return headers

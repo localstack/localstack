@@ -14,6 +14,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -173,6 +174,7 @@ def sqs_create_queue_with_client():
             LOG.debug("error cleaning up queue %s: %s", queue_url, e)
 
 
+@pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="SQS not enabled in S3 image")
 class TestS3NotificationsToSQS:
     @markers.aws.validated
     def test_object_created_put(

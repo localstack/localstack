@@ -10,6 +10,7 @@ from localstack.utils.aws import arns
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
@@ -17,6 +18,7 @@ TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
 )
 
 
+@pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
 class TestS3NotificationsToLambda:
     @markers.aws.validated
     def test_create_object_put_via_dynamodb(

@@ -9,7 +9,6 @@ import time
 from typing import IO, Optional, Tuple
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.api.lambda_ import (
     AccountLimit,
@@ -643,7 +642,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             layer_version = None
             if layer is not None:
                 layer_version = layer.layer_versions.get(layer_version_str)
-            if layer_account_id == get_aws_account_id():
+            if layer_account_id == account_id:
                 if region and layer_region != region:
                     raise InvalidParameterValueException(
                         f"Layers are not in the same region as the function. "
@@ -2535,8 +2534,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             "UnreservedConcurrentExecutions"
         ]
         if (
-            provisioned_concurrent_executions
-            > unreserved_concurrent_executions - config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY
+            unreserved_concurrent_executions - provisioned_concurrent_executions
+            < config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY
         ):
             raise InvalidParameterValueException(
                 f"Specified ConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below"
@@ -3507,8 +3506,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             "UnreservedConcurrentExecutions"
         ]
 
+        # The existing reserved concurrent executions for the same function are already deduced in
+        # unreserved_concurrent_executions but must not count because the new one will replace the existing one.
+        # Joel tested this behavior manually against AWS (2023-11-28).
+        existing_reserved_concurrent_executions = (
+            fn.reserved_concurrent_executions if fn.reserved_concurrent_executions else 0
+        )
         if (
-            unreserved_concurrent_executions - reserved_concurrent_executions
+            unreserved_concurrent_executions
+            - reserved_concurrent_executions
+            + existing_reserved_concurrent_executions
         ) < config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY:
             raise InvalidParameterValueException(
                 f"Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [{config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY}]."

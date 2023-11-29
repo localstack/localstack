@@ -7407,13 +7407,13 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_wrong_target": {
-    "recorded-date": "03-08-2023, 04:26:14",
+    "recorded-date": "23-11-2023, 12:50:13",
     "recorded-content": {
       "put-bucket-logging-different-regions": {
         "Error": {
           "Code": "CrossLocationLoggingProhibitted",
           "Message": "Cross S3 location logging not allowed. ",
-          "TargetBucketLocation": "us-west-2"
+          "TargetBucketLocation": "<region_2>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -10653,6 +10653,34 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_cross_locations": {
+    "recorded-date": "27-11-2023, 16:40:53",
+    "recorded-content": {
+      "put-bucket-logging-cross-us-east-1": {
+        "Error": {
+          "Code": "CrossLocationLoggingProhibitted",
+          "Message": "Cross S3 location logging not allowed. ",
+          "TargetBucketLocation": "<region_3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "put-bucket-logging-different-regions": {
+        "Error": {
+          "Code": "CrossLocationLoggingProhibitted",
+          "Message": "Cross S3 location logging not allowed. ",
+          "SourceBucketLocation": "<region_2>",
+          "TargetBucketLocation": "<region_3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
         }
       }
     }

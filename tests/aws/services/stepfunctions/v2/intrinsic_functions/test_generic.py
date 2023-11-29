@@ -51,3 +51,17 @@ class TestGeneric:
             IFT.FORMAT_2,
             input_values,
         )
+
+    @markers.aws.validated
+    def test_context_json_path(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        input_values = [None]
+        create_and_test_on_inputs(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            IFT.FORMAT_CONTEXT_PATH,
+            input_values,
+        )

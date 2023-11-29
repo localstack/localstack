@@ -193,6 +193,8 @@ class TestRouter:
         assert router.dispatch(Request(path="/my//path")).json == {"path": "my//path"}
         assert router.dispatch(Request(path="/my//path/")).json == {"path": "my//path/"}
         assert router.dispatch(Request(path="/my/path foobar")).json == {"path": "my/path foobar"}
+        assert router.dispatch(Request(path="//foobar")).json == {"path": "foobar"}
+        assert router.dispatch(Request(path="//foobar/")).json == {"path": "foobar/"}
 
     def test_path_converter_with_args(self):
         router = Router()

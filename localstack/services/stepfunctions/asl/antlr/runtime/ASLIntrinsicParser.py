@@ -10,44 +10,47 @@ else:
 
 def serializedATN():
     return [
-        4,1,42,116,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
-        6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,1,0,1,0,1,1,1,1,1,
-        1,1,1,1,1,1,2,1,2,1,3,1,3,1,3,1,3,5,3,38,8,3,10,3,12,3,41,9,3,1,
-        3,1,3,1,3,1,3,3,3,47,8,3,1,4,1,4,1,4,1,4,1,4,1,4,3,4,55,8,4,1,5,
-        1,5,1,5,1,5,5,5,61,8,5,10,5,12,5,64,9,5,1,6,1,6,3,6,68,8,6,1,7,1,
-        7,1,8,1,8,1,8,1,9,1,9,1,9,1,9,1,9,1,9,1,9,1,9,1,9,3,9,84,8,9,1,10,
-        1,10,1,10,1,10,1,10,1,10,1,10,1,10,3,10,94,8,10,1,10,1,10,3,10,98,
-        8,10,1,10,1,10,1,10,4,10,103,8,10,11,10,12,10,104,5,10,107,8,10,
-        10,10,12,10,110,9,10,1,11,1,11,3,11,114,8,11,1,11,0,1,20,12,0,2,
-        4,6,8,10,12,14,16,18,20,22,0,4,1,0,20,37,1,0,17,18,2,0,9,10,15,15,
-        1,0,13,14,120,0,24,1,0,0,0,2,26,1,0,0,0,4,31,1,0,0,0,6,46,1,0,0,
-        0,8,54,1,0,0,0,10,56,1,0,0,0,12,67,1,0,0,0,14,69,1,0,0,0,16,71,1,
-        0,0,0,18,83,1,0,0,0,20,97,1,0,0,0,22,113,1,0,0,0,24,25,3,2,1,0,25,
-        1,1,0,0,0,26,27,5,19,0,0,27,28,5,2,0,0,28,29,3,4,2,0,29,30,3,6,3,
-        0,30,3,1,0,0,0,31,32,7,0,0,0,32,5,1,0,0,0,33,34,5,5,0,0,34,39,3,
-        8,4,0,35,36,5,4,0,0,36,38,3,8,4,0,37,35,1,0,0,0,38,41,1,0,0,0,39,
-        37,1,0,0,0,39,40,1,0,0,0,40,42,1,0,0,0,41,39,1,0,0,0,42,43,5,6,0,
-        0,43,47,1,0,0,0,44,45,5,5,0,0,45,47,5,6,0,0,46,33,1,0,0,0,46,44,
-        1,0,0,0,47,7,1,0,0,0,48,55,5,38,0,0,49,55,5,39,0,0,50,55,5,40,0,
-        0,51,55,7,1,0,0,52,55,3,10,5,0,53,55,3,0,0,0,54,48,1,0,0,0,54,49,
-        1,0,0,0,54,50,1,0,0,0,54,51,1,0,0,0,54,52,1,0,0,0,54,53,1,0,0,0,
-        55,9,1,0,0,0,56,57,5,1,0,0,57,62,3,12,6,0,58,59,5,2,0,0,59,61,3,
-        12,6,0,60,58,1,0,0,0,61,64,1,0,0,0,62,60,1,0,0,0,62,63,1,0,0,0,63,
-        11,1,0,0,0,64,62,1,0,0,0,65,68,3,14,7,0,66,68,3,16,8,0,67,65,1,0,
-        0,0,67,66,1,0,0,0,68,13,1,0,0,0,69,70,3,22,11,0,70,15,1,0,0,0,71,
-        72,3,14,7,0,72,73,3,18,9,0,73,17,1,0,0,0,74,75,5,7,0,0,75,84,5,8,
-        0,0,76,77,5,7,0,0,77,78,5,39,0,0,78,84,5,8,0,0,79,80,5,7,0,0,80,
-        81,3,20,10,0,81,82,5,8,0,0,82,84,1,0,0,0,83,74,1,0,0,0,83,76,1,0,
-        0,0,83,79,1,0,0,0,84,19,1,0,0,0,85,86,6,10,-1,0,86,98,5,3,0,0,87,
-        88,5,11,0,0,88,93,3,14,7,0,89,90,7,2,0,0,90,94,5,39,0,0,91,92,5,
-        16,0,0,92,94,5,38,0,0,93,89,1,0,0,0,93,91,1,0,0,0,94,98,1,0,0,0,
-        95,96,5,12,0,0,96,98,5,39,0,0,97,85,1,0,0,0,97,87,1,0,0,0,97,95,
-        1,0,0,0,98,108,1,0,0,0,99,102,10,1,0,0,100,101,7,3,0,0,101,103,3,
-        20,10,0,102,100,1,0,0,0,103,104,1,0,0,0,104,102,1,0,0,0,104,105,
-        1,0,0,0,105,107,1,0,0,0,106,99,1,0,0,0,107,110,1,0,0,0,108,106,1,
-        0,0,0,108,109,1,0,0,0,109,21,1,0,0,0,110,108,1,0,0,0,111,114,5,41,
-        0,0,112,114,3,4,2,0,113,111,1,0,0,0,113,112,1,0,0,0,114,23,1,0,0,
-        0,11,39,46,54,62,67,83,93,97,104,108,113
+        4,1,42,123,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,1,0,1,0,
+        1,1,1,1,1,1,1,1,1,1,1,2,1,2,1,3,1,3,1,3,1,3,5,3,40,8,3,10,3,12,3,
+        43,9,3,1,3,1,3,1,3,1,3,3,3,49,8,3,1,4,1,4,1,4,1,4,1,4,1,4,1,4,3,
+        4,58,8,4,1,5,1,5,1,5,1,6,1,6,1,6,1,6,1,6,5,6,68,8,6,10,6,12,6,71,
+        9,6,1,7,1,7,3,7,75,8,7,1,8,1,8,1,9,1,9,1,9,1,10,1,10,1,10,1,10,1,
+        10,1,10,1,10,1,10,1,10,3,10,91,8,10,1,11,1,11,1,11,1,11,1,11,1,11,
+        1,11,1,11,3,11,101,8,11,1,11,1,11,3,11,105,8,11,1,11,1,11,1,11,4,
+        11,110,8,11,11,11,12,11,111,5,11,114,8,11,10,11,12,11,117,9,11,1,
+        12,1,12,3,12,121,8,12,1,12,0,1,22,13,0,2,4,6,8,10,12,14,16,18,20,
+        22,24,0,4,1,0,20,37,1,0,17,18,2,0,9,10,15,15,1,0,13,14,127,0,26,
+        1,0,0,0,2,28,1,0,0,0,4,33,1,0,0,0,6,48,1,0,0,0,8,57,1,0,0,0,10,59,
+        1,0,0,0,12,62,1,0,0,0,14,74,1,0,0,0,16,76,1,0,0,0,18,78,1,0,0,0,
+        20,90,1,0,0,0,22,104,1,0,0,0,24,120,1,0,0,0,26,27,3,2,1,0,27,1,1,
+        0,0,0,28,29,5,19,0,0,29,30,5,2,0,0,30,31,3,4,2,0,31,32,3,6,3,0,32,
+        3,1,0,0,0,33,34,7,0,0,0,34,5,1,0,0,0,35,36,5,5,0,0,36,41,3,8,4,0,
+        37,38,5,4,0,0,38,40,3,8,4,0,39,37,1,0,0,0,40,43,1,0,0,0,41,39,1,
+        0,0,0,41,42,1,0,0,0,42,44,1,0,0,0,43,41,1,0,0,0,44,45,5,6,0,0,45,
+        49,1,0,0,0,46,47,5,5,0,0,47,49,5,6,0,0,48,35,1,0,0,0,48,46,1,0,0,
+        0,49,7,1,0,0,0,50,58,5,38,0,0,51,58,5,39,0,0,52,58,5,40,0,0,53,58,
+        7,1,0,0,54,58,3,10,5,0,55,58,3,12,6,0,56,58,3,0,0,0,57,50,1,0,0,
+        0,57,51,1,0,0,0,57,52,1,0,0,0,57,53,1,0,0,0,57,54,1,0,0,0,57,55,
+        1,0,0,0,57,56,1,0,0,0,58,9,1,0,0,0,59,60,5,1,0,0,60,61,3,12,6,0,
+        61,11,1,0,0,0,62,63,5,1,0,0,63,64,5,2,0,0,64,69,3,14,7,0,65,66,5,
+        2,0,0,66,68,3,14,7,0,67,65,1,0,0,0,68,71,1,0,0,0,69,67,1,0,0,0,69,
+        70,1,0,0,0,70,13,1,0,0,0,71,69,1,0,0,0,72,75,3,16,8,0,73,75,3,18,
+        9,0,74,72,1,0,0,0,74,73,1,0,0,0,75,15,1,0,0,0,76,77,3,24,12,0,77,
+        17,1,0,0,0,78,79,3,16,8,0,79,80,3,20,10,0,80,19,1,0,0,0,81,82,5,
+        7,0,0,82,91,5,8,0,0,83,84,5,7,0,0,84,85,5,39,0,0,85,91,5,8,0,0,86,
+        87,5,7,0,0,87,88,3,22,11,0,88,89,5,8,0,0,89,91,1,0,0,0,90,81,1,0,
+        0,0,90,83,1,0,0,0,90,86,1,0,0,0,91,21,1,0,0,0,92,93,6,11,-1,0,93,
+        105,5,3,0,0,94,95,5,11,0,0,95,100,3,16,8,0,96,97,7,2,0,0,97,101,
+        5,39,0,0,98,99,5,16,0,0,99,101,5,38,0,0,100,96,1,0,0,0,100,98,1,
+        0,0,0,101,105,1,0,0,0,102,103,5,12,0,0,103,105,5,39,0,0,104,92,1,
+        0,0,0,104,94,1,0,0,0,104,102,1,0,0,0,105,115,1,0,0,0,106,109,10,
+        1,0,0,107,108,7,3,0,0,108,110,3,22,11,0,109,107,1,0,0,0,110,111,
+        1,0,0,0,111,109,1,0,0,0,111,112,1,0,0,0,112,114,1,0,0,0,113,106,
+        1,0,0,0,114,117,1,0,0,0,115,113,1,0,0,0,115,116,1,0,0,0,116,23,1,
+        0,0,0,117,115,1,0,0,0,118,121,5,41,0,0,119,121,3,4,2,0,120,118,1,
+        0,0,0,120,119,1,0,0,0,121,25,1,0,0,0,11,41,48,57,69,74,90,100,104,
+        111,115,120
     ]
 
 class ASLIntrinsicParser ( Parser ):
@@ -60,7 +63,7 @@ class ASLIntrinsicParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "'$.'", "'.'", "'*'", "','", "'('", "')'", 
+    literalNames = [ "<INVALID>", "'$'", "'.'", "'*'", "','", "'('", "')'", 
                      "'['", "']'", "'<'", "'>'", "'@.'", "'@.length-'", 
                      "'&&'", "'||'", "'=='", "'='", "'true'", "'false'", 
                      "'States'", "'Format'", "'StringToJson'", "'JsonToString'", 
@@ -69,10 +72,10 @@ class ASLIntrinsicParser ( Parser ):
                      "'Base64Encode'", "'Base64Decode'", "'Hash'", "'JsonMerge'", 
                      "'MathRandom'", "'MathAdd'", "'StringSplit'", "'UUID'" ]
 
-    symbolicNames = [ "<INVALID>", "DOLLARDOT", "DOT", "STAR", "COMMA", 
-                      "LPAREN", "RPAREN", "LBRACK", "RBRACK", "LDIAM", "RDIAM", 
-                      "ATDOT", "ATDOTLENGTHDASH", "ANDAND", "OROR", "EQEQ", 
-                      "EQ", "TRUE", "FALSE", "States", "Format", "StringToJson", 
+    symbolicNames = [ "<INVALID>", "DOLLAR", "DOT", "STAR", "COMMA", "LPAREN", 
+                      "RPAREN", "LBRACK", "RBRACK", "LDIAM", "RDIAM", "ATDOT", 
+                      "ATDOTLENGTHDASH", "ANDAND", "OROR", "EQEQ", "EQ", 
+                      "TRUE", "FALSE", "States", "Format", "StringToJson", 
                       "JsonToString", "Array", "ArrayPartition", "ArrayContains", 
                       "ArrayRange", "ArrayGetItem", "ArrayLength", "ArrayUnique", 
                       "Base64Encode", "Base64Decode", "Hash", "JsonMerge", 
@@ -84,21 +87,22 @@ class ASLIntrinsicParser ( Parser ):
     RULE_state_fun_name = 2
     RULE_func_arg_list = 3
     RULE_func_arg = 4
-    RULE_json_path = 5
-    RULE_json_path_part = 6
-    RULE_json_path_iden = 7
-    RULE_json_path_iden_qual = 8
-    RULE_json_path_qual = 9
-    RULE_json_path_query = 10
-    RULE_identifier = 11
+    RULE_context_path = 5
+    RULE_json_path = 6
+    RULE_json_path_part = 7
+    RULE_json_path_iden = 8
+    RULE_json_path_iden_qual = 9
+    RULE_json_path_qual = 10
+    RULE_json_path_query = 11
+    RULE_identifier = 12
 
     ruleNames =  [ "func_decl", "states_func_decl", "state_fun_name", "func_arg_list", 
-                   "func_arg", "json_path", "json_path_part", "json_path_iden", 
-                   "json_path_iden_qual", "json_path_qual", "json_path_query", 
-                   "identifier" ]
+                   "func_arg", "context_path", "json_path", "json_path_part", 
+                   "json_path_iden", "json_path_iden_qual", "json_path_qual", 
+                   "json_path_query", "identifier" ]
 
     EOF = Token.EOF
-    DOLLARDOT=1
+    DOLLAR=1
     DOT=2
     STAR=3
     COMMA=4
@@ -187,7 +191,7 @@ class ASLIntrinsicParser ( Parser ):
         self.enterRule(localctx, 0, self.RULE_func_decl)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 24
+            self.state = 26
             self.states_func_decl()
         except RecognitionException as re:
             localctx.exception = re
@@ -245,13 +249,13 @@ class ASLIntrinsicParser ( Parser ):
         self.enterRule(localctx, 2, self.RULE_states_func_decl)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 26
-            self.match(ASLIntrinsicParser.States)
-            self.state = 27
-            self.match(ASLIntrinsicParser.DOT)
             self.state = 28
-            self.state_fun_name()
+            self.match(ASLIntrinsicParser.States)
             self.state = 29
+            self.match(ASLIntrinsicParser.DOT)
+            self.state = 30
+            self.state_fun_name()
+            self.state = 31
             self.func_arg_list()
         except RecognitionException as re:
             localctx.exception = re
@@ -350,7 +354,7 @@ class ASLIntrinsicParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 31
+            self.state = 33
             _la = self._input.LA(1)
             if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 274876858368) != 0)):
                 self._errHandler.recoverInline(self)
@@ -418,36 +422,36 @@ class ASLIntrinsicParser ( Parser ):
         self.enterRule(localctx, 6, self.RULE_func_arg_list)
         self._la = 0 # Token type
         try:
-            self.state = 46
+            self.state = 48
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,1,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 33
+                self.state = 35
                 self.match(ASLIntrinsicParser.LPAREN)
-                self.state = 34
+                self.state = 36
                 self.func_arg()
-                self.state = 39
+                self.state = 41
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while _la==4:
-                    self.state = 35
+                    self.state = 37
                     self.match(ASLIntrinsicParser.COMMA)
-                    self.state = 36
+                    self.state = 38
                     self.func_arg()
-                    self.state = 41
+                    self.state = 43
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-                self.state = 42
+                self.state = 44
                 self.match(ASLIntrinsicParser.RPAREN)
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 44
+                self.state = 46
                 self.match(ASLIntrinsicParser.LPAREN)
-                self.state = 45
+                self.state = 47
                 self.match(ASLIntrinsicParser.RPAREN)
                 pass
 
@@ -476,6 +480,31 @@ class ASLIntrinsicParser ( Parser ):
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
+
+
+    class Func_arg_context_pathContext(Func_argContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ASLIntrinsicParser.Func_argContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def context_path(self):
+            return self.getTypedRuleContext(ASLIntrinsicParser.Context_pathContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterFunc_arg_context_path" ):
+                listener.enterFunc_arg_context_path(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitFunc_arg_context_path" ):
+                listener.exitFunc_arg_context_path(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitFunc_arg_context_path" ):
+                return visitor.visitFunc_arg_context_path(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class Func_arg_floatContext(Func_argContext):
@@ -633,31 +662,34 @@ class ASLIntrinsicParser ( Parser ):
         self.enterRule(localctx, 8, self.RULE_func_arg)
         self._la = 0 # Token type
         try:
-            self.state = 54
+            self.state = 57
             self._errHandler.sync(self)
-            token = self._input.LA(1)
-            if token in [38]:
+            la_ = self._interp.adaptivePredict(self._input,2,self._ctx)
+            if la_ == 1:
                 localctx = ASLIntrinsicParser.Func_arg_stringContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 48
+                self.state = 50
                 self.match(ASLIntrinsicParser.STRING)
                 pass
-            elif token in [39]:
+
+            elif la_ == 2:
                 localctx = ASLIntrinsicParser.Func_arg_intContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 49
+                self.state = 51
                 self.match(ASLIntrinsicParser.INT)
                 pass
-            elif token in [40]:
+
+            elif la_ == 3:
                 localctx = ASLIntrinsicParser.Func_arg_floatContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 50
+                self.state = 52
                 self.match(ASLIntrinsicParser.NUMBER)
                 pass
-            elif token in [17, 18]:
+
+            elif la_ == 4:
                 localctx = ASLIntrinsicParser.Func_arg_boolContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
-                self.state = 51
+                self.state = 53
                 _la = self._input.LA(1)
                 if not(_la==17 or _la==18):
                     self._errHandler.recoverInline(self)
@@ -665,21 +697,82 @@ class ASLIntrinsicParser ( Parser ):
                     self._errHandler.reportMatch(self)
                     self.consume()
                 pass
-            elif token in [1]:
-                localctx = ASLIntrinsicParser.Func_arg_json_pathContext(self, localctx)
+
+            elif la_ == 5:
+                localctx = ASLIntrinsicParser.Func_arg_context_pathContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
-                self.state = 52
+                self.state = 54
+                self.context_path()
+                pass
+
+            elif la_ == 6:
+                localctx = ASLIntrinsicParser.Func_arg_json_pathContext(self, localctx)
+                self.enterOuterAlt(localctx, 6)
+                self.state = 55
                 self.json_path()
                 pass
-            elif token in [19]:
+
+            elif la_ == 7:
                 localctx = ASLIntrinsicParser.Func_arg_func_declContext(self, localctx)
-                self.enterOuterAlt(localctx, 6)
-                self.state = 53
+                self.enterOuterAlt(localctx, 7)
+                self.state = 56
                 self.func_decl()
                 pass
-            else:
-                raise NoViableAltException(self)
 
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+
+    class Context_pathContext(ParserRuleContext):
+        __slots__ = 'parser'
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def DOLLAR(self):
+            return self.getToken(ASLIntrinsicParser.DOLLAR, 0)
+
+        def json_path(self):
+            return self.getTypedRuleContext(ASLIntrinsicParser.Json_pathContext,0)
+
+
+        def getRuleIndex(self):
+            return ASLIntrinsicParser.RULE_context_path
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterContext_path" ):
+                listener.enterContext_path(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitContext_path" ):
+                listener.exitContext_path(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitContext_path" ):
+                return visitor.visitContext_path(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+
+
+    def context_path(self):
+
+        localctx = ASLIntrinsicParser.Context_pathContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 10, self.RULE_context_path)
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 59
+            self.match(ASLIntrinsicParser.DOLLAR)
+            self.state = 60
+            self.json_path()
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -696,8 +789,14 @@ class ASLIntrinsicParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def DOLLARDOT(self):
-            return self.getToken(ASLIntrinsicParser.DOLLARDOT, 0)
+        def DOLLAR(self):
+            return self.getToken(ASLIntrinsicParser.DOLLAR, 0)
+
+        def DOT(self, i:int=None):
+            if i is None:
+                return self.getTokens(ASLIntrinsicParser.DOT)
+            else:
+                return self.getToken(ASLIntrinsicParser.DOT, i)
 
         def json_path_part(self, i:int=None):
             if i is None:
@@ -705,12 +804,6 @@ class ASLIntrinsicParser ( Parser ):
             else:
                 return self.getTypedRuleContext(ASLIntrinsicParser.Json_path_partContext,i)
 
-
-        def DOT(self, i:int=None):
-            if i is None:
-                return self.getTokens(ASLIntrinsicParser.DOT)
-            else:
-                return self.getToken(ASLIntrinsicParser.DOT, i)
 
         def getRuleIndex(self):
             return ASLIntrinsicParser.RULE_json_path
@@ -735,23 +828,25 @@ class ASLIntrinsicParser ( Parser ):
     def json_path(self):
 
         localctx = ASLIntrinsicParser.Json_pathContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 10, self.RULE_json_path)
+        self.enterRule(localctx, 12, self.RULE_json_path)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 56
-            self.match(ASLIntrinsicParser.DOLLARDOT)
-            self.state = 57
-            self.json_path_part()
             self.state = 62
+            self.match(ASLIntrinsicParser.DOLLAR)
+            self.state = 63
+            self.match(ASLIntrinsicParser.DOT)
+            self.state = 64
+            self.json_path_part()
+            self.state = 69
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==2:
-                self.state = 58
+                self.state = 65
                 self.match(ASLIntrinsicParser.DOT)
-                self.state = 59
+                self.state = 66
                 self.json_path_part()
-                self.state = 64
+                self.state = 71
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
@@ -802,20 +897,20 @@ class ASLIntrinsicParser ( Parser ):
     def json_path_part(self):
 
         localctx = ASLIntrinsicParser.Json_path_partContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 12, self.RULE_json_path_part)
+        self.enterRule(localctx, 14, self.RULE_json_path_part)
         try:
-            self.state = 67
+            self.state = 74
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,4,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 65
+                self.state = 72
                 self.json_path_iden()
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 66
+                self.state = 73
                 self.json_path_iden_qual()
                 pass
 
@@ -863,10 +958,10 @@ class ASLIntrinsicParser ( Parser ):
     def json_path_iden(self):
 
         localctx = ASLIntrinsicParser.Json_path_idenContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 14, self.RULE_json_path_iden)
+        self.enterRule(localctx, 16, self.RULE_json_path_iden)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 69
+            self.state = 76
             self.identifier()
         except RecognitionException as re:
             localctx.exception = re
@@ -915,12 +1010,12 @@ class ASLIntrinsicParser ( Parser ):
     def json_path_iden_qual(self):
 
         localctx = ASLIntrinsicParser.Json_path_iden_qualContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 16, self.RULE_json_path_iden_qual)
+        self.enterRule(localctx, 18, self.RULE_json_path_iden_qual)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 71
+            self.state = 78
             self.json_path_iden()
-            self.state = 72
+            self.state = 79
             self.json_path_qual()
         except RecognitionException as re:
             localctx.exception = re
@@ -1035,39 +1130,39 @@ class ASLIntrinsicParser ( Parser ):
     def json_path_qual(self):
 
         localctx = ASLIntrinsicParser.Json_path_qualContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 18, self.RULE_json_path_qual)
+        self.enterRule(localctx, 20, self.RULE_json_path_qual)
         try:
-            self.state = 83
+            self.state = 90
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,5,self._ctx)
             if la_ == 1:
                 localctx = ASLIntrinsicParser.Json_path_qual_voidContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 74
+                self.state = 81
                 self.match(ASLIntrinsicParser.LBRACK)
-                self.state = 75
+                self.state = 82
                 self.match(ASLIntrinsicParser.RBRACK)
                 pass
 
             elif la_ == 2:
                 localctx = ASLIntrinsicParser.Json_path_qual_idxContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 76
+                self.state = 83
                 self.match(ASLIntrinsicParser.LBRACK)
-                self.state = 77
+                self.state = 84
                 self.match(ASLIntrinsicParser.INT)
-                self.state = 78
+                self.state = 85
                 self.match(ASLIntrinsicParser.RBRACK)
                 pass
 
             elif la_ == 3:
                 localctx = ASLIntrinsicParser.Json_path_qual_queryContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 79
+                self.state = 86
                 self.match(ASLIntrinsicParser.LBRACK)
-                self.state = 80
+                self.state = 87
                 self.json_path_query(0)
-                self.state = 81
+                self.state = 88
                 self.match(ASLIntrinsicParser.RBRACK)
                 pass
 
@@ -1230,12 +1325,12 @@ class ASLIntrinsicParser ( Parser ):
         _parentState = self.state
         localctx = ASLIntrinsicParser.Json_path_queryContext(self, self._ctx, _parentState)
         _prevctx = localctx
-        _startState = 20
-        self.enterRecursionRule(localctx, 20, self.RULE_json_path_query, _p)
+        _startState = 22
+        self.enterRecursionRule(localctx, 22, self.RULE_json_path_query, _p)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 97
+            self.state = 104
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [3]:
@@ -1243,35 +1338,35 @@ class ASLIntrinsicParser ( Parser ):
                 self._ctx = localctx
                 _prevctx = localctx
 
-                self.state = 86
+                self.state = 93
                 self.match(ASLIntrinsicParser.STAR)
                 pass
             elif token in [11]:
                 localctx = ASLIntrinsicParser.Json_path_query_cmpContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 87
+                self.state = 94
                 self.match(ASLIntrinsicParser.ATDOT)
-                self.state = 88
+                self.state = 95
                 self.json_path_iden()
-                self.state = 93
+                self.state = 100
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
                 if token in [9, 10, 15]:
-                    self.state = 89
+                    self.state = 96
                     _la = self._input.LA(1)
                     if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 34304) != 0)):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-                    self.state = 90
+                    self.state = 97
                     self.match(ASLIntrinsicParser.INT)
                     pass
                 elif token in [16]:
-                    self.state = 91
+                    self.state = 98
                     self.match(ASLIntrinsicParser.EQ)
-                    self.state = 92
+                    self.state = 99
                     self.match(ASLIntrinsicParser.STRING)
                     pass
                 else:
@@ -1282,16 +1377,16 @@ class ASLIntrinsicParser ( Parser ):
                 localctx = ASLIntrinsicParser.Json_path_query_lengthContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 95
+                self.state = 102
                 self.match(ASLIntrinsicParser.ATDOTLENGTHDASH)
-                self.state = 96
+                self.state = 103
                 self.match(ASLIntrinsicParser.INT)
                 pass
             else:
                 raise NoViableAltException(self)
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 108
+            self.state = 115
             self._errHandler.sync(self)
             _alt = self._interp.adaptivePredict(self._input,9,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -1301,32 +1396,32 @@ class ASLIntrinsicParser ( Parser ):
                     _prevctx = localctx
                     localctx = ASLIntrinsicParser.Json_path_query_binaryContext(self, ASLIntrinsicParser.Json_path_queryContext(self, _parentctx, _parentState))
                     self.pushNewRecursionContext(localctx, _startState, self.RULE_json_path_query)
-                    self.state = 99
+                    self.state = 106
                     if not self.precpred(self._ctx, 1):
                         from antlr4.error.Errors import FailedPredicateException
                         raise FailedPredicateException(self, "self.precpred(self._ctx, 1)")
-                    self.state = 102 
+                    self.state = 109 
                     self._errHandler.sync(self)
                     _alt = 1
                     while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                         if _alt == 1:
-                            self.state = 100
+                            self.state = 107
                             _la = self._input.LA(1)
                             if not(_la==13 or _la==14):
                                 self._errHandler.recoverInline(self)
                             else:
                                 self._errHandler.reportMatch(self)
                                 self.consume()
-                            self.state = 101
+                            self.state = 108
                             self.json_path_query(0)
 
                         else:
                             raise NoViableAltException(self)
-                        self.state = 104 
+                        self.state = 111 
                         self._errHandler.sync(self)
                         _alt = self._interp.adaptivePredict(self._input,8,self._ctx)
              
-                self.state = 110
+                self.state = 117
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,9,self._ctx)
 
@@ -1376,19 +1471,19 @@ class ASLIntrinsicParser ( Parser ):
     def identifier(self):
 
         localctx = ASLIntrinsicParser.IdentifierContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 22, self.RULE_identifier)
+        self.enterRule(localctx, 24, self.RULE_identifier)
         try:
-            self.state = 113
+            self.state = 120
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [41]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 111
+                self.state = 118
                 self.match(ASLIntrinsicParser.IDENTIFIER)
                 pass
             elif token in [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 112
+                self.state = 119
                 self.state_fun_name()
                 pass
             else:
@@ -1407,7 +1502,7 @@ class ASLIntrinsicParser ( Parser ):
     def sempred(self, localctx:RuleContext, ruleIndex:int, predIndex:int):
         if self._predicates == None:
             self._predicates = dict()
-        self._predicates[10] = self.json_path_query_sempred
+        self._predicates[11] = self.json_path_query_sempred
         pred = self._predicates.get(ruleIndex, None)
         if pred is None:
             raise Exception("No predicate with index:" + str(ruleIndex))
