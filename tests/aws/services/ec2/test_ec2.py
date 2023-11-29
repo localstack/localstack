@@ -535,7 +535,7 @@ class TestDescribeSecurityGroupRules:
         for rule in result["SecurityGroupRules"]:
             if not rule["IsEgress"]:
                 assert rule["Description"] == "UserGroupID Test Description"
-                assert rule["ReferencedGroupInfo"]["UserId"] == DEFAULT_AWS_ACCOUNT_ID
+                assert rule["ReferencedGroupInfo"]["UserId"] == TEST_AWS_ACCOUNT_ID
 
     @markers.aws.validated
     def test_describe_security_group_rules_with_invalid_group_id(self, aws_client):
