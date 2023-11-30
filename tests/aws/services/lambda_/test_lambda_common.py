@@ -267,11 +267,12 @@ class TestLambdaRuntimesCommon:
         assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value
 
 
-# TODO: Split this and move to PRO
+# TODO: fix arch marker and clarify reason
 # @pytest.mark.skipif(
 #     condition=get_arch() != Arch.amd64, reason="build process doesn't support arm64 right now"
 # )
 class TestLambdaCallingLocalstack:
+    # TODO: rename to "test_manual_endpoint_configuration"
     @markers.multiruntime(
         scenario="endpointinjection",
         runtimes=[

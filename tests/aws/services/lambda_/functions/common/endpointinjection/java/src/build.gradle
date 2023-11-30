@@ -13,12 +13,19 @@ repositories {
 }
 
 dependencies {
-    // Using the AWS Java SDK v1 because v2 removed the ability to disable SSL certificate checking
     // AWS SDK v1: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/welcome.html
     implementation platform('com.amazonaws:aws-java-sdk-bom:1.12.599')
+    // AWS SDK v2: https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/home.html
+    implementation platform('software.amazon.awssdk:bom:2.21.35')
     // Lambda and SQS
     implementation 'com.amazonaws:aws-java-sdk-lambda'
     implementation 'com.amazonaws:aws-java-sdk-sqs'
+    // SQS and HTTP clients
+    compileOnly 'software.amazon.awssdk:apache-client'
+    implementation 'software.amazon.awssdk:sqs'
+    implementation 'software.amazon.awssdk:url-connection-client'
+    implementation 'software.amazon.awssdk:aws-crt-client'
+    implementation 'software.amazon.awssdk:netty-nio-client'
 
     // AWS Java libraries https://github.com/aws/aws-lambda-java-libs
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
