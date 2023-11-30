@@ -18,7 +18,6 @@ from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 
-
 # port range instance used to reserve Docker container ports
 PORT_START = 0
 PORT_END = 65536
@@ -251,8 +250,12 @@ def _get_ports_check_docker_image() -> str:
         # explicit configuration takes precedence
         return config.PORTS_CHECK_DOCKER_IMAGE
     if not config.is_in_docker:
-        # use default image for host mode
-        return DOCKER_IMAGE_NAME
+        # local import to prevent circular imports
+        from localstack.utils.bootstrap import get_docker_image_to_start
+
+        # Use whatever image the user is trying to run LocalStack with, since they either have
+        # it already, or need it by definition to start LocalStack.
+        return get_docker_image_to_start()
     try:
         # inspect the running container to determine the image
         container = DOCKER_CLIENT.inspect_container(get_current_container_id())
