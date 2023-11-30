@@ -71,6 +71,7 @@ PROVIDER_DEFAULTS = {
     "AWS::AppConfig::Environment": "ResourceProvider",
     "AWS::AppConfig::ConfigurationProfile": "ResourceProvider",
     "AWS::AppConfig::HostedConfigurationVersion": "ResourceProvider",
+    "AWS::AppConfig::DeploymentStrategy": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::CloudFormation::Stack": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
