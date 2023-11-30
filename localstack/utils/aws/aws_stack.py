@@ -1,7 +1,6 @@
 import logging
 import re
 import socket
-import warnings
 from functools import lru_cache
 from typing import Dict, List, Optional, Union
 
@@ -17,12 +16,6 @@ from localstack.utils.strings import is_string_or_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# cache local region
-LOCAL_REGION = None
-
-# Used in AWS assume role function
-INITIAL_BOTO3_SESSION = None
 
 # cached value used to determine the DNS status of the S3 hostname (whether it can be resolved properly)
 CACHE_S3_HOSTNAME_DNS_STATUS = None
@@ -44,36 +37,6 @@ def get_valid_regions_for_service(service_name):
     regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-us-gov"))
     regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-cn"))
     return regions
-
-
-# WARNING: This function is deprecated and must not be used.
-def _get_region():
-    warnings.warn("_get_region() is deprecated and must not be used", DeprecationWarning)
-
-    # Note: leave import here to avoid import errors (e.g., "flask") for CLI commands
-    from localstack.utils.aws.request_context import get_region_from_request_context
-
-    region = get_region_from_request_context()
-    if region:
-        return region
-    # fall back to returning static pre-defined region
-    return get_local_region()
-
-
-# WARNING: This function is deprecated and must not be used.
-def _get_partition(region_name: str = None):
-    warnings.warn("_get_partition() is deprecated and must not be used", DeprecationWarning)
-
-    region_name = region_name or _get_region()
-    return boto3.session.Session().get_partition_for_region(region_name)
-
-
-# TODO: Deprecate and remove this
-def get_local_region():
-    global LOCAL_REGION
-    if LOCAL_REGION is None:
-        LOCAL_REGION = get_boto3_region() or ""
-    return AWS_REGION_US_EAST_1 or LOCAL_REGION
 
 
 def get_boto3_region() -> str:

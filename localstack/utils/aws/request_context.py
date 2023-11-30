@@ -115,16 +115,6 @@ class RequestContextManager:
         THREAD_LOCAL.request_context = None
 
 
-def get_region_from_request_context():
-    """look up region from request context"""
-
-    request_context = get_request_context()
-    if not request_context:
-        return
-
-    return extract_region_from_headers(request_context.headers)
-
-
 def mock_request_for_region(service_name: str, account_id: str, region_name: str) -> Request:
     result = Request()
     result.headers["Authorization"] = mock_aws_request_headers(
