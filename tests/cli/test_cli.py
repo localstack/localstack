@@ -103,7 +103,12 @@ class TestCliContainerLifecycle:
         result = runner.invoke(cli, ["start", "-d"])
 
         assert result.exit_code == 0, result.output
-        assert "Pulling container image" in result.output, result.output
+
+        # we cannot check for "Pulling container image" which would be more accurate
+        # since it is printed in a temporary status line and may not be present in
+        # the output if the docker pull is fast enough, but we can check for the
+        # presence of another message which is present when pulling the image.
+        assert "download complete" in result.output
 
     def test_start_already_running(self, runner, container_client):
         runner.invoke(cli, ["start", "-d"])
