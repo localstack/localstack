@@ -15,8 +15,8 @@ dependencies {
     // AWS SDK v2: https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/home.html
     implementation platform('software.amazon.awssdk:bom:2.21.33')
     // SQS and HTTP clients
-    compileOnly 'software.amazon.awssdk:apache-client'
     implementation 'software.amazon.awssdk:sqs'
+    compileOnly 'software.amazon.awssdk:apache-client'
     implementation 'software.amazon.awssdk:url-connection-client'
     implementation 'software.amazon.awssdk:aws-crt-client'
     implementation 'software.amazon.awssdk:netty-nio-client'

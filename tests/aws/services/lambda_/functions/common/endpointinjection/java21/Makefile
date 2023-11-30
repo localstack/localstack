@@ -1,3 +1,4 @@
+# https://hub.docker.com/_/gradle/tags
 IMAGE ?= gradle:8.4.0-jdk17
 
 build:
