@@ -610,8 +610,8 @@ def validate_kms_key_id(kms_key: str, bucket: Any) -> None:
         raise
 
 
-def create_s3_kms_managed_key_for_region(region_name: str) -> SSEKMSKeyId:
-    kms_client = connect_to(region_name=region_name).kms
+def create_s3_kms_managed_key_for_region(account_id: str, region_name: str) -> SSEKMSKeyId:
+    kms_client = connect_to(aws_access_key_id=account_id, region_name=region_name).kms
     key = kms_client.create_key(
         Description="Default key that protects my S3 objects when no other key is defined"
     )
