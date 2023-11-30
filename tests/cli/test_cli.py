@@ -55,18 +55,21 @@ def container_client():
 
 
 @pytest.fixture
-def backup_and_remove_image(container_client: ContainerClient):
+def backup_and_remove_image(monkeypatch, container_client: ContainerClient):
     """
     To test whether the image is pulled correctly, we must remove the image.
     However we do not want to do this and remove the current image, so "back it
     up" - i.e. tag it with another tag, and restore it afterwards.
     """
 
-    source_image_name = "localstack/localstack:latest"
-    tagged_image_name = "localstack/localstack:backup"
+    source_image_name = f"{constants.DOCKER_IMAGE_NAME}:latest"
+    tagged_image_name = f"{constants.DOCKER_IMAGE_NAME}:backup"
     container_client.tag_image(source_image_name, tagged_image_name)
     container_client.remove_image(source_image_name, force=True)
+    monkeypatch.setenv("IMAGE_NAME", source_image_name)
+
     yield
+
     container_client.tag_image(tagged_image_name, source_image_name)
 
 
@@ -97,8 +100,9 @@ class TestCliContainerLifecycle:
 
     @pytest.mark.usefixtures("backup_and_remove_image")
     def test_pulling_image_message(self, runner, container_client: ContainerClient):
+        image_name_and_tag = f"{constants.DOCKER_IMAGE_NAME}:latest"
         with pytest.raises(NoSuchImage):
-            container_client.inspect_image("localstack/localstack:latest", pull=False)
+            container_client.inspect_image(image_name_and_tag, pull=False)
 
         result = runner.invoke(cli, ["start", "-d"])
 
