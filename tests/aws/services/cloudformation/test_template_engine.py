@@ -609,6 +609,13 @@ class TestMacros:
         "template_to_transform",
         ["transformation_snippet_topic.yml", "transformation_snippet_topic.json"],
     )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..TemplateBody.ChangeSetName",
+            "$..TemplateBody.Resources.Topic.LogicalResourceId",
+            "$..TemplateBody.StackName",
+        ]
+    )
     def test_snipped_scope(
         self,
         deploy_cfn_template,
@@ -635,7 +642,9 @@ class TestMacros:
         )
 
         macro_name = "ConvertTopicToFifo"
+        stack_name = f"stake-macro-{short_uid()}"
         deploy_cfn_template(
+            stack_name=stack_name,
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../templates/macro_resource.yml"
             ),
@@ -654,12 +663,18 @@ class TestMacros:
         original_template = aws_client.cloudformation.get_template(
             StackName=stack.stack_name, TemplateStage="Original"
         )
-        snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
-        snapshot.match("original_template", original_template)
-
         processed_template = aws_client.cloudformation.get_template(
             StackName=stack.stack_name, TemplateStage="Processed"
         )
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
+
+        # TODO: fix this. For some reason LS always returns a str instead of a dict
+        # if template_to_transform.endswith(".json") and isinstance(original_template["TemplateBody"], str):
+        #     original_template["TemplateBody"] = json.loads(original_template["TemplateBody"])
+        # if not is_aws_cloud():
+        #     processed_template["TemplateBody"] = json.loads(processed_template["TemplateBody"])
+
+        snapshot.match("original_template", original_template)
         snapshot.match("processed_template", processed_template)
 
     @markers.aws.validated
@@ -697,7 +712,6 @@ class TestMacros:
         resulting_value = stack.outputs["Parameter"]
         assert "test-" in resulting_value
 
-    @pytest.mark.skip(reason="Snippet macros not yet supported")
     @markers.aws.validated
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client

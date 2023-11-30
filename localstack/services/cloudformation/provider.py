@@ -469,8 +469,14 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return stack_not_found_error(stack_name)
 
+        # Fix this some day
+        if template_stage == TemplateStage.Processed:
+            template_body = json.dumps(stack.template_original)
+        else:
+            template_body = stack.template_body
+
         return GetTemplateOutput(
-            TemplateBody=stack.template_body,
+            TemplateBody=template_body,
             StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
         )
 

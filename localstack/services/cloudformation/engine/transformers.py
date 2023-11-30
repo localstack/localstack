@@ -65,9 +65,13 @@ def apply_snipped_transformations(
 ) -> dict:
     """Resolve constructs using the 'Fn::Transform' intrinsic function."""
 
-    def _visit(obj, **_):
-        if isinstance(obj, dict) and obj.keys() == {"Fn::Transform"}:
-            transform = obj["Fn::Transform"]
+    def _visit(obj, path, **_):
+        if isinstance(obj, dict) and "Fn::Transform" in obj.keys():
+            transform = (
+                obj["Fn::Transform"]
+                if isinstance(obj["Fn::Transform"], dict)
+                else {"Name": obj["Fn::Transform"]}
+            )
             transform_name = transform.get("Name")
             transformer_class = transformers.get(transform_name)
             macro_store = get_cloudformation_store(account_id, region_name).macros
@@ -87,9 +91,12 @@ def apply_snipped_transformations(
                 return transformer.transform(account_id, region_name, parameters)
 
             elif transform_name in macro_store:
-                return execute_macro(
-                    account_id, region_name, template, transform, stack_parameters, parameters, True
+                obj_copy = dict(obj)
+                obj_copy.pop("Fn::Transform")
+                result = execute_macro(
+                    account_id, region_name, obj_copy, transform, stack_parameters, parameters, True
                 )
+                return result
             else:
                 LOG.warning("Unsupported transform function: %s", transform_name)
         return obj
