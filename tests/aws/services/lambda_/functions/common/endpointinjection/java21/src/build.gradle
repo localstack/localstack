@@ -3,9 +3,9 @@ plugins {
 }
 
 java {
-    // Target oldest tested Java runtime
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    // VERSION_21 requires Gradle update but the update deprecates VERSION_1_8 still used by the java8 runtimes
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 repositories {
@@ -13,15 +13,17 @@ repositories {
 }
 
 dependencies {
-    // Using the AWS Java SDK v1 because v2 removed the ability to disable SSL certificate checking
-    // AWS SDK v1: https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/welcome.html
-    implementation platform('com.amazonaws:aws-java-sdk-bom:1.12.599')
-    // Lambda and SQS
-    implementation 'com.amazonaws:aws-java-sdk-lambda'
-    implementation 'com.amazonaws:aws-java-sdk-sqs'
-
+    // AWS SDK v2: https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/home.html
+    implementation platform('software.amazon.awssdk:bom:2.21.33')
     // AWS Java libraries https://github.com/aws/aws-lambda-java-libs
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+
+    // Custom SQS and HTTP clients
+    compileOnly 'software.amazon.awssdk:apache-client'
+    implementation 'software.amazon.awssdk:sqs'
+    implementation 'software.amazon.awssdk:url-connection-client'
+    implementation 'software.amazon.awssdk:aws-crt-client'
+    implementation 'software.amazon.awssdk:netty-nio-client'
 
      // SLF4J logging
     implementation 'org.slf4j:slf4j-nop:2.0.9'

@@ -109,6 +109,9 @@ TEST_LAMBDA_INVOCATION_TYPE = os.path.join(THIS_FOLDER, "functions/lambda_invoca
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
 
+TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
+TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
+
 # TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
 PYTHON_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["python"] if (get_arch() != Arch.arm64) else [Runtime.python3_11]

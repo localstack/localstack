@@ -18,6 +18,9 @@ from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
 from localstack.utils.platform import Arch, get_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_EVENTS_APIGATEWAY_AWS_PROXY,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -52,8 +55,7 @@ def snapshot_transformers(snapshot):
 @markers.lambda_runtime_update
 class TestLambdaRuntimesCommon:
     # TODO: refactor builds:
-    # * Remove specific hashes and `touch -t` since we're not actually checking size & hash of the zip files anymore
-    # * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
+    #   * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
 
     @markers.aws.validated
     @markers.multiruntime(scenario="echo")
@@ -104,6 +106,24 @@ class TestLambdaRuntimesCommon:
         assert invoke_result["StatusCode"] == 200
         assert json.loads(invoke_result["Payload"].read()) == {}
         assert not invoke_result.get("FunctionError")
+
+    @pytest.mark.skip(reason="test not yet implemented")
+    @markers.aws.unknown
+    @markers.multiruntime(scenario="typedevent")
+    def test_typed_event_invoke(self, multiruntime_lambda, aws_client):
+        """Test typed Lambda functions with Apigateway Proxy event integration."""
+        create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
+
+        sqs_event = json.load(open(TEST_EVENTS_APIGATEWAY_AWS_PROXY))
+        invocation_result = aws_client.lambda_.invoke(
+            FunctionName=create_function_result["FunctionName"],
+            Payload=to_bytes(json.dumps(sqs_event)),
+        )
+        assert "FunctionError" not in invocation_result
+
+    #     TODO: assert proxy response
+    #     assert ok
+    #     assert body == "Hello from ApiGateway!"
 
     # skip snapshots of LS specific env variables
     @markers.snapshot.skip_snapshot_verify(
@@ -205,6 +225,7 @@ class TestLambdaRuntimesCommon:
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
     @markers.multiruntime(
         scenario="introspection",
+        # TODO: should this include all al2 and new lambdas except provided?
         runtimes=["nodejs"],
         # runtimes=["nodejs", "python3.8", "python3.9", "java8.al2", "java11", "dotnet", "ruby"],
     )
@@ -247,31 +268,35 @@ class TestLambdaRuntimesCommon:
 
 
 # TODO: Split this and move to PRO
-@pytest.mark.skipif(
-    condition=get_arch() != Arch.amd64, reason="build process doesn't support arm64 right now"
-)
+# @pytest.mark.skipif(
+#     condition=get_arch() != Arch.amd64, reason="build process doesn't support arm64 right now"
+# )
 class TestLambdaCallingLocalstack:
     @markers.multiruntime(
         scenario="endpointinjection",
         runtimes=[
+            # nodejs18.x and nodejs20.x do not ship the AWS SDK v1 anymore.
+            # Therefore, we create a specific directory and use the SDK v2 instead.
             "nodejs",
             "python",
             "ruby",
-            "java8.al2",
-            "java11",
-            "go1.x",  # TODO: does not yet support transparent endpoint injection
-            "dotnet6",  # TODO: does not yet support transparent endpoint injection
+            # java17 and java21 do not ship the AWS SDK v1 anymore.
+            # Therefore, we create a specific directory and bundle the SDK v1 separately because the SDK v2 does not
+            # support DISABLE_CERT_CHECKING_SYSTEM_PROPERTY anymore.
+            "java",
+            "go",
         ],
     )
     @markers.aws.only_localstack
     def test_calling_localstack_from_lambda(self, multiruntime_lambda, tmp_path, aws_client):
+        """Test calling LocalStack from Lambda using manual client configuration. This must work for all runtimes.
+        The code might differ depending on the SDK version shipped with the Lambda runtime.
+        """
         create_function_result = multiruntime_lambda.create_function(
-            MemorySize=1024,
             Environment={"Variables": {"CONFIGURE_CLIENT": "1"}},
         )
 
         invocation_result = aws_client.lambda_.invoke(
             FunctionName=create_function_result["FunctionName"],
-            Payload=b"{}",
         )
         assert "FunctionError" not in invocation_result

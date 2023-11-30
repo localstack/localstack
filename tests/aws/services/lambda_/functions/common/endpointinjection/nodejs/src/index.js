@@ -1,4 +1,5 @@
 const AWS = require("aws-sdk");
+
 const shouldConfigureClient = process.env.CONFIGURE_CLIENT === "1";
 
 let sqsClient;
