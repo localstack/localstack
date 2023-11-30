@@ -69,6 +69,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::UsagePlanKey": "ResourceProvider",
     "AWS::Athena::DataCatalog": "ResourceProvider",
     "AWS::Athena::NamedQuery": "ResourceProvider",
+    "AWS::Athena::WorkGroup": "ResourceProvider",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::CloudFormation::Stack": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
