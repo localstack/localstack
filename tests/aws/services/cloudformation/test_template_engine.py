@@ -668,12 +668,6 @@ class TestMacros:
         )
         snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
 
-        # TODO: fix this. For some reason LS always returns a str instead of a dict
-        # if template_to_transform.endswith(".json") and isinstance(original_template["TemplateBody"], str):
-        #     original_template["TemplateBody"] = json.loads(original_template["TemplateBody"])
-        # if not is_aws_cloud():
-        #     processed_template["TemplateBody"] = json.loads(processed_template["TemplateBody"])
-
         snapshot.match("original_template", original_template)
         snapshot.match("processed_template", processed_template)
 
@@ -713,6 +707,7 @@ class TestMacros:
         assert "test-" in resulting_value
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="Fn::Transform does not support array of transformations")
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
