@@ -10,6 +10,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.strings import long_uid, short_uid
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
 
 def is_legacy_v2_provider():
@@ -838,6 +839,7 @@ class TestS3BucketEncryption:
         get_object_encrypted = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         snapshot.match("get-object-encrypted", get_object_encrypted)
 
+    @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
@@ -900,6 +902,7 @@ class TestS3BucketEncryption:
         )
         snapshot.match("put-object-encrypted-bucket-key-disabled", put_object_encrypted)
 
+    @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
     @pytest.mark.xfail(
         condition=config.LEGACY_V2_S3_PROVIDER,

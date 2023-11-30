@@ -599,5 +599,18 @@
         "Timestamp": "timestamp"
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function": {
+    "recorded-date": "27-11-2023, 13:14:35",
+    "recorded-content": {
+      "azs": [
+        "<region>a",
+        "<region>b",
+        "<region>c",
+        "<region>d",
+        "<region>e",
+        "<region>f"
+      ]
+    }
   }
 }

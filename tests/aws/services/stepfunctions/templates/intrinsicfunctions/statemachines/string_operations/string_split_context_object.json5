@@ -1,0 +1,13 @@
+{
+  "Comment": "STRING_SPLIT_CONTEXT_OBJECT",
+  "StartAt": "State_0",
+  "States": {
+    "State_0": {
+      "Type": "Pass",
+      "End": true,
+      "Parameters": {
+        "FunctionResult.$": "States.StringSplit($$.Execution.Input.FunctionInput, ',')"
+      }
+    }
+  }
+}

@@ -2,10 +2,9 @@ import logging
 import re
 import socket
 from functools import lru_cache
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import boto3
-from moto.core import DEFAULT_ACCOUNT_ID
 
 from localstack import config
 from localstack.config import S3_VIRTUAL_HOSTNAME
@@ -17,12 +16,6 @@ from localstack.utils.strings import is_string_or_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# cache local region
-LOCAL_REGION = None
-
-# Used in AWS assume role function
-INITIAL_BOTO3_SESSION = None
 
 # cached value used to determine the DNS status of the S3 hostname (whether it can be resolved properly)
 CACHE_S3_HOSTNAME_DNS_STATUS = None
@@ -44,32 +37,6 @@ def get_valid_regions_for_service(service_name):
     regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-us-gov"))
     regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-cn"))
     return regions
-
-
-# NOTE: This method should not be used as it is not guaranteed to return the correct region
-# In the near future it will be deprecated and removed
-def get_region():
-    # Note: leave import here to avoid import errors (e.g., "flask") for CLI commands
-    from localstack.utils.aws.request_context import get_region_from_request_context
-
-    region = get_region_from_request_context()
-    if region:
-        return region
-    # fall back to returning static pre-defined region
-    return get_local_region()
-
-
-def get_partition(region_name: str = None):
-    region_name = region_name or get_region()
-    return boto3.session.Session().get_partition_for_region(region_name)
-
-
-# TODO: Deprecate and remove this
-def get_local_region():
-    global LOCAL_REGION
-    if LOCAL_REGION is None:
-        LOCAL_REGION = get_boto3_region() or ""
-    return AWS_REGION_US_EAST_1 or LOCAL_REGION
 
 
 def get_boto3_region() -> str:
@@ -99,9 +66,11 @@ def get_s3_hostname():
 
 
 def fix_account_id_in_arns(
-    response, replacement: str, colon_delimiter: str = ":", existing: str | list[str] = None
+    response, replacement: str, colon_delimiter: str = ":", existing: Union[str, List[str]] = None
 ):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
+    from moto.core import DEFAULT_ACCOUNT_ID
+
     existing = existing or ["123456789", "1234567890", DEFAULT_ACCOUNT_ID]
     existing = existing if isinstance(existing, list) else [existing]
     is_str_obj = is_string_or_bytes(response)
@@ -135,7 +104,7 @@ def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -
     if region == auth:
         region = None
     if use_default:
-        region = region or get_region()
+        region = region or AWS_REGION_US_EAST_1
     return region
 
 
