@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import json
 import logging
@@ -7,7 +9,6 @@ from typing import Dict, List, Optional, Tuple, TypedDict, Union
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
-from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import PutEventsRequestEntry
@@ -33,12 +34,8 @@ from localstack.aws.api.s3 import (
     TopicConfiguration,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.s3.models import get_moto_s3_backend
-from localstack.services.s3.utils import (
-    _create_invalid_argument_exc,
-    get_bucket_from_moto,
-    get_key_from_moto_bucket,
-)
+from localstack.config import LEGACY_V2_S3_PROVIDER
+from localstack.services.s3.utils import _create_invalid_argument_exc
 from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
@@ -46,6 +43,15 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import short_uid
 from localstack.utils.time import parse_timestamp, timestamp_millis
+
+if LEGACY_V2_S3_PROVIDER:
+    from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
+
+    from localstack.services.s3.models import get_moto_s3_backend
+    from localstack.services.s3.utils_moto import (
+        get_bucket_from_moto,
+        get_key_from_moto_bucket,
+    )
 
 LOG = logging.getLogger(__name__)
 
@@ -327,9 +333,7 @@ class BaseNotifier:
         - validate the arn pattern
         - validating the Rule names (and normalizing to capitalized)
         - check if the filter value is not empty
-        :param configuration: a configuration for a notifier, like QueueConfiguration for SQS or
-        TopicConfiguration for SNS
-        :param skip_destination_validation: allow skipping the validation of the target
+        :param verification_ctx: the verification context containing necessary data for validation
         :raises InvalidArgument if the rule is not valid, infos in ArgumentName and ArgumentValue members
         :return:
         """

@@ -27,6 +27,9 @@ class ApiInvocationContext:
     data: InvocationPayload
     headers: Dict[str, str]
 
+    # raw URI (including query string) retired from werkzeug "RAW_URI" environment variable
+    raw_uri: str
+
     # invocation context
     context: Dict[str, Any]
     # authentication info for this invocation

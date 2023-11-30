@@ -7,6 +7,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
 
 @pytest.fixture
@@ -86,6 +87,7 @@ def s3_event_bridge_notification(snapshot):
     )
 
 
+@pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="EventBridge not enabled in S3 image")
 class TestS3NotificationsToEventBridge:
     @markers.aws.validated
     def test_object_created_put(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
