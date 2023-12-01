@@ -41,6 +41,15 @@ def keys_lower(model: dict) -> dict:
     return {k.lower(): v for k, v in model.items()}
 
 
+def transform_list_to_dict(param, key_attr_name="Key", value_attr_name="Value"):
+    result = {}
+    for entry in param:
+        key = entry[key_attr_name]
+        value = entry[value_attr_name]
+        result[key] = value
+    return result
+
+
 def remove_none_values(obj):
     """Remove None values (recursively) in the given object."""
     if isinstance(obj, dict):
