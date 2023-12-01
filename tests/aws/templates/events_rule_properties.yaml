@@ -28,6 +28,13 @@ Resources:
           - "*"
       EventBusName: !GetAtt Bus.Name
 
+  RuleWithoutBus:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        resources:
+          - "*"
+
 Outputs:
   RuleWithoutNameArn:
     Value: !GetAtt RuleWithoutName.Arn
@@ -40,3 +47,9 @@ Outputs:
 
   RuleWithNameRef:
     Value: !Ref RuleWithName
+
+  RuleWithoutBusArn:
+    Value: !GetAtt RuleWithoutBus.Arn
+
+  RuleWithoutBusRef:
+    Value: !Ref RuleWithoutBus

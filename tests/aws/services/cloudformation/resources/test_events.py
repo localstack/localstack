@@ -230,6 +230,9 @@ def test_rule_properties(deploy_cfn_template, aws_client, snapshot):
     rule_id = stack.outputs["RuleWithoutNameArn"].rsplit("/")[-1]
     snapshot.add_transformer(snapshot.transform.regex(rule_id, "<rule-id>"))
 
+    without_bus_id = stack.outputs["RuleWithoutBusArn"].rsplit("/")[-1]
+    snapshot.add_transformer(snapshot.transform.regex(without_bus_id, "<without-bus-id>"))
+
     snapshot.match("outputs", stack.outputs)
 
 
