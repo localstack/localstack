@@ -47,7 +47,7 @@ def send_event_to_target(
             role_arn=role, service_principal=source_service, region_name=region
         )
     else:
-        clients = connect_to(region_name=region)
+        clients = connect_to(aws_access_key_id=event.get("account"), region_name=region)
 
     if ":lambda:" in target_arn:
         lambda_client = clients.lambda_.request_metadata(
