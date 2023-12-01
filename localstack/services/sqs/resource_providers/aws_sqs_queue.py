@@ -189,14 +189,12 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
             model["QueueUrl"] = sqs.create_queue(QueueName=request.desired_state.get("QueueName"))[
                 "QueueUrl"
             ]
-        elif "QueueUrl" not in model:
+        else:
             model["QueueUrl"] = sqs.get_queue_url(QueueName=model["QueueName"])["QueueUrl"]
 
-        if "Arn" not in model:
-            model["Arn"] = sqs.get_queue_attributes(
-                QueueUrl=model["QueueUrl"], AttributeNames=["QueueArn"]
-            )["Attributes"]["QueueArn"]
-
+        model["Arn"] = sqs.get_queue_attributes(
+            QueueUrl=model["QueueUrl"], AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
         return ProgressEvent(OperationStatus.SUCCESS, resource_model=model)
 
     def _compile_sqs_queue_attributes(self, properties: SQSQueueProperties) -> dict[str, str]:
