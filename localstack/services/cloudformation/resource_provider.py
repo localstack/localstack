@@ -77,6 +77,7 @@ PROVIDER_DEFAULTS = {
     "AWS::CloudFormation::Stack": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
+    "AWS::DynamoDB::GlobalTable": "ResourceProvider",
     "AWS::DynamoDB::Table": "ResourceProvider",
     "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::EC2::Instance": "ResourceProvider",
