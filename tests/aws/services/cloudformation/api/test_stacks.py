@@ -662,15 +662,6 @@ Resources:
             Type: String
 """
 
-MINIMAL_TEMPLATE_UPDATED = """
-Resources:
-    SimpleParam:
-        Type: AWS::SSM::Parameter
-        Properties:
-            Value: test2
-            Type: String
-"""
-
 
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..EnableTerminationProtection", "$..LastUpdatedTime"]
