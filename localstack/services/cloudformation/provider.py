@@ -471,7 +471,11 @@ class CloudformationProvider(CloudformationApi):
 
         # Fix this some day
         if template_stage == TemplateStage.Processed:
-            template_body = json.dumps(stack.template_original)
+            template_body = (
+                json.dumps(stack.template)
+                if "Transform" in stack.template_body
+                else stack.template_body
+            )
         else:
             template_body = stack.template_body
 
