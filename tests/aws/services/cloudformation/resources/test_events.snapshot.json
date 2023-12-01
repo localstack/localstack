@@ -1,0 +1,13 @@
+{
+  "tests/aws/services/cloudformation/resources/test_events.py::test_rule_properties": {
+    "recorded-date": "01-12-2023, 14:48:39",
+    "recorded-content": {
+      "outputs": {
+        "RuleWithNameArn": "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<custom-rule-name>",
+        "RuleWithNameRef": "<event-bus-name>|<custom-rule-name>",
+        "RuleWithoutNameArn": "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<rule-id>",
+        "RuleWithoutNameRef": "<event-bus-name>|<rule-id>"
+      }
+    }
+  }
+}

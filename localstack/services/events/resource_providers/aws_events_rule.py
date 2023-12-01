@@ -195,10 +195,19 @@ class EventsRuleProvider(ResourceProvider[EventsRuleProperties]):
         model = request.desired_state
         events = request.aws_client_factory.events
 
-        if not model.get("Name"):
-            model["Name"] = util.generate_default_name(
+        name = model.get("Name")
+        if not name:
+            name = util.generate_default_name(
                 stack_name=request.stack_name, logical_resource_id=request.logical_resource_id
             )
+
+        model["Id"] = "|".join(
+            [
+                model["EventBusName"],
+                name,
+            ]
+        )
+
         attrs = [
             "ScheduleExpression",
             "EventPattern",
@@ -226,6 +235,7 @@ class EventsRuleProvider(ResourceProvider[EventsRuleProperties]):
             wrapped = common.recurse_object(pattern, wrap_in_lists)
             params["EventPattern"] = json.dumps(wrapped)
 
+        params["Name"] = name
         result = events.put_rule(**params)
         model["Arn"] = result["RuleArn"]
 
