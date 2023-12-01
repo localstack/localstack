@@ -227,9 +227,9 @@ class LambdaFunctionVersion(GenericBaseModel):
         ):
             resource["Properties"]["Version"] = result["Version"]
             resource["PhysicalResourceId"] = result["FunctionArn"]
-            connect_to().lambda_.get_waiter("published_version_active").wait(
-                FunctionName=result["FunctionName"], Qualifier=result["Version"]
-            )
+            connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_.get_waiter(
+                "published_version_active"
+            ).wait(FunctionName=result["FunctionName"], Qualifier=result["Version"])
 
         return {
             "create": {
