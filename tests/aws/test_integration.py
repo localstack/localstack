@@ -231,6 +231,7 @@ class TestIntegration:
         # start the KCL client process in the background
         process = kinesis_connector.listen_to_kinesis(
             stream_name,
+            account_id=TEST_AWS_ACCOUNT_ID,
             region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
             wait_until_started=True,
