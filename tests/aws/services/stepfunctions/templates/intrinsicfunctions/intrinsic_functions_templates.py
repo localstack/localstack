@@ -74,3 +74,12 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     FORMAT_CONTEXT_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/generic/format_context_path.json5"
     )
+    NESTED_CALLS_1: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/generic/nested_calls_1.json5"
+    )
+    NESTED_CALLS_2: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/generic/nested_calls_2.json5"
+    )
+    ESCAPE_SEQUENCE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/generic/escape_sequence.json5"
+    )

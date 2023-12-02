@@ -60,6 +60,8 @@ class StackTemplate(TypedDict):
 
 # TODO: remove metadata (flatten into individual fields)
 class Stack:
+    change_sets: list["StackChangeSet"]
+
     def __init__(
         self,
         account_id: str,

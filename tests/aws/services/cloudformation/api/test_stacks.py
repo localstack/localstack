@@ -17,8 +17,11 @@ from localstack.utils.sync import retry, wait_until
 
 
 class TestStacksApi:
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
+    )
     @markers.aws.validated
-    def test_stack_lifecycle(self, is_stack_updated, deploy_cfn_template, snapshot, aws_client):
+    def test_stack_lifecycle(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.add_transformer(snapshot.transform.key_value("ParameterValue", "parameter-value"))
         api_name = f"test_{short_uid()}"
@@ -51,11 +54,17 @@ class TestStacksApi:
         aws_client.cloudformation.delete_stack(
             StackName=stack_name,
         )
-        deletion_description = (
-            "DeletionTime"
-            in aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0]
-        )
-        snapshot.match("deletion", deletion_description)
+        aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+
+        with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+            aws_client.cloudformation.describe_stacks(StackName=stack_name)
+        snapshot.match("describe_deleted_by_name_exc", e.value.response)
+
+        deleted = aws_client.cloudformation.describe_stacks(StackName=deployed.stack_id)["Stacks"][
+            0
+        ]
+        assert "DeletionTime" in deleted
+        snapshot.match("deleted", deleted)
 
     @markers.aws.validated
     def test_stack_description_special_chars(self, deploy_cfn_template, snapshot, aws_client):
@@ -642,3 +651,85 @@ def test_blocked_stack_deletion(aws_client, cleanups, snapshot):
     snapshot.match("stack_post_success_delete", stack_post_success_delete)
     stack_events = cfn.describe_stack_events(StackName=stack_id)
     snapshot.match("stack_events", stack_events)
+
+
+MINIMAL_TEMPLATE = """
+Resources:
+    SimpleParam:
+        Type: AWS::SSM::Parameter
+        Properties:
+            Value: test
+            Type: String
+"""
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..EnableTerminationProtection", "$..LastUpdatedTime"]
+)
+@markers.aws.validated
+def test_name_conflicts(aws_client, snapshot, cleanups):
+    """
+    Tests behavior of creating a stack with the same name of one that was previously deleted
+
+    1. Create Stack
+    2. Delete Stack
+    3. Create Stack with same name as in 1.
+
+    Step 3 should be successful because you can re-use StackNames,
+    but only one stack for a given stack name can be `ACTIVE` at one time.
+
+    We didn't exhaustively test yet what is considered as Active by CloudFormation
+    For now the assumption is that anything != "DELETE_COMPLETED" is considered "ACTIVE"
+    """
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    stack_name = f"repeated-stack-{short_uid()}"
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+    stack = aws_client.cloudformation.create_stack(
+        StackName=stack_name, TemplateBody=MINIMAL_TEMPLATE
+    )
+    stack_id = stack["StackId"]
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+    # only one can be active at a time
+    with pytest.raises(aws_client.cloudformation.exceptions.AlreadyExistsException) as e:
+        aws_client.cloudformation.create_stack(StackName=stack_name, TemplateBody=MINIMAL_TEMPLATE)
+    snapshot.match("create_stack_already_exists_exc", e.value.response)
+
+    created_stack_desc = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][
+        0
+    ]["StackStatus"]
+    snapshot.match("created_stack_desc", created_stack_desc)
+
+    aws_client.cloudformation.delete_stack(StackName=stack_name)
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+
+    # describe with name fails
+    with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+        aws_client.cloudformation.describe_stacks(StackName=stack_name)
+    snapshot.match("deleted_stack_not_found_exc", e.value.response)
+
+    # describe with stack id (ARN) succeeds
+    deleted_stack_desc = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    snapshot.match("deleted_stack_desc", deleted_stack_desc)
+
+    # creating a new stack with the same name as the previously deleted one should work
+    stack = aws_client.cloudformation.create_stack(
+        StackName=stack_name, TemplateBody=MINIMAL_TEMPLATE
+    )
+    # should issue a new unique stack ID/ARN
+    new_stack_id = stack["StackId"]
+    assert stack_id != new_stack_id
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+    new_stack_desc = aws_client.cloudformation.describe_stacks(StackName=stack_name)
+    snapshot.match("new_stack_desc", new_stack_desc)
+    assert len(new_stack_desc["Stacks"]) == 1
+    assert new_stack_desc["Stacks"][0]["StackId"] == new_stack_id
+
+    # can still access both by using the ARN (stack id)
+    # and they should be different from each other
+    stack_id_desc = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    new_stack_id_desc = aws_client.cloudformation.describe_stacks(StackName=new_stack_id)
+    snapshot.match("stack_id_desc", stack_id_desc)
+    snapshot.match("new_stack_id_desc", new_stack_id_desc)
