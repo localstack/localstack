@@ -36,7 +36,7 @@ SCAFFOLDING_VERSION = 2
 # Some services require their names to be re-written as we know them by different names
 SERVICE_NAME_MAP = {
     "OpenSearchService": "OpenSearch",
-    "Lambda": "AWSLambda",
+    "Lambda": "lambda_",
 }
 
 
@@ -126,11 +126,14 @@ def run_black(text: str) -> str:
 
 
 def get_formatted_template_output(
-    env: Environment, template_name: str, *render_args, **render_kwargs
+    env: Environment, template_name: str, do_run_black: bool, *render_args, **render_kwargs
 ) -> str:
     template = env.get_template(template_name)
     raw_text = template.render(*render_args, **render_kwargs)
-    return run_black(raw_text)
+    if do_run_black:
+        return run_black(raw_text)
+    else:
+        return raw_text
 
 
 class SchemaProvider:
@@ -153,11 +156,39 @@ class SchemaProvider:
 
 
 LOCALSTACK_ROOT_DIR = Path(__file__).parent.joinpath("../../../..").resolve()
-TESTS_ROOT_DIR = LOCALSTACK_ROOT_DIR.joinpath("tests/aws/cloudformation/resource_providers")
+LOCALSTACK_PRO_ROOT_DIR = LOCALSTACK_ROOT_DIR.joinpath("../localstack-ext").resolve()
+TESTS_ROOT_DIR = LOCALSTACK_ROOT_DIR.joinpath(
+    "tests/aws/services/cloudformation/resource_providers"
+)
+TESTS_PRO_ROOT_DIR = LOCALSTACK_PRO_ROOT_DIR.joinpath(
+    "tests/aws/services/cloudformation/resource_providers"
+)
+
+assert LOCALSTACK_ROOT_DIR.is_dir(), f"{LOCALSTACK_ROOT_DIR} does not exist"
+assert LOCALSTACK_PRO_ROOT_DIR.is_dir(), f"{LOCALSTACK_PRO_ROOT_DIR} does not exist"
+assert TESTS_ROOT_DIR.is_dir(), f"{TESTS_ROOT_DIR} does not exist"
+assert TESTS_PRO_ROOT_DIR.is_dir(), f"{TESTS_PRO_ROOT_DIR} does not exist"
+
+
+def root_dir(pro: bool = False) -> Path:
+    if pro:
+        return LOCALSTACK_PRO_ROOT_DIR
+    else:
+        return LOCALSTACK_ROOT_DIR
+
+
+def tests_root_dir(pro: bool = False) -> Path:
+    if pro:
+        return TESTS_PRO_ROOT_DIR
+    else:
+        return TESTS_ROOT_DIR
 
 
 def template_path(
-    resource_name: ResourceName, file_type: FileType, root: Optional[Path] = None
+    resource_name: ResourceName,
+    file_type: FileType,
+    root: Optional[Path] = None,
+    pro: bool = False,
 ) -> Path:
     """
     Given a resource name and file type, return the path of the template relative to the template root.
@@ -174,14 +205,22 @@ def template_path(
         case _:
             raise ValueError(f"File type {file_type} is not a template")
 
-    output_path = TESTS_ROOT_DIR.joinpath(
-        f"{resource_name.python_compatible_service_name.lower()}/{resource_name.path_compatible_full_name()}/templates/{stub}"
-    ).resolve()
+    output_path = (
+        tests_root_dir(pro)
+        .joinpath(
+            f"{resource_name.python_compatible_service_name.lower()}/{resource_name.path_compatible_full_name()}/templates/{stub}"
+        )
+        .resolve()
+    )
 
     if root:
-        test_path = LOCALSTACK_ROOT_DIR.joinpath(
-            f"tests/aws/cloudformation/resource_providers/{resource_name.python_compatible_service_name.lower()}/{resource_name.path_compatible_full_name()}"
-        ).resolve()
+        test_path = (
+            root_dir(pro)
+            .joinpath(
+                f"tests/aws/cloudformation/resource_providers/{resource_name.python_compatible_service_name.lower()}/{resource_name.path_compatible_full_name()}"
+            )
+            .resolve()
+        )
 
         common_root = os.path.relpath(output_path, test_path)
         return Path(common_root)
@@ -191,6 +230,7 @@ def template_path(
 
 class FileType(Enum):
     # service code
+    plugin = auto()
     provider = auto()
 
     # meta test files
@@ -213,14 +253,16 @@ class FileType(Enum):
 
 
 class TemplateRenderer:
-    def __init__(self, schema: ResourceSchema, environment: Environment):
+    def __init__(self, schema: ResourceSchema, environment: Environment, pro: bool = False):
         self.schema = schema
         self.environment = environment
+        self.pro = pro
 
     def render(
         self,
         file_type: FileType,
         resource_name: ResourceName,
+        do_run_black: bool,
     ) -> str:
         # Generated outputs (template, schema)
         # templates
@@ -237,6 +279,7 @@ class TemplateRenderer:
             return json.dumps(self.schema, indent=2)
 
         template_mapping = {
+            FileType.plugin: "plugin_template.py.j2",
             FileType.provider: "provider_template.py.j2",
             FileType.getatt_test: "test_getatt_template.py.j2",
             FileType.integration_test: "test_integration_template.py.j2",
@@ -252,7 +295,7 @@ class TemplateRenderer:
         # TODO: we might want to segregate each provider in its own directory
         # e.g. .../resource_providers/aws_iam_role/test_X.py vs. .../resource_providers/iam/test_X.py
         # add extra parameters
-        tests_output_path = LOCALSTACK_ROOT_DIR.joinpath(
+        tests_output_path = root_dir(self.pro).joinpath(
             f"tests/aws/cloudformation/resource_providers/{resource_name.python_compatible_service_name.lower()}/{resource_name.full_name.lower()}"
         )
         match file_type:
@@ -289,6 +332,10 @@ class TemplateRenderer:
                 kwargs["list_permissions"] = (
                     self.schema.get("handlers", {}).get("list", {}).get("permissions")
                 )
+            case FileType.plugin:
+                kwargs["service"] = resource_name.python_compatible_service_name.lower()
+                kwargs["lower_resource"] = resource_name.resource.lower()
+                kwargs["pro"] = self.pro
             case FileType.integration_test:
                 kwargs["black_box_template_path"] = str(
                     template_path(resource_name, FileType.minimal_template, tests_output_path)
@@ -312,7 +359,7 @@ class TemplateRenderer:
                 raise NotImplementedError(f"Rendering template of type {file_type}")
 
         return get_formatted_template_output(
-            self.environment, template_mapping[file_type], **kwargs
+            self.environment, template_mapping[file_type], do_run_black, **kwargs
         )
 
     def get_getatt_targets(self) -> Generator[str, None, None]:
@@ -468,46 +515,56 @@ class PropertyRenderer:
 class FileWriter:
     destination_files: dict[FileType, Path]
 
-    def __init__(self, resource_name: ResourceName, console: Console, overwrite: bool):
+    def __init__(
+        self, resource_name: ResourceName, console: Console, overwrite: bool, pro: bool = False
+    ):
         self.resource_name = resource_name
         self.console = console
         self.overwrite = overwrite
+        self.pro = pro
 
         self.destination_files = {
-            FileType.provider: LOCALSTACK_ROOT_DIR.joinpath(
-                "localstack",
+            FileType.provider: root_dir(self.pro).joinpath(
+                "localstack_ext" if self.pro else "localstack",
                 "services",
                 self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
                 f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
-            FileType.schema: LOCALSTACK_ROOT_DIR.joinpath(
-                "localstack",
+            FileType.plugin: root_dir(self.pro).joinpath(
+                "localstack_ext" if self.pro else "localstack",
+                "services",
+                self.resource_name.python_compatible_service_name.lower(),
+                "resource_providers",
+                f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_plugin.py",
+            ),
+            FileType.schema: root_dir(self.pro).joinpath(
+                "localstack_ext" if self.pro else "localstack",
                 "services",
                 self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
                 f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.schema.json",
             ),
-            FileType.integration_test: TESTS_ROOT_DIR.joinpath(
+            FileType.integration_test: tests_root_dir(self.pro).joinpath(
                 self.resource_name.python_compatible_service_name.lower(),
                 self.resource_name.path_compatible_full_name(),
                 "test_basic.py",
             ),
-            FileType.getatt_test: TESTS_ROOT_DIR.joinpath(
+            FileType.getatt_test: tests_root_dir(self.pro).joinpath(
                 self.resource_name.python_compatible_service_name.lower(),
                 self.resource_name.path_compatible_full_name(),
                 "test_exploration.py",
             ),
-            # FileType.cloudcontrol_test: TESTS_ROOT_DIR.joinpath(
+            # FileType.cloudcontrol_test: tests_root_dir(self.pro).joinpath(
             #     self.resource_name.python_compatible_service_name.lower(),
             #     f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_cloudcontrol.py",
             # ),
-            FileType.parity_test: TESTS_ROOT_DIR.joinpath(
+            FileType.parity_test: tests_root_dir(self.pro).joinpath(
                 self.resource_name.python_compatible_service_name.lower(),
                 self.resource_name.path_compatible_full_name(),
                 "test_parity.py",
             ),
-            FileType.conftest: TESTS_ROOT_DIR.joinpath(
+            FileType.conftest: tests_root_dir(self.pro).joinpath(
                 self.resource_name.python_compatible_service_name.lower(),
                 self.resource_name.path_compatible_full_name(),
                 "conftest.py",
@@ -541,6 +598,10 @@ class FileWriter:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written provider to {file_destination}")
+            case FileType.plugin:
+                self.ensure_python_init_files(destination_path)
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written plugin to {file_destination}")
 
             # tests meta
             case FileType.conftest:
@@ -619,13 +680,20 @@ class FileWriter:
 
 
 class OutputFactory:
-    def __init__(self, template_renderer: TemplateRenderer, printer: Console, writer: FileWriter):
+    def __init__(
+        self,
+        template_renderer: TemplateRenderer,
+        printer: Console,
+        writer: FileWriter,
+        do_run_black: bool,
+    ):
         self.template_renderer = template_renderer
         self.printer = printer
         self.writer = writer
+        self.do_run_black = do_run_black
 
     def get(self, file_type: FileType, resource_name: ResourceName) -> Output:
-        contents = self.template_renderer.render(file_type, resource_name)
+        contents = self.template_renderer.render(file_type, resource_name, self.do_run_black)
         return Output(contents, file_type, self.printer, self.writer, resource_name)
 
 
@@ -659,7 +727,9 @@ class Output:
             case FileType.provider:
                 self.printer.print("\n[underline]Provider template[/underline]\n")
                 self.printer.print(Syntax(self.contents, "python"))
-
+            case FileType.plugin:
+                self.printer.print("\n[underline]Plugin[/underline]\n")
+                self.printer.print(Syntax(self.contents, "python"))
             # tests
             case FileType.integration_test:
                 self.printer.print("\n[underline]Integration test file[/underline]\n")
@@ -711,7 +781,16 @@ def cli():
 @click.option("-w", "--write/--no-write", default=False)
 @click.option("--overwrite", is_flag=True, default=False)
 @click.option("-t", "--write-tests/--no-write-tests", default=False)
-def generate(resource_type: str, write: bool, write_tests: bool, overwrite: bool):
+@click.option("--run-black/--no-run-black", "do_run_black", default=True)
+@click.option("--pro", is_flag=True, default=False)
+def generate(
+    resource_type: str,
+    write: bool,
+    write_tests: bool,
+    overwrite: bool,
+    do_run_black: bool,
+    pro: bool,
+):
     console = Console()
     console.rule(title=resource_type)
 
@@ -736,9 +815,9 @@ def generate(resource_type: str, write: bool, write_tests: bool, overwrite: bool
         resource_name = ResourceName.from_name(matching_resource)
         schema = schema_provider.schema(resource_name)
 
-        template_renderer = TemplateRenderer(schema, env)
-        writer = FileWriter(resource_name, console, overwrite)
-        output_factory = OutputFactory(template_renderer, console, writer)  # noqa
+        template_renderer = TemplateRenderer(schema, env, pro)
+        writer = FileWriter(resource_name, console, overwrite, pro)
+        output_factory = OutputFactory(template_renderer, console, writer, do_run_black)  # noqa
         for file_type in FileType:
             if not write_tests and file_type in {
                 FileType.integration_test,

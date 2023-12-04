@@ -14,18 +14,16 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.sqs import (
     InvalidAttributeName,
     Message,
-    MessageNotInflight,
     QueueAttributeMap,
     QueueAttributeName,
     ReceiptHandleIsInvalid,
     TagMap,
 )
-from localstack.config import get_protocol
 from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import (
     InvalidAttributeValue,
-    InvalidParameterValue,
-    MissingParameter,
+    InvalidParameterValueException,
+    MissingRequiredParameterException,
 )
 from localstack.services.sqs.utils import (
     decode_receipt_handle,
@@ -74,6 +72,7 @@ class SqsMessage:
         self.delay_seconds = None
         self.last_received = None
         self.first_received = None
+        self.visibility_deadline = None
         self.deleted = False
         self.priority = priority
         self.sequence_number = sequence_number
@@ -225,9 +224,15 @@ class SqsQueue:
 
     def default_attributes(self) -> QueueAttributeMap:
         return {
-            QueueAttributeName.ApproximateNumberOfMessages: lambda: self.approx_number_of_messages,
-            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: self.approx_number_of_messages_not_visible,
-            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: self.approx_number_of_messages_delayed,
+            QueueAttributeName.ApproximateNumberOfMessages: lambda: str(
+                self.approx_number_of_messages
+            ),
+            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: str(
+                self.approx_number_of_messages_not_visible
+            ),
+            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: str(
+                self.approx_number_of_messages_delayed
+            ),
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),
@@ -261,28 +266,35 @@ class SqsQueue:
         return f"arn:aws:sqs:{self.region}:{self.account_id}:{self.name}"
 
     def url(self, context: RequestContext) -> str:
-        """Return queue URL using either SQS_PORT_EXTERNAL (if configured), the SQS_ENDPOINT_STRATEGY (if configured)
-        or based on the 'Host' request header"""
+        """Return queue URL which depending on the endpoint strategy returns e.g.:
+        * (standard) http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/myqueue
+        * (domain) http://eu-west-1.queue.localhost.localstack.cloud:4566/000000000000/myqueue
+        * (path) http://localhost.localstack.cloud:4566/queue/eu-central-1/000000000000/myqueue
+        * otherwise: http://localhost.localstack.cloud:4566/000000000000/myqueue
+        """
 
-        host_url = context.request.host_url
+        scheme = config.get_protocol()
+        host_definition = localstack_host()
 
-        if config.SQS_ENDPOINT_STRATEGY == "domain":
+        if config.SQS_ENDPOINT_STRATEGY == "standard":
+            # Region is always part of the queue URL
+            # sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/my-queue
+            scheme = context.request.scheme
+            host_definition = localstack_host()
+            host_url = f"{scheme}://sqs.{self.region}.{host_definition.host_and_port()}"
+
+        elif config.SQS_ENDPOINT_STRATEGY == "domain":
+            # Legacy style
             # queue.localhost.localstack.cloud:4566/000000000000/my-queue (us-east-1)
             # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
             region = "" if self.region == "us-east-1" else self.region + "."
-            scheme = context.request.scheme
 
-            host_definition = localstack_host(use_localhost_cloud=True)
             host_url = f"{scheme}://{region}queue.{host_definition.host_and_port()}"
         elif config.SQS_ENDPOINT_STRATEGY == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
-            host_url = f"{context.request.host_url}queue/{self.region}"
+            host_url = f"{scheme}://{host_definition.host_and_port()}/queue/{self.region}"
         else:
-            if config.SQS_PORT_EXTERNAL:
-                host_definition = localstack_host(
-                    use_hostname_external=True, custom_port=config.SQS_PORT_EXTERNAL
-                )
-                host_url = f"{get_protocol()}://{host_definition.host_and_port()}"
+            host_url = f"{scheme}://{host_definition.host_and_port()}"
 
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),
@@ -345,7 +357,7 @@ class SqsQueue:
             self.validate_receipt_handle(receipt_handle)
 
             if receipt_handle not in self.receipts:
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     f"Value {receipt_handle} for parameter ReceiptHandle is invalid. Reason: Message does not exist "
                     f"or is not available for visibility timeout change."
                 )
@@ -353,7 +365,7 @@ class SqsQueue:
             standard_message = self.receipts[receipt_handle]
 
             if standard_message not in self.inflight:
-                raise MessageNotInflight()
+                return
 
             standard_message.update_visibility_timeout(visibility_timeout)
 
@@ -473,7 +485,7 @@ class SqsQueue:
 
     def _assert_queue_name(self, name):
         if not re.match(r"^[a-zA-Z0-9_-]{1,80}$", name):
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
             )
 
@@ -522,7 +534,7 @@ class SqsQueue:
         policy.setdefault("Statement", [])
         existing_statement_ids = [statement.get("Sid") for statement in policy["Statement"]]
         if label in existing_statement_ids:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 f"Value {label} for parameter Label is invalid. Reason: Already exists."
             )
         policy["Statement"].append(statement)
@@ -546,7 +558,7 @@ class SqsQueue:
             }
         existing_statement_ids = [statement.get("Sid") for statement in policy["Statement"]]
         if label not in existing_statement_ids:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 f"Value {label} for parameter Label is invalid. Reason: can't find label."
             )
         policy["Statement"] = [
@@ -584,12 +596,12 @@ class StandardQueue(SqsQueue):
         delay_seconds: int = None,
     ):
         if message_deduplication_id:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 f"Value {message_deduplication_id} for parameter MessageDeduplicationId is invalid. Reason: The "
                 f"request includes a parameter that is not valid for this queue type. "
             )
         if message_group_id:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 f"Value {message_group_id} for parameter MessageGroupId is invalid. Reason: The request includes a "
                 f"parameter that is not valid for this queue type. "
             )
@@ -809,21 +821,22 @@ class FifoQueue(SqsQueue):
     ):
         if delay_seconds:
             # in fifo queues, delay is only applied on queue level. However, explicitly setting delay_seconds=0 is valid
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 f"Value {delay_seconds} for parameter DelaySeconds is invalid. Reason: The request include parameter "
                 f"that is not valid for this queue type."
             )
 
         if not message_group_id:
-            raise MissingParameter("The request must contain the parameter MessageGroupId.")
+            raise MissingRequiredParameterException(
+                "The request must contain the parameter MessageGroupId."
+            )
         dedup_id = message_deduplication_id
         content_based_deduplication = not is_message_deduplication_id_required(self)
         if not dedup_id and content_based_deduplication:
             dedup_id = hashlib.sha256(message.get("Body").encode("utf-8")).hexdigest()
         if not dedup_id:
-            raise InvalidParameterValue(
-                "The Queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided "
-                "explicitly "
+            raise InvalidParameterValueException(
+                "The queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly"
             )
 
         fifo_message = SqsMessage(
@@ -1008,7 +1021,7 @@ class FifoQueue(SqsQueue):
 
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "The name of a FIFO queue can only include alphanumeric characters, hyphens, or underscores, "
                 "must end with .fifo suffix and be 1 to 80 in length"
             )

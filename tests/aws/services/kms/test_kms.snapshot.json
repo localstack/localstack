@@ -301,14 +301,14 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
-    "recorded-date": "13-04-2023, 11:29:34",
+    "recorded-date": "07-11-2023, 14:05:57",
     "recorded-content": {
       "describe-key-with-invalid-uuid": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId fake-key-id"
+          "Message": "Invalid keyId 'fake-key-id'"
         },
-        "message": "Invalid keyId fake-key-id",
+        "message": "Invalid keyId 'fake-key-id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -317,9 +317,9 @@
       "describe-key-with-invalid-uuid-2": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId 134f2428cec14b25a1ae9048164dba47"
+          "Message": "Invalid keyId '134f2428cec14b25a1ae9048164dba47'"
         },
-        "message": "Invalid keyId 134f2428cec14b25a1ae9048164dba47",
+        "message": "Invalid keyId '134f2428cec14b25a1ae9048164dba47'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -328,9 +328,9 @@
       "describe-key-with-invalid-uuid-mrk": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId mrk-fake-key-id"
+          "Message": "Invalid keyId 'mrk-fake-key-id'"
         },
-        "message": "Invalid keyId mrk-fake-key-id",
+        "message": "Invalid keyId 'mrk-fake-key-id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -924,7 +924,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_224-HMAC_SHA_224]": {
-    "recorded-date": "13-04-2023, 11:31:08",
+    "recorded-date": "07-11-2023, 14:06:46",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -947,9 +947,9 @@
       "generate-mac-invalid-key-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId key_id"
+          "Message": "Invalid keyId 'key_id'"
         },
-        "message": "Invalid keyId key_id",
+        "message": "Invalid keyId 'key_id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -958,9 +958,9 @@
       "verify-mac-invalid-key-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId key_id"
+          "Message": "Invalid keyId 'key_id'"
         },
-        "message": "Invalid keyId key_id",
+        "message": "Invalid keyId 'key_id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -969,7 +969,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_256-HMAC_SHA_256]": {
-    "recorded-date": "13-04-2023, 11:31:10",
+    "recorded-date": "07-11-2023, 14:06:48",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -992,9 +992,9 @@
       "generate-mac-invalid-key-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId key_id"
+          "Message": "Invalid keyId 'key_id'"
         },
-        "message": "Invalid keyId key_id",
+        "message": "Invalid keyId 'key_id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1003,9 +1003,9 @@
       "verify-mac-invalid-key-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId key_id"
+          "Message": "Invalid keyId 'key_id'"
         },
-        "message": "Invalid keyId key_id",
+        "message": "Invalid keyId 'key_id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1014,7 +1014,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_384-HMAC_SHA_384]": {
-    "recorded-date": "13-04-2023, 11:31:12",
+    "recorded-date": "07-11-2023, 14:06:51",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -1037,9 +1037,9 @@
       "generate-mac-invalid-key-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId key_id"
+          "Message": "Invalid keyId 'key_id'"
         },
-        "message": "Invalid keyId key_id",
+        "message": "Invalid keyId 'key_id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1048,9 +1048,9 @@
       "verify-mac-invalid-key-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId key_id"
+          "Message": "Invalid keyId 'key_id'"
         },
-        "message": "Invalid keyId key_id",
+        "message": "Invalid keyId 'key_id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1059,7 +1059,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_512-HMAC_SHA_512]": {
-    "recorded-date": "13-04-2023, 11:31:13",
+    "recorded-date": "07-11-2023, 14:06:52",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -1082,9 +1082,9 @@
       "generate-mac-invalid-key-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId key_id"
+          "Message": "Invalid keyId 'key_id'"
         },
-        "message": "Invalid keyId key_id",
+        "message": "Invalid keyId 'key_id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1093,9 +1093,9 @@
       "verify-mac-invalid-key-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid keyId key_id"
+          "Message": "Invalid keyId 'key_id'"
         },
-        "message": "Invalid keyId key_id",
+        "message": "Invalid keyId 'key_id'",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1554,6 +1554,22 @@
           "Code": "InvalidCiphertextException",
           "Message": ""
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import": {
+    "recorded-date": "25-10-2023, 12:29:27",
+    "recorded-content": {
+      "response-error": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": "<key-arn> origin is AWS_KMS which is not valid for this operation."
+        },
+        "message": "<key-arn> origin is AWS_KMS which is not valid for this operation.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400

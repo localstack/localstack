@@ -4,8 +4,8 @@ import abc
 from itertools import takewhile
 from typing import Final, Optional
 
-from localstack.services.stepfunctions.asl.component.component import Component
-from localstack.utils.aws import aws_stack
+from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
+from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ResourceCondition(str):
@@ -72,23 +72,30 @@ class ResourceARN:
         )
 
 
-class Resource(Component, abc.ABC):
+class ResourceRuntimePart:
+    account: Final[str]
+    region: Final[str]
+
+    def __init__(self, account: str, region: str):
+        self.region = region
+        self.account = account
+
+
+class Resource(EvalComponent, abc.ABC):
+    _region: Final[str]
+    _account: Final[str]
     resource_arn: Final[str]
     partition: Final[str]
-    region: Final[str]
-    account: Final[str]
 
     def __init__(self, resource_arn: ResourceARN):
+        self._region = resource_arn.region
+        self._account = resource_arn.account
         self.resource_arn = resource_arn.arn
         self.partition = resource_arn.partition
-        self.region = resource_arn.region
-        self.account = resource_arn.account
 
     @staticmethod
     def from_resource_arn(arn: str) -> Resource:
         resource_arn = ResourceARN.from_arn(arn)
-        if not resource_arn.region:
-            resource_arn.region = aws_stack.get_region()
         match resource_arn.service, resource_arn.task_type:
             case "lambda", "function":
                 return LambdaResource(resource_arn=resource_arn)
@@ -96,6 +103,18 @@ class Resource(Component, abc.ABC):
                 return ActivityResource(resource_arn=resource_arn)
             case "states", _:
                 return ServiceResource(resource_arn=resource_arn)
+
+    def _eval_runtime_part(self, env: Environment) -> ResourceRuntimePart:
+        region = self._region if self._region else env.aws_execution_details.region
+        account = self._account if self._account else env.aws_execution_details.account
+        return ResourceRuntimePart(
+            account=account,
+            region=region,
+        )
+
+    def _eval_body(self, env: Environment) -> None:
+        runtime_part = self._eval_runtime_part(env=env)
+        env.stack.append(runtime_part)
 
 
 class ActivityResource(Resource):
@@ -111,7 +130,7 @@ class LambdaResource(Resource):
 
     def __init__(self, resource_arn: ResourceARN):
         super().__init__(resource_arn=resource_arn)
-        self.function_name: str = resource_arn.name
+        self.function_name = resource_arn.name
 
 
 class ServiceResource(Resource):

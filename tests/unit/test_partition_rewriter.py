@@ -1,7 +1,6 @@
 import base64
 import hashlib
 import json
-from unittest import mock
 from urllib.parse import urlencode
 
 import pytest
@@ -11,10 +10,10 @@ from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.partition_rewriter import ArnPartitionRewriteHandler
-from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.http import Request, Response
 from localstack.http.request import get_full_raw_path, get_raw_path
-from localstack.utils.aws.aws_stack import mock_aws_request_headers
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import to_bytes, to_str
 
 # Define the callables used to convert the payload to the appropriate encoding for the tests
@@ -59,8 +58,9 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
     # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
     if internal_call:
         headers = mock_aws_request_headers(
+            "dummy",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=origin_partition,
-            access_key=INTERNAL_AWS_ACCESS_KEY_ID,
             internal=True,
         )
     else:
@@ -168,11 +168,11 @@ def test_arn_partition_rewriting_url_encoding(httpserver, monkeypatch):
     # httpserver matches on the URL-decoded path
     httpserver.expect_request("/query:encoded/path/").respond_with_handler(echo_path)
 
-    def mock_get_edge_url() -> str:
+    def mock_internal_service_url() -> str:
         # Set the forwarding URL to the mock HTTP server
         return httpserver.url_for("/")
 
-    monkeypatch.setattr(config, "get_edge_url", mock_get_edge_url)
+    monkeypatch.setattr(config, "internal_service_url", mock_internal_service_url)
 
     request = Request(
         method="POST",
@@ -236,7 +236,7 @@ def test_arn_partition_rewriting_in_response(encoding):
         },
     )
 
-    rewrite_handler.modify_response(response, request_region="us-gov-west-1")
+    rewrite_handler.modify_response_revert(response, request_region="us-gov-west-1")
 
     assert response.status_code == response.status_code
     assert (
@@ -252,34 +252,6 @@ def test_arn_partition_rewriting_in_response(encoding):
     )
 
 
-def test_no_arn_partition_rewriting_in_internal_request():
-    """Partitions should not be rewritten for _internal_ requests."""
-    rewrite_handler = ArnPartitionRewriteHandler()
-    request = Request(
-        method="POST",
-        path="/",
-        body=b"",
-        headers={},
-    )
-    handler2 = mock.MagicMock()
-    # mimic an internal request
-    request.headers.update(
-        mock_aws_request_headers(
-            region_name="us-gov-west-1",
-            access_key=INTERNAL_AWS_ACCESS_KEY_ID,
-            internal=True,
-        )
-    )
-    chain = HandlerChain()
-    chain.request_handlers.append(rewrite_handler)
-    chain.request_handlers.append(handler2)
-    context = RequestContext()
-    context.request = request
-    chain.handle(context, Response())
-    assert not chain.terminated
-    handler2.assert_called_once()
-
-
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 def test_arn_partition_rewriting_in_response_with_request_region(encoding):
     rewrite_handler = ArnPartitionRewriteHandler()
@@ -290,7 +262,7 @@ def test_arn_partition_rewriting_in_response_with_request_region(encoding):
         status=200,
         headers={"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"},
     )
-    rewrite_handler.modify_response(response=response, request_region="us-gov-west-1")
+    rewrite_handler.modify_response_revert(response=response, request_region="us-gov-west-1")
 
     assert response.status_code == 200
     assert (
@@ -302,50 +274,49 @@ def test_arn_partition_rewriting_in_response_with_request_region(encoding):
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_arn_partition_rewriting_in_response_without_region_and_without_default_region(
-    encoding, switch_region
+def test_arn_partition_rewriting_in_response_without_region_without_fallback_partition_override(
+    encoding, monkeypatch
 ):
-    with switch_region(None):
-        rewrite_handler = ArnPartitionRewriteHandler()
-        response = Response(
-            response=encoding(
-                json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
-            ),
-            status=200,
-            headers={"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"},
-        )
-        rewrite_handler.modify_response(response=response, request_region=None)
+    rewrite_handler = ArnPartitionRewriteHandler()
+    response = Response(
+        response=encoding(
+            json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
+        ),
+        status=200,
+        headers={"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"},
+    )
+    rewrite_handler.modify_response_revert(response=response, request_region=None)
 
-        assert response.status_code == 200
-        assert response.headers["some-header-with-arn"] == "arn:aws:iam::123456789012:ArnInHeader"
-        assert response.data == to_bytes(
-            json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
-        )
+    assert response.status_code == 200
+    assert response.headers["some-header-with-arn"] == "arn:aws:iam::123456789012:ArnInHeader"
+    assert response.data == to_bytes(
+        json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
+    )
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_arn_partition_rewriting_in_response_without_region_and_with_default_region(
-    encoding, switch_region
+def test_arn_partition_rewriting_in_response_without_region_with_fallback_partition_override(
+    encoding, monkeypatch
 ):
-    with switch_region("us-gov-east-1"):
-        rewrite_handler = ArnPartitionRewriteHandler()
-        response = Response(
-            response=encoding(
-                json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
-            ),
-            status=200,
-            headers={"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"},
-        )
-        rewrite_handler.modify_response(response, request_region=None)
+    monkeypatch.setattr(config, "ARN_PARTITION_FALLBACK", "aws-us-gov")
 
-        assert response.status_code == response.status_code
-        assert (
-            response.headers["some-header-with-arn"]
-            == "arn:aws-us-gov:iam::123456789012:ArnInHeader"
-        )
-        assert response.data == to_bytes(
-            json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
-        )
+    rewrite_handler = ArnPartitionRewriteHandler()
+    response = Response(
+        response=encoding(
+            json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
+        ),
+        status=200,
+        headers={"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"},
+    )
+    rewrite_handler.modify_response_revert(response, request_region=None)
+
+    assert response.status_code == response.status_code
+    assert (
+        response.headers["some-header-with-arn"] == "arn:aws-us-gov:iam::123456789012:ArnInHeader"
+    )
+    assert response.data == to_bytes(
+        json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
+    )
 
 
 @pytest.mark.parametrize("internal_call", [True, False])
@@ -360,17 +331,17 @@ def test_arn_partition_rewriting_in_request_and_response(
         handler_data["received_request"] = _request
         response = Response()
         response.set_data(_request.data)
-        response.headers = request.headers
+        response.headers = _request.headers
         handler_data["sent_request"] = response
         return response
 
     httpserver.expect_request("").respond_with_handler(echo)
 
-    def mock_get_edge_url() -> str:
+    def mock_internal_service_url() -> str:
         # Set the forwarding URL to the mock HTTP server
         return httpserver.url_for("/")
 
-    monkeypatch.setattr(config, "get_edge_url", mock_get_edge_url)
+    monkeypatch.setattr(config, "internal_service_url", mock_internal_service_url)
     data = encoding(
         json.dumps(
             {
@@ -383,8 +354,9 @@ def test_arn_partition_rewriting_in_request_and_response(
     # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
     if internal_call:
         headers = mock_aws_request_headers(
+            "dummy",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=origin_partition,
-            access_key=INTERNAL_AWS_ACCESS_KEY_ID,
             internal=True,
         )
     else:

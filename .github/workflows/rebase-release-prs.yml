@@ -1,8 +1,8 @@
 name: Rebase Release PRs
 on:
-  push:
-    branches:
-    - master
+  workflow_dispatch:
+  schedule:
+    - cron: 0 5 * * MON-FRI
 jobs:
   find-release-branches:
     runs-on: ubuntu-latest
@@ -10,7 +10,7 @@ jobs:
     steps:
     - name: find release branches
       id: find-release-branches
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           // find all refs in the repo starting with "release/"

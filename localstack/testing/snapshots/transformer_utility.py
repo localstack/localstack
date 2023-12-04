@@ -6,7 +6,7 @@ from json import JSONDecodeError
 from typing import Optional, Pattern
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
-from localstack.aws.api.stepfunctions import CreateStateMachineOutput, StartExecutionOutput
+from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
 from localstack.testing.snapshots.transformer import (
     JsonpathTransformer,
     KeyValueBasedTransformer,
@@ -131,6 +131,24 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def lambda_report_logs():
+        """Transformers for Lambda REPORT logs replacing dynamic metrics including:
+        * Duration
+        * Billed Duration
+        * Max Memory Used
+        * Init Duration
+
+        Excluding:
+        * Memory Size
+        """
+        return [
+            TransformerUtility.regex(
+                re.compile(r"Duration: \d+(\.\d{2})? ms"), "Duration: <duration> ms"
+            ),
+            TransformerUtility.regex(re.compile(r"Used: \d+ MB"), "Used: <memory> MB"),
+        ]
+
+    @staticmethod
     def apigateway_api():
         return [
             TransformerUtility.key_value("id"),
@@ -235,6 +253,19 @@ class TransformerUtility:
             TransformerUtility.key_value("ChangeSetName"),
             TransformerUtility.key_value("ChangeSetId"),
             TransformerUtility.key_value("StackName"),
+        ]
+
+    @staticmethod
+    def cfn_stack_resource():
+        """
+        :return: array with Transformers, for cloudformation stack resource description;
+                recommended for verifying the stack resources deployed for scenario tests
+        """
+        return [
+            KeyValueBasedTransformer(_resource_name_transformer, "resource"),
+            KeyValueBasedTransformer(_change_set_id_transformer, "change-set-id"),
+            TransformerUtility.key_value("LogicalResourceId"),
+            TransformerUtility.key_value("PhysicalResourceId", reference_replacement=False),
         ]
 
     @staticmethod
@@ -406,6 +437,25 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def route53_api():
+        return [
+            TransformerUtility.jsonpath("$..HostedZone.CallerReference", "caller-reference"),
+            TransformerUtility.jsonpath(
+                jsonpath="$..DelegationSet.NameServers",
+                value_replacement="<name-server>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.jsonpath(
+                jsonpath="$..ChangeInfo.Status", value_replacement="status"
+            ),
+            KeyValueBasedTransformer(_route53_hosted_zone_id_transformer, "zone-id"),
+            TransformerUtility.regex(r"/change/[A-Za-z0-9]+", "/change/<change-id>"),
+            TransformerUtility.jsonpath(
+                jsonpath="$..HostedZone.Name", value_replacement="zone_name"
+            ),
+        ]
+
+    @staticmethod
     def sqs_api():
         """
         :return: array with Transformers, for sqs api.
@@ -563,6 +613,15 @@ class TransformerUtility:
         return RegexTransformer(arn_part, arn_part_repl)
 
     @staticmethod
+    def sfn_map_run_arn(map_run_arn: LongArn, index: int) -> list[RegexTransformer]:
+        map_run_arn_part = map_run_arn.split("/")[-1]
+        arn_parts = map_run_arn_part.split(":")
+        return [
+            RegexTransformer(arn_parts[0], f"<MapRunArnPart0_{index}idx>"),
+            RegexTransformer(arn_parts[1], f"<MapRunArnPart1_{index}idx>"),
+        ]
+
+    @staticmethod
     def stepfunctions_api():
         return [
             JsonpathTransformer(
@@ -622,6 +681,13 @@ def _log_stream_name_transformer(key: str, val: str) -> str:
         if match:
             return val
     return None
+
+
+def _route53_hosted_zone_id_transformer(key: str, val: str) -> str:
+    if isinstance(val, str) and key == "Id":
+        match = re.match(r".*/hostedzone/([A-Za-z0-9]+)", val)
+        if match:
+            return match.groups()[0]
 
 
 # TODO: actual and declared type diverge

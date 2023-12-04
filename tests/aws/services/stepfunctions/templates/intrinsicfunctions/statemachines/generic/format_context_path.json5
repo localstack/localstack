@@ -1,0 +1,13 @@
+{
+    "Comment": "FORMAT_CONTEXT_PATH",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.Format('Formatting arguments fst={} and snd={}.', $$.Execution.Name, $$.StateMachine)",
+            },
+            "End": true,
+        },
+    },
+}

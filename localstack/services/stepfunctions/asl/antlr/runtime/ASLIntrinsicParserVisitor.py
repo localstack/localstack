@@ -1,6 +1,6 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLIntrinsicParser.g4 by ANTLR 4.12.0
+# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLIntrinsicParser.g4 by ANTLR 4.13.1
 from antlr4 import *
-if __name__ is not None and "." in __name__:
+if "." in __name__:
     from .ASLIntrinsicParser import ASLIntrinsicParser
 else:
     from ASLIntrinsicParser import ASLIntrinsicParser
@@ -49,6 +49,11 @@ class ASLIntrinsicParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLIntrinsicParser#func_arg_context_path.
+    def visitFunc_arg_context_path(self, ctx:ASLIntrinsicParser.Func_arg_context_pathContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLIntrinsicParser#func_arg_json_path.
     def visitFunc_arg_json_path(self, ctx:ASLIntrinsicParser.Func_arg_json_pathContext):
         return self.visitChildren(ctx)
@@ -56,6 +61,11 @@ class ASLIntrinsicParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLIntrinsicParser#func_arg_func_decl.
     def visitFunc_arg_func_decl(self, ctx:ASLIntrinsicParser.Func_arg_func_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLIntrinsicParser#context_path.
+    def visitContext_path(self, ctx:ASLIntrinsicParser.Context_pathContext):
         return self.visitChildren(ctx)
 
 

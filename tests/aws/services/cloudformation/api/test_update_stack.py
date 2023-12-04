@@ -360,7 +360,6 @@ def test_update_with_invalid_rollback_configuration_errors(
 @markers.aws.validated
 @pytest.mark.skip(reason="The update value is not being applied")
 def test_update_with_rollback_configuration(deploy_cfn_template, aws_client):
-
     aws_client.cloudwatch.put_metric_alarm(
         AlarmName="HighResourceUsage",
         ComparisonOperator="GreaterThanThreshold",

@@ -1,24 +1,20 @@
 import abc
 import json
 import logging
-import threading
 from abc import ABC
 from functools import lru_cache
 from typing import Callable, Optional
 
-from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_.api_utils import function_locators_from_arn, qualifier_is_version
+from localstack.services.lambda_.event_source_listeners.lambda_legacy import LegacyInvocationResult
+from localstack.services.lambda_.event_source_listeners.utils import event_source_arn_matches
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
 from localstack.services.lambda_.invocation.lambda_service import LambdaService
 from localstack.services.lambda_.invocation.models import lambda_stores
-from localstack.services.lambda_.lambda_executors import (
-    InvocationResult as LegacyInvocationResult,  # TODO: extract
-)
-from localstack.services.lambda_.lambda_utils import event_source_arn_matches
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import to_bytes, to_str
@@ -64,72 +60,6 @@ class EventSourceAdapter(ABC):
     @abc.abstractmethod
     def get_client_factory(self, function_arn: str, region_name: str) -> ServiceLevelClientFactory:
         pass
-
-
-class EventSourceLegacyAdapter(EventSourceAdapter):
-    def __init__(self):
-        pass
-
-    def invoke(self, function_arn, context, payload, invocation_type, callback=None):
-        from localstack.services.lambda_.lambda_api import run_lambda
-
-        try:
-            json.dumps(payload)
-        except TypeError:
-            payload = json.loads(json.dumps(payload or {}, cls=BytesEncoder))
-
-        run_lambda(
-            func_arn=function_arn,
-            event=payload,
-            context=context,
-            asynchronous=(invocation_type == InvocationType.Event),
-            callback=callback,
-        )
-
-    def invoke_with_statuscode(
-        self,
-        function_arn,
-        context,
-        payload,
-        invocation_type,
-        callback=None,
-        *,
-        lock_discriminator,
-        parallelization_factor
-    ) -> int:
-        from localstack.services.lambda_ import lambda_executors
-        from localstack.services.lambda_.lambda_api import run_lambda
-
-        if not config.SYNCHRONOUS_KINESIS_EVENTS:
-            lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
-                lock_discriminator, threading.BoundedSemaphore(parallelization_factor)
-            )
-        else:
-            lock_discriminator = None
-
-        try:
-            json.dumps(payload)
-        except TypeError:
-            payload = json.loads(json.dumps(payload or {}, cls=BytesEncoder))
-
-        result = run_lambda(
-            func_arn=function_arn,
-            event=payload,
-            context=context,
-            asynchronous=(invocation_type == InvocationType.Event),
-            callback=callback,
-            lock_discriminator=lock_discriminator,
-        )
-        status_code = getattr(result.result, "status_code", 0)
-        return status_code
-
-    def get_event_sources(self, source_arn: str) -> list:
-        from localstack.services.lambda_.lambda_api import get_event_sources
-
-        return get_event_sources(source_arn=source_arn)
-
-    def get_client_factory(self, function_arn: str, region_name: str) -> ServiceLevelClientFactory:
-        return connect_to(region_name=region_name)
 
 
 class EventSourceAsfAdapter(EventSourceAdapter):

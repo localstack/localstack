@@ -7,7 +7,7 @@ from rich.rule import Rule
 
 from localstack import config
 from localstack.cli import console
-from localstack.utils.bootstrap import ContainerConfigurators
+from localstack.utils.bootstrap import Container, ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     PortMappings,
@@ -49,6 +49,12 @@ from .paths import HostPaths
     is_flag=True,
     default=None,
     help="Whether to start localstack pro or community. If not set, it will guess from the current directory",
+)
+@click.option(
+    "--develop/--no-develop",
+    is_flag=True,
+    default=False,
+    help="Install debugpy and expose port 5678",
 )
 @click.option(
     "--randomize",
@@ -108,11 +114,15 @@ from .paths import HostPaths
     required=False,
     help="Docker network to start the container in",
 )
+@click.option(
+    "--dev-extensions", is_flag=True, default=False, help="Load extensions in develop mode"
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     image: str = None,
     volume_dir: str = None,
     pro: bool = None,
+    develop: bool = False,
     randomize: bool = False,
     mount_source: bool = True,
     mount_dependencies: bool = False,
@@ -124,6 +134,7 @@ def run(
     entrypoint: str = None,
     network: str = None,
     command: str = None,
+    dev_extensions: bool = False,
 ):
     """
     A tool for localstack developers to start localstack containers. Run this in your localstack or
@@ -162,6 +173,10 @@ def run(
     Or use custom entrypoints:
 
         python -m localstack.dev.run --entrypoint /bin/bash -- echo "hello"
+
+    You can import and expose debugpy:
+
+        python -m localstack.dev.run --develop
 
     You can also mount local dependencies (e.g., pytest and other test dependencies, and then use that
     in the container)::
@@ -234,6 +249,15 @@ def run(
         network=network,
     )
 
+    # replicate pro startup
+    if pro:
+        try:
+            from localstack_ext.plugins import modify_gateway_listen_config
+
+            modify_gateway_listen_config(config)
+        except ImportError:
+            pass
+
     # setup configurators
     configurators = [
         ImageConfigurator(pro, image),
@@ -259,6 +283,27 @@ def run(
         configurators.append(EntryPointMountConfigurator(host_paths=host_paths, pro=pro))
     if mount_dependencies:
         configurators.append(DependencyMountConfigurator(host_paths=host_paths))
+    if develop:
+        configurators.append(ContainerConfigurators.develop)
+    if dev_extensions:
+        if pro:
+            try:
+                from localstack_ext.extensions.bootstrap import (
+                    run_on_configure_host_hook,
+                    run_on_configure_localstack_container_hook,
+                )
+
+                # collect dev extensions
+                run_on_configure_host_hook()
+
+                # create stub container with configuration to apply
+                c = Container(container_config=container_config)
+                run_on_configure_localstack_container_hook(c)
+
+            except ImportError:
+                pass
+        else:
+            click.echo("Pro mode is required for extensions support")
 
     # make sure anything coming from CLI arguments has priority
     configurators.extend(

@@ -241,7 +241,6 @@ class UntagResourcesOutput(TypedDict, total=False):
 
 
 class ResourcegroupstaggingapiApi:
-
     service = "resourcegroupstaggingapi"
     version = "2017-01-26"
 

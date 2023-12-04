@@ -39,6 +39,7 @@ tagKeyType = str
 tagValueType = str
 tokenCodeType = str
 tokenType = str
+unrestrictedSessionPolicyDocumentType = str
 urlType = str
 userIdType = str
 userNameType = str
@@ -121,7 +122,7 @@ class AssumeRoleRequest(ServiceRequest):
     RoleArn: arnType
     RoleSessionName: roleSessionNameType
     PolicyArns: Optional[policyDescriptorListType]
-    Policy: Optional[sessionPolicyDocumentType]
+    Policy: Optional[unrestrictedSessionPolicyDocumentType]
     DurationSeconds: Optional[roleDurationSecondsType]
     Tags: Optional[tagListType]
     TransitiveTagKeys: Optional[tagKeyListType]
@@ -251,7 +252,6 @@ class GetSessionTokenResponse(TypedDict, total=False):
 
 
 class StsApi:
-
     service = "sts"
     version = "2011-06-15"
 
@@ -262,7 +262,7 @@ class StsApi:
         role_arn: arnType,
         role_session_name: roleSessionNameType,
         policy_arns: policyDescriptorListType = None,
-        policy: sessionPolicyDocumentType = None,
+        policy: unrestrictedSessionPolicyDocumentType = None,
         duration_seconds: roleDurationSecondsType = None,
         tags: tagListType = None,
         transitive_tag_keys: tagKeyListType = None,

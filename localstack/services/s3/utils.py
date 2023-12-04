@@ -7,16 +7,13 @@ import re
 import zlib
 from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
-from zoneinfo import ZoneInfo
 
-import moto.s3.models as moto_s3_models
 import xmltodict
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
-from moto.s3.exceptions import MissingBucket
-from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
+from zoneinfo import ZoneInfo
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3 import (
     AccessControlPolicy,
@@ -37,9 +34,6 @@ from localstack.aws.api.s3 import (
     LifecycleRule,
     LifecycleRules,
     Metadata,
-    MethodNotAllowed,
-    NoSuchBucket,
-    NoSuchKey,
     ObjectCannedACL,
     ObjectKey,
     ObjectSize,
@@ -85,19 +79,13 @@ BUCKET_NAME_REGEX = (
     + r"(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)"
 )
 
-REGION_REGEX = r"[a-z]{2}-[a-z]+-[0-9]{1,}"
-PORT_REGEX = r"(:[\d]{0,6})?"
-
 TAG_REGEX = re.compile(r"^[\w\s.:/=+\-@]*$")
 
-S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expression (separated by .) followed by .s3
-    r"^(http(s)?://)?((?!s3\.)[^\./]+)\."  # the negative lookahead part is for considering buckets
-    r"(((s3(-website)?\.({}\.)?)localhost(\.localstack\.cloud)?)|(localhost\.localstack\.cloud)|"
-    r"(s3((-website)|(-external-1))?[\.-](dualstack\.)?"
-    r"({}\.)?amazonaws\.com(.cn)?)){}(/[\w\-. ]*)*$"
-).format(
-    REGION_REGEX, REGION_REGEX, PORT_REGEX
+
+S3_VIRTUAL_HOSTNAME_REGEX = (
+    r"(?P<bucket>.*).s3.(?P<region>(?:us-gov|us|ap|ca|cn|eu|sa)-[a-z]+-\d)?.*"
 )
+
 _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
 
@@ -313,13 +301,12 @@ def parse_copy_source_range_header(copy_source_range: str, object_size: int) -> 
 
 
 def get_full_default_bucket_location(bucket_name: BucketName) -> str:
-    if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
-        host_definition = localstack_host(
-            use_hostname_external=True, custom_port=config.get_edge_port_http()
-        )
+    host_definition = localstack_host()
+    if host_definition.host != constants.LOCALHOST_HOSTNAME:
+        # the user has customised their LocalStack hostname, and may not support subdomains.
+        # Return the location in path form.
         return f"{config.get_protocol()}://{host_definition.host_and_port()}/{bucket_name}/"
     else:
-        host_definition = localstack_host(use_localhost_cloud=True)
         return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
@@ -415,12 +402,6 @@ def is_presigned_url_request(context: RequestContext) -> bool:
     )
 
 
-def is_key_expired(key_object: Union[FakeKey, FakeDeleteMarker]) -> bool:
-    if not key_object or isinstance(key_object, FakeDeleteMarker) or not key_object._expiry:
-        return False
-    return key_object._expiry <= datetime.datetime.now(key_object._expiry.tzinfo)
-
-
 def is_bucket_name_valid(bucket_name: str) -> bool:
     """
     ref. https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
@@ -447,20 +428,19 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return False
 
 
-def uses_host_addressing(headers: Dict[str, str]) -> bool:
+def uses_host_addressing(headers: Dict[str, str]) -> str | None:
     """
     Determines if the request is targeting S3 with virtual host addressing
     :param headers: the request headers
-    :return: whether the request targets S3 with virtual host addressing
+    :return: if the request targets S3 with virtual host addressing, returns the bucket name else None
     """
     host = headers.get("host", "")
 
     # try to extract the bucket from the hostname (the "in" check is a minor optimization, as the regex is very greedy)
-    return (
-        True
-        if ".s3" in host and ((match := _s3_virtual_host_regex.match(host)) and match.group(3))
-        else False
-    )
+    if ".s3." in host and (
+        (match := _s3_virtual_host_regex.match(host)) and (bucket_name := match.group("bucket"))
+    ):
+        return bucket_name
 
 
 def get_class_attrs_from_spec_class(spec_class: Type[str]) -> set[str]:
@@ -501,65 +481,19 @@ def extract_bucket_name_and_key_from_headers_and_path(
     host = headers.get("host", "")
     if ".s3" in host:
         vhost_match = _s3_virtual_host_regex.match(host)
-        if vhost_match and vhost_match.group(3):
-            bucket_name = vhost_match.group(3)
+        if vhost_match and vhost_match.group("bucket"):
+            bucket_name = vhost_match.group("bucket") or None
             split = path.split("/", maxsplit=1)
-            if len(split) > 1:
+            if len(split) > 1 and split[1]:
                 object_key = split[1]
     else:
         path_without_params = path.partition("?")[0]
         split = path_without_params.split("/", maxsplit=2)
-        bucket_name = split[1]
+        bucket_name = split[1] or None
         if len(split) > 2:
             object_key = split[2]
 
     return bucket_name, object_key
-
-
-def get_bucket_from_moto(
-    moto_backend: moto_s3_models.S3Backend, bucket: BucketName
-) -> moto_s3_models.FakeBucket:
-    # TODO: check authorization for buckets as well?
-    try:
-        return moto_backend.get_bucket(bucket_name=bucket)
-    except MissingBucket:
-        raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
-
-
-def get_key_from_moto_bucket(
-    moto_bucket: FakeBucket,
-    key: ObjectKey,
-    version_id: str = None,
-    raise_if_delete_marker_method: Literal["GET", "PUT"] = None,
-) -> FakeKey | FakeDeleteMarker:
-    # TODO: rework the delete marker handling
-    # we basically need to re-implement moto `get_object` to account for FakeDeleteMarker
-    if version_id is None:
-        fake_key = moto_bucket.keys.get(key)
-    else:
-        for key_version in moto_bucket.keys.getlist(key, default=[]):
-            if str(key_version.version_id) == str(version_id):
-                fake_key = key_version
-                break
-        else:
-            fake_key = None
-
-    if not fake_key:
-        raise NoSuchKey("The specified key does not exist.", Key=key)
-
-    if isinstance(fake_key, FakeDeleteMarker) and raise_if_delete_marker_method:
-        # TODO: validate method, but should be PUT in most cases (updating a DeleteMarker)
-        match raise_if_delete_marker_method:
-            case "GET":
-                raise NoSuchKey("The specified key does not exist.", Key=key)
-            case "PUT":
-                raise MethodNotAllowed(
-                    "The specified method is not allowed against this resource.",
-                    Method="PUT",
-                    ResourceType="DeleteMarker",
-                )
-
-    return fake_key
 
 
 def normalize_bucket_name(bucket_name):
@@ -568,7 +502,7 @@ def normalize_bucket_name(bucket_name):
     return bucket_name
 
 
-def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, Optional[str]]:
+def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, str]:
     """
     Extracts the bucket name and key from s3 uri
     """
@@ -601,7 +535,7 @@ def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
 
 
-def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str = None) -> Optional[str]:
+def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str) -> Optional[str]:
     """
     In S3, the KMS key can be passed as a KeyId or a KeyArn. This method allows to always get the KeyArn from either.
     It can also validate if the key is in the same region, and raise an exception.
@@ -633,7 +567,7 @@ def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str = None) ->
 
 
 # TODO: replace Any by a replacement for S3Bucket, some kind of defined type?
-def validate_kms_key_id(kms_key: str, bucket: FakeBucket | Any) -> None:
+def validate_kms_key_id(kms_key: str, bucket: Any) -> None:
     """
     Validate that the KMS key used to encrypt the object is valid
     :param kms_key: the KMS key id or ARN
@@ -676,8 +610,8 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket | Any) -> None:
         raise
 
 
-def create_s3_kms_managed_key_for_region(region_name: str) -> SSEKMSKeyId:
-    kms_client = connect_to(region_name=region_name).kms
+def create_s3_kms_managed_key_for_region(account_id: str, region_name: str) -> SSEKMSKeyId:
+    kms_client = connect_to(aws_access_key_id=account_id, region_name=region_name).kms
     key = kms_client.create_key(
         Description="Default key that protects my S3 objects when no other key is defined"
     )
@@ -691,12 +625,6 @@ def rfc_1123_datetime(src: datetime.datetime) -> str:
 
 def str_to_rfc_1123_datetime(value: str) -> datetime.datetime:
     return datetime.datetime.strptime(value, RFC1123).replace(tzinfo=_gmt_zone_info)
-
-
-def iso_8601_datetime_without_milliseconds_s3(
-    value: datetime,
-) -> Optional[str]:
-    return value.strftime("%Y-%m-%dT%H:%M:%S.000Z") if value else None
 
 
 def add_expiration_days_to_datetime(user_datatime: datetime.datetime, exp_days: int) -> str:
@@ -936,6 +864,8 @@ def validate_failed_precondition(
     :raises NotModified, 304 with an empty body
     """
     precondition_failed = None
+    # last_modified needs to be rounded to a second so that strict equality can be enforced from a RFC1123 header
+    last_modified = last_modified.replace(microsecond=0)
     if (if_match := request.get("IfMatch")) and etag != if_match.strip('"'):
         precondition_failed = "If-Match"
 
@@ -952,7 +882,7 @@ def validate_failed_precondition(
 
     if ((if_none_match := request.get("IfNoneMatch")) and etag == if_none_match.strip('"')) or (
         (if_modified_since := request.get("IfModifiedSince"))
-        and last_modified < if_modified_since < datetime.datetime.now(tz=_gmt_zone_info)
+        and last_modified <= if_modified_since < datetime.datetime.now(tz=_gmt_zone_info)
     ):
         raise CommonServiceException(
             message="Not Modified",

@@ -120,7 +120,7 @@ def test_describe_template(s3_create_bucket, aws_client, cleanups, snapshot):
             f"https://{bucket_name}.s3.{aws_client.s3.meta.region_name}.amazonaws.com/template.yml"
         )
     else:
-        template_url = f"{config.get_edge_url()}/{bucket_name}/template.yml"
+        template_url = f"{config.internal_service_url()}/{bucket_name}/template.yml"
 
     # get summary by template URL
     get_template_summary_by_url = aws_client.cloudformation.get_template_summary(
@@ -174,3 +174,17 @@ def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client):
     assert response.get("TableName") == "EventTable"
     assert len(response.get("KinesisDataStreamDestinations")) == 1
     assert "StreamArn" in response.get("KinesisDataStreamDestinations")[0]
+
+
+@markers.aws.validated
+def test_kinesis_stream_consumer_creations(deploy_cfn_template, aws_client):
+    consumer_name = f"{short_uid()}"
+    stack = deploy_cfn_template(
+        parameters={"TestConsumerName": consumer_name},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/kinesis_stream_consumer.yaml"
+        ),
+    )
+    consumer_arn = stack.outputs["KinesisSConsumerARN"]
+    response = aws_client.kinesis.describe_stream_consumer(ConsumerARN=consumer_arn)
+    assert response["ConsumerDescription"]["ConsumerStatus"] == "ACTIVE"

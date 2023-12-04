@@ -186,6 +186,16 @@ class ExportStatus(str):
     FAILED = "FAILED"
 
 
+class ExportType(str):
+    FULL_EXPORT = "FULL_EXPORT"
+    INCREMENTAL_EXPORT = "INCREMENTAL_EXPORT"
+
+
+class ExportViewType(str):
+    NEW_IMAGE = "NEW_IMAGE"
+    NEW_AND_OLD_IMAGES = "NEW_AND_OLD_IMAGES"
+
+
 class GlobalTableStatus(str):
     CREATING = "CREATING"
     ACTIVE = "ACTIVE"
@@ -1277,6 +1287,16 @@ class DescribeExportInput(ServiceRequest):
     ExportArn: ExportArn
 
 
+ExportToTime = datetime
+ExportFromTime = datetime
+
+
+class IncrementalExportSpecification(TypedDict, total=False):
+    ExportFromTime: Optional[ExportFromTime]
+    ExportToTime: Optional[ExportToTime]
+    ExportViewType: Optional[ExportViewType]
+
+
 ExportTime = datetime
 ExportEndTime = datetime
 ExportStartTime = datetime
@@ -1302,6 +1322,8 @@ class ExportDescription(TypedDict, total=False):
     ExportFormat: Optional[ExportFormat]
     BilledSizeBytes: Optional[BilledSizeBytes]
     ItemCount: Optional[ItemCount]
+    ExportType: Optional[ExportType]
+    IncrementalExportSpecification: Optional[IncrementalExportSpecification]
 
 
 class DescribeExportOutput(TypedDict, total=False):
@@ -1544,6 +1566,7 @@ class ExecuteTransactionOutput(TypedDict, total=False):
 class ExportSummary(TypedDict, total=False):
     ExportArn: Optional[ExportArn]
     ExportStatus: Optional[ExportStatus]
+    ExportType: Optional[ExportType]
 
 
 ExportSummaries = List[ExportSummary]
@@ -1559,6 +1582,8 @@ class ExportTableToPointInTimeInput(ServiceRequest):
     S3SseAlgorithm: Optional[S3SseAlgorithm]
     S3SseKmsKeyId: Optional[S3SseKmsKeyId]
     ExportFormat: Optional[ExportFormat]
+    ExportType: Optional[ExportType]
+    IncrementalExportSpecification: Optional[IncrementalExportSpecification]
 
 
 class ExportTableToPointInTimeOutput(TypedDict, total=False):
@@ -2115,7 +2140,6 @@ class UpdateTimeToLiveOutput(TypedDict, total=False):
 
 
 class DynamodbApi:
-
     service = "dynamodb"
     version = "2012-08-10"
 
@@ -2331,6 +2355,8 @@ class DynamodbApi:
         s3_sse_algorithm: S3SseAlgorithm = None,
         s3_sse_kms_key_id: S3SseKmsKeyId = None,
         export_format: ExportFormat = None,
+        export_type: ExportType = None,
+        incremental_export_specification: IncrementalExportSpecification = None,
     ) -> ExportTableToPointInTimeOutput:
         raise NotImplementedError
 

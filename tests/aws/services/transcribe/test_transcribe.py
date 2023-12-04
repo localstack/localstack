@@ -241,6 +241,7 @@ class TestTranscribe:
         output_bucket,
         output_key,
         s3_bucket,
+        s3_create_bucket,
         cleanups,
         snapshot,
         aws_client,
@@ -263,7 +264,7 @@ class TestTranscribe:
 
         if output_bucket is not None:
             params["OutputBucketName"] = output_bucket
-            aws_client.s3.create_bucket(Bucket=output_bucket)
+            s3_create_bucket(Bucket=output_bucket)
             cleanups.append(_cleanup)
         if output_key is not None:
             params["OutputKey"] = output_key

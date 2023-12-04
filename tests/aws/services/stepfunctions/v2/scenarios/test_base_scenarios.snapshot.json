@@ -276,7 +276,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_break_condition": {
-    "recorded-date": "17-07-2023, 16:56:59",
+    "recorded-date": "21-09-2023, 17:39:44",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -715,7 +715,10 @@
             "type": "MapStateFailed"
           },
           {
-            "executionFailedEventDetails": {},
+            "executionFailedEventDetails": {
+              "cause": "This state machines raises a 'SomeFailure' failure.",
+              "error": "SomeFailure"
+            },
             "id": 36,
             "previousEventId": 35,
             "timestamp": "timestamp",
@@ -8853,6 +8856,2437 @@
             },
             "id": 6,
             "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_list_objects_v2": {
+    "recorded-date": "21-09-2023, 13:54:23",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket_name"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket_name"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"Etag\": \"<Etag-file_0.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_0.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}, {\"Etag\": \"<Etag-file_1.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_1.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}, {\"Etag\": \"<Etag-file_2.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_2.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"Etag\": \"<Etag-file_0.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_0.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}, {\"Etag\": \"<Etag-file_1.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_1.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}, {\"Etag\": \"<Etag-file_2.txt>\", \"LastModified\": \"<date>\", \"Key\": \"file_2.txt\", \"Size\": 12, \"StorageClass\": \"STANDARD\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_csv_headers_first_line": {
+    "recorded-date": "21-09-2023, 14:07:17",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"Col1\":\"Value1\",\"Col2\":\"Value2\",\"Col3\":\"Value3\"},{\"Col1\":\"Value4\",\"Col2\":\"Value5\",\"Col3\":\"Value6\"},{\"Col1\":\"\",\"Col2\":\"\",\"Col3\":\"\"},{\"Col1\":\"true\",\"Col2\":\"1\",\"Col3\":\"'HelloWorld'\"},{\"Col1\":\"Null\",\"Col2\":\"None\",\"Col3\":\"\"},{\"Col1\":\"   \",\"Col2\":\"\",\"Col3\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"Col1\":\"Value1\",\"Col2\":\"Value2\",\"Col3\":\"Value3\"},{\"Col1\":\"Value4\",\"Col2\":\"Value5\",\"Col3\":\"Value6\"},{\"Col1\":\"\",\"Col2\":\"\",\"Col3\":\"\"},{\"Col1\":\"true\",\"Col2\":\"1\",\"Col3\":\"'HelloWorld'\"},{\"Col1\":\"Null\",\"Col2\":\"None\",\"Col3\":\"\"},{\"Col1\":\"   \",\"Col2\":\"\",\"Col3\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_csv_headers_decl": {
+    "recorded-date": "21-09-2023, 14:07:46",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"H1\":\"Value1\",\"H2\":\"Value2\",\"H3\":\"Value3\"},{\"H1\":\"Value4\",\"H2\":\"Value5\",\"H3\":\"Value6\"},{\"H1\":\"\",\"H2\":\"\",\"H3\":\"\"},{\"H1\":\"true\",\"H2\":\"1\",\"H3\":\"'HelloWorld'\"},{\"H1\":\"Null\",\"H2\":\"None\",\"H3\":\"\"},{\"H1\":\"   \",\"H2\":\"\",\"H3\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"H1\":\"Value1\",\"H2\":\"Value2\",\"H3\":\"Value3\"},{\"H1\":\"Value4\",\"H2\":\"Value5\",\"H3\":\"Value6\"},{\"H1\":\"\",\"H2\":\"\",\"H3\":\"\"},{\"H1\":\"true\",\"H2\":\"1\",\"H3\":\"'HelloWorld'\"},{\"H1\":\"Null\",\"H2\":\"None\",\"H3\":\"\"},{\"H1\":\"   \",\"H2\":\"\",\"H3\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json": {
+    "recorded-date": "21-09-2023, 14:08:16",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"false\",\"statement_date\":\"6/7/2022\",\"statement_source\":\"television\"},{\"verdict\":\"mostly-true\",\"statement_date\":\"5/18/2016\",\"statement_source\":\"news\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"false\",\"statement_date\":\"6/7/2022\",\"statement_source\":\"television\"},{\"verdict\":\"mostly-true\",\"statement_date\":\"5/18/2016\",\"statement_source\":\"news\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_headers_decl_duplicate_headers": {
+    "recorded-date": "21-09-2023, 14:16:41",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "mapRunFailedEventDetails": {
+              "cause": "CSV headers cannot contain duplicates.",
+              "error": "States.ItemReaderFailed"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "CSV headers cannot contain duplicates.",
+              "error": "States.ItemReaderFailed"
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_headers_decl_extra_fields": {
+    "recorded-date": "21-09-2023, 14:25:23",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"H1\":\"Value1\"},{\"H1\":\"Value4\"},{\"H1\":\"\"},{\"H1\":\"true\"},{\"H1\":\"Null\"},{\"H1\":\"   \"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"H1\":\"Value1\"},{\"H1\":\"Value4\"},{\"H1\":\"\"},{\"H1\":\"true\"},{\"H1\":\"Null\"},{\"H1\":\"   \"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_headers_first_row_typed_headers": {
+    "recorded-date": "21-09-2023, 14:26:55",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"0\":\"Value4\",\"{}\":\"Value6\",\"True\":\"Value5\"},{\"0\":\"\",\"{}\":\"\",\"True\":\"\"},{\"0\":\"true\",\"{}\":\"'HelloWorld'\",\"True\":\"1\"},{\"0\":\"Null\",\"{}\":\"\",\"True\":\"None\"},{\"0\":\"   \",\"{}\":\"\",\"True\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"0\":\"Value4\",\"{}\":\"Value6\",\"True\":\"Value5\"},{\"0\":\"\",\"{}\":\"\",\"True\":\"\"},{\"0\":\"true\",\"{}\":\"'HelloWorld'\",\"True\":\"1\"},{\"0\":\"Null\",\"{}\":\"\",\"True\":\"None\"},{\"0\":\"   \",\"{}\":\"\",\"True\":\"\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_first_row_extra_fields": {
+    "recorded-date": "21-09-2023, 14:27:49",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.csv"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"\":\"Value5\",\"H1\":\"Value4\"},{\"\":\"\",\"H1\":\"\"},{\"\":\"1\",\"H1\":\"true\"},{\"\":\"None\",\"H1\":\"Null\"},{\"\":\"\",\"H1\":\"   \"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"\":\"Value5\",\"H1\":\"Value4\"},{\"\":\"\",\"H1\":\"\"},{\"\":\"1\",\"H1\":\"true\"},{\"\":\"None\",\"H1\":\"Null\"},{\"\":\"\",\"H1\":\"   \"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_json_no_json_list_object": {
+    "recorded-date": "21-09-2023, 14:30:11",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "mapRunFailedEventDetails": {
+              "cause": "Attempting to map over non-iterable node.",
+              "error": "States.ItemReaderFailed"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Attempting to map over non-iterable node.",
+              "error": "States.ItemReaderFailed"
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_lambda_invoke_with_retry_base": {
+    "recorded-date": "24-10-2023, 12:52:08",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambdaWithRetry"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 6,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 8,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 9,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 11,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 12,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 14,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:4>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambdaWithRetry",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleError"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "stateExitedEventDetails": {
+              "name": "HandleError",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_lambda_invoke_with_retry_extended_input": {
+    "recorded-date": "24-10-2023, 17:18:16",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambdaWithRetry"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "ThisContextObject": {
+                  "Execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "Value1": "HelloWorld!",
+                      "Value2": null
+                    },
+                    "StartTime": "<start-time>",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "StateMachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "State": {
+                    "Name": "InvokeLambdaWithRetry",
+                    "EnteredTime": "<entered-time>",
+                    "RetryCount": 0
+                  }
+                },
+                "ThisState": {
+                  "Value1": "HelloWorld!",
+                  "Value2": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 6,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "ThisContextObject": {
+                  "Execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "Value1": "HelloWorld!",
+                      "Value2": null
+                    },
+                    "StartTime": "<start-time>",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "StateMachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "State": {
+                    "Name": "InvokeLambdaWithRetry",
+                    "EnteredTime": "<entered-time>",
+                    "RetryCount": 1
+                  }
+                },
+                "ThisState": {
+                  "Value1": "HelloWorld!",
+                  "Value2": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 8,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 9,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "ThisContextObject": {
+                  "Execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "Value1": "HelloWorld!",
+                      "Value2": null
+                    },
+                    "StartTime": "<start-time>",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "StateMachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "State": {
+                    "Name": "InvokeLambdaWithRetry",
+                    "EnteredTime": "<entered-time>",
+                    "RetryCount": 2
+                  }
+                },
+                "ThisState": {
+                  "Value1": "HelloWorld!",
+                  "Value2": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 11,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 12,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {
+                "ThisContextObject": {
+                  "Execution": {
+                    "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                    "Input": {
+                      "Value1": "HelloWorld!",
+                      "Value2": null
+                    },
+                    "StartTime": "<start-time>",
+                    "Name": "<ExecArnPart_0idx>",
+                    "RoleArn": "snf_role_arn"
+                  },
+                  "StateMachine": {
+                    "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                    "Name": "<ArnPart_0idx>"
+                  },
+                  "State": {
+                    "Name": "InvokeLambdaWithRetry",
+                    "EnteredTime": "<entered-time>",
+                    "RetryCount": 3
+                  }
+                },
+                "ThisState": {
+                  "Value1": "HelloWorld!",
+                  "Value2": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>"
+            },
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 14,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:4>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambdaWithRetry",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleError"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "stateExitedEventDetails": {
+              "name": "HandleError",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\": \"Some exception was raised.\", \"errorType\": \"Exception\", \"requestId\": \"<uuid:4>\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke_with_retry_extended_input": {
+    "recorded-date": "24-10-2023, 17:26:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_1_name>",
+                "Value1": "HelloWorld!",
+                "Value2": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "InvokeLambdaWithRetry"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Payload": {
+                  "ThisContextObject": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "FunctionName": "<lambda_function_1_name>",
+                        "Value1": "HelloWorld!",
+                        "Value2": null
+                      },
+                      "StartTime": "<start-time>",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "InvokeLambdaWithRetry",
+                      "EnteredTime": "<entered-time>",
+                      "RetryCount": 0
+                    }
+                  },
+                  "ThisState": {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Value1": "HelloWorld!",
+                    "Value2": null
+                  }
+                },
+                "FunctionName": "<lambda_function_1_name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Payload": {
+                  "ThisContextObject": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "FunctionName": "<lambda_function_1_name>",
+                        "Value1": "HelloWorld!",
+                        "Value2": null
+                      },
+                      "StartTime": "<start-time>",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "InvokeLambdaWithRetry",
+                      "EnteredTime": "<entered-time>",
+                      "RetryCount": 1
+                    }
+                  },
+                  "ThisState": {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Value1": "HelloWorld!",
+                    "Value2": null
+                  }
+                },
+                "FunctionName": "<lambda_function_1_name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Payload": {
+                  "ThisContextObject": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "FunctionName": "<lambda_function_1_name>",
+                        "Value1": "HelloWorld!",
+                        "Value2": null
+                      },
+                      "StartTime": "<start-time>",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "InvokeLambdaWithRetry",
+                      "EnteredTime": "<entered-time>",
+                      "RetryCount": 2
+                    }
+                  },
+                  "ThisState": {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Value1": "HelloWorld!",
+                    "Value2": null
+                  }
+                },
+                "FunctionName": "<lambda_function_1_name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Payload": {
+                  "ThisContextObject": {
+                    "Execution": {
+                      "Id": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+                      "Input": {
+                        "FunctionName": "<lambda_function_1_name>",
+                        "Value1": "HelloWorld!",
+                        "Value2": null
+                      },
+                      "StartTime": "<start-time>",
+                      "Name": "<ExecArnPart_0idx>",
+                      "RoleArn": "snf_role_arn"
+                    },
+                    "StateMachine": {
+                      "Id": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                      "Name": "<ArnPart_0idx>"
+                    },
+                    "State": {
+                      "Name": "InvokeLambdaWithRetry",
+                      "EnteredTime": "<entered-time>",
+                      "RetryCount": 3
+                    }
+                  },
+                  "ThisState": {
+                    "FunctionName": "<lambda_function_1_name>",
+                    "Value1": "HelloWorld!",
+                    "Value2": null
+                  }
+                },
+                "FunctionName": "<lambda_function_1_name>"
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "taskFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:4>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "InvokeLambdaWithRetry",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:4>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:4>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleError"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "stateExitedEventDetails": {
+              "name": "HandleError",
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:4>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Exception",
+                "Cause": "{\"errorMessage\":\"Some exception was raised.\",\"errorType\":\"Exception\",\"requestId\":\"<uuid:4>\",\"stackTrace\":[\"  File \\\"/var/task/handler.py\\\", line 2, in handler\\n    raise Exception(\\\"Some exception was raised.\\\")\\n\"]}"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 18,
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path": {
+    "recorded-date": "31-10-2023, 18:57:26",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TimestampValue": "date"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TimestampValue": "date"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitUntil"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "WaitUntil",
+              "output": {
+                "TimestampValue": "date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "TimestampValue": "date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp": {
+    "recorded-date": "31-10-2023, 19:01:20",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitUntil"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "WaitUntil",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_lambda_empty_retry": {
+    "recorded-date": "23-11-2023, 18:08:38",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "LambdaTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_choice_singleton_composite": {
+    "recorded-date": "23-11-2023, 18:28:31",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 22
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 22
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ChoiceStateX"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "ChoiceStateX",
+              "output": {
+                "type": "Public",
+                "value": 22
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 22
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Public"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "Public",
+              "output": {
+                "type": "Public",
+                "value": 22
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "type": "Public",
+                "value": 22
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_catch_states_runtime": {
+    "recorded-date": "23-11-2023, 21:56:22",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "RaiseRuntime"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'RaiseRuntime' (entered at the event id #2). Invalid path '$.no.such.result.path' : Missing property in path $['no']",
+              "error": "States.Runtime"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_catch_empty": {
+    "recorded-date": "24-11-2023, 08:01:19",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "StartTask",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Final"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "Final",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
             "timestamp": "timestamp",
             "type": "ExecutionSucceeded"
           }

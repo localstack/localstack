@@ -1,3 +1,4 @@
+"""Routing for Lambda function URLs: https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html"""
 import base64
 import json
 import logging
@@ -5,7 +6,6 @@ import urllib
 from datetime import datetime
 from http import HTTPStatus
 
-from localstack import config
 from localstack.aws.api import HttpResponse
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.protocol.serializer import gen_amzn_requestid
@@ -18,12 +18,12 @@ from localstack.services.lambda_.invocation.models import lambda_stores
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.strings import long_uid, to_bytes, to_str
 from localstack.utils.time import TIMESTAMP_READABLE_FORMAT, mktime, timestamp
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
 
 class FunctionUrlRouter:
-
     router: Router[Handler]
     lambda_service: LambdaService
 
@@ -143,7 +143,7 @@ def event_for_lambda_url(api_id: str, path: str, data, headers, method: str) -> 
             "x-amzn-tls-version": "TLSv1.2",
             "x-forwarded-proto": "http",
             "x-forwarded-for": source_ip,
-            "x-forwarded-port": str(config.EDGE_PORT),
+            "x-forwarded-port": str(localstack_host().port),
         }
     )
 

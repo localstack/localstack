@@ -15,7 +15,6 @@ from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDe
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_CONTENT_TYPE,
-    LOCALHOST_HOSTNAME,
     PATH_USER_REQUEST,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
@@ -24,6 +23,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceRuntimePart,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
@@ -31,6 +33,7 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import long_uid
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -96,9 +99,8 @@ class SfnGatewayException(Exception):
 
 
 class StateTaskServiceApiGateway(StateTaskServiceCallback):
-
     _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
-        SupportedApiCalls.invoke: set(TaskParameters.__required_keys__)
+        SupportedApiCalls.invoke: set(TaskParameters.__required_keys__)  # noqa
     }
 
     _FORBIDDEN_HTTP_HEADERS_PREFIX: Final[set[str]] = {"X-Forwarded", "X-Amz", "X-Amzn"}
@@ -162,11 +164,11 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
         #  there's an argument to be made that this may mast implementation mistakes: investigate further.
         url_spec = urlparse(api_endpoint)
         url_path = url_spec.path
-        if not url_path.endswith(LOCALHOST_HOSTNAME):
+        if not url_path.endswith(localstack_host().host):
             return api_endpoint
         path_parts = url_path.split(".")
         api_id = path_parts[0]
-        path_based_api_endpoint = f"{config.service_url('apigateway')}/restapis/{api_id}"
+        path_based_api_endpoint = f"{config.internal_service_url()}/restapis/{api_id}"
         return path_based_api_endpoint
 
     @staticmethod
@@ -246,9 +248,14 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
             ),
         )
 
-    def _eval_service_task(self, env: Environment, parameters: dict):
+    def _eval_service_task(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ):
         task_parameters: TaskParameters = select_from_typed_dict(
-            typed_dict=TaskParameters, obj=parameters
+            typed_dict=TaskParameters, obj=normalised_parameters
         )
 
         method = task_parameters["Method"]

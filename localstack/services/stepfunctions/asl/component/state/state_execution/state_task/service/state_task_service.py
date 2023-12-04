@@ -20,6 +20,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
     StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceRuntimePart,
     ServiceResource,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
@@ -30,7 +31,6 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
-# TODO: improve on factory constructor (don't use SubtypeManager)
 class StateTaskService(StateTask, abc.ABC):
     resource: ServiceResource
 
@@ -54,16 +54,23 @@ class StateTaskService(StateTask, abc.ABC):
         )
 
     @abc.abstractmethod
-    def _eval_service_task(self, env: Environment, parameters: dict):
+    def _eval_service_task(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ):
         ...
 
-    def _before_eval_execution(self, env: Environment, parameters: dict) -> None:
-        parameters_str = to_json_str(parameters)
+    def _before_eval_execution(
+        self, env: Environment, resource_runtime_part: ResourceRuntimePart, raw_parameters: dict
+    ) -> None:
+        parameters_str = to_json_str(raw_parameters)
 
         scheduled_event_details = TaskScheduledEventDetails(
             resource=self._get_sfn_resource(),
             resourceType=self._get_sfn_resource_type(),
-            region=self.resource.region,
+            region=resource_runtime_part.region,
             parameters=parameters_str,
         )
         if not self.timeout.is_default_value():
@@ -75,11 +82,13 @@ class StateTaskService(StateTask, abc.ABC):
             heartbeat_seconds = env.stack.pop()
             scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.TaskScheduled,
             event_detail=EventDetails(taskScheduledEventDetails=scheduled_event_details),
         )
 
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.TaskStarted,
             event_detail=EventDetails(
                 taskStartedEventDetails=TaskStartedEventDetails(
@@ -88,9 +97,15 @@ class StateTaskService(StateTask, abc.ABC):
             ),
         )
 
-    def _after_eval_execution(self, env: Environment) -> None:
+    def _after_eval_execution(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         output = env.stack[-1]
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=HistoryEventType.TaskSucceeded,
             event_detail=EventDetails(
                 taskSucceededEventDetails=TaskSucceededEventDetails(
@@ -103,65 +118,24 @@ class StateTaskService(StateTask, abc.ABC):
         )
 
     def _eval_execution(self, env: Environment) -> None:
-        parameters = self._eval_parameters(env=env)
-        self._before_eval_execution(env=env, parameters=parameters)
+        self.resource.eval(env=env)
+        resource_runtime_part: ResourceRuntimePart = env.stack.pop()
 
-        normalised_parameters = self._normalised_parameters_bindings(parameters)
-        self._eval_service_task(env=env, parameters=normalised_parameters)
+        raw_parameters = self._eval_parameters(env=env)
 
-        self._after_eval_execution(env=env)
+        self._before_eval_execution(
+            env=env, resource_runtime_part=resource_runtime_part, raw_parameters=raw_parameters
+        )
 
-    @classmethod
-    def for_service(cls, service_name: str) -> StateTaskService:
-        match service_name:
-            case "aws-sdk":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_aws_sdk import (
-                    StateTaskServiceAwsSdk,
-                )
+        normalised_parameters = self._normalised_parameters_bindings(raw_parameters)
+        self._eval_service_task(
+            env=env,
+            resource_runtime_part=resource_runtime_part,
+            normalised_parameters=normalised_parameters,
+        )
 
-                return StateTaskServiceAwsSdk()
-            case "lambda":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_lambda import (
-                    StateTaskServiceLambda,
-                )
-
-                return StateTaskServiceLambda()
-            case "sqs":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sqs import (
-                    StateTaskServiceSqs,
-                )
-
-                return StateTaskServiceSqs()
-            case "states":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sfn import (
-                    StateTaskServiceSfn,
-                )
-
-                return StateTaskServiceSfn()
-            case "dynamodb":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_dynamodb import (
-                    StateTaskServiceDynamoDB,
-                )
-
-                return StateTaskServiceDynamoDB()
-            case "apigateway":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_api_gateway import (
-                    StateTaskServiceApiGateway,
-                )
-
-                return StateTaskServiceApiGateway()
-            case "sns":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sns import (
-                    StateTaskServiceSns,
-                )
-
-                return StateTaskServiceSns()
-            case "events":
-                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_events import (
-                    StateTaskServiceEvents,
-                )
-
-                return StateTaskServiceEvents()
-
-            case unknown:
-                raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa
+        self._after_eval_execution(
+            env=env,
+            resource_runtime_part=resource_runtime_part,
+            normalised_parameters=normalised_parameters,
+        )

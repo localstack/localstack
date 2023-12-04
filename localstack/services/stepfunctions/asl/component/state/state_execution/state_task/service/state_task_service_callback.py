@@ -15,6 +15,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
+    ResourceRuntimePart,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
     StateTaskService,
@@ -39,7 +40,12 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             resource += f".{self.resource.condition}"
         return resource
 
-    def _wait_for_task_token(self, env: Environment) -> None:
+    def _wait_for_task_token(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         callback_id = env.context_object_manager.context_object["Task"]["Token"]
         callback_endpoint = env.callback_pool_manager.get(callback_id)
 
@@ -79,12 +85,22 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         else:
             raise NotImplementedError(f"Unsupported CallbackOutcome type '{type(outcome)}'.")
 
-    def _sync(self, env: Environment) -> None:
+    def _sync(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         raise RuntimeError(
             f"Unsupported .sync callback procedure in resource {self.resource.resource_arn}"
         )
 
-    def _sync2(self, env: Environment) -> None:
+    def _sync2(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         raise RuntimeError(
             f"Unsupported .sync:2 callback procedure in resource {self.resource.resource_arn}"
         )
@@ -113,10 +129,16 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             return self._get_callback_outcome_failure_event(ex=ex)
         return super()._from_error(env=env, ex=ex)
 
-    def _after_eval_execution(self, env: Environment) -> None:
+    def _after_eval_execution(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         if self._is_condition():
             output = env.stack[-1]
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.TaskSubmitted,
                 event_detail=EventDetails(
                     taskSubmittedEventDetails=TaskSubmittedEventDetails(
@@ -129,12 +151,28 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             )
             match self.resource.condition:
                 case ResourceCondition.WaitForTaskToken:
-                    self._wait_for_task_token(env=env)
+                    self._wait_for_task_token(
+                        env=env,
+                        resource_runtime_part=resource_runtime_part,
+                        normalised_parameters=normalised_parameters,
+                    )
                 case ResourceCondition.Sync:
-                    self._sync(env=env)
+                    self._sync(
+                        env=env,
+                        resource_runtime_part=resource_runtime_part,
+                        normalised_parameters=normalised_parameters,
+                    )
                 case ResourceCondition.Sync2:
-                    self._sync2(env=env)
+                    self._sync2(
+                        env=env,
+                        resource_runtime_part=resource_runtime_part,
+                        normalised_parameters=normalised_parameters,
+                    )
                 case unsupported:
                     raise NotImplementedError(f"Unsupported callback type '{unsupported}'.")
 
-        super()._after_eval_execution(env=env)
+        super()._after_eval_execution(
+            env=env,
+            resource_runtime_part=resource_runtime_part,
+            normalised_parameters=normalised_parameters,
+        )

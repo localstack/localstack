@@ -2,14 +2,11 @@ import os
 
 import boto3
 
-EDGE_PORT = 4566
-
 
 def handler(event, context):
     endpoint_url = None
-    if os.environ.get("LOCALSTACK_HOSTNAME"):
-        protocol = "https" if os.environ.get("USE_SSL") else "http"
-        endpoint_url = "{}://{}:{}".format(protocol, os.environ["LOCALSTACK_HOSTNAME"], EDGE_PORT)
+    if os.environ.get("AWS_ENDPOINT_URL"):
+        endpoint_url = os.environ["AWS_ENDPOINT_URL"]
     sqs = boto3.client(
         "sqs", endpoint_url=endpoint_url, region_name=event["region_name"], verify=False
     )

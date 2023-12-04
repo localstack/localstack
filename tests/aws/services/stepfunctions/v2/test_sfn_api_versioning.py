@@ -11,17 +11,10 @@ from tests.aws.services.stepfunctions.utils import (
     await_execution_terminated,
     await_state_machine_version_listed,
     await_state_machine_version_not_listed,
-    is_old_provider,
-)
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
 )
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestSnfApiVersioning:
     @markers.aws.validated
     def test_create_with_publish(

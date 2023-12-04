@@ -42,6 +42,9 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     STRING_SPLIT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/string_operations/string_split.json5"
     )
+    STRING_SPLIT_CONTEXT_OBJECT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/string_operations/string_split_context_object.json5"
+    )
 
     # Encode and Decode.
     BASE_64_ENCODE: Final[str] = os.path.join(
@@ -68,3 +71,15 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     # Generic.
     FORMAT_1: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_1.json5")
     FORMAT_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_2.json5")
+    FORMAT_CONTEXT_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/generic/format_context_path.json5"
+    )
+    NESTED_CALLS_1: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/generic/nested_calls_1.json5"
+    )
+    NESTED_CALLS_2: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/generic/nested_calls_2.json5"
+    )
+    ESCAPE_SEQUENCE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/generic/escape_sequence.json5"
+    )

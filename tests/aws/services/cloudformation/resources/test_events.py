@@ -2,6 +2,7 @@ import json
 import logging
 import os
 
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
@@ -243,7 +244,7 @@ def test_cfn_handle_events_rule_without_name(deploy_cfn_template, aws_client):
     rule_names = [rule["Name"] for rule in rs["Rules"]]
 
     stack = deploy_cfn_template(
-        template=TEST_TEMPLATE_18 % arns.role_arn("sfn_role"),  # TODO: !
+        template=TEST_TEMPLATE_18 % arns.iam_role_arn("sfn_role", account_id=TEST_AWS_ACCOUNT_ID),
     )
 
     rs = aws_client.events.list_rules()

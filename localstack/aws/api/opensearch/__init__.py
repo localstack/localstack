@@ -26,6 +26,7 @@ DomainNameFqdn = str
 Double = float
 DryRun = bool
 Endpoint = str
+EngineVersion = str
 ErrorMessage = str
 ErrorType = str
 GUID = str
@@ -39,6 +40,7 @@ Issue = str
 KmsKeyId = str
 LimitName = str
 LimitValue = str
+MaintenanceStatusMessage = str
 MaxResults = int
 MaximumInstanceCount = int
 Message = str
@@ -55,9 +57,14 @@ PackageID = str
 PackageName = str
 PackageVersion = str
 Password = str
+PluginClassName = str
+PluginDescription = str
+PluginName = str
+PluginVersion = str
 PolicyDocument = str
 ReferencePath = str
 Region = str
+RequestId = str
 ReservationToken = str
 RoleArn = str
 S3BucketName = str
@@ -140,6 +147,8 @@ class DescribePackagesFilterName(str):
     PackageID = "PackageID"
     PackageName = "PackageName"
     PackageStatus = "PackageStatus"
+    PackageType = "PackageType"
+    EngineVersion = "EngineVersion"
 
 
 class DomainHealth(str):
@@ -173,6 +182,11 @@ class EngineType(str):
     Elasticsearch = "Elasticsearch"
 
 
+class IPAddressType(str):
+    ipv4 = "ipv4"
+    dualstack = "dualstack"
+
+
 class InboundConnectionStatusCode(str):
     PENDING_ACCEPTANCE = "PENDING_ACCEPTANCE"
     APPROVED = "APPROVED"
@@ -189,6 +203,20 @@ class LogType(str):
     SEARCH_SLOW_LOGS = "SEARCH_SLOW_LOGS"
     ES_APPLICATION_LOGS = "ES_APPLICATION_LOGS"
     AUDIT_LOGS = "AUDIT_LOGS"
+
+
+class MaintenanceStatus(str):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    TIMED_OUT = "TIMED_OUT"
+
+
+class MaintenanceType(str):
+    REBOOT_NODE = "REBOOT_NODE"
+    RESTART_SEARCH_PROCESS = "RESTART_SEARCH_PROCESS"
+    RESTART_DASHBOARD = "RESTART_DASHBOARD"
 
 
 class MasterNodeStatus(str):
@@ -351,6 +379,7 @@ class PackageStatus(str):
 
 class PackageType(str):
     TXT_DICTIONARY = "TXT-DICTIONARY"
+    ZIP_PLUGIN = "ZIP-PLUGIN"
 
 
 class PrincipalType(str):
@@ -967,6 +996,7 @@ class CreateDomainRequest(ServiceRequest):
     ClusterConfig: Optional[ClusterConfig]
     EBSOptions: Optional[EBSOptions]
     AccessPolicies: Optional[PolicyDocument]
+    IPAddressType: Optional[IPAddressType]
     SnapshotOptions: Optional[SnapshotOptions]
     VPCOptions: Optional[VPCOptions]
     CognitoOptions: Optional[CognitoOptions]
@@ -999,6 +1029,7 @@ class DomainStatus(TypedDict, total=False):
     Created: Optional[Boolean]
     Deleted: Optional[Boolean]
     Endpoint: Optional[ServiceUrl]
+    EndpointV2: Optional[ServiceUrl]
     Endpoints: Optional[EndpointsMap]
     Processing: Optional[Boolean]
     UpgradeProcessing: Optional[Boolean]
@@ -1006,6 +1037,7 @@ class DomainStatus(TypedDict, total=False):
     ClusterConfig: ClusterConfig
     EBSOptions: Optional[EBSOptions]
     AccessPolicies: Optional[PolicyDocument]
+    IPAddressType: Optional[IPAddressType]
     SnapshotOptions: Optional[SnapshotOptions]
     VPCOptions: Optional[VPCDerivedInfo]
     CognitoOptions: Optional[CognitoOptions]
@@ -1061,6 +1093,17 @@ class CreatePackageRequest(ServiceRequest):
     PackageSource: PackageSource
 
 
+UncompressedPluginSizeInBytes = int
+
+
+class PluginProperties(TypedDict, total=False):
+    Name: Optional[PluginName]
+    Description: Optional[PluginDescription]
+    Version: Optional[PluginVersion]
+    ClassName: Optional[PluginClassName]
+    UncompressedSizeInBytes: Optional[UncompressedPluginSizeInBytes]
+
+
 CreatedAt = datetime
 
 
@@ -1074,6 +1117,8 @@ class PackageDetails(TypedDict, total=False):
     LastUpdatedAt: Optional[LastUpdated]
     AvailablePackageVersion: Optional[PackageVersion]
     ErrorDetails: Optional[ErrorDetails]
+    EngineVersion: Optional[EngineVersion]
+    AvailablePluginProperties: Optional[PluginProperties]
 
 
 class CreatePackageResponse(TypedDict, total=False):
@@ -1220,6 +1265,11 @@ class SnapshotOptionsStatus(TypedDict, total=False):
     Status: OptionStatus
 
 
+class IPAddressTypeStatus(TypedDict, total=False):
+    Options: IPAddressType
+    Status: OptionStatus
+
+
 class EBSOptionsStatus(TypedDict, total=False):
     Options: EBSOptions
     Status: OptionStatus
@@ -1235,6 +1285,7 @@ class DomainConfig(TypedDict, total=False):
     ClusterConfig: Optional[ClusterConfigStatus]
     EBSOptions: Optional[EBSOptionsStatus]
     AccessPolicies: Optional[AccessPoliciesStatus]
+    IPAddressType: Optional[IPAddressTypeStatus]
     SnapshotOptions: Optional[SnapshotOptionsStatus]
     VPCOptions: Optional[VPCDerivedInfoStatus]
     CognitoOptions: Optional[CognitoOptionsStatus]
@@ -1568,6 +1619,20 @@ class DomainInfo(TypedDict, total=False):
 
 
 DomainInfoList = List[DomainInfo]
+
+
+class DomainMaintenanceDetails(TypedDict, total=False):
+    MaintenanceId: Optional[RequestId]
+    DomainName: Optional[DomainName]
+    Action: Optional[MaintenanceType]
+    NodeId: Optional[NodeId]
+    Status: Optional[MaintenanceStatus]
+    StatusMessage: Optional[MaintenanceStatusMessage]
+    CreatedAt: Optional[UpdateTimestamp]
+    UpdatedAt: Optional[UpdateTimestamp]
+
+
+DomainMaintenanceList = List[DomainMaintenanceDetails]
 DomainPackageDetailsList = List[DomainPackageDetails]
 
 
@@ -1577,6 +1642,20 @@ class GetCompatibleVersionsRequest(ServiceRequest):
 
 class GetCompatibleVersionsResponse(TypedDict, total=False):
     CompatibleVersions: Optional[CompatibleVersionsList]
+
+
+class GetDomainMaintenanceStatusRequest(ServiceRequest):
+    DomainName: DomainName
+    MaintenanceId: RequestId
+
+
+class GetDomainMaintenanceStatusResponse(TypedDict, total=False):
+    Status: Optional[MaintenanceStatus]
+    StatusMessage: Optional[MaintenanceStatusMessage]
+    NodeId: Optional[NodeId]
+    Action: Optional[MaintenanceType]
+    CreatedAt: Optional[UpdateTimestamp]
+    UpdatedAt: Optional[UpdateTimestamp]
 
 
 class GetPackageVersionHistoryRequest(ServiceRequest):
@@ -1589,6 +1668,7 @@ class PackageVersionHistory(TypedDict, total=False):
     PackageVersion: Optional[PackageVersion]
     CommitMessage: Optional[CommitMessage]
     CreatedAt: Optional[CreatedAt]
+    PluginProperties: Optional[PluginProperties]
 
 
 PackageVersionHistoryList = List[PackageVersionHistory]
@@ -1660,6 +1740,19 @@ class InstanceTypeDetails(TypedDict, total=False):
 
 
 InstanceTypeDetailsList = List[InstanceTypeDetails]
+
+
+class ListDomainMaintenancesRequest(ServiceRequest):
+    DomainName: DomainName
+    Action: Optional[MaintenanceType]
+    Status: Optional[MaintenanceStatus]
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+
+
+class ListDomainMaintenancesResponse(TypedDict, total=False):
+    DomainMaintenances: Optional[DomainMaintenanceList]
+    NextToken: Optional[NextToken]
 
 
 class ListDomainNamesRequest(ServiceRequest):
@@ -1815,6 +1908,16 @@ class RevokeVpcEndpointAccessResponse(TypedDict, total=False):
     pass
 
 
+class StartDomainMaintenanceRequest(ServiceRequest):
+    DomainName: DomainName
+    Action: MaintenanceType
+    NodeId: Optional[NodeId]
+
+
+class StartDomainMaintenanceResponse(TypedDict, total=False):
+    MaintenanceId: Optional[RequestId]
+
+
 class StartServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
     ScheduleAt: Optional[ScheduleAt]
@@ -1834,6 +1937,7 @@ class UpdateDomainConfigRequest(ServiceRequest):
     CognitoOptions: Optional[CognitoOptions]
     AdvancedOptions: Optional[AdvancedOptions]
     AccessPolicies: Optional[PolicyDocument]
+    IPAddressType: Optional[IPAddressType]
     LogPublishingOptions: Optional[LogPublishingOptions]
     EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
     DomainEndpointOptions: Optional[DomainEndpointOptions]
@@ -1901,7 +2005,6 @@ class UpgradeDomainResponse(TypedDict, total=False):
 
 
 class OpensearchApi:
-
     service = "opensearch"
     version = "2021-01-01"
 
@@ -1942,6 +2045,7 @@ class OpensearchApi:
         cluster_config: ClusterConfig = None,
         ebs_options: EBSOptions = None,
         access_policies: PolicyDocument = None,
+        ip_address_type: IPAddressType = None,
         snapshot_options: SnapshotOptions = None,
         vpc_options: VPCOptions = None,
         cognito_options: CognitoOptions = None,
@@ -2155,6 +2259,12 @@ class OpensearchApi:
     ) -> GetCompatibleVersionsResponse:
         raise NotImplementedError
 
+    @handler("GetDomainMaintenanceStatus")
+    def get_domain_maintenance_status(
+        self, context: RequestContext, domain_name: DomainName, maintenance_id: RequestId
+    ) -> GetDomainMaintenanceStatusResponse:
+        raise NotImplementedError
+
     @handler("GetPackageVersionHistory")
     def get_package_version_history(
         self,
@@ -2179,6 +2289,18 @@ class OpensearchApi:
     def get_upgrade_status(
         self, context: RequestContext, domain_name: DomainName
     ) -> GetUpgradeStatusResponse:
+        raise NotImplementedError
+
+    @handler("ListDomainMaintenances")
+    def list_domain_maintenances(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        action: MaintenanceType = None,
+        status: MaintenanceStatus = None,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+    ) -> ListDomainMaintenancesResponse:
         raise NotImplementedError
 
     @handler("ListDomainNames")
@@ -2284,6 +2406,16 @@ class OpensearchApi:
     ) -> RevokeVpcEndpointAccessResponse:
         raise NotImplementedError
 
+    @handler("StartDomainMaintenance")
+    def start_domain_maintenance(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        action: MaintenanceType,
+        node_id: NodeId = None,
+    ) -> StartDomainMaintenanceResponse:
+        raise NotImplementedError
+
     @handler("StartServiceSoftwareUpdate")
     def start_service_software_update(
         self,
@@ -2306,6 +2438,7 @@ class OpensearchApi:
         cognito_options: CognitoOptions = None,
         advanced_options: AdvancedOptions = None,
         access_policies: PolicyDocument = None,
+        ip_address_type: IPAddressType = None,
         log_publishing_options: LogPublishingOptions = None,
         encryption_at_rest_options: EncryptionAtRestOptions = None,
         domain_endpoint_options: DomainEndpointOptions = None,

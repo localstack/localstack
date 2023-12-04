@@ -41,6 +41,15 @@ def keys_lower(model: dict) -> dict:
     return {k.lower(): v for k, v in model.items()}
 
 
+def transform_list_to_dict(param, key_attr_name="Key", value_attr_name="Value"):
+    result = {}
+    for entry in param:
+        key = entry[key_attr_name]
+        value = entry[value_attr_name]
+        result[key] = value
+    return result
+
+
 def remove_none_values(obj):
     """Remove None values (recursively) in the given object."""
     if isinstance(obj, dict):
@@ -97,6 +106,6 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
 
 #  LocalStack specific utilities
 def get_schema_path(file_path: Path) -> Path:
-    file_name_base = file_path.name.removesuffix(".py")
+    file_name_base = file_path.name.removesuffix(".py").removesuffix(".py.enc")
     with Path(file_path).parent.joinpath(f"{file_name_base}.schema.json").open() as fd:
         return json.load(fd)

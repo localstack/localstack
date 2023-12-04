@@ -4,7 +4,7 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
-from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import parse_arn
@@ -53,7 +53,7 @@ class TestApiGatewayCommon:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_AWS_PROXY,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
         lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
@@ -539,7 +539,6 @@ class TestStages:
         snapshot.match("error-update-tags", ctx.value.response)
 
         # update & get stage
-
         response = client.update_stage(
             restApiId=api_id,
             stageName="s1",
@@ -550,12 +549,24 @@ class TestStages:
                 {"op": "replace", "path": "/*/*/throttling/burstLimit", "value": "123"},
                 {"op": "replace", "path": "/*/*/caching/enabled", "value": "true"},
                 {"op": "replace", "path": "/tracingEnabled", "value": "true"},
+                {"op": "replace", "path": "/test/GET/throttling/burstLimit", "value": "124"},
             ],
         )
         snapshot.match("update-stage", response)
 
         response = client.get_stage(restApiId=api_id, stageName="s1")
         snapshot.match("get-stage", response)
+
+        # show that updating */* does not override previously set values, only provides default values then like shown
+        # above
+        response = client.update_stage(
+            restApiId=api_id,
+            stageName="s1",
+            patchOperations=[
+                {"op": "replace", "path": "/*/*/throttling/burstLimit", "value": "100"},
+            ],
+        )
+        snapshot.match("update-stage-override", response)
 
 
 class TestDeployments:

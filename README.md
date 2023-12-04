@@ -55,7 +55,7 @@ Please make sure that you have a working [`docker` environment](https://docs.doc
 ### Brew (MacOS or Linux with Homebrew)
 Install the LocalStack CLI by using our [official LocalStack Brew Tap](https://github.com/localstack/homebrew-tap):
 ```
-$ brew install localstack/tap/localstack-cli
+brew install localstack/tap/localstack-cli
 ```
 
 ### Binary download (MacOS, Linux, Windows)
@@ -77,6 +77,8 @@ You can directly install the LocalStack CLI in your Python environment using `pi
 python3 -m pip install localstack
 ```
 
+This installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime. The `awslocal` CLI for interacting with the local AWS services is installed separately. See the [`awslocal` documentation](https://docs.localstack.cloud/user-guide/integrations/aws-cli/#localstack-aws-cli-awslocal) for installation instructions.
+
 > **Important**: Do not use `sudo` or run as `root` user. LocalStack must be installed and started entirely under a local non-root user. If you have problems with permissions in macOS High Sierra, install with `pip install --user localstack`
 
 ## Example
@@ -92,7 +94,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 2.2.0
+ 💻 LocalStack CLI 2.3.0
 
 [20:22:20] starting LocalStack in Docker mode 🐳
 [20:22:21] detaching

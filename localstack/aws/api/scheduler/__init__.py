@@ -451,7 +451,6 @@ class UpdateScheduleOutput(TypedDict, total=False):
 
 
 class SchedulerApi:
-
     service = "scheduler"
     version = "2021-06-30"
 

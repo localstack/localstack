@@ -18,7 +18,6 @@ from localstack.services.lambda_.invocation.lambda_models import (
     InvocationResult,
 )
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
-from localstack.services.lambda_.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.strings import md5, to_str
@@ -35,6 +34,14 @@ def get_sqs_client(function_version, client_config=None):
         region_name=region_name,
         config=client_config,
     ).sqs
+
+
+# TODO: remove once DLQ handling is refactored following the removal of the legacy lambda provider
+class LegacyInvocationException(Exception):
+    def __init__(self, message, log_output=None, result=None):
+        super(LegacyInvocationException, self).__init__(message)
+        self.log_output = log_output
+        self.result = result
 
 
 @dataclasses.dataclass
@@ -391,9 +398,11 @@ class Poller:
                 source_arn=self.version_manager.function_arn,
                 dlq_arn=self.version_manager.function_version.config.dead_letter_arn,
                 event=json.loads(to_str(sqs_invocation.invocation.payload)),
+                # TODO: Refactor DLQ handling by removing the invocation exception from the legacy lambda provider
                 # TODO: Check message. Possibly remove because it is not used in the DLQ message?!
-                # TODO: Remove InvocationException import dependency to old provider.
-                error=InvocationException(message="hi", result=to_str(invocation_result.payload)),
+                error=LegacyInvocationException(
+                    message="hi", result=to_str(invocation_result.payload)
+                ),
                 role=self.version_manager.function_version.config.role,
             )
         except Exception as e:
@@ -485,7 +494,7 @@ class LambdaEventManager:
             self.poller,
             id(self),
         )
-        with (self.lifecycle_lock):
+        with self.lifecycle_lock:
             if self.stopped.is_set():
                 LOG.debug("Event manager already stopped!")
                 return

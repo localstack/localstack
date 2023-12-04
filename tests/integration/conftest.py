@@ -9,6 +9,6 @@ def pytest_configure(config: Config):
     #  the same CI test step, but only one localstack instance is started for both.
     config.option.start_localstack = True
     localstack_config.FORCE_SHUTDOWN = False
-    localstack_config.GATEWAY_LISTEN = [
-        localstack_config.HostAndPort(host="0.0.0.0", port=constants.DEFAULT_PORT_EDGE)
-    ]
+    localstack_config.GATEWAY_LISTEN = localstack_config.UniqueHostAndPortList(
+        [localstack_config.HostAndPort(host="0.0.0.0", port=constants.DEFAULT_PORT_EDGE)]
+    )

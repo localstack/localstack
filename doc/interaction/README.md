@@ -47,8 +47,6 @@ awslocal kinesis list-streams
 }
 ```
 
-**UPDATE**: Use the environment variable `$LOCALSTACK_HOSTNAME` to determine the target host inside your Lambda function. See [Configuration](#configuration) section for more details.
-
 ## AWS CLI v2 with Docker and LocalStack
 
 By default, the container running [amazon/aws-cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-docker.html) is isolated from `0.0.0.0:4566` on the host machine, that means that aws-cli cannot reach localstack through your shell.

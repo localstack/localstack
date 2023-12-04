@@ -1,5 +1,6 @@
 import copy
 import json
+import logging
 import time
 from abc import ABC
 from typing import Dict, Optional
@@ -79,9 +80,12 @@ from localstack.aws.api.ssm import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto, call_moto_with_request
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import remove_attributes
 from localstack.utils.objects import keys_to_lower
 from localstack.utils.patch import patch
+
+LOG = logging.getLogger(__name__)
 
 PARAM_PREFIX_SECRETSMANAGER = "/aws/reference/secretsmanager"
 
@@ -416,6 +420,12 @@ class SsmProvider(SsmApi, ABC):
     def _notify_event_subscribers(
         account_id: str, region_name: str, name: ParameterName, operation: str
     ):
+        if not is_api_enabled("events"):
+            LOG.warning(
+                "Service 'events' is not enabled: skip emitting SSM event. "
+                "Please check your 'SERVICES' configuration variable."
+            )
+            return
         """Publish an EventBridge event to notify subscribers of changes."""
         events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
         detail = {"name": name, "operation": operation}

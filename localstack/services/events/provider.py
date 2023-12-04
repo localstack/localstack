@@ -9,10 +9,12 @@ from typing import Any, Dict, List, Optional
 
 from moto.events import events_backends
 from moto.events.responses import EventsHandler as MotoEventsHandler
+from werkzeug import Request
+from werkzeug.exceptions import NotFound
 
 from localstack import config
 from localstack.aws.api import RequestContext
-from localstack.aws.api.core import CommonServiceException
+from localstack.aws.api.core import CommonServiceException, ServiceException
 from localstack.aws.api.events import (
     Boolean,
     ConnectionAuthorizationType,
@@ -36,17 +38,20 @@ from localstack.aws.api.events import (
     TestEventPatternResponse,
 )
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.http import route
+from localstack.services.edge import ROUTER
 from localstack.services.events.models import EventsStore, events_stores
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.arns import event_bus_arn
+from localstack.utils.aws.arns import event_bus_arn, parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.collections import pick_attributes
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import long_uid, short_uid
+from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
 
@@ -58,15 +63,43 @@ CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "ex
 CONNECTION_NAME_PATTERN = re.compile("^[\\.\\-_A-Za-z0-9]+$")
 
 
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
 class EventsProvider(EventsApi, ServiceLifecycleHook):
     def __init__(self):
         apply_patches()
+
+    def on_after_init(self):
+        ROUTER.add(self.trigger_scheduled_rule)
 
     def on_before_start(self):
         JobScheduler.start()
 
     def on_before_stop(self):
         JobScheduler.shutdown()
+
+    @route("/_aws/events/rules/<path:rule_arn>/trigger")
+    def trigger_scheduled_rule(self, request: Request, rule_arn: str):
+        """Developer endpoint to trigger a scheduled rule."""
+        arn_data = parse_arn(rule_arn)
+        account_id = arn_data["account"]
+        region = arn_data["region"]
+        rule_name = arn_data["resource"].split("/", maxsplit=1)[-1]
+
+        job_id = events_stores[account_id][region].rule_scheduled_jobs.get(rule_name)
+        if not job_id:
+            raise NotFound()
+        job = JobScheduler().instance().get_job(job_id)
+        if not job:
+            raise NotFound()
+
+        # TODO: once job scheduler is refactored, we can update the deadline of the task instead of running
+        #  it here
+        job.run()
 
     @staticmethod
     def get_store(context: RequestContext) -> EventsStore:
@@ -75,7 +108,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def test_event_pattern(
         self, context: RequestContext, event_pattern: EventPattern, event: String
     ) -> TestEventPatternResponse:
-
         # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
         # Test event pattern uses event pattern to match against event.
         # So event pattern keys must be in the event keys and values must match.
@@ -94,7 +126,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
     ):
         def func(*args, **kwargs):
-            moto_backend = events_backends[store._account_id][store._region_name]
+            account_id = store._account_id
+            region = store._region_name
+            moto_backend = events_backends[account_id][region]
             event_bus_name = get_event_bus_name(event_bus_name_or_arn)
             event_bus = moto_backend.event_buses[event_bus_name]
             rule = event_bus.rules.get(rule_name)
@@ -107,11 +141,33 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     len(rule.targets),
                     rule_name,
                 )
+
+            default_event = {
+                "version": "0",
+                "id": long_uid(),
+                "detail-type": "Scheduled Event",
+                "source": "aws.events",
+                "account": account_id,
+                "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
+                "region": region,
+                "resources": [rule.arn],
+                "detail": {},
+            }
+
             for target in rule.targets:
                 arn = target.get("Arn")
-                # TODO generate event matching aws in case no Input has been specified
-                event_str = target.get("Input") or "{}"
-                event = json.loads(event_str)
+
+                if input_ := target.get("Input"):
+                    event = json.loads(input_)
+                else:
+                    event = default_event
+                    if target.get("InputPath"):
+                        event = filter_event_with_target_input_path(target, event)
+                    if target.get("InputTransformer"):
+                        LOG.warning(
+                            "InputTransformer is currently not supported for scheduled rules"
+                        )
+
                 attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
 
                 try:
@@ -145,14 +201,23 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if re.match(rate_regex, schedule):
             rate = re.sub(rate_regex, r"\1", schedule)
             value, unit = re.split(r"\s+", rate.strip())
-            # TODO: when 1 is given as value, unit has to be singular, e.g., 1 minute/hour/day - aws throws 'Parameter ScheduleExpression is not valid' otherwise
+
+            value = int(value)
+            if value < 1:
+                raise ValueError("Rate value must be larger than 0")
+            # see https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rate-expressions.html
+            if value == 1 and unit.endswith("s"):
+                raise ValueError("If the value is equal to 1, then the unit must be singular")
+            if value > 1 and not unit.endswith("s"):
+                raise ValueError("If the value is greater than 1, the unit must be plural")
+
             if "minute" in unit:
                 return "*/%s * * * *" % value
             if "hour" in unit:
                 return "0 */%s * * *" % value
             if "day" in unit:
                 return "0 0 */%s * *" % value
-            raise Exception("Unable to parse events schedule expression: %s" % schedule)
+            raise ValueError("Unable to parse events schedule expression: %s" % schedule)
         return schedule
 
     @staticmethod
@@ -166,10 +231,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if not schedule_expression:
             return
 
+        try:
+            cron = EventsProvider.convert_schedule_to_cron(schedule_expression)
+        except ValueError as e:
+            LOG.error("Error parsing schedule expression: %s", e)
+            raise ValidationException("Parameter ScheduleExpression is not valid.") from e
+
         job_func = EventsProvider.get_scheduled_rule_func(
             store, name, event_bus_name_or_arn=event_bus_name_or_arn
         )
-        cron = EventsProvider.convert_schedule_to_cron(schedule_expression)
         LOG.debug("Adding new scheduled Events rule with cron schedule %s", cron)
 
         enabled = state != "DISABLED"
@@ -493,7 +563,9 @@ def filter_event_based_on_event_format(
 
         return True
 
-    rule_information = self.events_backend.describe_rule(rule_name, event_bus_arn(event_bus_name))
+    rule_information = self.events_backend.describe_rule(
+        rule_name, event_bus_arn(event_bus_name, self.current_account, self.region)
+    )
 
     if not rule_information:
         LOG.info('Unable to find rule "%s" in backend: %s', rule_name, rule_information)
@@ -593,7 +665,7 @@ def events_handler_put_events(self):
         for rule in matching_rules:
             if filter_event_based_on_event_format(self, rule.name, event_bus_name, formatted_event):
                 rule_targets = self.events_backend.list_targets_by_rule(
-                    rule.name, event_bus_arn(event_bus_name)
+                    rule.name, event_bus_arn(event_bus_name, self.current_account, self.region)
                 ).get("Targets", [])
 
                 targets.extend([{"RuleArn": rule.arn} | target for target in rule_targets])

@@ -5,7 +5,6 @@ from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.http import Response
-from localstack.utils.aws.aws_stack import is_internal_call_context
 
 LOG = logging.getLogger(__name__)
 
@@ -175,7 +174,6 @@ class MetricHandler:
         if not config.is_collect_metrics_mode() or not context.service_operation:
             return
 
-        is_internal = is_internal_call_context(context.request.headers)
         item = self._get_metric_handler_item_for_context(context)
 
         # parameters might get changed when dispatched to the service - we use the params stored in
@@ -193,7 +191,7 @@ class MetricHandler:
             exception=context.service_exception.__class__.__name__
             if context.service_exception
             else "",
-            origin="internal" if is_internal else "external",
+            origin="internal" if context.is_internal_call else "external",
         )
         # refrain from adding duplicates
         if metric not in MetricHandler.metric_data:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import json
 import logging
@@ -7,7 +9,6 @@ from typing import Dict, List, Optional, Tuple, TypedDict, Union
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
-from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import PutEventsRequestEntry
@@ -33,18 +34,24 @@ from localstack.aws.api.s3 import (
     TopicConfiguration,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.s3.models import get_moto_s3_backend
-from localstack.services.s3.utils import (
-    _create_invalid_argument_exc,
-    get_bucket_from_moto,
-    get_key_from_moto_bucket,
-)
+from localstack.config import LEGACY_V2_S3_PROVIDER
+from localstack.services.s3.utils import _create_invalid_argument_exc
 from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import short_uid
 from localstack.utils.time import parse_timestamp, timestamp_millis
+
+if LEGACY_V2_S3_PROVIDER:
+    from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
+
+    from localstack.services.s3.models import get_moto_s3_backend
+    from localstack.services.s3.utils_moto import (
+        get_bucket_from_moto,
+        get_key_from_moto_bucket,
+    )
 
 LOG = logging.getLogger(__name__)
 
@@ -135,7 +142,7 @@ class S3EventNotificationContext:
             )
         except NoSuchKey as ex:
             if allow_non_existing_key:
-                key: FakeKey = FakeKey(key_name, "")
+                key: FakeKey = FakeKey(key_name, "", request_context.account_id)
             else:
                 raise ex
 
@@ -326,9 +333,7 @@ class BaseNotifier:
         - validate the arn pattern
         - validating the Rule names (and normalizing to capitalized)
         - check if the filter value is not empty
-        :param configuration: a configuration for a notifier, like QueueConfiguration for SQS or
-        TopicConfiguration for SNS
-        :param skip_destination_validation: allow skipping the validation of the target
+        :param verification_ctx: the verification context containing necessary data for validation
         :raises InvalidArgument if the rule is not valid, infos in ArgumentName and ArgumentValue members
         :return:
         """
@@ -349,7 +354,7 @@ class BaseNotifier:
         if filter_rules := configuration.get("Filter", {}).get("Key", {}).get("FilterRules"):
             for rule in filter_rules:
                 rule["Name"] = rule["Name"].capitalize()
-                if not rule["Name"] in ["Suffix", "Prefix"]:
+                if rule["Name"] not in ["Suffix", "Prefix"]:
                     raise _create_invalid_argument_exc(
                         "filter rule name must be either prefix or suffix",
                         rule["Name"],
@@ -381,7 +386,7 @@ class BaseNotifier:
         record = EventRecord(
             eventVersion="2.1",
             eventSource="aws:s3",
-            awsRegion=ctx.region,
+            awsRegion=ctx.bucket_location,
             eventTime=timestamp_millis(ctx.event_time),
             eventName=ctx.event_type.removeprefix("s3:"),
             userIdentity={"principalId": "AIDAJDPLRKLG7UEXAMPLE"},  # TODO: use the real one?
@@ -449,10 +454,19 @@ class SqsNotifier(BaseNotifier):
         return queue_configuration.get("QueueArn", ""), "QueueArn"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        if not is_api_enabled("sqs"):
+            LOG.warning(
+                "Service 'sqs' is not enabled: skipping validation of the following destination: '%s' "
+                "Please check your 'SERVICES' configuration variable.",
+                target_arn,
+            )
+            return
+
         arn_data = parse_arn(target_arn)
         sqs_client = connect_to(
             aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
         ).sqs
+        # test if the destination exists (done on AWS side, no permission required)
         try:
             queue_url = sqs_client.get_queue_url(
                 QueueName=arn_data["resource"], QueueOwnerAWSAccountId=arn_data["account"]
@@ -464,9 +478,9 @@ class SqsNotifier(BaseNotifier):
                 name=target_arn,
                 value="The destination queue does not exist",
             )
-        # send test event
+        # send test event with the request metadata for permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
-        sqs_client = connect_to().sqs.request_metadata(
+        sqs_client = connect_to(region_name=arn_data["region"]).sqs.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -491,9 +505,7 @@ class SqsNotifier(BaseNotifier):
         queue_arn = config["QueueArn"]
 
         parsed_arn = parse_arn(queue_arn)
-        sqs_client = connect_to(
-            aws_access_key_id=parsed_arn["account"], region_name=parsed_arn["region"]
-        ).sqs.request_metadata(
+        sqs_client = connect_to(region_name=parsed_arn["region"]).sqs.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         try:
@@ -525,6 +537,13 @@ class SnsNotifier(BaseNotifier):
         return topic_configuration.get("TopicArn", ""), "TopicArn"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        if not is_api_enabled("sns"):
+            LOG.warning(
+                "Service 'sns' is not enabled: skipping validation of the following destination: '%s' "
+                "Please check your 'SERVICES' configuration variable.",
+                target_arn,
+            )
+            return
         arn_data = parse_arn(target_arn)
         sns_client = connect_to(
             aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
@@ -538,7 +557,7 @@ class SnsNotifier(BaseNotifier):
                 value="The destination topic does not exist",
             )
 
-        sns_client = connect_to().sns.request_metadata(
+        sns_client = connect_to(region_name=arn_data["region"]).sns.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -574,9 +593,7 @@ class SnsNotifier(BaseNotifier):
         topic_arn = config["TopicArn"]
 
         arn_data = parse_arn(topic_arn)
-        sns_client = connect_to(
-            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
-        ).sns.request_metadata(
+        sns_client = connect_to(region_name=arn_data["region"]).sns.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         try:
@@ -603,6 +620,13 @@ class LambdaNotifier(BaseNotifier):
         return lambda_configuration.get("LambdaFunctionArn", ""), "LambdaFunctionArn"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        if not is_api_enabled("lambda"):
+            LOG.warning(
+                "Service 'lambda' is not enabled: skipping validation of the following destination: '%s' "
+                "Please check your 'SERVICES' configuration variable.",
+                target_arn,
+            )
+            return
         arn_data = parse_arn(arn=target_arn)
         lambda_client = connect_to(
             aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
@@ -615,7 +639,7 @@ class LambdaNotifier(BaseNotifier):
                 name=target_arn,
                 value="The destination Lambda does not exist",
             )
-        lambda_client = connect_to().lambda_.request_metadata(
+        lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name),
             service_principal=ServicePrincipal.s3,
         )
@@ -635,15 +659,13 @@ class LambdaNotifier(BaseNotifier):
 
         arn_data = parse_arn(lambda_arn)
 
-        lambda_client = connect_to(
-            aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
-        ).lambda_.request_metadata(
+        lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
-        lambda_function_config = arns.lambda_function_name(lambda_arn)
+
         try:
             lambda_client.invoke(
-                FunctionName=lambda_function_config,
+                FunctionName=lambda_arn,
                 InvocationType="Event",
                 Payload=payload,
             )
@@ -651,11 +673,13 @@ class LambdaNotifier(BaseNotifier):
             LOG.exception(
                 'Unable to send notification for S3 bucket "%s" to Lambda function "%s".',
                 ctx.bucket_name,
-                lambda_function_config,
+                lambda_arn,
             )
 
 
 class EventBridgeNotifier(BaseNotifier):
+    service_name = "events"
+
     @staticmethod
     def _get_event_payload(
         ctx: S3EventNotificationContext, config_id: NotificationId = None
@@ -756,7 +780,11 @@ class EventBridgeNotifier(BaseNotifier):
     def notify(self, ctx: S3EventNotificationContext, config: EventBridgeConfiguration):
         # does not require permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-permissions.html
-        events_client = connect_to(aws_access_key_id=ctx.account_id, region_name=ctx.region).events
+        # the account_id should be the bucket owner
+        # - account — The 12-digit AWS account ID of the bucket owner.
+        events_client = connect_to(
+            aws_access_key_id=ctx.bucket_account_id, region_name=ctx.bucket_location
+        ).events
         entry = self._get_event_payload(ctx)
         try:
             events_client.put_events(Entries=[entry])
@@ -785,6 +813,13 @@ class NotificationDispatcher:
     ):
         for configuration_key, configurations in notification_config.items():
             notifier = self.notifiers[configuration_key]
+            if not is_api_enabled(notifier.service_name):
+                LOG.warning(
+                    "Service '%s' is not enabled: skip sending notification. "
+                    "Please check your 'SERVICES' configuration variable.",
+                    notifier.service_name,
+                )
+                continue
             # there is not really a configuration for EventBridge, it is an empty dict
             configurations = (
                 configurations if isinstance(configurations, list) else [configurations]

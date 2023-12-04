@@ -4,12 +4,20 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    reviewers:
+      - "alexrashed"
     ignore:
       - dependency-name: "python"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
     labels:
       - "area: dependencies"
       - "semver: patch"
+    groups:
+      docker-base-images:
+        patterns:
+          - "*"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -19,3 +27,7 @@ updates:
     labels:
       - "area: dependencies"
       - "semver: patch"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

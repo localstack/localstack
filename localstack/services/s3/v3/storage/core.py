@@ -92,6 +92,9 @@ class S3StoredObject(abc.ABC, Iterable[bytes]):
     def seek(self, offset: int, whence: int = 0) -> int:
         pass
 
+    def truncate(self, size: int = None) -> int:
+        pass
+
     @property
     @abc.abstractmethod
     def checksum(self) -> Optional[str]:
@@ -146,7 +149,7 @@ class S3StoredMultipart(abc.ABC):
         s3_part: S3Part,
         src_bucket: BucketName,
         src_s3_object: S3Object,
-        range_data: ObjectRange,
+        range_data: Optional[ObjectRange],
     ) -> None:
         pass
 

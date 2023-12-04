@@ -16,10 +16,8 @@ from aws_cdk.aws_lambda_event_sources import SqsEventSource
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from tests.aws.services.lambda_.functions import lambda_integration
@@ -31,9 +29,6 @@ if TYPE_CHECKING:
 
 class TestLambdaDLQ:
     @markers.snapshot.skip_snapshot_verify(paths=["$..DeadLetterConfig", "$..result"])
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-    )
     @markers.aws.validated
     def test_dead_letter_queue(
         self,
@@ -127,18 +122,6 @@ def wait_until_log_group_exists(fn_name: str, logs_client: "CloudWatchLogsClient
 
 
 class TestLambdaDestinationSqs:
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..context",
-            "$..MessageId",
-            "$..functionArn",
-            "$..FunctionArn",
-            "$..approximateInvokeCount",
-            "$..stackTrace",
-            "$..Messages..Body.responsePayload.requestId",
-        ],
-    )
     @pytest.mark.parametrize(
         "payload",
         [
@@ -200,9 +183,6 @@ class TestLambdaDestinationSqs:
         receive_message_result = retry(receive_message, retries=120, sleep=1)
         snapshot.match("receive_message_result", receive_message_result)
 
-    @pytest.mark.skipif(
-        condition=is_old_provider(), reason="config variable only supported in new provider"
-    )
     @markers.aws.validated
     def test_lambda_destination_default_retries(
         self,
@@ -260,7 +240,6 @@ class TestLambdaDestinationSqs:
         snapshot.match("receive_message_result", receive_message_result)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..Body.requestContext.functionArn"])
-    @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
     @markers.aws.validated
     def test_retries(
         self,
@@ -380,7 +359,6 @@ class TestLambdaDestinationSqs:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..SenderId", "$..Body.requestContext.functionArn"]
     )
-    @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
     @markers.aws.validated
     def test_maxeventage(
         self,
@@ -527,17 +505,16 @@ def handler(event, context):
 """
 
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(self, aws_client):
-        infra = InfraProvisioner(aws_client)
+    def infrastructure(self, aws_client, infrastructure_setup):
+        infra = infrastructure_setup(namespace="LambdaDestinationEventbridge")
         input_fn_name = f"input-fn-{short_uid()}"
         triggered_fn_name = f"triggered-fn-{short_uid()}"
-        app = cdk.App()
 
         # setup a stack with two lambdas:
         #  - input-lambda will be invoked manually
         #      - its output is written to SQS queue by using an EventBridge
         #  - triggered lambda invoked by SQS event source
-        stack = cdk.Stack(app, self.EVENT_BRIDGE_STACK)
+        stack = cdk.Stack(infra.cdk_app, self.EVENT_BRIDGE_STACK)
         event_bus = events.EventBus(
             stack, "MortgageQuotesEventBus", event_bus_name="MortgageQuotesEventBus"
         )
@@ -588,7 +565,6 @@ def handler(event, context):
         cdk.CfnOutput(stack, self.INPUT_FUNCTION_NAME, value=input_func.function_name)
         cdk.CfnOutput(stack, self.TRIGGERED_FUNCTION_NAME, value=triggered_func.function_name)
         cdk.CfnOutput(stack, self.TEST_QUEUE_NAME, value=test_queue.queue_name)
-        infra.add_cdk_stack(stack)
 
         with infra.provisioner(skip_teardown=False) as prov:
             yield prov

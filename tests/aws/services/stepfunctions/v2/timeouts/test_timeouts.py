@@ -13,17 +13,10 @@ from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates impor
 from tests.aws.services.stepfunctions.utils import (
     await_execution_terminated,
     create_and_record_execution,
-    is_old_provider,
-)
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
 )
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestTimeouts:
     @markers.aws.validated
     def test_global_timeout(

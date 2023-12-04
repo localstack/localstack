@@ -43,6 +43,7 @@ HookType = str
 HookTypeConfigurationVersionId = str
 HookTypeName = str
 HookTypeVersionId = str
+ImportExistingResources = bool
 InProgressStackInstancesCount = int
 InSyncStackInstancesCount = int
 IncludeNestedStacks = bool
@@ -223,6 +224,11 @@ class ChangeType(str):
     Resource = "Resource"
 
 
+class ConcurrencyMode(str):
+    STRICT_FAILURE_TOLERANCE = "STRICT_FAILURE_TOLERANCE"
+    SOFT_FAILURE_TOLERANCE = "SOFT_FAILURE_TOLERANCE"
+
+
 class DeprecatedStatus(str):
     LIVE = "LIVE"
     DEPRECATED = "DEPRECATED"
@@ -376,6 +382,7 @@ class ResourceAttribute(str):
     CreationPolicy = "CreationPolicy"
     UpdatePolicy = "UpdatePolicy"
     DeletionPolicy = "DeletionPolicy"
+    UpdateReplacePolicy = "UpdateReplacePolicy"
     Tags = "Tags"
 
 
@@ -865,6 +872,7 @@ class ChangeSetSummary(TypedDict, total=False):
     IncludeNestedStacks: Optional[IncludeNestedStacks]
     ParentChangeSetId: Optional[ChangeSetId]
     RootChangeSetId: Optional[ChangeSetId]
+    ImportExistingResources: Optional[ImportExistingResources]
 
 
 ChangeSetSummaries = List[ChangeSetSummary]
@@ -949,6 +957,7 @@ class CreateChangeSetInput(ServiceRequest):
     ResourcesToImport: Optional[ResourcesToImport]
     IncludeNestedStacks: Optional[IncludeNestedStacks]
     OnStackFailure: Optional[OnStackFailure]
+    ImportExistingResources: Optional[ImportExistingResources]
 
 
 class CreateChangeSetOutput(TypedDict, total=False):
@@ -987,6 +996,7 @@ class StackSetOperationPreferences(TypedDict, total=False):
     FailureTolerancePercentage: Optional[FailureTolerancePercentage]
     MaxConcurrentCount: Optional[MaxConcurrentCount]
     MaxConcurrentPercentage: Optional[MaxConcurrentPercentage]
+    ConcurrencyMode: Optional[ConcurrencyMode]
 
 
 OrganizationalUnitIdList = List[OrganizationalUnitId]
@@ -1172,6 +1182,7 @@ class DescribeChangeSetOutput(TypedDict, total=False):
     ParentChangeSetId: Optional[ChangeSetId]
     RootChangeSetId: Optional[ChangeSetId]
     OnStackFailure: Optional[OnStackFailure]
+    ImportExistingResources: Optional[ImportExistingResources]
 
 
 class DescribeOrganizationsAccessInput(ServiceRequest):
@@ -2279,7 +2290,6 @@ class ValidateTemplateOutput(TypedDict, total=False):
 
 
 class CloudformationApi:
-
     service = "cloudformation"
     version = "2010-05-15"
 
@@ -2344,6 +2354,7 @@ class CloudformationApi:
         resources_to_import: ResourcesToImport = None,
         include_nested_stacks: IncludeNestedStacks = None,
         on_stack_failure: OnStackFailure = None,
+        import_existing_resources: ImportExistingResources = None,
     ) -> CreateChangeSetOutput:
         raise NotImplementedError
 

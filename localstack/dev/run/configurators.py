@@ -48,7 +48,7 @@ class PortConfigurator:
         self.randomize = randomize
 
     def __call__(self, cfg: ContainerConfiguration):
-        cfg.ports.bind_host = config.EDGE_BIND_HOST
+        cfg.ports.bind_host = config.GATEWAY_LISTEN[0].host
 
         if self.randomize:
             ContainerConfigurators.random_gateway_port(cfg)
@@ -140,13 +140,8 @@ class SourceVolumeMountConfigurator:
         # moto code if available
         self.try_mount_to_site_packages(cfg, self.host_paths.moto_project_dir / "moto")
 
-        # persistence plugin
-        self.try_mount_to_site_packages(
-            cfg,
-            self.host_paths.workspace_dir
-            / "localstack-plugin-persistence"
-            / "localstack_persistence",
-        )
+        # postgresql-proxy code if available
+        self.try_mount_to_site_packages(cfg, self.host_paths.postgresql_proxy / "postgresql_proxy")
 
         # plux
         self.try_mount_to_site_packages(cfg, self.host_paths.workspace_dir / "plux" / "plugin")
@@ -271,6 +266,9 @@ class DependencyMountConfigurator:
 
     dependency_glob = "/opt/code/localstack/.venv/lib/python3.*/site-packages/*"
 
+    # skip mounting dependencies with incompatible binaries (e.g., on MacOS)
+    skipped_dependencies = ["cryptography", "psutil", "rpds"]
+
     def __init__(
         self,
         *,
@@ -294,12 +292,15 @@ class DependencyMountConfigurator:
 
         # find dependencies from the host
         for dep_path in self.host_paths.venv_dir.glob("lib/python3.*/site-packages/*"):
-            # filter out everything that heuristically cannot be a source directory
-            if not dep_path.is_dir():
+            # filter out everything that heuristically cannot be a source path
+            if not self._can_be_source_path(dep_path):
                 continue
             if dep_path.name.endswith(".dist-info"):
                 continue
             if dep_path.name == "__pycache__":
+                continue
+
+            if dep_path.name in self.skipped_dependencies:
                 continue
 
             if dep_path.name in container_path_index:
@@ -315,6 +316,9 @@ class DependencyMountConfigurator:
                 continue
 
             cfg.volumes.append(VolumeBind(str(dep_path), target_path))
+
+    def _can_be_source_path(self, path: Path) -> bool:
+        return path.is_dir() or (path.name.endswith(".py") and not path.name.startswith("__"))
 
     def _has_mount(self, volumes: VolumeMappings, target_path: str) -> bool:
         return True if volumes.find_target_mapping(target_path) else False

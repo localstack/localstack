@@ -147,7 +147,6 @@ def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
 
 @markers.aws.validated
 def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
-
     snapshot.add_transformer(snapshot.transform.iam_api())
     snapshot.add_transformer(snapshot.transform.key_value("PolicyName", "policy-name"))
     snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))

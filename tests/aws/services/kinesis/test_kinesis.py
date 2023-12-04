@@ -1,4 +1,3 @@
-import logging
 import time
 from unittest.mock import patch
 
@@ -9,9 +8,11 @@ from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from localstack import config, constants
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.services.kinesis import provider as kinesis_provider
 from localstack.testing.pytest import markers
-from localstack.utils.aws import aws_stack, resources
+from localstack.utils.aws import resources
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import poll_condition, retry, select_attributes, short_uid
 from localstack.utils.kinesis import kinesis_connector
 
@@ -249,8 +250,10 @@ class TestKinesis:
 
         # get records with CBOR encoding
         iterator = get_shard_iterator(stream_name, aws_client.kinesis)
-        url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers("kinesis")
+        url = config.internal_service_url()
+        headers = mock_aws_request_headers(
+            "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
         data = cbor2.dumps({"ShardIterator": iterator})
@@ -281,8 +284,10 @@ class TestKinesis:
         assert 0 == len(json_records)
 
         # empty get records with CBOR encoding
-        url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers("kinesis")
+        url = config.internal_service_url()
+        headers = mock_aws_request_headers(
+            "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
         data = cbor2.dumps({"ShardIterator": iterator})
@@ -438,8 +443,8 @@ class TestKinesisPythonClient:
         resources.create_kinesis_stream(kinesis, stream_name, delete=True)
         process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
+            region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
-            kcl_log_level=logging.INFO,
             wait_until_started=True,
         )
 

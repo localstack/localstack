@@ -6,7 +6,7 @@ import logging
 from collections import defaultdict
 from operator import itemgetter
 from secrets import token_urlsafe
-from typing import IO, Union
+from typing import IO, Optional, Union
 from urllib import parse as urlparse
 
 from localstack import config
@@ -122,6 +122,7 @@ from localstack.aws.api.s3 import (
     MaxKeys,
     MaxParts,
     MaxUploads,
+    MethodNotAllowed,
     MissingSecurityHeader,
     MultipartUpload,
     MultipartUploadId,
@@ -197,6 +198,7 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
 )
 from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
@@ -658,7 +660,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if tagging:
             store.TAGS.tags[key_id] = tagging
 
-        # TODO: returned fields
         # RequestCharged: Optional[RequestCharged]  # TODO
         response = PutObjectOutput(
             ETag=s3_object.quoted_etag,
@@ -693,15 +694,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> GetObjectOutput:
         # TODO: missing handling parameters:
         #  request_payer: RequestPayer = None,
-        #  part_number: PartNumber = None,
         #  expected_bucket_owner: AccountId = None,
 
         bucket_name = request["Bucket"]
         object_key = request["Key"]
         version_id = request.get("VersionId")
         store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
-
-        # TODO implement PartNumber once multipart is done (being able to select only a Part)
 
         s3_object = s3_bucket.get_object(
             key=object_key,
@@ -805,8 +803,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ObjectLockLegalHoldStatus"] = s3_object.lock_legal_status
 
         for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
-            if request_param_value := request.get(request_param):  # noqa
-                response[response_param] = request_param_value  # noqa
+            if request_param_value := request.get(request_param):
+                response[response_param] = request_param_value
 
         return response
 
@@ -821,7 +819,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         version_id = request.get("VersionId")
         store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
 
-        # TODO implement PartNumber, don't know about part number + version id?
         s3_object = s3_bucket.get_object(
             key=object_key,
             version_id=version_id,
@@ -839,7 +836,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
-                response[f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
+                response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
         if s3_object.parts:
             response["PartsCount"] = len(s3_object.parts)
@@ -909,7 +906,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
     ) -> DeleteObjectOutput:
-        # TODO: implement bypass_governance_retention, it is done in moto
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if bypass_governance_retention is not None and not s3_bucket.object_lock_enabled:
@@ -938,8 +934,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not version_id:
             delete_marker_id = generate_version_id(s3_bucket.versioning_status)
             delete_marker = S3DeleteMarker(key=key, version_id=delete_marker_id)
-            # TODO: verify with Suspended bucket? does it override last version or still append?? big question
-            #  I think it puts a delete marker with a `null` VersionId, which deletes the object under
             s3_bucket.objects.set(key, delete_marker)
             # TODO: make a proper difference between DeleteMarker and S3Object, not done yet
             #  s3:ObjectRemoved:DeleteMarkerCreated
@@ -996,8 +990,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise MalformedXML()
 
         # TODO: max 1000 delete at once? test against AWS?
-        # TODO: implement ByPassGovernance
-        # TODO: implement Locking error
 
         quiet = delete.get("Quiet", False)
         deleted = []
@@ -1005,7 +997,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         to_remove = []
         for to_delete_object in objects:
-            # TODO: beware of key encoding (XML?)
             object_key = to_delete_object.get("Key")
             version_id = to_delete_object.get("VersionId")
             if s3_bucket.versioning_status is None:
@@ -1113,8 +1104,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: CopyObjectRequest,
     ) -> CopyObjectOutput:
-        # TODO: handle those parameters next:
-        # request_payer: RequestPayer = None,
+        # request_payer: RequestPayer = None,  # TODO:
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
         store = self.get_store(context.account_id, context.region)
@@ -1127,15 +1117,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         if not (src_s3_bucket := store.buckets.get(src_bucket)):
-            # TODO: validate this
             raise NoSuchBucket("The specified bucket does not exist", BucketName=src_bucket)
 
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             validate_kms_key_id(sse_kms_key_id, dest_s3_bucket)
 
-        # validate method not allowed?
-        # if the object is a delete marker, get_object will raise, like AWS
-        src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
+        # if the object is a delete marker, get_object will raise NotFound if no versionId, like AWS
+        try:
+            src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
+        except MethodNotAllowed:
+            raise InvalidRequest(
+                "The source of a copy request may not specifically refer to a delete marker by version id."
+            )
 
         if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES and not src_s3_object.restore:
             raise InvalidObjectState(
@@ -1161,15 +1154,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             dest_s3_bucket.encryption_rule is DEFAULT_BUCKET_ENCRYPTION
             and src_s3_object.encryption == "AES256"
         )
-        if src_key == dest_key and not any(
-            (
-                storage_class,
-                server_side_encryption,
-                metadata_directive == "REPLACE",
-                website_redirect_location,
-                dest_s3_bucket.encryption_rule
-                and not is_default_encryption,  # S3 will allow copy in place if the bucket has encryption configured
-                src_s3_object.restore,
+        if (
+            src_bucket == dest_bucket
+            and src_key == dest_key
+            and not any(
+                (
+                    storage_class,
+                    server_side_encryption,
+                    metadata_directive == "REPLACE",
+                    website_redirect_location,
+                    dest_s3_bucket.encryption_rule
+                    and not is_default_encryption,  # S3 will allow copy in place if the bucket has encryption configured
+                    src_s3_object.restore,
+                )
             )
         ):
             raise InvalidRequest(
@@ -1296,22 +1293,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         is_truncated = False
         next_key_marker = None
         max_keys = max_keys or 1000
-        prefix = urlparse.quote(prefix or "")
-        delimiter = urlparse.quote(delimiter or "")
+        prefix = prefix or ""
+        delimiter = delimiter or ""
+        if encoding_type:
+            prefix = urlparse.quote(prefix)
+            delimiter = urlparse.quote(delimiter)
 
         s3_objects: list[Object] = []
 
-        all_objects = s3_bucket.objects.values()
-        # sort by key
-        all_objects.sort(key=lambda r: r.key)
-        for s3_object in all_objects:
-            if count >= max_keys:
-                is_truncated = True
-                if s3_objects:
-                    next_key_marker = s3_objects[-1]["Key"]
-                break
+        all_keys = sorted(s3_bucket.objects.values(), key=lambda r: r.key)
+        last_key = all_keys[-1] if all_keys else None
 
-            key = urlparse.quote(s3_object.key)
+        # sort by key
+        for s3_object in all_keys:
+            key = urlparse.quote(s3_object.key) if encoding_type else s3_object.key
             # skip all keys that alphabetically come before key_marker
             if marker:
                 if key <= marker:
@@ -1321,32 +1316,44 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if prefix and not key.startswith(prefix):
                 continue
 
-            # separate keys that contain the same string between the prefix and the first occurrence of the delimiter
+            # see ListObjectsV2 for the logic comments (shared logic here)
+            prefix_including_delimiter = None
             if delimiter and delimiter in (key_no_prefix := key.removeprefix(prefix)):
                 pre_delimiter, _, _ = key_no_prefix.partition(delimiter)
                 prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
 
-                if prefix_including_delimiter not in common_prefixes:
-                    count += 1
-                    common_prefixes.add(prefix_including_delimiter)
-                continue
+                if prefix_including_delimiter in common_prefixes or (
+                    marker and marker.startswith(prefix_including_delimiter)
+                ):
+                    continue
 
-            # TODO: add RestoreStatus if present
-            object_data = Object(
-                Key=key,
-                ETag=s3_object.quoted_etag,
-                Owner=s3_bucket.owner,  # TODO: verify reality
-                Size=s3_object.size,
-                LastModified=s3_object.last_modified,
-                StorageClass=s3_object.storage_class,
-            )
+            if prefix_including_delimiter:
+                common_prefixes.add(prefix_including_delimiter)
+            else:
+                # TODO: add RestoreStatus if present
+                object_data = Object(
+                    Key=key,
+                    ETag=s3_object.quoted_etag,
+                    Owner=s3_bucket.owner,  # TODO: verify reality
+                    Size=s3_object.size,
+                    LastModified=s3_object.last_modified,
+                    StorageClass=s3_object.storage_class,
+                )
 
-            if s3_object.checksum_algorithm:
-                object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
+                if s3_object.checksum_algorithm:
+                    object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
 
-            s3_objects.append(object_data)
+                s3_objects.append(object_data)
 
+            # we just added a CommonPrefix or an Object, increase the counter
             count += 1
+            if count >= max_keys and last_key.key != s3_object.key:
+                is_truncated = True
+                if prefix_including_delimiter:
+                    next_key_marker = prefix_including_delimiter
+                elif s3_objects:
+                    next_key_marker = s3_objects[-1]["Key"]
+                break
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 
@@ -1354,12 +1361,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             IsTruncated=is_truncated,
             Name=bucket,
             MaxKeys=max_keys,
-            EncodingType=EncodingType.url,
             Prefix=prefix or "",
             Marker=marker or "",
         )
         if s3_objects:
             response["Contents"] = s3_objects
+        if encoding_type:
+            response["EncodingType"] = EncodingType.url
         if delimiter:
             response["Delimiter"] = delimiter
         if common_prefixes:
@@ -1389,16 +1397,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> ListObjectsV2Output:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        if continuation_token and continuation_token == "":
-            raise InvalidArgument("The continuation token provided is incorrect")
+        if continuation_token == "":
+            raise InvalidArgument(
+                "The continuation token provided is incorrect",
+                ArgumentName="continuation-token",
+            )
 
         common_prefixes = set()
         count = 0
         is_truncated = False
         next_continuation_token = None
         max_keys = max_keys or 1000
-        prefix = urlparse.quote(prefix or "")
-        delimiter = urlparse.quote(delimiter or "")
+        prefix = prefix or ""
+        delimiter = delimiter or ""
+        if encoding_type:
+            prefix = urlparse.quote(prefix)
+            delimiter = urlparse.quote(delimiter)
         decoded_continuation_token = (
             to_str(base64.urlsafe_b64decode(continuation_token.encode()))
             if continuation_token
@@ -1407,20 +1421,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_objects: list[Object] = []
 
-        all_objects = s3_bucket.objects.values()
         # sort by key
-        all_objects.sort(key=lambda r: r.key)
+        for s3_object in sorted(s3_bucket.objects.values(), key=lambda r: r.key):
+            key = urlparse.quote(s3_object.key) if encoding_type else s3_object.key
 
-        for s3_object in all_objects:
-            key = urlparse.quote(s3_object.key)
-            # skip all keys that alphabetically come before key_marker
-            # TODO: what if there's StartAfter AND ContinuationToken
+            # skip all keys that alphabetically come before continuation_token
             if continuation_token:
                 if key < decoded_continuation_token:
                     continue
 
-            if start_after:
-                if key < start_after:
+            elif start_after:
+                if key <= start_after:
                     continue
 
             # Filter for keys that start with prefix
@@ -1428,37 +1439,47 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 continue
 
             # separate keys that contain the same string between the prefix and the first occurrence of the delimiter
+            prefix_including_delimiter = None
             if delimiter and delimiter in (key_no_prefix := key.removeprefix(prefix)):
                 pre_delimiter, _, _ = key_no_prefix.partition(delimiter)
                 prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
 
-                if prefix_including_delimiter not in common_prefixes:
-                    count += 1
-                    common_prefixes.add(prefix_including_delimiter)
-                continue
+                # if the CommonPrefix is already in the CommonPrefixes, it doesn't count towards MaxKey, we can skip
+                # the entry without increasing the counter. We need to iterate over all of these entries before
+                # returning the next continuation marker, to properly start at the next key after this CommonPrefix
+                if prefix_including_delimiter in common_prefixes:
+                    continue
 
-            count += 1
-            if count > max_keys:
+            # After skipping all entries, verify we're not over the MaxKeys before adding a new entry
+            if count >= max_keys:
                 is_truncated = True
                 next_continuation_token = to_str(base64.urlsafe_b64encode(s3_object.key.encode()))
                 break
 
-            # TODO: add RestoreStatus if present
-            object_data = Object(
-                Key=key,
-                ETag=s3_object.quoted_etag,
-                Size=s3_object.size,
-                LastModified=s3_object.last_modified,
-                StorageClass=s3_object.storage_class,
-            )
+            # if we found a new CommonPrefix, add it to the CommonPrefixes
+            # else, it means it's a new Object, add it to the Contents
+            if prefix_including_delimiter:
+                common_prefixes.add(prefix_including_delimiter)
+            else:
+                # TODO: add RestoreStatus if present
+                object_data = Object(
+                    Key=key,
+                    ETag=s3_object.quoted_etag,
+                    Size=s3_object.size,
+                    LastModified=s3_object.last_modified,
+                    StorageClass=s3_object.storage_class,
+                )
 
-            if fetch_owner:
-                object_data["Owner"] = s3_bucket.owner
+                if fetch_owner:
+                    object_data["Owner"] = s3_bucket.owner
 
-            if s3_object.checksum_algorithm:
-                object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
+                if s3_object.checksum_algorithm:
+                    object_data["ChecksumAlgorithm"] = [s3_object.checksum_algorithm]
 
-            s3_objects.append(object_data)
+                s3_objects.append(object_data)
+
+            # we just added either a CommonPrefix or an Object to the List, increase the counter by one
+            count += 1
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 
@@ -1466,22 +1487,25 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             IsTruncated=is_truncated,
             Name=bucket,
             MaxKeys=max_keys,
-            EncodingType=EncodingType.url,
             Prefix=prefix or "",
             KeyCount=count,
         )
         if s3_objects:
             response["Contents"] = s3_objects
+        if encoding_type:
+            response["EncodingType"] = EncodingType.url
         if delimiter:
             response["Delimiter"] = delimiter
         if common_prefixes:
             response["CommonPrefixes"] = common_prefixes
         if next_continuation_token:
             response["NextContinuationToken"] = next_continuation_token
+
         if continuation_token:
             response["ContinuationToken"] = continuation_token
-        if start_after:
+        elif start_after:
             response["StartAfter"] = start_after
+
         if s3_bucket.bucket_region != "us-east-1":
             response["BucketRegion"] = s3_bucket.bucket_region
 
@@ -1502,16 +1526,26 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectVersionsOutput:
-        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
+        if version_id_marker and not key_marker:
+            raise InvalidArgument(
+                "A version-id marker cannot be specified without a key marker.",
+                ArgumentName="version-id-marker",
+                ArgumentValue=version_id_marker,
+            )
 
+        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         common_prefixes = set()
         count = 0
         is_truncated = False
         next_key_marker = None
         next_version_id_marker = None
         max_keys = max_keys or 1000
-        prefix = urlparse.quote(prefix or "")
-        delimiter = urlparse.quote(delimiter or "")
+        prefix = prefix or ""
+        delimiter = delimiter or ""
+        if encoding_type:
+            prefix = urlparse.quote(prefix)
+            delimiter = urlparse.quote(delimiter)
+        version_key_marker_found = False
 
         object_versions: list[ObjectVersion] = []
         delete_markers: list[DeleteMarkerEntry] = []
@@ -1519,40 +1553,44 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         all_versions = s3_bucket.objects.values(with_versions=True)
         # sort by key, and last-modified-date, to get the last version first
         all_versions.sort(key=lambda r: (r.key, -r.last_modified.timestamp()))
+        last_version = all_versions[-1] if all_versions else None
 
         for version in all_versions:
-            key = urlparse.quote(version.key)
+            key = urlparse.quote(version.key) if encoding_type else version.key
             # skip all keys that alphabetically come before key_marker
             if key_marker:
                 if key < key_marker:
                     continue
                 elif key == key_marker:
-                    # if we're at the key_marker, skip versions that are before version_id_marker
-                    if version_id_marker and version.version_id < version_id_marker:
+                    if not version_id_marker:
+                        continue
+                    # as the keys are ordered by time, once we found the key marker, we can return the next one
+                    if version.version_id == version_id_marker:
+                        version_key_marker_found = True
+                        continue
+                    elif not version_key_marker_found:
+                        # as long as we have not passed the version_key_marker, skip the versions
                         continue
 
             # Filter for keys that start with prefix
             if prefix and not key.startswith(prefix):
                 continue
 
-            # separate keys that contain the same string between the prefix and the first occurrence of the delimiter
+            # see ListObjectsV2 for the logic comments (shared logic here)
+            prefix_including_delimiter = None
             if delimiter and delimiter in (key_no_prefix := key.removeprefix(prefix)):
                 pre_delimiter, _, _ = key_no_prefix.partition(delimiter)
                 prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
 
-                if prefix_including_delimiter not in common_prefixes:
-                    count += 1
-                    common_prefixes.add(prefix_including_delimiter)
-                continue
+                if prefix_including_delimiter in common_prefixes or (
+                    key_marker and key_marker.startswith(prefix_including_delimiter)
+                ):
+                    continue
 
-            count += 1
-            if count > max_keys:
-                is_truncated = True
-                next_key_marker = version.key
-                next_version_id_marker = version.version_id
-                break
+            if prefix_including_delimiter:
+                common_prefixes.add(prefix_including_delimiter)
 
-            if isinstance(version, S3DeleteMarker):
+            elif isinstance(version, S3DeleteMarker):
                 delete_marker = DeleteMarkerEntry(
                     Key=key,
                     Owner=s3_bucket.owner,
@@ -1561,26 +1599,36 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     LastModified=version.last_modified,
                 )
                 delete_markers.append(delete_marker)
-                continue
+            else:
+                # TODO: add RestoreStatus if present
+                object_version = ObjectVersion(
+                    Key=key,
+                    ETag=version.quoted_etag,
+                    Owner=s3_bucket.owner,  # TODO: verify reality
+                    Size=version.size,
+                    VersionId=version.version_id or "null",
+                    LastModified=version.last_modified,
+                    IsLatest=version.is_current,
+                    # TODO: verify this, are other class possible?
+                    # StorageClass=version.storage_class,
+                    StorageClass=ObjectVersionStorageClass.STANDARD,
+                )
 
-            # TODO: add RestoreStatus if present
-            object_version = ObjectVersion(
-                Key=key,
-                ETag=version.quoted_etag,
-                Owner=s3_bucket.owner,  # TODO: verify reality
-                Size=version.size,
-                VersionId=version.version_id or "null",
-                LastModified=version.last_modified,
-                IsLatest=version.is_current,
-                # TODO: verify this, are other class possible?
-                # StorageClass=version.storage_class,
-                StorageClass=ObjectVersionStorageClass.STANDARD,
-            )
+                if version.checksum_algorithm:
+                    object_version["ChecksumAlgorithm"] = [version.checksum_algorithm]
 
-            if version.checksum_algorithm:
-                object_version["ChecksumAlgorithm"] = [version.checksum_algorithm]
+                object_versions.append(object_version)
 
-            object_versions.append(object_version)
+            # we just added a CommonPrefix, an Object or a DeleteMarker, increase the counter
+            count += 1
+            if count >= max_keys and last_version.version_id != version.version_id:
+                is_truncated = True
+                if prefix_including_delimiter:
+                    next_key_marker = prefix_including_delimiter
+                else:
+                    next_key_marker = version.key
+                    next_version_id_marker = version.version_id
+                break
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 
@@ -1588,13 +1636,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             IsTruncated=is_truncated,
             Name=bucket,
             MaxKeys=max_keys,
-            EncodingType=EncodingType.url,
             Prefix=prefix,
             KeyMarker=key_marker or "",
             VersionIdMarker=version_id_marker or "",
         )
         if object_versions:
             response["Versions"] = object_versions
+        if encoding_type:
+            response["EncodingType"] = EncodingType.url
         if delete_markers:
             response["DeleteMarkers"] = delete_markers
         if delimiter:
@@ -1634,7 +1683,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if "ObjectSize" in object_attrs:
             response["ObjectSize"] = s3_object.size
         if "Checksum" in object_attrs and (checksum_algorithm := s3_object.checksum_algorithm):
-            response["Checksum"] = {  # noqa
+            response["Checksum"] = {
                 f"Checksum{checksum_algorithm.upper()}": s3_object.checksum_value
             }
 
@@ -1643,8 +1692,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_bucket.versioning_status:
             response["VersionId"] = s3_object.version_id
 
-        # TODO implement PartNumber test once multipart is done
         if s3_object.parts:
+            # TODO: implements ObjectParts, this is basically a simplified `ListParts` call on the object, we might
+            #  need to store more data about the Parts once we implement checksums for them
             response["ObjectParts"] = GetObjectAttributesParts(TotalPartsCount=len(s3_object.parts))
 
         return response
@@ -1800,7 +1850,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
 
         upload_id = request.get("UploadId")
-        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+        if not (
+            s3_multipart := s3_bucket.multiparts.get(upload_id)
+        ) or s3_multipart.object.key != request.get("Key"):
             raise NoSuchUpload(
                 "The specified upload does not exist. "
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
@@ -1812,10 +1864,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentName="partNumber",
                 ArgumentValue=part_number,
             )
-
-        # TODO: validate key?
-        if s3_multipart.object.key != request.get("Key"):
-            pass
 
         checksum_algorithm = request.get("ChecksumAlgorithm")
         checksum_value = (
@@ -1872,7 +1920,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #  copy_source_if_unmodified_since: CopySourceIfUnmodifiedSince = None,
         #  request_payer: RequestPayer = None,
         dest_bucket = request["Bucket"]
-        dest_key = request["Bucket"]
+        dest_key = request["Key"]
         store = self.get_store(context.account_id, context.region)
         # TODO: validate cross-account UploadPartCopy
         if not (dest_s3_bucket := store.buckets.get(dest_bucket)):
@@ -1883,11 +1931,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         if not (src_s3_bucket := store.buckets.get(src_bucket)):
-            # TODO: validate this
             raise NoSuchBucket("The specified bucket does not exist", BucketName=src_bucket)
 
-        # validate method not allowed?
-        src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
+        # if the object is a delete marker, get_object will raise NotFound if no versionId, like AWS
+        try:
+            src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
+        except MethodNotAllowed:
+            raise InvalidRequest(
+                "The source of a copy request may not specifically refer to a delete marker by version id."
+            )
 
         if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES and not src_s3_object.restore:
             raise InvalidObjectState(
@@ -1896,7 +1948,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         upload_id = request.get("UploadId")
-        if not (s3_multipart := dest_s3_bucket.multiparts.get(upload_id)):
+        if (
+            not (s3_multipart := dest_s3_bucket.multiparts.get(upload_id))
+            or s3_multipart.object.key != dest_key
+        ):
             raise NoSuchUpload(
                 "The specified upload does not exist. "
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
@@ -1910,13 +1965,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=part_number,
             )
 
-        # TODO: validate key?
-        if s3_multipart.object.key != dest_key:
-            pass
-
         source_range = request.get("CopySourceRange")
         # TODO implement copy source IF (done in ASF provider)
-        range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
+
+        range_data: Optional[ObjectRange] = None
+        if source_range:
+            range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
         s3_part = S3Part(part_number=part_number)
 
@@ -1967,15 +2021,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> CompleteMultipartUploadOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+        if (
+            not (s3_multipart := s3_bucket.multiparts.get(upload_id))
+            or s3_multipart.object.key != key
+        ):
             raise NoSuchUpload(
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
-
-        # TODO: validate key?
-        if s3_multipart.object.key != key:
-            pass
 
         parts = multipart_upload.get("Parts", [])
         if not parts:
@@ -2054,15 +2107,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
     ) -> AbortMultipartUploadOutput:
-        # TODO: write tests around this
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        if not (s3_multipart := s3_bucket.multiparts.pop(upload_id, None)):
+        if (
+            not (s3_multipart := s3_bucket.multiparts.get(upload_id))
+            or s3_multipart.object.key != key
+        ):
             raise NoSuchUpload(
                 "The specified upload does not exist. "
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
+        s3_bucket.multiparts.pop(upload_id, None)
 
         self._storage_backend.remove_multipart(bucket, s3_multipart)
         response = AbortMultipartUploadOutput()
@@ -2083,9 +2139,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
     ) -> ListPartsOutput:
+        # TODO: implement MaxParts
+        # TODO: implements PartNumberMarker
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+        if (
+            not (s3_multipart := s3_bucket.multiparts.get(upload_id))
+            or s3_multipart.object.key != key
+        ):
             raise NoSuchUpload(
                 "The specified upload does not exist. "
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
@@ -2095,7 +2156,30 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #     AbortDate: Optional[AbortDate] TODO: lifecycle
         #     AbortRuleId: Optional[AbortRuleId] TODO: lifecycle
         #     RequestCharged: Optional[RequestCharged]
-        #     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+
+        count = 0
+        is_truncated = False
+        part_number_marker = part_number_marker or 0
+        max_parts = max_parts or 1000
+
+        parts = []
+        all_parts = sorted(s3_multipart.parts.items())
+        last_part_number = all_parts[-1][0] if all_parts else None
+        for part_number, part in all_parts:
+            if part_number <= part_number_marker:
+                continue
+            part_item = Part(
+                ETag=part.quoted_etag,
+                LastModified=part.last_modified,
+                PartNumber=part_number,
+                Size=part.size,
+            )
+            parts.append(part_item)
+            count += 1
+
+            if count >= max_parts and part.part_number != last_part_number:
+                is_truncated = True
+                break
 
         response = ListPartsOutput(
             Bucket=bucket,
@@ -2104,26 +2188,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             Initiator=s3_multipart.initiator,
             Owner=s3_multipart.initiator,
             StorageClass=s3_multipart.object.storage_class,
-            IsTruncated=False,
-            MaxParts=max_parts or 1000,
+            IsTruncated=is_truncated,
+            MaxParts=max_parts,
+            PartNumberMarker=0,
+            NextPartNumberMarker=0,
         )
+        if parts:
+            response["Parts"] = parts
+            last_part = parts[-1]["PartNumber"]
+            response["NextPartNumberMarker"] = last_part
 
-        # TODO: implement MaxParts
-        # TODO: implement locking for iteration
-        parts = [
-            Part(
-                ETag=part.quoted_etag,
-                LastModified=part.last_modified,
-                PartNumber=part_number,
-                Size=part.size,
-            )
-            for part_number, part in sorted(s3_multipart.parts.items())
-        ]
-        response["Parts"] = parts
-        last_part = parts[-1]["PartNumber"] if parts else 0
-        response["PartNumberMarker"] = last_part - 1 if parts else 0
-        response["NextPartNumberMarker"] = last_part
-
+        if part_number_marker:
+            response["PartNumberMarker"] = part_number_marker
         if s3_multipart.object.checksum_algorithm:
             response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
 
@@ -2144,38 +2220,115 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> ListMultipartUploadsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
-        s3_multiparts = s3_bucket.multiparts
-        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
-        # TODO implement Prefix/Delimiter/CommonPrefixes/EncodingType and truncating results
-        # should be common from ListObjects?ListVersions
+        common_prefixes = set()
+        count = 0
+        is_truncated = False
+        max_uploads = max_uploads or 1000
+        prefix = prefix or ""
+        delimiter = delimiter or ""
+        if encoding_type:
+            prefix = urlparse.quote(prefix)
+            delimiter = urlparse.quote(delimiter)
+        upload_id_marker_found = False
+
+        if key_marker and upload_id_marker:
+            multipart = s3_bucket.multiparts.get(upload_id_marker)
+            if multipart:
+                key = (
+                    urlparse.quote(multipart.object.key) if encoding_type else multipart.object.key
+                )
+            else:
+                # set key to None so it fails if the multipart is not Found
+                key = None
+
+            if key_marker != key:
+                raise InvalidArgument(
+                    "Invalid uploadId marker",
+                    ArgumentName="upload-id-marker",
+                    ArgumentValue=upload_id_marker,
+                )
+
+        uploads = []
+        # sort by key and initiated
+        all_multiparts = sorted(
+            s3_bucket.multiparts.values(), key=lambda r: (r.object.key, r.initiated.timestamp())
+        )
+        last_multipart = all_multiparts[-1] if all_multiparts else None
+
+        for multipart in all_multiparts:
+            key = urlparse.quote(multipart.object.key) if encoding_type else multipart.object.key
+            # skip all keys that are different than key_marker
+            if key_marker:
+                if key < key_marker:
+                    continue
+                elif key == key_marker:
+                    if not upload_id_marker:
+                        continue
+                    # as the keys are ordered by time, once we found the key marker, we can return the next one
+                    if multipart.id == upload_id_marker:
+                        upload_id_marker_found = True
+                        continue
+                    elif not upload_id_marker_found:
+                        # as long as we have not passed the version_key_marker, skip the versions
+                        continue
+
+            # Filter for keys that start with prefix
+            if prefix and not key.startswith(prefix):
+                continue
+
+            # see ListObjectsV2 for the logic comments (shared logic here)
+            prefix_including_delimiter = None
+            if delimiter and delimiter in (key_no_prefix := key.removeprefix(prefix)):
+                pre_delimiter, _, _ = key_no_prefix.partition(delimiter)
+                prefix_including_delimiter = f"{prefix}{pre_delimiter}{delimiter}"
+
+                if prefix_including_delimiter in common_prefixes or (
+                    key_marker and key_marker.startswith(prefix_including_delimiter)
+                ):
+                    continue
+
+            if prefix_including_delimiter:
+                common_prefixes.add(prefix_including_delimiter)
+            else:
+                multipart_upload = MultipartUpload(
+                    UploadId=multipart.id,
+                    Key=multipart.object.key,
+                    Initiated=multipart.initiated,
+                    StorageClass=multipart.object.storage_class,
+                    Owner=multipart.initiator,  # TODO: check the difference
+                    Initiator=multipart.initiator,
+                )
+                uploads.append(multipart_upload)
+
+            count += 1
+            if count >= max_uploads and last_multipart.id != multipart.id:
+                is_truncated = True
+                break
+
+        common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 
         response = ListMultipartUploadsOutput(
             Bucket=bucket,
-            IsTruncated=False,
-            KeyMarker=key_marker or "",
+            IsTruncated=is_truncated,
             MaxUploads=max_uploads or 1000,
-            UploadIdMarker=upload_id_marker or "",
+            KeyMarker=key_marker or "",
+            UploadIdMarker=upload_id_marker or "" if key_marker else "",
+            NextKeyMarker="",
+            NextUploadIdMarker="",
         )
+        if uploads:
+            response["Uploads"] = uploads
+            last_upload = uploads[-1]
+            response["NextKeyMarker"] = last_upload["Key"]
+            response["NextUploadIdMarker"] = last_upload["UploadId"]
         if delimiter:
             response["Delimiter"] = delimiter
-
-        # TODO: implement locking for iteration
-        uploads = [
-            MultipartUpload(
-                UploadId=multipart.id,
-                Key=multipart.object.key,
-                Initiated=multipart.initiated,
-                StorageClass=multipart.object.storage_class,
-                Owner=multipart.initiator,  # TODO: check the difference
-                Initiator=multipart.initiator,
-            )
-            for multipart in s3_multiparts.values()
-        ]
-        response["Uploads"] = uploads
-        if uploads:
-            last_upload = uploads[-1]
-            response["NextUploadIdMarker"] = last_upload["UploadId"]
-            response["NextKeyMarker"] = last_upload["Key"]
+        if prefix:
+            response["Prefix"] = prefix
+        if encoding_type:
+            response["EncodingType"] = EncodingType.url
+        if common_prefixes:
+            response["CommonPrefixes"] = common_prefixes
 
         return response
 
@@ -2366,7 +2519,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         validate_tag_set(tagging["TagSet"], type_set="object")
 
-        key_id = get_unique_key_id(bucket, key, version_id)
+        key_id = get_unique_key_id(bucket, key, s3_object.version_id)
         # remove the previous tags before setting the new ones, it overwrites the whole TagSet
         store.TAGS.tags.pop(key_id, None)
         store.TAGS.tag_resource(key_id, tags=tagging["TagSet"])
@@ -2401,9 +2554,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             e.Key = f"{bucket}/{key}"
             raise e
 
-        tag_set = store.TAGS.list_tags_for_resource(get_unique_key_id(bucket, key, version_id))[
-            "Tags"
-        ]
+        tag_set = store.TAGS.list_tags_for_resource(
+            get_unique_key_id(bucket, key, s3_object.version_id)
+        )["Tags"]
         response = GetObjectTaggingOutput(TagSet=tag_set)
         if s3_object.version_id:
             response["VersionId"] = s3_object.version_id
@@ -3042,8 +3195,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
         expected_bucket_owner: AccountId = None,
     ) -> None:
-        # TODO: there is not validation of the policy at the moment, as there was none in moto
-        #  we store the JSON policy as is, as we do not need to decode it
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if not policy or policy[0] != "{":
@@ -3133,9 +3284,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 TargetBucket=target_bucket_name,
             )
 
-        if target_s3_bucket.bucket_region != s3_bucket.bucket_region:
+        source_bucket_region = s3_bucket.bucket_region
+        if target_s3_bucket.bucket_region != source_bucket_region:
             raise CrossLocationLoggingProhibitted(
                 "Cross S3 location logging not allowed. ",
+                TargetBucketLocation=target_s3_bucket.bucket_region,
+            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
+                "Cross S3 location logging not allowed. ",
+                SourceBucketLocation=source_bucket_region,
                 TargetBucketLocation=target_s3_bucket.bucket_region,
             )
 
@@ -3490,13 +3646,15 @@ def get_encryption_parameters_from_request_and_bucket(
             key_id = kms_key_id or s3_bucket.encryption_rule[
                 "ApplyServerSideEncryptionByDefault"
             ].get("KMSMasterKeyID")
-            kms_key_id = get_kms_key_arn(key_id, s3_bucket.bucket_account_id)
+            kms_key_id = get_kms_key_arn(
+                key_id, s3_bucket.bucket_account_id, s3_bucket.bucket_region
+            )
             if not kms_key_id:
                 # if not key is provided, AWS will use an AWS managed KMS key
                 # create it if it doesn't already exist, and save it in the store per region
                 if not store.aws_managed_kms_key_id:
                     managed_kms_key_id = create_s3_kms_managed_key_for_region(
-                        s3_bucket.bucket_region
+                        s3_bucket.bucket_account_id, s3_bucket.bucket_region
                     )
                     store.aws_managed_kms_key_id = managed_kms_key_id
 

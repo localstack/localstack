@@ -9,12 +9,10 @@ from urllib.parse import urlparse
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
-from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Response
 from localstack.http.proxy import forward
 from localstack.http.request import Request, get_full_raw_path, get_raw_path, restore_payload
 from localstack.utils.aws.aws_responses import calculate_crc32
-from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
@@ -34,6 +32,18 @@ class ArnPartitionRewriteHandler(Handler):
     rewriting all the cases where the ARN is parsed or constructed within LocalStack or moto.
     In other words, this listener makes sure that internally the ARNs are always in the partition
     "aws", while the client gets ARNs with the proper partition.
+
+    There are multiple operation modes you can choose for the rewriting:
+
+    - "request": only the requests gets rewritten (to DEFAULT_INBOUND_PARTITION)
+    - "response": only the response gets rewritten (to original partition based on the region)
+    - "bidirectional": both request and response are rewritten as described above
+    - "internal-guard": both request and response are rewritten, but the response is also rewritten to DEFAULT_INBOUND_PARTITION (!)
+
+    Default behavior for external clients is "bidirectional".
+    Default behavior for internal clients is "internal-guard".
+    Behavior can be overwritten by setting the "LS-INTERNAL-REWRITE-MODE" header
+
     """
 
     # Partition which should be statically set for incoming requests
@@ -68,23 +78,40 @@ class ArnPartitionRewriteHandler(Handler):
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         request = context.request
-        # If this header is present, or the request is internal, remove it and continue the handler chain
-        if request.headers.pop("LS-INTERNAL-REWRITE-HANDLER", None) or is_internal_call_context(
-            request.headers
-        ):
+        # If this header is present we've already rewritten the request, remove it and continue the handler chain
+        if request.headers.pop("LS-INTERNAL-REWRITE-HANDLER", None):
             return
-        # since we are very early in the handler chain, we cannot use the request context here
+
         request_region = extract_region_from_headers(request.headers)
-        forward_request = self.modify_request(request)
+
+        # get arn rewriting mode from header
+        # not yet used but would allow manual override (e.g. for testing)
+        rewrite_mode = request.headers.pop("LS-INTERNAL-REWRITE-MODE", None)
+        if rewrite_mode is None and context.is_internal_call:
+            # default internal mode
+            rewrite_mode = "internal-guard"
+        else:
+            # default external mode
+            rewrite_mode = "bidirectional"
+
+        if rewrite_mode in {"request", "bidirectional", "internal-guard"}:
+            # since we are very early in the handler chain, we cannot use the request context here
+            request = self.modify_request(request)
 
         # forward to the handler chain again
         result_response = forward(
-            request=forward_request,
-            forward_base_url=config.get_edge_url(),
-            forward_path=get_raw_path(forward_request),
-            headers=forward_request.headers,
+            request=request,
+            forward_base_url=config.internal_service_url(),
+            forward_path=get_raw_path(request),
+            headers=request.headers,
         )
-        self.modify_response(result_response, request_region=request_region)
+
+        match rewrite_mode:
+            case "response" | "bidirectional":
+                self.modify_response_revert(result_response, request_region=request_region)
+            case "internal-guard":
+                self.modify_response_guard(result_response)
+
         response.update_from(result_response)
 
         # terminate this chain, as the request was proxied
@@ -92,7 +119,7 @@ class ArnPartitionRewriteHandler(Handler):
 
     def modify_request(self, request: Request) -> Request:
         """
-        Modifies the request by rewriting ARNs
+        Modifies the request by rewriting ARNs to default partition
 
 
         :param request: Request
@@ -129,7 +156,7 @@ class ArnPartitionRewriteHandler(Handler):
             raw_path=parsed_forward_rewritten_path.path,
         )
 
-    def modify_response(self, response: Response, request_region: str):
+    def modify_response_revert(self, response: Response, request_region: str):
         """
         Modifies the supplied response by rewriting the ARNs back based on the regions in the arn or the supplied region
 
@@ -141,6 +168,22 @@ class ArnPartitionRewriteHandler(Handler):
             dict(response.headers), request_region=request_region
         )
         response.data = self._adjust_partition(response.data, request_region=request_region)
+        self._post_process_response_headers(response)
+
+    def modify_response_guard(self, response: Response):
+        """
+        Modifies the supplied response by rewriting the ARNs to default partition
+
+        :param response: Response to be modified
+        :param request_region: Region the original request was meant for
+        """
+        # rewrite response
+        response.headers = self._adjust_partition(
+            dict(response.headers), static_partition=self.DEFAULT_INBOUND_PARTITION
+        )
+        response.data = self._adjust_partition(
+            response.data, static_partition=self.DEFAULT_INBOUND_PARTITION
+        )
         self._post_process_response_headers(response)
 
     def _adjust_partition(
@@ -210,13 +253,9 @@ class ArnPartitionRewriteHandler(Handler):
             try:
                 partition = self._get_partition_for_region(request_region)
             except self.InvalidRegionException:
-                try:
-                    # If the region is not properly set (f.e. because it is set to a wildcard),
-                    # the partition is determined based on the default region.
-                    partition = self._get_partition_for_region(config.DEFAULT_REGION)
-                except self.InvalidRegionException:
-                    # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
-                    partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
+                # If the region is not properly set (f.e. because it is set to a wildcard),
+                # the fallback partition is used.
+                partition = config.ARN_PARTITION_FALLBACK
         return partition
 
     @staticmethod

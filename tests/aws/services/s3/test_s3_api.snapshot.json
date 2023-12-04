@@ -1827,7 +1827,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
-    "recorded-date": "02-08-2023, 23:14:16",
+    "recorded-date": "20-11-2023, 17:25:12",
     "recorded-content": {
       "put-obj-0": {
         "ETag": "\"86639701cdcc5b39438a5f009bd74cb1\"",
@@ -1867,6 +1867,19 @@
           "HTTPStatusCode": 200
         }
       },
+      "get-object-tags-previous-version": {
+        "TagSet": [
+          {
+            "Key": "test_tag",
+            "Value": "tagv1"
+          }
+        ],
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "put-object-tags-previous-version": {
         "VersionId": "<version-id:1>",
         "ResponseMetadata": {
@@ -1874,7 +1887,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "get-object-tags-previous-version": {
+      "get-object-tags-previous-version-again": {
         "TagSet": [
           {
             "Key": "tag1",
@@ -2514,7 +2527,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketPolicy::test_bucket_policy_crud": {
-    "recorded-date": "10-08-2023, 17:27:26",
+    "recorded-date": "20-10-2023, 17:31:38",
     "recorded-content": {
       "get-bucket-default-policy": {
         "Error": {
@@ -2567,6 +2580,12 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "delete-bucket-policy-after-delete": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
         }
       }
     }
@@ -3185,6 +3204,69 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_no_copy_source_range": {
+    "recorded-date": "14-11-2023, 20:50:28",
+    "recorded-content": {
+      "put-src-object": {
+        "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-multipart": {
+        "Bucket": "bucket",
+        "Key": "test-upload-part-copy",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-copy": {
+        "CopyPartResult": {
+          "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-upload-part-copy",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "\"781e5e245d69b566979b86e28d23f2c7\"",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 10
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

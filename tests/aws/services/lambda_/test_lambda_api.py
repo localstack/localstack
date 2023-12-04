@@ -1,11 +1,6 @@
-import re
-
-from localstack import config
-from localstack.services.lambda_.api_utils import ARCHITECTURES, RUNTIMES
-from localstack.testing.pytest import markers
-
-"""
-API-focused tests only. Don't add tests for asynchronous, blocking or implicit behavior here.
+"""API-focused tests only.
+Everything related to behavior and implicit functionality goes into test_lambda.py instead
+Don't add tests for asynchronous, blocking or implicit behavior here.
 
 # TODO: create a re-usable pattern for fairly reproducible scenarios with slower updates/creates to test intermediary states
 # TODO: code signing https://docs.aws.amazon.com/lambda/latest/dg/configuration-codesigning.html
@@ -17,6 +12,7 @@ import base64
 import io
 import json
 import logging
+import re
 from hashlib import sha256
 from io import BytesIO
 from typing import Callable
@@ -26,12 +22,20 @@ import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError, ParamValidationError
 
+from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
-from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
+from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
+from localstack.services.lambda_.api_utils import ARCHITECTURES
+from localstack.services.lambda_.runtimes import (
+    ALL_RUNTIMES,
+    SNAP_START_SUPPORTED_RUNTIMES,
+)
+from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
@@ -39,7 +43,6 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import (
-    FUNCTION_MAX_UNZIPPED_SIZE,
     TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON_ECHO,
@@ -68,7 +71,6 @@ def environment_length_bytes(e: dict) -> int:
     return string_length_bytes(serialized_environment)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaFunction:
     @markers.snapshot.skip_snapshot_verify(
         # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
@@ -402,6 +404,7 @@ class TestLambdaFunction:
             == get_function_response_updated["Configuration"]["CodeSize"]
         )
 
+    @markers.lambda_runtime_update
     @markers.aws.validated
     def test_create_lambda_exceptions(self, lambda_su_role, snapshot, aws_client):
         function_name = f"invalid-function-{short_uid()}"
@@ -490,6 +493,7 @@ class TestLambdaFunction:
             )
         snapshot.match("invalid_zip_exc", e.value.response)
 
+    @markers.lambda_runtime_update
     @markers.aws.validated
     def test_update_lambda_exceptions(
         self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
@@ -579,6 +583,7 @@ class TestLambdaFunction:
         snapshot.match("list_all", list_all)
         snapshot.match("list_default", list_default)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Ipv6AllowedForDualStack"])
     @markers.aws.validated
     def test_vpc_config(
         self, create_lambda_function, lambda_su_role, snapshot, aws_client, cleanups
@@ -657,7 +662,14 @@ class TestLambdaFunction:
             },
         )
         snapshot.match("update_vpcconfig_update_response", update_vpcconfig_update_response)
-        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda/waiter/FunctionUpdatedV2.html#Lambda.Waiter.FunctionUpdatedV2.wait
+        waiter_config = {"Delay": 1, "MaxAttempts": 60}
+        # Increase timeouts because it can take longer than 5 minutes against AWS due to VPC.
+        if is_aws_cloud():
+            waiter_config = {"Delay": 5, "MaxAttempts": 90}
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(
+            FunctionName=function_name, WaiterConfig=waiter_config
+        )
 
         update_vpcconfig_get_function_response = aws_client.lambda_.get_function(
             FunctionName=function_name
@@ -685,7 +697,6 @@ class TestLambdaFunction:
         )
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaImages:
     @pytest.fixture(scope="class")
     def login_docker_client(self, aws_client):
@@ -704,8 +715,7 @@ class TestLambdaImages:
             )
 
     @pytest.fixture(scope="class")
-    @markers.aws.unknown
-    def test_image(self, aws_client, login_docker_client):
+    def ecr_image(self, aws_client, login_docker_client):
         repository_names = []
         image_names = []
 
@@ -751,10 +761,10 @@ class TestLambdaImages:
 
     @markers.aws.validated
     def test_lambda_image_crud(
-        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
+        self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
         """Test lambda crud with package type image"""
-        image = test_image("alpine")
+        image = ecr_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
         function_name = f"test-function-{short_uid()}"
@@ -782,7 +792,7 @@ class TestLambdaImages:
             )
         snapshot.match("image-to-zipfile-error", e.value.response)
 
-        image_2 = test_image("debian")
+        image_2 = ecr_image("debian")
         repo_uri_2 = image_2.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri_2, "<repo_uri_2>"))
         update_function_code_response = aws_client.lambda_.update_function_code(
@@ -800,10 +810,10 @@ class TestLambdaImages:
 
     @markers.aws.validated
     def test_lambda_zip_file_to_image(
-        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
+        self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
         """Test that verifies conversion from zip file lambda to image lambda is not possible"""
-        image = test_image("alpine")
+        image = ecr_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
         function_name = f"test-function-{short_uid()}"
@@ -840,10 +850,10 @@ class TestLambdaImages:
 
     @markers.aws.validated
     def test_lambda_image_and_image_config_crud(
-        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
+        self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
         """Test lambda crud with packagetype image and image configs"""
-        image = test_image("alpine")
+        image = ecr_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
         # Create another lambda with image config
@@ -908,10 +918,10 @@ class TestLambdaImages:
 
     @markers.aws.validated
     def test_lambda_image_versions(
-        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
+        self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
         """Test lambda versions with package type image"""
-        image = test_image("alpine")
+        image = ecr_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
         function_name = f"test-function-{short_uid()}"
@@ -975,7 +985,6 @@ class TestLambdaImages:
         snapshot.match("second_publish_response", second_publish_response)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaVersions:
     @markers.aws.validated
     def test_publish_version_on_create(
@@ -1183,7 +1192,6 @@ class TestLambdaVersions:
         snapshot.match("get_function_latest_result", get_function_latest_result)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaAlias:
     @markers.aws.validated
     def test_alias_lifecycle(
@@ -1517,7 +1525,6 @@ class TestLambdaAlias:
         snapshot.match("alias_does_not_exist_esc", e.value.response)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaRevisions:
     @markers.snapshot.skip_snapshot_verify(
         # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
@@ -1758,7 +1765,6 @@ class TestLambdaRevisions:
         assert rev3_added_permission != rev4_removed_permission
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="focusing on new provider")
 class TestLambdaTag:
     @pytest.fixture(scope="function")
     def fn_arn(self, create_lambda_function, aws_client):
@@ -1794,7 +1800,6 @@ class TestLambdaTag:
 
     @markers.aws.validated
     def test_tag_lifecycle(self, create_lambda_function, snapshot, fn_arn, aws_client):
-
         # 1. add tag
         tag_single_response = aws_client.lambda_.tag_resource(Resource=fn_arn, Tags={"A": "tag-a"})
         snapshot.match("tag_single_response", tag_single_response)
@@ -1876,31 +1881,6 @@ class TestLambdaTag:
         snapshot.match("not_found_exception_list", e.value.response)
 
 
-# some more common ones that usually don't work in the old provider
-pytestmark = markers.snapshot.skip_snapshot_verify(
-    condition=is_old_provider,
-    paths=[
-        "$..Architectures",
-        "$..EphemeralStorage",
-        "$..LastUpdateStatus",
-        "$..MemorySize",
-        "$..State",
-        "$..StateReason",
-        "$..StateReasonCode",
-        "$..VpcConfig",
-        "$..CodeSigningConfig",
-        "$..Environment",  # missing
-        "$..HTTPStatusCode",  # 201 vs 200
-        "$..Layers",
-        "$..RuntimeVersionConfig",
-        "$..SnapStart",
-        "$..CreateFunctionResponse.RuntimeVersionConfig",
-        "$..CreateFunctionResponse.SnapStart",
-    ],
-)
-
-
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaEventInvokeConfig:
     """TODO: add sqs & stream specific lifecycle snapshot tests"""
 
@@ -2353,10 +2333,8 @@ class TestLambdaEventInvokeConfig:
 # Against AWS, these tests might require increasing the service quota for concurrent executions (e.g., 10 => 101):
 # https://us-east-1.console.aws.amazon.com/servicequotas/home/services/lambda/quotas/L-B99A9384
 # New accounts in an organization have by default a quota of 10 or 50.
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaReservedConcurrency:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     def test_function_concurrency_exceptions(
         self, create_lambda_function, snapshot, aws_client, monkeypatch
     ):
@@ -2439,7 +2417,6 @@ class TestLambdaReservedConcurrency:
         snapshot.match("put_function_concurrency_below_unreserved_min_value", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     def test_function_concurrency(self, create_lambda_function, snapshot, aws_client, monkeypatch):
         """Testing the api of the put function concurrency action"""
         # A lower limits (e.g., 11) could work if the minium unreservered concurrency is lower as well
@@ -2496,9 +2473,7 @@ class TestLambdaReservedConcurrency:
         )
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaProvisionedConcurrency:
-
     # TODO: test ARN
     # TODO: test shorthand ARN
     @markers.aws.validated
@@ -2813,20 +2788,7 @@ class TestLambdaProvisionedConcurrency:
         snapshot.match("list_response_postdeletes", list_response_postdeletes)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_old_provider,
-    paths=[
-        "$..RevisionId",
-        "$..Policy.Statement",
-        "$..PolicyName",
-        "$..PolicyArn",
-        "$..Layers",
-        # mismatching resource index due to SnapStart
-        "$..Statement.Condition.ArnLike.'AWS:SourceArn'",
-    ],
-)
 class TestLambdaPermissions:
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @markers.aws.validated
     def test_permission_exceptions(self, create_lambda_function, account_id, snapshot, aws_client):
         function_name = f"lambda_func-{short_uid()}"
@@ -3017,7 +2979,6 @@ class TestLambdaPermissions:
         get_policy_result = aws_client.lambda_.get_policy(FunctionName=function_name)
         snapshot.match("get_policy", get_policy_result)
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @markers.aws.validated
     def test_lambda_permission_fn_versioning(
         self, create_lambda_function, account_id, snapshot, aws_client
@@ -3138,7 +3099,6 @@ class TestLambdaPermissions:
         get_policy_result_adding_2 = aws_client.lambda_.get_policy(FunctionName=function_name)
         snapshot.match("get_policy_after_adding_2", get_policy_result_adding_2)
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @markers.aws.validated
     def test_add_lambda_permission_fields(
         self, create_lambda_function, account_id, snapshot, aws_client
@@ -3223,7 +3183,6 @@ class TestLambdaPermissions:
         )
         snapshot.match("add_permission_alexa_skill", response)
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @markers.aws.validated
     def test_remove_multi_permissions(self, create_lambda_function, snapshot, aws_client):
         """Tests creation and subsequent removal of multiple permissions, including the changes in the policy"""
@@ -3331,7 +3290,6 @@ class TestLambdaPermissions:
 
 
 class TestLambdaUrl:
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @markers.aws.validated
     def test_url_config_exceptions(self, create_lambda_function, snapshot, aws_client):
         """
@@ -3377,8 +3335,7 @@ class TestLambdaUrl:
         # function name + qualifier tests
         fn_arn_doesnotexist = fn_arn.replace(function_name, "doesnotexist")
 
-        @markers.aws.unknown
-        def test_name_and_qualifier(method: Callable, snapshot_prefix: str, tests, **kwargs):
+        def assert_name_and_qualifier(method: Callable, snapshot_prefix: str, tests, **kwargs):
             for t in tests:
                 with pytest.raises(t["exc"]) as e:
                     method(**t["args"], **kwargs)
@@ -3440,30 +3397,30 @@ class TestLambdaUrl:
             },
         ]
 
-        test_name_and_qualifier(
+        assert_name_and_qualifier(
             aws_client.lambda_.create_function_url_config,
             "create_function_url_config",
             tests,
             AuthType="NONE",
         )
-        test_name_and_qualifier(
+        assert_name_and_qualifier(
             aws_client.lambda_.get_function_url_config,
             "get_function_url_config",
             tests + config_doesnotexist_tests,
         )
-        test_name_and_qualifier(
+        assert_name_and_qualifier(
             aws_client.lambda_.delete_function_url_config,
             "delete_function_url_config",
             tests + config_doesnotexist_tests,
         )
-        test_name_and_qualifier(
+        assert_name_and_qualifier(
             aws_client.lambda_.update_function_url_config,
             "update_function_url_config",
             tests + config_doesnotexist_tests,
             AuthType="AWS_IAM",
         )
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @markers.snapshot.skip_snapshot_verify(paths=["$..FunctionUrlConfigs..InvokeMode"])
     @markers.aws.validated
     def test_url_config_list_paging(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
@@ -3535,6 +3492,7 @@ class TestLambdaUrl:
             != list_max_1_item["FunctionUrlConfigs"][0]["FunctionUrl"]
         )
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..InvokeMode"])
     @markers.aws.validated
     def test_url_config_lifecycle(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
@@ -3585,11 +3543,46 @@ class TestLambdaSizeLimits:
         py_str += "#" * (size - len(py_str))
         return py_str
 
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     @markers.aws.validated
     def test_oversized_request_create_lambda(self, lambda_su_role, snapshot, aws_client):
         function_name = f"test_lambda_{short_uid()}"
-        code_str = self._generate_sized_python_str(TEST_LAMBDA_PYTHON_ECHO, 50 * 1024 * 1024)
+        # ensure that we are slightly below the zipped size limit because it is checked before the request limit
+        code_str = self._generate_sized_python_str(
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED - 1024
+        )
+
+        # upload zip file to S3
+        zip_file = testutil.create_lambda_archive(
+            code_str, get_content=True, runtime=Runtime.python3_9
+        )
+
+        # enlarge the request beyond its limit while accounting for the zip file size
+        delta = (
+            config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE
+            - config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED
+        )
+        large_env = self._generate_sized_python_str(TEST_LAMBDA_PYTHON_ECHO, delta + 1024 * 1024)
+
+        # create lambda function
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Runtime=Runtime.python3_9,
+                Handler="handler.handler",
+                Role=lambda_su_role,
+                Code={"ZipFile": zip_file},
+                Timeout=10,
+                Environment={"Variables": {"largeKey": large_env}},
+            )
+        snapshot.match("invalid_param_exc", e.value.response)
+
+    @markers.aws.validated
+    def test_oversized_zipped_create_lambda(self, lambda_su_role, snapshot, aws_client):
+        function_name = f"test_lambda_{short_uid()}"
+        # use the highest boundary to test that the zipped size is checked before the request size
+        code_str = self._generate_sized_python_str(
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED
+        )
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
@@ -3613,7 +3606,7 @@ class TestLambdaSizeLimits:
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
         code_str = self._generate_sized_python_str(
-            TEST_LAMBDA_PYTHON_ECHO, FUNCTION_MAX_UNZIPPED_SIZE
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED
         )
 
         # upload zip file to S3
@@ -3640,7 +3633,7 @@ class TestLambdaSizeLimits:
         cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
         bucket_key = "test_lambda.zip"
         code_str = self._generate_sized_python_str(
-            TEST_LAMBDA_PYTHON_ECHO, FUNCTION_MAX_UNZIPPED_SIZE - 1000
+            TEST_LAMBDA_PYTHON_ECHO, config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED - 1000
         )
 
         # upload zip file to S3
@@ -3731,20 +3724,6 @@ class TestLambdaSizeLimits:
         assert exc.match("ResourceNotFoundException")
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..CodeSha256",
-            "$..EphemeralStorage",
-            "$..LastUpdateStatus",
-            "$..MemorySize",
-            "$..ResponseMetadata",
-            "$..State",
-            "$..StateReason",
-            "$..StateReasonCode",
-            "$..VpcConfig",
-        ],
-    )
     def test_lambda_envvars_near_limit_succeeds(self, create_lambda_function, snapshot, aws_client):
         """Lambda functions with environments less than or equal to 4 KB can be created."""
         snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -3773,7 +3752,6 @@ class TestLambdaSizeLimits:
 
 # TODO: test paging
 # TODO: test function name / ARN resolving
-@pytest.mark.skipif(condition=is_old_provider(), reason="not implemented")
 class TestCodeSigningConfig:
     @markers.aws.validated
     def test_function_code_signing_config(
@@ -3945,7 +3923,6 @@ class TestCodeSigningConfig:
         snapshot.match("list_functions_by_csc_invalid_cscarn", e.value.response)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not implemented")
 class TestLambdaAccountSettings:
     @markers.aws.validated
     def test_account_settings(self, snapshot, aws_client):
@@ -4122,10 +4099,8 @@ class TestLambdaAccountSettings:
 
 
 class TestLambdaEventSourceMappings:
-    @pytest.mark.skipif(condition=is_old_provider(), reason="new provider only")
     @markers.aws.validated
     def test_event_source_mapping_exceptions(self, snapshot, aws_client):
-
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             aws_client.lambda_.get_event_source_mapping(UUID=long_uid())
         snapshot.match("get_unknown_uuid", e.value.response)
@@ -4159,20 +4134,9 @@ class TestLambdaEventSourceMappings:
         # TODO: add test for adding success destination
 
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..BisectBatchOnFunctionError",
-            "$..FunctionResponseTypes",
-            "$..LastProcessingResult",
-            "$..MaximumBatchingWindowInSeconds",
-            "$..MaximumRecordAgeInSeconds",
-            "$..Topics",
-            "$..TumblingWindowInSeconds",
-        ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
         paths=[
             # all dynamodb service issues not related to lambda
+            "$..TableDescription.DeletionProtectionEnabled",
             "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
             "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
             "$..TableDescription.TableStatus",
@@ -4253,7 +4217,6 @@ class TestLambdaEventSourceMappings:
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="new provider only")
     @markers.aws.validated
     def test_create_event_source_validation(
         self, create_lambda_function, lambda_su_role, dynamodb_create_table, snapshot, aws_client
@@ -4284,7 +4247,6 @@ class TestLambdaEventSourceMappings:
         snapshot.match("error", response)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not correctly supported")
 class TestLambdaTags:
     @markers.aws.validated
     def test_tag_exceptions(self, create_lambda_function, snapshot, account_id, aws_client):
@@ -4478,11 +4440,11 @@ class TestLambdaTags:
 
 # TODO: add more tests where layername can be an ARN
 # TODO: test if function has to be in same region as layer
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaLayer:
+    @markers.lambda_runtime_update
     @markers.aws.validated
     # AWS only allows a max of 15 compatible runtimes, split runtimes and run two tests
-    @pytest.mark.parametrize("runtimes", [RUNTIMES[:14], RUNTIMES[14:]])
+    @pytest.mark.parametrize("runtimes", [ALL_RUNTIMES[:14], ALL_RUNTIMES[14:]])
     def test_layer_compatibilities(self, snapshot, dummylayer, cleanups, aws_client, runtimes):
         """Creates a single layer which is compatible with all"""
         layer_name = f"testlayer-{short_uid()}"
@@ -4500,6 +4462,7 @@ class TestLambdaLayer:
         )
         snapshot.match("publish_result", publish_result)
 
+    @markers.lambda_runtime_update
     @markers.aws.validated
     def test_layer_exceptions(self, snapshot, dummylayer, cleanups, aws_client):
         """
@@ -4730,9 +4693,9 @@ class TestLambdaLayer:
             )
         snapshot.match("add_layer_arn_without_version_exc", e.value.response)
 
-        other_region = "us-west-2"
-        assert other_region != aws_stack.get_region()
-        other_region_lambda_client = aws_client_factory(region_name=other_region).lambda_
+        other_region_lambda_client = aws_client_factory(
+            region_name=SECONDARY_TEST_AWS_REGION_NAME
+        ).lambda_
         other_region_layer_result = other_region_lambda_client.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[],
@@ -5135,10 +5098,9 @@ class TestLambdaLayer:
         )
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaSnapStart:
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17])
+    @pytest.mark.parametrize("runtime", SNAP_START_SUPPORTED_RUNTIMES)
     def test_snapstart_lifecycle(self, create_lambda_function, snapshot, aws_client, runtime):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
         Slow (~1-2min) against AWS.

@@ -32,7 +32,7 @@ While not recommended, store classes may define member helper functions and prop
 import re
 from collections.abc import Callable
 from threading import RLock
-from typing import Any, Generic, Type, TypeVar, Union
+from typing import Any, Generic, Iterator, Type, TypeVar, Union
 
 from localstack import config
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
@@ -238,7 +238,7 @@ class RegionBundle(dict, Generic[BaseStoreType]):
 
                 store_obj._global = self._global
                 store_obj._universal = self._universal
-                store_obj._service_name = self.service_name
+                store_obj.service_name = self.service_name
                 store_obj._account_id = self.account_id
                 store_obj._region_name = region_name
 
@@ -333,3 +333,14 @@ class AccountRegionBundle(dict, Generic[BaseStoreType]):
 
         with self.lock:
             self.clear()
+
+    def iter_stores(self) -> Iterator[tuple[str, str, BaseStoreType]]:
+        """
+        Iterate over a flattened view of all stores in this AccountRegionBundle, where each record is a
+        tuple of account id, region name, and the store within that account and region. Example::
+
+        :return: an iterator
+        """
+        for account_id, region_stores in self.items():
+            for region_name, store in region_stores.items():
+                yield account_id, region_name, store

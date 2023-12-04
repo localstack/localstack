@@ -10,11 +10,9 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import APPLICATION_JSON, LOCALHOST
+from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import path_based_url
-from localstack.services.lambda_.lambda_utils import get_main_endpoint_from_container
-from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.services.lambda_.networking import get_main_endpoint_from_container
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import PUBLIC_HTTP_ECHO_SERVER_URL
@@ -377,7 +375,7 @@ def test_put_integration_validation(aws_client, echo_http_server, echo_http_serv
             restApiId=api_id,
             resourceId=root_id,
             credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
-                get_aws_account_id()
+                TEST_AWS_ACCOUNT_ID,
             ),
             httpMethod="GET",
             type=_type,
@@ -402,7 +400,7 @@ def test_put_integration_validation(aws_client, echo_http_server, echo_http_serv
                 restApiId=api_id,
                 resourceId=root_id,
                 credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
-                    get_aws_account_id()
+                    TEST_AWS_ACCOUNT_ID,
                 ),
                 httpMethod="GET",
                 type=_type,
@@ -587,12 +585,8 @@ def test_create_execute_api_vpc_endpoint(
 
     # create Lambda function that invokes the API GW (private VPC endpoint not accessible from outside of AWS)
     if not is_aws_cloud():
-        if config.LAMBDA_EXECUTOR == "local" and is_old_provider():
-            # special case: return localhost for local Lambda executor (TODO remove after full switch to v2 provider)
-            api_host = LOCALHOST
-        else:
-            api_host = get_main_endpoint_from_container()
-        endpoint = endpoint.replace(host_header, f"{api_host}:{config.get_edge_port_http()}")
+        api_host = get_main_endpoint_from_container()
+        endpoint = endpoint.replace(host_header, f"{api_host}:{config.GATEWAY_LISTEN[0].port}")
     lambda_code = textwrap.dedent(
         f"""
     def handler(event, context):

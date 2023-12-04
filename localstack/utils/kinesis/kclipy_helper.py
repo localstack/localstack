@@ -5,7 +5,6 @@ from glob import glob
 
 from amazon_kclpy import kcl
 
-from localstack.utils.aws import aws_stack
 from localstack.utils.files import save_file
 
 
@@ -81,14 +80,7 @@ def get_kcl_app_command(java, multi_lang_daemon_class, properties, paths=None):
         paths = []
     logging_config = os.path.join(get_dir_of_file(__file__), "java", "logging.properties")
     sys_props = f'-Djava.util.logging.config.file="{logging_config}" -Daws.cborEnabled=false'
-    return "{java} -cp {cp} {sys_props} {daemon} {props}".format(
-        java=java,
-        cp=get_kcl_classpath(properties, paths),
-        daemon=multi_lang_daemon_class,
-        # Just need the basename because the path is added to the classpath
-        props=os.path.basename(properties),
-        sys_props=sys_props,
-    )
+    return f"{java} -cp {get_kcl_classpath(properties, paths)} {sys_props} {multi_lang_daemon_class} {os.path.basename(properties)}"
 
 
 def create_config_file(
@@ -96,13 +88,12 @@ def create_config_file(
     executableName,
     streamName,
     applicationName,
+    region_name,
     credentialsProvider=None,
-    region_name=None,
     **kwargs,
 ):
     if not credentialsProvider:
         credentialsProvider = "DefaultAWSCredentialsProviderChain"
-    region_name = region_name or aws_stack.get_region()
     content = f"""
         executableName = {executableName}
         streamName = {streamName}

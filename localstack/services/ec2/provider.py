@@ -15,7 +15,6 @@ from moto.ec2.models import (
 )
 from moto.ec2.models.launch_templates import LaunchTemplate as MotoLaunchTemplate
 from moto.ec2.models.subnets import Subnet
-from moto.ec2.models.vpcs import VPCEndPoint
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
@@ -48,6 +47,7 @@ from localstack.aws.api.ec2 import (
     Ec2Api,
     InstanceType,
     IpAddressType,
+    LaunchTemplate,
     ModifyLaunchTemplateRequest,
     ModifyLaunchTemplateResult,
     ModifySubnetAttributeRequest,
@@ -74,7 +74,6 @@ from localstack.aws.api.ec2 import (
     VpcEndpointSubnetIdList,
     scope,
 )
-from localstack.aws.connect import connect_to
 from localstack.services.ec2.exceptions import (
     InvalidLaunchTemplateIdError,
     InvalidLaunchTemplateNameError,
@@ -355,7 +354,6 @@ class Ec2Provider(Ec2Api, ABC):
         context: RequestContext,
         request: CreateLaunchTemplateRequest,
     ) -> CreateLaunchTemplateResult:
-
         # parameter validation
         if not request["LaunchTemplateData"]:
             raise MissingParameterError(parameter="LaunchTemplateData")
@@ -372,7 +370,6 @@ class Ec2Provider(Ec2Api, ABC):
         context: RequestContext,
         request: ModifyLaunchTemplateRequest,
     ) -> ModifyLaunchTemplateResult:
-
         backend = get_ec2_backend(context.account_id, context.region)
         template_id = (
             request["LaunchTemplateId"]
@@ -389,14 +386,16 @@ class Ec2Provider(Ec2Api, ABC):
 
         template.default_version_number = int(request["DefaultVersion"])
 
-        client = connect_to().ec2
-        retrieved_template = client.describe_launch_templates(LaunchTemplateIds=[template.id])
-
-        result: ModifyLaunchTemplateResult = {
-            "LaunchTemplate": retrieved_template["LaunchTemplates"][0],
-        }
-
-        return result
+        return ModifyLaunchTemplateResult(
+            LaunchTemplate=LaunchTemplate(
+                LaunchTemplateId=template.id,
+                LaunchTemplateName=template.name,
+                CreateTime=template.create_time,
+                DefaultVersionNumber=template.default_version_number,
+                LatestVersionNumber=template.latest_version_number,
+                Tags=template.tags,
+            )
+        )
 
     @handler("DescribeVpcEndpointServices", expand=False)
     def describe_vpc_endpoint_services(
@@ -496,8 +495,3 @@ def delete_transit_gateway_vpc_attachment(fn, self, transit_gateway_attachment_i
     transit_gateway_attachment = self.transit_gateway_attachments.get(transit_gateway_attachment_id)
     transit_gateway_attachment.state = "deleted"
     return transit_gateway_attachment
-
-
-# fix a bug in upstream moto where a space is encoded in the "Statement" key - TODO remove once fixed upstream
-if "Statement " in VPCEndPoint.DEFAULT_POLICY:
-    VPCEndPoint.DEFAULT_POLICY["Statement"] = VPCEndPoint.DEFAULT_POLICY.pop("Statement ")

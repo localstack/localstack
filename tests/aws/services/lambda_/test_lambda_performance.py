@@ -30,7 +30,7 @@ if not is_env_true("TEST_PERFORMANCE"):
 LOG = logging.getLogger(__name__)
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_invoke_warm_start(create_lambda_function, aws_client):
     function_name = f"echo-func-{short_uid()}"
     create_lambda_function(
@@ -53,7 +53,7 @@ def test_invoke_warm_start(create_lambda_function, aws_client):
     export_csv(timings, "test_invoke_warm_start")
 
 
-@markers.aws.unknown
+@markers.aws.only_localstack
 def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     monkeypatch.setattr(config, "LAMBDA_KEEPALIVE_MS", 0)
     function_name = f"echo-func-{short_uid()}"

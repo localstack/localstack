@@ -8,12 +8,13 @@ import requests
 from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
-from localstack.config import LEGACY_S3_PROVIDER
+from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -94,16 +95,16 @@ def create_sqs_bucket_notification(
 def s3_create_sqs_bucket_notification(aws_client) -> NotificationFactory:
     """
     A factory fixture for creating sqs bucket notifications.
-
-    :param s3_client:
-    :param sqs_client:
-    :return:
     """
 
-    def factory(bucket_name: str, queue_url: str, events: List["EventType"]):
-        return create_sqs_bucket_notification(
-            aws_client.s3, aws_client.sqs, bucket_name, queue_url, events
-        )
+    def factory(
+        bucket_name: str,
+        queue_url: str,
+        events: List["EventType"],
+        s3_client=aws_client.s3,
+        sqs_client=aws_client.sqs,
+    ):
+        return create_sqs_bucket_notification(s3_client, sqs_client, bucket_name, queue_url, events)
 
     return factory
 
@@ -150,11 +151,32 @@ def sqs_collect_s3_events(
     return events
 
 
+@pytest.fixture
+def sqs_create_queue_with_client():
+    queue_urls = []
+
+    def factory(sqs_client, **kwargs):
+        if "QueueName" not in kwargs:
+            kwargs["QueueName"] = "test-queue-%s" % short_uid()
+
+        response = sqs_client.create_queue(**kwargs)
+        url = response["QueueUrl"]
+        queue_urls.append((sqs_client, url))
+        return url
+
+    yield factory
+
+    # cleanup
+    for client, queue_url in queue_urls:
+        try:
+            client.delete_queue(QueueUrl=queue_url)
+        except Exception as e:
+            LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+
+
+@pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="SQS not enabled in S3 image")
 class TestS3NotificationsToSQS:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag"]
-    )
     def test_object_created_put(
         self,
         s3_create_bucket,
@@ -203,9 +225,6 @@ class TestS3NotificationsToSQS:
         assert obj1["VersionId"] == events[1]["s3"]["object"]["versionId"]
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
-    )
     def test_object_created_copy(
         self,
         s3_create_bucket,
@@ -247,10 +266,6 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == dest_key
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER,
-        paths=["$..s3.object.eTag", "$..s3.object.versionId", "$..s3.object.size"],
-    )
     def test_object_created_and_object_removed(
         self,
         s3_create_bucket,
@@ -305,7 +320,6 @@ class TestS3NotificationsToSQS:
         assert events[2]["s3"]["bucket"]["name"] == bucket_name
         assert events[2]["s3"]["object"]["key"] == src_key
 
-    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Not implemented in old provider")
     @markers.aws.validated
     def test_delete_objects(
         self,
@@ -348,9 +362,6 @@ class TestS3NotificationsToSQS:
         assert events[2]["s3"]["object"]["key"] == key
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
-    )
     def test_object_created_complete_multipart_upload(
         self,
         s3_create_bucket,
@@ -389,9 +400,6 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["size"] == file.size()
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
-    )
     def test_key_encoding(
         self,
         s3_create_bucket,
@@ -420,19 +428,21 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == key_encoded
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
-    )
     def test_object_created_put_with_presigned_url_upload(
         self,
         s3_create_bucket,
         sqs_create_queue,
+        sqs_create_queue_with_client,
         s3_create_sqs_bucket_notification,
         snapshot,
         aws_client,
+        aws_client_factory,
     ):
+        """This test validates that pre-signed URL works with notification, and that the awsRegion field is the
+        bucket's region"""
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("awsRegion"), priority=-1)
 
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
@@ -450,17 +460,29 @@ class TestS3NotificationsToSQS:
         assert events[0]["eventName"] == "ObjectCreated:Put"
         assert events[0]["s3"]["object"]["key"] == key
 
+        # test with the bucket in a different region than the client
+        bucket_name_region_2 = s3_create_bucket(
+            CreateBucketConfiguration={"LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME},
+        )
+        # the SQS queue needs to be in the same region as the S3 bucket
+        sqs_client_region_2 = aws_client_factory(region_name=SECONDARY_TEST_AWS_REGION_NAME).sqs
+        queue_url_region_2 = sqs_create_queue_with_client(sqs_client_region_2)
+        s3_create_sqs_bucket_notification(
+            bucket_name=bucket_name_region_2,
+            queue_url=queue_url_region_2,
+            events=["s3:ObjectCreated:*"],
+            sqs_client=sqs_client_region_2,
+        )
+        # still generate the presign URL with the default client, with the default region
+        url_bucket_region_2 = aws_client.s3.generate_presigned_url(
+            "put_object", Params={"Bucket": bucket_name_region_2, "Key": key}
+        )
+        requests.put(url_bucket_region_2, data="something", verify=False)
+
+        events = sqs_collect_s3_events(sqs_client_region_2, queue_url_region_2, 1)
+        snapshot.match("receive_messages_region_2", {"messages": events})
+
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER,
-        paths=[
-            "$..s3.object.eTag",
-            "$..s3.object.versionId",
-            "$..s3.object.size",
-            "$..s3.object.sequencer",
-            "$..eventVersion",
-        ],
-    )
     def test_object_tagging_put_event(
         self,
         s3_create_bucket,
@@ -506,16 +528,6 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == dest_key
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER,
-        paths=[
-            "$..s3.object.eTag",
-            "$..s3.object.versionId",
-            "$..s3.object.size",
-            "$..s3.object.sequencer",
-            "$..eventVersion",
-        ],
-    )
     def test_object_tagging_delete_event(
         self,
         s3_create_bucket,
@@ -566,9 +578,6 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == dest_key
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
-    )
     def test_xray_header(
         self,
         s3_create_bucket,
@@ -636,14 +645,6 @@ class TestS3NotificationsToSQS:
         snapshot.match("receive_messages", {"messages": messages})
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER,
-        paths=[
-            "$..QueueConfigurations..Filter",
-            "$..s3.object.eTag",
-            "$..s3.object.versionId",
-        ],
-    )
     def test_notifications_with_filter(
         self,
         s3_create_bucket,
@@ -809,13 +810,8 @@ class TestS3NotificationsToSQS:
         snapshot.match("bucket_notification_configuration", response)
 
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not LEGACY_S3_PROVIDER,
         paths=["$..Error.ArgumentName", "$..Error.ArgumentValue"],
     )  # TODO: add to exception for ASF
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: LEGACY_S3_PROVIDER,
-        paths=["$..Error.RequestID"],
-    )
     @markers.aws.validated
     def test_bucket_notification_with_invalid_filter_rules(
         self, s3_create_bucket, sqs_create_queue, snapshot, aws_client
@@ -843,13 +839,11 @@ class TestS3NotificationsToSQS:
         snapshot.match("invalid_filter_name", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
     # AWS seems to return "ArgumentName" (without the number) if the request fails a basic verification
     # -  basically everything it can check isolated of the structure of the request
     # and then the "ArgumentNameX" (with the number) for each verification against the target services
     # e.g. queues not existing, no permissions etc.
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not LEGACY_S3_PROVIDER,
         paths=[
             "$..Error.ArgumentName1",
             "$..Error.ArgumentValue1",
@@ -903,9 +897,7 @@ class TestS3NotificationsToSQS:
         snapshot.match("skip_destination_validation", config)
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not LEGACY_S3_PROVIDER,
         paths=[
             "$..Error.ArgumentName",
             "$..Error.ArgumentValue",
@@ -960,7 +952,6 @@ class TestS3NotificationsToSQS:
         snapshot.match("multiple-queues-do-not-exist", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
     def test_object_put_acl(
         self,
         s3_create_bucket,
@@ -1022,7 +1013,6 @@ class TestS3NotificationsToSQS:
         snapshot.match("receive_messages", {"messages": events})
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..messages[1].requestParameters.sourceIPAddress",  # AWS IP address is different as its internal

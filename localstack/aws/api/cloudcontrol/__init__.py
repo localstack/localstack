@@ -305,7 +305,6 @@ class UpdateResourceOutput(TypedDict, total=False):
 
 
 class CloudcontrolApi:
-
     service = "cloudcontrol"
     version = "2021-09-30"
 

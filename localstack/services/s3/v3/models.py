@@ -4,9 +4,9 @@ from collections import defaultdict
 from datetime import datetime
 from secrets import token_urlsafe
 from typing import Literal, NamedTuple, Optional, Union
+
 from zoneinfo import ZoneInfo
 
-from localstack import config
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.s3 import (
     AccessControlPolicy,
@@ -62,15 +62,13 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
     WebsiteRedirectLocation,
 )
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.s3.constants import (
     DEFAULT_BUCKET_ENCRYPTION,
     DEFAULT_PUBLIC_BLOCK_ACCESS,
     S3_UPLOAD_PART_MIN_SIZE,
 )
-from localstack.services.s3.utils import (
-    iso_8601_datetime_without_milliseconds_s3,
-    rfc_1123_datetime,
-)
+from localstack.services.s3.utils import rfc_1123_datetime
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -80,9 +78,6 @@ from localstack.services.stores import (
 )
 from localstack.utils.aws import arns
 from localstack.utils.tagging import TaggingService
-
-# TODO: beware of timestamp data, we need the snapshot to be more precise for S3, with the different types
-# moto had a lot of issue with it? not sure about our parser/serializer
 
 LOG = logging.getLogger(__name__)
 
@@ -346,11 +341,6 @@ class S3Object:
         return headers
 
     @property
-    def last_modified_iso8601(self) -> str:
-        # TODO: verify if we need them with proper snapshot testing, for now it's copied from moto
-        return iso_8601_datetime_without_milliseconds_s3(self.last_modified)  # type: ignore
-
-    @property
     def last_modified_rfc1123(self) -> str:
         # TODO: verify if we need them with proper snapshot testing, for now it's copied from moto
         # Different datetime formats depending on how the key is obtained
@@ -542,7 +532,8 @@ class KeyStore:
         return self._store.pop(object_key, default)
 
     def values(self, *_, **__) -> list[S3Object | S3DeleteMarker]:
-        return [value for value in self._store.values()]
+        # we create a shallow copy with dict to avoid size changed during iteration
+        return [value for value in dict(self._store).values()]
 
     def is_empty(self) -> bool:
         return not self._store
@@ -622,15 +613,16 @@ class VersionedKeyStore:
 
     def values(self, with_versions: bool = False) -> list[S3Object | S3DeleteMarker]:
         if with_versions:
+            # we create a shallow copy with dict to avoid size changed during iteration
             return [
                 object_version
-                for values in self._store.values()
-                for object_version in values.values()
+                for values in dict(self._store).values()
+                for object_version in dict(values).values()
             ]
 
         # if `with_versions` is False, then we need to return only the current version if it's not a DeleteMarker
         objects = []
-        for object_key, versions in self._store.items():
+        for object_key, versions in dict(self._store).items():
             # we're getting the last set object in the versions dictionary
             for version_id in reversed(versions):
                 current_object = versions[version_id]
@@ -683,8 +675,10 @@ class BucketCorsIndex:
     def _build_index() -> tuple[set[BucketName], dict[BucketName, CORSConfiguration]]:
         buckets = set()
         cors_index = {}
-        for account_id, regions in s3_stores.items():
-            for bucket_name, bucket in regions[config.DEFAULT_REGION].buckets.items():
+        # we create a shallow copy with dict to avoid size changed during iteration, as the store could have new account
+        # or region create from any other requests
+        for account_id, regions in dict(s3_stores).items():
+            for bucket_name, bucket in dict(regions[AWS_REGION_US_EAST_1].buckets).items():
                 bucket: S3Bucket
                 buckets.add(bucket_name)
                 if bucket.cors_rules is not None:

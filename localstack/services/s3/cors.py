@@ -19,7 +19,7 @@ from localstack.aws.chain import Handler, HandlerChain
 from localstack.aws.handlers.cors import CorsEnforcer, CorsResponseEnricher
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.protocol.service_router import get_service_catalog
-from localstack.constants import S3_VIRTUAL_HOSTNAME
+from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.http import Request, Response
 from localstack.services.s3.utils import S3_VIRTUAL_HOSTNAME_REGEX
 
@@ -45,7 +45,6 @@ class BucketCorsIndex(Protocol):
 
 
 class S3CorsHandler(Handler):
-
     bucket_cors_index: BucketCorsIndex
 
     def __init__(self, bucket_cors_index: BucketCorsIndex):
@@ -77,7 +76,7 @@ class S3CorsHandler(Handler):
         # try to extract the bucket from the hostname (the "in" check is a minor optimization)
         elif ".s3" in host and (match := _s3_virtual_host_regex.match(host)):
             is_s3 = True
-            bucket_name = match.group(3)
+            bucket_name = match.group("bucket")
         # otherwise we're not sure, and whether it's s3 depends on whether the bucket exists. check later
         else:
             is_s3 = False
@@ -98,7 +97,7 @@ class S3CorsHandler(Handler):
 
         # this is used with the new ASF S3 provider
         # although, we could use it to pre-parse the request and set the context to move the service name parser
-        if config.LEGACY_S3_PROVIDER or config.DISABLE_CUSTOM_CORS_S3:
+        if config.DISABLE_CUSTOM_CORS_S3:
             return
 
         request = context.request
@@ -276,7 +275,7 @@ def s3_cors_request_handler(chain: HandlerChain, context: RequestContext, respon
     Handler to add default CORS headers to S3 operations not concerned with CORS configuration
     """
     # if DISABLE_CUSTOM_CORS_S3 is true, the default CORS handling will take place, so we won't need to do it here
-    if config.LEGACY_S3_PROVIDER or config.DISABLE_CUSTOM_CORS_S3:
+    if config.DISABLE_CUSTOM_CORS_S3:
         return
 
     if not context.service or context.service.service_name != "s3":

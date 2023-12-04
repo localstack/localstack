@@ -657,6 +657,46 @@ class ResourceType(str):
         "AWS::NetworkManager::CustomerGatewayAssociation"
     )
     AWS_NetworkManager_LinkAssociation = "AWS::NetworkManager::LinkAssociation"
+    AWS_IoTWireless_MulticastGroup = "AWS::IoTWireless::MulticastGroup"
+    AWS_Personalize_DatasetGroup = "AWS::Personalize::DatasetGroup"
+    AWS_IoTTwinMaker_ComponentType = "AWS::IoTTwinMaker::ComponentType"
+    AWS_CodeBuild_ReportGroup = "AWS::CodeBuild::ReportGroup"
+    AWS_SageMaker_FeatureGroup = "AWS::SageMaker::FeatureGroup"
+    AWS_MSK_BatchScramSecret = "AWS::MSK::BatchScramSecret"
+    AWS_AppStream_Stack = "AWS::AppStream::Stack"
+    AWS_IoT_JobTemplate = "AWS::IoT::JobTemplate"
+    AWS_IoTWireless_FuotaTask = "AWS::IoTWireless::FuotaTask"
+    AWS_IoT_ProvisioningTemplate = "AWS::IoT::ProvisioningTemplate"
+    AWS_InspectorV2_Filter = "AWS::InspectorV2::Filter"
+    AWS_Route53Resolver_ResolverQueryLoggingConfigAssociation = (
+        "AWS::Route53Resolver::ResolverQueryLoggingConfigAssociation"
+    )
+    AWS_ServiceDiscovery_Instance = "AWS::ServiceDiscovery::Instance"
+    AWS_Transfer_Certificate = "AWS::Transfer::Certificate"
+    AWS_MediaConnect_FlowSource = "AWS::MediaConnect::FlowSource"
+    AWS_APS_RuleGroupsNamespace = "AWS::APS::RuleGroupsNamespace"
+    AWS_CodeGuruProfiler_ProfilingGroup = "AWS::CodeGuruProfiler::ProfilingGroup"
+    AWS_Route53Resolver_ResolverQueryLoggingConfig = (
+        "AWS::Route53Resolver::ResolverQueryLoggingConfig"
+    )
+    AWS_Batch_SchedulingPolicy = "AWS::Batch::SchedulingPolicy"
+    AWS_ACMPCA_CertificateAuthorityActivation = "AWS::ACMPCA::CertificateAuthorityActivation"
+    AWS_AppMesh_GatewayRoute = "AWS::AppMesh::GatewayRoute"
+    AWS_AppMesh_Mesh = "AWS::AppMesh::Mesh"
+    AWS_Connect_Instance = "AWS::Connect::Instance"
+    AWS_Connect_QuickConnect = "AWS::Connect::QuickConnect"
+    AWS_EC2_CarrierGateway = "AWS::EC2::CarrierGateway"
+    AWS_EC2_IPAMPool = "AWS::EC2::IPAMPool"
+    AWS_EC2_TransitGatewayConnect = "AWS::EC2::TransitGatewayConnect"
+    AWS_EC2_TransitGatewayMulticastDomain = "AWS::EC2::TransitGatewayMulticastDomain"
+    AWS_ECS_CapacityProvider = "AWS::ECS::CapacityProvider"
+    AWS_IAM_InstanceProfile = "AWS::IAM::InstanceProfile"
+    AWS_IoT_CACertificate = "AWS::IoT::CACertificate"
+    AWS_IoTTwinMaker_SyncJob = "AWS::IoTTwinMaker::SyncJob"
+    AWS_KafkaConnect_Connector = "AWS::KafkaConnect::Connector"
+    AWS_Lambda_CodeSigningConfig = "AWS::Lambda::CodeSigningConfig"
+    AWS_NetworkManager_ConnectPeer = "AWS::NetworkManager::ConnectPeer"
+    AWS_ResourceExplorer2_Index = "AWS::ResourceExplorer2::Index"
 
 
 class ResourceValueType(str):
@@ -2872,7 +2912,6 @@ class UntagResourceRequest(ServiceRequest):
 
 
 class ConfigApi:
-
     service = "config"
     version = "2014-11-12"
 

@@ -1,4 +1,6 @@
-""" Utilities for the new Lambda ASF provider. Do not use in the current provider, as ASF specific exceptions might be thrown """
+""" Utilities related to Lambda API operations such as ARN handling, validations, and output formatting.
+Everything related to behavior or implicit functionality goes into `lambda_utils.py`.
+"""
 import datetime
 import random
 import re
@@ -21,10 +23,10 @@ from localstack.aws.api.lambda_ import (
     LayerVersionContentOutput,
     PublishLayerVersionResponse,
     ResourceNotFoundException,
-    Runtime,
     TracingConfig,
     VpcConfigResponse,
 )
+from localstack.services.lambda_.runtimes import ALL_RUNTIMES, VALID_LAYER_RUNTIMES, VALID_RUNTIMES
 from localstack.utils.collections import merge_recursive
 
 if TYPE_CHECKING:
@@ -89,31 +91,6 @@ STATEMENT_ID_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
 URL_CHAR_SET = string.ascii_lowercase + string.digits
 # Date format as returned by the lambda service
 LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
-
-# An unordered list of all Lambda runtimes supported by LocalStack.
-# Has to contain all elements of lambda_mapping.IMAGE_MAPPING.
-RUNTIMES = [
-    Runtime.nodejs12_x,
-    Runtime.nodejs14_x,
-    Runtime.nodejs16_x,
-    Runtime.nodejs18_x,
-    Runtime.python3_7,
-    Runtime.python3_8,
-    Runtime.python3_9,
-    Runtime.python3_10,
-    Runtime.python3_11,
-    Runtime.ruby2_7,
-    Runtime.ruby3_2,
-    Runtime.java8,
-    Runtime.java8_al2,
-    Runtime.java11,
-    Runtime.java17,
-    Runtime.dotnetcore3_1,
-    Runtime.dotnet6,
-    Runtime.go1_x,
-    Runtime.provided,
-    Runtime.provided_al2,
-]
 
 # An unordered list of all Lambda CPU architectures supported by LocalStack.
 ARCHITECTURES = [Architecture.arm64, Architecture.x86_64]
@@ -607,11 +584,9 @@ def parse_layer_arn(layer_version_arn: str) -> Tuple[str, str, str, str]:
     )
 
 
-# TODO: use list of valid runtimes from botocore through validators. See:
-#  https://github.com/localstack/localstack/pull/7675#discussion_r1107777058
 def validate_layer_runtime(compatible_runtime: str) -> str | None:
-    if compatible_runtime is not None and compatible_runtime not in RUNTIMES:
-        return f"Value '{compatible_runtime}' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby2.5, python3.6, python2.7]"
+    if compatible_runtime is not None and compatible_runtime not in ALL_RUNTIMES:
+        return f"Value '{compatible_runtime}' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_LAYER_RUNTIMES}"
     return None
 
 
@@ -626,8 +601,8 @@ def validate_layer_runtimes_and_architectures(
 ):
     validations = []
 
-    if compatible_runtimes and set(compatible_runtimes).difference(RUNTIMES):
-        constraint = "Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9]"
+    if compatible_runtimes and set(compatible_runtimes).difference(ALL_RUNTIMES):
+        constraint = f"Member must satisfy enum value set: {VALID_RUNTIMES}"
         validation_msg = f"Value '[{', '.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
         validations.append(validation_msg)
 

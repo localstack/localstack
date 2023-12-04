@@ -47,6 +47,7 @@ state_stmt
     | item_processor_decl
     | iterator_decl
     | item_selector_decl
+    | item_reader_decl
     | max_concurrency_decl
     | timeout_seconds_decl
     | timeout_seconds_path_decl
@@ -105,7 +106,7 @@ result_decl
     ;
 
 result_path_decl
-    : RESULTPATH COLON (keyword_or_string | NULL) // TODO keywords too?
+    : RESULTPATH COLON (NULL | keyword_or_string)
     ;
 
 output_path_decl
@@ -256,7 +257,7 @@ comparison_composite
     : choice_operator COLON
       ( choice_rule
       | LBRACK
-        choice_rule (COMMA choice_rule)+
+        choice_rule (COMMA choice_rule)*
         RBRACK
       )
     ;
@@ -296,10 +297,30 @@ processor_config_decl
     : PROCESSORCONFIG
       COLON
       LBRACE
-      ( mode_decl
-      | json_binding  // TODO
-      )*
+      processor_config_field (COMMA processor_config_field)*
       RBRACE
+    ;
+
+processor_config_field
+    : mode_decl
+    | execution_decl
+    ;
+
+mode_decl
+    : MODE COLON mode_type
+    ;
+
+mode_type
+    : INLINE
+    | DISTRIBUTED
+    ;
+
+execution_decl
+    : EXECUTIONTYPE COLON execution_type
+    ;
+
+execution_type
+    : STANDARD
     ;
 
 iterator_decl
@@ -320,19 +341,65 @@ item_selector_decl
     : ITEMSELECTOR COLON payload_tmpl_decl
     ;
 
-mode_decl
-    : MODE COLON mode_type
+item_reader_decl
+    : ITEMREADER
+      COLON
+      LBRACE
+      items_reader_field (COMMA items_reader_field)*
+      RBRACE
     ;
 
-mode_type
-    : INLINE
+items_reader_field
+    : resource_decl
+    | parameters_decl
+    | reader_config_decl
+    ;
+
+reader_config_decl
+    : READERCONFIG
+      COLON
+      LBRACE
+      reader_config_field (COMMA reader_config_field)*
+      RBRACE
+    ;
+
+reader_config_field
+    : input_type_decl
+    | csv_header_location_decl
+    | csv_headers_decl
+    | max_items_decl
+    | max_items_path_decl
+    ;
+
+input_type_decl
+    : INPUTTYPE COLON keyword_or_string
+    ;
+
+csv_header_location_decl
+    : CSVHEADERLOCATION COLON keyword_or_string
+    ;
+
+csv_headers_decl  // TODO: are empty "CSVHeaders" list values supported?
+    : CSVHEADERS
+      COLON
+      LBRACK
+      keyword_or_string (COMMA keyword_or_string)*
+      RBRACK
+    ;
+
+max_items_decl
+    : MAXITEMS COLON INT
+    ;
+
+max_items_path_decl
+    : MAXITEMSPATH COLON STRINGPATH
     ;
 
 retry_decl
     : RETRY
       COLON
       LBRACK
-      retrier_decl (COMMA retrier_decl)*
+      (retrier_decl (COMMA retrier_decl)*)?
       RBRACK
     ;
 
@@ -373,7 +440,7 @@ catch_decl
     : CATCH
       COLON
       LBRACK
-      catcher_decl (COMMA catcher_decl)*
+      (catcher_decl (COMMA catcher_decl)*)?
       RBRACK
     ;
 
@@ -451,6 +518,7 @@ states_error_name
     | ERRORNAMEStatesExceedToleratedFailureThreshold
     | ERRORNAMEStatesItemReaderFailed
     | ERRORNAMEStatesResultWriterFailed
+    | ERRORNAMEStatesRuntime
     ;
 
 error_name
@@ -485,51 +553,125 @@ json_value_decl
    ;
 
 keyword_or_string // TODO: check keywords can be used as strings.
-    : STRING
-    | STRINGDOLLAR
-    | STRINGPATH
+    : STRINGDOLLAR
     | STRINGPATHCONTEXTOBJ
+    | STRINGPATH
+    | STRING
     //
     | COMMENT
     | STATES
     | STARTAT
     | NEXTSTATE
     | TYPE
-    | PASS
     | TASK
     | CHOICE
-    | CHOICES
     | FAIL
+    | SUCCEED
+    | PASS
     | WAIT
     | PARALLEL
     | MAP
-    | SUCCEED
+    | CHOICES
     | VARIABLE
-    | RESOURCE
-    | RESULT
-    | END
-    | CAUSE
-    | ERROR
     | DEFAULT
-    | ITEMSPATH
-    | MODE
-    | PROCESSORCONFIG
-    | INLINE
-    | OUTPUTPATH
-    | RESULTPATH
-    | INPUTPATH
+    | BRANCHES
+    | AND
+    | BOOLEANEQUALS
+    | BOOLEANQUALSPATH
+    | ISBOOLEAN
+    | ISNULL
+    | ISNUMERIC
+    | ISPRESENT
+    | ISSTRING
+    | ISTIMESTAMP
+    | NOT
+    | NUMERICEQUALS
+    | NUMERICEQUALSPATH
+    | NUMERICGREATERTHAN
+    | NUMERICGREATERTHANPATH
+    | NUMERICGREATERTHANEQUALS
+    | NUMERICGREATERTHANEQUALSPATH
+    | NUMERICLESSTHAN
+    | NUMERICLESSTHANPATH
+    | NUMERICLESSTHANEQUALS
+    | NUMERICLESSTHANEQUALSPATH
+    | OR
+    | STRINGEQUALS
+    | STRINGEQUALSPATH
+    | STRINGGREATERTHAN
+    | STRINGGREATERTHANPATH
+    | STRINGGREATERTHANEQUALS
+    | STRINGGREATERTHANEQUALSPATH
+    | STRINGLESSTHAN
+    | STRINGLESSTHANPATH
+    | STRINGLESSTHANEQUALS
+    | STRINGLESSTHANEQUALSPATH
+    | STRINGMATCHES
+    | TIMESTAMPEQUALS
+    | TIMESTAMPEQUALSPATH
+    | TIMESTAMPGREATERTHAN
+    | TIMESTAMPGREATERTHANPATH
+    | TIMESTAMPGREATERTHANEQUALS
+    | TIMESTAMPGREATERTHANEQUALSPATH
+    | TIMESTAMPLESSTHAN
+    | TIMESTAMPLESSTHANPATH
+    | TIMESTAMPLESSTHANEQUALS
+    | TIMESTAMPLESSTHANEQUALSPATH
     | SECONDSPATH
     | SECONDS
     | TIMESTAMPPATH
     | TIMESTAMP
+    | TIMEOUTSECONDS
+    | TIMEOUTSECONDSPATH
+    | HEARTBEATSECONDS
+    | HEARTBEATSECONDSPATH
+    | PROCESSORCONFIG
+    | MODE
+    | INLINE
+    | DISTRIBUTED
+    | EXECUTIONTYPE
+    | STANDARD
+    | ITEMPROCESSOR
+    | ITERATOR
+    | ITEMSELECTOR
+    | MAXCONCURRENCY
+    | RESOURCE
+    | INPUTPATH
+    | OUTPUTPATH
+    | ITEMSPATH
+    | RESULTPATH
+    | RESULT
+    | PARAMETERS
+    | RESULTSELECTOR
+    | ITEMREADER
+    | READERCONFIG
+    | INPUTTYPE
+    | CSVHEADERLOCATION
+    | CSVHEADERS
+    | MAXITEMS
+    | MAXITEMSPATH
+    | NEXT
+    | END
+    | CAUSE
+    | ERROR
     | RETRY
     | ERROREQUALS
     | INTERVALSECONDS
     | MAXATTEMPTS
     | BACKOFFRATE
     | CATCH
-    //
-    | comparison_func
-    | choice_operator
-    | states_error_name
+    | ERRORNAMEStatesALL
+    | ERRORNAMEStatesHeartbeatTimeout
+    | ERRORNAMEStatesTimeout
+    | ERRORNAMEStatesTaskFailed
+    | ERRORNAMEStatesPermissions
+    | ERRORNAMEStatesResultPathMatchFailure
+    | ERRORNAMEStatesParameterPathFailure
+    | ERRORNAMEStatesBranchFailed
+    | ERRORNAMEStatesNoChoiceMatched
+    | ERRORNAMEStatesIntrinsicFailure
+    | ERRORNAMEStatesExceedToleratedFailureThreshold
+    | ERRORNAMEStatesItemReaderFailed
+    | ERRORNAMEStatesResultWriterFailed
+    | ERRORNAMEStatesRuntime
     ;

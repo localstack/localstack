@@ -446,6 +446,7 @@ class AutomationExecutionStatus(str):
     ChangeCalendarOverrideRejected = "ChangeCalendarOverrideRejected"
     CompletedWithSuccess = "CompletedWithSuccess"
     CompletedWithFailure = "CompletedWithFailure"
+    Exited = "Exited"
 
 
 class AutomationSubtype(str):
@@ -528,8 +529,8 @@ class ComplianceUploadType(str):
 
 
 class ConnectionStatus(str):
-    Connected = "Connected"
-    NotConnected = "NotConnected"
+    connected = "connected"
+    notconnected = "notconnected"
 
 
 class DescribeActivationsFilterKeys(str):
@@ -935,7 +936,6 @@ class ResourceDataSyncS3Format(str):
 
 class ResourceType(str):
     ManagedInstance = "ManagedInstance"
-    Document = "Document"
     EC2Instance = "EC2Instance"
 
 
@@ -1002,6 +1002,9 @@ class StepExecutionFilterKey(str):
     StepExecutionId = "StepExecutionId"
     StepName = "StepName"
     Action = "Action"
+    ParentStepExecutionId = "ParentStepExecutionId"
+    ParentStepIteration = "ParentStepIteration"
+    ParentStepIteratorValue = "ParentStepIteratorValue"
 
 
 class StopType(str):
@@ -1515,6 +1518,12 @@ class OpsItemAlreadyExistsException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     OpsItemId: Optional[String]
+
+
+class OpsItemConflictException(ServiceException):
+    code: str = "OpsItemConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 OpsItemParameterNamesList = List[String]
@@ -2135,6 +2144,14 @@ class ResolvedTargets(TypedDict, total=False):
     Truncated: Optional[Boolean]
 
 
+class ParentStepDetails(TypedDict, total=False):
+    StepExecutionId: Optional[String]
+    StepName: Optional[String]
+    Action: Optional[AutomationActionName]
+    Iteration: Optional[Integer]
+    IteratorValue: Optional[String]
+
+
 ValidNextStepList = List[ValidNextStep]
 
 
@@ -2172,6 +2189,7 @@ class StepExecution(TypedDict, total=False):
     Targets: Optional[Targets]
     TargetLocation: Optional[TargetLocation]
     TriggeredAlarms: Optional[AlarmStateInformationList]
+    ParentStepDetails: Optional[ParentStepDetails]
 
 
 StepExecutionList = List[StepExecution]
@@ -2211,6 +2229,7 @@ class AutomationExecution(TypedDict, total=False):
     OpsItemId: Optional[String]
     AssociationId: Optional[String]
     ChangeRequestName: Optional[ChangeRequestName]
+    Variables: Optional[AutomationParameterMap]
 
 
 AutomationExecutionFilterValueList = List[AutomationExecutionFilterValue]
@@ -2885,6 +2904,14 @@ class DeleteMaintenanceWindowRequest(ServiceRequest):
 
 class DeleteMaintenanceWindowResult(TypedDict, total=False):
     WindowId: Optional[MaintenanceWindowId]
+
+
+class DeleteOpsItemRequest(ServiceRequest):
+    OpsItemId: OpsItemId
+
+
+class DeleteOpsItemResponse(TypedDict, total=False):
+    pass
 
 
 class DeleteOpsMetadataRequest(ServiceRequest):
@@ -5478,7 +5505,6 @@ class UpdateServiceSettingResult(TypedDict, total=False):
 
 
 class SsmApi:
-
     service = "ssm"
     version = "2014-11-06"
 
@@ -5704,6 +5730,12 @@ class SsmApi:
     def delete_maintenance_window(
         self, context: RequestContext, window_id: MaintenanceWindowId
     ) -> DeleteMaintenanceWindowResult:
+        raise NotImplementedError
+
+    @handler("DeleteOpsItem")
+    def delete_ops_item(
+        self, context: RequestContext, ops_item_id: OpsItemId
+    ) -> DeleteOpsItemResponse:
         raise NotImplementedError
 
     @handler("DeleteOpsMetadata")

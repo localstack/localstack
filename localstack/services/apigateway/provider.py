@@ -138,7 +138,9 @@ STAGE_UPDATE_PATHS = [
     "/{resourcePath}/{httpMethod}/metrics/enabled",
     "/{resourcePath}/{httpMethod}/logging/dataTrace",
     "/{resourcePath}/{httpMethod}/logging/loglevel",
-    "/{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+    "/{resourcePath}/{httpMethod}/throttling/burstLimit",
+    "/{resourcePath}/{httpMethod}/throttling/rateLimit",
+    "/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
     "/{resourcePath}/{httpMethod}/caching/enabled",
     "/{resourcePath}/{httpMethod}/caching/dataEncrypted",
     "/{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl",
@@ -156,6 +158,14 @@ STAGE_UPDATE_PATHS = [
     "/variables/{variable_name}",
     "/tracingEnabled",
 ]
+
+VALID_INTEGRATION_TYPES = {
+    IntegrationType.AWS,
+    IntegrationType.AWS_PROXY,
+    IntegrationType.HTTP,
+    IntegrationType.HTTP_PROXY,
+    IntegrationType.MOCK,
+}
 
 
 class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
@@ -176,6 +186,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         invocation_context.method = request.get("httpMethod")
         invocation_context.api_id = request.get("restApiId")
         invocation_context.path_with_query_string = request.get("pathWithQueryString")
+        invocation_context.region_name = context.region
+        invocation_context.account_id = context.account_id
 
         moto_rest_api = get_moto_rest_api(context=context, rest_api_id=invocation_context.api_id)
         resource = moto_rest_api.resources.get(request["resourceId"])
@@ -337,6 +349,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         endpoint_configs = rest_api.endpoint_configuration or {}
         if isinstance(endpoint_configs.get("vpcEndpointIds"), str):
             endpoint_configs["vpcEndpointIds"] = [endpoint_configs["vpcEndpointIds"]]
+
+        # minimum_compression_size is a unique path as it's a nullable integer,
+        # it would throw an error if it stays an empty string
+        if rest_api.minimum_compression_size == "":
+            rest_api.minimum_compression_size = None
 
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response, remove_tags=False)
@@ -940,6 +957,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             if not path_valid:
                 valid_paths = f"[{', '.join(STAGE_UPDATE_PATHS)}]"
                 # note: weird formatting in AWS - required for snapshot testing
+                valid_paths = valid_paths.replace(
+                    "/{resourcePath}/{httpMethod}/throttling/burstLimit, /{resourcePath}/{httpMethod}/throttling/rateLimit, /{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+                    "/{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+                )
                 valid_paths = valid_paths.replace("/burstLimit, /", "/burstLimit /")
                 valid_paths = valid_paths.replace("/rateLimit, /", "/rateLimit /")
                 raise BadRequestException(
@@ -1224,7 +1245,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
     ) -> DocumentationPartIds:
-
         body_data = body.read()
         openapi_spec = parse_json_or_yaml(to_str(body_data))
 
@@ -1684,7 +1704,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
     ) -> RestApi:
-
         body_data = body.read()
 
         # create rest api
@@ -1740,7 +1759,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def put_integration(
         self, context: RequestContext, request: PutIntegrationRequest
     ) -> Integration:
-        if request.get("type") == IntegrationType.AWS_PROXY:
+        if (integration_type := request.get("type")) not in VALID_INTEGRATION_TYPES:
+            raise CommonServiceException(
+                "ValidationException",
+                f"1 validation error detected: Value '{integration_type}' at "
+                f"'putIntegrationInput.type' failed to satisfy constraint: "
+                f"Member must satisfy enum value set: [HTTP, MOCK, AWS_PROXY, HTTP_PROXY, AWS]",
+            )
+
+        elif integration_type == IntegrationType.AWS_PROXY:
             integration_uri = request.get("uri") or ""
             if ":lambda:" not in integration_uri and ":firehose:" not in integration_uri:
                 raise BadRequestException(
@@ -1750,7 +1777,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         moto_request = copy.copy(request)
         moto_request.setdefault("passthroughBehavior", "WHEN_NO_MATCH")
         moto_request.setdefault("timeoutInMillis", 29000)
-        if request.get("type") in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY):
+        if integration_type in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY):
             moto_request.setdefault("connectionType", ConnectionType.INTERNET)
         response = call_moto_with_request(context, moto_request)
         remove_empty_attributes_from_integration(integration=response)
@@ -1832,6 +1859,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             export_type=export_type,
             export_format=accepts,
             with_extension=has_extension,
+            account_id=context.account_id,
+            region_name=context.region,
         )
 
         accepts = accepts or APPLICATION_JSON

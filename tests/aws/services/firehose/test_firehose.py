@@ -8,7 +8,6 @@ from pytest_httpserver import HTTPServer
 from localstack import config
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import lambda_function_arn
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 
@@ -42,7 +41,9 @@ def test_firehose_http(
     if lambda_processor_enabled:
         # create processor func
         func_name = f"proc-{short_uid()}"
-        create_lambda_function(handler_file=PROCESSOR_LAMBDA, func_name=func_name)
+        func_arn = create_lambda_function(handler_file=PROCESSOR_LAMBDA, func_name=func_name)[
+            "CreateFunctionResponse"
+        ]["FunctionArn"]
 
     # define firehose configs
     # records = []
@@ -70,7 +71,7 @@ def test_firehose_http(
                     "Parameters": [
                         {
                             "ParameterName": "LambdaArn",
-                            "ParameterValue": lambda_function_arn(func_name),
+                            "ParameterValue": func_arn,
                         }
                     ],
                 }
@@ -289,7 +290,7 @@ class TestFirehoseIntegration:
                 )
                 return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
-            assert poll_condition(check_stream_state, 30, 1)
+            assert poll_condition(check_stream_state, 60, 1)
 
             # wait for opensearch cluster to be ready
             def check_domain_state():
@@ -348,7 +349,6 @@ class TestFirehoseIntegration:
     def test_delivery_stream_with_kinesis_as_source(
         self, s3_bucket, kinesis_create_stream, cleanups, aws_client
     ):
-
         bucket_arn = arns.s3_bucket_arn(s3_bucket)
         stream_name = f"test-stream-{short_uid()}"
         log_group_name = f"group{short_uid()}"

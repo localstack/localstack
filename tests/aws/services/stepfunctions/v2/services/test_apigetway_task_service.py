@@ -3,7 +3,8 @@ import json
 import pytest
 
 from localstack import config
-from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer
@@ -14,18 +15,13 @@ from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
-from tests.aws.services.stepfunctions.utils import create_and_record_execution, is_old_provider
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
-)
+from tests.aws.services.stepfunctions.utils import create_and_record_execution
 
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",
-        "$..previousEventId",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
@@ -99,14 +95,14 @@ class TestTaskApiGateway:
         create_function_response = create_lambda_function(
             func_name=function_name,
             handler_file=lambda_function_filename,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
 
         _, role_arn = create_role_with_policy(
             "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
         )
         lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-        target_uri = arns.apigateway_invocations_arn(lambda_arn)
+        target_uri = arns.apigateway_invocations_arn(lambda_arn, TEST_AWS_REGION_NAME)
 
         api_id, _, root = create_rest_apigw(name=f"sfn-test-api-{short_uid()}")
         resource_id, _ = create_rest_resource(
@@ -183,7 +179,7 @@ class TestTaskApiGateway:
         if is_aws_cloud():
             invocation_url = f"{api_id}.execute-api.{aws_stack.get_boto3_region()}.amazonaws.com"
         else:
-            invocation_url = f"{config.service_url('apigateway')}/restapis/{api_id}"
+            invocation_url = f"{config.internal_service_url()}/restapis/{api_id}"
         return invocation_url, stage_name
 
     @markers.aws.validated

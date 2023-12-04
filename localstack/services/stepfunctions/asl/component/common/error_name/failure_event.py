@@ -27,15 +27,28 @@ class FailureEventException(Exception):
     def __init__(self, failure_event: FailureEvent):
         self.failure_event = failure_event
 
-    def get_execution_failed_event_details(self) -> Optional[ExecutionFailedEventDetails]:
+    def extract_error_cause_pair(self) -> Optional[tuple[Optional[str], Optional[str]]]:
         if self.failure_event.event_details is None:
             return None
 
         failure_event_spec = list(self.failure_event.event_details.values())[0]
 
-        execution_failed_event_details = ExecutionFailedEventDetails()
+        error = None
+        cause = None
         if "error" in failure_event_spec:
-            execution_failed_event_details["error"] = failure_event_spec["error"]
+            error = failure_event_spec["error"]
         if "cause" in failure_event_spec:
-            execution_failed_event_details["cause"] = failure_event_spec["cause"]
+            cause = failure_event_spec["cause"]
+        return error, cause
+
+    def get_execution_failed_event_details(self) -> Optional[ExecutionFailedEventDetails]:
+        maybe_error_cause_pair = self.extract_error_cause_pair()
+        if maybe_error_cause_pair is None:
+            return None
+        execution_failed_event_details = ExecutionFailedEventDetails()
+        error, cause = maybe_error_cause_pair
+        if error:
+            execution_failed_event_details["error"] = error
+        if cause:
+            execution_failed_event_details["cause"] = cause
         return execution_failed_event_details

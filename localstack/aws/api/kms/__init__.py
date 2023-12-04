@@ -1210,7 +1210,6 @@ class VerifyResponse(TypedDict, total=False):
 
 
 class KmsApi:
-
     service = "kms"
     version = "2014-11-01"
 

@@ -11,7 +11,7 @@ exports.handler = async (event, context, callback) => {
     const bodyMd5AsBase64 = '4QrcOUm6Wau+VuBX8g+IPg=='; // body should be '123456'
 
     let s3;
-    if (process.env.LOCALSTACK_HOSTNAME) {
+    if (process.env.AWS_ENDPOINT_URL) {
         const CREDENTIALS = {
             secretAccessKey: 'test',
             accessKeyId: 'test',
@@ -30,8 +30,9 @@ exports.handler = async (event, context, callback) => {
         s3,
         new PutObjectCommand({
             Bucket: BUCKET_NAME,
-            Key: 'key.txt',
+            Key: 'temp.txt',
             StorageClass: 'STANDARD',
+            Metadata: {"foo": "bar-complicated-no-random"},
             ContentMD5: bodyMd5AsBase64
         }),
         {

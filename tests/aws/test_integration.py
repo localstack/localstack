@@ -68,7 +68,7 @@ def scheduled_test_lambda(aws_client):
     # create scheduled Lambda function
     rule_name = f"rule-{short_uid()}"
     target_id = f"target-{short_uid()}"
-    aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+    aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
     aws_client.events.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": func_arn}])
 
     yield scheduled_lambda_name
@@ -90,7 +90,7 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "BucketARN": arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
@@ -102,7 +102,7 @@ class TestIntegration:
         assert TEST_TAGS == tags["Tags"]
 
         # create target S3 bucket
-        aws_client.s3.create_bucket(Bucket=bucket_name)
+        s3_create_bucket(Bucket=bucket_name)
 
         # put records
         aws_client.firehose.put_record(
@@ -129,7 +129,7 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             ExtendedS3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "BucketARN": arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
@@ -154,7 +154,7 @@ class TestIntegration:
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
     @markers.aws.unknown
-    def test_firehose_kinesis_to_s3(self, kinesis_create_stream, aws_client):
+    def test_firehose_kinesis_to_s3(self, kinesis_create_stream, s3_create_bucket, aws_client):
         stream_name = f"fh-stream-{short_uid()}"
 
         kinesis_stream_name = kinesis_create_stream()
@@ -166,14 +166,14 @@ class TestIntegration:
         stream = aws_client.firehose.create_delivery_stream(
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "KinesisStreamARN": arns.kinesis_stream_arn(
                     kinesis_stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
                 ),
             },
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "BucketARN": arns.s3_bucket_arn(TEST_BUCKET_NAME),
                 "Prefix": s3_prefix,
             },
@@ -191,7 +191,7 @@ class TestIntegration:
         retry(_assert_active, sleep=1, retries=30)
 
         # create target S3 bucket
-        aws_client.s3.create_bucket(Bucket=TEST_BUCKET_NAME)
+        s3_create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
         aws_client.kinesis.put_record(
@@ -225,316 +225,313 @@ class TestIntegration:
         events = []
 
         # subscribe to inbound Kinesis stream
-        def process_records(records, shard_id):
+        def process_records(records):
             events.extend(records)
 
         # start the KCL client process in the background
         process = kinesis_connector.listen_to_kinesis(
             stream_name,
+            region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
             wait_until_started=True,
             ddb_lease_table_suffix=ddb_lease_table_suffix,
         )
+        cleanups.append(lambda: process.stop())
 
         LOGGER.info("Kinesis consumer initialized.")
-        try:
-            # create table with stream forwarding config
-            dynamodb_create_table(
-                table_name=table_name,
-                partition_key=PARTITION_KEY,
-                stream_view_type="NEW_AND_OLD_IMAGES",
-            )
+        # create table with stream forwarding config
+        dynamodb_create_table(
+            table_name=table_name,
+            partition_key=PARTITION_KEY,
+            stream_view_type="NEW_AND_OLD_IMAGES",
+        )
 
-            # list DDB streams and make sure the table stream is there
-            streams = aws_client.dynamodbstreams.list_streams()
-            ddb_event_source_arn = None
-            for stream in streams["Streams"]:
-                if stream["TableName"] == table_name:
-                    ddb_event_source_arn = stream["StreamArn"]
-            assert ddb_event_source_arn
+        # list DDB streams and make sure the table stream is there
+        streams = aws_client.dynamodbstreams.list_streams()
+        ddb_event_source_arn = None
+        for stream in streams["Streams"]:
+            if stream["TableName"] == table_name:
+                ddb_event_source_arn = stream["StreamArn"]
+        assert ddb_event_source_arn
 
-            # deploy test lambda connected to DynamoDB Stream
-            create_lambda_function(
-                handler_file=TEST_LAMBDA_PYTHON,
-                func_name=lambda_ddb_name,
-                envvars={"KINESIS_STREAM_NAME": stream_name},
-                client=aws_client.lambda_,
-            )
-            uuid = aws_client.lambda_.create_event_source_mapping(
-                FunctionName=lambda_ddb_name,
-                EventSourceArn=ddb_event_source_arn,
-                StartingPosition="TRIM_HORIZON",
-            )["UUID"]
-            cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        # deploy test lambda connected to DynamoDB Stream
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON,
+            func_name=lambda_ddb_name,
+            envvars={"KINESIS_STREAM_NAME": stream_name},
+            client=aws_client.lambda_,
+        )
+        uuid = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=lambda_ddb_name,
+            EventSourceArn=ddb_event_source_arn,
+            StartingPosition="TRIM_HORIZON",
+        )["UUID"]
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
 
-            # submit a batch with writes
-            aws_client.dynamodb.batch_write_item(
-                RequestItems={
-                    table_name: [
-                        {
-                            "PutRequest": {
-                                "Item": {
-                                    PARTITION_KEY: {"S": "testId0"},
-                                    "data": {"S": "foobar123"},
-                                }
-                            }
-                        },
-                        {
-                            "PutRequest": {
-                                "Item": {
-                                    PARTITION_KEY: {"S": "testId1"},
-                                    "data": {"S": "foobar123"},
-                                }
-                            }
-                        },
-                        {
-                            "PutRequest": {
-                                "Item": {
-                                    PARTITION_KEY: {"S": "testId2"},
-                                    "data": {"S": "foobar123"},
-                                }
-                            }
-                        },
-                    ]
-                }
-            )
-
-            # submit a batch with writes and deletes
-            aws_client.dynamodb.batch_write_item(
-                RequestItems={
-                    table_name: [
-                        {
-                            "PutRequest": {
-                                "Item": {
-                                    PARTITION_KEY: {"S": "testId3"},
-                                    "data": {"S": "foobar123"},
-                                }
-                            }
-                        },
-                        {
-                            "PutRequest": {
-                                "Item": {
-                                    PARTITION_KEY: {"S": "testId4"},
-                                    "data": {"S": "foobar123"},
-                                }
-                            }
-                        },
-                        {
-                            "PutRequest": {
-                                "Item": {
-                                    PARTITION_KEY: {"S": "testId5"},
-                                    "data": {"S": "foobar123"},
-                                }
-                            }
-                        },
-                        {"DeleteRequest": {"Key": {PARTITION_KEY: {"S": "testId0"}}}},
-                        {"DeleteRequest": {"Key": {PARTITION_KEY: {"S": "testId1"}}}},
-                        {"DeleteRequest": {"Key": {PARTITION_KEY: {"S": "testId2"}}}},
-                    ]
-                }
-            )
-
-            # submit a transaction with writes and delete
-            aws_client.dynamodb.transact_write_items(
-                TransactItems=[
+        # submit a batch with writes
+        aws_client.dynamodb.batch_write_item(
+            RequestItems={
+                table_name: [
                     {
-                        "Put": {
-                            "TableName": table_name,
+                        "PutRequest": {
                             "Item": {
-                                PARTITION_KEY: {"S": "testId6"},
+                                PARTITION_KEY: {"S": "testId0"},
                                 "data": {"S": "foobar123"},
-                            },
+                            }
                         }
                     },
                     {
-                        "Put": {
-                            "TableName": table_name,
+                        "PutRequest": {
                             "Item": {
-                                PARTITION_KEY: {"S": "testId7"},
+                                PARTITION_KEY: {"S": "testId1"},
                                 "data": {"S": "foobar123"},
-                            },
+                            }
                         }
                     },
                     {
-                        "Put": {
-                            "TableName": table_name,
+                        "PutRequest": {
                             "Item": {
-                                PARTITION_KEY: {"S": "testId8"},
+                                PARTITION_KEY: {"S": "testId2"},
                                 "data": {"S": "foobar123"},
-                            },
-                        }
-                    },
-                    {
-                        "Delete": {
-                            "TableName": table_name,
-                            "Key": {PARTITION_KEY: {"S": "testId3"}},
-                        }
-                    },
-                    {
-                        "Delete": {
-                            "TableName": table_name,
-                            "Key": {PARTITION_KEY: {"S": "testId4"}},
-                        }
-                    },
-                    {
-                        "Delete": {
-                            "TableName": table_name,
-                            "Key": {PARTITION_KEY: {"S": "testId5"}},
+                            }
                         }
                     },
                 ]
-            )
+            }
+        )
 
-            # submit a batch with a put over existing item
-            aws_client.dynamodb.transact_write_items(
-                TransactItems=[
+        # submit a batch with writes and deletes
+        aws_client.dynamodb.batch_write_item(
+            RequestItems={
+                table_name: [
                     {
-                        "Put": {
-                            "TableName": table_name,
+                        "PutRequest": {
                             "Item": {
-                                PARTITION_KEY: {"S": "testId6"},
-                                "data": {"S": "foobar123_updated1"},
-                            },
+                                PARTITION_KEY: {"S": "testId3"},
+                                "data": {"S": "foobar123"},
+                            }
                         }
                     },
-                ]
-            )
-
-            # submit a transaction with a put over existing item
-            aws_client.dynamodb.transact_write_items(
-                TransactItems=[
                     {
-                        "Put": {
-                            "TableName": table_name,
+                        "PutRequest": {
                             "Item": {
-                                PARTITION_KEY: {"S": "testId7"},
-                                "data": {"S": "foobar123_updated1"},
-                            },
-                        }
-                    },
-                ]
-            )
-
-            # submit a transaction with updates
-            aws_client.dynamodb.transact_write_items(
-                TransactItems=[
-                    {
-                        "Update": {
-                            "TableName": table_name,
-                            "Key": {PARTITION_KEY: {"S": "testId6"}},
-                            "UpdateExpression": "SET #0 = :0",
-                            "ExpressionAttributeNames": {"#0": "data"},
-                            "ExpressionAttributeValues": {":0": {"S": "foobar123_updated2"}},
+                                PARTITION_KEY: {"S": "testId4"},
+                                "data": {"S": "foobar123"},
+                            }
                         }
                     },
                     {
-                        "Update": {
-                            "TableName": table_name,
-                            "Key": {PARTITION_KEY: {"S": "testId7"}},
-                            "UpdateExpression": "SET #0 = :0",
-                            "ExpressionAttributeNames": {"#0": "data"},
-                            "ExpressionAttributeValues": {":0": {"S": "foobar123_updated2"}},
+                        "PutRequest": {
+                            "Item": {
+                                PARTITION_KEY: {"S": "testId5"},
+                                "data": {"S": "foobar123"},
+                            }
                         }
                     },
-                    {
-                        "Update": {
-                            "TableName": table_name,
-                            "Key": {PARTITION_KEY: {"S": "testId8"}},
-                            "UpdateExpression": "SET #0 = :0",
-                            "ExpressionAttributeNames": {"#0": "data"},
-                            "ExpressionAttributeValues": {":0": {"S": "foobar123_updated2"}},
-                        }
-                    },
+                    {"DeleteRequest": {"Key": {PARTITION_KEY: {"S": "testId0"}}}},
+                    {"DeleteRequest": {"Key": {PARTITION_KEY: {"S": "testId1"}}}},
+                    {"DeleteRequest": {"Key": {PARTITION_KEY: {"S": "testId2"}}}},
                 ]
-            )
+            }
+        )
 
-            LOGGER.info("Waiting some time before finishing test.")
-            time.sleep(2)
+        # submit a transaction with writes and delete
+        aws_client.dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    "Put": {
+                        "TableName": table_name,
+                        "Item": {
+                            PARTITION_KEY: {"S": "testId6"},
+                            "data": {"S": "foobar123"},
+                        },
+                    }
+                },
+                {
+                    "Put": {
+                        "TableName": table_name,
+                        "Item": {
+                            PARTITION_KEY: {"S": "testId7"},
+                            "data": {"S": "foobar123"},
+                        },
+                    }
+                },
+                {
+                    "Put": {
+                        "TableName": table_name,
+                        "Item": {
+                            PARTITION_KEY: {"S": "testId8"},
+                            "data": {"S": "foobar123"},
+                        },
+                    }
+                },
+                {
+                    "Delete": {
+                        "TableName": table_name,
+                        "Key": {PARTITION_KEY: {"S": "testId3"}},
+                    }
+                },
+                {
+                    "Delete": {
+                        "TableName": table_name,
+                        "Key": {PARTITION_KEY: {"S": "testId4"}},
+                    }
+                },
+                {
+                    "Delete": {
+                        "TableName": table_name,
+                        "Key": {PARTITION_KEY: {"S": "testId5"}},
+                    }
+                },
+            ]
+        )
 
-            num_insert = 9
-            num_modify = 5
-            num_delete = 6
-            num_events = num_insert + num_modify + num_delete
+        # submit a batch with a put over existing item
+        aws_client.dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    "Put": {
+                        "TableName": table_name,
+                        "Item": {
+                            PARTITION_KEY: {"S": "testId6"},
+                            "data": {"S": "foobar123_updated1"},
+                        },
+                    }
+                },
+            ]
+        )
 
-            def check_events():
-                if len(events) != num_events:
-                    msg = "DynamoDB updates retrieved (actual/expected): %s/%s" % (
-                        len(events),
-                        num_events,
-                    )
-                    LOGGER.warning(msg)
-                assert len(events) == num_events
-                event_items = [json.loads(base64.b64decode(e["data"])) for e in events]
-                # make sure that we have the right amount of expected event types
-                inserts = [e for e in event_items if e.get("__action_type") == "INSERT"]
-                modifies = [e for e in event_items if e.get("__action_type") == "MODIFY"]
-                removes = [e for e in event_items if e.get("__action_type") == "REMOVE"]
-                assert len(inserts) == num_insert
-                assert len(modifies) == num_modify
-                assert len(removes) == num_delete
+        # submit a transaction with a put over existing item
+        aws_client.dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    "Put": {
+                        "TableName": table_name,
+                        "Item": {
+                            PARTITION_KEY: {"S": "testId7"},
+                            "data": {"S": "foobar123_updated1"},
+                        },
+                    }
+                },
+            ]
+        )
 
-                # assert that all inserts were received
+        # submit a transaction with updates
+        aws_client.dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    "Update": {
+                        "TableName": table_name,
+                        "Key": {PARTITION_KEY: {"S": "testId6"}},
+                        "UpdateExpression": "SET #0 = :0",
+                        "ExpressionAttributeNames": {"#0": "data"},
+                        "ExpressionAttributeValues": {":0": {"S": "foobar123_updated2"}},
+                    }
+                },
+                {
+                    "Update": {
+                        "TableName": table_name,
+                        "Key": {PARTITION_KEY: {"S": "testId7"}},
+                        "UpdateExpression": "SET #0 = :0",
+                        "ExpressionAttributeNames": {"#0": "data"},
+                        "ExpressionAttributeValues": {":0": {"S": "foobar123_updated2"}},
+                    }
+                },
+                {
+                    "Update": {
+                        "TableName": table_name,
+                        "Key": {PARTITION_KEY: {"S": "testId8"}},
+                        "UpdateExpression": "SET #0 = :0",
+                        "ExpressionAttributeNames": {"#0": "data"},
+                        "ExpressionAttributeValues": {":0": {"S": "foobar123_updated2"}},
+                    }
+                },
+            ]
+        )
 
-                for i, event in enumerate(inserts):
-                    assert "old_image" not in event
-                    item_id = "testId%d" % i
-                    matching = [i for i in inserts if i["new_image"]["id"] == item_id][0]
-                    assert matching["new_image"] == {"id": item_id, "data": "foobar123"}
+        LOGGER.info("Waiting some time before finishing test.")
+        time.sleep(2)
 
-                # assert that all updates were received
+        num_insert = 9
+        num_modify = 5
+        num_delete = 6
+        num_events = num_insert + num_modify + num_delete
 
-                def assert_updates(expected_updates, modifies):
-                    def found(update):
-                        for modif in modifies:
-                            if modif["old_image"]["id"] == update["id"]:
-                                assert modif["old_image"] == {
-                                    "id": update["id"],
-                                    "data": update["old"],
-                                }
-                                assert modif["new_image"] == {
-                                    "id": update["id"],
-                                    "data": update["new"],
-                                }
-                                return True
+        def check_events():
+            if len(events) != num_events:
+                msg = "DynamoDB updates retrieved (actual/expected): %s/%s" % (
+                    len(events),
+                    num_events,
+                )
+                LOGGER.warning(msg)
+            assert len(events) == num_events
+            event_items = [json.loads(base64.b64decode(e["data"])) for e in events]
+            # make sure that we have the right amount of expected event types
+            inserts = [e for e in event_items if e.get("__action_type") == "INSERT"]
+            modifies = [e for e in event_items if e.get("__action_type") == "MODIFY"]
+            removes = [e for e in event_items if e.get("__action_type") == "REMOVE"]
+            assert len(inserts) == num_insert
+            assert len(modifies) == num_modify
+            assert len(removes) == num_delete
 
-                    for update in expected_updates:
-                        assert found(update)
+            # assert that all inserts were received
 
-                updates1 = [
-                    {"id": "testId6", "old": "foobar123", "new": "foobar123_updated1"},
-                    {"id": "testId7", "old": "foobar123", "new": "foobar123_updated1"},
-                ]
-                updates2 = [
-                    {
-                        "id": "testId6",
-                        "old": "foobar123_updated1",
-                        "new": "foobar123_updated2",
-                    },
-                    {
-                        "id": "testId7",
-                        "old": "foobar123_updated1",
-                        "new": "foobar123_updated2",
-                    },
-                    {"id": "testId8", "old": "foobar123", "new": "foobar123_updated2"},
-                ]
+            for i, event in enumerate(inserts):
+                assert "old_image" not in event
+                item_id = "testId%d" % i
+                matching = [i for i in inserts if i["new_image"]["id"] == item_id][0]
+                assert matching["new_image"] == {"id": item_id, "data": "foobar123"}
 
-                assert_updates(updates1, modifies[:2])
-                assert_updates(updates2, modifies[2:])
+            # assert that all updates were received
 
-                # assert that all removes were received
+            def assert_updates(expected_updates, modifies):
+                def found(update):
+                    for modif in modifies:
+                        if modif["old_image"]["id"] == update["id"]:
+                            assert modif["old_image"] == {
+                                "id": update["id"],
+                                "data": update["old"],
+                            }
+                            assert modif["new_image"] == {
+                                "id": update["id"],
+                                "data": update["new"],
+                            }
+                            return True
 
-                for i, event in enumerate(removes):
-                    assert "new_image" not in event
-                    item_id = "testId%d" % i
-                    matching = [i for i in removes if i["old_image"]["id"] == item_id][0]
-                    assert matching["old_image"] == {"id": item_id, "data": "foobar123"}
+                for update in expected_updates:
+                    assert found(update)
 
-            # this can take a long time in CI, make sure we give it enough time/retries
-            retry(check_events, retries=30, sleep=4)
+            updates1 = [
+                {"id": "testId6", "old": "foobar123", "new": "foobar123_updated1"},
+                {"id": "testId7", "old": "foobar123", "new": "foobar123_updated1"},
+            ]
+            updates2 = [
+                {
+                    "id": "testId6",
+                    "old": "foobar123_updated1",
+                    "new": "foobar123_updated2",
+                },
+                {
+                    "id": "testId7",
+                    "old": "foobar123_updated1",
+                    "new": "foobar123_updated2",
+                },
+                {"id": "testId8", "old": "foobar123", "new": "foobar123_updated2"},
+            ]
 
-        finally:
-            # cleanup
-            process.stop()
+            assert_updates(updates1, modifies[:2])
+            assert_updates(updates2, modifies[2:])
+
+            # assert that all removes were received
+
+            for i, event in enumerate(removes):
+                assert "new_image" not in event
+                item_id = "testId%d" % i
+                matching = [i for i in removes if i["old_image"]["id"] == item_id][0]
+                assert matching["old_image"] == {"id": item_id, "data": "foobar123"}
+
+        # this can take a long time in CI, make sure we give it enough time/retries
+        retry(check_events, retries=30, sleep=4)
 
     @markers.aws.unknown
     def test_scheduled_lambda(self, aws_client, scheduled_test_lambda):
@@ -547,13 +544,15 @@ class TestIntegration:
 
 @markers.aws.unknown
 def test_kinesis_lambda_forward_chain(
-    kinesis_create_stream, create_lambda_function, cleanups, aws_client
+    kinesis_create_stream, s3_create_bucket, create_lambda_function, cleanups, aws_client
 ):
     stream1_name = kinesis_create_stream()
     stream2_name = kinesis_create_stream()
     lambda1_name = f"function-{short_uid()}"
     lambda2_name = f"function-{short_uid()}"
-    aws_client.s3.create_bucket(Bucket=TEST_BUCKET_NAME)
+
+    # create s3 bucket: this bucket is being used in lambda function
+    s3_create_bucket(Bucket=TEST_BUCKET_NAME)
 
     # deploy test lambdas connected to Kinesis streams
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True)

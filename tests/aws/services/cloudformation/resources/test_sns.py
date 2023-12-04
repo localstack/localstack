@@ -8,7 +8,15 @@ from localstack.utils.common import short_uid
 
 
 @markers.aws.validated
-def test_sns_topic_fifo_with_deduplication(deploy_cfn_template, aws_client):
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..Attributes.DeliveryPolicy",
+        "$..Attributes.EffectiveDeliveryPolicy",
+        "$..Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+    ]
+)
+def test_sns_topic_fifo_with_deduplication(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.key_value("TopicArn"))
     topic_name = f"topic-{short_uid()}.fifo"
 
     deploy_cfn_template(
@@ -21,7 +29,12 @@ def test_sns_topic_fifo_with_deduplication(deploy_cfn_template, aws_client):
     topics = aws_client.sns.list_topics()["Topics"]
     topic_arns = [t["TopicArn"] for t in topics]
 
-    assert len([t for t in topic_arns if topic_name in t]) == 1
+    filtered_topics = [t for t in topic_arns if topic_name in t]
+    assert len(filtered_topics) == 1
+
+    # assert that the topic is properly created as Fifo
+    topic_attrs = aws_client.sns.get_topic_attributes(TopicArn=filtered_topics[0])
+    snapshot.match("get-topic-attrs", topic_attrs)
 
 
 @markers.aws.needs_fixing
@@ -66,7 +79,6 @@ def test_sns_subscription(deploy_cfn_template, aws_client):
 
 @markers.aws.validated
 def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
-
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/deploy_template_2.yaml"

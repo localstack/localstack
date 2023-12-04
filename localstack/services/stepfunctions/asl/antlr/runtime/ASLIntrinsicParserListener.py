@@ -1,6 +1,6 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLIntrinsicParser.g4 by ANTLR 4.12.0
+# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLIntrinsicParser.g4 by ANTLR 4.13.1
 from antlr4 import *
-if __name__ is not None and "." in __name__:
+if "." in __name__:
     from .ASLIntrinsicParser import ASLIntrinsicParser
 else:
     from ASLIntrinsicParser import ASLIntrinsicParser
@@ -80,6 +80,15 @@ class ASLIntrinsicParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLIntrinsicParser#func_arg_context_path.
+    def enterFunc_arg_context_path(self, ctx:ASLIntrinsicParser.Func_arg_context_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLIntrinsicParser#func_arg_context_path.
+    def exitFunc_arg_context_path(self, ctx:ASLIntrinsicParser.Func_arg_context_pathContext):
+        pass
+
+
     # Enter a parse tree produced by ASLIntrinsicParser#func_arg_json_path.
     def enterFunc_arg_json_path(self, ctx:ASLIntrinsicParser.Func_arg_json_pathContext):
         pass
@@ -95,6 +104,15 @@ class ASLIntrinsicParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLIntrinsicParser#func_arg_func_decl.
     def exitFunc_arg_func_decl(self, ctx:ASLIntrinsicParser.Func_arg_func_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLIntrinsicParser#context_path.
+    def enterContext_path(self, ctx:ASLIntrinsicParser.Context_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLIntrinsicParser#context_path.
+    def exitContext_path(self, ctx:ASLIntrinsicParser.Context_pathContext):
         pass
 
 

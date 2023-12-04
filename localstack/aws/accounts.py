@@ -3,68 +3,18 @@ import base64
 import binascii
 import logging
 import re
-import threading
 
 from localstack import config
-from localstack.constants import DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_ACCESS_KEY_ID
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 
 LOG = logging.getLogger(__name__)
-
-# Thread local storage for keeping current request & account related info
-REQUEST_CTX_TLS = threading.local()
 
 # Account id offset for id extraction
 # generated from int.from_bytes(base64.b32decode(b"QAAAAAAA"), byteorder="big") (user id 000000000000)
 ACCOUNT_OFFSET = 549755813888
+
 # Basically the base32 alphabet, for better access as constant here
 AWS_ACCESS_KEY_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-#
-# Access Key IDs
-#
-
-
-def get_aws_access_key_id() -> str:
-    """Return the AWS access key ID for current context."""
-    return getattr(REQUEST_CTX_TLS, "access_key_id", TEST_AWS_ACCESS_KEY_ID)
-
-
-def set_aws_access_key_id(access_key_id: str):
-    REQUEST_CTX_TLS.access_key_id = access_key_id
-
-
-def reset_aws_access_key_id() -> None:
-    try:
-        del REQUEST_CTX_TLS.access_key_id
-    except AttributeError:
-        pass
-
-
-#
-# Account IDs
-#
-
-
-def get_aws_account_id() -> str:
-    """Return the AWS account ID for the current context."""
-    try:
-        return REQUEST_CTX_TLS.account_id
-    except AttributeError:
-        LOG.debug(
-            "No Account ID in thread-local storage for thread %s",
-            threading.current_thread().ident,
-        )
-        return DEFAULT_AWS_ACCOUNT_ID
-
-
-def set_aws_account_id(account_id: str) -> None:
-    REQUEST_CTX_TLS.account_id = account_id
-
-
-def reset_aws_account_id() -> None:
-    try:
-        del REQUEST_CTX_TLS.account_id
-    except AttributeError:
-        pass
 
 
 def extract_account_id_from_access_key_id(access_key_id: str) -> str:

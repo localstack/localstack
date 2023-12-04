@@ -66,14 +66,17 @@ class SnapshotSession:
     def __init__(
         self,
         *,
-        file_path: str,
+        base_file_path: str,
         scope_key: str,
         update: Optional[bool] = False,  # TODO: find a way to remove this
         verify: Optional[bool] = False,  # TODO: find a way to remove this
+        raw: Optional[bool] = False,
     ):
         self.verify = verify
         self.update = update
-        self.file_path = file_path
+        self.file_path = f"{base_file_path}.snapshot.json"
+        self.raw_file_path = f"{base_file_path}.raw.snapshot.json"
+        self.raw = raw
         self.scope_key = scope_key
 
         self.called_keys = set()
@@ -91,7 +94,9 @@ class SnapshotSession:
         for transformer in transformer_list:
             self.transformers.append((transformer, priority))  # TODO
 
-    def add_transformer(self, transformer: Transformer, *, priority: Optional[int] = 0):
+    def add_transformer(
+        self, transformer: Transformer | list[Transformer], *, priority: Optional[int] = 0
+    ):
         if isinstance(transformer, list):
             self.add_transformers_list(transformer, priority)
         else:
@@ -107,6 +112,26 @@ class SnapshotSession:
                     recorded = {
                         "recorded-date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
                         "recorded-content": self.observed_state,
+                    }
+                    full_state[self.scope_key] = recorded
+                    state_to_dump = json.dumps(full_state, indent=2)
+                    fd.seek(0)
+                    fd.truncate()
+                    # add line ending to be compatible with pre-commit-hooks (end-of-file-fixer)
+                    fd.write(f"{state_to_dump}\n")
+                except Exception as e:
+                    SNAPSHOT_LOGGER.exception(e)
+
+    def _persist_raw(self, raw_state: dict) -> None:
+        if self.raw:
+            Path(self.raw_file_path).touch()
+            with open(self.raw_file_path, "r+") as fd:
+                try:
+                    content = fd.read()
+                    full_state = json.loads(content or "{}")
+                    recorded = {
+                        "recorded-date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
+                        "recorded-content": raw_state,
                     }
                     full_state[self.scope_key] = recorded
                     state_to_dump = json.dumps(full_state, indent=2)
@@ -216,9 +241,10 @@ class SnapshotSession:
                 original[k] = v = v.read().decode(
                     "utf-8"
                 )  # TODO: patch boto client so this doesn't break any further read() calls
-            if isinstance(v, list) and v and isinstance(v[0], dict):
+            if isinstance(v, list) and v:
                 for item in v:
-                    self._transform_dict_to_parseable_values(item)
+                    if isinstance(item, dict):
+                        self._transform_dict_to_parseable_values(item)
             if isinstance(v, Dict):
                 self._transform_dict_to_parseable_values(v)
 
@@ -233,6 +259,10 @@ class SnapshotSession:
         """build a persistable state definition that can later be compared against"""
         self._transform_dict_to_parseable_values(tmp)
 
+        # persist tmp
+        if self.raw:
+            self._persist_raw(tmp)
+
         ctx = TransformContext()
         for transformer, _ in sorted(self.transformers, key=lambda p: p[1]):
             tmp = transformer.transform(tmp, ctx=ctx)
@@ -240,18 +270,21 @@ class SnapshotSession:
         if not self.update:
             self._remove_skip_verification_paths(tmp)
 
-        tmp = json.dumps(tmp, default=str)
-        for sr in ctx.serialized_replacements:
-            tmp = sr(tmp)
+        replaced_tmp = {}
+        # avoid replacements in snapshot keys
+        for key, value in tmp.items():
+            dumped_value = json.dumps(value, default=str)
+            for sr in ctx.serialized_replacements:
+                dumped_value = sr(dumped_value)
 
-        assert tmp
-        try:
-            tmp = json.loads(tmp)
-        except JSONDecodeError:
-            SNAPSHOT_LOGGER.error(f"could not decode json-string:\n{tmp}")
-            return {}
+            assert dumped_value
+            try:
+                replaced_tmp[key] = json.loads(dumped_value)
+            except JSONDecodeError:
+                SNAPSHOT_LOGGER.error(f"could not decode json-string:\n{tmp}")
+                return {}
 
-        return tmp
+        return replaced_tmp
 
     def _order_dict(self, response) -> dict:
         if isinstance(response, dict):

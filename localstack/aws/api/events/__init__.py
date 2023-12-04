@@ -209,6 +209,7 @@ class ReplicationState(str):
 class RuleState(str):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
+    ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
 
 
 class ConcurrentModificationException(ServiceException):
@@ -1467,7 +1468,6 @@ class UpdateEndpointResponse(TypedDict, total=False):
 
 
 class EventsApi:
-
     service = "events"
     version = "2015-10-07"
 

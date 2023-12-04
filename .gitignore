@@ -68,3 +68,6 @@ gen/
 
 # hypothesis pytest plugin
 .hypothesis
+
+# RAW snapshots
+*.raw.snapshot.json

@@ -1,12 +1,8 @@
 {
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_get_transcription_job": {
-    "recorded-date": "30-08-2022, 12:34:01",
+    "recorded-date": "06-10-2023, 17:11:58",
     "recorded-content": {
       "GetJob": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TranscriptionJob": {
           "CreationTime": "datetime",
           "LanguageCode": "en-GB",
@@ -21,6 +17,10 @@
           "Transcript": {},
           "TranscriptionJobName": "<transcription-job:1>",
           "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "GetError": {
@@ -37,7 +37,7 @@
     }
   },
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_failing_start_transcription_job": {
-    "recorded-date": "30-08-2022, 12:34:20",
+    "recorded-date": "06-10-2023, 17:07:27",
     "recorded-content": {
       "MissingLanguageCode": {
         "Error": {
@@ -53,9 +53,9 @@
       "MalformedLanguageCode": {
         "Error": {
           "Code": "BadRequestException",
-          "Message": "1 validation error detected: Value 'non-existent' at 'languageCode' failed to satisfy constraint: Member must satisfy enum value set: [en-IE, ar-AE, te-IN, zh-TW, en-US, ta-IN, en-AB, en-IN, zh-CN, ar-SA, en-ZA, gd-GB, th-TH, tr-TR, ru-RU, pt-PT, nl-NL, it-IT, id-ID, fr-FR, es-ES, de-DE, ga-IE, af-ZA, en-NZ, ko-KR, hi-IN, de-CH, cy-GB, ms-MY, he-IL, da-DK, en-AU, pt-BR, en-WL, fa-IR, ja-JP, es-US, fr-CA, en-GB]"
+          "Message": "1 validation error detected: Value 'non-existent' at 'languageCode' failed to satisfy constraint: Member must satisfy enum value set: [en-IE, ar-AE, te-IN, zh-TW, en-US, ta-IN, en-AB, en-IN, zh-CN, ar-SA, en-ZA, gd-GB, th-TH, tr-TR, ru-RU, pt-PT, nl-NL, it-IT, id-ID, fr-FR, es-ES, de-DE, ga-IE, af-ZA, en-NZ, ko-KR, hi-IN, de-CH, vi-VN, cy-GB, ms-MY, he-IL, da-DK, en-AU, pt-BR, en-WL, fa-IR, sv-SE, ja-JP, es-US, fr-CA, en-GB]"
         },
-        "Message": "1 validation error detected: Value 'non-existent' at 'languageCode' failed to satisfy constraint: Member must satisfy enum value set: [en-IE, ar-AE, te-IN, zh-TW, en-US, ta-IN, en-AB, en-IN, zh-CN, ar-SA, en-ZA, gd-GB, th-TH, tr-TR, ru-RU, pt-PT, nl-NL, it-IT, id-ID, fr-FR, es-ES, de-DE, ga-IE, af-ZA, en-NZ, ko-KR, hi-IN, de-CH, cy-GB, ms-MY, he-IL, da-DK, en-AU, pt-BR, en-WL, fa-IR, ja-JP, es-US, fr-CA, en-GB]",
+        "Message": "1 validation error detected: Value 'non-existent' at 'languageCode' failed to satisfy constraint: Member must satisfy enum value set: [en-IE, ar-AE, te-IN, zh-TW, en-US, ta-IN, en-AB, en-IN, zh-CN, ar-SA, en-ZA, gd-GB, th-TH, tr-TR, ru-RU, pt-PT, nl-NL, it-IT, id-ID, fr-FR, es-ES, de-DE, ga-IE, af-ZA, en-NZ, ko-KR, hi-IN, de-CH, vi-VN, cy-GB, ms-MY, he-IL, da-DK, en-AU, pt-BR, en-WL, fa-IR, sv-SE, ja-JP, es-US, fr-CA, en-GB]",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -64,7 +64,7 @@
     }
   },
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_failing_deletion": {
-    "recorded-date": "30-08-2022, 12:34:14",
+    "recorded-date": "06-10-2023, 17:10:47",
     "recorded-content": {
       "MissingLanguageCode": {
         "Error": {
@@ -80,13 +80,9 @@
     }
   },
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_transcribe_happy_path": {
-    "recorded-date": "30-08-2022, 12:33:39",
+    "recorded-date": "06-10-2023, 17:09:11",
     "recorded-content": {
       "TranscriptionJob": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TranscriptionJob": {
           "CompletionTime": "datetime",
           "CreationTime": "datetime",
@@ -106,6 +102,10 @@
           },
           "TranscriptionJobName": "<transcription-job:1>",
           "TranscriptionJobStatus": "COMPLETED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "GetError": {
@@ -122,14 +122,9 @@
     }
   },
   "tests/aws/services/transcribe/test_transcribe.py::TestTranscribe::test_list_transcription_jobs": {
-    "recorded-date": "30-08-2022, 12:34:06",
+    "recorded-date": "06-10-2023, 17:11:25",
     "recorded-content": {
       "ListJobs": {
-        "NextToken": "token",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TranscriptionJobSummaries": {
           "CreationTime": "datetime",
           "LanguageCode": "en-GB",
@@ -137,6 +132,10 @@
           "StartTime": "datetime",
           "TranscriptionJobName": "<transcription-job:1>",
           "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

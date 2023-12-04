@@ -5,9 +5,10 @@ import pytest
 import requests
 
 from localstack import config
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
@@ -49,8 +50,10 @@ class TestCdkInit:
         change_set_name = "cdk-deploy-change-set-a4b98b18"
         stack_name = "CDKToolkit-a4b98b18"
         try:
-            headers = aws_stack.mock_aws_request_headers("cloudformation")
-            base_url = config.get_edge_url()
+            headers = mock_aws_request_headers(
+                "cloudformation", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+            )
+            base_url = config.internal_service_url()
             for op in operations:
                 url = f"{base_url}{op['path']}"
                 data = op["data"]

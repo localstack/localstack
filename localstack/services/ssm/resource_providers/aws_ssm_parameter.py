@@ -1,12 +1,11 @@
+# LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
-import uuid
 from pathlib import Path
-from typing import Optional, Type, TypedDict
+from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
-    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -15,8 +14,8 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SSMParameterProperties(TypedDict):
-    Type: str
-    Value: str
+    Type: Optional[str]
+    Value: Optional[str]
     AllowedPattern: Optional[str]
     DataType: Optional[str]
     Description: Optional[str]
@@ -27,11 +26,7 @@ class SSMParameterProperties(TypedDict):
     Tier: Optional[str]
 
 
-INITIALISED_KEY = "initialised"
-
-
-def short_uid() -> str:
-    return str(uuid.uuid4())[0:8]
+REPEATED_INVOCATION = "repeated_invocation"
 
 
 class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
@@ -58,52 +53,45 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
         Read-only properties:
           - /properties/Id
 
+
+
         """
         model = request.desired_state
+        ssm = request.aws_client_factory.ssm
 
-        # validation
-        assert model.get("Type") in {"String", "SecureString", "StringList"}
-        assert model.get("Value") is not None
-
-        if not request.custom_context.get(INITIALISED_KEY):
-            # this is the first time this callback is invoked
-
-            # defaults
-            if model.get("DataType") is None:
-                model["DataType"] = "text"
-
-            if model.get("Name") is None:
-                # TODO: fix auto-generation
-                model["Name"] = f"param-{short_uid()}"
-
-            # idempotency
-            try:
-                request.aws_client_factory.ssm.get_parameter(Name=model["Name"])
-            except request.aws_client_factory.ssm.exceptions.ParameterNotFound:
-                pass
-            else:
-                # the resource already exists
-                # for now raise an exception
-                # TODO: return progress event
-                raise RuntimeError(f"ssm parameter: {model['Name']} already exists")
-
-            # create the resource
-            res = request.aws_client_factory.ssm.put_parameter(
-                Name=model["Name"],
-                Type=model["Type"],
-                Value=model["Value"],
+        if not model.get("Name"):
+            model["Name"] = util.generate_default_name(
+                stack_name=request.stack_name, logical_resource_id=request.logical_resource_id
             )
-            model["Tier"] = res.get("Tier", "Standard")
+        params = util.select_attributes(
+            model=model,
+            params=[
+                "Name",
+                "Type",
+                "Value",
+                "Description",
+                "AllowedPattern",
+                "Policies",
+                "Tier",
+            ],
+        )
+        if "Value" in params:
+            params["Value"] = str(params["Value"])
 
-            request.custom_context[INITIALISED_KEY] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
+        if tags := model.get("Tags"):
+            formatted_tags = []
+            for key, value in tags.items():
+                formatted_tags.append({"Key": key, "Value": value})
 
-        res = request.aws_client_factory.ssm.get_parameter(Name=model["Name"])["Parameter"]
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=res)
+            params["Tags"] = formatted_tags
+
+        ssm.put_parameter(**params)
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def read(
         self,
@@ -111,6 +99,8 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
     ) -> ProgressEvent[SSMParameterProperties]:
         """
         Fetch resource information
+
+
         """
         raise NotImplementedError
 
@@ -120,10 +110,19 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
     ) -> ProgressEvent[SSMParameterProperties]:
         """
         Delete a resource
+
+
         """
-        name = request.desired_state["Name"]
-        request.aws_client_factory.ssm.delete_parameter(Name=name)
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.desired_state)
+        model = request.desired_state
+        ssm = request.aws_client_factory.ssm
+
+        ssm.delete_parameter(Name=model["Name"])
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def update(
         self,
@@ -131,15 +130,68 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
     ) -> ProgressEvent[SSMParameterProperties]:
         """
         Update a resource
+
+
         """
-        raise NotImplementedError
+        model = request.desired_state
+        ssm = request.aws_client_factory.ssm
 
+        if not model.get("Name"):
+            model["Name"] = request.previous_state["Name"]
+        parameters_to_select = [
+            "AllowedPattern",
+            "DataType",
+            "Description",
+            "Name",
+            "Policies",
+            "Tags",
+            "Tier",
+            "Type",
+            "Value",
+        ]
+        update_config_props = util.select_attributes(model, parameters_to_select)
 
-class SSMParameterProviderPlugin(CloudFormationResourceProviderPlugin):
-    name = "AWS::SSM::Parameter"
+        # tag handling
+        # tag handling
+        new_tags = update_config_props.pop("Tags", {})
+        self.update_tags(ssm, model, new_tags)
 
-    def __init__(self):
-        self.factory: Optional[Type[ResourceProvider]] = None
+        ssm.put_parameter(Overwrite=True, **update_config_props)
 
-    def load(self):
-        self.factory = SSMParameterProvider
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
+
+    def update_tags(self, ssm, model, new_tags):
+        current_tags = ssm.list_tags_for_resource(
+            ResourceType="Parameter", ResourceId=model["Name"]
+        )["TagList"]
+        current_tags = {tag["Key"]: tag["Value"] for tag in current_tags}
+
+        new_tag_keys = set(new_tags.keys())
+        old_tag_keys = set(current_tags.keys())
+        potentially_modified_tag_keys = new_tag_keys.intersection(old_tag_keys)
+        tag_keys_to_add = new_tag_keys.difference(old_tag_keys)
+        tag_keys_to_remove = old_tag_keys.difference(new_tag_keys)
+
+        for tag_key in potentially_modified_tag_keys:
+            if new_tags[tag_key] != current_tags[tag_key]:
+                tag_keys_to_add.add(tag_key)
+
+        if tag_keys_to_add:
+            ssm.add_tags_to_resource(
+                ResourceType="Parameter",
+                ResourceId=model["Name"],
+                Tags=[
+                    {"Key": tag_key, "Value": tag_value}
+                    for tag_key, tag_value in new_tags.items()
+                    if tag_key in tag_keys_to_add
+                ],
+            )
+
+        if tag_keys_to_remove:
+            ssm.remove_tags_from_resource(
+                ResourceType="Parameter", ResourceId=model["Name"], TagKeys=tag_keys_to_remove
+            )

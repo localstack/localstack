@@ -55,6 +55,7 @@ ListDeliveryStreamsInputLimit = int
 ListTagsForDeliveryStreamInputLimit = int
 LogGroupName = str
 LogStreamName = str
+MSKClusterARN = str
 NonEmptyString = str
 NonEmptyStringWithoutWhitespace = str
 NonNegativeIntegerObject = int
@@ -73,6 +74,7 @@ SizeInMBs = int
 SplunkRetryDurationInSeconds = int
 TagKey = str
 TagValue = str
+TopicName = str
 Username = str
 
 
@@ -100,6 +102,11 @@ class CompressionFormat(str):
     ZIP = "ZIP"
     Snappy = "Snappy"
     HADOOP_SNAPPY = "HADOOP_SNAPPY"
+
+
+class Connectivity(str):
+    PUBLIC = "PUBLIC"
+    PRIVATE = "PRIVATE"
 
 
 class ContentEncoding(str):
@@ -150,6 +157,7 @@ class DeliveryStreamStatus(str):
 class DeliveryStreamType(str):
     DirectPut = "DirectPut"
     KinesisStreamAsSource = "KinesisStreamAsSource"
+    MSKAsSource = "MSKAsSource"
 
 
 class ElasticsearchIndexRotationPeriod(str):
@@ -216,10 +224,12 @@ class ProcessorParameterName(str):
     BufferIntervalInSeconds = "BufferIntervalInSeconds"
     SubRecordType = "SubRecordType"
     Delimiter = "Delimiter"
+    CompressionFormat = "CompressionFormat"
 
 
 class ProcessorType(str):
     RecordDeAggregation = "RecordDeAggregation"
+    Decompression = "Decompression"
     Lambda = "Lambda"
     MetadataExtraction = "MetadataExtraction"
     AppendDelimiterToRecord = "AppendDelimiterToRecord"
@@ -481,6 +491,11 @@ class AmazonopensearchserviceDestinationUpdate(TypedDict, total=False):
     DocumentIdOptions: Optional[DocumentIdOptions]
 
 
+class AuthenticationConfiguration(TypedDict, total=False):
+    RoleARN: RoleARN
+    Connectivity: Connectivity
+
+
 ColumnToJsonKeyMappings = Dict[NonEmptyStringWithoutWhitespace, NonEmptyString]
 
 
@@ -488,6 +503,12 @@ class CopyCommand(TypedDict, total=False):
     DataTableName: DataTableName
     DataTableColumns: Optional[DataTableColumns]
     CopyOptions: Optional[CopyOptions]
+
+
+class MSKSourceConfiguration(TypedDict, total=False):
+    MSKClusterARN: MSKClusterARN
+    TopicName: TopicName
+    AuthenticationConfiguration: AuthenticationConfiguration
 
 
 class Tag(TypedDict, total=False):
@@ -723,6 +744,7 @@ class CreateDeliveryStreamInput(ServiceRequest):
     AmazonOpenSearchServerlessDestinationConfiguration: Optional[
         AmazonOpenSearchServerlessDestinationConfiguration
     ]
+    MSKSourceConfiguration: Optional[MSKSourceConfiguration]
 
 
 class CreateDeliveryStreamOutput(TypedDict, total=False):
@@ -838,6 +860,13 @@ class DestinationDescription(TypedDict, total=False):
 DestinationDescriptionList = List[DestinationDescription]
 
 
+class MSKSourceDescription(TypedDict, total=False):
+    MSKClusterARN: Optional[MSKClusterARN]
+    TopicName: Optional[TopicName]
+    AuthenticationConfiguration: Optional[AuthenticationConfiguration]
+    DeliveryStartTimestamp: Optional[DeliveryStartTimestamp]
+
+
 class KinesisStreamSourceDescription(TypedDict, total=False):
     KinesisStreamARN: Optional[KinesisStreamARN]
     RoleARN: Optional[RoleARN]
@@ -846,6 +875,7 @@ class KinesisStreamSourceDescription(TypedDict, total=False):
 
 class SourceDescription(TypedDict, total=False):
     KinesisStreamSourceDescription: Optional[KinesisStreamSourceDescription]
+    MSKSourceDescription: Optional[MSKSourceDescription]
 
 
 Timestamp = datetime
@@ -1081,7 +1111,6 @@ class UpdateDestinationOutput(TypedDict, total=False):
 
 
 class FirehoseApi:
-
     service = "firehose"
     version = "2015-08-04"
 
@@ -1102,6 +1131,7 @@ class FirehoseApi:
         http_endpoint_destination_configuration: HttpEndpointDestinationConfiguration = None,
         tags: TagDeliveryStreamInputTagList = None,
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
+        msk_source_configuration: MSKSourceConfiguration = None,
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
 

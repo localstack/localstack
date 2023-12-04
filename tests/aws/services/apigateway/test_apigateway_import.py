@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.api.apigateway import Resources
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
@@ -123,7 +124,7 @@ def apigw_snapshot_transformer(request, snapshot):
     if is_aws_cloud():
         model_base_url = "https://apigateway.amazonaws.com"
     else:
-        host_definition = localstack_host(use_localhost_cloud=True)
+        host_definition = localstack_host()
         model_base_url = f"{config.get_protocol()}://apigateway.{host_definition.host_and_port()}"
 
     snapshot.add_transformer(snapshot.transform.regex(model_base_url, "<model-base-url>"))
@@ -225,7 +226,9 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_s
         # localstack should normally not require the retries and will just continue here
         response = retry(_create_function, retries=3, sleep=4)
 
-        lambda_invocation_arn = arns.apigateway_invocations_arn(response["FunctionArn"])
+        lambda_invocation_arn = arns.apigateway_invocations_arn(
+            response["FunctionArn"], TEST_AWS_REGION_NAME
+        )
 
         yield lambda_invocation_arn
 
@@ -729,7 +732,6 @@ class TestApiGatewayImportRestApi:
 
     @markers.aws.validated
     def test_import_with_stage_variables(self, import_apigw, aws_client, echo_http_server_post):
-
         spec_file = load_file(OAS_30_STAGE_VARIABLES)
         import_resp, root_id = import_apigw(body=spec_file, failOnWarnings=True)
         rest_api_id = import_resp["id"]

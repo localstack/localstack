@@ -1,0 +1,15 @@
+Resources:
+    VPC:
+        Type: AWS::EC2::VPC
+        Properties:
+          CidrBlock: 10.0.0.0/16
+    NetworkAcl:
+        Type: AWS::EC2::NetworkAcl
+        Properties:
+            VpcId: !Ref VPC
+            Tags:
+                - Key: Name
+                  Value: MyNetworkAcl
+Outputs:
+    NetworkAclId:
+        Value: !Ref NetworkAcl

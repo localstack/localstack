@@ -196,7 +196,12 @@ def get_raw_path(request) -> str:
     if hasattr(request, "environ"):
         # werkzeug/flask request (already a string, and contains the query part)
         # we need to parse it, because the RAW_URI can contain a full URL if it is specified in the HTTP request
-        return urlparse(request.environ.get("RAW_URI", request.path)).path
+        raw_uri: str = request.environ.get("RAW_URI", "")
+        if raw_uri.startswith("//"):
+            # if the RAW_URI starts with double slashes, `urlparse` will fail to decode it as path only
+            # it also means that we already only have the path, so we just need to remove the query string
+            return raw_uri.split("?")[0]
+        return urlparse(raw_uri or request.path).path
 
     if hasattr(request, "scope"):
         # quart request raw_path comes as bytes, and without the query part

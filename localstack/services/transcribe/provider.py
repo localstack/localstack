@@ -342,7 +342,7 @@ class TranscribeProvider(TranscribeApi):
                     {
                         "start_time": unigram["start"],
                         "end_time": unigram["end"],
-                        "type": "pronounciation",
+                        "type": "pronunciation",
                         "alternatives": [
                             {
                                 "confidence": unigram["conf"],

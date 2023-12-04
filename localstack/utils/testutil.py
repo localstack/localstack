@@ -8,12 +8,15 @@ import shutil
 import tempfile
 import time
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_externally_to, connect_to
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_utils
+from localstack.utils.aws.request_context import mock_aws_request_headers
+from localstack.utils.urls import localstack_host
 
 try:
     from typing import Literal
@@ -24,17 +27,17 @@ import boto3
 import requests
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import LOCALHOST_HOSTNAME, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
-from localstack.services.lambda_.lambda_api import LAMBDA_TEST_ROLE
+from localstack.constants import (
+    LOCALSTACK_ROOT_FOLDER,
+    LOCALSTACK_VENV_FOLDER,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.lambda_.lambda_utils import (
-    LAMBDA_DEFAULT_HANDLER,
-    LAMBDA_DEFAULT_RUNTIME,
-    LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
 from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
-from localstack.utils.aws import aws_stack
 from localstack.utils.collections import ensure_list
 from localstack.utils.files import (
     TMP_FILES,
@@ -50,12 +53,15 @@ from localstack.utils.net import get_free_tcp_port, is_port_open
 from localstack.utils.platform import is_debian
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition
-from localstack.utils.threads import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
+LAMBDA_DEFAULT_HANDLER = "handler.handler"
+LAMBDA_DEFAULT_RUNTIME = Runtime.python3_9
+LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 LAMBDA_TIMEOUT_SEC = 30
 LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"
+LAMBDA_TEST_ROLE = "arn:aws:iam::{account_id}:role/lambda-test-role"
 MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 
@@ -196,7 +202,8 @@ def create_lambda_function(
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API
-    CAVEAT: Does NOT wait until the function is ready/active. The fixture create_lambda_function waits until ready."""
+    CAVEAT: Does NOT wait until the function is ready/active. The fixture create_lambda_function waits until ready.
+    """
     if envvars is None:
         envvars = {}
     if tags is None:
@@ -246,7 +253,7 @@ def create_lambda_function(
         "FunctionName": func_name,
         "Runtime": runtime,
         "Handler": handler,
-        "Role": role or LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
+        "Role": role or LAMBDA_TEST_ROLE.format(account_id=TEST_AWS_ACCOUNT_ID),
         "Code": lambda_code,
         "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
@@ -334,11 +341,10 @@ def create_lambda_api_gateway_integration(
 
     # create Lambda
     zip_file = create_lambda_archive(handler_file, get_content=True, runtime=runtime)
-    create_lambda_function(
+    func_arn = create_lambda_function(
         func_name=func_name, zip_file=zip_file, runtime=runtime, client=lambda_client
-    )
-    func_arn = arns.lambda_function_arn(func_name)
-    target_arn = arns.apigateway_invocations_arn(func_arn)
+    )["CreateFunctionResponse"]["FunctionArn"]
+    target_arn = arns.apigateway_invocations_arn(func_arn, TEST_AWS_REGION_NAME)
 
     # connect API GW to Lambda
     result = connect_api_gateway_to_http_with_lambda_proxy(
@@ -407,26 +413,6 @@ def find_recursive(key, value, obj):
                 return True
     else:
         return False
-
-
-def start_http_server(
-    test_port: int = None, invocations: List = None, invocation_handler: Callable = None
-) -> Tuple[int, List, FuncThread]:
-    # Note: leave imports here to avoid import errors (e.g., "flask") for CLI commands
-    from localstack.services.generic_proxy import ProxyListener
-    from localstack.services.infra import start_proxy
-
-    class TestListener(ProxyListener):
-        def forward_request(self, **kwargs):
-            if invocation_handler:
-                kwargs = invocation_handler(**kwargs)
-            invocations.append(kwargs)
-            return 200
-
-    test_port = test_port or get_free_tcp_port()
-    invocations = invocations or []
-    proxy = start_proxy(test_port, update_listener=TestListener())
-    return test_port, invocations, proxy
 
 
 def list_all_s3_objects(s3_client):
@@ -510,9 +496,11 @@ def send_dynamodb_request(path, action, request_body):
     headers = {
         "Host": "dynamodb.amazonaws.com",
         "x-amz-target": "DynamoDB_20120810.{}".format(action),
-        "Authorization": aws_stack.mock_aws_request_headers("dynamodb")["Authorization"],
+        "Authorization": mock_aws_request_headers(
+            "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )["Authorization"],
     }
-    url = f"{config.service_url('dynamodb')}/{path}"
+    url = f"{config.internal_service_url()}/{path}"
     return requests.put(url, data=request_body, headers=headers, verify=False)
 
 
@@ -626,25 +614,6 @@ def http_server(handler, host="127.0.0.1", port=None) -> str:
     thread.stop()
 
 
-@contextmanager
-def proxy_server(proxy_listener, host="127.0.0.1", port=None) -> str:
-    """
-    Create a temporary proxy server on a random port (or the specified port) with the given proxy listener
-    for the duration of the context manager.
-    """
-    from localstack.services.generic_proxy import start_proxy_server
-
-    host = host
-    port = port or get_free_tcp_port()
-    thread = start_proxy_server(port, bind_address=host, update_listener=proxy_listener)
-    url = f"http://{host}:{port}"
-    assert poll_condition(
-        lambda: is_port_open(port), timeout=5
-    ), f"server on port {port} did not start"
-    yield url
-    thread.stop()
-
-
 def list_all_resources(
     page_function: Callable[[dict], Any],
     last_token_attr_name: str,
@@ -717,7 +686,7 @@ def upload_file_to_bucket(s3_client, bucket_name, file_path, file_name=None):
         Key=key,
     )
 
-    domain = "amazonaws.com" if is_aws_cloud() else f"{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    domain = "amazonaws.com" if is_aws_cloud() else localstack_host().host_and_port()
     url = f"https://{bucket_name}.s3.{domain}/{key}"
 
     return {"Bucket": bucket_name, "Key": key, "Url": url}

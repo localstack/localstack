@@ -32,6 +32,7 @@ from localstack.utils.common import (
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 INTERNAL_USER_AUTH = ("localstack-internal", "localstack-internal")
@@ -47,13 +48,18 @@ class Directories(NamedTuple):
     backup: str
 
 
-def get_cluster_health_status(url: str, auth: Tuple[str, str] | None) -> Optional[str]:
+def get_cluster_health_status(
+    url: str, auth: Tuple[str, str] | None, host: str | None = None
+) -> Optional[str]:
     """
     Queries the health endpoint of OpenSearch/Elasticsearch and returns either the status ('green', 'yellow',
     ...) or None if the response returned a non-200 response.
     Authentication needs to be set in case the security plugin is enabled.
     """
-    resp = requests.get(url + "/_cluster/health", verify=False, auth=auth)
+    headers = {}
+    if host:
+        headers["Host"] = host
+    resp = requests.get(url + "/_cluster/health", headers=headers, verify=False, auth=auth)
 
     if resp and resp.ok:
         opensearch_status = resp.json()
@@ -239,7 +245,7 @@ def register_cluster(
     if custom_endpoint and custom_endpoint.enabled:
         LOG.debug(f"Registering route from {host}{path} to {endpoint.proxy.forward_base_url}")
         assert not (
-            host == config.LOCALSTACK_HOSTNAME and (not path or path == "/")
+            host == localstack_host().host and (not path or path == "/")
         ), "trying to register an illegal catch all route"
         rules.append(
             ROUTER.add(
@@ -257,9 +263,7 @@ def register_cluster(
         )
     elif strategy == "domain":
         LOG.debug(f"Registering route from {host} to {endpoint.proxy.forward_base_url}")
-        assert (
-            not host == config.LOCALSTACK_HOSTNAME
-        ), "trying to register an illegal catch all route"
+        assert not host == localstack_host().host, "trying to register an illegal catch all route"
         rules.append(
             ROUTER.add(
                 "/",
@@ -461,10 +465,21 @@ class OpensearchCluster(Server):
         return cmd
 
     def _create_env_vars(self, directories: Directories) -> Dict:
-        return {
+        env_vars = {
             "OPENSEARCH_JAVA_OPTS": os.environ.get("OPENSEARCH_JAVA_OPTS", "-Xms200m -Xmx600m"),
             "OPENSEARCH_TMPDIR": directories.tmp,
         }
+
+        # if the "opensearch-knn" plugin exists and has a "lib" directory, add it to the LD_LIBRARY_PATH
+        # see https://forum.opensearch.org/t/issue-with-opensearch-knn/12633
+        knn_lib_dir = os.path.join(directories.install, "plugins", "opensearch-knn", "lib")
+        if os.path.isdir(knn_lib_dir):
+            prefix = (
+                f"{os.environ.get('LD_LIBRARY_PATH')}:" if "LD_LIBRARY_PATH" in os.environ else ""
+            )
+            env_vars["LD_LIBRARY_PATH"] = prefix + f"{knn_lib_dir}"
+
+        return env_vars
 
     def _log_listener(self, line, **_kwargs):
         # logging the port before each line to be able to connect logs to specific instances
@@ -583,7 +598,15 @@ class EdgeProxiedOpensearchCluster(Server):
 
     def health(self):
         """calls the health endpoint of cluster through the proxy, making sure implicitly that both are running"""
-        return get_cluster_health_status(self.url, self.auth)
+
+        # The user may have customised `LOCALSTACK_HOST`, so we need to rewrite the health
+        # check endpoint to always make a request against localhost.localstack.cloud (since we
+        # are always running in the same container), but in order to match the registered HTTP
+        # route, we must set the host header to the original URL used by this cluster.
+        url = self.url.replace(config.LOCALSTACK_HOST.host, constants.LOCALHOST_HOSTNAME)
+        url = url.replace(str(config.LOCALSTACK_HOST.port), str(config.GATEWAY_LISTEN[0].port))
+        host = self._url.hostname
+        return get_cluster_health_status(url, self.auth, host=host)
 
     def _backend_cluster(self) -> OpensearchCluster:
         return OpensearchCluster(

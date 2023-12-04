@@ -8,7 +8,7 @@ import logging
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Union
 
 import requests
@@ -35,6 +35,7 @@ from localstack.utils.aws.arns import (
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.objects import not_none_or
 from localstack.utils.strings import long_uid, md5, to_bytes
@@ -47,7 +48,8 @@ LOG = logging.getLogger(__name__)
 class SnsPublishContext:
     message: SnsMessage
     store: SnsStore
-    request_headers: Dict[str, str]
+    request_headers: dict[str, str]
+    topic_attributes: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -55,6 +57,7 @@ class SnsBatchPublishContext:
     messages: List[SnsMessage]
     store: SnsStore
     request_headers: Dict[str, str]
+    topic_attributes: dict[str, str] = field(default_factory=dict)
 
 
 class TopicPublisher(abc.ABC):
@@ -186,13 +189,24 @@ class LambdaTopicPublisher(TopicPublisher):
                         {"lambdaRequestId": inv_result["ResponseMetadata"]["RequestId"]}
                     ),
                 }
-                store_delivery_log(context.message, subscriber, success=True, delivery=delivery)
+                store_delivery_log(
+                    context.message,
+                    subscriber,
+                    success=True,
+                    topic_attributes=context.topic_attributes,
+                    delivery=delivery,
+                )
 
         except Exception as exc:
             LOG.info(
                 "Unable to run Lambda function on SNS message: %s %s", exc, traceback.format_exc()
             )
-            store_delivery_log(context.message, subscriber, success=False)
+            store_delivery_log(
+                context.message,
+                subscriber,
+                success=False,
+                topic_attributes=context.topic_attributes,
+            )
             message_body = create_sns_message_body(
                 message_context=context.message, subscriber=subscriber
             )
@@ -205,7 +219,7 @@ class LambdaTopicPublisher(TopicPublisher):
         :param subscriber: the SNS subscription
         :return: an SNS message body formatted as a lambda Event in a JSON string
         """
-        external_url = external_service_url("sns")
+        external_url = external_service_url()
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
         message_attributes = prepare_message_attributes(message_context.message_attributes)
         region_name = extract_region_from_arn(subscriber["SubscriptionArn"])
@@ -263,10 +277,17 @@ class SqsTopicPublisher(TopicPublisher):
                 MessageSystemAttributes=create_sqs_system_attributes(context.request_headers),
                 **kwargs,
             )
-            store_delivery_log(message_context, subscriber, success=True)
+            store_delivery_log(
+                message_context, subscriber, success=True, topic_attributes=context.topic_attributes
+            )
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
-            store_delivery_log(message_context, subscriber, success=False)
+            store_delivery_log(
+                message_context,
+                subscriber,
+                success=False,
+                topic_attributes=context.topic_attributes,
+            )
             sns_error_to_dead_letter_queue(subscriber, message_body, str(exc), **kwargs)
             if "NonExistentQueue" in str(exc):
                 LOG.debug("The SQS queue endpoint does not exist anymore")
@@ -343,7 +364,9 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
             response = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=entries)
 
             for message_ctx in context.messages:
-                store_delivery_log(message_ctx, subscriber, success=True)
+                store_delivery_log(
+                    message_ctx, subscriber, success=True, topic_attributes=context.topic_attributes
+                )
 
             if failed_messages := response.get("Failed"):
                 for failed_msg in failed_messages:
@@ -353,7 +376,12 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
                         failed_msg["Code"],
                         failed_msg["Message"],
                     )
-                    store_delivery_log(failure_data["context"], subscriber, success=False)
+                    store_delivery_log(
+                        failure_data["context"],
+                        subscriber,
+                        success=False,
+                        topic_attributes=context.topic_attributes,
+                    )
                     kwargs = {}
                     if msg_attrs := failure_data["entry"].get("MessageAttributes"):
                         kwargs["MessageAttributes"] = msg_attrs
@@ -374,7 +402,12 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             for message_ctx in context.messages:
-                store_delivery_log(message_ctx, subscriber, success=False)
+                store_delivery_log(
+                    message_ctx,
+                    subscriber,
+                    success=False,
+                    topic_attributes=context.topic_attributes,
+                )
                 msg_body = self.prepare_message(message_ctx, subscriber)
                 kwargs = self.get_sqs_kwargs(message_ctx, subscriber)
 
@@ -403,23 +436,24 @@ class HttpTopicPublisher(TopicPublisher):
         message_body = self.prepare_message(message_context, subscriber)
         try:
             message_headers = {
-                "Content-Type": "text/plain",
+                "Content-Type": "text/plain; charset=UTF-8",
+                "Accept-Encoding": "gzip,deflate",
+                "User-Agent": "Amazon Simple Notification Service Agent",
                 # AWS headers according to
                 # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
                 "x-amz-sns-message-type": message_context.type,
                 "x-amz-sns-message-id": message_context.message_id,
                 "x-amz-sns-topic-arn": subscriber["TopicArn"],
-                "User-Agent": "Amazon Simple Notification Service Agent",
             }
             if message_context.type != "SubscriptionConfirmation":
                 # while testing, never had those from AWS but the docs above states it should be there
                 message_headers["x-amz-sns-subscription-arn"] = subscriber["SubscriptionArn"]
 
-            # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
-            # indicating that the message has been published without JSON formatting.
-            # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-            elif message_context.type == "Notification" and is_raw_message_delivery(subscriber):
-                message_headers["x-amz-sns-rawdelivery"] = "true"
+                # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
+                # indicating that the message has been published without JSON formatting.
+                # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
+                if message_context.type == "Notification" and is_raw_message_delivery(subscriber):
+                    message_headers["x-amz-sns-rawdelivery"] = "true"
 
             response = requests.post(
                 subscriber["Endpoint"],
@@ -432,14 +466,25 @@ class HttpTopicPublisher(TopicPublisher):
                 "statusCode": response.status_code,
                 "providerResponse": response.content.decode("utf-8"),
             }
-            store_delivery_log(message_context, subscriber, success=True, delivery=delivery)
+            store_delivery_log(
+                message_context,
+                subscriber,
+                success=True,
+                delivery=delivery,
+                topic_attributes=context.topic_attributes,
+            )
 
             response.raise_for_status()
         except Exception as exc:
             LOG.info(
                 "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
             )
-            store_delivery_log(message_context, subscriber, success=False)
+            store_delivery_log(
+                message_context,
+                subscriber,
+                success=False,
+                topic_attributes=context.topic_attributes,
+            )
             # AWS doesn't send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
             if message_context.type != "UnsubscribeConfirmation":
                 sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
@@ -471,7 +516,6 @@ class EmailJsonTopicPublisher(TopicPublisher):
                 },
                 Destination={"ToAddresses": [endpoint]},
             )
-            store_delivery_log(context.message, subscriber, success=True)
 
 
 class EmailTopicPublisher(EmailJsonTopicPublisher):
@@ -514,7 +558,9 @@ class ApplicationTopicPublisher(TopicPublisher):
         # TODO: rewrite the platform application publishing logic
         #  will need to validate credentials when creating platform app earlier, need thorough testing
 
-        store_delivery_log(context.message, subscriber, success=True)
+        store_delivery_log(
+            context.message, subscriber, success=True, topic_attributes=context.topic_attributes
+        )
 
     def prepare_message(
         self, message_context: SnsMessage, subscriber: SnsSubscription
@@ -613,7 +659,12 @@ class FirehoseTopicPublisher(TopicPublisher):
                 firehose_client.put_record(
                     DeliveryStreamName=delivery_stream, Record={"Data": to_bytes(message_body)}
                 )
-                store_delivery_log(context.message, subscriber, success=True)
+                store_delivery_log(
+                    context.message,
+                    subscriber,
+                    success=True,
+                    topic_attributes=context.topic_attributes,
+                )
         except Exception as exc:
             LOG.info(
                 "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
@@ -779,7 +830,7 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
     if message_type == "Notification" and is_raw_message_delivery(subscriber):
         return message_content
 
-    external_url = external_service_url("sns")
+    external_url = external_service_url()
 
     data = {
         "Type": message_type,
@@ -856,11 +907,57 @@ def is_fifo_topic(subscriber: SnsSubscription) -> bool:
 
 
 def store_delivery_log(
-    message_context: SnsMessage, subscriber: SnsSubscription, success: bool, delivery: dict = None
+    message_context: SnsMessage,
+    subscriber: SnsSubscription,
+    success: bool,
+    topic_attributes: dict[str, str] = None,
+    delivery: dict = None,
 ):
-    """Store the delivery logs in CloudWatch"""
-    # TODO: this is enabled by default in LocalStack, but not in AWS
+    """
+    Store the delivery logs in CloudWatch, configured as TopicAttributes
+    See: https://docs.aws.amazon.com/sns/latest/dg/sns-topic-attributes.html#msg-status-sdk
+
+    TODO: for Application, you can also configure Platform attributes:
+    See:https://docs.aws.amazon.com/sns/latest/dg/sns-msg-status.html
+    """
+    # TODO: effectively use `<ENDPOINT>SuccessFeedbackSampleRate` to sample delivery logs
     # TODO: validate format of `delivery` for each Publisher
+    # map Protocol to TopicAttribute
+    available_delivery_logs_services = {
+        "http",
+        "https",
+        "firehose",
+        "lambda",
+        "application",
+        "sqs",
+    }
+    # SMS is a special case: https://docs.aws.amazon.com/sns/latest/dg/sms_stats_cloudwatch.html
+    # seems like you need to configure on the Console, leave it on by default now in LocalStack
+    protocol = subscriber.get("Protocol")
+
+    if protocol != "sms":
+        if protocol not in available_delivery_logs_services or not topic_attributes:
+            # this service does not have DeliveryLogs feature, return
+            return
+
+        # TODO: for now, those attributes are stored as attributes of the moto Topic model in snake case
+        # see to work this in our store instead
+        role_type = "success" if success else "failure"
+        topic_attribute = f"{protocol}_{role_type}_feedback_role_arn"
+
+        # check if topic has the right attribute and a role, otherwise return
+        # TODO: on purpose not using walrus operator to show that we get the RoleArn here for CloudWatch
+        role_arn = topic_attributes.get(topic_attribute)
+        if not role_arn:
+            return
+
+    if not is_api_enabled("logs"):
+        LOG.warning(
+            "Service 'logs' is not enabled: skip storing SNS delivery logs. "
+            "Please check your 'SERVICES' configuration variable."
+        )
+        return
+
     log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
     log_stream_name = long_uid()
     invocation_time = int(time.time() * 1000)
@@ -889,6 +986,7 @@ def store_delivery_log(
 
     log_output = json.dumps(delivery_log)
 
+    # TODO: use the account/region from the role in the TopicAttribute instead, this is what AWS uses
     account_id = extract_account_id_from_arn(subscriber["TopicArn"])
     region_name = extract_region_from_arn(subscriber["TopicArn"])
     logs_client = connect_to(aws_access_key_id=account_id, region_name=region_name).logs
@@ -934,55 +1032,29 @@ class SubscriptionFilter:
 
     def _evaluate_nested_filter_policy_on_dict(self, filter_policy, payload: dict) -> bool:
         """
-        This method evaluate the filter policy recursively, while still being able to validate the `exists` condition.
+        This method evaluates the filter policy against the JSON decoded payload.
+        Although it's not documented anywhere, AWS allows `.` in the fields name in the filter policy and the payload,
+        and will evaluate them. However, it's not JSONPath compatible:
         Example:
-        nested_filter_policy = {
-            "object": {
-                "key": [{"prefix": "auto-"}],
-                "nested_key": [{"exists": False}],
-            },
-            "test": [{"exists": False}],
-        }
-        payload = {
-            "object": {
-                "key": "auto-test",
-            }
-        }
-        This function then iterates on top level keys of the filter policy: ("object", "test")
-        The value of "object" is a dict, we need to evaluate this level of the filter policy.
-        We pass the nested property values (the dict) as well as the values of the payload's field to the recursive
-        function, to evaluate the conditions on the same level of depth.
-        We now have these parameters to the function:
-        filter_policy = {
-            "key": [{"prefix": "auto-"}],
-            "nested_key": [{"exists": False}],
-        }
-        payload = {
-            "key": "auto-test",
-        }
-        We can now properly evaluate the conditions on the same level of depth in the dict object.
-        As it passes the filter policy, we then continue to evaluate the top keys, going back to "test".
+        Policy: `{"field1.field2": "value1"}`
+        This policy will match both `{"field1.field2": "value1"}` and  {"field1: {"field2": "value1"}}`, unlike JSONPath
+        for which `.` points to a child node.
+        This might show they are flattening the both dictionaries to a single level for an easier matching without
+        recursion.
         :param filter_policy: a dict, starting at the FilterPolicy
         :param payload: a dict, starting at the MessageBody
         :return: True if the payload respect the filter policy, otherwise False
         """
-        for field_name, values in filter_policy.items():
-            # if values is not a dict, then it's a nested property
-            if not isinstance(values, list):
-                if not self._evaluate_nested_filter_policy_on_dict(
-                    values, payload.get(field_name, {})
-                ):
-                    return False
-            else:
-                # else, values represents the list of conditions of the filter policy
-                if not any(
-                    self._evaluate_condition(
-                        payload.get(field_name), condition, field_exists=field_name in payload
-                    )
-                    for condition in values
-                ):
-                    return False
-
+        flat_policy = self._flatten_dict(filter_policy)
+        flat_payload = self._flatten_dict(payload)
+        for key, values in flat_policy.items():
+            if not any(
+                self._evaluate_condition(
+                    flat_payload.get(key), condition, field_exists=key in flat_payload
+                )
+                for condition in values
+            ):
+                return False
         return True
 
     def _evaluate_filter_policy_conditions_on_attribute(
@@ -1010,16 +1082,9 @@ class SubscriptionFilter:
 
         return False
 
-    def _evaluate_filter_policy_conditions_on_field(self, conditions, value, field_exists: bool):
-        for condition in conditions:
-            if self._evaluate_condition(value, condition, field_exists):
-                return True
-
-        return False
-
     def _evaluate_condition(self, value, condition, field_exists: bool):
         if not isinstance(condition, dict):
-            return value == condition
+            return field_exists and value == condition
         elif (must_exist := condition.get("exists")) is not None:
             # if must_exists is True then field_exists must be True
             # if must_exists is False then fields_exists must be False
@@ -1065,6 +1130,33 @@ class SubscriptionFilter:
                     return False
 
         return True
+
+    @staticmethod
+    def _flatten_dict(nested_dict: dict):
+        """
+        Takes a dictionary as input and will output the dictionary on a single level.
+        Input:
+        `{"field1": {"field2: {"field3: "val1", "field4": "val2"}}}`
+        Output:
+        `{
+            "field1.field2.field3": "val1",
+            "field1.field2.field4": "val1"
+        }`
+        :param nested_dict: a (nested) dictionary
+        :return: flatten_dict: a dictionary with no nested dict inside, flattened to a single level
+        """
+        flatten = {}
+
+        def _traverse(_policy: dict, parent_key=None):
+            for key, values in _policy.items():
+                pkey = key if not parent_key else f"{parent_key}.{key}"
+                if not isinstance(values, dict):
+                    flatten[pkey] = values
+                else:
+                    _traverse(values, parent_key=pkey)
+
+        _traverse(nested_dict)
+        return flatten
 
 
 class PublishDispatcher:

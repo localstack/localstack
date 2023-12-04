@@ -7,12 +7,10 @@ from gzip import GzipFile
 from typing import Callable, Dict
 
 from moto.core.utils import unix_time_millis
-from moto.logs.models import LogEvent
+from moto.logs.models import LogEvent, LogsBackend
 from moto.logs.models import LogGroup as MotoLogGroup
-from moto.logs.models import LogsBackend
 from moto.logs.models import LogStream as MotoLogStream
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.logs import (
     AmazonResourceName,
@@ -41,7 +39,8 @@ from localstack.services.logs.models import get_moto_logs_backend, logs_stores
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns
-from localstack.utils.aws.arns import extract_region_from_arn
+from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
 
@@ -62,7 +61,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         sequence_token: SequenceToken = None,
     ) -> PutLogEventsResponse:
         logs_backend = get_moto_logs_backend(context.account_id, context.region)
-        metric_filters = logs_backend.filters.metric_filters
+        metric_filters = logs_backend.filters.metric_filters if is_api_enabled("cloudwatch") else []
         for metric_filter in metric_filters:
             pattern = metric_filter.get("filterPattern", "")
             transformations = metric_filter.get("metricTransformations", [])
@@ -247,46 +246,61 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
     role_arn = args[4]
 
     log_group = self.groups.get(log_group_name)
+    log_group_arn = arns.log_group_arn(log_group_name, self.account_id, self.region_name)
 
     if not log_group:
         raise ResourceNotFoundException("The specified log group does not exist.")
 
+    arn_data = arns.parse_arn(destination_arn)
+
+    if role_arn:
+        factory = connect_to.with_assumed_role(
+            role_arn=role_arn, service_principal=ServicePrincipal.logs
+        )
+    else:
+        factory = connect_to(aws_access_key_id=arn_data["account"], region_name=arn_data["region"])
+
     if ":lambda:" in destination_arn:
-        client = connect_to(region_name=extract_region_from_arn(destination_arn)).lambda_
-        lambda_name = arns.lambda_function_name(destination_arn)
+        client = factory.lambda_.request_metadata(
+            source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+        )
         try:
-            client.get_function(FunctionName=lambda_name)
+            client.get_function(FunctionName=destination_arn)
         except Exception:
             raise InvalidParameterException(
                 "destinationArn for vendor lambda cannot be used with roleArn"
             )
 
     elif ":kinesis:" in destination_arn:
-        client = connect_to().kinesis
+        client = factory.kinesis.request_metadata(
+            source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+        )
         stream_name = arns.kinesis_stream_name(destination_arn)
         try:
+            # Kinesis-Local DescribeStream does not support StreamArn param, so use StreamName instead
             client.describe_stream(StreamName=stream_name)
         except Exception:
             raise InvalidParameterException(
-                "Could not deliver test message to specified Kinesis stream. "
-                "Check if the given kinesis stream is in ACTIVE state. "
+                "Could not deliver message to specified Kinesis stream. "
+                "Ensure that the Kinesis stream exists and is ACTIVE."
             )
 
     elif ":firehose:" in destination_arn:
-        client = connect_to().firehose
+        client = factory.firehose.request_metadata(
+            source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+        )
         firehose_name = arns.firehose_name(destination_arn)
         try:
             client.describe_delivery_stream(DeliveryStreamName=firehose_name)
         except Exception:
             raise InvalidParameterException(
-                "Could not deliver test message to specified Firehose stream. "
-                "Check if the given Firehose stream is in ACTIVE state."
+                "Could not deliver message to specified Firehose stream. "
+                "Ensure that the Firehose stream exists and is ACTIVE."
             )
 
     else:
-        service = arns.extract_service_from_arn(destination_arn)
         raise InvalidParameterException(
-            f"PutSubscriptionFilter operation cannot work with destinationArn for vendor {service}"
+            f"PutSubscriptionFilter operation cannot work with destinationArn for vendor {arn_data['service']}"
         )
 
     if filter_pattern:
@@ -329,7 +343,7 @@ def moto_put_log_events(self: "MotoLogStream", log_events):
 
             data = {
                 "messageType": "DATA_MESSAGE",
-                "owner": get_aws_account_id(),
+                "owner": self.account_id,  # AWS Account ID of the originating log data
                 "logGroup": self.log_group.name,
                 "logStream": self.log_stream_name,
                 "subscriptionFilters": [subscription_filter.name],
@@ -342,20 +356,39 @@ def moto_put_log_events(self: "MotoLogStream", log_events):
             payload_gz_encoded = output.getvalue()
             event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
 
+            log_group_arn = arns.log_group_arn(self.log_group.name, self.account_id, self.region)
+            arn_data = arns.parse_arn(destination_arn)
+
+            if subscription_filter.role_arn:
+                factory = connect_to.with_assumed_role(
+                    role_arn=subscription_filter.role_arn, service_principal=ServicePrincipal.logs
+                )
+            else:
+                factory = connect_to(
+                    aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+                )
+
             if ":lambda:" in destination_arn:
-                client = connect_to(region_name=extract_region_from_arn(destination_arn)).lambda_
-                lambda_name = arns.lambda_function_name(destination_arn)
-                client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
+                client = factory.lambda_.request_metadata(
+                    source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+                )
+                client.invoke(FunctionName=destination_arn, Payload=json.dumps(event))
+
             if ":kinesis:" in destination_arn:
-                client = connect_to().kinesis
+                client = factory.kinesis.request_metadata(
+                    source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+                )
                 stream_name = arns.kinesis_stream_name(destination_arn)
                 client.put_record(
                     StreamName=stream_name,
                     Data=payload_gz_encoded,
                     PartitionKey=self.log_group.name,
                 )
+
             if ":firehose:" in destination_arn:
-                client = connect_to().firehose
+                client = factory.firehose.request_metadata(
+                    source_arn=log_group_arn, service_principal=ServicePrincipal.logs
+                )
                 firehose_name = arns.firehose_name(destination_arn)
                 client.put_record(
                     DeliveryStreamName=firehose_name,

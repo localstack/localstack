@@ -60,7 +60,12 @@ from localstack.services.sns.publisher import (
     SnsBatchPublishContext,
     SnsPublishContext,
 )
-from localstack.utils.aws.arns import ArnData, parse_arn
+from localstack.utils.aws.arns import (
+    ArnData,
+    extract_account_id_from_arn,
+    extract_region_from_arn,
+    parse_arn,
+)
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -102,16 +107,29 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return sns_backends[account_id][region_name]
 
     @staticmethod
-    def _get_topic(arn: str, context: RequestContext) -> Topic:
+    def _get_topic(arn: str, context: RequestContext, multiregion: bool = True) -> Topic:
+        """
+        :param arn: the Topic ARN
+        :param context: the RequestContext of the request
+        :param multiregion: if the request can fetch the topic across regions or not (ex. Publish cannot publish to a
+        topic in a different region than the request)
+        :return: the Moto model Topic
+        """
         arn_data = parse_and_validate_topic_arn(arn)
         try:
             return sns_backends[arn_data["account"]][context.region].topics[arn]
         except KeyError:
-            raise NotFoundException("Topic does not exist")
+            if multiregion or context.region == arn_data["region"]:
+                raise NotFoundException("Topic does not exist")
+            else:
+                raise InvalidParameterException("Invalid parameter: TopicArn")
 
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
+        # get the Topic from moto manually first, because Moto does not handle well the case where the ARN is malformed
+        # (raises ValueError: not enough values to unpack (expected 6, got 1))
+        moto_topic_model = self._get_topic(topic_arn, context)
         moto_response: GetTopicAttributesResponse = call_moto(context)
         # TODO: fix some attributes by moto, see snapshot
         # DeliveryPolicy
@@ -120,9 +138,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # see the attributes we need: https://docs.aws.amazon.com/sns/latest/dg/sns-topic-attributes.html
         # would need more work to have the proper format out of moto, maybe extract the model to our store
-        moto_topic_model = self._get_topic(topic_arn, context)
         for attr in vars(moto_topic_model):
-            if "success_feedback" in attr:
+            if "_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
                 moto_response["Attributes"][key] = getattr(moto_topic_model, attr)
             elif attr == "signature_version":
@@ -142,10 +159,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         parsed_arn = parse_and_validate_topic_arn(topic_arn)
         store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
-        if topic_arn not in store.topic_subscriptions:
-            raise NotFoundException(
-                "Topic does not exist",
-            )
+        moto_topic = self._get_topic(topic_arn, context, multiregion=False)
 
         ids = [entry["Id"] for entry in publish_batch_request_entries]
         if len(set(ids)) != len(publish_batch_request_entries):
@@ -192,8 +206,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     raise InvalidParameterException(
                         "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                     )
-                topic = self._get_topic(topic_arn, context)
-                if topic.content_based_deduplication == "false":
+                if moto_topic.content_based_deduplication == "false":
                     if not all(
                         [
                             "MessageDeduplicationId" in entry
@@ -218,6 +231,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             messages=message_contexts,
             store=store,
             request_headers=context.request.headers,
+            topic_attributes=vars(moto_topic),
         )
         self._publisher.publish_batch_to_topic(publish_ctx, topic_arn)
 
@@ -333,25 +347,27 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> CreateEndpointResponse:
         # TODO: support mobile app events
         # see https://docs.aws.amazon.com/sns/latest/dg/application-event-notifications.html
-        try:
-            result: CreateEndpointResponse = call_moto(context)
-        except CommonServiceException as e:
-            if "DuplicateEndpoint" in e.code:
-                moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
-                for e in moto_sns_backend.platform_endpoints.values():
-                    if e.token == token:
-                        if custom_user_data and custom_user_data != e.custom_user_data:
-                            raise InvalidParameterException(
-                                f"Endpoint {e.arn} already exists with the same Token, but different attributes."
-                            )
-                        else:
-                            return CreateEndpointResponse(EndpointArn=e.arn)
-            raise
-        return result
+        return call_moto(context)
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
-        call_moto(context)
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
+        count = len(subscription_arn.split(":"))
+        try:
+            parsed_arn = parse_arn(subscription_arn)
+        except InvalidArnException:
+            # TODO: check for invalid SubscriptionGUID
+            raise InvalidParameterException(
+                f"Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not {count}"
+            )
+
+        account_id = parsed_arn["account"]
+        region_name = parsed_arn["region"]
+
+        store = self.get_store(account_id=account_id, region_name=region_name)
+        if count == 6 and subscription_arn not in store.subscriptions:
+            raise InvalidParameterException("Invalid parameter: SubscriptionId")
+
+        moto_sns_backend = self.get_moto_backend(account_id, region_name)
+        moto_sns_backend.unsubscribe(subscription_arn)
 
         # pop the subscription at the end, to avoid race condition by iterating over the topic subscriptions
         subscription = store.subscriptions.get(subscription_arn)
@@ -369,8 +385,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 token=subscription_token,
                 message=f"You have chosen to deactivate subscription {subscription_arn}.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
             )
+            moto_topic = moto_sns_backend.topics.get(subscription["TopicArn"])
             publish_ctx = SnsPublishContext(
-                message=message_ctx, store=store, request_headers=context.request.headers
+                message=message_ctx,
+                store=store,
+                request_headers=context.request.headers,
+                topic_attributes=vars(moto_topic),
             )
             self._publisher.publish_to_topic_subscriber(
                 publish_ctx,
@@ -429,14 +449,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # for compatibility reasons, AWS allows users to use either TargetArn or TopicArn for publishing to a topic
         # use any of them for topic validation
         topic_or_target_arn = topic_arn or target_arn
+        topic_model = None
 
         if is_fifo := (topic_or_target_arn and ".fifo" in topic_or_target_arn):
             if not message_group_id:
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
-            topic = self._get_topic(topic_or_target_arn, context)
-            if topic.content_based_deduplication == "false":
+            topic_model = self._get_topic(topic_or_target_arn, context, multiregion=False)
+            if topic_model.content_based_deduplication == "false":
                 if not message_deduplication_id:
                     raise InvalidParameterException(
                         "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
@@ -485,10 +506,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 elif not platform_endpoint.enabled:
                     raise EndpointDisabledException("Endpoint is disabled")
             else:
-                if topic_or_target_arn not in store.topic_subscriptions:
-                    raise NotFoundException(
-                        "Topic does not exist",
-                    )
+                topic_model = self._get_topic(topic_or_target_arn, context, multiregion=False)
         else:
             # use the store from the request context
             store = self.get_store(account_id=context.account_id, region_name=context.region)
@@ -517,6 +535,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # beware if the subscription is FIFO, the order might not be guaranteed.
             # 2 quick call to this method in succession might not be executed in order in the executor?
             # TODO: test how this behaves in a FIFO context with a lot of threads.
+            publish_ctx.topic_attributes |= vars(topic_model)
             self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn)
 
         if is_fifo:
@@ -631,7 +650,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 message=f"You have chosen to subscribe to the topic {topic_arn}.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
             )
             publish_ctx = SnsPublishContext(
-                message=message_ctx, store=store, request_headers=context.request.headers
+                message=message_ctx,
+                store=store,
+                request_headers=context.request.headers,
+                topic_attributes=vars(self._get_topic(topic_arn, context)),
             )
             self._publisher.publish_to_topic_subscriber(
                 ctx=publish_ctx,
@@ -895,6 +917,7 @@ def register_sns_api_resource(router: Router):
     """Register the retrospection endpoints as internal LocalStack endpoints."""
     router.add(SNSServicePlatformEndpointMessagesApiResource())
     router.add(SNSServiceSMSMessagesApiResource())
+    router.add(SNSServiceSubscriptionTokenApiResource())
 
 
 def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[str]):
@@ -942,9 +965,17 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
-        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
-        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
+        account_id = (
+            request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+            if not filter_endpoint_arn
+            else extract_account_id_from_arn(filter_endpoint_arn)
+        )
+        region = (
+            request.args.get("region", AWS_REGION_US_EAST_1)
+            if not filter_endpoint_arn
+            else extract_region_from_arn(filter_endpoint_arn)
+        )
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             messages = store.platform_endpoint_messages.get(filter_endpoint_arn, [])
@@ -965,9 +996,17 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
     def on_delete(self, request: Request) -> Response:
-        account_id = request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
-        region = request.args.get("region", AWS_REGION_US_EAST_1)
         filter_endpoint_arn = request.args.get("endpointArn")
+        account_id = (
+            request.args.get("accountId", DEFAULT_AWS_ACCOUNT_ID)
+            if not filter_endpoint_arn
+            else extract_account_id_from_arn(filter_endpoint_arn)
+        )
+        region = (
+            request.args.get("region", AWS_REGION_US_EAST_1)
+            if not filter_endpoint_arn
+            else extract_region_from_arn(filter_endpoint_arn)
+        )
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             store.platform_endpoint_messages.pop(filter_endpoint_arn, None)
@@ -1039,3 +1078,47 @@ class SNSServiceSMSMessagesApiResource:
 
         store.sms_messages.clear()
         return Response("", status=204)
+
+
+class SNSServiceSubscriptionTokenApiResource:
+    """Provides a REST API for retrospective access to Subscription Confirmation Tokens to confirm subscriptions.
+    Those are not sent for email, and sometimes inaccessible when working with external HTTPS endpoint which won't be
+    able to reach your local host.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint has the following parameter:
+    - GET `subscription_arn`: `subscriptionArn`resource in SNS for which you want the SubscriptionToken
+    """
+
+    @route(f"{sns_constants.SUBSCRIPTION_TOKENS_ENDPOINT}/<path:subscription_arn>", methods=["GET"])
+    def on_get(self, _request: Request, subscription_arn: str):
+        try:
+            parsed_arn = parse_arn(subscription_arn)
+        except InvalidArnException:
+            response = Response("", 400)
+            response.set_json(
+                {
+                    "error": "The provided SubscriptionARN is invalid",
+                    "subscription_arn": subscription_arn,
+                }
+            )
+            return response
+
+        store: SnsStore = sns_stores[parsed_arn["account"]][parsed_arn["region"]]
+
+        for token, sub_arn in store.subscription_tokens.items():
+            if sub_arn == subscription_arn:
+                return {
+                    "subscription_token": token,
+                    "subscription_arn": subscription_arn,
+                }
+
+        response = Response("", 404)
+        response.set_json(
+            {
+                "error": "The provided SubscriptionARN is not found",
+                "subscription_arn": subscription_arn,
+            }
+        )
+        return response

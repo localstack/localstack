@@ -7,10 +7,26 @@ _THIS_FOLDER: Final[str] = os.path.dirname(os.path.realpath(__file__))
 
 
 class ScenariosTemplate(TemplateLoader):
+    CATCH_EMPTY: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/catch_empty.json5")
+    CATCH_STATES_RUNTIME: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/catch_states_runtime.json5"
+    )
     PARALLEL_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/parallel_state.json5")
     MAP_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_state.json5")
     MAP_STATE_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_legacy.json5"
+    )
+    MAP_ITEM_READER_BASE_LIST_OBJECTS_V2: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_list_objects_v2.json5"
+    )
+    MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_csv_headers_first_line.json5"
+    )
+    MAP_ITEM_READER_BASE_CSV_HEADERS_DECL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_csv_headers_decl.json5"
+    )
+    MAP_ITEM_READER_BASE_JSON: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_json.json5"
     )
     MAP_STATE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_item_selector.json5"
@@ -47,6 +63,25 @@ class ScenariosTemplate(TemplateLoader):
     CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_unsorted_choice_parameters.json5"
     )
+    CHOICE_STATE_SINGLETON_COMPOSITE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/choice_state_singleton_composite.json5"
+    )
     CHOICE_STATE_AWS_SCENARIO: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_aws_scenario.json5"
+    )
+    LAMBDA_EMPTY_RETRY: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_empty_retry.json5"
+    )
+    LAMBDA_INVOKE_WITH_RETRY_BASE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_invoke_with_retry_base.json5"
+    )
+    LAMBDA_INVOKE_WITH_RETRY_BASE_EXTENDED_INPUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_invoke_with_retry_extended_input.json5"
+    )
+    LAMBDA_SERVICE_INVOKE_WITH_RETRY_BASE_EXTENDED_INPUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_service_invoke_with_retry_extended_input.json5"
+    )
+    WAIT_TIMESTAMP: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_timestamp.json5")
+    WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/wait_timestamp_path.json5"
     )

@@ -11,6 +11,7 @@ from localstack.services.s3.utils import (
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests
 from localstack.utils.strings import to_str
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -68,8 +69,7 @@ def is_local_service_url(url: str) -> bool:
     candidates = (
         constants.LOCALHOST,
         constants.LOCALHOST_HOSTNAME,
-        config.LOCALSTACK_HOSTNAME,
-        config.HOSTNAME_EXTERNAL,
+        localstack_host().host,
     )
     if any(re.match(r"^[^:]+://[^:/]*%s([:/]|$)" % host, url) for host in candidates):
         return True
@@ -78,15 +78,26 @@ def is_local_service_url(url: str) -> bool:
 
 
 def convert_s3_to_local_url(url: str) -> str:
+    from localstack.services.cloudformation.provider import ValidationError
+
     url_parsed = urlparse(url)
     path = url_parsed.path
 
     headers = {"host": url_parsed.netloc}
     bucket_name, key_name = extract_bucket_name_and_key_from_headers_and_path(headers, path)
 
+    if url_parsed.scheme == "s3":
+        raise ValidationError(
+            f"S3 error: Domain name specified in {url_parsed.netloc} is not a valid S3 domain"
+        )
+
+    if not bucket_name or not key_name:
+        if not (url_parsed.netloc.startswith("s3.") or ".s3." in url_parsed.netloc):
+            raise ValidationError("TemplateURL must be a supported URL.")
+
     # note: make sure to normalize the bucket name here!
     bucket_name = normalize_bucket_name(bucket_name)
-    local_url = f"{config.service_url('s3')}/{bucket_name}/{key_name}"
+    local_url = f"{config.internal_service_url()}/{bucket_name}/{key_name}"
     return local_url
 
 

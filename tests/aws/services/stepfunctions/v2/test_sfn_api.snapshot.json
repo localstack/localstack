@@ -538,32 +538,11 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_sms": {
-    "recorded-date": "22-06-2023, 13:52:24",
+    "recorded-date": "29-08-2023, 19:40:19",
     "recorded-content": {
-      "lst_resp_init": {
-        "stateMachines": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "creation_resp_0": {
         "creationDate": "datetime",
         "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "lst_resp_0": {
-        "stateMachines": [
-          {
-            "creationDate": "datetime",
-            "name": "<ArnPart_0idx>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "type": "EXPRESS"
-          }
-        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -577,26 +556,6 @@
           "HTTPStatusCode": 200
         }
       },
-      "lst_resp_1": {
-        "stateMachines": [
-          {
-            "creationDate": "datetime",
-            "name": "<ArnPart_0idx>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "type": "EXPRESS"
-          },
-          {
-            "creationDate": "datetime",
-            "name": "<ArnPart_1idx>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
-            "type": "EXPRESS"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "creation_resp_2": {
         "creationDate": "datetime",
         "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
@@ -605,53 +564,27 @@
           "HTTPStatusCode": 200
         }
       },
-      "lst_resp_2": {
-        "stateMachines": [
-          {
-            "creationDate": "datetime",
-            "name": "<ArnPart_0idx>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "type": "EXPRESS"
-          },
-          {
-            "creationDate": "datetime",
-            "name": "<ArnPart_1idx>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
-            "type": "EXPRESS"
-          },
-          {
-            "creationDate": "datetime",
-            "name": "<ArnPart_2idx>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
-            "type": "EXPRESS"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+      "lst_resp_filter": [
+        {
+          "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+          "name": "<ArnPart_0idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
+          "name": "<ArnPart_1idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
+        },
+        {
+          "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
+          "name": "<ArnPart_2idx>",
+          "type": "STANDARD",
+          "creationDate": "datetime"
         }
-      },
+      ],
       "deletion_resp_0": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "lst_resp_del_0": {
-        "stateMachines": [
-          {
-            "creationDate": "datetime",
-            "name": "<ArnPart_1idx>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
-            "type": "EXPRESS"
-          },
-          {
-            "creationDate": "datetime",
-            "name": "<ArnPart_2idx>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
-            "type": "EXPRESS"
-          }
-        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -663,40 +596,13 @@
           "HTTPStatusCode": 200
         }
       },
-      "lst_resp_del_1": {
-        "stateMachines": [
-          {
-            "creationDate": "datetime",
-            "name": "<ArnPart_2idx>",
-            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
-            "type": "EXPRESS"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "deletion_resp_2": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
-      "lst_resp_del_2": {
-        "stateMachines": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "lst_resp_del_end": {
-        "stateMachines": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
+      "lst_resp_del_filter": []
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_definition": {
@@ -1308,6 +1214,160 @@
           "enabled": false
         },
         "updateDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_nonexistent_sm": {
+    "recorded-date": "26-10-2023, 17:10:22",
+    "recorded-content": {
+      "describe_nonexistent_sm": "An error occurred (StateMachineDoesNotExist) when calling the DescribeStateMachine operation: State Machine Does Not Exist: 'sm_nonexistent_arn'"
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_cloudformation_definition_create_describe[dumps]": {
+    "recorded-date": "17-11-2023, 17:01:05",
+    "recorded-content": {
+      "describe_state_machine_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "End": true,
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "Type": "Pass"
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "state_machine_name",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:state_machine_name",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_cloudformation_definition_create_describe[dump]": {
+    "recorded-date": "17-11-2023, 17:02:36",
+    "recorded-content": {
+      "describe_state_machine_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "End": true,
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "Type": "Pass"
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "state_machine_name",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:state_machine_name",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_cloudformation_definition_string_create_describe[dumps]": {
+    "recorded-date": "17-11-2023, 17:06:22",
+    "recorded-content": {
+      "describe_state_machine_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "state_machine_name",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:state_machine_name",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_cloudformation_definition_string_create_describe[dump]": {
+    "recorded-date": "17-11-2023, 17:07:38",
+    "recorded-content": {
+      "describe_state_machine_response": {
+        "creationDate": "datetime",
+        "definition": {
+          "Comment": "BASE_PASS_RESULT",
+          "StartAt": "State_1",
+          "States": {
+            "State_1": {
+              "Type": "Pass",
+              "Result": {
+                "Arg1": "argument1"
+              },
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "state_machine_name",
+        "roleArn": "snf_role_arn",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:state_machine_name",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

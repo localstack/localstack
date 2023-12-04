@@ -48,6 +48,7 @@ from localstack.aws.api.opensearch import (
     EncryptionAtRestOptionsStatus,
     EngineType,
     GetCompatibleVersionsResponse,
+    IPAddressType,
     ListDomainNamesResponse,
     ListTagsResponse,
     ListVersionsResponse,
@@ -82,7 +83,6 @@ from localstack.aws.api.opensearch import (
     VPCDerivedInfoStatus,
     VPCOptions,
 )
-from localstack.config import LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import SecurityOptions
@@ -92,10 +92,12 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
 from localstack.utils.serving import Server
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -113,6 +115,12 @@ DEFAULT_OPENSEARCH_CLUSTER_CONFIG = ClusterConfig(
     ZoneAwarenessEnabled=False,
     DedicatedMasterType=OpenSearchPartitionInstanceType.m3_medium_search,
     DedicatedMasterCount=1,
+)
+
+DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS = DomainEndpointOptions(
+    EnforceHTTPS=False,
+    TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
+    CustomEndpointEnabled=False,
 )
 
 
@@ -168,7 +176,7 @@ def create_cluster(
     # Replacing only 0.0.0.0 here as usage of this bind address mostly means running in docker which is used locally
     # If another bind address is used we want to keep it in the endpoint as this is a conscious user decision to
     # access from another device on the network.
-    status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", LOCALSTACK_HOSTNAME)
+    status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", localstack_host().host)
     status["EngineVersion"] = engine_version
 
     if cluster.is_up():
@@ -353,18 +361,13 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             AutomatedUpdateDate=datetime.fromtimestamp(0, tz=timezone.utc),
             OptionalDeployment=True,
         ),
-        DomainEndpointOptions=DomainEndpointOptions(
-            EnforceHTTPS=False,
-            TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
-            CustomEndpointEnabled=False,
-        ),
+        DomainEndpointOptions=stored_status.get("DomainEndpointOptions")
+        or DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS,
         AdvancedSecurityOptions=AdvancedSecurityOptions(
             Enabled=False, InternalUserDatabaseEnabled=False
         ),
         AutoTuneOptions=AutoTuneOptionsOutput(State=AutoTuneState.ENABLE_IN_PROGRESS),
     )
-    if stored_status.get("Endpoint"):
-        new_status["Endpoint"] = new_status.get("Endpoint")
     return new_status
 
 
@@ -398,7 +401,21 @@ def is_valid_domain_name(name: str) -> bool:
     return True if _domain_name_pattern.match(name) else False
 
 
-class OpensearchProvider(OpensearchApi):
+def validate_endpoint_options(endpoint_options: DomainEndpointOptions):
+    custom_endpoint = endpoint_options.get("CustomEndpoint", "")
+    custom_endpoint_enabled = endpoint_options.get("CustomEndpointEnabled", False)
+
+    if custom_endpoint and not custom_endpoint_enabled:
+        raise ValidationException(
+            "CustomEndpointEnabled flag should be set in order to use CustomEndpoint."
+        )
+    if custom_endpoint_enabled and not custom_endpoint:
+        raise ValidationException(
+            "Please provide CustomEndpoint field to create a custom endpoint."
+        )
+
+
+class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
     @staticmethod
     def get_store(account_id: str, region_name: str) -> OpenSearchStore:
         return opensearch_stores[account_id][region_name]
@@ -410,39 +427,36 @@ class OpensearchProvider(OpensearchApi):
 
     def on_after_state_load(self):
         """Starts clusters whose metadata has been restored."""
-        for account_id, region_bundle in opensearch_stores.items():
-            for region, store in region_bundle.items():
-                for domain_name, domain_status in store.opensearch_domains.items():
-                    domain_key = DomainKey(domain_name, region, account_id)
-                    if cluster_manager().get(domain_key.arn):
-                        # cluster already restored in previous call to on_after_state_load
-                        continue
+        for account_id, region, store in opensearch_stores.iter_stores():
+            for domain_name, domain_status in store.opensearch_domains.items():
+                domain_key = DomainKey(domain_name, region, account_id)
+                if cluster_manager().get(domain_key.arn):
+                    # cluster already restored in previous call to on_after_state_load
+                    continue
 
-                    LOG.info(f"Restoring domain {domain_name} in region {region}.")
-                    try:
-                        preferred_port = None
-                        if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
-                            # try to parse the previous port to re-use it for the re-created cluster
-                            if "Endpoint" in domain_status:
-                                preferred_port = urlparse(
-                                    f"http://{domain_status['Endpoint']}"
-                                ).port
+                LOG.info(f"Restoring domain {domain_name} in region {region}.")
+                try:
+                    preferred_port = None
+                    if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
+                        # try to parse the previous port to re-use it for the re-created cluster
+                        if "Endpoint" in domain_status:
+                            preferred_port = urlparse(f"http://{domain_status['Endpoint']}").port
 
-                        engine_version = domain_status.get("EngineVersion")
-                        domain_endpoint_options = domain_status.get("DomainEndpointOptions", {})
-                        security_options = SecurityOptions.from_input(
-                            domain_status.get("AdvancedSecurityOptions")
-                        )
+                    engine_version = domain_status.get("EngineVersion")
+                    domain_endpoint_options = domain_status.get("DomainEndpointOptions", {})
+                    security_options = SecurityOptions.from_input(
+                        domain_status.get("AdvancedSecurityOptions")
+                    )
 
-                        create_cluster(
-                            domain_key=domain_key,
-                            engine_version=engine_version,
-                            domain_endpoint_options=domain_endpoint_options,
-                            security_options=security_options,
-                            preferred_port=preferred_port,
-                        )
-                    except Exception:
-                        LOG.exception(f"Could not restore domain {domain_name} in region {region}.")
+                    create_cluster(
+                        domain_key=domain_key,
+                        engine_version=engine_version,
+                        domain_endpoint_options=domain_endpoint_options,
+                        security_options=security_options,
+                        preferred_port=preferred_port,
+                    )
+                except Exception:
+                    LOG.exception(f"Could not restore domain {domain_name} in region {region}.")
 
     def on_before_state_reset(self):
         self._stop_clusters()
@@ -451,10 +465,9 @@ class OpensearchProvider(OpensearchApi):
         self._stop_clusters()
 
     def _stop_clusters(self):
-        for account_id, region_bundle in opensearch_stores.items():
-            for region, store in region_bundle.items():
-                for domain_name in store.opensearch_domains.keys():
-                    cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
+        for account_id, region, store in opensearch_stores.iter_stores():
+            for domain_name in store.opensearch_domains.keys():
+                cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
 
     def create_domain(
         self,
@@ -464,6 +477,7 @@ class OpensearchProvider(OpensearchApi):
         cluster_config: ClusterConfig = None,
         ebs_options: EBSOptions = None,
         access_policies: PolicyDocument = None,
+        ip_address_type: IPAddressType = None,
         snapshot_options: SnapshotOptions = None,
         vpc_options: VPCOptions = None,
         cognito_options: CognitoOptions = None,
@@ -486,6 +500,9 @@ class OpensearchProvider(OpensearchApi):
                 "Member must satisfy regular expression pattern: [a-z][a-z0-9\\-]+"
             )
 
+        if domain_endpoint_options:
+            validate_endpoint_options(domain_endpoint_options)
+
         with _domain_mutex:
             if domain_name in store.opensearch_domains:
                 raise ResourceAlreadyExistsException(
@@ -500,6 +517,10 @@ class OpensearchProvider(OpensearchApi):
 
             # "create" domain data
             store.opensearch_domains[domain_name] = get_domain_status(domain_key)
+            if domain_endpoint_options:
+                store.opensearch_domains[domain_name]["DomainEndpointOptions"] = (
+                    DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS | domain_endpoint_options
+                )
 
             # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
             # TODO handle additional parameters (cluster config,...)

@@ -21,7 +21,7 @@ from localstack.aws.connect import (
 from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.proxy import get_account_id_from_request
-from localstack.aws.spec import load_service
+from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH, load_service
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -29,7 +29,6 @@ from localstack.constants import (
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.sync import poll_condition
 
 
@@ -55,8 +54,8 @@ def bucket_exists(client, bucket_name: str) -> bool:
     return False
 
 
-def wait_for_user(keys):
-    sts_client = create_client_with_keys(service="sts", keys=keys)
+def wait_for_user(keys, region_name: str):
+    sts_client = create_client_with_keys(service="sts", keys=keys, region_name=region_name)
 
     def is_user_ready():
         try:
@@ -74,7 +73,7 @@ def wait_for_user(keys):
 def create_client_with_keys(
     service: str,
     keys: Dict[str, str],
-    region_name: str = None,
+    region_name: str,
     client_config: Config = None,
 ):
     """
@@ -87,8 +86,6 @@ def create_client_with_keys(
     :param client_config:
     :return:
     """
-    if not region_name and os.environ.get("TEST_TARGET") != "AWS_CLOUD":
-        region_name = aws_stack.get_region()
     return boto3.client(
         service,
         region_name=region_name,
@@ -96,7 +93,7 @@ def create_client_with_keys(
         aws_secret_access_key=keys["SecretAccessKey"],
         aws_session_token=keys.get("SessionToken"),
         config=client_config,
-        endpoint_url=config.get_edge_url()
+        endpoint_url=config.internal_service_url()
         if os.environ.get("TEST_TARGET") != "AWS_CLOUD"
         else None,
     )
@@ -189,10 +186,13 @@ def base_aws_session() -> boto3.Session:
 
     # Otherwise, when running against LS, use primary test credentials to start with
     # This set here in the session so that both `aws_client` and `aws_client_factory` can work without explicit creds.
-    return boto3.Session(
+    session = boto3.Session(
         aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
     )
+    # make sure we consider our custom data paths for legacy specs (like SQS query protocol)
+    session._loader.search_paths.append(LOCALSTACK_BUILTIN_DATA_PATH)
+    return session
 
 
 def base_aws_client_factory(session: boto3.Session) -> ClientFactory:

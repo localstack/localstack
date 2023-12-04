@@ -1,0 +1,81 @@
+{
+  "typeName": "AWS::ApiGateway::BasePathMapping",
+  "description": "Resource Type definition for AWS::ApiGateway::BasePathMapping",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-apigateway",
+  "additionalProperties": false,
+  "properties": {
+    "BasePath": {
+      "type": "string",
+      "description": "The base path name that callers of the API must provide in the URL after the domain name."
+    },
+    "DomainName": {
+      "type": "string",
+      "description": "The DomainName of an AWS::ApiGateway::DomainName resource."
+    },
+    "RestApiId": {
+      "type": "string",
+      "description": "The ID of the API."
+    },
+    "Stage": {
+      "type": "string",
+      "description": "The name of the API's stage."
+    }
+  },
+  "required": [
+    "DomainName"
+  ],
+  "createOnlyProperties": [
+    "/properties/DomainName",
+    "/properties/BasePath"
+  ],
+  "primaryIdentifier": [
+    "/properties/DomainName",
+    "/properties/BasePath"
+  ],
+  "tagging": {
+    "taggable": false,
+    "tagOnCreate": false,
+    "tagUpdatable": false,
+    "cloudFormationSystemTags": false
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "apigateway:POST",
+        "apigateway:GET"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "apigateway:GET"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "apigateway:GET",
+        "apigateway:DELETE",
+        "apigateway:PATCH"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "apigateway:DELETE"
+      ]
+    },
+    "list": {
+      "handlerSchema": {
+        "properties": {
+          "DomainName": {
+            "$ref": "resource-schema.json#/properties/DomainName"
+          }
+        },
+        "required": [
+          "DomainName"
+        ]
+      },
+      "permissions": [
+        "apigateway:GET"
+      ]
+    }
+  }
+}

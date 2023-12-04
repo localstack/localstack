@@ -25,7 +25,9 @@ class ECRRepository(GenericBaseModel):
         repo_name = default_repos_per_stack.get(stack_name)
         if repo_name:
             return {
-                "repositoryArn": arns.get_ecr_repository_arn(repo_name),
+                "repositoryArn": arns.ecr_repository_arn(
+                    repo_name, self.account_id, self.region_name
+                ),
                 "registryId": self.account_id,
                 "repositoryName": repo_name,
                 "repositoryUri": "http://localhost:4566",
@@ -68,10 +70,14 @@ class ECRRepository(GenericBaseModel):
             resource: dict,
         ):
             repo_name = resource["Properties"]["RepositoryName"]
-            resource["PhysicalResourceId"] = arns.get_ecr_repository_arn(repo_name)
+            resource["PhysicalResourceId"] = arns.ecr_repository_arn(
+                repo_name, account_id, region_name
+            )
 
             # add in some properties required for GetAtt and Ref
-            resource["Properties"]["Arn"] = arns.get_ecr_repository_arn(repo_name)
+            resource["Properties"]["Arn"] = arns.ecr_repository_arn(
+                repo_name, account_id, region_name
+            )
             resource["Properties"]["RepositoryUri"] = "http://localhost:4566"
 
         return {

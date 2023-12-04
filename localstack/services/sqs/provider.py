@@ -30,7 +30,6 @@ from localstack.aws.api.sqs import (
     EmptyBatchRequest,
     GetQueueAttributesResult,
     GetQueueUrlResult,
-    Integer,
     InvalidAttributeName,
     InvalidBatchEntryId,
     InvalidMessageContents,
@@ -42,6 +41,7 @@ from localstack.aws.api.sqs import (
     MessageBodyAttributeMap,
     MessageBodySystemAttributeMap,
     MessageSystemAttributeName,
+    NullableInteger,
     PurgeQueueInProgress,
     QueueAttributeMap,
     QueueAttributeName,
@@ -67,7 +67,7 @@ from localstack.http import Request, route
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sqs import constants as sqs_constants
-from localstack.services.sqs.exceptions import InvalidParameterValue
+from localstack.services.sqs.exceptions import InvalidParameterValueException
 from localstack.services.sqs.models import (
     FifoQueue,
     SqsMessage,
@@ -84,6 +84,7 @@ from localstack.services.sqs.utils import (
 )
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.request_context import extract_region_from_headers
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.cloudwatch.cloudwatch_util import publish_sqs_metric
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
@@ -108,7 +109,7 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
     if queue_name.endswith(".fifo"):
         if not fifo:
             # Standard queues with .fifo suffix are not allowed
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
             )
         # The .fifo suffix counts towards the 80-character queue name quota.
@@ -116,7 +117,7 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
 
     # slashes are actually not allowed, but we've allowed it explicitly in localstack
     if not re.match(r"^[a-zA-Z0-9/_-]{1,80}$", queue_name):
-        raise InvalidParameterValue(
+        raise InvalidParameterValueException(
             "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
         )
 
@@ -132,7 +133,7 @@ def check_message_size(
         _message_body_size(message_body) + _message_attributes_size(message_attributes)
         > max_message_size
     ):
-        raise InvalidParameterValue(error)
+        raise InvalidParameterValueException(error)
 
 
 def _message_body_size(body: str):
@@ -175,10 +176,17 @@ class CloudwatchDispatcher:
         self.executor.shutdown(wait=False)
 
     def dispatch_sqs_metric(
-        self, region: str, queue_name: str, metric: str, value: float = 1, unit: str = "Count"
+        self,
+        account_id: str,
+        region: str,
+        queue_name: str,
+        metric: str,
+        value: float = 1,
+        unit: str = "Count",
     ):
         """
         Publishes a metric to Cloudwatch using a Threadpool
+        :param account_id The account id that should be used for Cloudwatch client
         :param region The region that should be used for Cloudwatch client
         :param queue_name The name of the queue that the metric belongs to
         :param metric The name of the metric
@@ -187,6 +195,7 @@ class CloudwatchDispatcher:
         """
         self.executor.submit(
             publish_sqs_metric,
+            account_id=account_id,
             region=region,
             queue_name=queue_name,
             metric=metric,
@@ -201,9 +210,13 @@ class CloudwatchDispatcher:
         :param message_body_size the size of the message in bytes
         """
         self.dispatch_sqs_metric(
-            region=queue.region, queue_name=queue.name, metric="NumberOfMessagesSent"
+            account_id=queue.account_id,
+            region=queue.region,
+            queue_name=queue.name,
+            metric="NumberOfMessagesSent",
         )
         self.dispatch_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="SentMessageSize",
@@ -218,6 +231,7 @@ class CloudwatchDispatcher:
         :param deleted The number of messages that were successfully deleted, default: 1
         """
         self.dispatch_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="NumberOfMessagesDeleted",
@@ -232,6 +246,7 @@ class CloudwatchDispatcher:
         """
         if received > 0:
             self.dispatch_sqs_metric(
+                account_id=queue.account_id,
                 region=queue.region,
                 queue_name=queue.name,
                 metric="NumberOfMessagesReceived",
@@ -239,7 +254,10 @@ class CloudwatchDispatcher:
             )
         else:
             self.dispatch_sqs_metric(
-                region=queue.region, queue_name=queue.name, metric="NumberOfEmptyReceives"
+                account_id=queue.account_id,
+                region=queue.region,
+                queue_name=queue.name,
+                metric="NumberOfEmptyReceives",
             )
 
 
@@ -256,10 +274,9 @@ class CloudwatchPublishWorker:
         self.thread: Optional[FuncThread] = None
 
     def publish_approximate_cloudwatch_metrics(self):
-        for account_id, region_bundle in sqs_stores.items():
-            for region, store in region_bundle.items():
-                for queue in store.queues.values():
-                    self.publish_approximate_metrics_for_queue_to_cloudwatch(queue)
+        for account_id, region, store in sqs_stores.iter_stores():
+            for queue in store.queues.values():
+                self.publish_approximate_metrics_for_queue_to_cloudwatch(queue)
 
     def publish_approximate_metrics_for_queue_to_cloudwatch(self, queue):
         """Publishes the metrics for ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
@@ -267,18 +284,21 @@ class CloudwatchPublishWorker:
         # TODO ApproximateAgeOfOldestMessage is missing
         #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
         publish_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="ApproximateNumberOfMessagesVisible",
             value=queue.approx_number_of_messages,
         )
         publish_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="ApproximateNumberOfMessagesNotVisible",
             value=queue.approx_number_of_messages_not_visible,
         )
         publish_sqs_metric(
+            account_id=queue.account_id,
             region=queue.region,
             queue_name=queue.name,
             metric="ApproximateNumberOfMessagesDelayed",
@@ -324,18 +344,17 @@ class QueueUpdateWorker:
         self.mutex = threading.RLock()
 
     def do_update_all_queues(self):
-        for account_id, region_bundle in sqs_stores.items():
-            for region, store in region_bundle.items():
-                for queue in store.queues.values():
-                    try:
-                        queue.requeue_inflight_messages()
-                    except Exception:
-                        LOG.exception("error re-queueing inflight messages")
+        for account_id, region, store in sqs_stores.iter_stores():
+            for queue in store.queues.values():
+                try:
+                    queue.requeue_inflight_messages()
+                except Exception:
+                    LOG.exception("error re-queueing inflight messages")
 
-                    try:
-                        queue.enqueue_delayed_messages()
-                    except Exception:
-                        LOG.exception("error enqueueing delayed messages")
+                try:
+                    queue.enqueue_delayed_messages()
+                except Exception:
+                    LOG.exception("error enqueueing delayed messages")
 
     def start(self):
         with self.mutex:
@@ -367,16 +386,16 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
         return
     for attribute_name in message_attributes:
         if len(attribute_name) >= 256:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "Message (user) attribute names must be shorter than 256 Bytes"
             )
         if not re.match(sqs_constants.ATTR_NAME_CHAR_REGEX, attribute_name.lower()):
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "Message (user) attributes name can only contain upper and lower score characters, digits, periods, "
                 "hyphens and underscores. "
             )
         if not re.match(sqs_constants.ATTR_NAME_PREFIX_SUFFIX_REGEX, attribute_name.lower()):
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "You can't use message attribute names beginning with 'AWS.' or 'Amazon.'. "
                 "These strings are reserved for internal use. Additionally, they cannot start or end with '.'."
             )
@@ -384,14 +403,14 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
         attribute = message_attributes[attribute_name]
         attribute_type = attribute.get("DataType")
         if not attribute_type:
-            raise InvalidParameterValue("Missing required parameter DataType")
+            raise InvalidParameterValueException("Missing required parameter DataType")
         if not re.match(sqs_constants.ATTR_TYPE_REGEX, attribute_type):
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 f"Type for parameter MessageAttributes.Attribute_name.DataType must be prefixed"
                 f'with "String", "Binary", or "Number", but was: {attribute_type}'
             )
         if len(attribute_type) >= 256:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 "Message (user) attribute types must be shorter than 256 Bytes"
             )
 
@@ -400,25 +419,25 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
                 attribute_value = attribute.get("StringValue")
 
                 if not attribute_value:
-                    raise InvalidParameterValue(
+                    raise InvalidParameterValueException(
                         f"Message (user) attribute '{attribute_name}' must contain a non-empty value of type 'String'."
                     )
 
                 check_message_content(attribute_value)
             except InvalidMessageContents as e:
                 # AWS throws a different exception here
-                raise InvalidParameterValue(e.args[0])
+                raise InvalidParameterValueException(e.args[0])
 
 
 def check_fifo_id(fifo_id):
     if not fifo_id:
         return
     if len(fifo_id) >= 128:
-        raise InvalidParameterValue(
+        raise InvalidParameterValueException(
             "Message deduplication ID and group ID must be shorter than 128 bytes"
         )
     if not re.match(sqs_constants.FIFO_MSG_REGEX, fifo_id):
-        raise InvalidParameterValue(
+        raise InvalidParameterValueException(
             "Invalid characters found. Deduplication ID and group ID can only contain"
             "alphanumeric characters as well as TODO"
         )
@@ -433,16 +452,17 @@ class SqsDeveloperEndpoints:
 
     def __init__(self, stores=None):
         self.stores = stores or sqs_stores
-        self.service = load_service("sqs")
+        self.service = load_service("sqs-query")
         self.serializer = create_serializer(self.service)
 
     @route("/_aws/sqs/messages")
-    @aws_response_serializer("sqs", "ReceiveMessage")
+    @aws_response_serializer("sqs-query", "ReceiveMessage")
     def list_messages(self, request: Request) -> ReceiveMessageResult:
         """
         This endpoint expects a ``QueueUrl`` request parameter (either as query arg or form parameter), similar to
         the ``ReceiveMessage`` operation. It will parse the Queue URL generated by one of the SQS endpoint strategies.
         """
+        # TODO migrate this endpoint to JSON (the new default protocol for SQS), or implement content negotiation
         if "Action" in request.values and request.values["Action"] != "ReceiveMessage":
             raise CommonServiceException(
                 "InvalidRequest", "This endpoint only accepts ReceiveMessage calls"
@@ -463,7 +483,7 @@ class SqsDeveloperEndpoints:
         return self._get_and_serialize_messages(request, region, account_id, queue_name)
 
     @route("/_aws/sqs/messages/<region>/<account_id>/<queue_name>")
-    @aws_response_serializer("sqs", "ReceiveMessage")
+    @aws_response_serializer("sqs-query", "ReceiveMessage")
     def list_messages_for_queue_url(
         self, request: Request, region: str, account_id: str, queue_name: str
     ) -> ReceiveMessageResult:
@@ -471,6 +491,7 @@ class SqsDeveloperEndpoints:
         This endpoint extracts the region, account_id, and queue_name directly from the URL rather than requiring the
         QueueUrl as parameter.
         """
+        # TODO migrate this endpoint to JSON (the new default protocol for SQS), or implement content negotiation
         if "Action" in request.values and request.values["Action"] != "ReceiveMessage":
             raise CommonServiceException(
                 "InvalidRequest", "This endpoint only accepts ReceiveMessage calls"
@@ -479,8 +500,15 @@ class SqsDeveloperEndpoints:
         return self._get_and_serialize_messages(request, region, account_id, queue_name)
 
     def _get_and_serialize_messages(
-        self, request: Request, region: str, account_id: str, queue_name: str
+        self,
+        request: Request,
+        region: str,
+        account_id: str,
+        queue_name: str,
     ) -> ReceiveMessageResult:
+        show_invisible = request.values.get("ShowInvisible", "").lower() in ["true", "1"]
+        show_delayed = request.values.get("ShowDelayed", "").lower() in ["true", "1"]
+
         try:
             store = SqsProvider.get_store(account_id, region)
             queue = store.queues[queue_name]
@@ -490,20 +518,30 @@ class SqsDeveloperEndpoints:
             )
             raise QueueDoesNotExist()
 
-        messages = self._collect_visible_messages(queue)
+        messages = self._collect_messages(
+            queue, show_invisible=show_invisible, show_delayed=show_delayed
+        )
+
         return ReceiveMessageResult(Messages=messages)
 
-    def _collect_visible_messages(self, queue: SqsQueue) -> List[Message]:
+    def _collect_messages(
+        self, queue: SqsQueue, show_invisible: bool = False, show_delayed: bool = False
+    ) -> List[Message]:
         """
         Retrieves from a given SqsQueue all visible messages without causing any side effects (not setting any
         receive timestamps, receive counts, or visibility state).
 
         :param queue: the queue
+        :param show_invisible: show invisible messages as well
+        :param show_delayed: show delayed messages as well
         :return: a list of messages
         """
         receipt_handle = "SQS/BACKDOOR/ACCESS"  # dummy receipt handle
 
         sqs_messages: List[SqsMessage] = []
+
+        if show_invisible:
+            sqs_messages.extend(queue.inflight)
 
         if isinstance(queue, StandardQueue):
             sqs_messages.extend(queue.visible.queue)
@@ -514,10 +552,18 @@ class SqsDeveloperEndpoints:
         else:
             raise ValueError(f"unknown queue type {type(queue)}")
 
+        if show_delayed:
+            sqs_messages.extend(queue.delayed)
+
         messages = []
 
         for sqs_message in sqs_messages:
             message: Message = to_sqs_api_message(sqs_message, QueueAttributeName.All, ["All"])
+            # these are all non-standard fields so we squelch the linter
+            if show_invisible:
+                message["Attributes"]["IsVisible"] = str(sqs_message.is_visible).lower()  # noqa
+            if show_delayed:
+                message["Attributes"]["IsDelayed"] = str(sqs_message.is_delayed).lower()  # noqa
             messages.append(message)
             message["ReceiptHandle"] = receipt_handle
 
@@ -572,25 +618,37 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._stop_cloudwatch_metrics_reporting()
 
     @staticmethod
-    def _require_queue(account_id: str, region_name: str, name: str) -> SqsQueue:
+    def _require_queue(
+        account_id: str, region_name: str, name: str, is_query: bool = False
+    ) -> SqsQueue:
         """
         Returns the queue for the given name, or raises QueueDoesNotExist if it does not exist.
 
         :param: context: the request context
         :param name: the name to look for
+        :param is_query: whether the request is using query protocol (error message is different)
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
         store = SqsProvider.get_store(account_id, region_name)
         with _STORE_LOCK:
             if name not in store.queues.keys():
-                raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
+                if is_query:
+                    message = "The specified queue does not exist for this wsdl version."
+                else:
+                    message = "The specified queue does not exist."
+                raise QueueDoesNotExist(message)
 
             return store.queues[name]
 
     def _require_queue_by_arn(self, context: RequestContext, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
-        return self._require_queue(arn["account"], arn["region"], arn["resource"])
+        return self._require_queue(
+            arn["account"],
+            arn["region"],
+            arn["resource"],
+            is_query=context.service.service_name == "sqs-query",
+        )
 
     def _resolve_queue(
         self,
@@ -609,7 +667,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :raises QueueDoesNotExist: if the queue does not exist
         """
         account_id, region_name, name = resolve_queue_location(context, queue_name, queue_url)
-        return self._require_queue(account_id, region_name or context.region, name)
+        is_query = context.service.service_name == "sqs-query"
+        return self._require_queue(
+            account_id, region_name or context.region, name, is_query=is_query
+        )
 
     def create_queue(
         self,
@@ -676,11 +737,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        store = self.get_store(queue_owner_aws_account_id or context.account_id, context.region)
-        if queue_name not in store.queues.keys():
-            raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
-
-        queue = store.queues[queue_name]
+        queue = self._require_queue(
+            queue_owner_aws_account_id or context.account_id,
+            context.region,
+            queue_name,
+            is_query=context.service.service_name == "sqs-query",
+        )
 
         return GetQueueUrlResult(QueueUrl=queue.url(context))
 
@@ -716,7 +778,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         context: RequestContext,
         queue_url: String,
         receipt_handle: String,
-        visibility_timeout: Integer,
+        visibility_timeout: NullableInteger,
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
         queue.update_visibility_timeout(receipt_handle, visibility_timeout)
@@ -813,7 +875,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         context: RequestContext,
         queue_url: String,
         message_body: String,
-        delay_seconds: Integer = None,
+        delay_seconds: NullableInteger = None,
         message_attributes: MessageBodyAttributeMap = None,
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
@@ -909,7 +971,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue: SqsQueue,
         context: RequestContext,
         message_body: String,
-        delay_seconds: Integer = None,
+        delay_seconds: NullableInteger = None,
         message_attributes: MessageBodyAttributeMap = None,
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
@@ -947,9 +1009,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue_url: String,
         attribute_names: AttributeNameList = None,
         message_attribute_names: MessageAttributeNameList = None,
-        max_number_of_messages: Integer = None,
-        visibility_timeout: Integer = None,
-        wait_time_seconds: Integer = None,
+        max_number_of_messages: NullableInteger = None,
+        visibility_timeout: NullableInteger = None,
+        wait_time_seconds: NullableInteger = None,
         receive_request_attempt_id: String = None,
     ) -> ReceiveMessageResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
@@ -965,7 +1027,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         elif (
             num < 1 or num > MAX_NUMBER_OF_MESSAGES
         ) and not SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT:
-            raise InvalidParameterValue(
+            raise InvalidParameterValueException(
                 f"Value {num} for parameter MaxNumberOfMessages is invalid. "
                 f"Reason: Must be between 1 and 10, if provided."
             )
@@ -1075,7 +1137,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             if config.SQS_DELAY_PURGE_RETRY:
                 if queue.purge_timestamp and (queue.purge_timestamp + 60) > time.time():
                     raise PurgeQueueInProgress(
-                        f"Only one PurgeQueue operation on {queue.name} is allowed every 60 seconds."
+                        f"Only one PurgeQueue operation on {queue.name} is allowed every 60 seconds.",
+                        status_code=403,
                     )
             queue.purge_timestamp = time.time()
             queue.clear()
@@ -1106,18 +1169,20 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             max_receive_count = _redrive_policy.get("maxReceiveCount")
             # TODO: use the actual AWS responses
             if not dl_target_arn:
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     "The required parameter 'deadLetterTargetArn' is missing"
                 )
             if max_receive_count is None:
-                raise InvalidParameterValue("The required parameter 'maxReceiveCount' is missing")
+                raise InvalidParameterValueException(
+                    "The required parameter 'maxReceiveCount' is missing"
+                )
             try:
                 max_receive_count = int(max_receive_count)
                 valid_count = 1 <= max_receive_count <= 1000
             except ValueError:
                 valid_count = False
             if not valid_count:
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     f"Value {redrive_policy} for parameter RedrivePolicy is invalid. Reason: Invalid value for "
                     f"maxReceiveCount: {max_receive_count}, valid values are from 1 to 1000 both inclusive."
                 )
@@ -1186,7 +1251,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         for action in actions:
             if action not in valid:
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     f"Value SQS:{action} for parameter ActionName is invalid. Reason: Please refer to the appropriate "
                     "WSDL for a list of valid actions. "
                 )
@@ -1213,12 +1278,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     "It can be at most 80 letters long."
                 )
             if require_message_deduplication_id and not entry.get("MessageDeduplicationId"):
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     "The queue should either have ContentBasedDeduplication enabled or "
                     "MessageDeduplicationId provided explicitly"
                 )
             if require_fifo_queue_params and not entry.get("MessageGroupId"):
-                raise InvalidParameterValue(
+                raise InvalidParameterValueException(
                     "The request must contain the parameter MessageGroupId."
                 )
             if entry_id in visited:
@@ -1247,19 +1312,21 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 )
 
     def _init_cloudwatch_metrics_reporting(self):
-        self._cloudwatch_publish_worker = (
-            None if config.SQS_DISABLE_CLOUDWATCH_METRICS else CloudwatchPublishWorker()
-        )
-        self._cloudwatch_dispatcher = (
-            None if config.SQS_DISABLE_CLOUDWATCH_METRICS else CloudwatchDispatcher()
+        self.cloudwatch_disabled: bool = (
+            config.SQS_DISABLE_CLOUDWATCH_METRICS or not is_api_enabled("cloudwatch")
         )
 
+        self._cloudwatch_publish_worker = (
+            None if self.cloudwatch_disabled else CloudwatchPublishWorker()
+        )
+        self._cloudwatch_dispatcher = None if self.cloudwatch_disabled else CloudwatchDispatcher()
+
     def _start_cloudwatch_metrics_reporting(self):
-        if not config.SQS_DISABLE_CLOUDWATCH_METRICS:
+        if not self.cloudwatch_disabled:
             self._cloudwatch_publish_worker.start()
 
     def _stop_cloudwatch_metrics_reporting(self):
-        if not config.SQS_DISABLE_CLOUDWATCH_METRICS:
+        if not self.cloudwatch_disabled:
             self._cloudwatch_publish_worker.stop()
             self._cloudwatch_dispatcher.shutdown()
 

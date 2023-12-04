@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import base64
 import gzip
 import json
@@ -6,9 +5,8 @@ import re
 
 import pytest
 
-from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
@@ -19,7 +17,7 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 logs_role = {
     "Statement": {
         "Effect": "Allow",
-        "Principal": {"Service": f"logs.{config.AWS_REGION_US_EAST_1}.amazonaws.com"},
+        "Principal": {"Service": f"logs.{TEST_AWS_REGION_NAME}.amazonaws.com"},
         "Action": "sts:AssumeRole",
     }
 }
@@ -208,7 +206,7 @@ class TestCloudWatchLogs:
             logGroupIdentifier=arns.log_group_arn(
                 logs_log_group,
                 account_id=aws_client.sts.get_caller_identity()["Account"],
-                region_name=config.AWS_REGION_US_EAST_1,
+                region_name=TEST_AWS_REGION_NAME,
             )
         ).get("logStreams")
         snapshot.match("log_group_identifier-arn", response)
@@ -278,20 +276,20 @@ class TestCloudWatchLogs:
         )
 
         test_lambda_name = f"test-lambda-function-{short_uid()}"
-        create_lambda_function(
+        func_arn = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=test_lambda_name,
             runtime=Runtime.python3_9,
-        )
+        )["CreateFunctionResponse"]["FunctionArn"]
         aws_client.lambda_.invoke(FunctionName=test_lambda_name, Payload=b"{}")
         # get account-id to set the correct policy
         account_id = aws_client.sts.get_caller_identity()["Account"]
         result = aws_client.lambda_.add_permission(
             FunctionName=test_lambda_name,
             StatementId=test_lambda_name,
-            Principal=f"logs.{config.AWS_REGION_US_EAST_1}.amazonaws.com",
+            Principal=f"logs.{TEST_AWS_REGION_NAME}.amazonaws.com",
             Action="lambda:InvokeFunction",
-            SourceArn=f"arn:aws:logs:{config.AWS_REGION_US_EAST_1}:{account_id}:log-group:{logs_log_group}:*",
+            SourceArn=f"arn:aws:logs:{TEST_AWS_REGION_NAME}:{account_id}:log-group:{logs_log_group}:*",
             SourceAccount=account_id,
         )
 
@@ -301,9 +299,7 @@ class TestCloudWatchLogs:
             logGroupName=logs_log_group,
             filterName="test",
             filterPattern="",
-            destinationArn=arns.lambda_function_arn(
-                test_lambda_name, account_id=account_id, region_name=config.AWS_REGION_US_EAST_1
-            ),
+            destinationArn=func_arn,
         )
         snapshot.match("put_subscription_filter", result)
 
@@ -438,7 +434,6 @@ class TestCloudWatchLogs:
     def test_put_subscription_filter_kinesis(
         self, logs_log_group, logs_log_stream, create_iam_role_with_policy, aws_client
     ):
-
         kinesis_name = f"test-kinesis-{short_uid()}"
         filter_name = "Destination"
         aws_client.kinesis.create_stream(StreamName=kinesis_name, ShardCount=1)

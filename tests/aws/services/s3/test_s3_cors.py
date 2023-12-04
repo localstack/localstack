@@ -7,16 +7,21 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.handlers.cors import ALLOWED_CORS_ORIGINS
-from localstack.config import LEGACY_S3_PROVIDER
-from localstack.constants import LOCALHOST_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.config import S3_VIRTUAL_HOSTNAME
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    LOCALHOST_HOSTNAME,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.testing.pytest import markers
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import short_uid
 
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = config.AWS_REGION_US_EAST_1
+        region = AWS_REGION_US_EAST_1
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"
@@ -25,7 +30,7 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
     host = localstack_host or (
         f"s3.{region}.{LOCALHOST_HOSTNAME}" if region != "us-east-1" else S3_VIRTUAL_HOSTNAME
     )
-    s3_edge_url = config.get_edge_url(localstack_hostname=host)
+    s3_edge_url = config.external_service_url(host=host)
     # TODO might add the region here
     return s3_edge_url.replace(f"://{host}", f"://{bucket_name}.{host}")
 
@@ -80,7 +85,6 @@ def allow_bucket_acl(s3_bucket, aws_client):
     aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
 
 
-@pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Tests are for new ASF provider")
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..x-amz-id-2"]  # we're currently using a static value in LocalStack
 )
@@ -168,11 +172,13 @@ class TestS3Cors:
         # ListBuckets is an operation outside S3 CORS configuration management
         # it should follow the default rules of LocalStack
 
-        url = f"{config.get_edge_url()}/"
+        url = f"{config.internal_service_url()}/"
         origin = ALLOWED_CORS_ORIGINS[0]
         # we need to "sign" the request so that our service name parser recognize ListBuckets as an S3 operation
         # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
-        headers = aws_stack.mock_aws_request_headers("s3")
+        headers = mock_aws_request_headers(
+            "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        )
         headers["Origin"] = origin
         response = requests.options(
             url, headers={**headers, "Access-Control-Request-Method": "GET"}
@@ -221,15 +227,18 @@ class TestS3Cors:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
-            "$..Body.Error.RequestId",  # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Body.Error.HostId",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.RequestId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
-            "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
+            "$..Headers.Transfer-Encoding",
+            # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
         ]
     )
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not config.NATIVE_S3_PROVIDER,
+        condition=lambda: config.LEGACY_V2_S3_PROVIDER,
         paths=["$..Headers.x-amz-server-side-encryption"],
     )
     def test_cors_match_origins(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
@@ -311,17 +320,20 @@ class TestS3Cors:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
-            "$..Body.Error.RequestId",  # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Body.Error.HostId",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.RequestId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
-            "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
+            "$..Headers.Transfer-Encoding",
+            # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
             "$.put-op.Body",  # TODO: We should not return a body for almost all PUT requests
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
     )
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not config.NATIVE_S3_PROVIDER,
+        condition=lambda: config.LEGACY_V2_S3_PROVIDER,
         paths=["$..Headers.x-amz-server-side-encryption"],
     )
     def test_cors_match_methods(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
@@ -376,8 +388,10 @@ class TestS3Cors:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
-            "$..Body.Error.RequestId",  # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Body.Error.HostId",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.RequestId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",
@@ -387,7 +401,7 @@ class TestS3Cors:
         ]
     )
     @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not config.NATIVE_S3_PROVIDER,
+        condition=lambda: config.LEGACY_V2_S3_PROVIDER,
         paths=["$..Headers.x-amz-server-side-encryption"],
     )
     def test_cors_match_headers(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
@@ -590,8 +604,10 @@ class TestS3Cors:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
-            "$..Body.Error.RequestId",  # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Body.Error.HostId",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.RequestId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",
         ]

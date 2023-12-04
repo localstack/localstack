@@ -28,6 +28,7 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 
 class StateTask(ExecutionState, abc.ABC):
     resource: Resource
+    parameters: Optional[Parameters]
 
     def __init__(self):
         super(StateTask, self).__init__(
@@ -37,7 +38,7 @@ class StateTask(ExecutionState, abc.ABC):
         # Parameters (Optional)
         # Used to state_pass information to the API actions of connected resources. The parameters can use a mix of static
         # JSON and JsonPath.
-        self.parameters: Optional[Parameters] = None
+        self.parameters = None
 
     def from_state_props(self, state_props: StateProps) -> None:
         super(StateTask, self).from_state_props(state_props)
@@ -50,8 +51,8 @@ class StateTask(ExecutionState, abc.ABC):
     def _get_parameters_normalising_bindings(self) -> dict[str, str]:  # noqa
         return dict()
 
-    def _normalised_parameters_bindings(self, parameters: dict[str, str]) -> dict[str, str]:
-        normalised_parameters = copy.deepcopy(parameters)
+    def _normalised_parameters_bindings(self, raw_parameters: dict[str, str]) -> dict[str, str]:
+        normalised_parameters = copy.deepcopy(raw_parameters)
         # Normalise bindings.
         parameter_normalisers = self._get_parameters_normalising_bindings()
         for parameter_key in list(normalised_parameters.keys()):

@@ -3,21 +3,18 @@ import re
 from botocore.exceptions import ClientError
 
 from localstack.aws.connect import connect_to
-from localstack.config import LEGACY_S3_PROVIDER, get_edge_port_http
-from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.config import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.cfn_utils import rename_params
 from localstack.services.cloudformation.deployment_utils import (
     dump_json_params,
     generate_default_name,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.services.s3.legacy.s3_listener import (
-    remove_bucket_notification as legacy_remove_bucket_notification,
-)
 from localstack.services.s3.utils import normalize_bucket_name
 from localstack.utils.aws import arns
 from localstack.utils.common import canonical_json, md5
 from localstack.utils.testutil import delete_all_s3_objects
+from localstack.utils.urls import localstack_host
 
 
 class S3BucketPolicy(GenericBaseModel):
@@ -180,6 +177,9 @@ class S3Bucket(GenericBaseModel):
                     "TopicConfigurations": topic_configs,
                 },
             }
+            if notif_config.get("EventBridgeConfiguration", {}).get("EventBridgeEnabled"):
+                result["NotificationConfiguration"]["EventBridgeConfiguration"] = {}
+
             return result
 
         def _handle_result(
@@ -201,7 +201,7 @@ class S3Bucket(GenericBaseModel):
             #   you can use Amazon CloudFront [...]"
             resource["Properties"][
                 "WebsiteURL"
-            ] = f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
+            ] = f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{localstack_host().port}"
             # resource["Properties"]["DualStackDomainName"] = ?
 
         def _pre_delete(
@@ -218,8 +218,6 @@ class S3Bucket(GenericBaseModel):
                 s3.delete_bucket_policy(Bucket=bucket_name)
             except Exception:
                 pass
-            if LEGACY_S3_PROVIDER:
-                legacy_remove_bucket_notification(resource["PhysicalResourceId"])
             # TODO: divergence from how AWS deals with bucket deletes (should throw an error)
             try:
                 delete_all_s3_objects(s3, bucket_name)

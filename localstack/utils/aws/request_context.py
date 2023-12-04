@@ -1,3 +1,7 @@
+"""
+This module has utilities relating to creating/parsing AWS requests.
+"""
+
 import logging
 import re
 import threading
@@ -8,15 +12,19 @@ from flask import request
 from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
-from localstack import config
-from localstack.constants import APPLICATION_JSON, APPLICATION_XML, HEADER_CONTENT_TYPE
-from localstack.utils.aws import aws_stack
+from localstack.aws.accounts import get_account_id_from_access_key_id
+from localstack.constants import (
+    APPLICATION_AMZ_JSON_1_0,
+    APPLICATION_AMZ_JSON_1_1,
+    APPLICATION_X_WWW_FORM_URLENCODED,
+    AWS_REGION_US_EAST_1,
+    DEFAULT_AWS_ACCOUNT_ID,
+)
 from localstack.utils.aws.aws_responses import (
-    is_json_request,
     requests_error_response,
-    requests_response,
     requests_to_flask_response,
 )
+from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.coverage_docs import get_coverage_link_for_service
 from localstack.utils.patch import patch
 from localstack.utils.strings import snake_to_camel_case
@@ -58,7 +66,7 @@ def get_flask_request_for_thread():
         raise
 
 
-def extract_region_from_auth_header(headers):
+def extract_region_from_auth_header(headers) -> Optional[str]:
     auth = headers.get("Authorization") or ""
     region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
     if region == auth:
@@ -66,7 +74,16 @@ def extract_region_from_auth_header(headers):
     return region
 
 
-def extract_region_from_headers(headers):
+def extract_account_id_from_auth_header(headers) -> Optional[str]:
+    if access_key_id := extract_access_key_id_from_auth_header(headers):
+        return get_account_id_from_access_key_id(access_key_id)
+
+
+def extract_account_id_from_headers(headers) -> str:
+    return extract_account_id_from_auth_header(headers) or DEFAULT_AWS_ACCOUNT_ID
+
+
+def extract_region_from_headers(headers) -> str:
     region = headers.get(MARKER_APIGW_REQUEST_REGION)
     # Fix region lookup for certain requests, e.g., API gateway invocations
     #  that do not contain region details in the Authorization header.
@@ -74,13 +91,7 @@ def extract_region_from_headers(headers):
     if region:
         return region
 
-    region = extract_region_from_auth_header(headers)
-
-    if not region:
-        # fall back to local region
-        region = aws_stack.get_local_region()
-
-    return region
+    return extract_region_from_auth_header(headers) or AWS_REGION_US_EAST_1
 
 
 def get_request_context():
@@ -104,53 +115,10 @@ class RequestContextManager:
         THREAD_LOCAL.request_context = None
 
 
-def get_region_from_request_context():
-    """look up region from request context"""
-
-    if config.USE_SINGLE_REGION:
-        return
-
-    request_context = get_request_context()
-    if not request_context:
-        return
-
-    return extract_region_from_headers(request_context.headers)
-
-
-def configure_region_for_current_request(region_name: str, service_name: str):
-    """Manually configure (potentially overwrite) the region in the current request context. This may be
-    used by API endpoints that are invoked directly by the user (without specifying AWS Authorization
-    headers), to still enable transparent region lookup via aws_stack.get_region() ..."""
-
-    # TODO: leaving import here for now, to avoid circular dependency
-    from localstack.utils.aws import aws_stack
-
-    request_context = get_request_context()
-    if not request_context:
-        LOG.info(
-            "Unable to set region '%s' in undefined request context: %s",
-            region_name,
-            request_context,
-        )
-        return
-
-    headers = request_context.headers
-    auth_header = headers.get("Authorization")
-    auth_header = auth_header or aws_stack.mock_aws_request_headers(service_name)["Authorization"]
-    auth_header = auth_header.replace("/%s/" % aws_stack.get_region(), "/%s/" % region_name)
-    try:
-        headers["Authorization"] = auth_header
-    except Exception as e:
-        if "immutable" not in str(e):
-            raise
-        _context_to_update = get_proxy_request_for_thread() or request
-        _context_to_update.headers = CaseInsensitiveDict({**headers, "Authorization": auth_header})
-
-
-def mock_request_for_region(region_name: str, service_name: str = "dummy") -> Request:
+def mock_request_for_region(service_name: str, account_id: str, region_name: str) -> Request:
     result = Request()
-    result.headers["Authorization"] = aws_stack.mock_aws_request_headers(
-        service_name, region_name=region_name
+    result.headers["Authorization"] = mock_aws_request_headers(
+        service_name, aws_access_key_id=account_id, region_name=region_name
     )["Authorization"]
     return result
 
@@ -166,6 +134,10 @@ def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
 
 
 def patch_moto_request_handling():
+    from importlib.util import find_spec
+
+    if not find_spec("moto"):
+        return
     # leave here to avoid import issues
     from moto.core import utils as moto_utils
 
@@ -186,19 +158,9 @@ def patch_moto_request_handling():
             exception_message: str | None = e.args[0] if e.args else None
             msg = exception_message or get_coverage_link_for_service(service, action)
             response = requests_error_response(request.headers, msg, code=501)
-            if config.MOCK_UNIMPLEMENTED:
-                is_json = is_json_request(request.headers)
-                headers = {HEADER_CONTENT_TYPE: APPLICATION_JSON if is_json else APPLICATION_XML}
-                content = "{}" if is_json else "<Response />"  # TODO: return proper mocked response
-                response = requests_response(content, headers=headers)
-                LOG.info(f"{msg}. Returning mocked response due to MOCK_UNIMPLEMENTED=1")
-            else:
-                LOG.info(msg)
+            LOG.info(msg)
             # TODO: publish analytics event ...
             return requests_to_flask_response(response)
-
-    if config.USE_SINGLE_REGION:
-        return
 
     # make sure that we inherit THREAD_LOCAL request contexts to spawned sub-threads
     @patch(FuncThread.__init__)
@@ -215,3 +177,42 @@ def patch_moto_request_handling():
             # sometimes there is a race condition where the previous patch has not been applied yet
             pass
         return fn(self, *args, **kwargs)
+
+
+def mock_aws_request_headers(
+    service: str, aws_access_key_id: str, region_name: str, internal: bool = False
+) -> Dict[str, str]:
+    """
+    Returns a mock set of headers that resemble SigV4 signing method.
+    """
+    from localstack.aws.connect import (
+        INTERNAL_REQUEST_PARAMS_HEADER,
+        InternalRequestParameters,
+        dump_dto,
+    )
+
+    ctype = APPLICATION_AMZ_JSON_1_0
+    if service == "kinesis":
+        ctype = APPLICATION_AMZ_JSON_1_1
+    elif service in ["sns", "sqs", "sts", "cloudformation"]:
+        ctype = APPLICATION_X_WWW_FORM_URLENCODED
+
+    # For S3 presigned URLs, we require that the client and server use the same
+    # access key ID to sign requests. So try to use the access key ID for the
+    # current request if available
+    headers = {
+        "Content-Type": ctype,
+        "Accept-Encoding": "identity",
+        "X-Amz-Date": "20160623T103251Z",  # TODO: Use current date
+        "Authorization": (
+            "AWS4-HMAC-SHA256 "
+            + f"Credential={aws_access_key_id}/20160623/{region_name}/{service}/aws4_request, "
+            + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
+        ),
+    }
+
+    if internal:
+        dto = InternalRequestParameters()
+        headers[INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
+
+    return headers

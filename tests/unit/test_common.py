@@ -6,10 +6,10 @@ import threading
 import time
 import zipfile
 from datetime import date, datetime, timezone
-from zoneinfo import ZoneInfo
 
 import pytest
 import yaml
+from zoneinfo import ZoneInfo
 
 from localstack import config
 from localstack.utils import common
@@ -487,7 +487,8 @@ class TestCommonFileOperations:
 
     def test_unzip_bad_crc(self):
         """Test unzipping of files with incorrect CRC codes - usually works with native `unzip` command,
-        but seems to fail with zipfile module under certain Python versions (extracts 0-bytes files)"""
+        but seems to fail with zipfile module under certain Python versions (extracts 0-bytes files)
+        """
 
         # base64-encoded zip file with a single entry with incorrect CRC (created by Node.js 18 / Serverless)
         zip_base64 = """

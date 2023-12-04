@@ -44,6 +44,9 @@ jobs:
           source .venv/bin/activate
           python3 -m localstack.aws.scaffold upgrade
 
+      - name: Format code
+        run: make format-modified
+
       - name: Check for changes
         id: check-for-changes
         run: |
@@ -85,6 +88,6 @@ jobs:
           author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
           committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
           commit-message: "update generated ASF APIs to latest version"
-          labels: "area: asf, area: dependencies"
+          labels: "area: asf, area: dependencies, semver: patch"
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           reviewers: alexrashed

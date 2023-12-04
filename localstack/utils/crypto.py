@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from .files import TMP_FILES, file_exists_not_empty, load_file, new_tmp_file, save_file
 from .strings import short_uid, to_bytes, to_str
 from .sync import synchronized
+from .urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -82,6 +83,8 @@ def generate_ssl_cert(
     k = crypto.PKey()
     k.generate_key(crypto.TYPE_RSA, 2048)
 
+    host_definition = localstack_host()
+
     # create a self-signed cert
     cert = crypto.X509()
     subj = cert.get_subject()
@@ -101,8 +104,8 @@ def generate_ssl_cert(
     cert.set_issuer(cert.get_subject())
     cert.set_pubkey(k)
     alt_names = (
-        b"DNS:localhost,DNS:test.localhost.atlassian.io,DNS:localhost.localstack.cloud,IP:127.0.0.1"
-    )
+        f"DNS:localhost,DNS:test.localhost.atlassian.io,DNS:localhost.localstack.cloud,DNS:{host_definition.host}IP:127.0.0.1"
+    ).encode("utf8")
     cert.add_extensions(
         [
             crypto.X509Extension(b"subjectAltName", False, alt_names),

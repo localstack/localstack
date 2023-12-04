@@ -1,17 +1,9 @@
 from typing import Any, Final
 
-import pytest
-
 from localstack.testing.pytest import markers
-from tests.aws.services.stepfunctions.utils import is_old_provider
 from tests.aws.services.stepfunctions.v2.choice_operators.utils import (
     create_and_test_comparison_function,
 )
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
-)
-
 
 # TODO: test for validation errors, and boundary testing.
 
@@ -32,9 +24,7 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
 ]
 
 
-@markers.snapshot.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestStrings:
     @markers.aws.validated
     def test_string_equals(

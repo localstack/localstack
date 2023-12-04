@@ -69,6 +69,8 @@ env:
 jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
+    # This job needs secrets and cannot be executed on forks, skip it in this case
+    if: github.event.repository.fork == false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -87,7 +89,7 @@ jobs:
 
       - name: "Determine Companion Ref"
         id: determine-companion-ref
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
           result-encoding: string
@@ -157,7 +159,7 @@ jobs:
           python-version: '3.11'
 
       - name: Set up Node 18.x
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18.x
 
@@ -168,7 +170,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 0.13.7
 
@@ -262,7 +264,6 @@ jobs:
           DEBUG: 1
           DISABLE_BOTO_RETRIES: 1
           DNS_ADDRESS: 0
-          LAMBDA_EXECUTOR: "local"
           LOCALSTACK_API_KEY: "test"
           AWS_SECRET_ACCESS_KEY: "test"
           AWS_ACCESS_KEY_ID: "test"

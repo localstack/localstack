@@ -116,7 +116,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         """Create a Firewall Rule Group."""
         store = self.get_store(context.account_id, context.region)
         id = get_route53_resolver_firewall_rule_group_id()
-        arn = arns.get_route53_resolver_firewall_rule_group_arn(id)
+        arn = arns.route53_resolver_firewall_rule_group_arn(id, context.account_id, context.region)
         firewall_rule_group = FirewallRuleGroup(
             Id=id,
             Arn=arn,
@@ -178,7 +178,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         """Create a Firewall Domain List."""
         store = self.get_store(context.account_id, context.region)
         id = get_route53_resolver_firewall_domain_list_id()
-        arn = arns.get_route53_resolver_firewall_domain_list_arn(id)
+        arn = arns.route53_resolver_firewall_domain_list_arn(id, context.account_id, context.region)
         firewall_domain_list = FirewallDomainList(
             Id=id,
             Arn=arn,
@@ -426,7 +426,9 @@ class Route53ResolverProvider(Route53ResolverApi):
                 )
 
         id = get_route53_resolver_firewall_rule_group_association_id()
-        arn = arns.get_route53_resolver_firewall_rule_group_associations_arn(id)
+        arn = arns.route53_resolver_firewall_rule_group_associations_arn(
+            id, context.account_id, context.region
+        )
 
         firewall_rule_group_association = FirewallRuleGroupAssociation(
             Id=id,
@@ -513,7 +515,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         store = self.get_store(context.account_id, context.region)
         validate_destination_arn(destination_arn)
         id = get_resolver_query_log_config_id()
-        arn = arns.get_resolver_query_log_config_arn(id)
+        arn = arns.route53_resolver_query_log_config_arn(id, context.account_id, context.region)
         resolver_query_log_config: ResolverQueryLogConfig = ResolverQueryLogConfig(
             Id=id,
             Arn=arn,

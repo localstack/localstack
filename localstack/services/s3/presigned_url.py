@@ -6,7 +6,7 @@ import logging
 import re
 import time
 from functools import cached_property
-from typing import Dict, List, Mapping, Optional, Tuple, TypedDict
+from typing import Mapping, Optional, TypedDict
 from urllib import parse as urlparse
 
 from botocore.auth import HmacV1QueryAuth, S3SigV4QueryAuth
@@ -42,6 +42,7 @@ from localstack.services.s3.utils import (
     forwarded_from_virtual_host_addressed_request,
     is_bucket_name_valid,
     is_presigned_url_request,
+    uses_host_addressing,
 )
 from localstack.utils.strings import to_bytes
 
@@ -63,27 +64,14 @@ SIGNATURE_V4_POST_FIELDS = [
 # headers to blacklist from request_dict.signed_headers
 BLACKLISTED_HEADERS = ["X-Amz-Security-Token"]
 
-# query params overrides for multipart upload and node sdk
-# TODO: this will depends on query/post v2/v4. Manage independently
-ALLOWED_QUERY_PARAMS = [
-    "x-id",
-    "x-amz-user-agent",
-    "x-amz-content-sha256",
-    "versionid",
-    "uploadid",
-    "partnumber",
-]
-
 IGNORED_SIGV4_HEADERS = [
-    "x-id",
-    "x-amz-user-agent",
     "x-amz-content-sha256",
 ]
 
 FAKE_HOST_ID = "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
 
 HOST_COMBINATION_REGEX = r"^(.*)(:[\d]{0,6})"
-PORT_REPLACEMENT = [":80", ":443", ":%s" % config.EDGE_PORT, ""]
+PORT_REPLACEMENT = [":80", ":443", f":{config.GATEWAY_LISTEN[0].port}", ""]
 
 # STS policy expiration date format
 POLICY_EXPIRATION_FORMAT1 = "%Y-%m-%dT%H:%M:%SZ"
@@ -96,7 +84,7 @@ class NotValidSigV4SignatureContext(TypedDict):
     canonical_request: str
 
 
-FindSigV4Result = Tuple["S3SigV4SignatureContext", Optional[NotValidSigV4SignatureContext]]
+FindSigV4Result = tuple["S3SigV4SignatureContext", Optional[NotValidSigV4SignatureContext]]
 
 
 class HmacV1QueryAuthValidation(HmacV1QueryAuth):
@@ -126,7 +114,7 @@ class S3SigV4QueryAuthValidation(S3SigV4QueryAuth):
     Override the timestamp for signature calculation, to use received timestamp instead of adding a fixed Expired time
     """
 
-    def add_auth(self, request) -> Tuple[bytes, str, str]:
+    def add_auth(self, request) -> tuple[bytes, str, str]:
         if self.credentials is None:  # noqa
             raise NoCredentialsError()
         canonical_request = self.canonical_request(request)
@@ -343,10 +331,18 @@ def _reverse_inject_signature_hmac_v1_query(
     # rebuild the query string
     new_query_string = percent_encode_sequence(new_query_string_dict)
 
-    # we need to URL encode the path, as the key needs to be urlencoded for the signature to match
-    encoded_path = urlparse.quote(request.path)
+    if bucket_name := uses_host_addressing(request.headers):
+        # if the request is host addressed, we need to remove the bucket from the host and set it in the path
+        path = f"/{bucket_name}{request.path}"
+        host = request.host.removeprefix(f"{bucket_name}.")
+    else:
+        path = request.path
+        host = request.host
 
-    reversed_url = f"{request.scheme}://{request.host}{encoded_path}?{new_query_string}"
+    # we need to URL encode the path, as the key needs to be urlencoded for the signature to match
+    encoded_path = urlparse.quote(path)
+
+    reversed_url = f"{request.scheme}://{host}{encoded_path}?{new_query_string}"
 
     reversed_headers = HTTPHeaders()
     for key, value in new_headers.items():
@@ -361,7 +357,24 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
     :param context: RequestContext
     :return:
     """
+
     sigv4_context, exception = _find_valid_signature_through_ports(context)
+    add_headers_to_original_request(context, sigv4_context.headers_in_qs)
+
+    if sigv4_context.missing_signed_headers:
+        if config.S3_SKIP_SIGNATURE_VALIDATION:
+            LOG.warning(
+                "There were headers present in the request which were not signed (%s), "
+                "but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1",
+                ", ".join(sigv4_context.missing_signed_headers),
+            )
+        else:
+            raise AccessDenied(
+                "There were headers present in the request which were not signed",
+                HostId=FAKE_HOST_ID,
+                HeadersNotSigned=", ".join(sigv4_context.missing_signed_headers),
+            )
+
     if exception:
         if config.S3_SKIP_SIGNATURE_VALIDATION:
             LOG.warning(
@@ -394,8 +407,6 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
                 X_Amz_Expires=x_amz_expires,
             )
 
-    add_headers_to_original_request(context, sigv4_context.signed_headers)
-
 
 def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Result:
     """
@@ -411,7 +422,7 @@ def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Res
     # get the port of the request
     match = re.match(HOST_COMBINATION_REGEX, sigv4_context.host)
     request_port = match.group(2) if match else None
-    # add_headers_to_original_request(context, sigv4_context.signed_headers)
+
     # get the signature from the request
     signature, canonical_request, string_to_sign = sigv4_context.get_signature_data()
     if signature == request_sig:
@@ -453,8 +464,8 @@ class S3SigV4SignatureContext:
             context.request.headers, get_raw_path(context.request)
         )
         self._bucket = urlparse.unquote(self._bucket)
-        print(self._bucket)
         self._request_method = context.request.method
+        self.missing_signed_headers = []
 
         credentials = ReadOnlyCredentials(
             TEST_AWS_ACCESS_KEY_ID,
@@ -466,9 +477,10 @@ class S3SigV4SignatureContext:
         self.signature_date = self._query_parameters["X-Amz-Date"]
 
         self.signer = S3SigV4QueryAuthValidation(credentials, "s3", region, expires=expires)
-        sig_headers, qs = self._get_signed_headers_and_filtered_query_string()
+        sig_headers, qs, headers_in_qs = self._get_signed_headers_and_filtered_query_string()
         self.signed_headers = sig_headers
         self.request_query_string = qs
+        self.headers_in_qs = headers_in_qs | sig_headers
 
         if forwarded_from_virtual_host_addressed_request(self._headers):
             # FIXME: maybe move this so it happens earlier in the chain when using virtual host?
@@ -486,9 +498,14 @@ class S3SigV4SignatureContext:
             netloc = urlparse.urlparse(self.request.url).netloc
             self.host = netloc
             self._original_host = netloc
-            # check that the path starts with the bucket
-            # our path has been sanitized, we should use the un-sanitized one
-            if not self.request.path.startswith(f"/{self._bucket}"):
+            if (host_addressed := uses_host_addressing(self._headers)) and not is_bucket_name_valid(
+                self._bucket
+            ):
+                raise InvalidBucketName(BucketName=self._bucket)
+
+            if not host_addressed and not self.request.path.startswith(f"/{self._bucket}"):
+                # if in path style, check that the path starts with the bucket
+                # our path has been sanitized, we should use the un-sanitized one
                 splitted_path = self.request.path.split("/", maxsplit=2)
                 self.path = f"/{self._bucket}/{splitted_path[-1]}"
             else:
@@ -517,20 +534,23 @@ class S3SigV4SignatureContext:
     def request_url(self) -> str:
         return f"{self.request.scheme}://{self.host}{self.path}?{self.request_query_string}"
 
-    def get_signature_data(self) -> Tuple[bytes, str, str]:
+    def get_signature_data(self) -> tuple[bytes, str, str]:
         """
         Uses the signer to return the signature and the data used to calculate it
         :return: signature, canonical_request and string_to_sign
         """
         return self.signer.add_auth(self.aws_request)
 
-    def _get_signed_headers_and_filtered_query_string(self) -> Tuple[Dict[str, str], str]:
+    def _get_signed_headers_and_filtered_query_string(
+        self,
+    ) -> tuple[dict[str, str], str, dict[str, str]]:
         """
         Transforms the original headers and query parameters to the headers and query string used to sign the
         original request.
-        Allows us to recreate the original request.
+        Allows us to recreate the original request, and also retrieve query string parameters that should be headers
         :raises AccessDenied if the request contains headers that were not in X-Amz-SignedHeaders and started with x-amz
-        :return: the headers used to sign the request and the query string without X-Amz-Signature
+        :return: the headers used to sign the request and the query string without X-Amz-Signature, and the query string
+        parameters which should be put back in the headers
         """
         headers = copy.copy(self._headers)
         # set automatically by the handler chain, we don't want that
@@ -538,6 +558,7 @@ class S3SigV4SignatureContext:
         signed_headers = self._query_parameters.get("X-Amz-SignedHeaders")
 
         new_query_args = {}
+        query_args_to_headers = {}
         for qs_parameter, qs_value in self._query_parameters.items():
             # skip the signature
             if qs_parameter == "X-Amz-Signature":
@@ -548,40 +569,33 @@ class S3SigV4SignatureContext:
                 qs_parameter not in SIGNATURE_V4_PARAMS
                 and qs_param_low.startswith("x-amz-")
                 and qs_param_low not in headers
-                and qs_param_low in signed_headers
             ):
-                # AWS JS SDK does not behave like boto, and will add some parameters as query string when signing when
-                # boto would not. this difference in behaviour would lead to pre-signed URLs generated by the JS SDK
-                # to be invalid for the boto signer.
-                # This fixes the behaviour by manually adding the parameter to the headers like boto would, if the SDK
-                # put them in the SignedHeaders
-                # this is especially valid for headers starting with x-amz-server-side-encryption, treated specially in
-                # the old JS SDK
-                headers.add(qs_param_low, qs_value)
+                if qs_param_low in signed_headers:
+                    # AWS JS SDK does not behave like boto, and will add some parameters as query string when signing
+                    # when boto would not. this difference in behaviour would lead to pre-signed URLs generated by the
+                    # JS SDK to be invalid for the boto signer.
+                    # This fixes the behaviour by manually adding the parameter to the headers like boto would, if the
+                    # SDK put them in the SignedHeaders
+                    # this is especially valid for headers starting with x-amz-server-side-encryption, treated
+                    # specially in the old JS SDK v2
+                    headers.add(qs_param_low, qs_value)
+                else:
+                    query_args_to_headers[qs_param_low] = qs_value
 
             new_query_args[qs_parameter] = qs_value
 
         signature_headers = {}
-        not_signed_headers = []
         for header, value in headers.items():
             header_low = header.lower()
-            if header_low.startswith("x-amz-"):
+            if header_low.startswith("x-amz-") and header_low not in signed_headers.lower():
                 if header_low in IGNORED_SIGV4_HEADERS:
                     continue
-                if header_low not in signed_headers.lower():
-                    not_signed_headers.append(header_low)
+                self.missing_signed_headers.append(header_low)
             if header_low in signed_headers:
                 signature_headers[header_low] = value
 
-        if not_signed_headers:
-            raise AccessDenied(
-                "There were headers present in the request which were not signed",
-                HostId=FAKE_HOST_ID,
-                HeadersNotSigned=", ".join(not_signed_headers),
-            )
-
         new_query_string = percent_encode_sequence(new_query_args)
-        return signature_headers, new_query_string
+        return signature_headers, new_query_string, query_args_to_headers
 
     def _get_aws_request(self) -> AWSRequest:
         """
@@ -698,7 +712,7 @@ def _parse_policy_expiration_date(expiration_string: str) -> datetime.datetime:
 
 
 def _is_match_with_signature_fields(
-    request_form: ImmutableMultiDict, signature_fields: List[str]
+    request_form: ImmutableMultiDict, signature_fields: list[str]
 ) -> bool:
     """
     Checks if the form contains at least one of the required fields passed in `signature_fields`

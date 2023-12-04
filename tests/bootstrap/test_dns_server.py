@@ -5,6 +5,8 @@ import pytest
 from localstack.config import in_docker
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.testing.pytest.container import ContainerFactory
+from localstack.utils.bootstrap import ContainerConfigurators
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -14,33 +16,92 @@ pytestmarks = pytest.mark.skipif(
 
 
 def test_default_network(
-    container_factory: ContainerFactory, wait_for_localstack_ready, dns_query_from_container
+    container_factory: ContainerFactory,
+    stream_container_logs,
+    wait_for_localstack_ready,
+    dns_query_from_container,
 ):
-    ls_container = container_factory(env_vars={"DEBUG": "1"})
-    ls_container.config.volumes.append(("/var/run/docker.sock", "/var/run/docker.sock"))
+    ls_container = container_factory(
+        configurators=[
+            ContainerConfigurators.debug,
+            ContainerConfigurators.mount_docker_socket,
+        ]
+    )
     running_container = ls_container.start()
+    stream_container_logs(ls_container)
     wait_for_localstack_ready(running_container)
 
     container_ip = running_container.ip_address()
-    stdout, _ = dns_query_from_container(name=LOCALHOST_HOSTNAME, ip_address=container_ip)
 
+    stdout, _ = dns_query_from_container(name=LOCALHOST_HOSTNAME, ip_address=container_ip)
+    assert container_ip in stdout.decode().splitlines()
+
+    stdout, _ = dns_query_from_container(name=f"foo.{LOCALHOST_HOSTNAME}", ip_address=container_ip)
     assert container_ip in stdout.decode().splitlines()
 
 
 def test_user_defined_network(
     docker_network,
     container_factory: ContainerFactory,
+    stream_container_logs,
     wait_for_localstack_ready,
     dns_query_from_container,
 ):
-    ls_container = container_factory(env_vars={"DEBUG": "1"}, network=docker_network)
-    ls_container.config.volumes.append(("/var/run/docker.sock", "/var/run/docker.sock"))
+    ls_container = container_factory(
+        configurators=[
+            ContainerConfigurators.debug,
+            ContainerConfigurators.mount_docker_socket,
+            ContainerConfigurators.network(docker_network),
+        ]
+    )
     running_ls_container = ls_container.start()
+    stream_container_logs(ls_container)
     wait_for_localstack_ready(running_ls_container)
 
     container_ip = running_ls_container.ip_address(docker_network=docker_network)
     stdout, _ = dns_query_from_container(
         name=LOCALHOST_HOSTNAME, ip_address=container_ip, network=docker_network
     )
+    assert container_ip in stdout.decode().splitlines()
 
+    stdout, _ = dns_query_from_container(
+        name=f"foo.{LOCALHOST_HOSTNAME}", ip_address=container_ip, network=docker_network
+    )
+    assert container_ip in stdout.decode().splitlines()
+
+
+def test_resolve_localstack_host(
+    container_factory: ContainerFactory,
+    stream_container_logs,
+    wait_for_localstack_ready,
+    dns_query_from_container,
+):
+    localstack_host = f"host-{short_uid()}"
+    ls_container = container_factory(
+        configurators=[
+            ContainerConfigurators.debug,
+            ContainerConfigurators.mount_docker_socket,
+            ContainerConfigurators.env_vars(
+                {
+                    "LOCALSTACK_HOST": localstack_host,
+                },
+            ),
+        ],
+    )
+    running_container = ls_container.start()
+    stream_container_logs(ls_container)
+    wait_for_localstack_ready(running_container)
+
+    container_ip = running_container.ip_address()
+
+    stdout, _ = dns_query_from_container(name=LOCALHOST_HOSTNAME, ip_address=container_ip)
+    assert container_ip in stdout.decode().splitlines()
+
+    stdout, _ = dns_query_from_container(name=f"foo.{LOCALHOST_HOSTNAME}", ip_address=container_ip)
+    assert container_ip in stdout.decode().splitlines()
+
+    stdout, _ = dns_query_from_container(name=localstack_host, ip_address=container_ip)
+    assert container_ip in stdout.decode().splitlines()
+
+    stdout, _ = dns_query_from_container(name=f"foo.{localstack_host}", ip_address=container_ip)
     assert container_ip in stdout.decode().splitlines()

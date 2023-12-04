@@ -14,6 +14,12 @@ from localstack.services.stepfunctions.asl.component.common.comment import Comme
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEventException,
 )
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import TimeoutSeconds
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
@@ -78,11 +84,12 @@ class Program(EvalComponent):
         except FailureEventException as ex:
             env.set_error(error=ex.get_execution_failed_event_details())
         except Exception as ex:
-            cause = f"{type(ex)}({str(ex)})"
+            cause = f"{type(ex).__name__}({str(ex)})"
             LOG.error(f"Stepfunctions computation ended with exception '{cause}'.")
             env.set_error(
                 ExecutionFailedEventDetails(
-                    error="Internal Error", cause=f"Internal Error due to '{cause}'"
+                    error=StatesErrorName(typ=StatesErrorNameType.StatesRuntime).error_name,
+                    cause=cause,
                 )
             )
 
@@ -96,11 +103,14 @@ class Program(EvalComponent):
                 typed_dict=ExecutionFailedEventDetails, obj=program_state.error or dict()
             )
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.ExecutionFailed,
                 event_detail=EventDetails(executionFailedEventDetails=exec_failed_event_details),
             )
         elif isinstance(program_state, ProgramStopped):
+            env.event_history_context.source_event_id = 0
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.ExecutionAborted,
                 event_detail=EventDetails(
                     executionAbortedEventDetails=ExecutionAbortedEventDetails(
@@ -110,6 +120,7 @@ class Program(EvalComponent):
             )
         elif isinstance(program_state, ProgramTimedOut):
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.ExecutionTimedOut,
                 event_detail=EventDetails(
                     executionTimedOutEventDetails=ExecutionTimedOutEventDetails()
@@ -117,6 +128,7 @@ class Program(EvalComponent):
             )
         elif isinstance(program_state, ProgramEnded):
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=HistoryEventType.ExecutionSucceeded,
                 event_detail=EventDetails(
                     executionSucceededEventDetails=ExecutionSucceededEventDetails(

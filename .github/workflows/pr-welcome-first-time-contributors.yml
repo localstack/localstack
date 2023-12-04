@@ -12,7 +12,7 @@ jobs:
   welcome:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/github-script@v6
+    - uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
         script: |
@@ -26,9 +26,9 @@ jobs:
           const isIssue = !!context.payload.issue;
           let isFirstContribution;
           if (isIssue) {
-              const query = `query($owner:String!, $name:String!, $contributer:String!) {
+              const query = `query($owner:String!, $name:String!, $contributor:String!) {
               repository(owner:$owner, name:$name){
-                issues(first: 1, filterBy: {createdBy:$contributer}){
+                issues(first: 1, filterBy: {createdBy:$contributor}){
                   totalCount
                 }
               }
@@ -37,7 +37,7 @@ jobs:
             const variables = {
               owner: context.repo.owner,
               name: context.repo.repo,
-              contributer: context.payload.sender.login
+              contributor: context.payload.sender.login
             };
 
             const { repository: { issues: { totalCount } } } = await github.graphql(query, variables);

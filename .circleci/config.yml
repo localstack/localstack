@@ -92,7 +92,7 @@ jobs:
           paths:
             - repo/target/coverage/
 
-  itest-lambda-legacy-local:
+  itest-sfn-legacy-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
@@ -100,48 +100,14 @@ jobs:
           at: /tmp/workspace
       - prepare-pytest-tinybird
       - run:
-          # legacy tests are executed locally, new runners ship with Java 17, downgrade to Java 11 for stepfunctions
-          name: Install OpenJDK 11
-          command: |
-            sudo apt-get update && sudo apt-get install openjdk-11-jdk
-            sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java
-            sudo update-alternatives --set javac /usr/lib/jvm/java-11-openjdk-amd64/bin/javac
-            java -version
-      - run:
-          name: Test 'local' Lambda executor
+          name: Test SFN Legacy provider
           environment:
-            LAMBDA_EXECUTOR: "local"
-            PROVIDER_OVERRIDE_LAMBDA: "legacy"
-            TEST_PATH: "tests/aws/services/lambda_/ tests/aws/test_integration.py tests/aws/services/apigateway/test_apigateway_basic.py tests/aws/services/cloudformation/resources/test_lambda.py"
+            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
+            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
             COVERAGE_ARGS: "-p"
           command: |
-            COVERAGE_FILE="target/coverage/.coverage.lambdav1.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
-  itest-sfn-v2-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - run:
-          name: Test SFN V2 provider
-          environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
-            TEST_PATH: "tests/aws/services/stepfunctions/v2/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.sfnv2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" \
+            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -178,7 +144,7 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-s3-v3-provider:
+  itest-s3-v2-legacy-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
@@ -186,14 +152,14 @@ jobs:
           at: /tmp/workspace
       - prepare-pytest-tinybird
       - run:
-          name: Test S3 v3 provider
+          name: Test S3 v2 legacy provider
           environment:
-            PROVIDER_OVERRIDE_S3: "v3"
+            PROVIDER_OVERRIDE_S3: "legacy_v2"
             TEST_PATH: "tests/aws/services/s3/"
             COVERAGE_ARGS: "-p"
           command: |
-            COVERAGE_FILE="target/coverage/.coverage.s3stream.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_stream.xml -o junit_suite_name='s3_stream'" \
+            COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -514,13 +480,10 @@ workflows:
       - acceptance-tests:
           requires:
             - preflight
-      - itest-lambda-legacy-local:
+      - itest-sfn-legacy-provider:
           requires:
             - preflight
-      - itest-sfn-v2-provider:
-          requires:
-            - preflight
-      - itest-s3-v3-provider:
+      - itest-s3-v2-legacy-provider:
           requires:
             - preflight
       - unit-tests:
@@ -565,9 +528,8 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-lambda-legacy-local
-            - itest-sfn-v2-provider
-            - itest-s3-v3-provider
+            - itest-sfn-legacy-provider
+            - itest-s3-v2-legacy-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
@@ -578,9 +540,8 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-lambda-legacy-local
-            - itest-sfn-v2-provider
-            - itest-s3-v3-provider
+            - itest-sfn-legacy-provider
+            - itest-s3-v2-legacy-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64

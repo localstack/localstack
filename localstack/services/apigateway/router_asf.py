@@ -13,6 +13,7 @@ from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import get_api_account_id_and_region
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.utils.aws.aws_responses import LambdaResponse
+from localstack.utils.strings import remove_leading_extra_slashes
 
 LOG = logging.getLogger(__name__)
 
@@ -36,7 +37,11 @@ def to_invocation_context(
     method = request.method
     # Base path is not URL-decoded.
     # Example: test%2Balias@gmail.com => test%2Balias@gmail.com
-    path = request.environ.get("RAW_URI")
+    raw_uri = path = request.environ.get("RAW_URI")
+    if raw_uri.startswith("//"):
+        # if starts with //, then replace the first // with /
+        path = remove_leading_extra_slashes(raw_uri)
+
     data = restore_payload(request)
     headers = Headers(request.headers)
 
@@ -54,7 +59,10 @@ def to_invocation_context(
     #   has side-effects (f.e. setting the region in a thread local)!
     #   It would be best to use a small (immutable) context for the already parsed params and the Request object
     #   and use it everywhere.
-    return ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
+    ctx = ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
+    ctx.raw_uri = raw_uri
+
+    return ctx
 
 
 def convert_response(result: RequestsResponse) -> Response:

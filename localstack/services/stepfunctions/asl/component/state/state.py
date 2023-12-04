@@ -109,6 +109,7 @@ class CommonStateField(EvalComponent, ABC):
 
     def _eval_body(self, env: Environment) -> None:
         env.event_history.add_event(
+            context=env.event_history_context,
             hist_type_event=self.state_entered_event_type,
             event_detail=EventDetails(
                 stateEnteredEventDetails=self._get_state_entered_event_details(env=env)
@@ -116,7 +117,7 @@ class CommonStateField(EvalComponent, ABC):
         )
 
         env.context_object_manager.context_object["State"] = State(
-            EnteredTime=datetime.datetime.now().isoformat(), Name=self.name
+            EnteredTime=datetime.datetime.now(tz=datetime.timezone.utc).isoformat(), Name=self.name
         )
 
         # Filter the input onto the stack.
@@ -135,6 +136,7 @@ class CommonStateField(EvalComponent, ABC):
 
         if self.state_exited_event_type is not None:
             env.event_history.add_event(
+                context=env.event_history_context,
                 hist_type_event=self.state_exited_event_type,
                 event_detail=EventDetails(
                     stateExitedEventDetails=self._get_state_exited_event_details(env=env),

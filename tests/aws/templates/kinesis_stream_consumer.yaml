@@ -1,0 +1,21 @@
+Parameters:
+    TestConsumerName:
+        Type: String
+
+Resources:
+    KinesisStream:
+        Type: AWS::Kinesis::Stream
+        Properties:
+            ShardCount: 1
+    StreamConsumer:
+        Type: AWS::Kinesis::StreamConsumer
+        Properties:
+            StreamARN: !GetAtt KinesisStream.Arn
+            ConsumerName: !Ref TestConsumerName
+Outputs:
+    KinesisStreamArn:
+        Description: The ARN of the created Kinesis Stream
+        Value: !GetAtt StreamConsumer.StreamARN
+    KinesisSConsumerARN:
+        Description: The ARN of the created Kinesis Stream
+        Value: !GetAtt StreamConsumer.ConsumerARN

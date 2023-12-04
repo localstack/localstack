@@ -267,7 +267,7 @@ class LambdaService:
             version_manager = self.get_lambda_version_manager(qualified_arn)
             event_manager = self.get_lambda_event_manager(qualified_arn)
             usage.runtime.record(version_manager.function_version.config.runtime)
-        except ValueError:
+        except ValueError as e:
             version = function.versions.get(version_qualifier)
             state = version and version.config.state.state
             # TODO: make such developer hints optional or remove after initial v2 transition period
@@ -288,7 +288,7 @@ class LambdaService:
                 )
             raise ResourceConflictException(
                 f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
-            )
+            ) from e
         # empty payloads have to work as well
         if payload is None:
             payload = b"{}"

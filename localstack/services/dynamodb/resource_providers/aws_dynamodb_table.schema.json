@@ -1,0 +1,514 @@
+{
+  "typeName": "AWS::DynamoDB::Table",
+  "description": "Version: None. Resource Type definition for AWS::DynamoDB::Table",
+  "additionalProperties": false,
+  "properties": {
+    "Arn": {
+      "type": "string"
+    },
+    "StreamArn": {
+      "type": "string"
+    },
+    "AttributeDefinitions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/AttributeDefinition"
+      }
+    },
+    "BillingMode": {
+      "type": "string"
+    },
+    "DeletionProtectionEnabled": {
+      "type": "boolean"
+    },
+    "GlobalSecondaryIndexes": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/GlobalSecondaryIndex"
+      }
+    },
+    "KeySchema": {
+      "oneOf": [
+        {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/KeySchema"
+          }
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "LocalSecondaryIndexes": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/LocalSecondaryIndex"
+      }
+    },
+    "PointInTimeRecoverySpecification": {
+      "$ref": "#/definitions/PointInTimeRecoverySpecification"
+    },
+    "TableClass": {
+      "type": "string"
+    },
+    "ProvisionedThroughput": {
+      "$ref": "#/definitions/ProvisionedThroughput"
+    },
+    "SSESpecification": {
+      "$ref": "#/definitions/SSESpecification"
+    },
+    "StreamSpecification": {
+      "$ref": "#/definitions/StreamSpecification"
+    },
+    "TableName": {
+      "type": "string"
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "TimeToLiveSpecification": {
+      "$ref": "#/definitions/TimeToLiveSpecification"
+    },
+    "ContributorInsightsSpecification": {
+      "$ref": "#/definitions/ContributorInsightsSpecification"
+    },
+    "KinesisStreamSpecification": {
+      "$ref": "#/definitions/KinesisStreamSpecification"
+    },
+    "ImportSourceSpecification": {
+      "$ref": "#/definitions/ImportSourceSpecification"
+    }
+  },
+  "propertyTransform": {
+    "/properties/SSESpecification/KMSMasterKeyId": "$join([\"arn:(aws)[-]{0,1}[a-z]{0,2}[-]{0,1}[a-z]{0,3}:kms:[a-z]{2}[-]{1}[a-z]{3,10}[-]{0,1}[a-z]{0,4}[-]{1}[1-4]{1}:[0-9]{12}[:]{1}key\\/\", SSESpecification.KMSMasterKeyId])"
+  },
+  "definitions": {
+    "StreamSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "StreamViewType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "StreamViewType"
+      ]
+    },
+    "DeprecatedKeySchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "HashKeyElement": {
+          "$ref": "#/definitions/DeprecatedHashKeyElement"
+        }
+      },
+      "required": [
+        "HashKeyElement"
+      ]
+    },
+    "DeprecatedHashKeyElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "AttributeType": {
+          "type": "string"
+        },
+        "AttributeName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "AttributeType",
+        "AttributeName"
+      ]
+    },
+    "KeySchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "AttributeName": {
+          "type": "string"
+        },
+        "KeyType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "KeyType",
+        "AttributeName"
+      ]
+    },
+    "PointInTimeRecoverySpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "PointInTimeRecoveryEnabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "KinesisStreamSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "StreamArn": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "StreamArn"
+      ]
+    },
+    "TimeToLiveSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "AttributeName": {
+          "type": "string"
+        },
+        "Enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "Enabled",
+        "AttributeName"
+      ]
+    },
+    "LocalSecondaryIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "IndexName": {
+          "type": "string"
+        },
+        "KeySchema": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/KeySchema"
+          }
+        },
+        "Projection": {
+          "$ref": "#/definitions/Projection"
+        }
+      },
+      "required": [
+        "IndexName",
+        "Projection",
+        "KeySchema"
+      ]
+    },
+    "GlobalSecondaryIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "IndexName": {
+          "type": "string"
+        },
+        "KeySchema": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/KeySchema"
+          }
+        },
+        "Projection": {
+          "$ref": "#/definitions/Projection"
+        },
+        "ProvisionedThroughput": {
+          "$ref": "#/definitions/ProvisionedThroughput"
+        },
+        "ContributorInsightsSpecification": {
+          "$ref": "#/definitions/ContributorInsightsSpecification"
+        }
+      },
+      "required": [
+        "IndexName",
+        "Projection",
+        "KeySchema"
+      ]
+    },
+    "SSESpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "KMSMasterKeyId": {
+          "type": "string"
+        },
+        "SSEEnabled": {
+          "type": "boolean"
+        },
+        "SSEType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "SSEEnabled"
+      ]
+    },
+    "AttributeDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "AttributeName": {
+          "type": "string"
+        },
+        "AttributeType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "AttributeName",
+        "AttributeType"
+      ]
+    },
+    "ProvisionedThroughput": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ReadCapacityUnits": {
+          "type": "integer"
+        },
+        "WriteCapacityUnits": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "WriteCapacityUnits",
+        "ReadCapacityUnits"
+      ]
+    },
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string"
+        },
+        "Value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    },
+    "Projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "NonKeyAttributes": {
+          "type": "array",
+          "uniqueItems": false,
+          "items": {
+            "type": "string"
+          }
+        },
+        "ProjectionType": {
+          "type": "string"
+        }
+      }
+    },
+    "ContributorInsightsSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "Enabled"
+      ]
+    },
+    "ImportSourceSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "S3BucketSource": {
+          "$ref": "#/definitions/S3BucketSource"
+        },
+        "InputFormat": {
+          "type": "string"
+        },
+        "InputFormatOptions": {
+          "$ref": "#/definitions/InputFormatOptions"
+        },
+        "InputCompressionType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "S3BucketSource",
+        "InputFormat"
+      ]
+    },
+    "S3BucketSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "S3BucketOwner": {
+          "type": "string"
+        },
+        "S3Bucket": {
+          "type": "string"
+        },
+        "S3KeyPrefix": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "S3Bucket"
+      ]
+    },
+    "InputFormatOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Csv": {
+          "$ref": "#/definitions/Csv"
+        }
+      }
+    },
+    "Csv": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "HeaderList": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "Delimiter": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": false,
+    "tagProperty": "/properties/Tags"
+  },
+  "required": [
+    "KeySchema"
+  ],
+  "readOnlyProperties": [
+    "/properties/Arn",
+    "/properties/StreamArn"
+  ],
+  "createOnlyProperties": [
+    "/properties/TableName",
+    "/properties/ImportSourceSpecification"
+  ],
+  "primaryIdentifier": [
+    "/properties/TableName"
+  ],
+  "writeOnlyProperties": [
+    "/properties/ImportSourceSpecification"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "dynamodb:CreateTable",
+        "dynamodb:DescribeImport",
+        "dynamodb:DescribeTable",
+        "dynamodb:DescribeTimeToLive",
+        "dynamodb:UpdateTimeToLive",
+        "dynamodb:UpdateContributorInsights",
+        "dynamodb:UpdateContinuousBackups",
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:DescribeContributorInsights",
+        "dynamodb:EnableKinesisStreamingDestination",
+        "dynamodb:DisableKinesisStreamingDestination",
+        "dynamodb:DescribeKinesisStreamingDestination",
+        "dynamodb:ImportTable",
+        "dynamodb:ListTagsOfResource",
+        "dynamodb:TagResource",
+        "dynamodb:UpdateTable",
+        "kinesis:DescribeStream",
+        "kinesis:PutRecords",
+        "iam:CreateServiceLinkedRole",
+        "kms:CreateGrant",
+        "kms:Decrypt",
+        "kms:Describe*",
+        "kms:Encrypt",
+        "kms:Get*",
+        "kms:List*",
+        "kms:RevokeGrant",
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:PutLogEvents",
+        "logs:PutRetentionPolicy",
+        "s3:GetObject",
+        "s3:GetObjectMetadata",
+        "s3:ListBucket"
+      ],
+      "timeoutInMinutes": 720
+    },
+    "read": {
+      "permissions": [
+        "dynamodb:DescribeTable",
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:DescribeContributorInsights"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "dynamodb:UpdateTable",
+        "dynamodb:DescribeTable",
+        "dynamodb:DescribeTimeToLive",
+        "dynamodb:UpdateTimeToLive",
+        "dynamodb:UpdateContinuousBackups",
+        "dynamodb:UpdateContributorInsights",
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:DescribeKinesisStreamingDestination",
+        "dynamodb:ListTagsOfResource",
+        "dynamodb:TagResource",
+        "dynamodb:UntagResource",
+        "dynamodb:DescribeContributorInsights",
+        "dynamodb:EnableKinesisStreamingDestination",
+        "dynamodb:DisableKinesisStreamingDestination",
+        "kinesis:DescribeStream",
+        "kinesis:PutRecords",
+        "iam:CreateServiceLinkedRole",
+        "kms:CreateGrant",
+        "kms:Describe*",
+        "kms:Get*",
+        "kms:List*",
+        "kms:RevokeGrant"
+      ],
+      "timeoutInMinutes": 720
+    },
+    "delete": {
+      "permissions": [
+        "dynamodb:DeleteTable",
+        "dynamodb:DescribeTable"
+      ],
+      "timeoutInMinutes": 720
+    },
+    "list": {
+      "permissions": [
+        "dynamodb:ListTables"
+      ]
+    }
+  }
+}

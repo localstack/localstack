@@ -67,4 +67,5 @@ class StringSplit(StatesFunction):
         pattern = "|".join(patterns)
 
         parts = re.split(pattern, string)
-        env.stack.append(parts)
+        parts_clean = list(filter(bool, parts))
+        env.stack.append(parts_clean)

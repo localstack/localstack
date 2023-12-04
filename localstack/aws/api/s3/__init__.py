@@ -498,6 +498,7 @@ class ReplicationStatus(str):
     PENDING = "PENDING"
     FAILED = "FAILED"
     REPLICA = "REPLICA"
+    COMPLETED = "COMPLETED"
 
 
 class ReplicationTimeStatus(str):
@@ -785,6 +786,7 @@ class CrossLocationLoggingProhibitted(ServiceException):
     sender_fault: bool = False
     status_code: int = 403
     TargetBucketLocation: Optional[BucketRegion]
+    SourceBucketLocation: Optional[BucketRegion]
 
 
 class InvalidTargetBucketForLogging(ServiceException):
@@ -3254,7 +3256,6 @@ class PostResponse(TypedDict, total=False):
 
 
 class S3Api:
-
     service = "s3"
     version = "2006-03-01"
 

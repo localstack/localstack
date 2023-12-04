@@ -1,7 +1,6 @@
 import json
 from typing import Any, Final, Optional
 
-from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import (
@@ -10,7 +9,6 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventType,
     TaskFailedEventDetails,
 )
-from localstack.aws.connect import connect_externally_to
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
@@ -24,11 +22,15 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
+    ResourceRuntimePart,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import camel_to_snake_case
@@ -100,10 +102,6 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         lower_to_normalise_key = _build_lower_to_key_dict(keys)
         _apply_normalisation(lower_to_normalise_key, response)
 
-    @staticmethod
-    def _get_sfn_client():
-        return connect_externally_to(config=Config(parameter_validation=False)).stepfunctions
-
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, ClientError):
             error_code = ex.response["Error"]["Code"]
@@ -136,13 +134,14 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
             )
         return super()._from_error(env=env, ex=ex)
 
-    def _normalised_parameters_bindings(self, parameters: dict[str, str]) -> dict[str, str]:
-        normalised_parameters = super()._normalised_parameters_bindings(parameters=parameters)
+    def _normalised_parameters_bindings(self, raw_parameters: dict[str, str]) -> dict[str, str]:
+        normalised_parameters = super()._normalised_parameters_bindings(
+            raw_parameters=raw_parameters
+        )
 
         if self.resource.api_action.lower() == "startexecution":
             optional_input = normalised_parameters.get("input")
             if not isinstance(optional_input, str):
-
                 # AWS Sfn's documentation states:
                 # If you don't include any JSON input data, you still must include the two braces.
                 if optional_input is None:
@@ -164,17 +163,34 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                 _replace_with_json_if_str("input")
                 _replace_with_json_if_str("output")
 
-    def _eval_service_task(self, env: Environment, parameters: dict) -> None:
+    def _eval_service_task(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ):
         api_action = camel_to_snake_case(self.resource.api_action)
-        sfn_client = self._get_sfn_client()
-        response = getattr(sfn_client, api_action)(**parameters)
+        sfn_client = boto_client_for(
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
+            service="stepfunctions",
+        )
+        response = getattr(sfn_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
         self._normalise_botocore_response(self.resource.api_action, response)
         env.stack.append(response)
 
-    def _sync_to_start_machine(self, env: Environment, sync2_response: bool) -> None:
-        sfn_client = self._get_sfn_client()
-
+    def _sync_to_start_machine(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        sync2_response: bool,
+    ) -> None:
+        sfn_client = boto_client_for(
+            region=resource_runtime_part.region,
+            account=resource_runtime_part.account,
+            service="stepfunctions",
+        )
         submission_output: dict = env.stack.pop()
         execution_arn: str = submission_output["ExecutionArn"]
 
@@ -216,16 +232,30 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
 
         env.stack.append(termination_output)
 
-    def _sync(self, env: Environment) -> None:
+    def _sync(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         match self.resource.api_action.lower():
             case "startexecution":
-                self._sync_to_start_machine(env=env, sync2_response=False)
+                self._sync_to_start_machine(
+                    env=env, resource_runtime_part=resource_runtime_part, sync2_response=False
+                )
             case _:
                 super()._sync(env=env)
 
-    def _sync2(self, env: Environment) -> None:
+    def _sync2(
+        self,
+        env: Environment,
+        resource_runtime_part: ResourceRuntimePart,
+        normalised_parameters: dict,
+    ) -> None:
         match self.resource.api_action.lower():
             case "startexecution":
-                self._sync_to_start_machine(env=env, sync2_response=True)
+                self._sync_to_start_machine(
+                    env=env, resource_runtime_part=resource_runtime_part, sync2_response=True
+                )
             case _:
                 super()._sync2(env=env)

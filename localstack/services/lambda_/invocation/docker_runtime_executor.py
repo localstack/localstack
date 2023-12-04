@@ -13,17 +13,18 @@ from localstack.services.lambda_.invocation.executor_endpoint import (
     INVOCATION_PORT,
     ExecutorEndpoint,
 )
-from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
+from localstack.services.lambda_.invocation.lambda_models import FunctionVersion
 from localstack.services.lambda_.invocation.runtime_executor import (
     LambdaRuntimeException,
     RuntimeExecutor,
 )
-from localstack.services.lambda_.lambda_utils import (
-    HINT_LOG,
+from localstack.services.lambda_.lambda_utils import HINT_LOG
+from localstack.services.lambda_.networking import (
     get_all_container_networks_for_lambda,
     get_main_endpoint_from_container,
 )
 from localstack.services.lambda_.packages import lambda_runtime_package
+from localstack.services.lambda_.runtimes import IMAGE_MAPPING
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
@@ -436,7 +437,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
 
     def get_runtime_endpoint(self) -> str:
-        return f"http://{self.get_endpoint_from_executor()}:{config.EDGE_PORT}{self.executor_endpoint.get_endpoint_prefix()}"
+        return f"http://{self.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}{self.executor_endpoint.get_endpoint_prefix()}"
 
     @classmethod
     def validate_environment(cls) -> bool:

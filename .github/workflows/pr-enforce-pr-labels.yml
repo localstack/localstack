@@ -1,19 +1,11 @@
 name: Enforce PR Labels
 
 on:
-  pull_request:
+  pull_request_target:
     types: [labeled, unlabeled, opened, edited, synchronize]
 
 jobs:
-  # make sure _all_ PRs have a semver label
-  enforce-semver-label:
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: write
-    steps:
-      - uses: mheap/github-action-required-labels@v5
-        with:
-          mode: exactly
-          count: 1
-          labels: "semver: patch, semver: minor, semver: major"
+  enforce-semver-labels:
+    uses: localstack/meta/.github/workflows/pr-enforce-semver-labels.yml@main
+    secrets:
+      github-token: ${{ secrets.PRO_ACCESS_TOKEN }}

@@ -1,6 +1,6 @@
 {
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_topic_with_attributes": {
-    "recorded-date": "24-08-2023, 22:30:43",
+    "recorded-date": "06-10-2023, 20:11:02",
     "recorded-content": {
       "get-topic-attrs": {
         "Attributes": {
@@ -74,6 +74,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "get-attrs-malformed-topic": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
@@ -1986,7 +1997,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs[True]": {
-    "recorded-date": "24-08-2023, 23:37:43",
+    "recorded-date": "09-11-2023, 21:12:03",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2020,6 +2031,7 @@
         }
       },
       "dedup-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2028,7 +2040,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs[False]": {
-    "recorded-date": "24-08-2023, 23:37:46",
+    "recorded-date": "09-11-2023, 21:12:07",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2062,6 +2074,7 @@
         }
       },
       "dedup-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2555,7 +2568,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
-    "recorded-date": "24-08-2023, 23:38:05",
+    "recorded-date": "09-11-2023, 21:10:27",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -2752,6 +2765,7 @@
         }
       },
       "duplicate-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2760,7 +2774,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
-    "recorded-date": "24-08-2023, 23:38:11",
+    "recorded-date": "09-11-2023, 21:10:33",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -2957,6 +2971,7 @@
         }
       },
       "duplicate-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3059,7 +3074,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_to_fifo_topic_deduplication_on_topic_level": {
-    "recorded-date": "24-08-2023, 23:38:21",
+    "recorded-date": "09-11-2023, 21:07:36",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -3093,6 +3108,7 @@
         }
       },
       "dedup-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3179,7 +3195,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy": {
-    "recorded-date": "25-08-2023, 00:15:01",
+    "recorded-date": "09-11-2023, 21:05:40",
     "recorded-content": {
       "subscription-attributes": {
         "Attributes": {
@@ -3212,6 +3228,7 @@
         }
       },
       "messages-0": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3276,11 +3293,44 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "subscription-attributes-2": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "attr1": [
+              null,
+              {
+                "anything-but": "whatever"
+              }
+            ]
+          },
+          "FilterPolicyScope": "MessageAttributes",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-3": {
+        "Messages": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_exists_filter_policy": {
-    "recorded-date": "25-08-2023, 00:15:09",
+    "recorded-date": "09-11-2023, 21:04:02",
     "recorded-content": {
       "subscription-attributes-policy-1": {
         "Attributes": {
@@ -3308,6 +3358,7 @@
         }
       },
       "messages-0": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3623,9 +3674,10 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body[True]": {
-    "recorded-date": "25-08-2023, 00:15:29",
+    "recorded-date": "09-11-2023, 20:58:29",
     "recorded-content": {
       "recv-init": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3670,9 +3722,10 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body[False]": {
-    "recorded-date": "25-08-2023, 00:15:41",
+    "recorded-date": "09-11-2023, 20:58:42",
     "recorded-content": {
       "recv-init": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3729,7 +3782,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_for_batch": {
-    "recorded-date": "25-08-2023, 00:15:58",
+    "recorded-date": "09-11-2023, 21:01:32",
     "recorded-content": {
       "subscription-attributes-with-filter": {
         "Attributes": {
@@ -3779,12 +3832,14 @@
         }
       },
       "messages-no-filter-before-publish": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "messages-with-filter-before-publish": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3881,6 +3936,7 @@
         }
       },
       "messages-with-filter-after-publish-filtered": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3956,7 +4012,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishDelivery::test_delivery_lambda": {
-    "recorded-date": "25-08-2023, 00:31:30",
+    "recorded-date": "07-11-2023, 11:11:37",
     "recorded-content": {
       "get-topic-attrs": {
         "Attributes": {
@@ -3978,7 +4034,74 @@
               }
             }
           },
-          "LambdaSuccessFeedbackRoleArn": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-no-logs": {
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-topic-attrs-with-success-feedback": {
+        "Attributes": {
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "LambdaSuccessFeedbackRoleArn": "arn:aws:iam::111111111111:role/<resource:2>",
           "LambdaSuccessFeedbackSampleRate": "100",
           "Owner": "111111111111",
           "Policy": {
@@ -4001,7 +4124,7 @@
                   "SNS:ListSubscriptionsByTopic",
                   "SNS:Publish"
                 ],
-                "Resource": "arn:aws:sns:<region>:111111111111:<resource:2>",
+                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
                 "Condition": {
                   "StringEquals": {
                     "AWS:SourceOwner": "111111111111"
@@ -4013,8 +4136,15 @@
           "SubscriptionsConfirmed": "0",
           "SubscriptionsDeleted": "0",
           "SubscriptionsPending": "0",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-logs": {
+        "MessageId": "<uuid:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4026,19 +4156,19 @@
             "ingestionTime": "timestamp",
             "message": {
               "delivery": {
-                "deliveryId": "<uuid:1>",
+                "deliveryId": "<uuid:3>",
                 "destination": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
                 "dwellTimeMs": "<time-ms>",
                 "providerResponse": {
-                  "lambdaRequestId": "<uuid:2>"
+                  "lambdaRequestId": "<uuid:4>"
                 },
                 "statusCode": 202
               },
               "notification": {
-                "messageId": "<uuid:3>",
-                "messageMD5Sum": "764569e58f53ea8b6404f6fa7fc0247f",
+                "messageId": "<uuid:2>",
+                "messageMD5Sum": "c1c7ff780647014d463e6801bf83c59d",
                 "timestamp": "timestamp",
-                "topicArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+                "topicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
               },
               "status": "SUCCESS"
             },
@@ -4241,7 +4371,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint[True]": {
-    "recorded-date": "25-08-2023, 17:28:02",
+    "recorded-date": "12-10-2023, 00:47:24",
     "recorded-content": {
       "subscription-confirmation": {
         "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
@@ -4254,6 +4384,17 @@
         "Token": "<token:1>",
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
         "Type": "SubscriptionConfirmation"
+      },
+      "http-confirm-sub-headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:1>",
+        "X-Amz-Sns-Message-Type": "SubscriptionConfirmation",
+        "X-Amz-Sns-Topic-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>"
       },
       "broken-topic-arn-confirm": {
         "ErrorResponse": {
@@ -4307,6 +4448,19 @@
           }
         }
       },
+      "http-message-headers-raw": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:2>",
+        "X-Amz-Sns-Message-Type": "Notification",
+        "X-Amz-Sns-Rawdelivery": "true",
+        "X-Amz-Sns-Subscription-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
+        "X-Amz-Sns-Topic-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+      },
       "unsubscribe-response": {
         "UnsubscribeResponse": {
           "ResponseMetadata": {
@@ -4317,7 +4471,7 @@
       },
       "unsubscribe-request": {
         "Message": "You have chosen to deactivate subscription arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
-        "MessageId": "<uuid:2>",
+        "MessageId": "<uuid:3>",
         "Signature": "<signature>",
         "SignatureVersion": "1",
         "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
@@ -4330,7 +4484,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint[False]": {
-    "recorded-date": "25-08-2023, 17:28:08",
+    "recorded-date": "12-10-2023, 00:47:29",
     "recorded-content": {
       "subscription-confirmation": {
         "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
@@ -4343,6 +4497,17 @@
         "Token": "<token:1>",
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
         "Type": "SubscriptionConfirmation"
+      },
+      "http-confirm-sub-headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:1>",
+        "X-Amz-Sns-Message-Type": "SubscriptionConfirmation",
+        "X-Amz-Sns-Topic-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>"
       },
       "broken-topic-arn-confirm": {
         "ErrorResponse": {
@@ -4407,6 +4572,18 @@
         "Type": "Notification",
         "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
       },
+      "http-message-headers": {
+        "Accept-Encoding": "gzip,deflate",
+        "Connection": "connection",
+        "Content-Length": "content--length",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Host": "<host:1>",
+        "User-Agent": "Amazon Simple Notification Service Agent",
+        "X-Amz-Sns-Message-Id": "<uuid:2>",
+        "X-Amz-Sns-Message-Type": "Notification",
+        "X-Amz-Sns-Subscription-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
+        "X-Amz-Sns-Topic-Arn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+      },
       "unsubscribe-response": {
         "UnsubscribeResponse": {
           "ResponseMetadata": {
@@ -4426,6 +4603,251 @@
         "Token": "<token:2>",
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
         "Type": "UnsubscribeConfirmation"
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_dot_attribute": {
+    "recorded-date": "09-11-2023, 18:50:59",
+    "recorded-content": {
+      "recv-init": {
+        "Messages": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-nested-msg-0": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"nested\": \"string.value\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-nested-msg-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object.nested\": \"string.value\"}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-deep-nested-msg-0": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:5>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"nested\": {\"test\": \"string.value\"}}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:6>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-deep-nested-msg-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:7>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object.nested.test\": \"string.value\"}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:8>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-deep-nested-msg-2": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:9>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object.nested\": {\"test\": \"string.value\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:10>",
+            "ReceiptHandle": "<receipt-handle:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-deep-nested-msg-3": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:11>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"nested.test\": \"string.value\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:12>",
+            "ReceiptHandle": "<receipt-handle:6>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_wrong_arn_format": {
+    "recorded-date": "20-10-2023, 12:52:36",
+    "recorded-content": {
+      "invalid-unsubscribe-arn-1": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-unsubscribe-arn-2": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 5",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-unsubscribe-arn-3": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionId",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_idempotency": {
+    "recorded-date": "07-11-2023, 00:36:06",
+    "recorded-content": {
+      "unsubscribe-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "unsubscribe-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_topic_publish_another_region": {
+    "recorded-date": "17-11-2023, 18:14:28",
+    "recorded-content": {
+      "success": {
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-batch": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
       }
     }
   }

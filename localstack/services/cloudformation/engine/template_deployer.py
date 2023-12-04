@@ -8,6 +8,7 @@ from typing import Literal, Optional, Type, TypedDict
 
 from localstack import config
 from localstack.aws.connect import connect_to
+from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     get_action_name_for_resource_change,
@@ -17,6 +18,7 @@ from localstack.services.cloudformation.engine.entities import Stack, StackChang
 from localstack.services.cloudformation.engine.parameters import StackParameter
 from localstack.services.cloudformation.engine.quirks import VALID_GETATT_PROPERTIES
 from localstack.services.cloudformation.engine.template_utils import (
+    AWS_URL_SUFFIX,
     fn_equals_type_conversion,
     get_deps_for_resource,
 )
@@ -39,10 +41,10 @@ from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
+from localstack.utils.urls import localstack_host
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
-AWS_URL_SUFFIX = "localhost.localstack.cloud"  # value is "amazonaws.com" in real AWS
 
 REGEX_OUTPUT_APIGATEWAY = re.compile(
     rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
@@ -198,7 +200,7 @@ def resolve_refs_recursively(
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]
-            port = config.service_port("apigateway")
+            port = localstack_host().port
             return f"{prefix}{host}:{port}/{path}"
 
         # basic dynamic reference support
@@ -611,7 +613,7 @@ def _resolve_refs_recursively(
                 or region_name
             )
             azs = []
-            for az in ("a", "b", "c", "d"):
+            for az in ("a", "b", "c", "d", "e", "f"):
                 azs.append("%s%s" % (region, az))
 
             return azs
@@ -829,9 +831,9 @@ class TemplateDeployer:
                 action="CREATE",
             )
         except Exception as e:
-            log_method = getattr(LOG, "info")
+            log_method = LOG.info
             if config.CFN_VERBOSE_ERRORS:
-                log_method = getattr(LOG, "exception")
+                log_method = LOG.exception
             log_method("Unable to create stack %s: %s", self.stack.stack_name, e)
             self.stack.set_stack_status("CREATE_FAILED")
             raise
@@ -923,9 +925,9 @@ class TemplateDeployer:
                             e,
                         )
                     else:
-                        log_method = getattr(LOG, "warning")
+                        log_method = LOG.warning
                         if config.CFN_VERBOSE_ERRORS:
-                            log_method = getattr(LOG, "exception")
+                            log_method = LOG.exception
                         log_method(
                             "Failed delete of resource with id %s in iteration cycle %d. Retrying in next cycle.",
                             resource_id,
@@ -963,6 +965,10 @@ class TemplateDeployer:
     ):
         result = {}
         for resource_id, resource in resources.items():
+            if not resource:
+                raise Exception(
+                    f"Resource '{resource_id}' not found in stack {self.stack.stack_name}"
+                )
             if not self.is_deployed(resource):
                 LOG.debug(
                     "Dependency for resource %s not yet deployed: %s %s",
@@ -1171,9 +1177,9 @@ class TemplateDeployer:
                 self.do_apply_changes_in_loop(changes, stack)
                 status = f"{action}_COMPLETE"
             except Exception as e:
-                log_method = getattr(LOG, "debug")
+                log_method = LOG.debug
                 if config.CFN_VERBOSE_ERRORS:
-                    log_method = getattr(LOG, "exception")
+                    log_method = LOG.exception
                 log_method(
                     'Error applying changes for CloudFormation stack "%s": %s %s',
                     stack.stack_name,
@@ -1247,9 +1253,9 @@ class TemplateDeployer:
                     del changes[j]
                     updated = True
                 except DependencyNotYetSatisfied as e:
-                    log_method = getattr(LOG, "debug")
+                    log_method = LOG.debug
                     if config.CFN_VERBOSE_ERRORS:
-                        log_method = getattr(LOG, "exception")
+                        log_method = LOG.exception
                     log_method(
                         'Dependencies for "%s" not yet satisfied, retrying in next loop: %s',
                         resource_id,
@@ -1397,9 +1403,10 @@ class TemplateDeployer:
     def create_resource_provider_payload(
         self, action: str, logical_resource_id: str
     ) -> ResourceProviderPayload:
+        # FIXME: use proper credentials
         creds: Credentials = {
-            "accessKeyId": "test",
-            "secretAccessKey": "test",
+            "accessKeyId": self.account_id,
+            "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
             "sessionToken": "",
         }
         resource = self.resources[logical_resource_id]
@@ -1447,7 +1454,7 @@ def resolve_outputs(account_id: str, region_name: str, stack) -> list[dict]:
             )
             value = details["Value"]
         except Exception as e:
-            log_method = getattr(LOG, "debug")
+            log_method = LOG.debug
             if config.CFN_VERBOSE_ERRORS:
                 raise  # unresolvable outputs cause a stack failure
                 # log_method = getattr(LOG, "exception")

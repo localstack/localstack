@@ -188,6 +188,10 @@ class HostedZoneLimitType(str):
     MAX_VPCS_ASSOCIATED_BY_ZONE = "MAX_VPCS_ASSOCIATED_BY_ZONE"
 
 
+class HostedZoneType(str):
+    PrivateHostedZone = "PrivateHostedZone"
+
+
 class InsufficientDataHealthStatus(str):
     Healthy = "Healthy"
     Unhealthy = "Unhealthy"
@@ -1606,6 +1610,7 @@ class ListHostedZonesRequest(ServiceRequest):
     Marker: Optional[PageMarker]
     MaxItems: Optional[PageMaxItems]
     DelegationSetId: Optional[ResourceId]
+    HostedZoneType: Optional[HostedZoneType]
 
 
 class ListHostedZonesResponse(TypedDict, total=False):
@@ -1873,7 +1878,6 @@ class UpdateTrafficPolicyInstanceResponse(TypedDict, total=False):
 
 
 class Route53Api:
-
     service = "route53"
     version = "2013-04-01"
 
@@ -2258,6 +2262,7 @@ class Route53Api:
         marker: PageMarker = None,
         max_items: PageMaxItems = None,
         delegation_set_id: ResourceId = None,
+        hosted_zone_type: HostedZoneType = None,
     ) -> ListHostedZonesResponse:
         raise NotImplementedError
 

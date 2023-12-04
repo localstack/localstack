@@ -23,6 +23,7 @@ from localstack.aws.api.stepfunctions import (
     TraceHeader,
 )
 from localstack.aws.connect import connect_to
+from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObjectInitData,
 )
@@ -50,36 +51,41 @@ from localstack.services.stepfunctions.backend.state_machine import (
 LOG = logging.getLogger(__name__)
 
 
+class BaseExecutionWorkerComm(ExecutionWorkerComm):
+    def __init__(self, execution: Execution):
+        self.execution: Execution = execution
+
+    def terminated(self) -> None:
+        exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
+        self.execution.stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
+        if isinstance(exit_program_state, ProgramEnded):
+            self.execution.exec_status = ExecutionStatus.SUCCEEDED
+            self.execution.output = to_json_str(
+                self.execution.exec_worker.env.inp, separators=(",", ":")
+            )
+        elif isinstance(exit_program_state, ProgramStopped):
+            self.execution.exec_status = ExecutionStatus.ABORTED
+        elif isinstance(exit_program_state, ProgramError):
+            self.execution.exec_status = ExecutionStatus.FAILED
+            self.execution.error = exit_program_state.error["error"]
+            self.execution.cause = exit_program_state.error["cause"]
+        elif isinstance(exit_program_state, ProgramTimedOut):
+            self.execution.exec_status = ExecutionStatus.TIMED_OUT
+        else:
+            raise RuntimeWarning(
+                f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
+            )
+        self.execution._publish_execution_status_change_event()
+
+
 class Execution:
-    class BaseExecutionWorkerComm(ExecutionWorkerComm):
-        def __init__(self, execution: Execution):
-            self.execution: Execution = execution
-
-        def terminated(self) -> None:
-            exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
-            self.execution.stop_date = datetime.datetime.now()
-            if isinstance(exit_program_state, ProgramEnded):
-                self.execution.exec_status = ExecutionStatus.SUCCEEDED
-                self.execution.output = to_json_str(
-                    self.execution.exec_worker.env.inp, separators=(",", ":")
-                )
-            elif isinstance(exit_program_state, ProgramStopped):
-                self.execution.exec_status = ExecutionStatus.ABORTED
-            elif isinstance(exit_program_state, ProgramError):
-                self.execution.exec_status = ExecutionStatus.FAILED
-                self.execution.error = exit_program_state.error["error"]
-                self.execution.cause = exit_program_state.error["cause"]
-            elif isinstance(exit_program_state, ProgramTimedOut):
-                self.execution.exec_status = ExecutionStatus.TIMED_OUT
-            else:
-                raise RuntimeWarning(
-                    f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
-                )
-            self.execution._publish_execution_status_change_event()
-
     name: Final[str]
     role_arn: Final[Arn]
     exec_arn: Final[Arn]
+
+    account_id: str
+    region_name: str
+
     state_machine: Final[StateMachineInstance]
     start_date: Final[Timestamp]
     input_data: Final[Optional[dict]]
@@ -102,6 +108,8 @@ class Execution:
         name: str,
         role_arn: Arn,
         exec_arn: Arn,
+        account_id: str,
+        region_name: str,
         state_machine: StateMachineInstance,
         start_date: Timestamp,
         input_data: Optional[dict] = None,
@@ -110,6 +118,8 @@ class Execution:
         self.name = name
         self.role_arn = role_arn
         self.exec_arn = exec_arn
+        self.account_id = account_id
+        self.region_name = region_name
         self.state_machine = state_machine
         self.start_date = start_date
         self.input_data = input_data
@@ -122,7 +132,9 @@ class Execution:
         self.exec_worker = None
         self.error = None
         self.cause = None
-        self._events_client = connect_to().events
+
+    def _get_events_client(self):
+        return connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
 
     def to_start_output(self) -> StartExecutionOutput:
         return StartExecutionOutput(executionArn=self.exec_arn, startDate=self.start_date)
@@ -194,28 +206,36 @@ class Execution:
         event_history: HistoryEventList = self.exec_worker.env.event_history.get_event_history()
         return GetExecutionHistoryOutput(events=event_history)
 
+    @staticmethod
+    def _to_serialized_date(timestamp: datetime.datetime) -> str:
+        """See test in tests.aws.services.stepfunctions.v2.base.test_base.TestSnfBase.test_execution_dateformat"""
+        return (
+            f'{timestamp.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
+        )
+
     def start(self) -> None:
         # TODO: checks exec_worker does not exists already?
         if self.exec_worker:
             raise InvalidName()  # TODO.
-
         self.exec_worker = ExecutionWorker(
-            role_arn=self.role_arn,
             definition=self.state_machine.definition,
             input_data=self.input_data,
-            exec_comm=Execution.BaseExecutionWorkerComm(self),
+            exec_comm=BaseExecutionWorkerComm(self),
             context_object_init=ContextObjectInitData(
                 Execution=ContextObjectExecution(
                     Id=self.exec_arn,
                     Input=self.input_data,
                     Name=self.name,
                     RoleArn=self.role_arn,
-                    StartTime=self.start_date.time().isoformat(),
+                    StartTime=self._to_serialized_date(self.start_date),
                 ),
                 StateMachine=ContextObjectStateMachine(
                     Id=self.state_machine.arn,
                     Name=self.state_machine.name,
                 ),
+            ),
+            aws_execution_details=AWSExecutionDetails(
+                account=self.account_id, region=self.region_name, role_arn=self.role_arn
             ),
         )
         self.exec_status = ExecutionStatus.RUNNING
@@ -259,7 +279,7 @@ class Execution:
             ),
         )
         try:
-            self._events_client.put_events(Entries=[entry])
+            self._get_events_client().put_events(Entries=[entry])
         except Exception:
             LOG.exception(
                 f"Unable to send notification of Entry='{entry}' for Step Function execution with Arn='{self.exec_arn}' to EventBridge."

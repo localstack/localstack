@@ -7,8 +7,7 @@ import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Mapping, Optional, Sequence, overload
 
-from localstack.aws.api.lambda_ import Runtime
-from localstack.services.lambda_.lambda_api import use_docker
+from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.utils.common import to_str
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -31,24 +30,6 @@ if TYPE_CHECKING:
     )
 
 LOG = logging.getLogger(__name__)
-
-# Supported Runtimes: https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
-# NOTE: missing support for `dotnet7` (container only)
-RUNTIMES_AGGREGATED = {
-    "python": [
-        Runtime.python3_7,
-        Runtime.python3_8,
-        Runtime.python3_9,
-        Runtime.python3_10,
-        Runtime.python3_11,
-    ],
-    "nodejs": [Runtime.nodejs14_x, Runtime.nodejs16_x, Runtime.nodejs18_x],
-    "ruby": [Runtime.ruby2_7, Runtime.ruby3_2],
-    "java": [Runtime.java8, Runtime.java8_al2, Runtime.java11, Runtime.java17],
-    "dotnet": [Runtime.dotnet6],
-    "go": [Runtime.go1_x],
-    "custom": [Runtime.provided, Runtime.provided_al2],
-}
 
 HANDLERS = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "handler.handler"),
@@ -343,23 +324,3 @@ def _get_lambda_invocation_events(logs_client, function_name, expected_num_event
         return events
 
     return retry(get_events, retries=retries, sleep_before=2)
-
-
-def is_old_local_executor() -> bool:
-    """Returns True if running in local executor mode and False otherwise.
-    The new provider ignores the LAMBDA_EXECUTOR flag and `not use_docker()` covers the fallback case if
-    the Docker socket is not available.
-    """
-    return is_old_provider() and not use_docker()
-
-
-def is_old_provider():
-    return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
-        "PROVIDER_OVERRIDE_LAMBDA"
-    ) in ["legacy", "v1"]
-
-
-def is_new_provider():
-    return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
-        "PROVIDER_OVERRIDE_LAMBDA"
-    ) not in ["legacy", "v1"]

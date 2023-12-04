@@ -1,13 +1,5 @@
-# builder: Stage to build a custom JRE (with jlink)
-FROM python:3.11.5-slim-buster@sha256:9f35f3a6420693c209c11bba63dcf103d88e47ebe0b205336b5168c122967edf as java-builder
-ARG TARGETARCH
-
-# install OpenJDK 11
-RUN apt-get update && \
-        apt-get install -y openjdk-11-jdk-headless && \
-        apt-get clean && rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${TARGETARCH}
+# java-builder: Stage to build a custom JRE (with jlink)
+FROM eclipse-temurin:11@sha256:17571c4ae2936842c2b6547a382dd0fad3a4601294240a871a0282657f3e89db as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -37,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.5-slim-buster@sha256:9f35f3a6420693c209c11bba63dcf103d88e47ebe0b205336b5168c122967edf as base
+FROM python:3.11.6-slim-bookworm@sha256:1bc6a3e9356d64ea632791653bc71a56340e8741dab66434ab2739ebf6aed29d as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -46,16 +38,50 @@ RUN --mount=type=cache,target=/var/cache/apt \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2
+            ca-certificates curl gnupg git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords procps iproute2 xz-utils
 
 # FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
-RUN --mount=type=cache,target=/var/cache/apt \
-    mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        nodejs
+# Install nodejs package from the dist release server. Note: we're installing from dist binaries, and not via
+#  `apt-get`, to avoid installing `python3.9` into the image (which otherwise comes as a dependency of nodejs).
+# See https://github.com/nodejs/docker-node/blob/main/18/bullseye/Dockerfile
+RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
+  && case "${dpkgArch##*-}" in \
+    amd64) ARCH='x64';; \
+    arm64) ARCH='arm64';; \
+    *) echo "unsupported architecture"; exit 1 ;; \
+  esac \
+  # gpg keys listed at https://github.com/nodejs/node#release-keys
+  && set -ex \
+  && for key in \
+    4ED778F539E3634C779C87C6D7062848A1AB005C \
+    141F07595B7B3FFE74309A937405533BE57C7D57 \
+    74F12602B6F1C4E913FAA37AD3A89613643B6201 \
+    DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7 \
+    61FC681DFB92A079F1685E77973F295594EC4689 \
+    8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600 \
+    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
+    890C08DB8579162FEE0DF9DB8BEAB4DFCF555EF4 \
+    C82FA3AE1CBEDC6BE46B9360C43CEC45C17AB93C \
+    108F52B48DB57BB0CC439B2997B01419BD92F80A \
+    A363A499291CBBC940DD62E41F10027AF002F8B0 \
+  ; do \
+      gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$key" || \
+      gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key" ; \
+  done \
+  && curl -O https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt \
+  && LATEST_VERSION_FILENAME=$(cat SHASUMS256.txt | grep -o "node-v.*-linux-$ARCH" | sort | uniq) \
+  && rm SHASUMS256.txt \
+  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/$LATEST_VERSION_FILENAME.tar.xz" \
+  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt.asc" \
+  && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
+  && grep " $LATEST_VERSION_FILENAME.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
+  && tar -xJf "$LATEST_VERSION_FILENAME.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
+  && rm "$LATEST_VERSION_FILENAME.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
+  && ln -s /usr/local/bin/node /usr/local/bin/nodejs \
+  # smoke tests
+  && node --version \
+  && npm --version \
+  && test ! $(which python3.9)
 
 SHELL [ "/bin/bash", "-c" ]
 
@@ -66,11 +92,9 @@ RUN { \
         echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
     } > /usr/local/bin/docker-java-home \
     && chmod +x /usr/local/bin/docker-java-home
-COPY --from=java-builder /usr/lib/jvm/java-11 /usr/lib/jvm/java-11
-COPY --from=java-builder /etc/ssl/certs/java /etc/ssl/certs/java
-COPY --from=java-builder /etc/java-11-openjdk/security /etc/java-11-openjdk/security
-RUN ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
 ENV JAVA_HOME /usr/lib/jvm/java-11
+COPY --from=java-builder /usr/lib/jvm/java-11 $JAVA_HOME
+RUN ln -s $JAVA_HOME/bin/java /usr/bin/java
 ENV PATH "${PATH}:${JAVA_HOME}/bin"
 
 # set workdir
@@ -103,13 +127,13 @@ ADD bin/hosts /etc/hosts
 # expose default environment
 # Set edge bind host so localstack can be reached by other containers
 # set library path and default LocalStack hostname
-ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
+ENV LD_LIBRARY_PATH=$JAVA_HOME/lib:$JAVA_HOME/lib/server
 ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
 
 # Install the latest version of awslocal globally
 RUN --mount=type=cache,target=/root/.cache \
-    pip3 install --upgrade awscli awscli-local requests
+    pip3 install --upgrade awscli==1.30.5 awscli-local requests
 
 
 
@@ -121,7 +145,7 @@ ARG TARGETARCH
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
         # Install dependencies to add additional repos
-        apt-get install -y gcc python-dev
+        apt-get install -y gcc
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
@@ -171,10 +195,6 @@ RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > 
     mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
 RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
-
-# Install the latest version of the LocalStack Persistence Plugin
-RUN --mount=type=cache,target=/root/.cache \
-    (. .venv/bin/activate && pip3 install --upgrade localstack-plugin-persistence)
 
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678

@@ -11,6 +11,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventList,
     HistoryEventType,
 )
+from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
@@ -23,15 +24,15 @@ LOG = logging.getLogger(__name__)
 _DELETION_TIMEOUT_SECS: Final[int] = 120
 
 
-def is_old_provider():
+def is_legacy_provider():
     return (
         os.environ.get("TEST_TARGET") != "AWS_CLOUD"
-        and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") != "v2"
+        and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") == "legacy"
     )
 
 
-def is_new_provider():
-    return not is_old_provider()
+def is_not_legacy_provider():
+    return not is_legacy_provider()
 
 
 def await_no_state_machines_listed(stepfunctions_client):
@@ -260,6 +261,18 @@ def launch_and_record_execution(
     )
 
     get_execution_history = stepfunctions_client.get_execution_history(executionArn=execution_arn)
+
+    # Transform all map runs if any.
+    try:
+        map_run_arns = JSONPathUtils.extract_json("$..mapRunArn", get_execution_history)
+        if isinstance(map_run_arns, str):
+            map_run_arns = [map_run_arns]
+        for i, map_run_arn in enumerate(list(set(map_run_arns))):
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_map_run_arn(map_run_arn, i))
+    except RuntimeError:
+        # No mapRunArns
+        pass
+
     sfn_snapshot.match("get_execution_history", get_execution_history)
 
 

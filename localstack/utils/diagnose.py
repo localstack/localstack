@@ -7,7 +7,7 @@ from typing import Dict, List, Union
 from localstack import config
 from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.services.lambda_.invocation.docker_runtime_executor import IMAGE_PREFIX
-from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING
+from localstack.services.lambda_.runtimes import IMAGE_MAPPING
 from localstack.utils import bootstrap
 from localstack.utils.analytics import usage
 from localstack.utils.container_networking import get_main_container_name
@@ -40,11 +40,11 @@ ENDPOINT_RESOLVE_LIST = ["localhost.localstack.cloud", "api.localstack.cloud"]
 INSPECT_DIRECTORIES = [DEFAULT_VOLUME_DIR, "/tmp"]
 
 
-def get_localstack_logs() -> Union[str, Dict]:
+def get_localstack_logs() -> Dict:
     try:
         result = DOCKER_CLIENT.get_container_logs(get_main_container_name())
     except Exception as e:
-        result = "error getting docker logs for container: %s" % e
+        result = f"error getting docker logs for container: {e}"
 
     return {"docker": result}
 
@@ -63,6 +63,9 @@ def get_localstack_config() -> Dict:
         if inspect.isclass(v):
             continue
         if "typing." in str(type(v)):
+            continue
+        if k == "GATEWAY_LISTEN":
+            result[k] = config.GATEWAY_LISTEN
             continue
 
         if hasattr(v, "__dict__"):

@@ -5,7 +5,7 @@ from xml.sax.saxutils import escape
 from moto.cloudwatch import cloudwatch_backends
 from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm, MetricDatum
 
-from localstack.aws.accounts import get_account_id_from_access_key_id, get_aws_account_id
+from localstack.aws.accounts import get_account_id_from_access_key_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AlarmNames,
@@ -28,13 +28,13 @@ from localstack.aws.api.cloudwatch import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
-from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request
 from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws.arns import extract_account_id_from_arn
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.patch import patch
 from localstack.utils.sync import poll_condition
@@ -144,7 +144,7 @@ def put_metric_alarm(
 
 def create_message_response_update_state(alarm, old_state):
     response = {
-        "AWSAccountId": get_aws_account_id(),
+        "AWSAccountId": extract_account_id_from_arn(alarm.alarm_arn),
         "OldStateValue": old_state,
         "AlarmName": alarm.name,
         "AlarmDescription": alarm.description or "",
@@ -232,16 +232,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
-        # TODO remove with 2.0
-        ROUTER.add(
-            DEPRECATED_PATH_GET_RAW_METRICS,
-            deprecated_endpoint(
-                self.get_raw_metrics,
-                previous_path=DEPRECATED_PATH_GET_RAW_METRICS,
-                deprecation_version="1.3.0",
-                new_path=PATH_GET_RAW_METRICS,
-            ),
-        )
         self.start_alarm_scheduler()
 
     def on_before_state_reset(self):
@@ -278,7 +268,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames) -> None:
         moto.call_moto(context)
         for alarm_name in alarm_names:
-            arn = arns.cloudwatch_alarm_arn(alarm_name)
+            arn = arns.cloudwatch_alarm_arn(alarm_name, context.account_id, context.region)
             self.alarm_scheduler.delete_scheduler_for_alarm(arn)
 
     def get_raw_metrics(self, request: Request):
@@ -352,9 +342,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutMetricAlarmInput,
     ) -> None:
-
         # missing will be the default, when not set (but it will not explicitly be set)
-        if not request.get("TreatMissingData", "missing") in [
+        if request.get("TreatMissingData", "missing") not in [
             "breaching",
             "notBreaching",
             "ignore",
@@ -371,7 +360,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 if value % 60 != 0:
                     raise ValidationError("Period must be 10, 30 or a multiple of 60")
         if request.get("Statistic"):
-            if not request.get("Statistic") in [
+            if request.get("Statistic") not in [
                 "SampleCount",
                 "Average",
                 "Sum",
@@ -385,7 +374,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         moto.call_moto(context)
 
         name = request.get("AlarmName")
-        arn = arns.cloudwatch_alarm_arn(name)
+        arn = arns.cloudwatch_alarm_arn(name, context.account_id, context.region)
         self.tags.tag_resource(arn, request.get("Tags"))
         self.alarm_scheduler.schedule_metric_alarm(arn)
 

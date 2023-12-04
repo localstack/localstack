@@ -3,9 +3,43 @@ from localstack.services.lambda_.api_utils import (
     qualifier_is_alias,
     qualifier_is_version,
 )
+from localstack.services.lambda_.runtimes import (
+    ALL_RUNTIMES,
+    IMAGE_MAPPING,
+    SUPPORTED_RUNTIMES,
+    TESTED_RUNTIMES,
+    VALID_LAYER_RUNTIMES,
+    VALID_RUNTIMES,
+)
 
 
 class TestApiUtils:
+    def test_check_runtime(self):
+        """
+        Ensure that we keep the runtime lists consistent. The supported runtimes through image mappings
+        should not diverge from the API-validated inputs nor the tested runtimes.
+        """
+        # Ensure that we have image mappings for all runtimes used in LocalStack (motivated by #9020)
+        assert set(ALL_RUNTIMES) == set(IMAGE_MAPPING.keys())
+
+        # Ensure that we test all supported runtimes
+        assert set(SUPPORTED_RUNTIMES) == set(
+            TESTED_RUNTIMES
+        ), "mismatch between supported and tested runtimes"
+
+        # Ensure that valid runtimes (i.e., API-level validation) match the actually supported runtimes
+        # HINT: Update your botocore version if this check fails
+        valid_runtimes = VALID_RUNTIMES[1:-1].split(", ")
+        assert set(SUPPORTED_RUNTIMES) == set(
+            valid_runtimes
+        ), "mismatch between supported and API-valid runtimes"
+
+        # Ensure that valid layer runtimes (includes some extra runtimes) contain the actually supported runtimes
+        valid_layer_runtimes = VALID_LAYER_RUNTIMES[1:-1].split(", ")
+        assert set(ALL_RUNTIMES).issubset(
+            set(valid_layer_runtimes)
+        ), "supported runtimes not part of compatible runtimes for layers"
+
     def test_is_qualifier_expression(self):
         assert is_qualifier_expression("abczABCZ")
         assert is_qualifier_expression("a01239")

@@ -23,7 +23,6 @@ class TestNotifications:
     def test_sns_to_sqs(
         self, sqs_create_queue, sns_create_topic, sqs_receive_num_messages, aws_client
     ):
-
         # create topic and queue
         queue_url = sqs_create_queue()
         topic_info = sns_create_topic()

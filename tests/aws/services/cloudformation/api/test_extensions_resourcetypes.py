@@ -12,7 +12,6 @@ class TestExtensionsResourceTypes:
     def test_deploy_resource_type(
         self, deploy_cfn_template, register_extension, snapshot, aws_client
     ):
-
         artifact_path = os.path.join(
             os.path.dirname(__file__),
             "../artifacts/extensions/resourcetypes/localstack-testing-deployableresource.zip",

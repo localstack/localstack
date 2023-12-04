@@ -10,21 +10,27 @@ from operator import itemgetter
 import pytest
 import requests
 import xmltodict
+from botocore.auth import SigV4Auth
 from botocore.exceptions import ClientError
 from pytest_httpserver import HTTPServer
 from werkzeug import Response
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
+    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SMS_MSGS_ENDPOINT
+from localstack.services.sns.constants import (
+    PLATFORM_ENDPOINT_MSGS_ENDPOINT,
+    SMS_MSGS_ENDPOINT,
+    SUBSCRIPTION_TOKENS_ENDPOINT,
+)
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -112,9 +118,13 @@ class TestSNSTopicCrud:
 
         snapshot.match("get-attrs-nonexistent-topic", e.value.response)
 
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.get_topic_attributes(TopicArn="test-topic")
+
+        snapshot.match("get-attrs-malformed-topic", e.value.response)
+
     @markers.aws.validated
     def test_tags(self, sns_create_topic, snapshot, aws_client):
-
         topic_arn = sns_create_topic()["TopicArn"]
         with pytest.raises(ClientError) as exc:
             aws_client.sns.tag_resource(
@@ -169,7 +179,7 @@ class TestSNSTopicCrud:
         assert topic_arn_params[5] == topic_name
 
         if not is_aws_cloud():
-            assert topic_arn_params[4] == get_aws_account_id()
+            assert topic_arn_params[4] == TEST_AWS_ACCOUNT_ID
 
         topic_attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
         snapshot.match("get-topic-attrs", topic_attrs)
@@ -241,12 +251,18 @@ class TestSNSPublishCrud:
         queue_url = sqs_create_queue()
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
-        client = aws_http_client_factory("sns", region="us-east-1")
+        client = aws_http_client_factory(
+            "sns",
+            signer_factory=SigV4Auth,
+            region=TEST_AWS_REGION_NAME,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
 
         if is_aws_cloud():
-            endpoint_url = "https://sns.us-east-1.amazonaws.com"
+            endpoint_url = f"https://sns.{TEST_AWS_REGION_NAME}.amazonaws.com"
         else:
-            endpoint_url = config.get_edge_url()
+            endpoint_url = config.internal_service_url()
 
         response = client.post(
             endpoint_url,
@@ -370,6 +386,44 @@ class TestSNSPublishCrud:
             aws_client.sns.publish(TopicArn=fake_arn, Message=message)
 
         snapshot.match("error", e.value.response)
+
+    @markers.aws.validated
+    def test_topic_publish_another_region(
+        self, sns_create_topic, snapshot, aws_client, aws_client_factory
+    ):
+        # create the topic in the default region, so that it's easier to clean up with the fixture
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        # create a client in another region
+        sns_client_region_2 = aws_client_factory.get_client(
+            service_name="sns", region_name=SECONDARY_TEST_AWS_REGION_NAME
+        )
+
+        message = "This is a test message"
+
+        # test to send a message with the client from the same region
+        response = aws_client.sns.publish(TopicArn=topic_arn, Message=message)
+        snapshot.match("success", response)
+
+        # test to send from the second region client
+        with pytest.raises(ClientError) as e:
+            sns_client_region_2.publish(TopicArn=topic_arn, Message=message)
+
+        snapshot.match("error", e.value.response)
+
+        # test to send batch from the second region client
+        with pytest.raises(ClientError) as e:
+            sns_client_region_2.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": message,
+                    }
+                ],
+            )
+
+        snapshot.match("error-batch", e.value.response)
 
     @markers.aws.validated
     def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client):
@@ -799,6 +853,39 @@ class TestSNSSubscriptionCrud:
                 }
             )
         snapshot.match("subscribe-diff-attributes", e.value.response)
+
+    @markers.aws.validated
+    def test_unsubscribe_idempotency(
+        self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
+    ):
+        topic_name = f"topic-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        sub_arn = subscription["SubscriptionArn"]
+
+        unsubscribe_1 = aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
+        snapshot.match("unsubscribe-1", unsubscribe_1)
+        unsubscribe_2 = aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
+        snapshot.match("unsubscribe-2", unsubscribe_2)
+
+    @markers.aws.validated
+    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
+
+        snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
+
+        snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
+
+        snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
 
 
 class TestSNSSubscriptionLambda:
@@ -2021,7 +2108,6 @@ class TestSNSSubscriptionSQSFifo:
         raw_message_delivery,
         aws_client,
     ):
-
         # the hash isn't the same because of the Binary attributes (maybe decoding order?)
         snapshot.add_transformer(
             snapshot.transform.key_value(
@@ -2513,7 +2599,6 @@ class TestSNSFilter:
     def test_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -2570,11 +2655,49 @@ class TestSNSFilter:
         num_msgs_2 = len(response_2["Messages"])
         assert num_msgs_2 == num_msgs_1
 
+        # remove all messages from the queue
+        receipt_handle = response_1["Messages"][0]["ReceiptHandle"]
+        aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        # test with a property value set to null with an OR operator with anything-but
+        filter_policy = json.dumps({"attr1": [None, {"anything-but": "whatever"}]})
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=filter_policy,
+        )
+
+        def get_filter_policy():
+            subscription_attrs = aws_client.sns.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            return subscription_attrs["Attributes"]["FilterPolicy"]
+
+        # wait for the new filter policy to be in effect
+        poll_condition(lambda: get_filter_policy() == filter_policy, timeout=4)
+        response_attributes_2 = aws_client.sns.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        snapshot.match("subscription-attributes-2", response_attributes_2)
+
+        # publish message that does not satisfy the filter policy, assert that message is not received
+        message = "This the test message for null"
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=message,
+        )
+
+        response_3 = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        snapshot.match("messages-3", response_3)
+        assert "Messages" in response_3
+        assert response_3["Messages"] == []
+
     @markers.aws.validated
     def test_exists_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -2856,7 +2979,6 @@ class TestSNSFilter:
         raw_message_delivery,
         aws_client,
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -2894,7 +3016,8 @@ class TestSNSFilter:
         )
         snapshot.match("recv-init", response)
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # publish messages that satisfies the filter policy, assert that messages are received
         messages = [
@@ -2934,7 +3057,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # publish message that does not satisfy the filter policy as it's not even JSON, or not a JSON object
         message = "Regular string message"
@@ -2951,13 +3075,13 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
     @markers.aws.validated
     def test_filter_policy_for_batch(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url_with_filter = sqs_create_queue()
         subscription_with_filter = sns_create_sqs_subscription(
@@ -3057,13 +3181,140 @@ class TestSNSFilter:
         # there should be no messages in this queue
         snapshot.match("messages-with-filter-after-publish-filtered", response_after_publish_filter)
 
+    @markers.aws.validated
+    def test_filter_policy_on_message_body_dot_attribute(
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
+        snapshot,
+        aws_client,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        nested_filter_policy = json.dumps(
+            {
+                "object.nested": ["string.value"],
+            }
+        )
+
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicyScope",
+            AttributeValue="MessageBody",
+        )
+
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=nested_filter_policy,
+        )
+
+        def get_filter_policy():
+            subscription_attrs = aws_client.sns.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            return subscription_attrs["Attributes"]["FilterPolicy"]
+
+        # wait for the new filter policy to be in effect
+        poll_condition(lambda: get_filter_policy() == nested_filter_policy, timeout=4)
+
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
+        )
+        snapshot.match("recv-init", response)
+        # assert there are no messages in the queue
+        assert "Messages" in response
+        assert response["Messages"] == []
+
+        def _verify_and_snapshot_sqs_messages(msg_to_send: list[dict], snapshot_prefix: str):
+            for i, _message in enumerate(msg_to_send):
+                aws_client.sns.publish(
+                    TopicArn=topic_arn,
+                    Message=json.dumps(_message),
+                )
+
+                _response = aws_client.sqs.receive_message(
+                    QueueUrl=queue_url,
+                    VisibilityTimeout=0,
+                    WaitTimeSeconds=5 if is_aws_cloud() else 2,
+                )
+                snapshot.match(f"{snapshot_prefix}-{i}", _response)
+                receipt_handle = _response["Messages"][0]["ReceiptHandle"]
+                aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        # publish messages that satisfies the filter policy, assert that messages are received
+        messages = [
+            {"object": {"nested": "string.value"}},
+            {"object.nested": "string.value"},
+        ]
+        _verify_and_snapshot_sqs_messages(messages, snapshot_prefix="recv-nested-msg")
+
+        # publish messages that do not satisfy the filter policy, assert those messages are not received
+        messages = [
+            {"object": {"nested": "test-auto"}},
+        ]
+        for message in messages:
+            aws_client.sns.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
+
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
+        )
+        # assert there are no messages in the queue
+        assert "Messages" in response
+        assert response["Messages"] == []
+
+        # assert with more nesting
+        deep_nested_filter_policy = json.dumps(
+            {
+                "object.nested.test": ["string.value"],
+            }
+        )
+
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=deep_nested_filter_policy,
+        )
+        # wait for the new filter policy to be in effect
+        poll_condition(lambda: get_filter_policy() == deep_nested_filter_policy, timeout=4)
+
+        messages = [
+            {"object": {"nested": {"test": "string.value"}}},
+            {"object.nested.test": "string.value"},
+            {"object.nested": {"test": "string.value"}},
+            {"object": {"nested.test": "string.value"}},
+        ]
+        _verify_and_snapshot_sqs_messages(messages, snapshot_prefix="recv-deep-nested-msg")
+        # publish messages that do not satisfy the filter policy, assert those messages are not received
+        messages = [
+            {"object": {"nested": {"test": "string.notvalue"}}},
+        ]
+        for message in messages:
+            aws_client.sns.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
+
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
+        )
+        # assert there are no messages in the queue
+        assert "Messages" in response
+        assert response["Messages"] == []
+
 
 class TestSNSPlatformEndpoint:
     @markers.aws.only_localstack
     def test_subscribe_platform_endpoint(
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
-
         sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -3097,8 +3348,10 @@ class TestSNSPlatformEndpoint:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="Test asserts wrong behaviour")
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
-    # Error responses are from reported https://github.com/spulec/moto/issues/2333
+    # TODO: AWS validate this test
+    # See https://github.com/getmoto/moto/pull/6953 where Moto updated errors.
     def test_create_platform_endpoint_check_idempotency(
         self, sns_create_platform_application, aws_client
     ):
@@ -3108,6 +3361,10 @@ class TestSNSPlatformEndpoint:
             Attributes={"PlatformCredential": "123"},
         )
         token = "test1"
+        # TODO: As per AWS docs:
+        # > The CreatePlatformEndpoint action is idempotent, so if the requester already owns an endpoint
+        # > with the same device token and attributes, that endpoint's ARN is returned without creating a new endpoint.
+        # The 'Token' and 'Attributes' are critical to idempotent behaviour.
         kwargs_list = [
             {"Token": token, "CustomUserData": "test-data"},
             {"Token": token, "CustomUserData": "test-data"},
@@ -3480,6 +3737,13 @@ class TestSNSSubscriptionHttp:
 
     @markers.aws.manual_setup_required
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.http-message-headers.Accept",  # requests adds the header but not SNS, not very important
+            "$.http-message-headers-raw.Accept",
+            "$.http-confirm-sub-headers.Accept",
+        ]
+    )
     def test_subscribe_external_http_endpoint(
         self, sns_create_http_endpoint, raw_message_delivery, aws_client, snapshot
     ):
@@ -3492,10 +3756,20 @@ class TestSNSSubscriptionHttp:
                     fields["ResponseMetadata"]["HTTPStatusCode"] = response.status_code
             return parsed_xml_body
 
+        def _clean_headers(response_headers: dict):
+            return {key: val for key, val in response_headers.items() if "Forwarded" not in key}
+
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("RequestId"),
                 snapshot.transform.key_value("Token"),
+                snapshot.transform.key_value("Host"),
+                snapshot.transform.key_value(
+                    "Content-Length", reference_replacement=False
+                ),  # might change depending on compression
+                snapshot.transform.key_value(
+                    "Connection", reference_replacement=False
+                ),  # casing might change
                 snapshot.transform.regex(
                     r"(?i)(?<=SubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=ConfirmSubscription)",
                     replacement="<subscribe-domain>",
@@ -3518,6 +3792,8 @@ class TestSNSSubscriptionHttp:
         assert sub_request.headers["x-amz-sns-message-type"] == "SubscriptionConfirmation"
         assert "Signature" in payload
         assert "SigningCertURL" in payload
+
+        snapshot.match("http-confirm-sub-headers", _clean_headers(sub_request.headers))
 
         token = payload["Token"]
         subscribe_url = payload["SubscribeURL"]
@@ -3608,6 +3884,7 @@ class TestSNSSubscriptionHttp:
         if raw_message_delivery:
             payload = notification_request.data.decode()
             assert payload == message
+            snapshot.match("http-message-headers-raw", _clean_headers(notification_request.headers))
         else:
             payload = notification_request.get_json(force=True)
             assert payload["Type"] == "Notification"
@@ -3616,6 +3893,7 @@ class TestSNSSubscriptionHttp:
             assert payload["Message"] == message
             assert payload["UnsubscribeURL"] == expected_unsubscribe_url
             snapshot.match("http-message", payload)
+            snapshot.match("http-message-headers", _clean_headers(notification_request.headers))
 
         unsub_request = requests.get(expected_unsubscribe_url)
         unsubscribe_confirmation = xmltodict.parse(unsub_request.content)
@@ -3723,7 +4001,8 @@ class TestSNSSubscriptionHttp:
 
         response = aws_client.sqs.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=2)
         # AWS doesn't send to the DLQ if the UnsubscribeConfirmation fails to be delivered
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
 
 class TestSNSSubscriptionFirehose:
@@ -3980,9 +4259,9 @@ class TestSNSPublishDelivery:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",
-            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-            "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            "$..Attributes.DeliveryPolicy",
+            "$..Attributes.EffectiveDeliveryPolicy",
+            "$..Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
         ]
     )
     def test_delivery_lambda(
@@ -4008,7 +4287,8 @@ class TestSNSPublishDelivery:
         function_name = f"lambda-function-{short_uid()}"
         permission_id = f"test-statement-{short_uid()}"
         subject = "[Subject] Test subject"
-        message = "Hello world."
+        message_fail = "Should not be received"
+        message_success = "Should be received"
         topic_name = f"test-topic-{short_uid()}"
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
         parsed_arn = parse_arn(topic_arn)
@@ -4018,7 +4298,6 @@ class TestSNSPublishDelivery:
         policy_name = f"SNSSuccessFeedback-policy-{short_uid()}"
 
         # enable Success Feedback from SNS to be sent to CloudWatch
-        # TODO: this is enabled by default in LS
         trust_policy = {
             "Version": "2012-10-17",
             "Statement": [
@@ -4058,18 +4337,6 @@ class TestSNSPublishDelivery:
             # wait for the policy to be properly attached
             time.sleep(20)
 
-        aws_client.sns.set_topic_attributes(
-            TopicArn=topic_arn,
-            AttributeName="LambdaSuccessFeedbackRoleArn",
-            AttributeValue=role_arn,
-        )
-
-        aws_client.sns.set_topic_attributes(
-            TopicArn=topic_arn,
-            AttributeName="LambdaSuccessFeedbackSampleRate",
-            AttributeValue="100",
-        )
-
         topic_attributes = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
         snapshot.match("get-topic-attrs", topic_attributes)
 
@@ -4103,7 +4370,32 @@ class TestSNSPublishDelivery:
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        aws_client.sns.publish(TopicArn=topic_arn, Subject=subject, Message=message)
+        publish_no_logs = aws_client.sns.publish(
+            TopicArn=topic_arn, Subject=subject, Message=message_fail
+        )
+        snapshot.match("publish-no-logs", publish_no_logs)
+
+        # Then enable the SNS Delivery Logs for Lambda on the topic
+        aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackRoleArn",
+            AttributeValue=role_arn,
+        )
+
+        aws_client.sns.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackSampleRate",
+            AttributeValue="100",
+        )
+
+        topic_attributes = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attrs-with-success-feedback", topic_attributes)
+
+        publish_logs = aws_client.sns.publish(
+            TopicArn=topic_arn, Subject=subject, Message=message_success
+        )
+        # we snapshot the publish call to match the messageId to the events
+        snapshot.match("publish-logs", publish_logs)
 
         # TODO: Wait until Lambda function actually executes and not only for SNS logs
         log_group_name = f"sns/{region}/{account_id}/{topic_name}"
@@ -4212,8 +4504,10 @@ class TestSNSRetrospectionEndpoints:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        msgs_url = config.get_edge_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
-        api_contents = requests.get(msgs_url, params={"region": TEST_AWS_REGION_NAME}).json()
+        msgs_url = config.internal_service_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
+        api_contents = requests.get(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        ).json()
         api_platform_endpoints_msgs = api_contents["platform_endpoint_messages"]
 
         assert len(api_platform_endpoints_msgs) == 2
@@ -4230,7 +4524,8 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure you can select the region
         msg_with_region = requests.get(
-            msgs_url, params={"region": SECONDARY_TEST_AWS_REGION_NAME}
+            msgs_url,
+            params={"region": SECONDARY_TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID},
         ).json()
         assert len(msg_with_region["platform_endpoint_messages"]) == 0
         assert msg_with_region["region"] == SECONDARY_TEST_AWS_REGION_NAME
@@ -4241,26 +4536,41 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure messages can be filtered by EndpointArn
         api_contents_with_endpoint = requests.get(
-            msgs_url, params={"endpointArn": endpoint_arn}
+            msgs_url,
+            params={
+                "endpointArn": endpoint_arn,
+            },
         ).json()
         msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
         assert len(msgs_with_endpoint) == 1
         assert len(msgs_with_endpoint[endpoint_arn]) == 1
-        assert api_contents_with_endpoint["region"] == "us-east-1"
+        assert api_contents_with_endpoint["region"] == TEST_AWS_REGION_NAME
 
         # Ensure you can reset the saved messages by EndpointArn
-        delete_res = requests.delete(msgs_url, params={"endpointArn": endpoint_arn})
+        delete_res = requests.delete(
+            msgs_url,
+            params={
+                "endpointArn": endpoint_arn,
+            },
+        )
         assert delete_res.status_code == 204
         api_contents_with_endpoint = requests.get(
-            msgs_url, params={"endpointArn": endpoint_arn}
+            msgs_url,
+            params={
+                "endpointArn": endpoint_arn,
+            },
         ).json()
         msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
         assert len(msgs_with_endpoint[endpoint_arn]) == 0
 
         # Ensure you can reset the saved messages by region
-        delete_res = requests.delete(msgs_url, params={"region": "us-east-1"})
+        delete_res = requests.delete(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        )
         assert delete_res.status_code == 204
-        msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
+        msg_with_region = requests.get(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        ).json()
         assert not msg_with_region["platform_endpoint_messages"]
 
     @markers.aws.only_localstack
@@ -4296,8 +4606,10 @@ class TestSNSRetrospectionEndpoints:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        msgs_url = config.get_edge_url() + SMS_MSGS_ENDPOINT
-        api_contents = requests.get(msgs_url, params={"region": TEST_AWS_REGION_NAME}).json()
+        msgs_url = config.internal_service_url() + SMS_MSGS_ENDPOINT
+        api_contents = requests.get(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        ).json()
         api_sms_msgs = api_contents["sms_messages"]
 
         assert len(api_sms_msgs) == 3
@@ -4322,15 +4634,27 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure messages can be filtered by EndpointArn
         api_contents_with_number = requests.get(
-            msgs_url, params={"phoneNumber": phone_number_1}
+            msgs_url,
+            params={
+                "phoneNumber": phone_number_1,
+                "accountId": TEST_AWS_ACCOUNT_ID,
+                "region": TEST_AWS_REGION_NAME,
+            },
         ).json()
         msgs_with_number = api_contents_with_number["sms_messages"]
         assert len(msgs_with_number) == 1
         assert len(msgs_with_number[phone_number_1]) == 2
-        assert api_contents_with_number["region"] == "us-east-1"
+        assert api_contents_with_number["region"] == TEST_AWS_REGION_NAME
 
         # Ensure you can reset the saved messages by EndpointArn
-        delete_res = requests.delete(msgs_url, params={"phoneNumber": phone_number_1})
+        delete_res = requests.delete(
+            msgs_url,
+            params={
+                "phoneNumber": phone_number_1,
+                "accountId": TEST_AWS_ACCOUNT_ID,
+                "region": TEST_AWS_REGION_NAME,
+            },
+        )
         assert delete_res.status_code == 204
         api_contents_with_number = requests.get(
             msgs_url, params={"phoneNumber": phone_number_1}
@@ -4339,7 +4663,71 @@ class TestSNSRetrospectionEndpoints:
         assert len(msgs_with_number[phone_number_1]) == 0
 
         # Ensure you can reset the saved messages by region
-        delete_res = requests.delete(msgs_url, params={"region": "us-east-1"})
+        delete_res = requests.delete(
+            msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
+        )
         assert delete_res.status_code == 204
-        msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
+        msg_with_region = requests.get(msgs_url, params={"region": TEST_AWS_REGION_NAME}).json()
         assert not msg_with_region["sms_messages"]
+
+    @markers.aws.only_localstack
+    def test_subscription_tokens_can_retrospect(
+        self, sns_create_topic, sns_subscription, sns_create_http_endpoint, aws_client
+    ):
+        sns_store = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        # clean up the saved tokens
+        sns_store.subscription_tokens.clear()
+
+        message = "Good news everyone!"
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
+        topic_arn, subscription_arn, endpoint_url, server = sns_create_http_endpoint()
+        assert poll_condition(
+            lambda: len(server.log) >= 1,
+            timeout=5,
+        )
+        sub_request, _ = server.log[0]
+        payload = sub_request.get_json(force=True)
+        assert payload["Type"] == "SubscriptionConfirmation"
+        token = payload["Token"]
+        server.clear()
+
+        # we won't confirm the subscription, to simulate an external provider that wouldn't be able to access LocalStack
+        # try to access the internal to confirm the Token is there
+        tokens_base_url = config.internal_service_url() + SUBSCRIPTION_TOKENS_ENDPOINT
+        api_contents = requests.get(f"{tokens_base_url}/{subscription_arn}").json()
+        assert api_contents["subscription_token"] == token
+        assert api_contents["subscription_arn"] == subscription_arn
+
+        # try to send a message to an unconfirmed subscription, assert that the message isn't received
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
+
+        assert poll_condition(
+            lambda: len(server.log) == 0,
+            timeout=1,
+        )
+
+        aws_client.sns.confirm_subscription(TopicArn=topic_arn, Token=token)
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
+        assert poll_condition(
+            lambda: len(server.log) == 1,
+            timeout=2,
+        )
+
+        wrong_sub_arn = subscription_arn.replace(
+            TEST_AWS_REGION_NAME,
+            "il-central-1" if TEST_AWS_REGION_NAME != "il-central-1" else "me-south-1",
+        )
+        wrong_region_req = requests.get(f"{tokens_base_url}/{wrong_sub_arn}")
+        assert wrong_region_req.status_code == 404
+        assert wrong_region_req.json() == {
+            "error": "The provided SubscriptionARN is not found",
+            "subscription_arn": wrong_sub_arn,
+        }
+
+        # Ensure proper error is raised with wrong ARN
+        incorrect_arn_req = requests.get(f"{tokens_base_url}/randomarnhere")
+        assert incorrect_arn_req.status_code == 400
+        assert incorrect_arn_req.json() == {
+            "error": "The provided SubscriptionARN is invalid",
+            "subscription_arn": "randomarnhere",
+        }

@@ -6,9 +6,8 @@ from collections import defaultdict
 from operator import itemgetter
 from typing import IO, Dict, List, Optional
 from urllib.parse import quote, urlparse
-from zoneinfo import ZoneInfo
 
-import moto.s3.responses as moto_s3_responses
+from zoneinfo import ZoneInfo
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException, handler
@@ -157,16 +156,19 @@ from localstack.services.s3.utils import (
     create_redirect_for_post_request,
     etag_to_base_64_content_md5,
     extract_bucket_key_version_id_from_copy_source,
-    get_bucket_from_moto,
     get_failed_precondition_copy_source,
-    get_key_from_moto_bucket,
+    get_full_default_bucket_location,
     get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
     get_permission_from_header,
-    is_key_expired,
     serialize_expiration_header,
     validate_kms_key_id,
     verify_checksum,
+)
+from localstack.services.s3.utils_moto import (
+    get_bucket_from_moto,
+    get_key_from_moto_bucket,
+    is_moto_key_expired,
 )
 from localstack.services.s3.validation import (
     parse_grants_in_headers,
@@ -192,22 +194,11 @@ LOG = logging.getLogger(__name__)
 
 os.environ[
     "MOTO_S3_CUSTOM_ENDPOINTS"
-] = "s3.localhost.localstack.cloud:4566,s3.localhost.localstack.cloud"
+] = f"s3.{localstack_host().host_and_port()},s3.{localstack_host().host}"
 
 MOTO_CANONICAL_USER_ID = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a"
 # max file size for S3 objects kept in memory (500 KB by default)
 S3_MAX_FILE_SIZE_BYTES = 512 * 1024
-
-
-def get_full_default_bucket_location(bucket_name):
-    if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
-        host_definition = localstack_host(
-            use_hostname_external=True, custom_port=config.get_edge_port_http()
-        )
-        return f"{config.get_protocol()}://{host_definition.host_and_port()}/{bucket_name}/"
-    else:
-        host_definition = localstack_host(use_localhost_cloud=True)
-        return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):
@@ -230,6 +221,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._expiration_cache.pop(bucket, None)
 
     def on_after_init(self):
+        LOG.warning(
+            "You are using the deprecated 'asf'/'v2'/'legacy_v2' S3 provider"
+            "Remove 'PROVIDER_OVERRIDE_S3' to use the new S3 'v3' provider (current default)."
+        )
+
         apply_moto_patches()
         preprocess_request.append(self._cors_handler)
         register_website_hosting_routes(router=ROUTER)
@@ -613,8 +609,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
         src_moto_bucket = get_bucket_from_moto(moto_backend, bucket=src_bucket)
         source_key_object = get_key_from_moto_bucket(
-            src_moto_bucket, key=src_key, version_id=src_version_id
+            src_moto_bucket,
+            key=src_key,
+            version_id=src_version_id,
         )
+        # if the source object does not have an etag, it means it's a DeleteMarker
+        if not hasattr(source_key_object, "etag"):
+            if src_version_id:
+                raise InvalidRequest(
+                    "The source of a copy request may not specifically refer to a delete marker by version id."
+                )
+            raise NoSuchKey("The specified key does not exist.", Key=src_key)
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html
         source_object_last_modified = source_key_object.last_modified.replace(
@@ -783,7 +788,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         bucket_name = request["Bucket"]
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket_name)
-        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+        upload_id = request.get("UploadId")
+        if not (
+            multipart := moto_bucket.multiparts.get(upload_id)
+        ) or not multipart.key_name == request.get("Key"):
             raise NoSuchUpload(
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
@@ -801,7 +809,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_name = request["Bucket"]
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
-        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+        upload_id = request.get("UploadId")
+        if not (
+            multipart := moto_bucket.multiparts.get(upload_id)
+        ) or not multipart.key_name == request.get("Key"):
             raise NoSuchUpload(
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
@@ -847,7 +858,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: ListMultipartUploadsRequest,
     ) -> ListMultipartUploadsOutput:
-
         # TODO: implement KeyMarker and UploadIdMarker (using sort)
         # implement Delimiter and MaxUploads
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
@@ -1644,9 +1654,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 TargetBucket=target_bucket_name,
             )
 
-        if target_bucket.region_name != moto_bucket.region_name:
+        source_bucket_region = moto_bucket.region_name
+        if target_bucket.region_name != source_bucket_region:
             raise CrossLocationLoggingProhibitted(
                 "Cross S3 location logging not allowed. ",
+                TargetBucketLocation=target_bucket.region_name,
+            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
+                "Cross S3 location logging not allowed. ",
+                SourceBucketLocation=source_bucket_region,
                 TargetBucketLocation=target_bucket.region_name,
             )
 
@@ -1771,12 +1786,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
 def is_object_expired(moto_bucket, key: ObjectKey, version_id: str = None) -> bool:
     key_object = get_key_from_moto_bucket(moto_bucket, key, version_id=version_id)
-    return is_key_expired(key_object=key_object)
+    return is_moto_key_expired(key_object=key_object)
 
 
 def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
     import moto.s3.models as moto_s3_models
+    import moto.s3.responses as moto_s3_responses
     from moto.iam.access_control import PermissionResult
     from moto.s3.exceptions import InvalidObjectState
 
@@ -1926,4 +1942,4 @@ def apply_moto_patches():
 
         return False
 
-    setattr(moto_s3_models.FakeKey, "is_locked", property(key_is_locked))
+    moto_s3_models.FakeKey.is_locked = property(key_is_locked)

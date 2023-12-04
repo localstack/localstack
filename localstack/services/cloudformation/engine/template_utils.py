@@ -2,9 +2,9 @@ import re
 from typing import Any
 
 from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_AWS_NO_VALUE
+from localstack.utils.urls import localstack_host
 
-# TODO: deduplicate
-AWS_URL_SUFFIX = "localhost.localstack.cloud"
+AWS_URL_SUFFIX = localstack_host().host  # value is "amazonaws.com" in real AWS
 
 
 def get_deps_for_resource(resource: dict, evaluated_conditions: dict[str, bool]) -> set[str]:
@@ -51,7 +51,6 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
                     # { "Fn::Sub" : [ "Hello ${Name}", { "Name": "SomeName" } ] }
                     variables_found = re.findall("\\${([^}]+)}", v[0])
                     for var in variables_found:
-
                         if var in v[1]:
                             # variable is included in provided mapping and can either be a static value or another reference
                             if isinstance(v[1][var], dict):
@@ -262,6 +261,21 @@ def resolve_condition(
                         ]
                     )
                     return result
+                case "Fn::Select":
+                    index = v[0]
+                    options = v[1]
+                    for i, option in enumerate(options):
+                        if isinstance(option, dict):
+                            options[i] = resolve_condition(
+                                account_id,
+                                region_name,
+                                option,
+                                conditions,
+                                parameters,
+                                mappings,
+                                stack_name,
+                            )
+                    return options[index]
                 case "Fn::Sub":
                     # we can assume anything in there is a ref
                     if isinstance(v, str):
