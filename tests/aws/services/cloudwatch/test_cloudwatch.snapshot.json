@@ -1511,5 +1511,55 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_zero_and_labels": {
+    "recorded-date": "04-12-2023, 09:13:59",
+    "recorded-content": {
+      "get_metric_data_with_zero_and_labels": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Average",
+            "Label": "metric1 Average",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              19.416666666666668
+            ]
+          },
+          {
+            "Id": "result_Sum",
+            "Label": "metric1 Sum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              116.5
+            ]
+          },
+          {
+            "Id": "result_Minimum",
+            "Label": "metric1 Minimum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              0.0
+            ]
+          },
+          {
+            "Id": "result_Maximum",
+            "Label": "metric1 Maximum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              100.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
