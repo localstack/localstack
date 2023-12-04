@@ -1165,10 +1165,10 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     # create and prepare container
     container_config = ContainerConfiguration(get_docker_image_to_start())
     container = Container(container_config)
+    ensure_container_image(console, container)
 
     configure_container(container)
     container.configure(ContainerConfigurators.cli_params(cli_params or {}))
-    ensure_container_image(console, container)
 
     status = console.status("Starting LocalStack container")
     status.start()
@@ -1249,9 +1249,9 @@ def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
     console.log("configuring container")
     container_config = ContainerConfiguration(get_docker_image_to_start())
     container = Container(container_config)
+    ensure_container_image(console, container)
     configure_container(container)
     container.configure(ContainerConfigurators.cli_params(cli_params or {}))
-    ensure_container_image(console, container)
 
     container_config.detach = True
 
