@@ -190,6 +190,7 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
                 "QueueUrl"
             ]
         else:
+            # TODO: write test with CDK re-deploy updating the queue with no changes to validate this fix
             model["QueueUrl"] = sqs.get_queue_url(QueueName=model["QueueName"])["QueueUrl"]
 
         model["Arn"] = sqs.get_queue_attributes(
