@@ -13,5 +13,6 @@ class FunctionArgumentJsonPath(FunctionArgument):
         self._json_path: str = json_path
 
     def _eval_body(self, env: Environment) -> None:
-        self._value = JSONPathUtils.extract_json(self._json_path, env.inp)
+        inp = env.stack[-1]
+        self._value = JSONPathUtils.extract_json(self._json_path, inp)
         super()._eval_body(env=env)

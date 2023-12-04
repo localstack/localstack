@@ -40,12 +40,13 @@ class ArrayGetItem(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
+        args = env.stack.pop()
 
-        index = env.stack.pop()
+        index = args.pop()
         if not isinstance(index, int):
             raise TypeError(f"Expected an integer index value, but got '{index}'.")
 
-        array = env.stack.pop()
+        array = args.pop()
         if not isinstance(array, list):
             raise TypeError(f"Expected an array type, but got '{array}'.")
 

@@ -46,6 +46,9 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
     ) -> None:
+        # Discard the state evaluation output.
+        env.stack.pop()
+
         callback_id = env.context_object_manager.context_object["Task"]["Token"]
         callback_endpoint = env.callback_pool_manager.get(callback_id)
 

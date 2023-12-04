@@ -10,8 +10,10 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 class ResultPath(EvalComponent):
     DEFAULT_PATH: Final[str] = "$"
 
-    def __init__(self, result_path_src: str):
-        self.result_path_src: Final[Optional[str]] = result_path_src
+    result_path_src: Final[Optional[str]]
+
+    def __init__(self, result_path_src: Optional[str]):
+        self.result_path_src = result_path_src
 
     def _eval_body(self, env: Environment) -> None:
         result = env.stack.pop()
