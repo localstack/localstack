@@ -222,19 +222,22 @@ class ShapeNode:
 
     def _print_as_typed_dict(self, output, doc=True, quote_types=False):
         name = to_valid_python_name(self.shape.name)
-        q = '"' if quote_types else ""
         output.write('%s = TypedDict("%s", {\n' % (name, name))
         for k, v in self.shape.members.items():
+            member_name = to_valid_python_name(v.name)
+            # check if the member name is the same as the type name (recursive types need to use forward references)
+            recursive_type = name == member_name
+            q = '"' if quote_types or recursive_type else ""
             if k in self.shape.required_members:
                 if v.serialization.get("eventstream"):
-                    output.write(f'    "{k}": Iterator[{q}{to_valid_python_name(v.name)}{q}],\n')
+                    output.write(f'    "{k}": Iterator[{q}{member_name}{q}],\n')
                 else:
-                    output.write(f'    "{k}": {q}{to_valid_python_name(v.name)}{q},\n')
+                    output.write(f'    "{k}": {q}{member_name}{q},\n')
             else:
                 if v.serialization.get("eventstream"):
-                    output.write(f'    "{k}": Iterator[{q}{to_valid_python_name(v.name)}{q}],\n')
+                    output.write(f'    "{k}": Iterator[{q}{member_name}{q}],\n')
                 else:
-                    output.write(f'    "{k}": Optional[{q}{to_valid_python_name(v.name)}{q}],\n')
+                    output.write(f'    "{k}": Optional[{q}{member_name}{q}],\n')
         output.write("}, total=False)")
 
     def print_shape_doc(self, output, shape):

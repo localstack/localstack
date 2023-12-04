@@ -66,14 +66,17 @@ class SnapshotSession:
     def __init__(
         self,
         *,
-        file_path: str,
+        base_file_path: str,
         scope_key: str,
         update: Optional[bool] = False,  # TODO: find a way to remove this
         verify: Optional[bool] = False,  # TODO: find a way to remove this
+        raw: Optional[bool] = False,
     ):
         self.verify = verify
         self.update = update
-        self.file_path = file_path
+        self.file_path = f"{base_file_path}.snapshot.json"
+        self.raw_file_path = f"{base_file_path}.raw.snapshot.json"
+        self.raw = raw
         self.scope_key = scope_key
 
         self.called_keys = set()
@@ -109,6 +112,26 @@ class SnapshotSession:
                     recorded = {
                         "recorded-date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
                         "recorded-content": self.observed_state,
+                    }
+                    full_state[self.scope_key] = recorded
+                    state_to_dump = json.dumps(full_state, indent=2)
+                    fd.seek(0)
+                    fd.truncate()
+                    # add line ending to be compatible with pre-commit-hooks (end-of-file-fixer)
+                    fd.write(f"{state_to_dump}\n")
+                except Exception as e:
+                    SNAPSHOT_LOGGER.exception(e)
+
+    def _persist_raw(self, raw_state: dict) -> None:
+        if self.raw:
+            Path(self.raw_file_path).touch()
+            with open(self.raw_file_path, "r+") as fd:
+                try:
+                    content = fd.read()
+                    full_state = json.loads(content or "{}")
+                    recorded = {
+                        "recorded-date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
+                        "recorded-content": raw_state,
                     }
                     full_state[self.scope_key] = recorded
                     state_to_dump = json.dumps(full_state, indent=2)
@@ -235,6 +258,10 @@ class SnapshotSession:
     def _transform(self, tmp: dict) -> dict:
         """build a persistable state definition that can later be compared against"""
         self._transform_dict_to_parseable_values(tmp)
+
+        # persist tmp
+        if self.raw:
+            self._persist_raw(tmp)
 
         ctx = TransformContext()
         for transformer, _ in sorted(self.transformers, key=lambda p: p[1]):

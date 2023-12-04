@@ -1,0 +1,13 @@
+{
+  "Comment": "ESCAPE_SEQUENCE",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Parameters": {
+        "FunctionResult.$": "States.StringSplit('Hello\nWorld', '\n')"
+      },
+      "End": true
+    }
+  }
+}

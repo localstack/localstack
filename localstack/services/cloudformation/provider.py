@@ -6,9 +6,11 @@ from copy import deepcopy
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
+    AlreadyExistsException,
     CallAs,
     ChangeSetNameOrId,
     ChangeSetNotFoundException,
+    ChangeSetType,
     ClientRequestToken,
     CloudformationApi,
     CreateChangeSetInput,
@@ -61,6 +63,7 @@ from localstack.aws.api.cloudformation import (
     StackName,
     StackNameOrId,
     StackSetName,
+    StackStatus,
     StackStatusFilter,
     TemplateParameter,
     TemplateStage,
@@ -154,10 +157,36 @@ class InternalFailure(CommonServiceException):
 
 
 class CloudformationProvider(CloudformationApi):
+    def _stack_status_is_active(self, stack_status: str) -> bool:
+        return stack_status not in [StackStatus.DELETE_COMPLETE]
+
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
         # TODO: test what happens when both TemplateUrl and Body are specified
         state = get_cloudformation_store(context.account_id, context.region)
+
+        stack_name = request.get("StackName")
+
+        # get stacks by name
+        active_stack_candidates = [
+            s
+            for s in state.stacks.values()
+            if s.stack_name == stack_name and self._stack_status_is_active(s.status)
+        ]
+
+        # TODO: fix/implement this code path
+        #   this needs more investigation how Cloudformation handles it (e.g. normal stack create or does it create a separate changeset?)
+        # REVIEW_IN_PROGRESS is another special status
+        # in this case existing changesets are set to obsolete and the stack is created
+        # review_stack_candidates = [s for s in stack_candidates if s.status == StackStatus.REVIEW_IN_PROGRESS]
+        # if review_stack_candidates:
+        # set changesets to obsolete
+        # for cs in review_stack_candidates[0].change_sets:
+        #     cs.execution_status = ExecutionStatus.OBSOLETE
+
+        if active_stack_candidates:
+            raise AlreadyExistsException(f"Stack [{stack_name}] already exists")
+
         template_body = request.get("TemplateBody") or ""
         if len(template_body) > 51200:
             raise ValidationError(
@@ -173,15 +202,6 @@ class CloudformationProvider(CloudformationApi):
                 f"1 validation error detected: Value '{stack_name}' at 'stackName' failed to satisfy constraint:\
                 Member must satisfy regular expression pattern: [a-zA-Z][-a-zA-Z0-9]*|arn:[-a-zA-Z0-9:/._+]*"
             )
-
-        # find existing stack with same name, and remove it if this stack is in DELETED state
-        existing = ([s for s in state.stacks.values() if s.stack_name == stack_name] or [None])[0]
-        if existing:
-            if "DELETE" not in existing.status:
-                raise ValidationError(
-                    f'Stack named "{stack_name}" already exists with status "{existing.status}"'
-                )
-            state.stacks.pop(existing.stack_id)
 
         if (
             "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
@@ -359,13 +379,29 @@ class CloudformationProvider(CloudformationApi):
     def describe_stacks(
         self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
     ) -> DescribeStacksOutput:
+        # TODO: test & implement pagination
         state = get_cloudformation_store(context.account_id, context.region)
-        stack_list = list(state.stacks.values())
-        stacks = [
-            s.describe_details()
-            for s in stack_list
-            if stack_name in [None, s.stack_name, s.stack_id]
-        ]
+
+        if stack_name:
+            if ARN_STACK_REGEX.match(stack_name):
+                # we can get the stack directly since we index the store by ARN/stackID
+                stack = state.stacks.get(stack_name)
+                stacks = [stack.describe_details()] if stack else []
+            else:
+                # otherwise we have to find the active stack with the given name
+                stack_candidates: list[Stack] = [
+                    s for stack_arn, s in state.stacks.items() if s.stack_name == stack_name
+                ]
+                active_stack_candidates = [
+                    s for s in stack_candidates if self._stack_status_is_active(s.status)
+                ]
+                stacks = [s.describe_details() for s in active_stack_candidates]
+        else:
+            # return all active stacks
+            stack_list = list(state.stacks.values())
+            stacks = [
+                s.describe_details() for s in stack_list if self._stack_status_is_active(s.status)
+            ]
 
         if stack_name and not stacks:
             raise ValidationError(f"Stack with id {stack_name} does not exist")
@@ -484,6 +520,8 @@ class CloudformationProvider(CloudformationApi):
     def create_change_set(
         self, context: RequestContext, request: CreateChangeSetInput
     ) -> CreateChangeSetOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+
         req_params = request
         change_set_type = req_params.get("ChangeSetType", "UPDATE")
         stack_name = req_params.get("StackName")
@@ -491,8 +529,6 @@ class CloudformationProvider(CloudformationApi):
         template_body = req_params.get("TemplateBody")
         # s3 or secretsmanager url
         template_url = req_params.get("TemplateURL")
-
-        stack = find_stack(context.account_id, context.region, stack_name)
 
         # validate and resolve template
         if template_body and template_url:
@@ -518,44 +554,66 @@ class CloudformationProvider(CloudformationApi):
         template["StackName"] = stack_name
         # TODO: validate with AWS what this is actually doing?
         template["ChangeSetName"] = change_set_name
-        state = get_cloudformation_store(context.account_id, context.region)
+
+        # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
+        # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
+        if ARN_STACK_REGEX.match(stack_name):
+            if not (stack := state.stacks.get(stack_name)):
+                raise ValidationError(f"Stack '{stack_name}' does not exist.")
+        else:
+            # stack name specified, so fetch the stack by name
+            stack_candidates: list[Stack] = [
+                s for stack_arn, s in state.stacks.items() if s.stack_name == stack_name
+            ]
+            active_stack_candidates = [
+                s for s in stack_candidates if self._stack_status_is_active(s.status)
+            ]
+
+            # on a CREATE an empty Stack should be generated if we didn't find an active one
+            if not active_stack_candidates and change_set_type == ChangeSetType.CREATE:
+                empty_stack_template = dict(template)
+                empty_stack_template["Resources"] = {}
+                req_params_copy = clone_stack_params(req_params)
+                stack = Stack(
+                    context.account_id,
+                    context.region,
+                    req_params_copy,
+                    empty_stack_template,
+                    template_body=template_body,
+                )
+                state.stacks[stack.stack_id] = stack
+                stack.set_stack_status("REVIEW_IN_PROGRESS")
+            else:
+                if not active_stack_candidates:
+                    raise ValidationError(f"Stack '{stack_name}' does not exist.")
+                stack = active_stack_candidates[0]
+
+        # TODO: test if rollback status is allowed as well
+        if (
+            change_set_type == ChangeSetType.CREATE
+            and stack.status != StackStatus.REVIEW_IN_PROGRESS
+        ):
+            raise ValidationError(
+                f"Stack [{stack_name}] already exists and cannot be created again with the changeSet [{change_set_name}]."
+            )
 
         old_parameters: dict[str, Parameter] = {}
-        if change_set_type == "UPDATE":
-            # add changeset to existing stack
-            if stack is None:
-                raise ValidationError(
-                    f"Stack '{stack_name}' does not exist."
-                )  # stack should exist already
-            old_parameters = {
-                k: strip_parameter_type(v) for k, v in stack.resolved_parameters.items()
-            }
-        elif change_set_type == "CREATE":
-            # create new (empty) stack
-            if stack is not None:
-                raise ValidationError(
-                    f"Stack {stack_name} already exists"
-                )  # stack should not exist yet (TODO: check proper message)
-            empty_stack_template = dict(template)
-            empty_stack_template["Resources"] = {}
-            req_params_copy = clone_stack_params(req_params)
-            stack = Stack(
-                context.account_id,
-                context.region,
-                req_params_copy,
-                empty_stack_template,
-                template_body=template_body,
-            )
-            state.stacks[stack.stack_id] = stack
-            stack.set_stack_status("REVIEW_IN_PROGRESS")
-        elif change_set_type == "IMPORT":
-            raise NotImplementedError()  # TODO: implement importing resources
-        else:
-            msg = (
-                f"1 validation error detected: Value '{change_set_type}' at 'changeSetType' failed to satisfy "
-                f"constraint: Member must satisfy enum value set: [IMPORT, UPDATE, CREATE] "
-            )
-            raise ValidationError(msg)
+        match change_set_type:
+            case ChangeSetType.UPDATE:
+                # add changeset to existing stack
+                old_parameters = {
+                    k: strip_parameter_type(v) for k, v in stack.resolved_parameters.items()
+                }
+            case ChangeSetType.IMPORT:
+                raise NotImplementedError()  # TODO: implement importing resources
+            case ChangeSetType.CREATE:
+                pass
+            case _:
+                msg = (
+                    f"1 validation error detected: Value '{change_set_type}' at 'changeSetType' failed to satisfy "
+                    f"constraint: Member must satisfy enum value set: [IMPORT, UPDATE, CREATE] "
+                )
+                raise ValidationError(msg)
 
         # resolve parameters
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(

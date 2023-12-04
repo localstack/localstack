@@ -107,14 +107,17 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
         ]
         attrs = util.select_attributes(model, attr_names)
 
-        attrs["ResourceRecords"] = [{"Value": record} for record in attrs["ResourceRecords"]]
+        if "AliasTarget" in attrs:
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset-aliastarget.html
+            if "EvaluateTargetHealth" not in attrs["AliasTarget"]:
+                attrs["AliasTarget"]["EvaluateTargetHealth"] = False
+        else:
+            # TODO: CNAME & SOA only allow 1 record type. should we check that here?
+            attrs["ResourceRecords"] = [{"Value": record} for record in attrs["ResourceRecords"]]
 
         if "TTL" in attrs:
             if isinstance(attrs["TTL"], str):
                 attrs["TTL"] = int(attrs["TTL"])
-
-        if "AliasTarget" in attrs and "EvaluateTargetHealth" not in attrs["AliasTarget"]:
-            attrs["AliasTarget"]["EvaluateTargetHealth"] = False
 
         route53.change_resource_record_sets(
             HostedZoneId=model["HostedZoneId"],
@@ -127,6 +130,9 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
                 ]
             },
         )
+        # TODO: not 100% sure this behaves the same betwen alias and non-alias records
+        model["Id"] = model["Name"]
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
@@ -163,21 +169,29 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
 
 
         """
-        model = request.desired_state
+        model = request.previous_state
         route53 = request.aws_client_factory.route53
-        resource_records = [{"Value": record} for record in model["ResourceRecords"]]
+        rrset_kwargs = {
+            "Name": model["Name"],
+            "Type": model["Type"],
+        }
+
+        if "AliasTarget" in model:
+            rrset_kwargs["AliasTarget"] = model["AliasTarget"]
+        if "ResourceRecords" in model:
+            rrset_kwargs["ResourceRecords"] = [
+                {"Value": record} for record in model["ResourceRecords"]
+            ]
+        if "TTL" in model:
+            rrset_kwargs["TTL"] = int(model["TTL"])
+
         route53.change_resource_record_sets(
             HostedZoneId=model["HostedZoneId"],
             ChangeBatch={
                 "Changes": [
                     {
                         "Action": "DELETE",
-                        "ResourceRecordSet": {
-                            "Name": model["Name"],
-                            "Type": model["Type"],
-                            "TTL": int(model["TTL"]),
-                            "ResourceRecords": resource_records,
-                        },
+                        "ResourceRecordSet": rrset_kwargs,
                     },
                 ]
             },

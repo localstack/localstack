@@ -1,0 +1,13 @@
+{
+  "Comment": "Used to check format of generated timestamp",
+  "StartAt": "Pass",
+  "States": {
+    "Pass": {
+      "Type": "Pass",
+      "End": true,
+      "Parameters": {
+        "out1.$": "$$.Execution.StartTime"
+      }
+    }
+  }
+}

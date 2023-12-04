@@ -22,3 +22,6 @@ class BaseTemplate(TemplateLoader):
     PASS_RESULT_NULL_INPUT_OUTPUT_PATHS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/pass_result_null_input_output_paths.json5"
     )
+    PASS_START_TIME: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/pass_start_time_format.json5"
+    )
