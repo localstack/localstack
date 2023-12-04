@@ -12,12 +12,12 @@ import software.amazon.awssdk.services.sqs.SqsClientBuilder;
 import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder;
 import software.amazon.awssdk.services.sqs.model.ListQueuesResponse;
 
-
 import java.net.URI;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
 
 public class Handler implements RequestHandler<Map<String, String>, String> {
 
@@ -26,19 +26,19 @@ public class Handler implements RequestHandler<Map<String, String>, String> {
 
         // v2 synchronous: test both apache and urlconnection http clients to ensure both are instrumented
         ListQueuesResponse response = this.getSqsClient().listQueues();
-        System.out.println(response.queueUrls().toString());
+        System.out.println("QueueUrls (SDK v2 sync SQS)=" + response.queueUrls().toString());
         response = this.getUrlConnectionSqsClient().listQueues();
-        System.out.println(response.queueUrls().toString());
+        System.out.println("QueueUrls (SDK v2 sync Url)=" + response.queueUrls().toString());
 
-         // v2 asynchronous: test both CRT and netty http client
-         Future<ListQueuesResponse> listQueuesFutureCrt = this.getAsyncCRTSqsClient().listQueues();
-         Future<ListQueuesResponse> listQueuesFutureNetty = this.getAsyncNettySqsClient().listQueues();
-         try {
-             System.out.println(listQueuesFutureCrt.get());
-             System.out.println(listQueuesFutureNetty.get());
-         } catch (InterruptedException | ExecutionException e) {
-             throw new RuntimeException(e);
-         }
+        // v2 asynchronous: test both CRT and netty http client
+        Future<ListQueuesResponse> listQueuesFutureCrt = this.getAsyncCRTSqsClient().listQueues();
+        Future<ListQueuesResponse> listQueuesFutureNetty = this.getAsyncNettySqsClient().listQueues();
+        try {
+            System.out.println("QueueUrls (SDK v2 async Crt)=" + listQueuesFutureCrt.get());
+            System.out.println("QueueUrls (SDK v2 async Netty)=" + listQueuesFutureNetty.get());
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
 
         return "ok";
     }
@@ -56,15 +56,14 @@ public class Handler implements RequestHandler<Map<String, String>, String> {
     }
 
     private SqsClientBuilder getSqsClientBuilder() {
-        if (Objects.equals(System.getenv("CONFIGURE_CLIENT"), "1")) {
-            String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        if (endpointUrl != null) {
             // Choosing a specific endpoint
             // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html
             return SqsClient.builder()
                     .endpointOverride(URI.create(endpointUrl));
-        } else {
-            return SqsClient.builder();
         }
+        return SqsClient.builder();
     }
 
     private SqsAsyncClient getAsyncCRTSqsClient() {
@@ -86,12 +85,11 @@ public class Handler implements RequestHandler<Map<String, String>, String> {
     }
 
     private SqsAsyncClientBuilder getSqsAsyncClientBuilder() {
-        if (Objects.equals(System.getenv("CONFIGURE_CLIENT"), "1")) {
-            String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        if (endpointUrl != null) {
             return SqsAsyncClient.builder()
                     .endpointOverride(URI.create(endpointUrl));
-        } else {
-            return SqsAsyncClient.builder();
         }
+        return SqsAsyncClient.builder();
     }
 }

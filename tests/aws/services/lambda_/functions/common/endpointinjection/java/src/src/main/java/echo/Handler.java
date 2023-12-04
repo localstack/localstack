@@ -34,24 +34,24 @@ public class Handler implements RequestHandler<Map<String, String>, String> {
 
     public String handleRequest(Map<String, String> event, Context context) {
         // Inspect ssl property for the Java AWS SDK v1 client. Removed in v2.
-        System.out.println("my ssl property" + System.getProperty("com.amazonaws.sdk.disableCertChecking"));
+        System.out.println("com.amazonaws.sdk.disableCertChecking=" + System.getProperty("com.amazonaws.sdk.disableCertChecking"));
 
         // v1
         ListQueuesResult responseV1 = this.getSqsClientV1().listQueues(new ListQueuesRequest());
-        System.out.println(responseV1.getQueueUrls().toString());
+        System.out.println("QueueUrls (SDK v1)=" + responseV1.getQueueUrls().toString());
 
         // v2 synchronous: test both apache and urlconnection http clients to ensure both are instrumented
         ListQueuesResponse response = this.getSqsClient().listQueues();
-        System.out.println(response.queueUrls().toString());
+        System.out.println("QueueUrls (SDK v2 sync SQS)=" + response.queueUrls().toString());
         response = this.getUrlConnectionSqsClient().listQueues();
-        System.out.println(response.queueUrls().toString());
+        System.out.println("QueueUrls (SDK v2 sync Url)=" + response.queueUrls().toString());
 
         // v2 asynchronous: test both CRT and netty http client
         Future<ListQueuesResponse> listQueuesFutureCrt = this.getAsyncCRTSqsClient().listQueues();
         Future<ListQueuesResponse> listQueuesFutureNetty = this.getAsyncNettySqsClient().listQueues();
         try {
-            System.out.println(listQueuesFutureCrt.get());
-            System.out.println(listQueuesFutureNetty.get());
+            System.out.println("QueueUrls (SDK v2 async Crt)=" + listQueuesFutureCrt.get());
+            System.out.println("QueueUrls (SDK v2 async Netty)=" + listQueuesFutureNetty.get());
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -60,18 +60,14 @@ public class Handler implements RequestHandler<Map<String, String>, String> {
     }
 
     private AmazonSQS getSqsClientV1() {
-        if (Objects.equals(System.getenv("CONFIGURE_CLIENT"), "1")) {
-            String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        String region = System.getenv("AWS_REGION");
+        if (endpointUrl != null) {
             return AmazonSQSClientBuilder.standard()
-                    .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpointUrl, "us-east-1"))
-                    .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("test", "test")))
-                    .build();
-        } else {
-            return AmazonSQSClientBuilder.standard()
-                    .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("test", "test")))
-                    .withRegion(Regions.US_EAST_1)
+                    .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpointUrl, region))
                     .build();
         }
+        return AmazonSQSClientBuilder.standard().build();
     }
 
     private SqsClient getSqsClient() {
@@ -87,15 +83,14 @@ public class Handler implements RequestHandler<Map<String, String>, String> {
     }
 
     private SqsClientBuilder getSqsClientBuilder() {
-        if (Objects.equals(System.getenv("CONFIGURE_CLIENT"), "1")) {
-            String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        if (endpointUrl != null) {
             // Choosing a specific endpoint
             // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html
             return SqsClient.builder()
                     .endpointOverride(URI.create(endpointUrl));
-        } else {
-            return SqsClient.builder();
         }
+        return SqsClient.builder();
     }
 
     private SqsAsyncClient getAsyncCRTSqsClient() {
@@ -117,12 +112,11 @@ public class Handler implements RequestHandler<Map<String, String>, String> {
     }
 
     private SqsAsyncClientBuilder getSqsAsyncClientBuilder() {
-        if (Objects.equals(System.getenv("CONFIGURE_CLIENT"), "1")) {
-            String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
+        if (endpointUrl != null) {
             return SqsAsyncClient.builder()
                     .endpointOverride(URI.create(endpointUrl));
-        } else {
-            return SqsAsyncClient.builder();
         }
+        return SqsAsyncClient.builder();
     }
 }

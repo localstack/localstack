@@ -13,6 +13,8 @@ import zipfile
 
 import pytest
 
+from localstack.aws.api.lambda_ import Runtime
+from localstack.services.lambda_.runtimes import TESTED_RUNTIMES
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
@@ -49,16 +51,29 @@ def snapshot_transformers(snapshot):
     )
 
 
-@pytest.mark.skipif(
-    condition=get_arch() != Arch.amd64, reason="build process doesn't support arm64 right now"
-)
+# TODO: remove this once all non-arm compatible runtimes are deprecated by the end of 2023
+RUNTIMES_SKIP_ARM = [
+    Runtime.python3_7,
+    Runtime.java8,
+    Runtime.go1_x,
+    Runtime.provided,
+]
+
+arm_compatible_runtimes = list(set(TESTED_RUNTIMES) - set(RUNTIMES_SKIP_ARM))
+runtimes = arm_compatible_runtimes if get_arch() == Arch.arm64 else TESTED_RUNTIMES
+
+
+# TODO: fix marker
+# @pytest.mark.skipif(
+#     condition=get_arch() == Arch.arm64, reason="al1 Lambda runtimes do not support ARM"
+# )
 @markers.lambda_runtime_update
 class TestLambdaRuntimesCommon:
     # TODO: refactor builds:
     #   * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
 
     @markers.aws.validated
-    @markers.multiruntime(scenario="echo")
+    @markers.multiruntime(scenario="echo", runtimes=runtimes)
     def test_echo_invoke(self, multiruntime_lambda, aws_client):
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024, Timeout=5)
@@ -155,7 +170,7 @@ class TestLambdaRuntimesCommon:
         ]
     )
     @markers.aws.validated
-    @markers.multiruntime(scenario="introspection")
+    @markers.multiruntime(scenario="introspection", runtimes=runtimes)
     def test_introspection_invoke(self, multiruntime_lambda, snapshot, aws_client):
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024, Environment={"Variables": {"TEST_KEY": "TEST_VAL"}}
@@ -193,7 +208,7 @@ class TestLambdaRuntimesCommon:
         ]
     )
     @markers.aws.validated
-    @markers.multiruntime(scenario="uncaughtexception")
+    @markers.multiruntime(scenario="uncaughtexception", runtimes=runtimes)
     def test_uncaught_exception_invoke(self, multiruntime_lambda, snapshot, aws_client):
         # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
         # since the stack trace contains references to internal runtime code.
@@ -226,8 +241,7 @@ class TestLambdaRuntimesCommon:
     @markers.multiruntime(
         scenario="introspection",
         # TODO: should this include all al2 and new lambdas except provided?
-        runtimes=["nodejs"],
-        # runtimes=["nodejs", "python3.8", "python3.9", "java8.al2", "java11", "dotnet", "ruby"],
+        runtimes=list(set(TESTED_RUNTIMES) - set(RUNTIMES_SKIP_ARM) - {Runtime.provided_al2}),
     )
     def test_runtime_wrapper_invoke(self, multiruntime_lambda, snapshot, tmp_path, aws_client):
         # copy and modify zip file, pretty dirty hack to reuse scenario and reduce CI test runtime
@@ -267,35 +281,54 @@ class TestLambdaRuntimesCommon:
         assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value
 
 
-# TODO: fix arch marker and clarify reason
-# @pytest.mark.skipif(
-#     condition=get_arch() != Arch.amd64, reason="build process doesn't support arm64 right now"
-# )
+# TODO: remove this once all non-arm compatible runtimes are deprecated by the end of 2023
+x86_runtimes = [
+    "dotnet6",
+    "go",
+    # java17 and java21 do not ship the AWS SDK v1 anymore.
+    # Therefore, we create a specific directory and bundle the SDK v1 separately because the SDK v2 does not
+    # support DISABLE_CERT_CHECKING_SYSTEM_PROPERTY anymore.
+    "java",
+    # nodejs18.x and nodejs20.x do not ship the AWS SDK v1 anymore.
+    # Therefore, we create a specific directory and use the SDK v2 instead.
+    "nodejs",
+    "python",
+    "ruby",
+]
+
+# ARM-compatible runtimes for the endpointinjection scenario
+arm_runtimes = [
+    "dotnet6",
+    "java8.al2",
+    "java11",
+    "java17",
+    "java21",
+    "nodejs",
+    "python3.8",
+    "python3.9",
+    "python3.10",
+    "python3.11",
+    "python3.12",
+    "ruby",
+]
+
+
 class TestLambdaCallingLocalstack:
+    """=> Keep these tests synchronized with `test_lambda_endpoint_injection.py` in ext!"""
+
     # TODO: rename to "test_manual_endpoint_configuration"
     @markers.multiruntime(
         scenario="endpointinjection",
-        runtimes=[
-            # nodejs18.x and nodejs20.x do not ship the AWS SDK v1 anymore.
-            # Therefore, we create a specific directory and use the SDK v2 instead.
-            "nodejs",
-            "python",
-            "ruby",
-            # java17 and java21 do not ship the AWS SDK v1 anymore.
-            # Therefore, we create a specific directory and bundle the SDK v1 separately because the SDK v2 does not
-            # support DISABLE_CERT_CHECKING_SYSTEM_PROPERTY anymore.
-            "java",
-            "go",
-        ],
+        runtimes=arm_runtimes if get_arch() == Arch.arm64 else x86_runtimes,
     )
-    @markers.aws.only_localstack
+    # TODO: validate against AWS
+    @markers.aws.unknown
     def test_calling_localstack_from_lambda(self, multiruntime_lambda, tmp_path, aws_client):
         """Test calling LocalStack from Lambda using manual client configuration. This must work for all runtimes.
         The code might differ depending on the SDK version shipped with the Lambda runtime.
         """
-        create_function_result = multiruntime_lambda.create_function(
-            Environment={"Variables": {"CONFIGURE_CLIENT": "1"}},
-        )
+
+        create_function_result = multiruntime_lambda.create_function(MemorySize=1024, Timeout=15)
 
         invocation_result = aws_client.lambda_.invoke(
             FunctionName=create_function_result["FunctionName"],
