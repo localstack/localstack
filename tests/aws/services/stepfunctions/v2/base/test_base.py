@@ -196,6 +196,7 @@ class TestSnfBase:
             exec_input,
         )
 
+    @markers.aws.validated
     def test_state_pass_result_null_input_output_paths(
         self,
         aws_client,
