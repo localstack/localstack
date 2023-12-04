@@ -60,10 +60,6 @@ arm_compatible_runtimes = list(set(TESTED_RUNTIMES) - set(RUNTIMES_SKIP_ARM))
 runtimes = arm_compatible_runtimes if get_arch() == Arch.arm64 else TESTED_RUNTIMES
 
 
-# TODO: fix marker
-# @pytest.mark.skipif(
-#     condition=get_arch() == Arch.arm64, reason="al1 Lambda runtimes do not support ARM"
-# )
 @markers.lambda_runtime_update
 class TestLambdaRuntimesCommon:
     # TODO: refactor builds:
@@ -215,12 +211,15 @@ class TestLambdaRuntimesCommon:
         ]
     )
     @markers.aws.validated
-    # this does only work on al2 lambdas, except provided.al2.
+    # Only works for >=al2 runtimes, except for any provided runtimes
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
     @markers.multiruntime(
         scenario="introspection",
-        # TODO: should this include all al2 and new lambdas except provided?
-        runtimes=list(set(TESTED_RUNTIMES) - set(RUNTIMES_SKIP_ARM) - {Runtime.provided_al2}),
+        runtimes=list(
+            set(TESTED_RUNTIMES)
+            - set(RUNTIMES_SKIP_ARM)
+            - {Runtime.provided_al2, Runtime.provided_al2023}
+        ),
     )
     def test_runtime_wrapper_invoke(self, multiruntime_lambda, snapshot, tmp_path, aws_client):
         # copy and modify zip file, pretty dirty hack to reuse scenario and reduce CI test runtime
