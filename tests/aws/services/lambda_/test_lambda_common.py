@@ -295,16 +295,16 @@ arm_runtimes = [
 class TestLambdaCallingLocalstack:
     """=> Keep these tests synchronized with `test_lambda_endpoint_injection.py` in ext!"""
 
-    # TODO: rename to "test_manual_endpoint_configuration"
     @markers.multiruntime(
         scenario="endpointinjection",
         runtimes=arm_runtimes if get_arch() == Arch.arm64 else x86_runtimes,
     )
-    # TODO: validate against AWS
-    @markers.aws.unknown
-    def test_calling_localstack_from_lambda(self, multiruntime_lambda, tmp_path, aws_client):
-        """Test calling LocalStack from Lambda using manual client configuration. This must work for all runtimes.
+    @markers.aws.validated
+    def test_manual_endpoint_injection(self, multiruntime_lambda, tmp_path, aws_client):
+        """Test calling SQS from Lambda using manual AWS SDK client configuration via AWS_ENDPOINT_URL.
+        This must work for all runtimes.
         The code might differ depending on the SDK version shipped with the Lambda runtime.
+        This test is designed to be AWS-compatible using minimal code changes to configure the endpoint url for LS.
         """
 
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024, Timeout=15)
