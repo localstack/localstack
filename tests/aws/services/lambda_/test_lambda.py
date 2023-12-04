@@ -359,7 +359,7 @@ class TestLambdaBehavior:
         ],
     )
     # TODO: fix arch compatibility detection for supported emulations
-    @pytest.mark.skipif(get_arch() == "arm64", reason="Cannot inspect x86 runtime on arm")
+    @pytest.mark.skipif(get_arch() == Arch.arm64, reason="Cannot inspect x86 runtime on arm")
     @markers.aws.validated
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_x86_{short_uid()}"
@@ -429,7 +429,7 @@ class TestLambdaBehavior:
         # This assumption could be violated when using remote Lambda executors
         native_arch = platform.get_arch()
         non_native_architecture = (
-            Architecture.x86_64 if native_arch == "arm64" else Architecture.arm64
+            Architecture.x86_64 if native_arch == Arch.arm64 else Architecture.arm64
         )
         func_name = f"test_lambda_arch_{short_uid()}"
         create_lambda_function(
