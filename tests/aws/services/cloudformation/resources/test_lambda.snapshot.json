@@ -1391,5 +1391,24 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_cfn_dead_letter_config_async_invocation": {
+    "recorded-date": "04-12-2023, 12:46:52",
+    "recorded-content": {
+      "failed-async-lambda": {
+        "Messages": [
+          {
+            "Body": {},
+            "MD5OfBody": "99914b932bd37a50b983c5e7c90ae93b",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
