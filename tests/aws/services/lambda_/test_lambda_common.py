@@ -20,9 +20,6 @@ from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
 from localstack.utils.platform import Arch, get_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
-from tests.aws.services.lambda_.test_lambda import (
-    TEST_EVENTS_APIGATEWAY_AWS_PROXY,
-)
 
 LOG = logging.getLogger(__name__)
 
@@ -121,24 +118,6 @@ class TestLambdaRuntimesCommon:
         assert invoke_result["StatusCode"] == 200
         assert json.loads(invoke_result["Payload"].read()) == {}
         assert not invoke_result.get("FunctionError")
-
-    @pytest.mark.skip(reason="test not yet implemented")
-    @markers.aws.unknown
-    @markers.multiruntime(scenario="typedevent")
-    def test_typed_event_invoke(self, multiruntime_lambda, aws_client):
-        """Test typed Lambda functions with Apigateway Proxy event integration."""
-        create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
-
-        sqs_event = json.load(open(TEST_EVENTS_APIGATEWAY_AWS_PROXY))
-        invocation_result = aws_client.lambda_.invoke(
-            FunctionName=create_function_result["FunctionName"],
-            Payload=to_bytes(json.dumps(sqs_event)),
-        )
-        assert "FunctionError" not in invocation_result
-
-    #     TODO: assert proxy response
-    #     assert ok
-    #     assert body == "Hello from ApiGateway!"
 
     # skip snapshots of LS specific env variables
     @markers.snapshot.skip_snapshot_verify(
