@@ -1352,7 +1352,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[Sum]": {
-    "recorded-date": "23-11-2023, 15:07:21",
+    "recorded-date": "04-12-2023, 12:22:53",
     "recorded-content": {
       "get_metric_data": {
         "Messages": [],
@@ -1363,7 +1363,7 @@
             "StatusCode": "Complete",
             "Timestamps": "timestamp",
             "Values": [
-              11.0
+              66.0
             ]
           }
         ],
@@ -1375,7 +1375,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[SampleCount]": {
-    "recorded-date": "23-11-2023, 15:07:22",
+    "recorded-date": "04-12-2023, 12:22:55",
     "recorded-content": {
       "get_metric_data": {
         "Messages": [],
@@ -1398,7 +1398,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[Minimum]": {
-    "recorded-date": "23-11-2023, 15:07:24",
+    "recorded-date": "04-12-2023, 12:22:58",
     "recorded-content": {
       "get_metric_data": {
         "Messages": [],
@@ -1421,7 +1421,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[Maximum]": {
-    "recorded-date": "23-11-2023, 15:07:25",
+    "recorded-date": "04-12-2023, 12:23:00",
     "recorded-content": {
       "get_metric_data": {
         "Messages": [],
@@ -1444,7 +1444,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[Average]": {
-    "recorded-date": "23-11-2023, 15:07:26",
+    "recorded-date": "04-12-2023, 12:23:02",
     "recorded-content": {
       "get_metric_data": {
         "Messages": [],
@@ -1490,16 +1490,16 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_statistics": {
-    "recorded-date": "23-11-2023, 15:15:51",
+    "recorded-date": "04-12-2023, 14:13:08",
     "recorded-content": {
       "get_metric_statistics": {
         "Datapoints": [
           {
-            "Average": 3.5,
-            "Maximum": 7.0,
+            "Average": 4.5,
+            "Maximum": 9.0,
             "Minimum": 0.0,
-            "SampleCount": 8.0,
-            "Sum": 28.0,
+            "SampleCount": 10.0,
+            "Sum": 45.0,
             "Timestamp": "timestamp",
             "Unit": "None"
           }

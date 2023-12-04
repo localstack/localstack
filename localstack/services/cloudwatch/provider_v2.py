@@ -104,14 +104,19 @@ def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
                 f"The parameters MetricData.member.{indexplusone}.Value and MetricData.member.{indexplusone}.Values are mutually exclusive and you have specified both."
             )
 
-        if values := metric_item.get("Values"):
-            counts = metric_item.get("Counts", [])
-            if len(values) != len(counts) and len(counts) != 0:
+        if metric_item.get("StatisticValues") and metric_item.get("Value"):
+            raise InvalidParameterCombinationException(
+                f"The parameters MetricData.member.{indexplusone}.Value and MetricData.member.{indexplusone}.StatisticValues are mutually exclusive and you have specified both."
+            )
+
+        if metric_item.get("Values") and metric_item.get("Counts"):
+            values = metric_item.get("Values")
+            counts = metric_item.get("Counts")
+            if len(values) != len(counts):
                 raise InvalidParameterValueException(
                     f"The parameters MetricData.member.{indexplusone}.Values and MetricData.member.{indexplusone}.Counts must be of the same size."
                 )
 
-        # TODO: check for other validations
 
 
 class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
@@ -215,6 +220,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             )
             if query_result.get("messages"):
                 messages.extend(query_result.get("messages"))
+
+
+            # TODO: Fix this. AWS sometimes returns the metric name as label, sometimes is metric with stat
+            query_result["label"] = query.get("Label") or f'{query["MetricStat"]["Metric"]["MetricName"]} {query["MetricStat"]["Stat"]}'
 
             # Paginate
             aliases_list = PaginatedList(query_result.get("datapoints", {}).items())

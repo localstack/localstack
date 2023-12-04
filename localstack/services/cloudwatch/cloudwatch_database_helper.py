@@ -295,7 +295,6 @@ class CloudwatchDatabase:
             return {
                 "id": query.get("Id"),
                 "datapoints": cleaned_datapoints,
-                "label": f"{metric.get('MetricName')} {stat}",
             }
 
     def list_metrics(

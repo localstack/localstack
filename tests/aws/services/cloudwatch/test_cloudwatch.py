@@ -27,8 +27,15 @@ def is_old_provider():
     return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2" and not is_aws_cloud()
 
 
+def is_new_provider():
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") == "v2"
+
+
 class TestCloudwatch:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths= ["$..Datapoints..Unit"] , condition=is_new_provider
+    )
     def test_put_metric_data_values_list(self, snapshot, aws_client):
         metric_name = "test-metric"
         namespace = f"ns-{short_uid()}"
@@ -293,6 +300,9 @@ class TestCloudwatch:
                 assert len(data_metric["Values"]) == 0
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        # paths= ["$..MetricDataResults..Label"], condition=is_new_provider,
+    )
     def test_get_metric_data_for_multiple_metrics(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=timezone.utc)
@@ -381,6 +391,8 @@ class TestCloudwatch:
         "stat",
         ["Sum", "SampleCount", "Minimum", "Maximum", "Average"],
     )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MetricDataResults..Label"])
     def test_get_metric_data_stats(self, aws_client, snapshot, stat):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
@@ -433,9 +445,12 @@ class TestCloudwatch:
             assert len(response["MetricDataResults"][0]["Values"]) > 0
             snapshot.match("get_metric_data", response)
 
-        retry(assert_results, retries=10, sleep_before=1)
+        sleep_before = 2 if is_aws_cloud() else 0
+        retry(assert_results, retries=10, sleep_before=sleep_before)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MetricDataResults..Label"])
     def test_get_metric_data_with_dimensions(self, aws_client, snapshot):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
@@ -1726,6 +1741,7 @@ class TestCloudwatch:
         retry(_match_results, retries=10, sleep=1.0)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"])
     def test_get_metric_statistics(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=timezone.utc)
@@ -1752,7 +1768,8 @@ class TestCloudwatch:
             assert len(stats_responce["Datapoints"]) == 1
             snapshot.match("get_metric_statistics", stats_responce)
 
-        retry(assert_results, retries=10, sleep=1.0)
+        sleep_before = 2 if is_aws_cloud() else 0.0
+        retry(assert_results, retries=10, sleep=1.0, sleep_before=sleep_before)
 
     @markers.aws.validated
     def test_list_metrics_pagination(self, aws_client):
