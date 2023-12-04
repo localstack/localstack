@@ -33,9 +33,7 @@ def is_new_provider():
 
 class TestCloudwatch:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths= ["$..Datapoints..Unit"] , condition=is_new_provider
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"], condition=is_new_provider)
     def test_put_metric_data_values_list(self, snapshot, aws_client):
         metric_name = "test-metric"
         namespace = f"ns-{short_uid()}"
@@ -391,8 +389,7 @@ class TestCloudwatch:
         "stat",
         ["Sum", "SampleCount", "Minimum", "Maximum", "Average"],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..MetricDataResults..Label"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..MetricDataResults..Label"])
     def test_get_metric_data_stats(self, aws_client, snapshot, stat):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
@@ -449,8 +446,7 @@ class TestCloudwatch:
         retry(assert_results, retries=10, sleep_before=sleep_before)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..MetricDataResults..Label"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..MetricDataResults..Label"])
     def test_get_metric_data_with_dimensions(self, aws_client, snapshot):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
@@ -1714,22 +1710,23 @@ class TestCloudwatch:
         )
         # get_metric_data
         stats = ["Average", "Sum", "Minimum", "Maximum"]
+
         def _get_metric_data():
             return aws_client.cloudwatch.get_metric_data(
-            MetricDataQueries=[
-                {
-                    "Id": "result_" + stat,
-                    "MetricStat": {
-                        "Metric": {"Namespace": namespace1, "MetricName": "metric1"},
-                        "Period": 60,
-                        "Stat": stat,
-                    },
-                }
-                for stat in stats
-            ],
-            StartTime=utc_now - timedelta(seconds=60),
-            EndTime=utc_now + timedelta(seconds=60),
-        )
+                MetricDataQueries=[
+                    {
+                        "Id": "result_" + stat,
+                        "MetricStat": {
+                            "Metric": {"Namespace": namespace1, "MetricName": "metric1"},
+                            "Period": 60,
+                            "Stat": stat,
+                        },
+                    }
+                    for stat in stats
+                ],
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+            )
 
         def _match_results():
             response = _get_metric_data()
