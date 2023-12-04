@@ -223,7 +223,6 @@ class TestSnfBase:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        sfn_snapshot,
     ):
         """
         When returning timestamps as strings, StepFunctions uses a format like this:
