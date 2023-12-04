@@ -65,3 +65,45 @@ class TestGeneric:
             IFT.FORMAT_CONTEXT_PATH,
             input_values,
         )
+
+    @markers.aws.validated
+    def test_nested_calls_1(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        input_values = [None]
+        create_and_test_on_inputs(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            IFT.NESTED_CALLS_1,
+            input_values,
+        )
+
+    @markers.aws.validated
+    def test_nested_calls_2(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        input_values = [None]
+        create_and_test_on_inputs(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            IFT.NESTED_CALLS_2,
+            input_values,
+        )
+
+    @markers.aws.validated
+    def test_escape_sequence(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        input_values = [None]
+        create_and_test_on_inputs(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            IFT.ESCAPE_SEQUENCE,
+            input_values,
+        )
