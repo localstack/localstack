@@ -1,6 +1,12 @@
 import abc
 from typing import TYPE_CHECKING, Union
 
+"""
+If some of the clients are missing we will need to install appropriate boto3stubs for them
+run for example if application_autoscaling is missing we need to run
+pip install "boto3-stubs[application-autoscaling]"
+
+"""
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
     from mypy_boto3_acm_pca import ACMPCAClient
@@ -9,6 +15,7 @@ if TYPE_CHECKING:
     from mypy_boto3_apigatewayv2 import ApiGatewayV2Client
     from mypy_boto3_appconfig import AppConfigClient
     from mypy_boto3_appconfigdata import AppConfigDataClient
+    from mypy_boto3_application_autoscaling import ApplicationAutoScalingClient
     from mypy_boto3_appsync import AppSyncClient
     from mypy_boto3_athena import AthenaClient
     from mypy_boto3_autoscaling import AutoScalingClient
@@ -109,8 +116,12 @@ class TypedServiceClientFactory(abc.ABC):
     appconfig: Union["AppConfigClient", "MetadataRequestInjector[AppConfigClient]"]
     appconfigdata: Union["AppConfigDataClient", "MetadataRequestInjector[AppConfigDataClient]"]
     appsync: Union["AppSyncClient", "MetadataRequestInjector[AppSyncClient]"]
+    application_autoscaling: Union[
+        "ApplicationAutoScalingClient", "MetadataRequestInjector[ApplicationAutoScalingClient]"
+    ]
     athena: Union["AthenaClient", "MetadataRequestInjector[AthenaClient]"]
     autoscaling: Union["AutoScalingClient", "MetadataRequestInjector[AutoScalingClient]"]
+    # application_autoscaling: Union["AutoScalingClient", "MetadataRequestInjector[AutoScalingClient]"]
     backup: Union["BackupClient", "MetadataRequestInjector[BackupClient]"]
     batch: Union["BatchClient", "MetadataRequestInjector[BatchClient]"]
     ce: Union["CostExplorerClient", "MetadataRequestInjector[CostExplorerClient]"]
