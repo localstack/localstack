@@ -28,7 +28,6 @@ from localstack.constants import (
 )
 from localstack.utils.aws.aws_stack import get_local_service_url, get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
-from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
@@ -423,9 +422,7 @@ class ClientFactory(ABC):
         - Boto session
         - us-east-1
         """
-        return (
-            get_region_from_request_context() or self._get_session_region() or AWS_REGION_US_EAST_1
-        )
+        return self._get_session_region() or AWS_REGION_US_EAST_1
 
 
 class InternalClientFactory(ClientFactory):
