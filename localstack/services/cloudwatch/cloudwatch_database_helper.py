@@ -26,6 +26,22 @@ STAT_TO_SQLITE_COLUMNS = {
     "SampleCount": "sample_count",
 }
 
+STAT_TO_SQLITE_FUNC_2 = {
+    "Sum": "SUM(value)",
+    "Average": "SUM(VALUE) / SUM(sample_count)",
+    "Minimum": "MIN(value)",
+    "Maximum": "MAX(value)",
+    "SampleCount": "COUNT(value)",
+}
+
+STAT_TO_SQLITE_COLUMNS_2 = {
+    "Sum": "sum",
+    "Average": "sum",
+    "Minimum": "min",
+    "Maximum": "max",
+    "SampleCount": "sample_count",
+}
+
 
 class CloudwatchDatabase:
     DB_NAME = "metrics.db"
@@ -181,11 +197,7 @@ class CloudwatchDatabase:
             # unit = metric_stat.get("Unit")
 
             # prepare SQL query
-            order_by = (
-                "timestamp ASC"
-                if scan_by == ScanBy.TimestampAscending
-                else "timestamp DESC"
-            )
+            order_by = "timestamp ASC" if scan_by == ScanBy.TimestampAscending else "timestamp DESC"
 
             start_time_unix = self._convert_timestamp_to_unix(start_time)
             end_time_unix = self._convert_timestamp_to_unix(end_time)
@@ -294,6 +306,58 @@ class CloudwatchDatabase:
                 "id": query.get("Id"),
                 "datapoints": cleaned_datapoints,
             }
+
+    def get_metric_data_2(
+        self,
+        account_id: str,
+        region: str,
+        query: MetricDataQuery,
+        start_time: datetime,
+        end_time: datetime,
+        scan_by: str,
+    ):
+        # TODO exclude null values, check if dimensions must be null though if missing
+        # TODO add filters for unit
+
+        with sqlite3.connect(self.METRICS_DB) as conn:
+            cur = conn.cursor()
+            metric_stat = query.get("MetricStat")
+            metric = metric_stat.get("Metric")
+            # period = metric_stat.get("Period")
+            stat = metric_stat.get("Stat")
+            dimensions = metric.get("Dimensions", [])
+            # unit = metric_stat.get("Unit")
+
+            # prepare SQL query
+            # order_by = "timestamp ASC" if scan_by == ScanBy.TimestampAscending else "timestamp DESC"
+            #
+            # start_time_unix = self._convert_timestamp_to_unix(start_time)
+            # end_time_unix = self._convert_timestamp_to_unix(end_time)
+
+            data = (
+                account_id,
+                region,
+                metric.get("Namespace"),
+                metric.get("MetricName"),
+            )
+
+            dimension_filter = ""
+            for dimension in dimensions:
+                dimension_filter += "AND dimensions LIKE ? "
+                data = data + (f"%{dimension.get('Name')}={dimension.get('Value')}%",)
+
+            sql_query = f"""
+            SELECT
+            *
+            FROM (
+                SELECT value, 1 as count FROM {self.TABLE_SINGLE_METRICS}
+                UNION
+                SELECT {STAT_TO_SQLITE_COLUMNS_2[stat]} as value, sample_count  as count FROM {self.TABLE_AGGREGATED_METRICS}
+            ) AS combined
+            """
+            cur.execute(sql_query)
+            result = cur.fetchall()
+            return result
 
     def list_metrics(
         self,

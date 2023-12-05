@@ -299,7 +299,8 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        # paths= ["$..MetricDataResults..Label"], condition=is_new_provider,
+        paths=["$..MetricDataResults..Label"],
+        condition=is_new_provider,
     )
     def test_get_metric_data_for_multiple_metrics(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
@@ -346,7 +347,6 @@ class TestCloudwatch:
             ],
         )
 
-        # get_metric_data
         def assert_results():
             response = aws_client.cloudwatch.get_metric_data(
                 MetricDataQueries=[
@@ -1962,8 +1962,6 @@ class TestCloudwatch:
             assert default_ordering_datapoints == assending_ordering_datapoints[::-1]
 
         retry(assert_ordering, retries=10, sleep=1.0)
-
-
 
 
 def _check_alarm_triggered(

@@ -38,7 +38,6 @@ from localstack.aws.api.cloudwatch import (
     MetricData,
     MetricDataQueries,
     MetricDataQuery,
-    MetricDataResult,
     MetricDataResultMessages,
     MetricDataResults,
     MetricName,
@@ -206,11 +205,11 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         label_options: LabelOptions = None,
     ) -> GetMetricDataOutput:
         results: List[MetricDataResults] = []
-        limit = max_datapoints or 100_800
+        # limit = max_datapoints or 100_800
         messages: MetricDataResultMessages = []
         nxt = None
         for query in metric_data_queries:
-            query_result = self.cloudwatch_database.get_metric_data_stat(
+            query_result = self.cloudwatch_database.get_metric_data_2(
                 account_id=context.account_id,
                 region=context.region,
                 query=query,
@@ -222,41 +221,41 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 messages.extend(query_result.get("messages"))
 
             # TODO: Fix this. AWS sometimes returns the metric name as label, sometimes is metric with stat
-            query_result["label"] = (
-                query.get("Label")
-                or f'{query["MetricStat"]["Metric"]["MetricName"]} {query["MetricStat"]["Stat"]}'
-            )
+            # query_result["label"] = (
+            #     query.get("Label")
+            #     or f'{query["MetricStat"]["Metric"]["MetricName"]} {query["MetricStat"]["Stat"]}'
+            # )
 
             # Paginate
-            aliases_list = PaginatedList(query_result.get("datapoints", {}).items())
-            page, nxt = aliases_list.get_page(
-                lambda metric_result: "",
-                next_token=next_token,
-                page_size=limit,
-            )
-            query_result["datapoints"] = dict(page)
+            # aliases_list = PaginatedList(query_result.get("datapoints", {}).items())
+            # page, nxt = aliases_list.get_page(
+            #     lambda metric_result: "",
+            #     next_token=next_token,
+            #     page_size=limit,
+            # )
+            # query_result["datapoints"] = dict(page)
             results.append(query_result)
 
         formatted_results = []
-        for result in results:
-            formatted_result = {
-                "Id": result.get("id"),
-                "Label": result.get("label"),
-                "StatusCode": "Complete",
-                "Timestamps": [],
-                "Values": [],
-            }
-            datapoints = result.get("datapoints", {})
-            for timestamp, datapoint_result in datapoints.items():
-                formatted_result["Timestamps"].append(int(timestamp))
-                formatted_result["Values"].append(datapoint_result)
-
-            # temporal fix while we still use python dicts for stats
-            if scan_by == "TimestampAscending":
-                formatted_result["Timestamps"].reverse()
-                formatted_result["Values"].reverse()
-
-            formatted_results.append(MetricDataResult(**formatted_result))
+        # for result in results:
+        #     formatted_result = {
+        #         "Id": result.get("id"),
+        #         "Label": result.get("label"),
+        #         "StatusCode": "Complete",
+        #         "Timestamps": [],
+        #         "Values": [],
+        #     }
+        #     datapoints = result.get("datapoints", {})
+        #     for timestamp, datapoint_result in datapoints.items():
+        #         formatted_result["Timestamps"].append(int(timestamp))
+        #         formatted_result["Values"].append(datapoint_result)
+        #
+        #     # temporal fix while we still use python dicts for stats
+        #     if scan_by == "TimestampAscending":
+        #         formatted_result["Timestamps"].reverse()
+        #         formatted_result["Values"].reverse()
+        #
+        #     formatted_results.append(MetricDataResult(**formatted_result))
 
         return GetMetricDataOutput(
             MetricDataResults=formatted_results, NextToken=nxt, Messages=messages
