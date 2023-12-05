@@ -13,6 +13,11 @@ from aws_cdk.aws_lambda_event_sources import DynamoEventSource
 from botocore.exceptions import ClientError
 from constructs import Construct
 
+from localstack.constants import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_s3
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
@@ -424,6 +429,9 @@ class BooksApi(Construct):
             code=awslambda.InlineCode(code=load_file(self.LOAD_BOOKS_HELPER_PATH)),
             runtime=awslambda.Runtime.NODEJS_16_X,
             environment={
+                "TEST_AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID,
+                "TEST_AWS_SECRET_ACCESS_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                "TEST_AWS_REGION_NAME": TEST_AWS_REGION_NAME,
                 "TABLE_NAME": self.books_table.table_name,
                 "S3_BUCKET": S3_BUCKET_BOOKS_INIT,
                 "FILE_NAME": S3_KEY_BOOKS_INIT,
@@ -445,7 +453,12 @@ class BooksApi(Construct):
             handler="index.handler",
             code=awslambda.InlineCode(code=load_file(self.GET_BOOK_PATH)),
             runtime=awslambda.Runtime.NODEJS_16_X,
-            environment={"TABLE_NAME": self.books_table.table_name},
+            environment={
+                "TEST_AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID,
+                "TEST_AWS_SECRET_ACCESS_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                "TEST_AWS_REGION_NAME": TEST_AWS_REGION_NAME,
+                "TABLE_NAME": self.books_table.table_name,
+            },
         )
 
         self.list_books_fn = awslambda.Function(
@@ -454,7 +467,12 @@ class BooksApi(Construct):
             handler="index.handler",
             code=awslambda.InlineCode(code=load_file(self.LIST_BOOKS_PATH)),
             runtime=awslambda.Runtime.NODEJS_16_X,
-            environment={"TABLE_NAME": self.books_table.table_name},
+            environment={
+                "TEST_AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID,
+                "TEST_AWS_SECRET_ACCESS_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                "TEST_AWS_REGION_NAME": TEST_AWS_REGION_NAME,
+                "TABLE_NAME": self.books_table.table_name,
+            },
         )
 
         # lambda to search for book
@@ -470,6 +488,9 @@ class BooksApi(Construct):
             code=awslambda.S3Code(bucket=bucket, key=search_key),
             runtime=awslambda.Runtime.PYTHON_3_10,
             environment={
+                "TEST_AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID,
+                "TEST_AWS_SECRET_ACCESS_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                "TEST_AWS_REGION_NAME": TEST_AWS_REGION_NAME,
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
                 "REGION": stack.region,
             },
@@ -483,6 +504,9 @@ class BooksApi(Construct):
             code=awslambda.S3Code(bucket=bucket, key=search_update_key),
             runtime=awslambda.Runtime.PYTHON_3_10,
             environment={
+                "TEST_AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID,
+                "TEST_AWS_SECRET_ACCESS_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                "TEST_AWS_REGION_NAME": TEST_AWS_REGION_NAME,
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
                 "REGION": stack.region,
             },

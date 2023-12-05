@@ -5,28 +5,24 @@ const https = require("https");
 const url = require("url");
 
 var AWS = require("aws-sdk");
-let documentClient;
-let s3Client;
-if (process.env.AWS_ENDPOINT_URL) {
-  const localStackS3Config = {
-      endpoint: process.env.AWS_ENDPOINT_URL,
-      s3ForcePathStyle: true,
-      accessKeyId: 'test',
-      secretAccessKey: 'test',
-      region: 'us-east-1',
-  };
-  s3Client = new AWS.S3(localStackS3Config);
 
-  documentClient = new AWS.DynamoDB.DocumentClient({
-        endpoint: process.env.AWS_ENDPOINT_URL,
-        region: 'us-east-1', // Change the region as per your setup
-      }
-  );
-} else {
-  // Use the default AWS configuration
-  s3Client = new AWS.S3();
-  documentClient = new AWS.DynamoDB.DocumentClient();
+var config = {};
+if (process.env.AWS_ENDPOINT_URL) {
+    config.endpoint = process.env.AWS_ENDPOINT_URL;
+    config.s3ForcePathStyle = true;
 }
+if (process.env.TEST_AWS_ACCESS_KEY_ID) {
+    config.accessKeyId = process.env.TEST_AWS_ACCESS_KEY_ID;
+}
+if (process.env.TEST_AWS_SECRET_ACCESS_KEY) {
+    config.secretAccessKey = process.env.TEST_AWS_SECRET_ACCESS_KEY;
+}
+if (process.env.TEST_AWS_REGION_NAME) {
+    config.region = process.env.TEST_AWS_REGION_NAME;
+}
+documentClient = new AWS.DynamoDB.DocumentClient(config);
+
+s3Client = new AWS.S3(config);
 
 // UploadBooks - Upload sample set of books to DynamoDB
 exports.handler = function(event, context, callback) {
