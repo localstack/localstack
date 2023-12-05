@@ -5485,7 +5485,9 @@ class TestS3MultiAccounts:
         exc.match("BucketAlreadyExists")
 
     @markers.aws.unknown
-    def test_cross_account_access(self, primary_client, secondary_client, cleanups):
+    def test_cross_account_access(
+        self, primary_client, secondary_client, cleanups, s3_empty_bucket
+    ):
         # Ensure that following operations can be performed across accounts
         # - ListObjects
         # - PutObject
@@ -5499,6 +5501,7 @@ class TestS3MultiAccounts:
         # First user creates a bucket and puts an object
         create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
         cleanups.append(lambda: primary_client.delete_bucket(Bucket=bucket_name))
+        cleanups.append(lambda: s3_empty_bucket(bucket_name))
 
         response = primary_client.list_buckets()
         assert bucket_name in [bucket["Name"] for bucket in response["Buckets"]]
@@ -5521,6 +5524,33 @@ class TestS3MultiAccounts:
         # The modified object must be reflected for the first user
         response = primary_client.get_object(Bucket=bucket_name, Key=key_name)
         assert response["Body"].read() == body2
+
+    @markers.aws.unknown
+    def test_cross_account_copy_object(
+        self, primary_client, secondary_client, cleanups, s3_empty_bucket
+    ):
+        bucket_name = short_uid()
+        key_name = "lorem/ipsum"
+        key_name_copy = "lorem/ipsum2"
+        body1 = b"zaphod beeblebrox"
+
+        # First user creates a bucket and puts an object
+        create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
+        cleanups.append(lambda: primary_client.delete_bucket(Bucket=bucket_name))
+        cleanups.append(lambda: s3_empty_bucket(bucket_name))
+
+        primary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body1)
+
+        # Assert that the secondary client can copy an object in the other account bucket
+        response = secondary_client.copy_object(
+            Bucket=bucket_name, Key=key_name_copy, CopySource=f"{bucket_name}/{key_name}"
+        )
+
+        # Yet they should be able to `ListObjects` in that bucket
+        response = secondary_client.list_objects(Bucket=bucket_name)
+        bucket_keys = {key["Key"] for key in response["Contents"]}
+        assert key_name in bucket_keys
+        assert key_name_copy in bucket_keys
 
 
 class TestS3TerraformRawRequests:
