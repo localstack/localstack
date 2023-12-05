@@ -151,3 +151,4 @@ def _upload_to_s3(s3_client: "S3Client", bucket_name: str, key_name: str, file: 
         # any other region will return a `BucketAlreadyOwnedByYou` exception.
         if exc.response["Error"]["Code"] != "BucketAlreadyOwnedByYou":
             raise exc
+    s3_client.upload_file(Filename=file, Bucket=bucket_name, Key=key_name)
