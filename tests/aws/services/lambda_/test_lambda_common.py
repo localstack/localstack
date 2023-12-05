@@ -268,41 +268,42 @@ class TestLambdaRuntimesCommon:
         assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value
 
 
-# TODO: remove this once all non-arm compatible runtimes are deprecated by the end of 2023
-x86_runtimes = [
-    "dotnet6",
-    "go",
-    # java17 and java21 do not ship the AWS SDK v1 anymore.
-    # Therefore, we create a specific directory and bundle the SDK v1 separately because the SDK v2 does not
-    # support DISABLE_CERT_CHECKING_SYSTEM_PROPERTY anymore.
-    "java",
-    # nodejs18.x and nodejs20.x do not ship the AWS SDK v1 anymore.
-    # Therefore, we create a specific directory and use the SDK v2 instead.
-    "nodejs",
-    "python",
-    "ruby",
-]
-
-# ARM-compatible runtimes for the endpointinjection scenario
-arm_runtimes = [
-    # TODO: debug and fix ARM builds in CI (works locally on ARM mac)
-    # "dotnet6",
-    # "java8.al2",
-    # "java11",
-    # "java17",
-    # "java21",
-    "nodejs",
-    "python3.8",
-    "python3.9",
-    "python3.10",
-    "python3.11",
-    "python3.12",
-    "ruby",
-]
-
-
 class TestLambdaCallingLocalstack:
     """=> Keep these tests synchronized with `test_lambda_endpoint_injection.py` in ext!"""
+
+    # TODO: remove this once all non-arm compatible runtimes are deprecated by the end of 2023
+    #  and the ARM builds are fixed for the CI.
+    # These temporary runtime selections are only relevant for test_manual_endpoint_injection
+    x86_runtimes = [
+        "dotnet6",
+        "go",
+        # java17 and java21 do not ship the AWS SDK v1 anymore.
+        # Therefore, we create a specific directory and bundle the SDK v1 separately because the SDK v2 does not
+        # support DISABLE_CERT_CHECKING_SYSTEM_PROPERTY anymore.
+        "java",
+        # nodejs18.x and nodejs20.x do not ship the AWS SDK v1 anymore.
+        # Therefore, we create a specific directory and use the SDK v2 instead.
+        "nodejs",
+        "python",
+        "ruby",
+    ]
+
+    # ARM-compatible runtimes for the endpointinjection scenario
+    arm_runtimes = [
+        # TODO: debug and fix ARM builds in CI (works locally on ARM mac)
+        # "dotnet6",
+        # "java8.al2",
+        # "java11",
+        # "java17",
+        # "java21",
+        "nodejs",
+        "python3.8",
+        "python3.9",
+        "python3.10",
+        "python3.11",
+        "python3.12",
+        "ruby",
+    ]
 
     @markers.multiruntime(
         scenario="endpointinjection",
