@@ -251,6 +251,11 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 formatted_result["Timestamps"].append(int(timestamp))
                 formatted_result["Values"].append(datapoint_result)
 
+            # temporal fix while we still use python dicts for stats
+            if scan_by == "TimestampAscending":
+                formatted_result["Timestamps"].reverse()
+                formatted_result["Values"].reverse()
+
             formatted_results.append(MetricDataResult(**formatted_result))
 
         return GetMetricDataOutput(

@@ -1875,6 +1875,96 @@ class TestCloudwatch:
 
         retry(assert_found_in_utc, retries=10, sleep=1.0)
 
+    @markers.aws.validated
+    def test_default_ordering(self, aws_client):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        for i in range(0, 10):
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": metric_name,
+                        "Timestamp": now + timedelta(seconds=(i * 60)),
+                        "Value": i,
+                        "Unit": "Seconds",
+                    }
+                ],
+            )
+
+        def assert_ordering():
+            default_ordering = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=(10 * 60)),
+                MaxDatapoints=10,
+            )
+
+            assending_ordering = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=(10 * 60)),
+                MaxDatapoints=10,
+                ScanBy="TimestampAscending",
+            )
+
+            descening_ordering = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=(10 * 60)),
+                MaxDatapoints=10,
+                ScanBy="TimestampDescending",
+            )
+
+            default_ordering_datapoints = default_ordering["MetricDataResults"][0]["Timestamps"]
+            assending_ordering_datapoints = assending_ordering["MetricDataResults"][0]["Timestamps"]
+            descening_ordering_datapoints = descening_ordering["MetricDataResults"][0]["Timestamps"]
+
+            # The default ordering is TimestampDescending
+            assert default_ordering_datapoints == descening_ordering_datapoints
+            assert default_ordering_datapoints == assending_ordering_datapoints[::-1]
+
+        retry(assert_ordering, retries=10, sleep=1.0)
+
+
+
 
 def _check_alarm_triggered(
     expected_state,

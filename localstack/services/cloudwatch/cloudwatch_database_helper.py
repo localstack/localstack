@@ -169,8 +169,6 @@ class CloudwatchDatabase:
         scan_by: str,
     ):
         # TODO exclude null values, check if dimensions must be null though if missing
-        # TODO test default order
-        # TODO add filters for dimensions
         # TODO add filters for unit
 
         with sqlite3.connect(self.METRICS_DB) as conn:
@@ -184,9 +182,9 @@ class CloudwatchDatabase:
 
             # prepare SQL query
             order_by = (
-                "timestamp DESC"
-                if scan_by and scan_by == ScanBy.TimestampDescending
-                else "timestamp ASC"
+                "timestamp ASC"
+                if scan_by == ScanBy.TimestampAscending
+                else "timestamp DESC"
             )
 
             start_time_unix = self._convert_timestamp_to_unix(start_time)
