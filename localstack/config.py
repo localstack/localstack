@@ -1019,7 +1019,9 @@ DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
 # Comma-separated list of regex patterns for DNS names to resolve locally.
 # Any DNS name not matched against any of the patterns on this whitelist
 # will resolve to the real DNS entry, rather than the local one.
-DNS_SKIP_LOCAL_RESOLUTION = (os.environ.get("DNS_SKIP_LOCAL_RESOLUTION") or "").strip()
+DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM = (
+    os.environ.get("DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM") or ""
+).strip()
 DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()  # deprecated
 
 # IP address that AWS endpoints should resolve to in our local DNS server. By default,

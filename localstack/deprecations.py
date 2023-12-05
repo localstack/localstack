@@ -272,7 +272,8 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "DNS_LOCAL_NAME_PATTERNS",
         "3.0.0",
-        "This option was confusingly named. Please use DNS_SKIP_LOCAL_RESOLUTION instead.",
+        "This option was confusingly named. Please use DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM "
+        "instead.",
     ),
 ]
 

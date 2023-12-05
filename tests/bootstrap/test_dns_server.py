@@ -89,7 +89,7 @@ def test_skip_pattern(
             ContainerConfigurators.network(docker_network),
             ContainerConfigurators.env_vars(
                 {
-                    "DNS_SKIP_LOCAL_RESOLUTION": r".*localhost.localstack.cloud",
+                    "DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM": r".*localhost.localstack.cloud",
                 }
             ),
         ]
