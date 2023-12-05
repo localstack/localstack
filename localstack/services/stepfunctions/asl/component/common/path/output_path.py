@@ -16,7 +16,7 @@ class OutputPath(EvalComponent):
     def _eval_body(self, env: Environment) -> None:
         if self.output_path is None:
             env.inp = dict()
-        elif self.output_path != OutputPath.DEFAULT_PATH:
-            inp = env.stack[-1]
-            value = JSONPathUtils.extract_json(self.output_path, inp)
-            env.inp = value
+        else:
+            current_output = env.stack.pop()
+            state_output = JSONPathUtils.extract_json(self.output_path, current_output)
+            env.inp = state_output

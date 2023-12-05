@@ -41,7 +41,7 @@ class PayloadBindingPath(PayloadBinding):
                 event_details=EventDetails(
                     taskFailedEventDetails=TaskFailedEventDetails(
                         error=StatesErrorNameType.StatesRuntime.to_name(),
-                        cause=f"The JSONPath {self.path} specified for the field $.{self.field} could not be found in the input {to_json_str(inp)}",
+                        cause=f"The JSONPath {self.path} specified for the field {self.field}.$ could not be found in the input {to_json_str(inp)}",
                     )
                 ),
             )

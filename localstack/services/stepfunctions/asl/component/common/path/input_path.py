@@ -1,3 +1,4 @@
+import copy
 from typing import Final, Optional
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
@@ -21,4 +22,4 @@ class InputPath(EvalComponent):
                 value = env.inp
             case _:
                 value = JSONPathUtils.extract_json(self.input_path_src, env.inp)
-        env.stack.append(value)
+        env.stack.append(copy.deepcopy(value))
