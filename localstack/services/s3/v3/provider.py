@@ -1107,17 +1107,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # request_payer: RequestPayer = None,  # TODO:
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
-        store = self.get_store(context.account_id, context.region)
-        # TODO: verify cross account CopyObject
-        if not (dest_s3_bucket := store.buckets.get(dest_bucket)):
-            raise NoSuchBucket("The specified bucket does not exist", BucketName=dest_bucket)
+        store, dest_s3_bucket = self._get_cross_account_bucket(context, dest_bucket)
 
         src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_copy_source(
             request.get("CopySource")
         )
-
-        if not (src_s3_bucket := store.buckets.get(src_bucket)):
-            raise NoSuchBucket("The specified bucket does not exist", BucketName=src_bucket)
+        _, src_s3_bucket = self._get_cross_account_bucket(context, src_bucket)
 
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             validate_kms_key_id(sse_kms_key_id, dest_s3_bucket)
