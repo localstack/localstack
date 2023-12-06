@@ -1,4 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  S3BucketPath:
+    Type: String
+  S3BucketName:
+    Type: String
 
 Resources:
   Bucket:
@@ -11,9 +16,9 @@ Resources:
             - Ref: AWS::Region
             - "."
             - Ref: AWS::URLSuffix
-            - {{ s3_bucket_url }}
+            - Ref: S3BucketPath
       Parameters:
-        BucketBaseName: {{ s3_bucket_name }}
+        BucketBaseName: !Ref S3BucketName
         Mode: prod
 Outputs:
   ProdBucket:

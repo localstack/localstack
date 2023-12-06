@@ -277,9 +277,9 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/nested-stack-conditions.yaml"
         ),
-        template_mapping={
-            "s3_bucket_url": f"/{bucket_name}/{key}",
-            "s3_bucket_name": nested_bucket_name,
+        parameters={
+            "S3BucketPath": f"/{bucket_name}/{key}",
+            "S3BucketName": nested_bucket_name,
         },
     )
 
