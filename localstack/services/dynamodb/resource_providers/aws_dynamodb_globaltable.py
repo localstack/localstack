@@ -277,11 +277,19 @@ class DynamoDBGlobalTableProvider(ResourceProvider[DynamoDBGlobalTableProperties
                 custom_context=request.custom_context,
             )
 
-        return ProgressEvent(
-            status=OperationStatus.IN_PROGRESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        elif status == "CREATING":
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
+        else:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                resource_model=model,
+                custom_context=request.custom_context,
+                message=f"Table creation failed with status {status}",
+            )
 
     def read(
         self,
@@ -333,11 +341,19 @@ class DynamoDBGlobalTableProvider(ResourceProvider[DynamoDBGlobalTableProperties
                 resource_model=model,
                 custom_context=request.custom_context,
             )
-        except Exception:
+        except Exception as ex:
+            if "ResourceNotFoundException" in str(ex):
+                return ProgressEvent(
+                    status=OperationStatus.SUCCESS,
+                    resource_model=model,
+                    custom_context=request.custom_context,
+                )
+
             return ProgressEvent(
-                status=OperationStatus.SUCCESS,
+                status=OperationStatus.FAILED,
                 resource_model=model,
                 custom_context=request.custom_context,
+                message=str(ex),
             )
 
     def update(

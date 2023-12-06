@@ -111,7 +111,6 @@ def test_billing_mode_as_conditional(deploy_cfn_template, snapshot, aws_client, 
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(paths=[])
 def test_global_table(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.dynamodb_api())
     stack = deploy_cfn_template(
