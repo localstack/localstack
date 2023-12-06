@@ -1,0 +1,55 @@
+Parameters:
+  EventBusName:
+    Type: String
+
+  RuleName:
+    Type: String
+
+Resources:
+  Bus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Ref EventBusName
+
+  RuleWithoutName:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        resources:
+          - "*"
+      EventBusName: !GetAtt Bus.Name
+
+  RuleWithName:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Ref RuleName
+      EventPattern:
+        resources:
+          - "*"
+      EventBusName: !GetAtt Bus.Name
+
+  RuleWithoutBus:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        resources:
+          - "*"
+
+Outputs:
+  RuleWithoutNameArn:
+    Value: !GetAtt RuleWithoutName.Arn
+
+  RuleWithoutNameRef:
+    Value: !Ref RuleWithoutName
+
+  RuleWithNameArn:
+    Value: !GetAtt RuleWithName.Arn
+
+  RuleWithNameRef:
+    Value: !Ref RuleWithName
+
+  RuleWithoutBusArn:
+    Value: !GetAtt RuleWithoutBus.Arn
+
+  RuleWithoutBusRef:
+    Value: !Ref RuleWithoutBus
