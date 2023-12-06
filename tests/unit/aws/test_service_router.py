@@ -24,6 +24,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
             # Exclude all operations for the following, currently _not_ supported services
             if service.service_name in [
                 "bedrock",
+                "bedrock-agent",
+                "bedrock-agent-runtime",
                 "bedrock-runtime",
                 "chime",
                 "chime-sdk-identity",
@@ -50,16 +52,20 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "lex-runtime",
                 "lexv2-models",
                 "lexv2-runtime",
+                "marketplace-catalog",
+                "marketplace-deployment",
                 "personalize",
                 "personalize-events",
                 "personalize-runtime",
                 "pinpoint-sms-voice",
+                "qconnect",
                 "sagemaker-edge",
                 "sagemaker-featurestore-runtime",
                 "sagemaker-metrics",
                 "sms-voice",
                 "sso",
                 "sso-oidc",
+                "wisdom",
                 "workdocs",
             ]:
                 yield pytest.param(

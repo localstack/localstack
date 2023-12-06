@@ -217,7 +217,7 @@ class TypedServiceClientFactory(abc.ABC):
     sesv2: Union["SESV2Client", "MetadataRequestInjector[SESV2Client]"]
     sns: Union["SNSClient", "MetadataRequestInjector[SNSClient]"]
     sqs: Union["SQSClient", "MetadataRequestInjector[SQSClient]"]
-    sqs_query: Union["SQSClient", "MetadataRequestInjector[SQSClient]"]
+    sqs_json: Union["SQSClient", "MetadataRequestInjector[SQSClient]"]
     ssm: Union["SSMClient", "MetadataRequestInjector[SSMClient]"]
     sso_admin: Union["SSOAdminClient", "MetadataRequestInjector[SSOAdminClient]"]
     stepfunctions: Union["SFNClient", "MetadataRequestInjector[SFNClient]"]

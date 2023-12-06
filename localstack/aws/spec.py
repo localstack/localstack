@@ -70,9 +70,9 @@ def load_service(service: ServiceName, version: str = None, model_type="service-
     For example: load_service("sqs", "2012-11-05")
     """
     service_description = loader.load_service_model(service, model_type, version)
-    # if the service name is sqs-query, we just loaded our internalized SQS query spec,
+    # if the service name is sqs-json, we just loaded our internalized SQS query spec,
     # the service name needs to be set to standard sqs
-    if service == "sqs-query":
+    if service == "sqs-json":
         service = "sqs"
     return ServiceModel(service_description, service)
 

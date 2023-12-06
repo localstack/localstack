@@ -80,10 +80,10 @@ def test_patching_loaders():
 
 
 def test_loading_own_specs():
-    """Ensure that the internalized specifications (f.e. the sqs-query spec) can be handled by the CustomLoader."""
+    """Ensure that the internalized specifications (f.e. the sqs-json spec) can be handled by the CustomLoader."""
     loader = CustomLoader({})
     # first test that specs remain intact
-    sqs_query_description = loader.load_service_model("sqs-query", "service-2")
+    sqs_query_description = loader.load_service_model("sqs", "service-2")
     assert sqs_query_description["metadata"]["protocol"] == "query"
-    sqs_json_description = loader.load_service_model("sqs", "service-2")
+    sqs_json_description = loader.load_service_model("sqs-json", "service-2")
     assert sqs_json_description["metadata"]["protocol"] == "json"

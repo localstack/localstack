@@ -28,13 +28,13 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_source_needs_redrive_policy": {
-    "recorded-date": "03-01-2024, 19:49:15",
+    "recorded-date": "05-01-2024, 12:48:02",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "Source queue must be configured as a Dead Letter Queue.",
-          "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -45,13 +45,13 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_task_handle": {
-    "recorded-date": "03-01-2024, 19:50:39",
+    "recorded-date": "05-01-2024, 12:45:27",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "Value for parameter TaskHandle is invalid.",
-          "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -62,16 +62,15 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_source_arn_in_task_handle": {
-    "recorded-date": "03-01-2024, 19:56:40",
+    "recorded-date": "05-01-2024, 12:46:39",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "ResourceNotFoundException",
+          "Detail": null,
           "Message": "The resource that you specified for the SourceArn parameter doesn't exist.",
-          "QueryErrorCode": "ResourceNotFoundException",
           "Type": "Sender"
         },
-        "message": "The resource that you specified for the SourceArn parameter doesn't exist.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
@@ -80,16 +79,15 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_task_id_in_task_handle": {
-    "recorded-date": "03-01-2024, 19:57:32",
+    "recorded-date": "05-01-2024, 12:47:48",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "ResourceNotFoundException",
+          "Detail": null,
           "Message": "Task does not exist.",
-          "QueryErrorCode": "ResourceNotFoundException",
           "Type": "Sender"
         },
-        "message": "Task does not exist.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
@@ -110,16 +108,15 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_destination_needs_to_exist": {
-    "recorded-date": "03-01-2024, 20:12:56",
+    "recorded-date": "05-01-2024, 12:48:32",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "ResourceNotFoundException",
+          "Detail": null,
           "Message": "The resource that you specified for the DestinationArn parameter doesn't exist.",
-          "QueryErrorCode": "ResourceNotFoundException",
           "Type": "Sender"
         },
-        "message": "The resource that you specified for the DestinationArn parameter doesn't exist.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
@@ -198,13 +195,13 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_start_multiple_move_tasks": {
-    "recorded-date": "03-01-2024, 20:57:58",
+    "recorded-date": "05-01-2024, 12:50:38",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "InvalidParameterValue",
+          "Detail": null,
           "Message": "There is already a task running. Only one active task is allowed for a source queue arn at a given time.",
-          "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
         "ResponseMetadata": {
