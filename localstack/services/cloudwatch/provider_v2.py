@@ -205,7 +205,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         label_options: LabelOptions = None,
     ) -> GetMetricDataOutput:
         results: List[MetricDataResult] = []
-        # limit = max_datapoints or 100_800
+        limit = max_datapoints or 100_800
         messages: MetricDataResultMessages = []
         nxt = None
         for query in metric_data_queries:
@@ -233,21 +233,25 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 timestamps = timestamps[::-1]
                 values = values[::-1]
 
-            # # Paginate
-            # timestamp_value_dicts = [
-            #     {
-            #         "Timestamp": timestamp,
-            #         "Value": value,
-            #     }
-            #     for timestamp, value in zip(timestamps, values)
-            # ]
-            #
-            # aliases_list = PaginatedList(query_result.get("datapoints", {}).items())
-            # timestamp_page, nxt = aliases_list.get_page(
-            #     lambda metric_result: "",
-            #     next_token=next_token,
-            #     page_size=limit,
-            # )
+            # Paginate
+            timestamp_value_dicts = [
+                {
+                    "Timestamp": timestamp,
+                    "Value": value,
+                }
+                for timestamp, value in zip(timestamps, values)
+            ]
+
+            pagination = PaginatedList(timestamp_value_dicts)
+            timestamp_page, nxt = pagination.get_page(
+                lambda item: item.get("Timestamp"),
+                next_token=next_token,
+                page_size=limit,
+            )
+
+            timestamps = [item.get("Timestamp") for item in timestamp_page]
+            values = [item.get("Value") for item in timestamp_page]
+
             metric_data_result = {
                 "Id": query.get("Id"),
                 "Label": label,
