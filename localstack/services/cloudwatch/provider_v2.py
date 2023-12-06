@@ -226,9 +226,24 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 or f'{query["MetricStat"]["Metric"]["MetricName"]} {query["MetricStat"]["Stat"]}'
             )
 
-            # Paginate
+            timestamps = query_result.get("timestamps", {})
+            values = query_result.get("values", {})
+
+            if scan_by == "TimestampAscending":
+                timestamps = timestamps[::-1]
+                values = values[::-1]
+
+            # # Paginate
+            # timestamp_value_dicts = [
+            #     {
+            #         "Timestamp": timestamp,
+            #         "Value": value,
+            #     }
+            #     for timestamp, value in zip(timestamps, values)
+            # ]
+            #
             # aliases_list = PaginatedList(query_result.get("datapoints", {}).items())
-            # page, nxt = aliases_list.get_page(
+            # timestamp_page, nxt = aliases_list.get_page(
             #     lambda metric_result: "",
             #     next_token=next_token,
             #     page_size=limit,
@@ -237,8 +252,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 "Id": query.get("Id"),
                 "Label": label,
                 "StatusCode": "Complete",
-                "Timestamps": query_result.get("timestamps"),
-                "Values": query_result.get("values"),
+                "Timestamps": timestamps,
+                "Values": values,
             }
             results.append(MetricDataResult(**metric_data_result))
 
