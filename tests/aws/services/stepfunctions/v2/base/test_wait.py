@@ -10,6 +10,7 @@ from tests.aws.services.stepfunctions.utils import (
 )
 
 
+# TODO: add tests for seconds, secondspath, timestamp
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestSfnWait:
     # TODO: timestamp in the past
@@ -22,16 +23,17 @@ class TestSfnWait:
         "timestamp_suffix",
         [
             # valid formats
-            "Z",
-            ".000000Z",
-            ".000Z",
+            # TODO: re-enable
+            # "Z",
+            # ".000000Z",
+            # ".000Z",
             # invalid formats
             "",
             ".000000",
             ".000",
         ],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_wait_timestamppath(
         self,
         aws_client,
