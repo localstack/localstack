@@ -151,6 +151,7 @@ def _snapshot_session(request: SubRequest, account_id, region):
         "tests/aws/services/transcribe",
         "tests/aws/scenario/bookstore",
         "tests/aws/scenario/note_taking",
+        "tests/aws/scenario/lambda_destination",
         "tests/aws/scenario/loan_broker",
         "localstack_ext",
         "localstack-ext",
