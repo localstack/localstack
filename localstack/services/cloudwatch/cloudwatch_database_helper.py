@@ -27,11 +27,11 @@ STAT_TO_SQLITE_COLUMNS = {
 }
 
 STAT_TO_SQLITE_FUNC_2 = {
-    "Sum": "SUM(value)",
-    "Average": "SUM(VALUE) / SUM(sample_count)",
-    "Minimum": "MIN(value)",
-    "Maximum": "MAX(value)",
-    "SampleCount": "COUNT(value)",
+    "Sum": "SUM(value) ",
+    "Average": "SUM(value), SUM(count) ",
+    "Minimum": "MIN(value) ",
+    "Maximum": "MAX(value) ",
+    "SampleCount": "Sum(count)",
 }
 
 STAT_TO_SQLITE_COLUMNS_2 = {
@@ -183,7 +183,7 @@ class CloudwatchDatabase:
         start_time: datetime,
         end_time: datetime,
         scan_by: str,
-    ):
+    ) -> dict:
         # TODO exclude null values, check if dimensions must be null though if missing
         # TODO add filters for unit
 
@@ -193,12 +193,11 @@ class CloudwatchDatabase:
             metric = metric_stat.get("Metric")
             period = metric_stat.get("Period")
             stat = metric_stat.get("Stat")
-            dimensions = metric.get("Dimensions", [])
+            # dimensions = metric.get("Dimensions", [])
             # unit = metric_stat.get("Unit")
 
             # prepare SQL query
             order_by = "timestamp ASC" if scan_by == ScanBy.TimestampAscending else "timestamp DESC"
-
             start_time_unix = self._convert_timestamp_to_unix(start_time)
             end_time_unix = self._convert_timestamp_to_unix(end_time)
 
@@ -208,156 +207,64 @@ class CloudwatchDatabase:
                 metric.get("Namespace"),
                 metric.get("MetricName"),
             )
-
-            dimension_filter = ""
-            for dimension in dimensions:
-                dimension_filter += "AND dimensions LIKE ? "
-                data = data + (f"%{dimension.get('Name')}={dimension.get('Value')}%",)
-
-            query_single_metric = f"""
-            SELECT {STAT_TO_SQLITE_FUNC[stat]} FROM {self.TABLE_SINGLE_METRICS}
-            WHERE account_id = ? AND region = ?
-            AND namespace = ? AND metric_name = ?
-            {dimension_filter}
-            AND timestamp >= ? AND timestamp < ?
-            ORDER BY {order_by}
-            """
-
-            query_agg_metric = f"""
-            SELECT {STAT_TO_SQLITE_COLUMNS[stat]} FROM {self.TABLE_AGGREGATED_METRICS}
-            WHERE account_id = ? AND region = ?
-            AND namespace = ? AND metric_name = ?
-            {dimension_filter}
-            AND timestamp >= ? AND timestamp < ?
-            ORDER BY {order_by}
-            """
-
-            # Execution of query according to period
-            datapoints = {}
-            while start_time_unix < end_time_unix:
-                next_start_time = start_time_unix + period
-                datapoints[str(start_time_unix)] = {"values": []}
-                cur.execute(
-                    query_single_metric,
-                    data
-                    + (
-                        start_time_unix,
-                        next_start_time,
-                    ),
-                )
-                single_result = cur.fetchone()[0]
-                if single_result or (single_result == 0 and stat != "SampleCount"):
-                    datapoints[str(start_time_unix)]["values"].append(single_result)
-
-                cur.execute(
-                    query_agg_metric,
-                    data
-                    + (
-                        start_time_unix,
-                        next_start_time,
-                    ),
-                )
-                agg_result = cur.fetchall()
-                if agg_result:
-                    datapoints[str(start_time_unix)]["values"] += [
-                        (
-                            (
-                                r[0],
-                                r[1],
-                            )
-                            if stat == "Average"
-                            else r[0]
-                        )
-                        for r in agg_result
-                    ]
-
-                start_time_unix = next_start_time
-
-            cleaned_datapoints = {}
-            for timestamp, timestamp_values in datapoints.items():
-                # clean up datapoints
-                cleaned_values = [v for v in timestamp_values["values"] if v is not None]
-                if not cleaned_values:
-                    continue
-
-                # calculate statistic
-                if stat == "Sum" or stat == "SampleCount":
-                    cleaned_datapoints[timestamp] = sum(cleaned_values)
-
-                elif stat == "Minimum":
-                    cleaned_datapoints[timestamp] = min(cleaned_values)
-
-                elif stat == "Maximum":
-                    cleaned_datapoints[timestamp] = max(cleaned_values)
-
-                elif stat == "Average":
-                    total_sum = 0
-                    count = 0
-                    for cleaned_value in cleaned_values:
-                        if isinstance(cleaned_value, tuple):
-                            total_sum += cleaned_value[0]
-                            count += cleaned_value[1]
-                        else:
-                            total_sum += cleaned_value
-                            count += 1
-                    cleaned_datapoints[timestamp] = total_sum / count
-
-            return {
-                "id": query.get("Id"),
-                "datapoints": cleaned_datapoints,
-            }
-
-    def get_metric_data_2(
-        self,
-        account_id: str,
-        region: str,
-        query: MetricDataQuery,
-        start_time: datetime,
-        end_time: datetime,
-        scan_by: str,
-    ):
-        # TODO exclude null values, check if dimensions must be null though if missing
-        # TODO add filters for unit
-
-        with sqlite3.connect(self.METRICS_DB) as conn:
-            cur = conn.cursor()
-            metric_stat = query.get("MetricStat")
-            metric = metric_stat.get("Metric")
-            # period = metric_stat.get("Period")
-            stat = metric_stat.get("Stat")
-            dimensions = metric.get("Dimensions", [])
-            # unit = metric_stat.get("Unit")
-
-            # prepare SQL query
-            # order_by = "timestamp ASC" if scan_by == ScanBy.TimestampAscending else "timestamp DESC"
             #
-            # start_time_unix = self._convert_timestamp_to_unix(start_time)
-            # end_time_unix = self._convert_timestamp_to_unix(end_time)
-
-            data = (
-                account_id,
-                region,
-                metric.get("Namespace"),
-                metric.get("MetricName"),
-            )
-
-            dimension_filter = ""
-            for dimension in dimensions:
-                dimension_filter += "AND dimensions LIKE ? "
-                data = data + (f"%{dimension.get('Name')}={dimension.get('Value')}%",)
+            # dimension_filter = ""
+            # for dimension in dimensions:
+            #     dimension_filter += "AND dimensions LIKE ? "
+            #     data = data + (f"%{dimension.get('Name')}={dimension.get('Value')}%",)
+            #
+            # unit_filter = ""
+            # if unit:
+            #     unit_filter = f"AND unit LIKE ? "
+            #     data = data + (unit,)
 
             sql_query = f"""
             SELECT
-            *
+            {STAT_TO_SQLITE_FUNC_2[stat]}
             FROM (
-                SELECT value, 1 as count FROM {self.TABLE_SINGLE_METRICS}
+                SELECT
+                value, 1 as count,
+                account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution
+                FROM {self.TABLE_SINGLE_METRICS}
                 UNION
-                SELECT {STAT_TO_SQLITE_COLUMNS_2[stat]} as value, sample_count  as count FROM {self.TABLE_AGGREGATED_METRICS}
+                SELECT
+                {STAT_TO_SQLITE_COLUMNS_2[stat]} as value, sample_count as count,
+                account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution
+                FROM {self.TABLE_AGGREGATED_METRICS}
             ) AS combined
+            WHERE account_id = ? AND region = ?
+            AND namespace = ? AND metric_name = ?
+            AND timestamp >= ? AND timestamp < ?
+            ORDER BY {order_by}
             """
-            cur.execute(sql_query)
-            result = cur.fetchall()
-            return result
+
+            timestamps = []
+            values = []
+            while start_time_unix < end_time_unix:
+                next_start_time = start_time_unix + period
+                cur.execute(
+                    sql_query,
+                    data + (start_time_unix, next_start_time),
+                )
+                result_row = cur.fetchone()
+                start_time_unix = next_start_time
+
+                cleaned_result = None
+                if stat == "SampleCount" and result_row[0] is not None:
+                    cleaned_result = result_row[0]
+                elif stat == "Average" and result_row[1]:
+                    cleaned_result = result_row[0] / result_row[1]
+                else:
+                    cleaned_result = result_row[0]
+
+                if cleaned_result:
+                    timestamps.append(start_time_unix)
+                    values.append(cleaned_result)
+
+            return {
+                "timestamps": timestamps,
+                "values": values,
+            }
 
     def list_metrics(
         self,

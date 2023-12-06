@@ -38,8 +38,8 @@ from localstack.aws.api.cloudwatch import (
     MetricData,
     MetricDataQueries,
     MetricDataQuery,
+    MetricDataResult,
     MetricDataResultMessages,
-    MetricDataResults,
     MetricName,
     MetricStat,
     Namespace,
@@ -204,12 +204,12 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         max_datapoints: GetMetricDataMaxDatapoints = None,
         label_options: LabelOptions = None,
     ) -> GetMetricDataOutput:
-        results: List[MetricDataResults] = []
+        results: List[MetricDataResult] = []
         # limit = max_datapoints or 100_800
         messages: MetricDataResultMessages = []
         nxt = None
         for query in metric_data_queries:
-            query_result = self.cloudwatch_database.get_metric_data_2(
+            query_result = self.cloudwatch_database.get_metric_data_stat(
                 account_id=context.account_id,
                 region=context.region,
                 query=query,
@@ -221,10 +221,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 messages.extend(query_result.get("messages"))
 
             # TODO: Fix this. AWS sometimes returns the metric name as label, sometimes is metric with stat
-            # query_result["label"] = (
-            #     query.get("Label")
-            #     or f'{query["MetricStat"]["Metric"]["MetricName"]} {query["MetricStat"]["Stat"]}'
-            # )
+            label = (
+                query.get("Label")
+                or f'{query["MetricStat"]["Metric"]["MetricName"]} {query["MetricStat"]["Stat"]}'
+            )
 
             # Paginate
             # aliases_list = PaginatedList(query_result.get("datapoints", {}).items())
@@ -233,33 +233,16 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             #     next_token=next_token,
             #     page_size=limit,
             # )
-            # query_result["datapoints"] = dict(page)
-            results.append(query_result)
+            metric_data_result = {
+                "Id": query.get("Id"),
+                "Label": label,
+                "StatusCode": "Complete",
+                "Timestamps": query_result.get("timestamps"),
+                "Values": query_result.get("values"),
+            }
+            results.append(MetricDataResult(**metric_data_result))
 
-        formatted_results = []
-        # for result in results:
-        #     formatted_result = {
-        #         "Id": result.get("id"),
-        #         "Label": result.get("label"),
-        #         "StatusCode": "Complete",
-        #         "Timestamps": [],
-        #         "Values": [],
-        #     }
-        #     datapoints = result.get("datapoints", {})
-        #     for timestamp, datapoint_result in datapoints.items():
-        #         formatted_result["Timestamps"].append(int(timestamp))
-        #         formatted_result["Values"].append(datapoint_result)
-        #
-        #     # temporal fix while we still use python dicts for stats
-        #     if scan_by == "TimestampAscending":
-        #         formatted_result["Timestamps"].reverse()
-        #         formatted_result["Values"].reverse()
-        #
-        #     formatted_results.append(MetricDataResult(**formatted_result))
-
-        return GetMetricDataOutput(
-            MetricDataResults=formatted_results, NextToken=nxt, Messages=messages
-        )
+        return GetMetricDataOutput(MetricDataResults=results, NextToken=nxt, Messages=messages)
 
     def set_alarm_state(
         self,
@@ -531,7 +514,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         extended_statistics: ExtendedStatistics = None,
         unit: StandardUnit = None,
     ) -> GetMetricStatisticsOutput:
-        stat_datapoints = {}
+        stat_datapoints = []
         for stat in statistics:
             query_result = self.cloudwatch_database.get_metric_data_stat(
                 account_id=context.account_id,
