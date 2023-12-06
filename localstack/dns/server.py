@@ -451,7 +451,7 @@ class Resolver(DnsServerProtocol):
         converter = RecordConverter(request, client_address)
 
         # check for direct (not regex based) response
-        zone = self.zones.get(request.q.qname)
+        zone = self.zones.get(str(request.q.qname))
         if zone is not None:
             for zone_records in zone:
                 rr = converter.to_record(zone_records).try_rr(request.q)
