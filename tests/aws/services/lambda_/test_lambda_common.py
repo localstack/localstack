@@ -151,6 +151,7 @@ class TestLambdaRuntimesCommon:
             "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
+            "$..environment.LC_CTYPE",  # Only python3.11 (part of a broken image rollout, likely rolled back)
         ]
     )
     @markers.aws.validated
