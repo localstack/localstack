@@ -193,8 +193,8 @@ class CloudwatchDatabase:
             metric = metric_stat.get("Metric")
             period = metric_stat.get("Period")
             stat = metric_stat.get("Stat")
-            # dimensions = metric.get("Dimensions", [])
-            # unit = metric_stat.get("Unit")
+            dimensions = metric.get("Dimensions", [])
+            unit = metric_stat.get("Unit")
 
             # prepare SQL query
             order_by = "timestamp ASC" if scan_by == ScanBy.TimestampAscending else "timestamp DESC"
@@ -208,15 +208,15 @@ class CloudwatchDatabase:
                 metric.get("MetricName"),
             )
             #
-            # dimension_filter = ""
-            # for dimension in dimensions:
-            #     dimension_filter += "AND dimensions LIKE ? "
-            #     data = data + (f"%{dimension.get('Name')}={dimension.get('Value')}%",)
-            #
-            # unit_filter = ""
-            # if unit:
-            #     unit_filter = f"AND unit LIKE ? "
-            #     data = data + (unit,)
+            dimension_filter = ""
+            for dimension in dimensions:
+                dimension_filter += "AND dimensions LIKE ? "
+                data = data + (f"%{dimension.get('Name')}={dimension.get('Value')}%",)
+
+            unit_filter = ""
+            if unit:
+                unit_filter = "AND unit LIKE ? "
+                data = data + (unit,)
 
             sql_query = f"""
             SELECT
@@ -235,6 +235,8 @@ class CloudwatchDatabase:
             WHERE account_id = ? AND region = ?
             AND namespace = ? AND metric_name = ?
             AND timestamp >= ? AND timestamp < ?
+            {dimension_filter}
+            {unit_filter}
             ORDER BY {order_by}
             """
 
