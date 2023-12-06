@@ -1,0 +1,481 @@
+{
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than": {
+    "recorded-date": "22-06-2023, 13:16:03",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "",
+            "Value": ""
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "A "
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "A\t\n\r"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "AB",
+            "Value": "ABC"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_equals": {
+    "recorded-date": "22-06-2023, 13:15:27",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": null,
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": true,
+            "Value": "HelloWorld"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": "     "
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "\t\n",
+            "Value": "\t\r\n"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "Hello",
+            "Value": "Hello"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_equals_path": {
+    "recorded-date": "22-06-2023, 13:15:46",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": " ",
+            "Value": "     "
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "\t\n",
+            "Value": "\t\r\n"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "Hello",
+            "Value": "Hello"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_path": {
+    "recorded-date": "22-06-2023, 13:16:20",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "",
+            "Value": ""
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "A "
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "A\t\n\r"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "AB",
+            "Value": "ABC"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_equals": {
+    "recorded-date": "22-06-2023, 13:16:37",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "",
+            "Value": ""
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "AB"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "AB",
+            "Value": "A"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_equals_path": {
+    "recorded-date": "22-06-2023, 13:16:54",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "",
+            "Value": ""
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "AB"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "AB",
+            "Value": "A"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than": {
+    "recorded-date": "22-06-2023, 13:17:10",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "",
+            "Value": ""
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "AB"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "AB",
+            "Value": "A"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_path": {
+    "recorded-date": "22-06-2023, 13:17:26",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "",
+            "Value": ""
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "AB"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "AB",
+            "Value": "A"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_equals": {
+    "recorded-date": "22-06-2023, 13:17:43",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "",
+            "Value": ""
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "AB"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "AB",
+            "Value": "A"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_equals_path": {
+    "recorded-date": "22-06-2023, 13:17:59",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": "",
+            "Value": ""
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "A",
+            "Value": "AB"
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "AB",
+            "Value": "A"
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  }
+}

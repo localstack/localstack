@@ -1,5 +1,6 @@
 import os
 import pathlib
+import textwrap
 
 import pytest
 
@@ -179,6 +180,65 @@ class TestInitScriptManager:
         # check script output
         assert (tmp_path / "script_01.out").read_text().strip() == "hello 1"
         assert (tmp_path / "script_03.out").read_text().strip() == "hello 3"
+
+    def test_python_globals(self, manager, tmp_path):
+        """
+        https://github.com/localstack/localstack/issues/7135
+        """
+        script_root = pathlib.Path(manager.script_root)
+        ready_d = script_root / "ready.d"
+        ready_d.mkdir()
+
+        python_script = ready_d / "script.py"
+        python_script.touch(mode=0o777)
+        src = textwrap.dedent(
+            """
+                import os
+
+                TOPICS = ("user-profile", "group")
+
+
+                def create_topic(topic):
+                    os.system(f"echo {topic} creating")
+
+
+                def init_topics():
+                    # access of global variable within scope
+                    with open('%s', 'w') as outfile:
+                        outfile.write('\\n'.join(TOPICS))
+
+                init_topics()
+                """
+            % (tmp_path / "script.out")
+        )
+        python_script.write_text(src)
+
+        assert manager.stage_completed == {
+            Stage.BOOT: False,
+            Stage.START: False,
+            Stage.READY: False,
+            Stage.SHUTDOWN: False,
+        }
+        result = manager.run_stage(Stage.READY)
+
+        # check completed state
+        assert manager.stage_completed == {
+            Stage.BOOT: False,
+            Stage.START: False,
+            Stage.READY: True,
+            Stage.SHUTDOWN: False,
+        }
+
+        # check script results
+        assert result == [
+            Script(
+                path=os.path.join(manager.script_root, "ready.d/script.py"),
+                stage=Stage.READY,
+                state=State.SUCCESSFUL,
+            ),
+        ]
+
+        assert (tmp_path / "script.out").read_text().strip() == "user-profile\ngroup"
 
     def test_empty_init_path(self):
         manager = InitScriptManager(script_root=None)

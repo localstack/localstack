@@ -1,0 +1,30 @@
+Parameters:
+  Substitution:
+    Type: String
+    Default: SubstitutionDefault
+
+  MacroInput:
+    Type: String
+
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Value:
+        Ref: Substitution
+      Type: String
+
+  Parameter2:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::Join:
+          - " "
+          - - "Hello"
+            - "World"
+Transform:
+  - Name: PrintReferences
+    Parameters:
+      Input:
+        Ref: MacroInput

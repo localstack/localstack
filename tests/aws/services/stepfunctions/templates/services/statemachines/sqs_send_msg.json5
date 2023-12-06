@@ -1,0 +1,15 @@
+{
+  "Comment": "SQS_SEND_MESSAGE",
+  "StartAt": "SendSQS",
+  "States": {
+   "SendSQS": {
+     "Type": "Task",
+     "Resource": "arn:aws:states:::sqs:sendMessage",
+     "Parameters": {
+       "QueueUrl.$": "$.QueueUrl",
+       "MessageBody.$": "$.MessageBody"
+     },
+     "End": true
+    }
+  }
+}

@@ -1,13 +1,12 @@
 IMAGE_NAME ?= localstack/localstack
-IMAGE_NAME_LIGHT ?= $(IMAGE_NAME)-light
-IMAGE_NAME_FULL ?= $(IMAGE_NAME)-full
 IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
 VENV_BIN ?= python3 -m venv
 VENV_DIR ?= .venv
 PIP_CMD ?= pip3
 TEST_PATH ?= .
 PYTEST_LOGLEVEL ?=
-MAIN_CONTAINER_NAME ?= localstack_main
+DISABLE_BOTO_RETRIES ?= 1
+MAIN_CONTAINER_NAME ?= localstack-main
 
 MAJOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f1)
 MINOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f2)
@@ -49,21 +48,25 @@ install-test-only: venv
 install-dev: venv         ## Install developer requirements into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
 
-install: install-dev entrypoints init-testlibs  ## Install full dependencies into venv, and download third-party services
+install-dev-types: venv   ## Install developer requirements incl. type hints into venv
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev,typehint]"
+
+install-s3: venv     ## Install dependencies for the localstack runtime for s3-only into venv
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,base-runtime]"
+
+install: install-dev entrypoints  ## Install full dependencies into venv
 
 entrypoints:              ## Run setup.py develop to build entry points
 	$(VENV_RUN); python setup.py plugins egg_info
-
-init:                     ## Initialize the infrastructure, make sure all libs are downloaded
-	$(VENV_RUN); python -m localstack.services.install libs
-
-init-testlibs:
-	$(VENV_RUN); python -m localstack.services.install testlibs
+	# make sure that the entrypoints were correctly created and are non-empty
+	test -s localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
 
 dist: entrypoints        ## Build source and built (wheel) distributions of the current version
 	$(VENV_RUN); pip install --upgrade twine; python setup.py sdist bdist_wheel
 
 publish: clean-dist dist  ## Publish the library to the central PyPi repository
+	# make sure the dist archive contains a non-empty entry_points.txt file before uploading
+	tar --wildcards --to-stdout -xf dist/localstack-core*.tar.gz "localstack-core*/localstack_core.egg-info/entry_points.txt" | grep . > /dev/null 2>&1 || (echo "Refusing upload, localstack-core dist does not contain entrypoints." && exit 1)
 	$(VENV_RUN); twine upload dist/*
 
 coveralls:         		  ## Publish coveralls metrics
@@ -72,22 +75,12 @@ coveralls:         		  ## Publish coveralls metrics
 start:             		  ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
 
-docker-image-stats: 	  ## TODO remove when image size is acceptable
-	docker image inspect $(IMAGE_NAME_FULL) --format='{{.Size}}'
-	docker history $(IMAGE_NAME_FULL)
-
-# By default we export the full image
-TAG ?= $(IMAGE_NAME_FULL)
-# By default we use no suffix
-EXPORT_SUFFIX ?=
+TAGS ?= $(IMAGE_NAME)
 docker-save-image: 		  ## Export the built Docker image
-	docker save $(TAG) -o target/localstack-docker-image$(EXPORT_SUFFIX)-$(PLATFORM).tar
+	docker save -o target/localstack-docker-image-$(PLATFORM).tar $(TAGS)
 
-docker-save-image-light:
-	make EXPORT_SUFFIX="-light" TAG=$(IMAGE_NAME_LIGHT) docker-save-image
-
-# By default we export the full image
-TAG ?= $(IMAGE_NAME_FULL)
+# By default we export the community image
+TAG ?= $(IMAGE_NAME)
 # By default we load the result to the docker daemon
 DOCKER_BUILD_FLAGS ?= "--load"
 DOCKERFILE ?= "./Dockerfile"
@@ -105,17 +98,13 @@ docker-build: 			  ## Build Docker image
 		--add-host="localhost.localdomain:127.0.0.1" \
 		-t $(TAG) $(DOCKER_BUILD_FLAGS) . -f $(DOCKERFILE)
 
-docker-build-light: 	  ## Build Light Docker image
-	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=light --load" \
-	  TAG=$(IMAGE_NAME_LIGHT) docker-build
-
 docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 	# Make sure to prepare your environment for cross-platform docker builds! (see doc/developer_guides/README.md)
 	# Multi-Platform builds cannot be loaded to the docker daemon from buildx, so we can't add "--load".
 	make DOCKER_BUILD_FLAGS="--platform linux/amd64,linux/arm64" docker-build
 
-SOURCE_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
-TARGET_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
+SOURCE_IMAGE_NAME ?= $(IMAGE_NAME)
+TARGET_IMAGE_NAME ?= $(IMAGE_NAME)
 docker-push-master: 	  ## Push a single platform-specific Docker image to registry IF we are currently on the master branch
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
@@ -130,23 +119,22 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):latest-$(PLATFORM) && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
-			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):stable-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
+				docker push $(TARGET_IMAGE_NAME):stable-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) \
 				)) && \
 				  docker push $(TARGET_IMAGE_NAME):latest-$(PLATFORM) \
 	)
 
-docker-push-master-all:		## Push Docker images of localstack, localstack-light, and localstack-full
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME) docker-push-master
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-push-master
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_FULL) TARGET_IMAGE_NAME=$(IMAGE_NAME_FULL) docker-push-master
-
-MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
-docker-create-push-manifests:	## Create and push manifests for a docker image (default: full)
+MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME)
+docker-create-push-manifests:	## Create and push manifests for a docker image (default: community)
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
@@ -163,35 +151,48 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):stable \
+			--amend $(MANIFEST_IMAGE_NAME):stable-amd64 \
+			--amend $(MANIFEST_IMAGE_NAME):stable-arm64 && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION) \
+			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION)-amd64 \
+			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION)-arm64 && \
 			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-arm64 && \
 			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION) \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-arm64 && \
+				docker manifest push $(MANIFEST_IMAGE_NAME):stable && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) && \
+				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION))) && \
 		docker manifest push $(MANIFEST_IMAGE_NAME):latest \
 	)
 
-docker-create-push-manifests-light:	## Create and push manifests for the light docker image
-	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-create-push-manifests
-	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME) docker-create-push-manifests
-
 docker-run-tests:		  ## Initializes the test environment and runs the tests in a docker container
 	# Remove argparse and dataclasses to fix https://github.com/pytest-dev/pytest/issues/5594
 	# Note: running "install-test-only" below, to avoid pulling in [runtime] extras from transitive dependencies
-	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ \
-		$(IMAGE_NAME_FULL) \
-	    bash -c "make install-test-only && make init-testlibs && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) LAMBDA_EXECUTOR=local PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' make test-coverage"
+	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
+		$(IMAGE_NAME) \
+	    bash -c "make install-test-only && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' LAMBDA_IGNORE_ARCHITECTURE=1 LAMBDA_INIT_POST_INVOKE_WAIT_MS=50 TINYBIRD_PYTEST_ARGS='$(TINYBIRD_PYTEST_ARGS)' TINYBIRD_DATASOURCE='$(TINYBIRD_DATASOURCE)' TINYBIRD_TOKEN='$(TINYBIRD_TOKEN)' TINYBIRD_URL='$(TINYBIRD_URL)' CI_COMMIT_BRANCH='$(CI_COMMIT_BRANCH)' CI_COMMIT_SHA='$(CI_COMMIT_SHA)' CI_JOB_URL='$(CI_JOB_URL)' CI_JOB_NAME='$(CI_JOB_NAME)' CI_JOB_ID='$(CI_JOB_ID)' make test-coverage"
+
+docker-run-tests-s3-only:		  ## Initializes the test environment and runs the tests in a docker container for the S3 only image
+	# Remove argparse and dataclasses to fix https://github.com/pytest-dev/pytest/issues/5594
+	# Note: running "install-test-only" below, to avoid pulling in [runtime] extras from transitive dependencies
+	# TODO: We need node as it's a dependency of the InfraProvisioner at import time, remove when we do not need it anymore
+	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
+		$(IMAGE_NAME) \
+	    bash -c "make install-test-only && apt-get install -y --no-install-recommends gnupg && mkdir -p /etc/apt/keyrings && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && echo \"deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main\" > /etc/apt/sources.list.d/nodesource.list && apt-get update && apt-get install -y --no-install-recommends nodejs && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' TEST_PATH='$(TEST_PATH)' TINYBIRD_PYTEST_ARGS='$(TINYBIRD_PYTEST_ARGS)' TINYBIRD_DATASOURCE='$(TINYBIRD_DATASOURCE)' TINYBIRD_TOKEN='$(TINYBIRD_TOKEN)' TINYBIRD_URL='$(TINYBIRD_URL)' CI_COMMIT_BRANCH='$(CI_COMMIT_BRANCH)' CI_COMMIT_SHA='$(CI_COMMIT_SHA)' CI_JOB_URL='$(CI_JOB_URL)' CI_JOB_NAME='$(CI_JOB_NAME)' CI_JOB_ID='$(CI_JOB_ID)' make test"
+
 
 docker-run:        		  ## Run Docker image locally
 	($(VENV_RUN); bin/localstack start)
 
 docker-mount-run:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \
-		DOCKER_FLAGS="$(DOCKER_FLAGS) -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/plugin:/opt/code/localstack/localstack/plugin -v `pwd`/localstack/runtime:/opt/code/localstack/localstack/runtime -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/http:/opt/code/localstack/localstack/http -v `pwd`/localstack/contrib:/opt/code/localstack/localstack/contrib -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.10/site-packages/moto/" make docker-run
+		DOCKER_FLAGS="$(DOCKER_FLAGS) -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/plugin:/opt/code/localstack/localstack/plugin -v `pwd`/localstack/runtime:/opt/code/localstack/localstack/runtime -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/http:/opt/code/localstack/localstack/http -v `pwd`/localstack/contrib:/opt/code/localstack/localstack/contrib -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.11/site-packages/moto/" make docker-run
 
 docker-cp-coverage:
 	@echo 'Extracting .coverage file from Docker image'; \
@@ -200,11 +201,12 @@ docker-cp-coverage:
 		docker rm -v $$id
 
 test:              		  ## Run automated tests
-	($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
+	($(VENV_RUN); DEBUG=$(DEBUG) DISABLE_BOTO_RETRIES=$(DISABLE_BOTO_RETRIES) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
 test-coverage:     		  ## Run automated tests and create coverage report
 	($(VENV_RUN); python -m coverage --version; \
 		DEBUG=$(DEBUG) \
+		DISABLE_BOTO_RETRIES=$(DISABLE_BOTO_RETRIES) \
 		LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 \
 		python -m coverage run $(COVERAGE_ARGS) -m \
 		pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
@@ -216,82 +218,41 @@ test-docker-mount:		  ## Run automated tests in Docker (mounting local code)
 	# TODO: find a cleaner way to mount/copy the dependencies into the container...
 	VENV_DIR=$$(pwd)/.venv/; \
 		PKG_DIR=$$(echo $$VENV_DIR/lib/python*/site-packages | awk '{print $$NF}'); \
-		PKG_DIR_CON=/opt/code/localstack/.venv/lib/python3.10/site-packages; \
+		PKG_DIR_CON=/opt/code/localstack/.venv/lib/python3.11/site-packages; \
 		echo "#!/usr/bin/env python" > /tmp/pytest.ls.bin; cat $$VENV_DIR/bin/pytest >> /tmp/pytest.ls.bin; chmod +x /tmp/pytest.ls.bin; \
-		DOCKER_FLAGS="-v `pwd`/tests:/opt/code/localstack/tests -v /tmp/pytest.ls.bin:/opt/code/localstack/.venv/bin/pytest -v $$PKG_DIR/deepdiff:$$PKG_DIR_CON/deepdiff -v $$PKG_DIR/ordered_set:$$PKG_DIR_CON/ordered_set -v $$PKG_DIR/py:$$PKG_DIR_CON/py -v $$PKG_DIR/pluggy:$$PKG_DIR_CON/pluggy -v $$PKG_DIR/iniconfig:$$PKG_DIR_CON/iniconfig -v $$PKG_DIR/jsonpath_ng:$$PKG_DIR_CON/jsonpath_ng -v $$PKG_DIR/packaging:$$PKG_DIR_CON/packaging -v $$PKG_DIR/pytest:$$PKG_DIR_CON/pytest -v $$PKG_DIR/pytest_httpserver:$$PKG_DIR_CON/pytest_httpserver -v $$PKG_DIR/_pytest:/opt/code/localstack/.venv/lib/python3.10/site-packages/_pytest" make test-docker-mount-code
+		DOCKER_FLAGS="-v `pwd`/tests:/opt/code/localstack/tests -v /tmp/pytest.ls.bin:/opt/code/localstack/.venv/bin/pytest -v $$PKG_DIR/deepdiff:$$PKG_DIR_CON/deepdiff -v $$PKG_DIR/ordered_set:$$PKG_DIR_CON/ordered_set -v $$PKG_DIR/py:$$PKG_DIR_CON/py -v $$PKG_DIR/pluggy:$$PKG_DIR_CON/pluggy -v $$PKG_DIR/iniconfig:$$PKG_DIR_CON/iniconfig -v $$PKG_DIR/jsonpath_ng:$$PKG_DIR_CON/jsonpath_ng -v $$PKG_DIR/packaging:$$PKG_DIR_CON/packaging -v $$PKG_DIR/pytest:$$PKG_DIR_CON/pytest -v $$PKG_DIR/pytest_httpserver:$$PKG_DIR_CON/pytest_httpserver -v $$PKG_DIR/_pytest:$$PKG_DIR_CON/_pytest -v $$PKG_DIR/_pytest:$$PKG_DIR_CON/orjson" make test-docker-mount-code
 
 test-docker-mount-code:
 	PACKAGES_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages | awk '{print $$NF}'); \
-		DOCKER_FLAGS="$(DOCKER_FLAGS) --entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/aws:/opt/code/localstack/localstack/aws -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$PACKAGES_DIR/moto:/opt/code/localstack/.venv/lib/python3.10/site-packages/moto/ -e TEST_PATH=\\'$(TEST_PATH)\\' -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
+		DOCKER_FLAGS="$(DOCKER_FLAGS) --entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/aws:/opt/code/localstack/localstack/aws -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$PACKAGES_DIR/moto:/opt/code/localstack/.venv/lib/python3.11/site-packages/moto/ -e TEST_PATH=\\'$(TEST_PATH)\\' -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
 
-# Note: the ci-* targets below should only be used in CI builds!
+lint:              		  ## Run code linter to check code style and check if formatter would make changes
+	($(VENV_RUN); python -m ruff check --show-source . && python -m black --check .)
 
-CI_SMOKE_IMAGE_NAME ?= $(IMAGE_NAME_LIGHT)
-ci-pro-smoke-tests:
-	pip3 install --upgrade awscli-local
-	pip3 install --upgrade localstack
-	IMAGE_NAME=$(CI_SMOKE_IMAGE_NAME) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DNS_ADDRESS=0 DEBUG=1 localstack start -d
-	docker logs -f $(MAIN_CONTAINER_NAME) &
-	localstack wait -t 120
-	awslocal amplify list-apps
-	awslocal apigatewayv2 get-apis
-	awslocal appsync list-graphql-apis
-	awslocal athena list-data-catalogs
-	awslocal batch describe-job-definitions
-	awslocal cloudfront list-distributions
-	awslocal cloudtrail list-trails
-	awslocal cognito-idp list-user-pools --max-results 10
-	awslocal docdb describe-db-clusters
-	awslocal ecr describe-repositories
-	awslocal ecs list-clusters
-	awslocal emr list-clusters
-	awslocal elasticache describe-cache-clusters
-	awslocal glue get-databases
-	awslocal iot list-things
-	awslocal kafka list-clusters
-	awslocal lambda list-layers
-	awslocal mediastore list-containers
-	awslocal mwaa list-environments
-	awslocal qldb list-ledgers
-	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup
-	awslocal rds describe-db-instances
-	awslocal s3 mb s3://test-bucket
-	awslocal timestream-write create-database --database-name db1
-	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
-	localstack stop
+lint-modified:     		  ## Run code linter to check code style and check if formatter would make changes on modified files
+	($(VENV_RUN); python -m ruff check --show-source `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` && python -m black --check `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
 
-lint:              		  ## Run code linter to check code style
-	($(VENV_RUN); python -m pflake8 --show-source)
+check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibilty markers set
+	($(VENV_RUN); python -m pytest --co tests/aws/)
 
-lint-modified:     		  ## Run code linter on modified files
-	($(VENV_RUN); python -m pflake8 --show-source `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
+format:            		  ## Run ruff and black to format the whole codebase
+	($(VENV_RUN); python -m ruff check --show-source --fix .; python -m black .)
 
-format:            		  ## Run black and isort code formatter
-	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
-
-format-modified:   		  ## Run black and isort code formatter on modified files
-	($(VENV_RUN); python -m isort `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
+format-modified:          ## Run ruff and black to format only modified code
+	($(VENV_RUN); python -m ruff check --show-source --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
 
 clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf .filesystem
-	# TODO: remove localstack/infra/ as it's no longer used
-	rm -rf localstack/infra/amazon-kinesis-client
-	rm -rf localstack/infra/elasticsearch
-	rm -rf localstack/infra/elasticmq
-	rm -rf localstack/infra/dynamodb
-	rm -rf localstack/infra/node_modules
-	rm -rf localstack/node_modules
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info
 	rm -rf $(VENV_DIR)
-	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
 clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints init init-testlibs dist publish coveralls start docker-save-image docker-save-image-light docker-build docker-build-light docker-build-multi-platform docker-push-master docker-push-master-all docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra
+.PHONY: usage freeze install-basic install-runtime install-test install-test-only install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist

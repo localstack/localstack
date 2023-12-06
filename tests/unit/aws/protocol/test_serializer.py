@@ -38,12 +38,14 @@ from localstack.aws.protocol.serializer import (
     ProtocolSerializerError,
     QueryResponseSerializer,
     UnknownSerializerError,
+    aws_response_serializer,
     create_serializer,
 )
 from localstack.aws.spec import load_service
 from localstack.constants import APPLICATION_AMZ_CBOR_1_1
-from localstack.http.response import Response
+from localstack.http import Request, Response
 from localstack.utils.common import to_str
+from localstack.utils.strings import long_uid
 
 _skip_assert = {}
 
@@ -81,7 +83,7 @@ def _botocore_serializer_integration_test(
     # The serializer changes the incoming dict, therefore copy it before passing it to the serializer
     response_to_parse = copy.deepcopy(response)
     serialized_response = response_serializer.serialize_to_response(
-        response_to_parse, service.operation_model(action), None
+        response_to_parse, service.operation_model(action), None, long_uid()
     )
 
     # Use the parser from botocore to parse the serialized response
@@ -98,7 +100,7 @@ def _botocore_serializer_integration_test(
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
     assert parsed_response["ResponseMetadata"]["HTTPStatusCode"] == status_code
     assert "RequestId" in parsed_response["ResponseMetadata"]
-    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
+    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 36
     del parsed_response["ResponseMetadata"]
 
     if expected_response_content is None:
@@ -146,7 +148,7 @@ def _botocore_error_serializer_integration_test(
     # Use our serializer to serialize the response
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model(action), None
+        exception, service.operation_model(action), None, long_uid()
     )
 
     # Use the parser from botocore to parse the serialized response
@@ -175,7 +177,7 @@ def _botocore_error_serializer_integration_test(
 
     assert "ResponseMetadata" in parsed_response
     assert "RequestId" in parsed_response["ResponseMetadata"]
-    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
+    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 36
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
     assert parsed_response["ResponseMetadata"]["HTTPStatusCode"] == status_code
     type = parsed_response["Error"].get("Type")
@@ -188,6 +190,59 @@ def _botocore_error_serializer_integration_test(
             assert key in parsed_response
             assert parsed_response[key] == value
     return parsed_response
+
+
+def _botocore_event_streaming_test(
+    service: str, action: str, response: dict, response_root_tag: str, expected_events: List[dict]
+):
+    """
+    Tests the serialization of event streaming responses using botocore.
+
+    :param service: to load the correct service specification, serializer, and parser
+    :param action: to load the correct service specification, serializer, and parser
+    :param response: which should be serialized
+    :param response_root_tag: name of the root element in the response
+    :param expected_events: events which are streamed and should be contained in the fully streamed and deserialized response
+    :return: None
+    """
+    # Serialize the response
+    service = load_service(service)
+    operation_model = service.operation_model(action)
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_to_response(
+        response, operation_model, None, long_uid()
+    )
+
+    # Convert the Werkzeug response from our serializer to a response botocore can work with
+    urllib_response = UrlLibHttpResponse(
+        body=_iterable_to_stream(serialized_response.response),
+        headers={
+            entry_tuple[0].lower(): entry_tuple[1] for entry_tuple in serialized_response.headers
+        },
+        status=serialized_response.status_code,
+        decode_content=False,
+        preload_content=False,
+    )
+    requests_response = RequestsResponse()
+    requests_response.headers = urllib_response.headers
+    requests_response.status_code = urllib_response.status
+    requests_response.raw = urllib_response
+    botocore_response = convert_to_response_dict(requests_response, operation_model)
+
+    # parse the response using botocore
+    response_parser: ResponseParser = create_parser(service.protocol)
+    parsed_response = response_parser.parse(
+        botocore_response,
+        operation_model.output_shape,
+    )
+
+    # check that the response contains the event stream
+    assert response_root_tag in parsed_response
+
+    # fetch all events and check their content
+    actual_events = list(parsed_response[response_root_tag])
+    assert len(actual_events) == len(expected_events)
+    assert actual_events == expected_events
 
 
 def test_rest_xml_serializer_cloudfront_with_botocore():
@@ -421,7 +476,7 @@ def test_query_serializer_sqs_none_value_in_map():
 def test_query_protocol_error_serialization():
     exception = InvalidMessageContents("Exception message!")
     _botocore_error_serializer_integration_test(
-        "sqs", "SendMessage", exception, "InvalidMessageContents", 400, "Exception message!"
+        "sqs-query", "SendMessage", exception, "InvalidMessageContents", 400, "Exception message!"
     )
 
 
@@ -431,12 +486,12 @@ def test_query_protocol_error_serialization_plain():
     )
 
     # Load the SQS service
-    service = load_service("sqs")
+    service = load_service("sqs-query")
 
     # Use our serializer to serialize the response
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("ChangeMessageVisibility"), None
+        exception, service.operation_model("ChangeMessageVisibility"), None, long_uid()
     )
     serialized_response_dict = serialized_response.to_readonly_response_dict()
     # Replace the random request ID with a static value for comparison
@@ -473,11 +528,29 @@ def test_query_protocol_error_serialization_plain():
 def test_query_protocol_custom_error_serialization():
     exception = CommonServiceException("InvalidParameterValue", "Parameter x was invalid!")
     _botocore_error_serializer_integration_test(
-        "sqs", "SendMessage", exception, "InvalidParameterValue", 400, "Parameter x was invalid!"
+        "sqs-query",
+        "SendMessage",
+        exception,
+        "InvalidParameterValue",
+        400,
+        "Parameter x was invalid!",
     )
 
 
 def test_query_protocol_error_serialization_sender_fault():
+    exception = UnsupportedOperation("Operation not supported.")
+    _botocore_error_serializer_integration_test(
+        "sqs-query",
+        "SendMessage",
+        exception,
+        "AWS.SimpleQueueService.UnsupportedOperation",
+        400,
+        "Operation not supported.",
+        True,
+    )
+
+
+def test_sqs_json_protocol_error_serialization_sender_fault():
     exception = UnsupportedOperation("Operation not supported.")
     _botocore_error_serializer_integration_test(
         "sqs",
@@ -545,6 +618,32 @@ def test_restxml_protocol_custom_error_serialization():
         451,
         "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
     )
+
+
+def test_s3_xml_protocol_custom_error_serialization_headers():
+    class NoSuchKey(ServiceException):
+        code: str = "NoSuchKey"
+        sender_fault: bool = False
+        status_code: int = 404
+        DeleteMarker: Optional[bool]
+        VersionId: Optional[str]
+
+    exception = NoSuchKey(
+        "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
+        DeleteMarker=True,
+        VersionId="version-id",
+    )
+
+    response = _botocore_error_serializer_integration_test(
+        "s3",
+        "GetObject",
+        exception,
+        "NoSuchKey",
+        404,
+        "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
+    )
+    assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-delete-marker"] == "true"
+    assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-version-id"] == "version-id"
 
 
 def test_json_protocol_error_serialization():
@@ -621,7 +720,7 @@ def test_json_protocol_error_serialization_with_shaped_default_members_on_root()
     service = load_service("dynamodb")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("ExecuteTransaction"), None
+        exception, service.operation_model("ExecuteTransaction"), None, long_uid()
     )
     body = serialized_response.data
     parsed_body = json.loads(body)
@@ -658,7 +757,7 @@ def test_rest_json_protocol_error_serialization_with_shaped_default_members_on_r
     service = load_service("lambda")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("GetLayerVersion"), None
+        exception, service.operation_model("GetLayerVersion"), None, long_uid()
     )
     body = serialized_response.data
     parsed_body = json.loads(body)
@@ -693,7 +792,7 @@ def test_query_protocol_error_serialization_with_default_members_not_on_root():
     service = load_service("sns")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("VerifySMSSandboxPhoneNumber"), None
+        exception, service.operation_model("VerifySMSSandboxPhoneNumber"), None, long_uid()
     )
     body = serialized_response.data
     parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
@@ -708,7 +807,7 @@ def test_rest_xml_protocol_error_serialization_with_default_members_not_on_root(
     service = load_service("route53")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("DeleteHostedZone"), None
+        exception, service.operation_model("DeleteHostedZone"), None, long_uid()
     )
     body = serialized_response.data
     parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
@@ -746,7 +845,7 @@ def test_json_protocol_content_type_1_0():
     service = load_service("apprunner")
     response_serializer = create_serializer(service)
     result: Response = response_serializer.serialize_to_response(
-        {}, service.operation_model("DeleteConnection"), None
+        {}, service.operation_model("DeleteConnection"), None, long_uid()
     )
     assert result is not None
     assert result.content_type is not None
@@ -758,7 +857,7 @@ def test_json_protocol_content_type_1_1():
     service = load_service("logs")
     response_serializer = create_serializer(service)
     result: Response = response_serializer.serialize_to_response(
-        {}, service.operation_model("DeleteLogGroup"), None
+        {}, service.operation_model("DeleteLogGroup"), None, long_uid()
     )
     assert result is not None
     assert result.content_type is not None
@@ -1212,7 +1311,7 @@ def test_ec2_protocol_errors_have_response_root_element():
     service = load_service("ec2")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("DescribeSubnets"), None
+        exception, service.operation_model("DescribeSubnets"), None, long_uid()
     )
     body = serialized_response.data
     parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
@@ -1227,7 +1326,7 @@ def test_restxml_s3_errors_have_error_root_element():
     service = load_service("s3")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("GetObject"), None
+        exception, service.operation_model("GetObject"), None, long_uid()
     )
     body = serialized_response.data
     parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
@@ -1275,6 +1374,7 @@ def test_restxml_headers_location():
             "ContentType": "application/octet-stream",
             # The content length should explicitly be tested here.
             "ContentLength": 159,
+            "StatusCode": 200,
         },
     )
 
@@ -1375,78 +1475,24 @@ def test_json_event_streaming():
         yield event_2
 
     response = {"EventStream": event_generator()}
-
-    # Serialize the response
-    service = load_service("kinesis")
-    operation_model = service.operation_model("SubscribeToShard")
-    response_serializer = create_serializer(service)
-    serialized_response = response_serializer.serialize_to_response(response, operation_model, None)
-
-    # Convert the Werkzeug response from our serializer to a response botocore can work with
-    urllib_response = UrlLibHttpResponse(
-        body=_iterable_to_stream(serialized_response.response),
-        headers={
-            entry_tuple[0].lower(): entry_tuple[1] for entry_tuple in serialized_response.headers
-        },
-        status=serialized_response.status_code,
-        decode_content=False,
-        preload_content=False,
-    )
-    requests_response = RequestsResponse()
-    requests_response.headers = urllib_response.headers
-    requests_response.status_code = urllib_response.status
-    requests_response.raw = urllib_response
-    botocore_response = convert_to_response_dict(requests_response, operation_model)
-
-    # parse the response using botocore
-    response_parser: ResponseParser = create_parser(service.protocol)
-    parsed_response = response_parser.parse(
-        botocore_response,
-        operation_model.output_shape,
+    _botocore_event_streaming_test(
+        "kinesis", "SubscribeToShard", response, "EventStream", [event_1, event_2]
     )
 
-    # check that the response contains the event stream
-    assert "EventStream" in parsed_response
 
-    # fetch all events and check their content
-    events = list(parsed_response["EventStream"])
-    assert len(events) == 2
-    assert events[0] == {
-        "SubscribeToShardEvent": {
-            "ContinuationSequenceNumber": "1",
-            "MillisBehindLatest": 1337,
-            "Records": [
-                {
-                    "Data": b"event_data_1_record_1",
-                    "PartitionKey": "event_1_partition_key_record_1",
-                    "SequenceNumber": "1",
-                },
-                {
-                    "Data": b"event_data_1_record_2",
-                    "PartitionKey": "event_1_partition_key_record_1",
-                    "SequenceNumber": "2",
-                },
-            ],
-        }
-    }
-    assert events[1] == {
-        "SubscribeToShardEvent": {
-            "Records": [
-                {
-                    "SequenceNumber": "3",
-                    "Data": b"event_data_2_record_1",
-                    "PartitionKey": "event_2_partition_key_record_1",
-                },
-                {
-                    "SequenceNumber": "4",
-                    "Data": b"event_data_2_record_2",
-                    "PartitionKey": "event_2_partition_key_record_2",
-                },
-            ],
-            "ContinuationSequenceNumber": "2",
-            "MillisBehindLatest": 1338,
-        }
-    }
+def test_s3_event_streaming():
+    event_1 = {"Records": {"Payload": b"Streamed-Body-Content"}}
+    event_2 = {"End": {}}
+
+    # Create the response which contains the generator
+    def event_generator() -> Iterator:
+        yield event_1
+        yield event_2
+
+    response = {"Payload": event_generator()}
+    _botocore_event_streaming_test(
+        "s3", "SelectObjectContent", response, "Payload", [event_1, event_2]
+    )
 
 
 def test_all_non_existing_key():
@@ -1553,7 +1599,7 @@ def test_no_mutation_of_parameters():
 
     # serialize response and check whether parameters are unchanged
     _ = response_serializer.serialize_to_response(
-        parameters, service.operation_model("CreateHostedConfigurationVersion"), None
+        parameters, service.operation_model("CreateHostedConfigurationVersion"), None, long_uid()
     )
     assert parameters == expected
 
@@ -1566,7 +1612,9 @@ def test_serializer_error_on_protocol_error_invalid_exception():
     with pytest.raises(ProtocolSerializerError):
         # a known protocol error would be if we try to serialize an exception which is not a CommonServiceException and
         # also not a generated exception
-        serializer.serialize_error_to_response(NotImplementedError(), operation_model, None)
+        serializer.serialize_error_to_response(
+            NotImplementedError(), operation_model, None, long_uid()
+        )
 
 
 def test_serializer_error_on_protocol_error_invalid_data():
@@ -1579,6 +1627,7 @@ def test_serializer_error_on_protocol_error_invalid_data():
             {"StreamDescription": {"CreationRequestDateTime": "invalid_timestamp"}},
             operation_model,
             None,
+            long_uid(),
         )
 
 
@@ -1595,7 +1644,7 @@ def test_serializer_error_on_unknown_error():
 
     serializer._serialize_response = raise_error
     with pytest.raises(UnknownSerializerError):
-        serializer.serialize_to_response({}, operation_model, None)
+        serializer.serialize_to_response({}, operation_model, None, long_uid())
 
 
 class ComparableBytesIO(BytesIO):
@@ -1698,7 +1747,7 @@ def test_restjson_streaming_payload(payload):
     "service,accept_header,content_type_header,expected_mime_type",
     [
         # Test default S3
-        ("s3", None, None, "text/xml"),
+        ("s3", None, None, "application/xml"),
         # Test default STS
         ("sts", None, None, "text/xml"),
         # Test STS for "any" Accept header
@@ -1772,7 +1821,7 @@ def test_query_protocol_json_serialization(headers_dict):
         )
     )
     result: Response = response_serializer.serialize_to_response(
-        response_data, service.operation_model("GetSessionToken"), headers
+        response_data, service.operation_model("GetSessionToken"), headers, long_uid()
     )
     assert result is not None
     assert result.content_type is not None
@@ -1806,10 +1855,128 @@ def test_json_protocol_cbor_serialization(headers_dict):
         ]
     )
     result: Response = response_serializer.serialize_to_response(
-        response_data, service.operation_model("GetRecords"), headers
+        response_data, service.operation_model("GetRecords"), headers, long_uid()
     )
     assert result is not None
     assert result.content_type is not None
     assert result.content_type == "application/cbor"
     parsed_data = cbor2.loads(result.data)
     assert parsed_data == response_data
+
+
+class TestAwsResponseSerializerDecorator:
+    def test_query_internal_error(self):
+        @aws_response_serializer("sqs-query", "ListQueues")
+        def fn(request: Request):
+            raise ValueError("oh noes!")
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 500
+        assert b"<Code>InternalError</Code>" in response.data
+
+    def test_query_service_error(self):
+        @aws_response_serializer("sqs-query", "ListQueues")
+        def fn(request: Request):
+            raise UnsupportedOperation("Operation not supported.")
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 400
+        assert b"<Code>AWS.SimpleQueueService.UnsupportedOperation</Code>" in response.data
+        assert b"<Message>Operation not supported.</Message>" in response.data
+
+    def test_query_valid_response(self):
+        @aws_response_serializer("sqs-query", "ListQueues")
+        def fn(request: Request):
+            from localstack.aws.api.sqs import ListQueuesResult
+
+            return ListQueuesResult(
+                QueueUrls=[
+                    "https://localhost:4566/000000000000/my-queue-1",
+                    "https://localhost:4566/000000000000/my-queue-2",
+                ]
+            )
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 200
+        assert (
+            b"<QueueUrl>https://localhost:4566/000000000000/my-queue-1</QueueUrl>" in response.data
+        )
+        assert (
+            b"<QueueUrl>https://localhost:4566/000000000000/my-queue-2</QueueUrl>" in response.data
+        )
+
+    def test_query_valid_response_content_negotiation(self):
+        # this test verifies that request header values are passed correctly to perform content negotation
+        @aws_response_serializer("sqs-query", "ListQueues")
+        def fn(request: Request):
+            from localstack.aws.api.sqs import ListQueuesResult
+
+            return ListQueuesResult(
+                QueueUrls=[
+                    "https://localhost:4566/000000000000/my-queue-1",
+                    "https://localhost:4566/000000000000/my-queue-2",
+                ]
+            )
+
+        response = fn(
+            Request("POST", "/", body="Action=ListQueues", headers={"Accept": "application/json"})
+        )
+        assert response.status_code == 200
+        assert response.json["ListQueuesResponse"]["ListQueuesResult"] == {
+            "QueueUrl": [
+                "https://localhost:4566/000000000000/my-queue-1",
+                "https://localhost:4566/000000000000/my-queue-2",
+            ]
+        }
+
+    def test_return_invalid_none_type_causes_internal_error(self):
+        @aws_response_serializer("sqs-query", "ListQueues")
+        def fn(request: Request):
+            return None
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 500
+        assert b"<Code>InternalError</Code>" in response.data
+
+    def test_response_pass_through(self):
+        # returning a response directly will forego the serializer
+        @aws_response_serializer("sqs-query", "ListQueues")
+        def fn(request: Request):
+            return Response(b"ok", status=201)
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 201
+        assert response.data == b"ok"
+
+    def test_invoke_using_kwargs(self):
+        @aws_response_serializer("sqs", "ListQueues")
+        def fn(request: Request):
+            return Response(b"ok", status=201)
+
+        response = fn(request=Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 201
+        assert response.data == b"ok"
+
+    def test_invoke_on_bound_method(self):
+        class MyHandler:
+            @aws_response_serializer("sqs-query", "ListQueues")
+            def handle(self, request: Request):
+                from localstack.aws.api.sqs import ListQueuesResult
+
+                return ListQueuesResult(
+                    QueueUrls=[
+                        "https://localhost:4566/000000000000/my-queue-1",
+                        "https://localhost:4566/000000000000/my-queue-2",
+                    ]
+                )
+
+        response = MyHandler().handle(
+            Request("POST", "/", body="Action=ListQueues", headers={"Accept": "application/json"})
+        )
+        assert response.status_code == 200
+        assert response.json["ListQueuesResponse"]["ListQueuesResult"] == {
+            "QueueUrl": [
+                "https://localhost:4566/000000000000/my-queue-1",
+                "https://localhost:4566/000000000000/my-queue-2",
+            ]
+        }

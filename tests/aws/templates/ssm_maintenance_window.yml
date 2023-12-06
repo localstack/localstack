@@ -1,0 +1,92 @@
+Resources:
+  PatchServerMaintenanceWindow:
+    Type: AWS::SSM::MaintenanceWindow
+    Properties:
+      Name: patch-server-window
+      AllowUnassociatedTargets: false
+      Cutoff: 0
+      Duration: 1
+      Schedule: cron(0 0 0 ? * * *)
+  PatchServerMaintenanceWindowTarget:
+    Type: AWS::SSM::MaintenanceWindowTarget
+    Properties:
+      Name: patch-server-target
+      WindowId: !Ref PatchServerMaintenanceWindow
+      ResourceType: INSTANCE
+      Targets:
+        - Key: tag:Name
+          Values:
+            - "patch-server"
+  PatchServerTask:
+    Type: AWS::SSM::MaintenanceWindowTask
+    Properties:
+      Name: patching-task
+      Priority: 1
+      MaxErrors: "1"
+      MaxConcurrency: "1"
+      TaskArn: AWS-RunPatchBaseline
+      TaskType: RUN_COMMAND
+      WindowId: !Ref PatchServerMaintenanceWindow
+      TaskInvocationParameters:
+        MaintenanceWindowRunCommandParameters:
+          Parameters:
+            Operation:
+              - Install
+      Targets:
+        - Key: WindowTargetIds
+          Values:
+            - Ref: PatchServerMaintenanceWindowTarget
+  PatchBaselineAML:
+    Type: "AWS::SSM::PatchBaseline"
+    Properties:
+      Name: aml-baseline
+      Description: "Custom Linux patch baseline which targets Amazon Linux instances for Critical, High, Medium patching"
+      OperatingSystem: "AMAZON_LINUX"
+      PatchGroups:
+        - patch-group
+      ApprovalRules:
+        PatchRules:
+          - ApproveAfterDays: 3
+            PatchFilterGroup:
+              PatchFilters:
+                - Key: "PRODUCT"
+                  Values:
+                    - "*"
+                - Key: "CLASSIFICATION"
+                  Values:
+                    - "Security"
+                    - "Bugfix"
+                    - "Recommended"
+                - Key: "SEVERITY"
+                  Values:
+                    - "Critical"
+                    - "Important"
+                    - "Medium"
+            EnableNonSecurity: false
+  PatchBaselineAML2:
+    Type: "AWS::SSM::PatchBaseline"
+    Properties:
+      Name: aml2-baseline
+      Description: "Custom Linux patch baseline which targets Amazon Linux 2 instances for Critical, High, Medium patching"
+      OperatingSystem: "AMAZON_LINUX_2"
+      PatchGroups:
+        - patch-group
+      ApprovalRules:
+        PatchRules:
+          - ApproveAfterDays: 3
+            PatchFilterGroup:
+              PatchFilters:
+                - Key: "PRODUCT"
+                  Values:
+                    - "*"
+                - Key: "CLASSIFICATION"
+                  Values:
+                    - "Security"
+                    - "Bugfix"
+                    - "Recommended"
+                - Key: "SEVERITY"
+                  Values:
+                    - "Critical"
+                    - "Important"
+                    - "Medium"
+            EnableNonSecurity: false

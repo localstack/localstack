@@ -1,0 +1,579 @@
+{
+  "Resources": {
+    "localstackdemo0E5A5AC4": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "key",
+            "KeyType": "RANGE"
+          }
+        ],
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "key",
+            "AttributeType": "S"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "TableName": "development-localstack-demo"
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo/Resource"
+      }
+    },
+    "lambdaroleidF47967A4": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Description": "Role to be used by lambda functions",
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/lambda-role-id/Resource"
+      }
+    },
+    "lambdaroleidDefaultPolicyFA899F44": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "localstackdemo0E5A5AC4",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "lambdaroleidDefaultPolicyFA899F44",
+        "Roles": [
+          {
+            "Ref": "lambdaroleidF47967A4"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/lambda-role-id/DefaultPolicy/Resource"
+      }
+    },
+    "createuserhandlerEA338D29": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "AssetParameters1S3BucketEE4ED9A8"
+          },
+          "S3Key": {
+            "Ref": "AssetParameters1S3VersionKeyE160C88A"
+          }
+        },
+        "Handler": "index.createUserHandler",
+        "Role": {
+          "Fn::GetAtt": [
+            "lambdaroleidF47967A4",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs14.x",
+        "Environment": {
+          "Variables": {
+            "TABLE_NAME": {
+              "Ref": "localstackdemo0E5A5AC4"
+            }
+          }
+        },
+        "MemorySize": 256
+      },
+      "DependsOn": [
+        "lambdaroleidDefaultPolicyFA899F44",
+        "lambdaroleidF47967A4"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/create-user-handler/Resource",
+        "aws:asset:path": "asset.1fb93160970e8cc8b45b410fa189bb5c92a6f44514fd2efb7e3d1c7add94ce09",
+        "aws:asset:property": "Code"
+      }
+    },
+    "authenticateuserhandlerC042AFAF": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "AssetParameters1S3BucketEE4ED9A8"
+          },
+          "S3Key": {
+            "Ref": "AssetParameters1S3VersionKeyE160C88A"
+          }
+        },
+        "Handler": "index.authenticateUserHandler",
+        "Role": {
+          "Fn::GetAtt": [
+            "lambdaroleidF47967A4",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs14.x",
+        "Environment": {
+          "Variables": {
+            "TABLE_NAME": {
+              "Ref": "localstackdemo0E5A5AC4"
+            }
+          }
+        },
+        "MemorySize": 256
+      },
+      "DependsOn": [
+        "lambdaroleidDefaultPolicyFA899F44",
+        "lambdaroleidF47967A4"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/authenticate-user-handler/Resource",
+        "aws:asset:path": "asset.1fb93160970e8cc8b45b410fa189bb5c92a6f44514fd2efb7e3d1c7add94ce09",
+        "aws:asset:property": "Code"
+      }
+    },
+    "localstackdemousersapi5BF8D1BC": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "localstack-demo-users-api"
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Resource"
+      }
+    },
+    "localstackdemousersapiCloudWatchRole38F13E60": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+              ]
+            ]
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/CloudWatchRole/Resource"
+      }
+    },
+    "localstackdemousersapiAccountD53C0FE9": {
+      "Type": "AWS::ApiGateway::Account",
+      "Properties": {
+        "CloudWatchRoleArn": {
+          "Fn::GetAtt": [
+            "localstackdemousersapiCloudWatchRole38F13E60",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "localstackdemousersapi5BF8D1BC"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Account"
+      }
+    },
+    "localstackdemousersapiDeployment3D024C199dad28773b0c77d47af4cfccb672bbdd": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "localstackdemousersapi5BF8D1BC"
+        },
+        "Description": "Automatically created by the RestApi construct"
+      },
+      "DependsOn": [
+        "localstackdemousersapiusersauthPOSTC2C36F06",
+        "localstackdemousersapiusersauthB7EAACD5",
+        "localstackdemousersapiusersPOSTE0CFCC64",
+        "localstackdemousersapiusersE9799961"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Deployment/Resource"
+      }
+    },
+    "localstackdemousersapiDeploymentStageprod4C134016": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "localstackdemousersapi5BF8D1BC"
+        },
+        "DeploymentId": {
+          "Ref": "localstackdemousersapiDeployment3D024C199dad28773b0c77d47af4cfccb672bbdd"
+        },
+        "StageName": "prod"
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/DeploymentStage.prod/Resource"
+      }
+    },
+    "localstackdemousersapiusersE9799961": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "localstackdemousersapi5BF8D1BC",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "users",
+        "RestApiId": {
+          "Ref": "localstackdemousersapi5BF8D1BC"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Default/users/Resource"
+      }
+    },
+    "localstackdemousersapiusersauthB7EAACD5": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Ref": "localstackdemousersapiusersE9799961"
+        },
+        "PathPart": "auth",
+        "RestApiId": {
+          "Ref": "localstackdemousersapi5BF8D1BC"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Default/users/auth/Resource"
+      }
+    },
+    "localstackdemousersapiusersauthPOSTApiPermissionLocalStackDemoStacklocalstackdemousersapi0C72431EPOSTusersauth611E09E0": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "authenticateuserhandlerC042AFAF",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:us-west-1:0000000000:",
+              {
+                "Ref": "localstackdemousersapi5BF8D1BC"
+              },
+              "/",
+              {
+                "Ref": "localstackdemousersapiDeploymentStageprod4C134016"
+              },
+              "/POST/users/auth"
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Default/users/auth/POST/ApiPermission.LocalStackDemoStacklocalstackdemousersapi0C72431E.POST..users.auth"
+      }
+    },
+    "localstackdemousersapiusersauthPOSTApiPermissionTestLocalStackDemoStacklocalstackdemousersapi0C72431EPOSTusersauthBAC0FF23": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "authenticateuserhandlerC042AFAF",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:us-west-1:0000000000:",
+              {
+                "Ref": "localstackdemousersapi5BF8D1BC"
+              },
+              "/test-invoke-stage/POST/users/auth"
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Default/users/auth/POST/ApiPermission.Test.LocalStackDemoStacklocalstackdemousersapi0C72431E.POST..users.auth"
+      }
+    },
+    "localstackdemousersapiusersauthPOSTC2C36F06": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "ResourceId": {
+          "Ref": "localstackdemousersapiusersauthB7EAACD5"
+        },
+        "RestApiId": {
+          "Ref": "localstackdemousersapi5BF8D1BC"
+        },
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:us-west-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "authenticateuserhandlerC042AFAF",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Default/users/auth/POST/Resource"
+      }
+    },
+    "localstackdemousersapiusersPOSTApiPermissionLocalStackDemoStacklocalstackdemousersapi0C72431EPOSTusersF8DB1ED3": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "createuserhandlerEA338D29",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:us-west-1:0000000000:",
+              {
+                "Ref": "localstackdemousersapi5BF8D1BC"
+              },
+              "/",
+              {
+                "Ref": "localstackdemousersapiDeploymentStageprod4C134016"
+              },
+              "/POST/users"
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Default/users/POST/ApiPermission.LocalStackDemoStacklocalstackdemousersapi0C72431E.POST..users"
+      }
+    },
+    "localstackdemousersapiusersPOSTApiPermissionTestLocalStackDemoStacklocalstackdemousersapi0C72431EPOSTusersC9EB94EF": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "createuserhandlerEA338D29",
+            "Arn"
+          ]
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:us-west-1:0000000000:",
+              {
+                "Ref": "localstackdemousersapi5BF8D1BC"
+              },
+              "/test-invoke-stage/POST/users"
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Default/users/POST/ApiPermission.Test.LocalStackDemoStacklocalstackdemousersapi0C72431E.POST..users"
+      }
+    },
+    "localstackdemousersapiusersPOSTE0CFCC64": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "ResourceId": {
+          "Ref": "localstackdemousersapiusersE9799961"
+        },
+        "RestApiId": {
+          "Ref": "localstackdemousersapi5BF8D1BC"
+        },
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:us-west-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "createuserhandlerEA338D29",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "LocalStackDemoStack/localstack-demo-users-api/Default/users/POST/Resource"
+      }
+    },
+    "CDKMetadata": {
+      "Type": "AWS::CDK::Metadata",
+      "Properties": {
+        "Modules": "aws-cdk=1.71.0"
+      }
+    }
+  },
+  "Parameters": {
+    "AssetParameters1S3BucketEE4ED9A8": {
+      "Type": "String",
+      "Description": "S3 bucket for asset \"1fb93160970e8cc8b45b410fa189bb5c92a6f44514fd2efb7e3d1c7add94ce09\"",
+      "Default": ""
+    },
+    "AssetParameters1S3VersionKeyE160C88A": {
+      "Type": "String",
+      "Description": "S3 key for asset version \"1fb93160970e8cc8b45b410fa189bb5c92a6f44514fd2efb7e3d1c7add94ce09\"",
+      "Default": ""
+    },
+    "AssetParameters1fb93160970e8cc8b45b410fa189bb5c92a6f44514fd2efb7e3d1c7add94ce09ArtifactHash773578C4": {
+      "Type": "String",
+      "Description": "Artifact hash for asset \"1fb93160970e8cc8b45b410fa189bb5c92a6f44514fd2efb7e3d1c7add94ce09\"",
+      "Default": ""
+    }
+  },
+  "Outputs": {
+    "localstackdemousersapiEndpoint7D48454D": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "localstackdemousersapi5BF8D1BC"
+            },
+            ".execute-api.us-west-1.",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/",
+            {
+              "Ref": "localstackdemousersapiDeploymentStageprod4C134016"
+            },
+            "/"
+          ]
+        ]
+      }
+    }
+  }
+}

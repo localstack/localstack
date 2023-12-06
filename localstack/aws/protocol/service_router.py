@@ -10,7 +10,7 @@ from localstack import config
 from localstack.aws.spec import ServiceCatalog, build_service_index_cache, load_service_index_cache
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
-from localstack.services.s3.s3_utils import uses_host_addressing
+from localstack.services.s3.utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_bytes
@@ -147,7 +147,7 @@ def custom_path_addressing_rules(path: str) -> Optional[str]:
     """
 
     if is_sqs_queue_url(path):
-        return "sqs"
+        return "sqs-query"
 
     if path.startswith("/2015-03-31/functions/"):
         return "lambda"
@@ -181,7 +181,12 @@ def legacy_rules(request: Request) -> Optional[str]:
 
     # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
     # necessary for correct handling of cors for internal endpoints
-    if path == "/health" or path.startswith("/_localstack"):
+    if (
+        path == "/health"
+        or path.startswith("/_localstack")
+        or path.startswith("/_pods")
+        or path.startswith("/_aws")
+    ):
         return None
 
     # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
@@ -280,17 +285,25 @@ def resolve_conflicts(candidates: Set[str], request: Request):
         return "timestream-query"
     if candidates == {"docdb", "neptune", "rds"}:
         return "rds"
+    if candidates == {"sqs-query", "sqs"}:
+        # SQS now have 2 different specs for `query` and `json` protocol. From our current implementation with the
+        # parser and serializer, we need to have 2 different service names for them, but they share one provider
+        # implementation. `sqs-query` represents the legacy `query` protocol spec, and `sqs` the new `json` spec,
+        # default in botocore starting 1.31.81.
+        # The `application/x-amz-json-1.0` header is mandatory for requests targeting SQS with the `json` protocol. We
+        # can safely route them to the `sqs` JSON parser/serializer. If not present, route the request to `query`.
+        content_type = request.headers.get("Content-Type")
+        return "sqs" if content_type == "application/x-amz-json-1.0" else "sqs-query"
 
 
-def determine_aws_service_name(
-    request: Request, services: ServiceCatalog = get_service_catalog()
-) -> Optional[str]:
+def determine_aws_service_name(request: Request, services: ServiceCatalog = None) -> Optional[str]:
     """
     Tries to determine the name of the AWS service an incoming request is targeting.
     :param request: to determine the target service name of
     :param services: service catalog (can be handed in for caching purposes)
     :return: service name string (or None if the targeting service could not be determined exactly)
     """
+    services = services or get_service_catalog()
     signing_name, target_prefix, operation, host, path = _extract_service_indicators(request)
     candidates = set()
 
@@ -345,7 +358,8 @@ def determine_aws_service_name(
     if host:
         # iterate over the service spec's endpoint prefix
         for prefix, services_per_prefix in services.endpoint_prefix_index.items():
-            if host.startswith(prefix):
+            # this prevents a virtual host addressed bucket to be wrongly recognized
+            if host.startswith(f"{prefix}.") and ".s3." not in host:
                 if len(services_per_prefix) == 1:
                     return services_per_prefix[0]
                 candidates.update(services_per_prefix)
@@ -353,6 +367,11 @@ def determine_aws_service_name(
         custom_host_match = custom_host_addressing_rules(host)
         if custom_host_match:
             return custom_host_match
+
+    if request.shallow:
+        # from here on we would need access to the request body, which doesn't exist for shallow requests like
+        # WebsocketRequests.
+        return None
 
     # 5. check the query / form-data
     values = request.values

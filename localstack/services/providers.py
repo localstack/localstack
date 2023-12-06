@@ -1,8 +1,8 @@
-from localstack import config
 from localstack.aws.forwarder import HttpFallbackDispatcher
-from localstack.aws.proxy import AwsApiListener
-from localstack.services.moto import MotoFallbackDispatcher
-from localstack.services.plugins import Service, aws_provider
+from localstack.services.plugins import (
+    Service,
+    aws_provider,
+)
 
 
 @aws_provider()
@@ -11,28 +11,16 @@ def acm():
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = AcmProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
-    return Service("acm", listener=AwsApiListener("acm", MotoFallbackDispatcher(provider)))
 
-
-@aws_provider(api="apigateway", name="legacy")
-def apigateway_legacy():
-    from localstack.services.apigateway.provider import ApigatewayApiListener, ApigatewayProvider
+@aws_provider(api="apigateway")
+def apigateway():
+    from localstack.services.apigateway.provider import ApigatewayProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
     provider = ApigatewayProvider()
-    listener = ApigatewayApiListener("apigateway", MotoFallbackDispatcher(provider))
-
-    return Service("apigateway", listener=listener, lifecycle_hook=provider)
-
-
-@aws_provider(api="apigateway", name="default")
-def apigateway_asf():
-    from localstack.services.apigateway.provider_asf import AsfApigatewayProvider
-
-    provider = AsfApigatewayProvider()
-    listener = AwsApiListener("apigateway", MotoFallbackDispatcher(provider))
-
-    return Service("apigateway", listener=listener, lifecycle_hook=provider)
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -40,8 +28,7 @@ def cloudformation():
     from localstack.services.cloudformation.provider import CloudformationProvider
 
     provider = CloudformationProvider()
-
-    return Service("cloudformation", listener=AwsApiListener("cloudformation", provider))
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="config")
@@ -50,7 +37,7 @@ def awsconfig():
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = ConfigProvider()
-    return Service("config", listener=AwsApiListener("config", MotoFallbackDispatcher(provider)))
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -59,43 +46,28 @@ def cloudwatch():
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = CloudwatchProvider()
-    listener = AwsApiListener("cloudwatch", MotoFallbackDispatcher(provider))
-
-    return Service(
-        "cloudwatch",
-        listener=listener,
-        lifecycle_hook=provider,
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
 def dynamodb():
-    from localstack.aws.forwarder import HttpFallbackDispatcher
     from localstack.services.dynamodb.provider import DynamoDBProvider
 
     provider = DynamoDBProvider()
-    listener = AwsApiListener(
-        "dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url)
-    )
-
-    return Service(
-        "dynamodb",
-        listener=listener,
-        lifecycle_hook=provider,
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
     )
 
 
 @aws_provider()
 def dynamodbstreams():
-    from localstack.aws.proxy import AwsApiListener
     from localstack.services.dynamodbstreams.provider import DynamoDBStreamsProvider
 
     provider = DynamoDBStreamsProvider()
-    return Service(
-        "dynamodbstreams",
-        listener=AwsApiListener("dynamodbstreams", provider),
-        lifecycle_hook=provider,
-    )
+    return Service.for_provider(provider)
 
 
 @aws_provider()
@@ -104,28 +76,23 @@ def ec2():
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = Ec2Provider()
-    return Service(
-        "ec2",
-        listener=AwsApiListener("ec2", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
 def es():
-    from localstack.aws.proxy import AwsApiListener
     from localstack.services.es.provider import EsProvider
 
     provider = EsProvider()
-    return Service("es", listener=AwsApiListener("es", provider))
+    return Service.for_provider(provider)
 
 
 @aws_provider()
 def firehose():
-    from localstack.aws.proxy import AwsApiListener
     from localstack.services.firehose.provider import FirehoseProvider
 
     provider = FirehoseProvider()
-    return Service("firehose", listener=AwsApiListener("firehose", provider))
+    return Service.for_provider(provider)
 
 
 @aws_provider()
@@ -134,30 +101,16 @@ def iam():
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = IamProvider()
-    return Service(
-        "iam",
-        listener=AwsApiListener("iam", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
 def sts():
+    from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.sts.provider import StsProvider
 
     provider = StsProvider()
-    return Service("sts", listener=AwsApiListener("sts", MotoFallbackDispatcher(provider)))
-
-
-@aws_provider(api="kinesis", name="legacy")
-def kinesis_legacy():
-    from localstack.services.kinesis import kinesis_listener, kinesis_starter
-
-    return Service(
-        "kinesis",
-        listener=kinesis_listener.UPDATE_KINESIS,
-        start=kinesis_starter.start_kinesis,
-        check=kinesis_starter.check_kinesis,
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -165,119 +118,139 @@ def kinesis():
     from localstack.services.kinesis.provider import KinesisProvider
 
     provider = KinesisProvider()
-    listener = AwsApiListener("kinesis", HttpFallbackDispatcher(provider, provider.get_forward_url))
-    return Service(
-        "kinesis",
-        listener=listener,
-        lifecycle_hook=provider,
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
     )
 
 
 @aws_provider()
 def kms():
-    if config.KMS_PROVIDER == "local-kms":
-        from localstack.services.kms import kms_starter
-
-        return Service("kms", start=kms_starter.start_kms_local)
-
-    # fall back to default provider
     from localstack.services.kms.provider import KmsProvider
 
     provider = KmsProvider()
-    return Service("kms", listener=AwsApiListener("kms", provider))
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="lambda")
-def awslambda():
-    from localstack.services.awslambda import lambda_starter
+def lambda_():
+    from localstack.services.lambda_.provider import LambdaProvider
 
-    return Service(
-        "lambda",
-        start=lambda_starter.start_lambda,
-        stop=lambda_starter.stop_lambda,
-        check=lambda_starter.check_lambda,
-    )
+    provider = LambdaProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="lambda", name="asf")
-def awslambda_asf():
-    from localstack.aws.proxy import AwsApiListener
-    from localstack.services.awslambda.provider import LambdaProvider
+def lambda_asf():
+    from localstack.services.lambda_.provider import LambdaProvider
 
     provider = LambdaProvider()
+    return Service.for_provider(provider)
 
-    return Service("lambda", listener=AwsApiListener("lambda", provider), lifecycle_hook=provider)
+
+@aws_provider(api="lambda", name="v2")
+def lambda_v2():
+    from localstack.services.lambda_.provider import LambdaProvider
+
+    provider = LambdaProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider()
 def logs():
     from localstack.services.logs.provider import LogsProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
     provider = LogsProvider()
-    listener = AwsApiListener("logs", MotoFallbackDispatcher(provider))
-    return Service("logs", listener=listener)
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
 def opensearch():
-    from localstack.aws.proxy import AwsApiListener
     from localstack.services.opensearch.provider import OpensearchProvider
 
     provider = OpensearchProvider()
-    return Service("opensearch", listener=AwsApiListener("opensearch", provider))
+    return Service.for_provider(provider)
 
 
 @aws_provider()
 def redshift():
+    from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.redshift.provider import RedshiftProvider
 
     provider = RedshiftProvider()
-    listener = AwsApiListener("redshift", MotoFallbackDispatcher(provider))
-
-    return Service("redshift", listener=listener)
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
 def route53():
+    from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.route53.provider import Route53Provider
 
     provider = Route53Provider()
-
-    return Service("route53", listener=AwsApiListener("route53", MotoFallbackDispatcher(provider)))
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
 def route53resolver():
+    from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.route53resolver.provider import Route53ResolverProvider
 
     provider = Route53ResolverProvider()
-
-    return Service(
-        "route53resolver",
-        listener=AwsApiListener("route53resolver", MotoFallbackDispatcher(provider)),
-    )
-
-
-@aws_provider(api="s3", name="default")
-def s3():
-    from localstack.services.s3 import s3_listener, s3_starter
-
-    return Service(
-        "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider(api="s3", name="asf")
 def s3_asf():
+    from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.s3.provider import S3Provider
 
     provider = S3Provider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
-    return Service(
-        "s3",
-        listener=AwsApiListener("s3", MotoFallbackDispatcher(provider)),
-        lifecycle_hook=provider,
-    )
+
+@aws_provider(api="s3", name="v2")
+def s3_v2():
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.s3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="s3", name="legacy_v2")
+def s3_legacy_v2():
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.s3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="s3", name="default")
+def s3():
+    from localstack.services.s3.v3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider)
+
+
+@aws_provider(api="s3", name="stream")
+def s3_stream():
+    from localstack.services.s3.v3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider)
+
+
+@aws_provider(api="s3", name="v3")
+def s3_v3():
+    from localstack.services.s3.v3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider)
 
 
 @aws_provider()
@@ -286,9 +259,16 @@ def s3control():
     from localstack.services.s3control.provider import S3ControlProvider
 
     provider = S3ControlProvider()
-    return Service(
-        "s3control", listener=AwsApiListener("s3control", MotoFallbackDispatcher(provider))
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider()
+def scheduler():
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.scheduler.provider import SchedulerProvider
+
+    provider = SchedulerProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -297,10 +277,7 @@ def secretsmanager():
     from localstack.services.secretsmanager.provider import SecretsmanagerProvider
 
     provider = SecretsmanagerProvider()
-    return Service(
-        "secretsmanager",
-        listener=AwsApiListener("secretsmanager", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -309,47 +286,53 @@ def ses():
     from localstack.services.ses.provider import SesProvider
 
     provider = SesProvider()
-    return Service(
-        "ses",
-        listener=AwsApiListener("ses", MotoFallbackDispatcher(provider)),
-        lifecycle_hook=provider,
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
 def sns():
-    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.sns.provider import SnsProvider
 
     provider = SnsProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
-    return Service("sns", listener=AwsApiListener("sns", provider), lifecycle_hook=provider)
+
+sqs_provider = None
+
+
+def get_sqs_provider():
+    """
+    Creates the SQS provider instance (and registers the query API routes) in a singleton fashion, such that the
+    same instance of the provider can be used by multiple services (i.e. the `sqs` as well as the `sqs-query` service).
+
+    TODO it would be great if we could find a better solution to use a single provider for multiple services
+    """
+    global sqs_provider
+
+    if not sqs_provider:
+        from localstack.services import edge
+        from localstack.services.sqs import query_api
+        from localstack.services.sqs.provider import SqsProvider
+
+        query_api.register(edge.ROUTER)
+
+        sqs_provider = SqsProvider()
+    return sqs_provider
 
 
 @aws_provider()
 def sqs():
-    from localstack.aws.proxy import AwsApiListener
-    from localstack.services import edge
-    from localstack.services.sqs import query_api
-    from localstack.services.sqs.provider import SqsProvider
-
-    query_api.register(edge.ROUTER)
-
-    provider = SqsProvider()
-
-    return Service("sqs", listener=AwsApiListener("sqs", provider), lifecycle_hook=provider)
+    return Service.for_provider(get_sqs_provider())
 
 
-@aws_provider(api="sqs", name="legacy")
-def sqs_legacy():
-    from localstack.services.sqs.legacy import sqs_listener, sqs_starter
-
-    return Service(
-        "sqs",
-        listener=sqs_listener.UPDATE_SQS,
-        start=sqs_starter.start_sqs,
-        check=sqs_starter.check_sqs,
+@aws_provider("sqs-query")
+def sqs_query():
+    sqs_query_service = Service.for_provider(
+        get_sqs_provider(),
+        custom_service_name="sqs-query",
     )
+    return sqs_query_service
 
 
 @aws_provider()
@@ -358,10 +341,7 @@ def ssm():
     from localstack.services.ssm.provider import SsmProvider
 
     provider = SsmProvider()
-    return Service(
-        "ssm",
-        listener=AwsApiListener("ssm", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -370,10 +350,7 @@ def events():
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = EventsProvider()
-    return Service(
-        "events",
-        listener=AwsApiListener("events", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -381,13 +358,40 @@ def stepfunctions():
     from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
-    listener = AwsApiListener(
-        "stepfunctions", HttpFallbackDispatcher(provider, provider.get_forward_url)
+    return Service.for_provider(provider)
+
+
+@aws_provider(api="stepfunctions", name="v2")
+def stepfunctions_v2():
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    return Service.for_provider(provider)
+
+
+@aws_provider(api="stepfunctions", name="v1")
+def stepfunctions_legacy():
+    from localstack.services.stepfunctions.legacy.provider_legacy import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
     )
-    return Service(
-        "stepfunctions",
-        listener=listener,
-        lifecycle_hook=provider,
+
+
+@aws_provider(api="stepfunctions", name="legacy")
+def stepfunctions_v1():
+    from localstack.services.stepfunctions.legacy.provider_legacy import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
     )
 
 
@@ -397,10 +401,7 @@ def swf():
     from localstack.services.swf.provider import SWFProvider
 
     provider = SWFProvider()
-    return Service(
-        "swf",
-        listener=AwsApiListener("swf", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -411,22 +412,16 @@ def resourcegroupstaggingapi():
     )
 
     provider = ResourcegroupstaggingapiProvider()
-    return Service(
-        "resourcegroupstaggingapi",
-        listener=AwsApiListener("resourcegroupstaggingapi", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider(api="resource-groups")
 def resource_groups():
     from localstack.services.moto import MotoFallbackDispatcher
-    from localstack.services.resourcegroups.provider import ResourceGroupsProvider
+    from localstack.services.resource_groups.provider import ResourceGroupsProvider
 
     provider = ResourceGroupsProvider()
-    return Service(
-        "resource-groups",
-        listener=AwsApiListener("resource-groups", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -435,10 +430,7 @@ def support():
     from localstack.services.support.provider import SupportProvider
 
     provider = SupportProvider()
-    return Service(
-        "support",
-        listener=AwsApiListener("support", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
 @aws_provider()
@@ -447,7 +439,4 @@ def transcribe():
     from localstack.services.transcribe.provider import TranscribeProvider
 
     provider = TranscribeProvider()
-    return Service(
-        "transcribe",
-        listener=AwsApiListener("transcribe", MotoFallbackDispatcher(provider)),
-    )
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)

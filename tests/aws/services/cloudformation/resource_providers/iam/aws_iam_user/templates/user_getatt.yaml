@@ -1,0 +1,16 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to exercise create and delete operations for AWS::IAM::User
+Parameters:
+  CustomUserName:
+    Type: String
+Resources:
+  MyResource:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Ref CustomUserName
+Outputs:
+  MyRef:
+    Value:
+      Ref: MyResource
+  GetAttArn:
+    Value: !GetAtt MyResource.Arn

@@ -1,0 +1,35 @@
+{
+  "StartAt": "SendMessageWithWait",
+  "States": {
+    "SendMessageWithWait": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody": {
+          "Message.$": "$.Message",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "<%WaitForTaskTokenFailureErrorName%>",
+          ],
+          "Next": "EndWithCaught"
+        },
+      ],
+      "Next": "EndWithFinal",
+    },
+    "EndWithCaught": {
+      "Type": "Pass",
+      "ResultPath": "$.caught",
+      "End": true
+    },
+    "EndWithFinal": {
+      "Type": "Pass",
+      "ResultPath": "$.final",
+      "End": true,
+    }
+  }
+}

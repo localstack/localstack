@@ -1,0 +1,17 @@
+{
+  "Comment": "LAMBDA_INVOKE_PIPE",
+  "StartAt": "step1",
+  "States": {
+    "step1": {
+      "Type": "Task",
+      "Resource": "__tbd__",
+      "Next": "step2"
+    },
+    "step2": {
+      "Type": "Task",
+      "Resource": "__tbd__",
+      "ResultPath": "$.Return",
+      "End": true,
+    },
+  },
+}

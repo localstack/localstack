@@ -1,0 +1,1697 @@
+{
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_boolean": {
+    "recorded-date": "22-06-2023, 13:08:16",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": null,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": null,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": true,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_null": {
+    "recorded-date": "22-06-2023, 13:09:08",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": null,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": null,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": true,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_numeric": {
+    "recorded-date": "22-06-2023, 13:09:58",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": null,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": null,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": true,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_present": {
+    "recorded-date": "22-06-2023, 13:11:07",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": null,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": null,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": true,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_string": {
+    "recorded-date": "22-06-2023, 13:12:11",
+    "recorded-content": {
+      "cases": [
+        {
+          "input": {
+            "Variable": null,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": null,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": [
+              ""
+            ],
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {},
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": {
+              "A": 0
+            },
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": true,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": false,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        }
+      ]
+    }
+  }
+}

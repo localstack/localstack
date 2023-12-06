@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from localstack.testing.snapshots.transformer import TransformContext
+from localstack.testing.snapshots.transformer import SortingTransformer, TransformContext
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 
 
@@ -45,6 +45,26 @@ class TestTransformer:
             tmp = sr(tmp)
 
         assert json.loads(tmp) == expected_key_value_reference
+
+    def test_key_value_replacement_with_falsy_value(self):
+        input = {
+            "hello": "world",
+            "somenumber": 0,
+        }
+
+        key_value = TransformerUtility.key_value(
+            "somenumber", "placeholder", reference_replacement=False
+        )
+
+        expected_key_value = {
+            "hello": "world",
+            "somenumber": "placeholder",
+        }
+
+        copied = copy.deepcopy(input)
+        ctx = TransformContext()
+        assert key_value.transform(copied, ctx=ctx) == expected_key_value
+        assert ctx.serialized_replacements == []
 
     @pytest.mark.parametrize("type", ["key_value", "jsonpath"])
     def test_replacement_with_reference(self, type):
@@ -155,3 +175,34 @@ class TestTransformer:
             }
         }
         assert expected == json.loads(output)
+
+    def test_nested_sorting_transformer(self):
+        input = {
+            "subsegments": [
+                {
+                    "name": "mysubsegment",
+                    "subsegments": [
+                        {"name": "b"},
+                        {"name": "a"},
+                    ],
+                }
+            ],
+        }
+
+        expected = {
+            "subsegments": [
+                {
+                    "name": "mysubsegment",
+                    "subsegments": [
+                        {"name": "a"},
+                        {"name": "b"},
+                    ],
+                }
+            ],
+        }
+
+        transformer = SortingTransformer("subsegments", lambda s: s["name"])
+
+        ctx = TransformContext()
+        output = transformer.transform(input, ctx=ctx)
+        assert output == expected

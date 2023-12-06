@@ -1,0 +1,30 @@
+{
+  "Comment": "LAMBDA_INVOKE_WITH_RETRY_BASE",
+  "StartAt": "InvokeLambdaWithRetry",
+  "States": {
+    "InvokeLambdaWithRetry": {
+      "Type": "Task",
+      "Resource": "__tbd__",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "MaxAttempts": 3,
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "HandleError"
+        }
+      ],
+      "End": true,
+      "ResultSelector": {
+        "Retries.$": "$$.State.RetryCount"
+      }
+    },
+    "HandleError": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

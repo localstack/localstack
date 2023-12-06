@@ -4,7 +4,7 @@ import threading
 from typing import Any, Callable, Dict, Generic, List, Optional, Set, Type, TypeVar, Union
 
 from .collections import ensure_list
-from .strings import first_char_to_lower
+from .strings import first_char_to_lower, first_char_to_upper
 
 ComplexType = Union[List, Dict, object]
 
@@ -18,8 +18,8 @@ class Value(Generic[_T]):
 
     value: Optional[_T]
 
-    def __init__(self) -> None:
-        self.value = None
+    def __init__(self, value: _T = None) -> None:
+        self.value = value
 
     def clear(self):
         self.value = None
@@ -146,17 +146,19 @@ def recurse_object(obj: ComplexType, func: Callable, path: str = "") -> ComplexT
     obj = func(obj, path=path)
     if isinstance(obj, list):
         for i in range(len(obj)):
-            tmp_path = "%s[%s]" % (path or ".", i)
+            tmp_path = f'{path or "."}[{i}]'
             obj[i] = recurse_object(obj[i], func, tmp_path)
     elif isinstance(obj, dict):
         for k, v in obj.items():
-            tmp_path = "%s%s" % (f"{path}." if path else "", k)
+            tmp_path = f'{f"{path}." if path else ""}{k}'
             obj[k] = recurse_object(v, func, tmp_path)
     return obj
 
 
-def keys_to_lower(obj: ComplexType, skip_children_of: List[str] = None) -> ComplexType:
-    """Recursively changes all dict keys to first character lowercase. Skip children
+def keys_to(
+    obj: ComplexType, op: Callable[[str], str], skip_children_of: List[str] = None
+) -> ComplexType:
+    """Recursively changes all dict keys to apply op. Skip children
     of any elements whose names are contained in skip_children_of (e.g., ['Tags'])"""
     skip_children_of = ensure_list(skip_children_of or [])
 
@@ -166,11 +168,19 @@ def keys_to_lower(obj: ComplexType, skip_children_of: List[str] = None) -> Compl
         if isinstance(o, dict):
             for k, v in dict(o).items():
                 o.pop(k)
-                o[first_char_to_lower(k)] = v
+                o[op(k)] = v
         return o
 
     result = recurse_object(obj, fix_keys)
     return result
+
+
+def keys_to_lower(obj: ComplexType, skip_children_of: List[str] = None) -> ComplexType:
+    return keys_to(obj, first_char_to_lower, skip_children_of)
+
+
+def keys_to_upper(obj: ComplexType, skip_children_of: List[str] = None) -> ComplexType:
+    return keys_to(obj, first_char_to_upper, skip_children_of)
 
 
 def singleton_factory(factory: Callable[[], _T]) -> Callable[[], _T]:

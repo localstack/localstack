@@ -3,37 +3,55 @@ import logging
 import uuid
 from typing import Dict, List
 
-from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_models import LambdaFunction
+from localstack.aws.connect import connect_to
+from localstack.utils.aws import arns
 from localstack.utils.strings import convert_to_printable_chars, first_char_to_upper
 
 LOG = logging.getLogger(__name__)
 
 
-def sns_error_to_dead_letter_queue(sns_subscriber: dict, message: str, error, msg_attrs=None):
-    # message should be of type str if coming from SNS, as it represents the message body being passed down
+def sns_error_to_dead_letter_queue(
+    sns_subscriber: dict,
+    message: str,
+    error: str,
+    **kwargs,
+):
     policy = json.loads(sns_subscriber.get("RedrivePolicy") or "{}")
     target_arn = policy.get("deadLetterTargetArn")
     if not target_arn:
         return
-    event = {"message": message, "message_attributes": msg_attrs or {}}
+    if not_supported := (
+        set(kwargs) - {"MessageAttributes", "MessageGroupId", "MessageDeduplicationId"}
+    ):
+        LOG.warning(
+            "Not publishing to the DLQ - invalid arguments passed to the DLQ '%s'", not_supported
+        )
+        return
+    event = {
+        "message": message,
+        **kwargs,
+    }
     return _send_to_dead_letter_queue(sns_subscriber["SubscriptionArn"], target_arn, event, error)
 
 
-def lambda_error_to_dead_letter_queue(func_details: LambdaFunction, event: Dict, error):
-    dlq_arn = (func_details.dead_letter_config or {}).get("TargetArn")
-    source_arn = func_details.id
-    return _send_to_dead_letter_queue(source_arn, dlq_arn, event, error)
-
-
-def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error):
+def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error, role: str = None):
     if not dlq_arn:
         return
     LOG.info("Sending failed execution %s to dead letter queue %s", source_arn, dlq_arn)
     messages = _prepare_messages_to_dlq(source_arn, event, error)
+    source_service = arns.extract_service_from_arn(source_arn)
+    region = arns.extract_region_from_arn(dlq_arn)
+    if role:
+        clients = connect_to.with_assumed_role(
+            role_arn=role, service_principal=source_service, region_name=region
+        )
+    else:
+        clients = connect_to(region_name=region)
     if ":sqs:" in dlq_arn:
-        queue_url = aws_stack.get_sqs_queue_url(dlq_arn)
-        sqs_client = aws_stack.connect_to_service("sqs")
+        queue_url = arns.sqs_queue_url_for_arn(dlq_arn)
+        sqs_client = clients.sqs.request_metadata(
+            source_arn=source_arn, service_principal=source_service
+        )
         error = None
         result_code = None
         try:
@@ -52,7 +70,9 @@ def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error
             LOG.info(msg)
             raise Exception(msg)
     elif ":sns:" in dlq_arn:
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = clients.sns.request_metadata(
+            source_arn=source_arn, service_principal=source_service
+        )
         for message in messages:
             sns_client.publish(
                 TopicArn=dlq_arn,
@@ -84,13 +104,14 @@ def _prepare_messages_to_dlq(source_arn: str, event: Dict, error) -> List[Dict]:
                 }
             )
     elif ":sns:" in source_arn:
-        messages.append(
-            {
-                "Id": str(uuid.uuid4()),
-                "MessageBody": event["message"],
-                "MessageAttributes": event.get("message_attributes", {}),
-            }
-        )
+        # event can also contain: MessageAttributes, MessageGroupId, MessageDeduplicationId
+        message = {
+            "Id": str(uuid.uuid4()),
+            "MessageBody": event.pop("message"),
+            **event,
+        }
+        messages.append(message)
+
     elif ":lambda:" in source_arn:
         custom_attrs["ErrorCode"]["DataType"] = "Number"
         # not sure about what type of error can come here

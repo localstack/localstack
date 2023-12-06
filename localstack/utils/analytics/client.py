@@ -17,14 +17,18 @@ LOG = logging.getLogger(__name__)
 
 
 class SessionResponse:
-
     response: Dict[str, Any]
+    status: int
 
-    def __init__(self, response: Dict[str, Any]):
+    def __init__(self, response: Dict[str, Any], status: int = 200):
         self.response = response
+        self.status = status
 
     def track_events(self) -> bool:
         return self.response.get("track_events")
+
+    def __repr__(self):
+        return f"SessionResponse({self.status},{self.response!r})"
 
 
 class AnalyticsClient:
@@ -38,6 +42,10 @@ class AnalyticsClient:
         self.endpoint_events = self.api + "/events"
 
         self.localstack_session_id = get_session_id()
+        self.session = requests.Session()
+
+    def close(self):
+        self.session.close()
 
     def start_session(self, metadata: ClientMetadata) -> SessionResponse:
         # FIXME: re-using Event as request object this way is kind of a hack
@@ -45,18 +53,22 @@ class AnalyticsClient:
             "session", EventMetadata(self.localstack_session_id, str(now())), payload=metadata
         )
 
-        response = requests.post(
+        response = self.session.post(
             self.endpoint_session,
             headers=self._create_headers(),
             json=request.asdict(),
             proxies=get_proxies(),
         )
 
-        if not response.ok:
-            raise ValueError("error during session initiation with analytics backend")
+        # 403 errors may indicate that track_events=False
+        if response.ok or response.status_code == 403:
+            return SessionResponse(response.json(), status=response.status_code)
 
-        return SessionResponse(response.json())
+        raise ValueError(
+            f"error during session initiation with analytics backend. code: {response.status_code}"
+        )
 
+    # TODO: naming seems confusing since this doesn't actually append, but directly sends all passed events via HTTP
     def append_events(self, events: List[Event]):
         # TODO: add compression to append_events
         #  it would maybe be useful to compress analytics data, but it's unclear how that will
@@ -81,7 +93,7 @@ class AnalyticsClient:
             LOG.debug("posting to %s events %s", endpoint, docs)
 
         # FIXME: fault tolerance/timeouts
-        response = requests.post(
+        response = self.session.post(
             endpoint, json={"events": docs}, headers=headers, proxies=get_proxies()
         )
 

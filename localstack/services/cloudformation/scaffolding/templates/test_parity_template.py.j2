@@ -1,0 +1,30 @@
+# ruff: noqa
+# LocalStack Resource Provider Scaffolding {{ scaffolding_version }}
+
+import pytest
+
+
+@pytest.mark.skip(reason="TODO")
+class TestParity:
+    """
+    Pro-active parity-focused tests that go into more detailed than the basic test skeleton
+
+    TODO: add more focused detailed tests for updates, different combinations, etc.
+        Use snapshots here to capture detailed parity with AWS
+
+    Other ideas for tests in here:
+        - Negative test: invalid combination of properties
+        - Negative test: missing required properties
+    """
+
+    def test_create_with_full_properties(self, aws_client, deploy_cfn_template):
+        """ A sort of smoke test that simply covers as many properties as possible """
+        ...
+
+
+
+
+@pytest.mark.skip(reason="TODO")
+class TestSamples:
+    """ User-provided samples and other reactively added scenarios (e.g. reported and reproduced GitHub issues) """
+    ...

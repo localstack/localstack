@@ -1,46 +1,118 @@
 import logging
 import os
-from typing import List, Optional
+import threading
 
 from localstack import config
+from localstack.aws.connect import connect_externally_to
+from localstack.aws.forwarder import AwsRequestProxy
 from localstack.config import is_env_true
 from localstack.services.dynamodb.packages import dynamodblocal_package
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
-from localstack.utils.files import rm_rf
-from localstack.utils.run import FuncThread
+from localstack.utils.functions import run_safe
+from localstack.utils.net import wait_for_port_closed
+from localstack.utils.run import FuncThread, run
 from localstack.utils.serving import Server
-from localstack.utils.sync import retry
+from localstack.utils.sync import retry, synchronized
 
 LOG = logging.getLogger(__name__)
+RESTART_LOCK = threading.RLock()
 
-# server singleton
-# TODO: consider removing this module-level singleton, and instead making the DynamodDB server part of the provider
-_server: Optional["DynamodbServer"] = None
+
+def _log_listener(line, **_kwargs):
+    LOG.debug(line.rstrip())
 
 
 class DynamodbServer(Server):
-    db_path: Optional[str]
+    db_path: str | None
     heap_size: str
 
     delay_transient_statuses: bool
     optimize_db_before_startup: bool
     share_db: bool
-    cors: Optional[str]
+    cors: str | None
 
-    def __init__(self, port: int, host: str = "localhost") -> None:
+    proxy: AwsRequestProxy
+
+    def __init__(
+        self,
+        port: int | None = None,
+        host: str = "localhost",
+        db_path: str | None = None,
+    ) -> None:
+        """
+        Creates a DynamoDB server from the local configuration.
+
+        :param port: optional, the port to start the server on (defaults to a random port)
+        :param host: localhost by default
+        :param db_path: path to the persistence state files used by the DynamoDB Local process
+        """
+
+        port = port or get_free_tcp_port()
         super().__init__(port, host)
 
-        # set defaults
+        self.db_path = (
+            f"{config.dirs.data}/dynamodb" if not db_path and config.dirs.data else db_path
+        )
+
+        # the DYNAMODB_IN_MEMORY variable takes precedence and will set the DB path to None which forces inMemory=true
+        if is_env_true("DYNAMODB_IN_MEMORY"):
+            # note: with DYNAMODB_IN_MEMORY we do not support persistence
+            self.db_path = None
+
+        if self.db_path:
+            mkdir(self.db_path)
+            self.db_path = os.path.abspath(self.db_path)
+
         self.heap_size = config.DYNAMODB_HEAP_SIZE
-        self.delay_transient_statuses = False
-        self.optimize_db_before_startup = False
-        self.share_db = False
-        self.cors = None
-        self.db_path = None
+        self.delay_transient_statuses = is_env_true("DYNAMODB_DELAY_TRANSIENT_STATUSES")
+        self.optimize_db_before_startup = is_env_true("DYNAMODB_OPTIMIZE_DB_BEFORE_STARTUP")
+        self.share_db = is_env_true("DYNAMODB_SHARE_DB")
+        self.cors = os.getenv("DYNAMODB_CORS", None)
+        self.proxy = AwsRequestProxy(self.url)
+
+    def start_dynamodb(self) -> bool:
+        """Start the DynamoDB server."""
+
+        # Note: when starting the server, we had a flag for wiping the assets directory before the actual start.
+        # This behavior was needed in some particular cases:
+        # - pod load with some assets already lying in the asset folder
+        # - ...
+        # The cleaning is now done via the reset endpoint
+
+        started = self.start()
+        self.wait_for_dynamodb()
+        return started
+
+    @synchronized(lock=RESTART_LOCK)
+    def stop_dynamodb(self) -> None:
+        """Stop the DynamoDB server."""
+        import psutil
+
+        if self._thread is None:
+            return
+        self._thread.auto_restart = False
+        self.shutdown()
+        self.join(timeout=10)
+        try:
+            wait_for_port_closed(self.port, sleep_time=0.8, retries=10)
+        except Exception:
+            LOG.warning(
+                "DynamoDB server port %s (%s) unexpectedly still open; running processes: %s",
+                self.port,
+                self._thread,
+                run(["ps", "aux"]),
+            )
+
+            # attempt to terminate/kill the process manually
+            server_pid = self._thread.process.pid  # noqa
+            LOG.info("Attempting to kill DynamoDB process %s", server_pid)
+            process = psutil.Process(server_pid)
+            run_safe(process.terminate)
+            run_safe(process.kill)
+            wait_for_port_closed(self.port, sleep_time=0.5, retries=8)
 
     @property
-    def in_memory(self):
+    def in_memory(self) -> bool:
         return self.db_path is None
 
     @property
@@ -51,7 +123,7 @@ class DynamodbServer(Server):
     def library_path(self) -> str:
         return f"{dynamodblocal_package.get_installed_dir()}/DynamoDBLocal_lib"
 
-    def _create_shell_command(self) -> List[str]:
+    def _create_shell_command(self) -> list[str]:
         cmd = [
             "java",
             "-Xmx%s" % self.heap_size,
@@ -80,81 +152,32 @@ class DynamodbServer(Server):
         dynamodblocal_package.install()
 
         cmd = self._create_shell_command()
-        LOG.debug("starting dynamodb process %s", cmd)
+        LOG.debug("Starting DynamoDB Local: %s", cmd)
         t = ShellCommandThread(
             cmd,
             strip_color=True,
-            log_listener=self._log_listener,
+            log_listener=_log_listener,
             auto_restart=True,
+            name="dynamodb-local",
         )
         TMP_THREADS.append(t)
         t.start()
         return t
 
-    def _log_listener(self, line, **_kwargs):
-        LOG.info(line.rstrip())
+    def check_dynamodb(self, expect_shutdown: bool = False, print_error: bool = False) -> None:
+        """Checks if DynamoDB server is up"""
+        out = None
 
+        try:
+            self.wait_is_up()
+            out = connect_externally_to(endpoint_url=self.url).dynamodb.list_tables()
+        except Exception:
+            if print_error:
+                LOG.exception("DynamoDB health check failed")
+        if expect_shutdown:
+            assert out is None
+        else:
+            assert isinstance(out["TableNames"], list)
 
-def create_dynamodb_server(
-    port=None, db_path: Optional[str] = None, clean_db_path: bool = False
-) -> DynamodbServer:
-    """
-    Creates a dynamodb server from the LocalStack configuration.
-    """
-    port = port or get_free_tcp_port()
-    server = DynamodbServer(port)
-    db_path = f"{config.dirs.data}/dynamodb" if not db_path and config.dirs.data else db_path
-
-    if is_env_true("DYNAMODB_IN_MEMORY"):
-        # the DYNAMODB_IN_MEMORY variable takes precedence and will set the DB path to None which forces inMemory=true
-        db_path = None
-
-    if db_path:
-        if clean_db_path:
-            rm_rf(db_path)
-        mkdir(db_path)
-        absolute_path = os.path.abspath(db_path)
-        server.db_path = absolute_path
-
-    server.heap_size = config.DYNAMODB_HEAP_SIZE
-    server.share_db = is_env_true("DYNAMODB_SHARE_DB")
-    server.optimize_db_before_startup = is_env_true("DYNAMODB_OPTIMIZE_DB_BEFORE_STARTUP")
-    server.delay_transient_statuses = is_env_true("DYNAMODB_DELAY_TRANSIENT_STATUSES")
-    server.cors = os.getenv("DYNAMODB_CORS", None)
-    return server
-
-
-def wait_for_dynamodb():
-    retry(check_dynamodb, sleep=0.4, retries=10)
-
-
-def check_dynamodb(expect_shutdown=False, print_error=False):
-    out = None
-
-    if not expect_shutdown:
-        assert _server
-
-    try:
-        _server.wait_is_up()
-        out = aws_stack.connect_to_service("dynamodb", endpoint_url=_server.url).list_tables()
-    except Exception:
-        if print_error:
-            LOG.exception("DynamoDB health check failed")
-    if expect_shutdown:
-        assert out is None
-    else:
-        assert isinstance(out["TableNames"], list)
-
-
-def start_dynamodb(port=None, db_path=None, clean_db_path=False):
-    global _server
-    if not _server:
-        _server = create_dynamodb_server(port, db_path, clean_db_path)
-
-    _server.start()
-
-    return _server
-
-
-def get_server():
-    return _server
+    def wait_for_dynamodb(self) -> None:
+        retry(self.check_dynamodb, sleep=0.4, retries=10)

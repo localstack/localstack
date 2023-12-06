@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  LambdaRuntime:
+    Type: String
+    Default: python3.9
+  FunctionName:
+    Type: String
+Resources:
+  MyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: test-role-123
+      AssumeRolePolicyDocument: {}
+  MyFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Ref: FunctionName
+      Handler: index.handler
+      Role: !GetAtt 'MyRole.Arn'
+      Runtime:
+        Ref: LambdaRuntime
+      InlineCode: |
+        def handler(event, context):
+            return {'hello': 'world'}

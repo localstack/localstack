@@ -1,21 +1,38 @@
 import base64
 import json
 import logging
+import re
 from abc import ABC, abstractmethod
-from collections import defaultdict
+from functools import lru_cache
 from http import HTTPStatus
-from typing import Dict, List, Union
+from typing import Any, Dict
+from urllib.parse import urljoin
 
+import requests
+from botocore.exceptions import ClientError
+from moto.apigatewayv2.exceptions import BadRequestException
 from requests import Response
 
 from localstack import config
+from localstack.aws.connect import (
+    INTERNAL_REQUEST_PARAMS_HEADER,
+    InternalRequestParameters,
+    connect_to,
+    dump_dto,
+)
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    ApiGatewayIntegrationError,
+    IntegrationParameters,
+    RequestParametersResolver,
+    ResponseParametersResolver,
     extract_path_params,
     extract_query_string_params,
     get_event_request_context,
+    make_error_response,
+    multi_value_dict_for_list,
 )
 from localstack.services.apigateway.templates import (
     MappingTemplates,
@@ -24,16 +41,31 @@ from localstack.services.apigateway.templates import (
 )
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import LambdaResponse, requests_response
-from localstack.utils.aws.aws_stack import extract_region_from_arn
-from localstack.utils.collections import remove_attributes
+from localstack.utils.aws.arns import extract_region_from_arn
+from localstack.utils.aws.aws_responses import (
+    LambdaResponse,
+    request_response_stream,
+    requests_response,
+)
+from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.aws.request_context import mock_aws_request_headers
+from localstack.utils.aws.templating import VtlTemplate
+from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
-from localstack.utils.http import canonicalize_headers, parse_request_data
+from localstack.utils.http import add_query_params_to_url, canonicalize_headers, parse_request_data
 from localstack.utils.json import json_safe
 from localstack.utils.strings import camel_to_snake_case, to_bytes
 
 LOG = logging.getLogger(__name__)
+
+
+class IntegrationAccessError(ApiGatewayIntegrationError):
+    """
+    Error message when an integration cannot be accessed.
+    """
+
+    def __init__(self):
+        super().__init__("Internal server error", 500)
 
 
 class BackendIntegration(ABC):
@@ -42,6 +74,8 @@ class BackendIntegration(ABC):
     def __init__(self):
         self.request_templates = RequestTemplates()
         self.response_templates = ResponseTemplates()
+        self.request_params_resolver = RequestParametersResolver()
+        self.response_params_resolver = ResponseParametersResolver()
 
     @abstractmethod
     def invoke(self, invocation_context: ApiInvocationContext):
@@ -54,6 +88,13 @@ class BackendIntegration(ABC):
         response.headers = headers
         response._content = data
         return response
+
+    @classmethod
+    def apply_request_parameters(
+        cls, integration_params: IntegrationParameters, headers: Dict[str, Any]
+    ):
+        for k, v in integration_params.get("headers").items():
+            headers.update({k: v})
 
     @classmethod
     def apply_response_parameters(
@@ -79,37 +120,66 @@ class BackendIntegration(ABC):
         return response
 
 
-class SnsIntegration(BackendIntegration):
-    def invoke(self, invocation_context: ApiInvocationContext) -> Response:
-        invocation_context.context = get_event_request_context(invocation_context)
-        try:
-            payload = self.request_templates.render(invocation_context)
-        except Exception as e:
-            LOG.warning("Failed to apply template for SNS integration", e)
-            raise
-        uri = (
-            invocation_context.integration.get("uri")
-            or invocation_context.integration.get("integrationUri")
-            or ""
+@lru_cache(maxsize=64)
+def get_service_factory(region_name: str, role_arn: str):
+    if role_arn:
+        return connect_to.with_assumed_role(
+            role_arn=role_arn,
+            region_name=region_name,
+            service_principal=ServicePrincipal.apigateway,
+            session_name="BackplaneAssumeRoleSession",
         )
-        region_name = uri.split(":")[3]
-        headers = aws_stack.mock_aws_request_headers(service="sns", region_name=region_name)
-        return make_http_request(
-            config.service_url("sns"), method="POST", headers=headers, data=payload
-        )
+    else:
+        return connect_to(region_name=region_name)
 
 
-def call_lambda(function_arn: str, event: bytes, asynchronous: bool) -> str:
-    lambda_client = aws_stack.connect_to_service(
-        "lambda", region_name=extract_region_from_arn(function_arn)
+@lru_cache(maxsize=64)
+def get_internal_mocked_headers(
+    service_name: str,
+    region_name: str,
+    source_arn: str,
+    role_arn: str | None,
+) -> dict[str, str]:
+    if role_arn:
+        access_key_id = (
+            connect_to()
+            .sts.request_metadata(service_principal=ServicePrincipal.apigateway)
+            .assume_role(RoleArn=role_arn, RoleSessionName="BackplaneAssumeRoleSession")[
+                "Credentials"
+            ]["AccessKeyId"]
+        )
+    else:
+        access_key_id = None
+    headers = mock_aws_request_headers(
+        service=service_name, aws_access_key_id=access_key_id, region_name=region_name
     )
-    inv_result = lambda_client.invoke(
+
+    dto = InternalRequestParameters(
+        service_principal=ServicePrincipal.apigateway, source_arn=source_arn
+    )
+    headers[INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
+    return headers
+
+
+def get_source_arn(invocation_context: ApiInvocationContext):
+    return f"arn:aws:execute-api:{invocation_context.region_name}:{invocation_context.account_id}:{invocation_context.api_id}/{invocation_context.stage}/{invocation_context.method}{invocation_context.path}"
+
+
+def call_lambda(
+    function_arn: str, event: bytes, asynchronous: bool, invocation_context: ApiInvocationContext
+) -> str:
+    region_name = extract_region_from_arn(function_arn)
+    clients = get_service_factory(
+        region_name=region_name, role_arn=invocation_context.integration.get("credentials")
+    )
+    inv_result = clients.lambda_.request_metadata(
+        service_principal=ServicePrincipal.apigateway, source_arn=get_source_arn(invocation_context)
+    ).invoke(
         FunctionName=function_arn,
         Payload=event,
         InvocationType="Event" if asynchronous else "RequestResponse",
     )
-    payload = inv_result.get("Payload")
-    if payload:
+    if payload := inv_result.get("Payload"):
         payload = to_str(payload.read())
         return payload
     return ""
@@ -130,7 +200,7 @@ class LambdaProxyIntegration(BackendIntegration):
         parsed_result = {} if parsed_result is None else parsed_result
 
         keys = parsed_result.keys()
-        if not ("statusCode" in keys and "body" in keys):
+        if "statusCode" not in keys or "body" not in keys:
             LOG.warning(
                 'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
             )
@@ -158,19 +228,6 @@ class LambdaProxyIntegration(BackendIntegration):
         return response
 
     @staticmethod
-    def multi_value_dict_for_list(elements: Union[List, Dict]) -> Dict:
-        temp_mv_dict = defaultdict(list)
-        for key in elements:
-            if isinstance(key, (list, tuple)):
-                key, value = key
-            else:
-                value = elements[key]
-            key = to_str(key)
-            temp_mv_dict[key].append(value)
-
-        return dict((k, tuple(v)) for k, v in temp_mv_dict.items())
-
-    @staticmethod
     def fix_proxy_path_params(path_params):
         proxy_path_param_value = path_params.get("proxy+")
         if not proxy_path_param_value:
@@ -183,18 +240,21 @@ class LambdaProxyIntegration(BackendIntegration):
         cls, method, path, headers, data, query_string_params=None, is_base64_encoded=False
     ):
         query_string_params = query_string_params or parse_request_data(method, path, "")
+
+        single_value_query_string_params = {
+            k: v[-1] if isinstance(v, list) else v for k, v in query_string_params.items()
+        }
         # AWS canonical header names, converting them to lower-case
         headers = canonicalize_headers(headers)
         return {
             "path": path,
             "headers": dict(headers),
-            "multiValueHeaders": cls.multi_value_dict_for_list(headers),
+            "multiValueHeaders": multi_value_dict_for_list(headers),
             "body": data,
             "isBase64Encoded": is_base64_encoded,
             "httpMethod": method,
-            "queryStringParameters": query_string_params or None,
-            "multiValueQueryStringParameters": cls.multi_value_dict_for_list(query_string_params)
-            or None,
+            "queryStringParameters": single_value_query_string_params or None,
+            "multiValueQueryStringParameters": dict_multi_values(query_string_params) or None,
         }
 
     @classmethod
@@ -234,14 +294,18 @@ class LambdaProxyIntegration(BackendIntegration):
             )
             asynchronous = invocation_context.headers.get("X-Amz-Invocation-Type") == "'Event'"
             return call_lambda(
-                function_arn=func_arn, event=to_bytes(json.dumps(event)), asynchronous=asynchronous
+                function_arn=func_arn,
+                event=to_bytes(json.dumps(event)),
+                asynchronous=asynchronous,
+                invocation_context=invocation_context,
             )
-
+        except ClientError as e:
+            raise IntegrationAccessError() from e
         except Exception as e:
-            if LOG.isEnabledFor(logging.DEBUG):
-                LOG.exception("Unable to run Lambda function on API Gateway message: %s", e)
-            else:
-                LOG.warning("Unable to run Lambda function on API Gateway message: %s", e)
+            LOG.warning(
+                "Unable to run Lambda function on API Gateway message: %s",
+                e,
+            )
 
     def invoke(self, invocation_context: ApiInvocationContext):
         uri = (
@@ -249,10 +313,10 @@ class LambdaProxyIntegration(BackendIntegration):
             or invocation_context.integration.get("integrationUri")
             or ""
         )
+        invocation_context.context = get_event_request_context(invocation_context)
         relative_path, query_string_params = extract_query_string_params(
             path=invocation_context.path_with_query_string
         )
-        invocation_context.context = get_event_request_context(invocation_context)
         try:
             path_params = extract_path_params(
                 path=relative_path, extracted_path=invocation_context.resource_path
@@ -266,7 +330,7 @@ class LambdaProxyIntegration(BackendIntegration):
             func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
 
         if invocation_context.authorizer_type:
-            invocation_context.context["authorizer"] = invocation_context.auth_context
+            invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         payload = self.request_templates.render(invocation_context)
 
@@ -316,65 +380,454 @@ class LambdaProxyIntegration(BackendIntegration):
         self.update_content_length(response)
         invocation_context.response = response
 
-        self.response_templates.render(invocation_context)
         return invocation_context.response
 
 
 class LambdaIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        headers = helpers.create_invocation_headers(invocation_context)
+        invocation_context.context = helpers.get_event_request_context(invocation_context)
+        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        if invocation_context.authorizer_type:
+            invocation_context.context["authorizer"] = invocation_context.authorizer_result
+
+        func_arn = self._lambda_integration_uri(invocation_context)
+        event = self.request_templates.render(invocation_context) or b""
+        asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
+        try:
+            result = call_lambda(
+                function_arn=func_arn,
+                event=to_bytes(event),
+                asynchronous=asynchronous,
+                invocation_context=invocation_context,
+            )
+        except ClientError as e:
+            raise IntegrationAccessError() from e
+
+        # default lambda status code is 200
+        response = LambdaResponse()
+        response.status_code = 200
+        response._content = result
+
+        if asynchronous:
+            response._content = ""
+
+        # response template
+        invocation_context.response = response
+        self.response_templates.render(invocation_context)
+        invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
+
+        headers = self.response_params_resolver.resolve(invocation_context)
+        invocation_context.response.headers.update(headers)
+
+        return invocation_context.response
+
+    def _lambda_integration_uri(self, invocation_context: ApiInvocationContext):
+        """
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html
+        """
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
+        variables = {"stageVariables": invocation_context.stage_variables}
+        uri = VtlTemplate().render_vtl(uri, variables)
+        if ":lambda:path" in uri:
+            uri = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
+        return uri
+
+
+class KinesisIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        integration = invocation_context.integration
+        integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
+        integration_type = integration_type_orig.upper()
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        if uri.endswith("kinesis:action/PutRecord"):
+            target = "Kinesis_20131202.PutRecord"
+        elif uri.endswith("kinesis:action/PutRecords"):
+            target = "Kinesis_20131202.PutRecords"
+        elif uri.endswith("kinesis:action/ListStreams"):
+            target = "Kinesis_20131202.ListStreams"
+        else:
+            LOG.info(
+                f"Unexpected API Gateway integration URI '{uri}' for integration type {integration_type}",
+            )
+            target = ""
+
+        try:
+            # xXx this "event" request context is used in multiple places, we probably
+            # want to refactor this into a model class
+            invocation_context.context = helpers.get_event_request_context(invocation_context)
+            invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+
+            # integration type "AWS" is only supported for WebSocket APIs and REST
+            # API (v1), but the template selection expression is only supported for
+            # Websockets
+            template_key = None
+            if invocation_context.is_websocket_request():
+                template_key = invocation_context.integration.get(
+                    "TemplateSelectionExpression", "$default"
+                )
+                payload = self.request_templates.render(invocation_context, template_key)
+            else:
+                payload = self.request_templates.render(invocation_context)
+
+        except Exception as e:
+            LOG.warning("Unable to convert API Gateway payload to str", e)
+            raise
+
+        # forward records to target kinesis stream
+        headers = get_internal_mocked_headers(
+            service_name="kinesis",
+            region_name=invocation_context.region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
+        )
+        headers["X-Amz-Target"] = target
+
+        result = common.make_http_request(
+            url=config.internal_service_url(), data=payload, headers=headers, method="POST"
+        )
+
+        # apply response template
+        invocation_context.response = result
+        self.response_templates.render(invocation_context)
+        return invocation_context.response
+
+
+class DynamoDBIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        # TODO we might want to do it plain http instead of using boto here, like kinesis
+        integration = invocation_context.integration
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        # example: arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
+        action = uri.split(":dynamodb:action/")[1].split("&")[0]
+
+        # render request template
+        payload = self.request_templates.render(invocation_context)
+        payload = json.loads(payload)
+
+        # determine target method via reflection
+        clients = get_service_factory(
+            region_name=invocation_context.region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+        )
+        dynamo_client = clients.dynamodb.request_metadata(
+            service_principal=ServicePrincipal.apigateway,
+            source_arn=get_source_arn(invocation_context),
+        )
+        method_name = camel_to_snake_case(action)
+        client_method = getattr(dynamo_client, method_name, None)
+        if not client_method:
+            raise Exception(f"Unsupported action {action} in API Gateway integration URI {uri}")
+
+        # run request against DynamoDB backend
+        try:
+            response = client_method(**payload)
+        except ClientError as e:
+            response = e.response
+            # The request body is packed into the "Error" field. To make the response match AWS, we will remove that
+            # field and merge with the response dict
+            error = response.pop("Error", {})
+            error.pop("Code", None)  # the Code is also something not relayed
+            response |= error
+
+        status_code = response.get("ResponseMetadata", {}).get("HTTPStatusCode", 200)
+        # apply response templates
+        response_content = json.dumps(remove_attributes(response, ["ResponseMetadata"]))
+        response_obj = requests_response(content=response_content)
+        response = self.response_templates.render(invocation_context, response=response_obj)
+
+        # construct final response
+        # TODO: set response header based on response templates
+        headers = {HEADER_CONTENT_TYPE: APPLICATION_JSON}
+        response = requests_response(response, headers=headers, status_code=status_code)
+
+        return response
+
+
+class S3Integration(BackendIntegration):
+    # target ARN patterns
+    TARGET_REGEX_PATH_S3_URI = (
+        r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
+    )
+    TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
+
+    def invoke(self, invocation_context: ApiInvocationContext):
+        invocation_path = invocation_context.path_with_query_string
+        integration = invocation_context.integration
+        path_params = invocation_context.path_params
+        relative_path, query_string_params = extract_query_string_params(path=invocation_path)
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        s3 = connect_to().s3
+        uri = apply_request_parameters(
+            uri,
+            integration=integration,
+            path_params=path_params,
+            query_params=query_string_params,
+        )
+        uri_match = re.match(self.TARGET_REGEX_PATH_S3_URI, uri) or re.match(
+            self.TARGET_REGEX_ACTION_S3_URI, uri
+        )
+        if not uri_match:
+            msg = "Request URI does not match s3 specifications"
+            LOG.warning(msg)
+            return make_error_response(msg, 400)
+
+        bucket, object_key = uri_match.group("bucket", "object")
+        LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
+        try:
+            object = s3.get_object(Bucket=bucket, Key=object_key)
+        except s3.exceptions.NoSuchKey:
+            msg = f"Object {object_key} not found"
+            LOG.debug(msg)
+            return make_error_response(msg, 404)
+
+        headers = mock_aws_request_headers(
+            service="s3",
+            aws_access_key_id=invocation_context.account_id,
+            region_name=invocation_context.region_name,
+        )
+
+        if object.get("ContentType"):
+            headers["Content-Type"] = object["ContentType"]
+
+        # stream used so large files do not fill memory
+        response = request_response_stream(stream=object["Body"], headers=headers)
+        return response
+
+
+class HTTPIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        invocation_path = invocation_context.path_with_query_string
+        integration = invocation_context.integration
+        path_params = invocation_context.path_params
+        method = invocation_context.method
+        headers = invocation_context.headers
+        relative_path, query_string_params = extract_query_string_params(path=invocation_path)
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        if ":servicediscovery:" in uri:
+            # check if this is a servicediscovery integration URI
+            client = connect_to().servicediscovery
+            service_id = uri.split("/")[-1]
+            instances = client.list_instances(ServiceId=service_id)["Instances"]
+            instance = (instances or [None])[0]
+            if instance and instance.get("Id"):
+                uri = "http://%s/%s" % (instance["Id"], invocation_path.lstrip("/"))
+
+        # apply custom request template
+        invocation_context.context = helpers.get_event_request_context(invocation_context)
+        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        payload = self.request_templates.render(invocation_context)
+
+        if isinstance(payload, dict):
+            payload = json.dumps(payload)
+
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html
+        # HTTP integration URIs
+        #
+        # A stage variable can be used as part of an HTTP integration URL, as shown in the following examples:
+        #
+        # A full URI without protocol – http://${stageVariables.<variable_name>}
+        # A full domain – http://${stageVariables.<variable_name>}/resource/operation
+        # A subdomain – http://${stageVariables.<variable_name>}.example.com/resource/operation
+        # A path – http://example.com/${stageVariables.<variable_name>}/bar
+        # A query string – http://example.com/foo?q=${stageVariables.<variable_name>}
+        render_vars = {"stageVariables": invocation_context.stage_variables}
+        rendered_uri = VtlTemplate().render_vtl(uri, render_vars)
+
+        uri = apply_request_parameters(
+            rendered_uri,
+            integration=integration,
+            path_params=path_params,
+            query_params=query_string_params,
+        )
+        result = requests.request(method=method, url=uri, data=payload, headers=headers)
+        if not result.ok:
+            LOG.debug(
+                "Upstream response from <%s> %s returned with status code: %s",
+                method,
+                uri,
+                result.status_code,
+            )
+        # apply custom response template
+        invocation_context.response = result
+        self.response_templates.render(invocation_context)
+        return invocation_context.response
+
+
+class SQSIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        integration = invocation_context.integration
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+        account_id, queue = uri.split("/")[-2:]
+        region_name = uri.split(":")[3]
+
+        headers = get_internal_mocked_headers(
+            service_name="sqs",
+            region_name=region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
+        )
+
+        # integration parameters can override headers
+        integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
+        headers.update(integration_parameters.get("headers", {}))
+        if "Accept" not in headers:
+            headers["Accept"] = "application/json"
+
+        template = integration.get("requestTemplates").get(APPLICATION_JSON)
+        if "GetQueueUrl" in template or "CreateQueue" in template:
+            payload = self.request_templates.render(invocation_context)
+            new_request = f"{payload}&QueueName={queue}"
+        else:
+            payload = self.request_templates.render(invocation_context)
+            queue_url = f"{config.internal_service_url()}/queue/{region_name}/{account_id}/{queue}"
+            new_request = f"{payload}&QueueUrl={queue_url}"
+
+        url = urljoin(config.internal_service_url(), f"/queue/{region_name}/{account_id}/{queue}")
+        response = common.make_http_request(url, method="POST", headers=headers, data=new_request)
+
+        # apply response template
+        invocation_context.response = response
+        response._content = self.response_templates.render(invocation_context)
+        return response
+
+
+class SNSIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext) -> Response:
+        # TODO: check if the logic below is accurate - cover with snapshot tests!
+        invocation_context.context = get_event_request_context(invocation_context)
+        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        integration = invocation_context.integration
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        try:
+            payload = self.request_templates.render(invocation_context)
+        except Exception as e:
+            LOG.warning("Failed to apply template for SNS integration", e)
+            raise
+        region_name = uri.split(":")[3]
+        headers = mock_aws_request_headers(
+            service="sns", aws_access_key_id=invocation_context.account_id, region_name=region_name
+        )
+        result = make_http_request(
+            config.internal_service_url(), method="POST", headers=headers, data=payload
+        )
+        return self.apply_response_parameters(invocation_context, result)
+
+
+class StepFunctionIntegration(BackendIntegration):
+    @classmethod
+    def _validate_required_params(cls, request_parameters: Dict[str, Any]) -> None:
+        if not request_parameters:
+            raise BadRequestException("Missing required parameters")
+        # stateMachineArn and input are required
+        state_machine_arn_param = request_parameters.get("StateMachineArn")
+        input_param = request_parameters.get("Input")
+
+        if not state_machine_arn_param:
+            raise BadRequestException("StateMachineArn")
+
+        if not input_param:
+            raise BadRequestException("Input")
+
     def invoke(self, invocation_context: ApiInvocationContext):
         uri = (
             invocation_context.integration.get("uri")
             or invocation_context.integration.get("integrationUri")
             or ""
         )
-        func_arn = uri
-        if ":lambda:path" in uri:
-            func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
+        action = uri.split("/")[-1]
 
-        headers = helpers.create_invocation_headers(invocation_context)
-        invocation_context.context = helpers.get_event_request_context(invocation_context)
-        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-        if invocation_context.authorizer_type:
-            invocation_context.context["authorizer"] = invocation_context.auth_context
+        if invocation_context.integration.get("IntegrationType") == "AWS_PROXY":
+            payload = self._create_request_parameters(invocation_context)
+        elif APPLICATION_JSON in invocation_context.integration.get("requestTemplates", {}):
+            payload = self.request_templates.render(invocation_context)
+            payload = json.loads(payload)
+        else:
+            payload = json.loads(invocation_context.data)
 
-        request_templates = RequestTemplates()
-        event = request_templates.render(invocation_context) or b""
-        asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
-        result = call_lambda(
-            function_arn=func_arn, event=to_bytes(event), asynchronous=asynchronous
+        client = connect_to().stepfunctions
+        if isinstance(payload.get("input"), dict):
+            payload["input"] = json.dumps(payload["input"])
+
+        # Hot fix since step functions local package responses: Unsupported Operation: 'StartSyncExecution'
+        method_name = (
+            camel_to_snake_case(action) if action != "StartSyncExecution" else "start_execution"
         )
 
-        response = LambdaResponse()
+        try:
+            # call method on step function client
+            method = getattr(client, method_name)
+        except AttributeError:
+            msg = f"Invalid step function action: {method_name}"
+            LOG.error(msg)
+            return StepFunctionIntegration._create_response(
+                HTTPStatus.BAD_REQUEST.value,
+                headers={"Content-Type": APPLICATION_JSON},
+                data=json.dumps({"message": msg}),
+            )
 
-        if asynchronous:
-            response._content = ""
-            response.status_code = 200
-        else:
-            # depending on the lambda executor sometimes it returns a string and sometimes a dict
-            match result:
-                case str():
-                    # try to parse the result as json, if it succeeds we assume it's a valid
-                    # json string, and we don't do anything.
-                    if isinstance(json.loads(result or "{}"), dict):
-                        parsed_result = result
-                    else:
-                        # the docker executor returns a string wrapping a json string,
-                        # so we need to remove the outer string
-                        parsed_result = json.loads(result or "{}")
-                case _:
-                    parsed_result = json.loads(str(result or "{}"))
-            parsed_result = common.json_safe(parsed_result)
-            parsed_result = {} if parsed_result is None else parsed_result
-            response.status_code = 200
-            response._content = parsed_result
+        result = method(**payload)
+        result = json_safe(remove_attributes(result, ["ResponseMetadata"]))
+        response = StepFunctionIntegration._create_response(
+            HTTPStatus.OK.value,
+            mock_aws_request_headers(
+                "stepfunctions",
+                aws_access_key_id=invocation_context.account_id,
+                region_name=invocation_context.region_name,
+            ),
+            data=json.dumps(result),
+        )
+        if action == "StartSyncExecution":
+            # poll for the execution result and return it
+            result = await_sfn_execution_result(result["executionArn"])
+            result_status = result.get("status")
+            if result_status != "SUCCEEDED":
+                return StepFunctionIntegration._create_response(
+                    HTTPStatus.INTERNAL_SERVER_ERROR.value,
+                    headers={"Content-Type": APPLICATION_JSON},
+                    data=json.dumps(
+                        {
+                            "message": "StepFunctions execution %s failed with status '%s'"
+                            % (result["executionArn"], result_status)
+                        }
+                    ),
+                )
 
-        # apply custom response template
+            result = json_safe(result)
+            response = requests_response(content=result)
+
+        # apply response templates
         invocation_context.response = response
+        response._content = self.response_templates.render(invocation_context)
+        return response
 
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
-        invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
-        return invocation_context.response
+    def _create_request_parameters(self, invocation_context):
+        request_parameters = invocation_context.integration.get("requestParameters", {})
+        self._validate_required_params(request_parameters)
+
+        variables = {
+            "request": {
+                "header": invocation_context.headers,
+                "querystring": invocation_context.query_params(),
+                "body": invocation_context.data_as_string(),
+                "context": invocation_context.context or {},
+                "stage_variables": invocation_context.stage_variables or {},
+            }
+        }
+        rendered_input = VtlTemplate().render_vtl(request_parameters.get("Input"), variables)
+        return {
+            "stateMachineArn": request_parameters.get("StateMachineArn"),
+            "input": rendered_input,
+        }
 
 
 class MockIntegration(BackendIntegration):
@@ -385,7 +838,7 @@ class MockIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext) -> Response:
         passthrough_behavior = invocation_context.integration.get("passthroughBehavior") or ""
         request_template = invocation_context.integration.get("requestTemplates", {}).get(
-            invocation_context.headers.get(HEADER_CONTENT_TYPE)
+            invocation_context.headers.get(HEADER_CONTENT_TYPE, APPLICATION_JSON)
         )
 
         # based on the configured passthrough behavior and the existence of template or not,
@@ -402,7 +855,7 @@ class MockIntegration(BackendIntegration):
         # request template rendering
         request_payload = self.request_templates.render(invocation_context)
 
-        # mapping is done based on "statusCode" field
+        # mapping is done based on "statusCode" field, we default to 200
         status_code = 200
         if invocation_context.headers.get(HEADER_CONTENT_TYPE) == APPLICATION_JSON:
             try:
@@ -429,66 +882,57 @@ class MockIntegration(BackendIntegration):
         return response
 
 
-class StepFunctionIntegration(BackendIntegration):
+# TODO: remove once we migrate all usages to `apply_request_parameters` on BackendIntegration
+def apply_request_parameters(
+    uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
+):
+    request_parameters = integration.get("requestParameters")
+    uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
+    if request_parameters:
+        for key in path_params:
+            # check if path_params is present in the integration request parameters
+            request_param_key = f"integration.request.path.{key}"
+            request_param_value = f"method.request.path.{key}"
+            if request_parameters.get(request_param_key) == request_param_value:
+                uri = uri.replace(f"{{{key}}}", path_params[key])
+
+    if integration.get("type") != "HTTP_PROXY" and request_parameters:
+        for key in query_params.copy():
+            request_query_key = f"integration.request.querystring.{key}"
+            request_param_val = f"method.request.querystring.{key}"
+            if request_parameters.get(request_query_key, None) != request_param_val:
+                query_params.pop(key)
+
+    return add_query_params_to_url(uri, query_params)
+
+
+class EventBridgeIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
+        invocation_context.context = get_event_request_context(invocation_context)
+        try:
+            payload = self.request_templates.render(invocation_context)
+        except Exception as e:
+            LOG.warning("Failed to apply template for EventBridge integration: %s", e)
+            raise
         uri = (
             invocation_context.integration.get("uri")
             or invocation_context.integration.get("integrationUri")
             or ""
         )
-        action = uri.split("/")[-1]
-
-        if APPLICATION_JSON in invocation_context.integration.get("requestTemplates", {}):
-            payload = self.request_templates.render(invocation_context)
-            payload = json.loads(payload)
-        else:
-            payload = json.loads(invocation_context.data)
-
-        client = aws_stack.connect_to_service("stepfunctions")
-        if isinstance(payload.get("input"), dict):
-            payload["input"] = json.dumps(payload["input"])
-
-        # Hot fix since step functions local package responses: Unsupported Operation: 'StartSyncExecution'
-        method_name = (
-            camel_to_snake_case(action) if action != "StartSyncExecution" else "start_execution"
+        region_name = uri.split(":")[3]
+        headers = get_internal_mocked_headers(
+            service_name="events",
+            region_name=region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
+        )
+        headers.update({"X-Amz-Target": invocation_context.headers.get("X-Amz-Target")})
+        response = make_http_request(
+            config.internal_service_url(), method="POST", headers=headers, data=payload
         )
 
-        try:
-            method = getattr(client, method_name)
-        except AttributeError:
-            msg = f"Invalid step function action: {method_name}"
-            LOG.error(msg)
-            return StepFunctionIntegration._create_response(
-                HTTPStatus.BAD_REQUEST.value,
-                headers={"Content-Type": APPLICATION_JSON},
-                data=json.dumps({"message": msg}),
-            )
-
-        result = method(**payload)
-        result = json_safe(remove_attributes(result, "ResponseMetadata"))
-        response = StepFunctionIntegration._create_response(
-            HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=result
-        )
-        if action == "StartSyncExecution":
-            # poll for the execution result and return it
-            result = await_sfn_execution_result(result["executionArn"])
-            result_status = result.get("status")
-            if result_status != "SUCCEEDED":
-                return StepFunctionIntegration._create_response(
-                    HTTPStatus.INTERNAL_SERVER_ERROR.value,
-                    headers={"Content-Type": APPLICATION_JSON},
-                    data=json.dumps(
-                        {
-                            "message": "StepFunctions execution %s failed with status '%s'"
-                            % (result["executionArn"], result_status)
-                        }
-                    ),
-                )
-
-            result = json_safe(result)
-            response = requests_response(content=result)
-
-        # apply response templates
         invocation_context.response = response
-        response._content = self.response_templates.render(invocation_context)
-        return response
+
+        self.response_templates.render(invocation_context)
+        invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
+        return invocation_context.response

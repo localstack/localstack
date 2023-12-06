@@ -1,0 +1,11 @@
+{
+  "Comment": "BASE_RAISE_FAILURE",
+  "StartAt": "FailState",
+  "States": {
+    "FailState": {
+      "Type": "Fail",
+      "Error": "SomeFailure",
+      "Cause": "This state machines raises a 'SomeFailure' failure."
+    },
+  },
+}

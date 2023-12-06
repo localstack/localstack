@@ -9,15 +9,14 @@ from _pytest.fixtures import SubRequest
 from _pytest.nodes import Item
 from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
-from pluggy.callers import _Result
+from pluggy import Result
 
-from localstack.testing.pytest.fixtures import (  # TODO(!) fix. shouldn't import from a plugin module
-    _client,
-)
+from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 from localstack.testing.snapshots.report import render_report
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import SNAPSHOT_BASIC_TRANSFORMER
+from localstack.utils.bootstrap import is_api_enabled
 
 
 def is_aws():
@@ -32,6 +31,7 @@ def pytest_configure(config: Config):
 @pytest.hookimpl
 def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
     parser.addoption("--snapshot-update", action="store_true")
+    parser.addoption("--snapshot-raw", action="store_true")
     parser.addoption("--snapshot-skip-all", action="store_true")
     parser.addoption("--snapshot-verify", action="store_true")
 
@@ -40,8 +40,8 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> Optional[TestReport]:
     use_legacy_report = os.environ.get("SNAPSHOT_LEGACY_REPORT", "0") == "1"
 
-    result: _Result = yield
-    report: TestReport = result.result
+    result: Result = yield
+    report: TestReport = result.get_result()
 
     if call.excinfo is not None and isinstance(call.excinfo.value, SnapshotAssertionError):
         err: SnapshotAssertionError = call.excinfo.value
@@ -72,9 +72,7 @@ def pytest_runtest_call(item: Item) -> None:
         paths = []
 
         if not is_aws():  # only skip for local tests
-
             for m in item.iter_markers(name="skip_snapshot_verify"):
-
                 skip_paths = m.kwargs.get("paths", [])
 
                 skip_condition = m.kwargs.get("condition")
@@ -103,21 +101,23 @@ def pytest_runtest_call(item: Item) -> None:
 
 
 @pytest.fixture(name="region", scope="session")
-def fixture_region():
-    sts_client = _client("sts")  # TODO: extract client factory from fixtures plugin
-    yield sts_client.meta.region_name
+def fixture_region(aws_client):
+    if is_aws() or is_api_enabled("sts"):
+        return aws_client.sts.meta.region_name
+    else:
+        return TEST_AWS_REGION_NAME
 
 
-@pytest.fixture(name="snapshot", scope="function")
-def fixture_snapshot(request: SubRequest, account_id, region):
-    update_overwrite = os.environ.get("SNAPSHOT_UPDATE", None) == "1"
+@pytest.fixture(scope="function")
+def _snapshot_session(request: SubRequest, account_id, region):
+    update_overwrite = os.environ.get("SNAPSHOT_UPDATE") == "1"
+    raw_overwrite = os.environ.get("SNAPSHOT_RAW") == "1"
 
     sm = SnapshotSession(
-        file_path=os.path.join(
-            request.fspath.dirname, f"{request.fspath.purebasename}.snapshot.json"
-        ),
+        base_file_path=os.path.join(request.fspath.dirname, request.fspath.purebasename),
         scope_key=request.node.nodeid,
         update=update_overwrite or request.config.option.snapshot_update,
+        raw=raw_overwrite or request.config.option.snapshot_raw,
         verify=False if request.config.option.snapshot_skip_all else True,
     )
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)
@@ -127,3 +127,9 @@ def fixture_snapshot(request: SubRequest, account_id, region):
     yield sm
 
     sm._persist_state()
+
+
+# FIXME: remove after fixture is added in -ext
+@pytest.fixture(scope="function")
+def snapshot(_snapshot_session):
+    return _snapshot_session

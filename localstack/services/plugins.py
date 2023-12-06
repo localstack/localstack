@@ -5,18 +5,18 @@ import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Protocol, Tuple
 
 from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
-from readerwriterlock import rwlock
-from werkzeug import Request
 
 from localstack import config
+from localstack.aws.skeleton import DispatchTable, Skeleton
+from localstack.aws.spec import load_service
 from localstack.config import ServiceProviderConfig
-from localstack.utils.bootstrap import get_enabled_apis, log_duration
+from localstack.state import StateLifecycleHook, StateVisitable, StateVisitor
+from localstack.utils.bootstrap import get_enabled_apis, is_api_enabled, log_duration
 from localstack.utils.functions import call_safe
-from localstack.utils.net import wait_for_port_status
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import SynchronizedDefaultDict, poll_condition
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -25,81 +25,6 @@ LOG = logging.getLogger(__name__)
 PLUGIN_NAMESPACE = "localstack.aws.provider"
 
 _default = object()  # sentinel object indicating a default value
-
-
-# ---------------------------
-# STATE SERIALIZER INTERFACE
-# ---------------------------
-
-
-class PersistenceContext:
-    state_dir: str
-    lock: rwlock.RWLockable
-
-    def __init__(self, state_dir: str = None, lock: rwlock.RWLockable = None):
-        # state dir (within DATA_DIR) of currently processed API in local file system
-        self.state_dir = state_dir
-        # read-write lock for concurrency control of incoming requests
-        self.lock = lock
-
-
-class StateSerializer(abc.ABC):
-    """A state serializer encapsulates the logic of persisting and loading service state to/from disk."""
-
-    @abc.abstractmethod
-    def restore_state(self, context: PersistenceContext):
-        """Restore state from the underlying persistence file"""
-        pass
-
-    @abc.abstractmethod
-    def update_state(self, context: PersistenceContext, request: Request):
-        """Update persistence state based on the incoming request"""
-        pass
-
-    @abc.abstractmethod
-    def is_write_request(self, request: Request) -> bool:
-        """Returns whether the given request is a write request that should trigger serialization"""
-        return False
-
-    def get_lock_for_request(self, request: Request) -> Optional[rwlock.Lockable]:
-        """Returns a lock (or None) that should be used to guard the given request, for concurrency control"""
-        return None
-
-    def get_context(self) -> PersistenceContext:
-        """Returns the current persistence context"""
-        return None
-
-
-class StateSerializerComposite(StateSerializer):
-    """Composite state serializer that delegates the requests to a list of underlying concrete serializers"""
-
-    def __init__(self, serializers: List[StateSerializer] = None):
-        self.serializers: List[StateSerializer] = serializers or []
-
-    def restore_state(self, context: PersistenceContext):
-        for serializer in self.serializers:
-            serializer.restore_state(context)
-
-    def update_state(self, context: PersistenceContext, request: Request):
-        for serializer in self.serializers:
-            serializer.update_state(context, request)
-
-    def is_write_request(self, request: Request) -> bool:
-        return any(ser.is_write_request(request) for ser in self.serializers)
-
-    def get_lock_for_request(self, request: Request) -> Optional[rwlock.Lockable]:
-        if self.serializers:
-            return self.serializers[0].get_lock_for_request(
-                request
-            )  # return lock from first serializer
-
-    def get_context(self) -> PersistenceContext:
-        if self.serializers:
-            return self.serializers[0].get_context()  # return context from first serializer
-
-
-# maps service names to serializers (TODO: to be encapsulated in ServicePlugin instances)
-SERIALIZERS: Dict[str, StateSerializer] = {}
 
 
 # -----------------
@@ -119,7 +44,7 @@ class ServiceStateException(ServiceException):
     pass
 
 
-class ServiceLifecycleHook:
+class ServiceLifecycleHook(StateLifecycleHook):
     def on_after_init(self):
         pass
 
@@ -133,49 +58,37 @@ class ServiceLifecycleHook:
         pass
 
 
-class BackendStateLifecycle(abc.ABC):
-    """
-    Interface that supports the retrieval, injection and restore of the backend for services.
-    """
-
-    @abc.abstractmethod
-    def retrieve_state(self, **kwargs):
-        """Retrieves the backend of a service"""
-
-    @abc.abstractmethod
-    def inject_state(self, **kwargs):
-        """Injects a backend for a service"""
-
-    @abc.abstractmethod
-    def reset_state(self):
-        """Resets a backend for a service"""
-
-    @abc.abstractmethod
-    def on_after_reset(self):
-        """Performed after the reset of a service"""
-        pass
+class ServiceProvider(Protocol):
+    service: str
 
 
 class Service:
+    """
+    FIXME: this has become frankenstein's monster, and it has to go. once we've rid ourselves of the legacy edge
+     proxy, we can get rid of the ``listener`` concept. we should then do one iteration over all the
+     ``start_dynamodb``, ``start_<whatever>``, ``check_<whatever>``, etc. methods, to make all of those integral part
+     of the service provider. the assumption that every service provider starts a backend server is outdated, and then
+     we can get rid of ``start``, and ``check``.
+    """
+
     def __init__(
         self,
         name,
         start=_default,
-        check=_default,
-        listener=None,
+        check=None,
+        skeleton=None,
         active=False,
         stop=None,
         lifecycle_hook: ServiceLifecycleHook = None,
-        backend_state_lifecycle: BackendStateLifecycle = None,
     ):
         self.plugin_name = name
         self.start_function = start
-        self.listener = listener
-        self.check_function = check if check is not _default else local_api_checker(name)
+        self.skeleton = skeleton
+        self.check_function = check
         self.default_active = active
         self.stop_function = stop
         self.lifecycle_hook = lifecycle_hook or ServiceLifecycleHook()
-        self.backend_state_lifecycle = backend_state_lifecycle
+        self._provider = None
         call_safe(self.lifecycle_hook.on_after_init)
 
     def start(self, asynchronous):
@@ -185,18 +98,11 @@ class Service:
             return
 
         if self.start_function is _default:
-            # fallback start method that simply adds the listener function to the list of proxy listeners if it exists
-            if not self.listener:
-                return
-
-            from localstack.services.infra import add_service_proxy_listener
-
-            add_service_proxy_listener(self.plugin_name, self.listener)
             return
 
         kwargs = {"asynchronous": asynchronous}
-        if self.listener:
-            kwargs["update_listener"] = self.listener
+        if self.skeleton:
+            kwargs["update_listener"] = self.skeleton
         return self.start_function(**kwargs)
 
     def stop(self):
@@ -214,7 +120,57 @@ class Service:
         return self.plugin_name
 
     def is_enabled(self):
-        return True
+        return is_api_enabled(self.plugin_name)
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        """
+        Passes the StateVisitor to the ASF provider if it is set and implements the StateVisitable. Otherwise, it uses
+        the ReflectionStateLocator to visit the service state.
+
+        :param visitor: the visitor
+        """
+        if self._provider and isinstance(self._provider, StateVisitable):
+            self._provider.accept_state_visitor(visitor)
+            return
+
+        from localstack.state.inspect import ReflectionStateLocator
+
+        ReflectionStateLocator(service=self.name()).accept_state_visitor(visitor)
+
+    @staticmethod
+    def for_provider(
+        provider: ServiceProvider,
+        dispatch_table_factory: Callable[[ServiceProvider], DispatchTable] = None,
+        service_lifecycle_hook: ServiceLifecycleHook = None,
+        custom_service_name: Optional[str] = None,
+    ) -> "Service":
+        """
+        Factory method for creating services for providers. This method hides a bunch of legacy code and
+        band-aids/adapters to make persistence visitors work, while providing compatibility with the legacy edge proxy.
+
+        :param provider: the service provider, i.e., the implementation of the generated ASF service API.
+        :param dispatch_table_factory: a `MotoFallbackDispatcher` or something similar that uses the provider to
+            create a dispatch table. this one's a bit clumsy.
+        :param service_lifecycle_hook: if left empty, the factory checks whether the provider is a ServiceLifecycleHook.
+        :param custom_service_name: allows defining a custom name for this service (instead of the one in the provider).
+        :return: a service instance
+        """
+        # determine the service_lifecycle_hook
+        if service_lifecycle_hook is None:
+            if isinstance(provider, ServiceLifecycleHook):
+                service_lifecycle_hook = provider
+
+        # determine the delegate for injecting into the skeleton
+        delegate = dispatch_table_factory(provider) if dispatch_table_factory else provider
+        service_name = custom_service_name or provider.service
+        service = Service(
+            name=service_name,
+            skeleton=Skeleton(load_service(service_name), delegate),
+            lifecycle_hook=service_lifecycle_hook,
+        )
+        service._provider = provider
+
+        return service
 
 
 class ServiceState(Enum):
@@ -282,7 +238,7 @@ class ServiceContainer:
 class ServiceManager:
     def __init__(self) -> None:
         super().__init__()
-        self._services = {}
+        self._services: Dict[str, ServiceContainer] = {}
         self._mutex = threading.RLock()
 
     def get_service_container(self, name: str) -> Optional[ServiceContainer]:
@@ -491,6 +447,11 @@ class ServicePluginManager(ServiceManager):
         self._api_provider_specs = None
         self.provider_config = provider_config or config.SERVICE_PROVIDER_CONFIG
 
+        # locks used to make sure plugin loading is thread safe - will be cleared after single use
+        self._plugin_load_locks: Dict[str, threading.RLock] = SynchronizedDefaultDict(
+            threading.RLock
+        )
+
     def get_active_provider(self, service: str) -> str:
         """
         Get configured provider for a given service
@@ -522,6 +483,20 @@ class ServicePluginManager(ServiceManager):
             if self.get_active_provider(service) in providers
         ]
 
+    def _get_loaded_service_containers(
+        self, services: Optional[List[str]] = None
+    ) -> List[ServiceContainer]:
+        """
+        Returns all the available service containers.
+        :param services: the list of services to restrict the search to. If empty or NULL then service containers for
+                         all available services are queried.
+        :return: a list of all the available service containers.
+        """
+        services = services or self.list_available()
+        return [
+            c for s in services if (c := super(ServicePluginManager, self).get_service_container(s))
+        ]
+
     def list_loaded_services(self) -> List[str]:
         """
         Lists all the services which have a provider that has been initialized
@@ -529,9 +504,20 @@ class ServicePluginManager(ServiceManager):
         :return: a list of service names
         """
         return [
-            service
-            for service in self.list_available()
-            if super(ServicePluginManager, self).get_service_container(service)
+            service_container.service.name()
+            for service_container in self._get_loaded_service_containers()
+        ]
+
+    def list_active_services(self) -> List[str]:
+        """
+        Lists all services that have an initialised provider and are currently running.
+
+        :return: the list of active service names.
+        """
+        return [
+            service_container.service.name()
+            for service_container in self._get_loaded_service_containers()
+            if service_container.state == ServiceState.RUNNING
         ]
 
     def exists(self, name: str) -> bool:
@@ -551,27 +537,34 @@ class ServicePluginManager(ServiceManager):
         if self.plugin_errors.has_errors(name, provider):
             return ServiceState.ERROR
 
-        return ServiceState.AVAILABLE
+        return ServiceState.AVAILABLE if is_api_enabled(name) else ServiceState.DISABLED
 
     def get_service_container(self, name: str) -> Optional[ServiceContainer]:
-        container = super().get_service_container(name)
-        if container:
+        if container := self._services.get(name):
             return container
 
         if not self.exists(name):
             return None
 
-        # this is where we start lazy loading. we now know the PluginSpec for the API exists,
-        # but the ServiceContainer has not been created
-        plugin = self._load_service_plugin(name)
-        if not plugin or not plugin.service:
-            return None
+        load_lock = self._plugin_load_locks[name]
+        with load_lock:
+            # check once again to avoid race conditions
+            if container := self._services.get(name):
+                return container
 
-        with self._mutex:
-            if plugin.service.name() not in self._services:
+            # this is where we start lazy loading. we now know the PluginSpec for the API exists,
+            # but the ServiceContainer has not been created.
+            # this control path will be executed once per service
+            plugin = self._load_service_plugin(name)
+            if not plugin or not plugin.service:
+                return None
+
+            with self._mutex:
                 super().add_service(plugin.service)
 
-        return super().get_service_container(name)
+            del self._plugin_load_locks[name]  # we only needed the service lock once
+
+            return self._services.get(name)
 
     @property
     def api_provider_specs(self) -> Dict[str, List[str]]:
@@ -640,6 +633,17 @@ class ServicePluginManager(ServiceManager):
                 apis.append(api)
         return apis
 
+    def _stop_services(self, service_containers: List[ServiceContainer]) -> None:
+        """
+        Atomically attempts to stop all given 'ServiceState.STARTING' and 'ServiceState.RUNNING' services.
+        :param service_containers: the list of service containers to be stopped.
+        """
+        target_service_states = {ServiceState.STARTING, ServiceState.RUNNING}
+        with self._mutex:
+            for service_container in service_containers:
+                if service_container.state in target_service_states:
+                    service_container.stop()
+
     def stop_services(self, services: List[str] = None):
         """
         Stops services for this service manager, if they are currently active.
@@ -647,18 +651,16 @@ class ServicePluginManager(ServiceManager):
 
         :param services: Service names to stop. If not provided, all services for this manager will be stopped.
         """
-        for service_name in services:
-            if self.get_state(service_name) in [ServiceState.STARTING, ServiceState.RUNNING]:
-                service_container = self.get_service_container(service_name)
-                service_container.stop()
+        target_service_containers = self._get_loaded_service_containers(services=services)
+        self._stop_services(target_service_containers)
 
     def stop_all_services(self) -> None:
         """
         Stops all services for this service manager, if they are currently active.
         Will not stop services not already started or in and error state.
         """
-        services = self.list_available()
-        self.stop_services(services)
+        target_service_containers = self._get_loaded_service_containers()
+        self._stop_services(target_service_containers)
 
 
 # map of service plugins, mapping from service name to plugin details
@@ -692,37 +694,3 @@ def check_service_health(api, expect_shutdown=False):
         else:
             LOG.warning('Service "%s" still shutting down, retrying...', api)
         raise Exception("Service check failed for api: %s" % api)
-
-
-def local_api_checker(service: str) -> Callable:
-    """
-    Creates a health check method for the given service that works under the assumption that the real backend service
-    ports are locatable through the PROXY_LISTENER global.
-    """
-    from localstack.services.infra import PROXY_LISTENERS
-
-    if config.EAGER_SERVICE_LOADING:
-        # most services don't have a real health check, and if they would, that would dramatically increase the
-        # startup time, since health checks are done sequentially at startup. however, the health checks are needed
-        # for the lazy-loading cold start.
-        return lambda *args, **kwargs: None
-
-    def _check(expect_shutdown=False, print_error=False):
-        port = None
-        try:
-            if service not in PROXY_LISTENERS:
-                LOG.debug("cannot find backend port for service %s", service)
-                return
-            port = PROXY_LISTENERS[service][1]
-
-            if port is None:
-                # for modern ASF services, the port can be none since the service is just served by localstack
-                return
-
-            LOG.debug("checking service health %s:%d", service, port)
-            wait_for_port_status(port, expect_success=not expect_shutdown)
-        except Exception:
-            if print_error:
-                LOG.exception("service health check %s:%s failed", service, port)
-
-    return _check

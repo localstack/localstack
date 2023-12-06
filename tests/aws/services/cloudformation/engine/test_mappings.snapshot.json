@@ -1,0 +1,66 @@
+{
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_with_nonexisting_key": {
+    "recorded-date": "12-06-2023, 16:47:23",
+    "recorded-content": {
+      "mapping_nonexisting_key_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: Unable to get mapping for TopicSuffixMap::C::Suffix",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_with_invalid_refs": {
+    "recorded-date": "12-06-2023, 16:47:24",
+    "recorded-content": {
+      "mapping_invalid_ref_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Every Mappings attribute must be a String or a List.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_maximum_nesting_depth": {
+    "recorded-date": "12-06-2023, 16:47:24",
+    "recorded-content": {
+      "mapping_maximum_level_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Every Mappings attribute must be a String or a List.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_minimum_nesting_depth": {
+    "recorded-date": "12-06-2023, 16:47:25",
+    "recorded-content": {
+      "mapping_minimum_level_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Every Mappings member A must be a map",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

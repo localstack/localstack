@@ -1,15 +1,11 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 ActionNameType = str
+CertificationKeyType = str
+CertificationValueType = str
 ColumnNumber = int
 ConcurrentModificationMessage = str
 ContextKeyNameType = str
@@ -507,6 +503,7 @@ class AttachedPolicy(TypedDict, total=False):
 
 
 BootstrapDatum = bytes
+CertificationMapType = Dict[CertificationKeyType, CertificationValueType]
 
 
 class ChangePasswordRequest(ServiceRequest):
@@ -1207,6 +1204,18 @@ class GetLoginProfileRequest(ServiceRequest):
 
 class GetLoginProfileResponse(TypedDict, total=False):
     LoginProfile: LoginProfile
+
+
+class GetMFADeviceRequest(ServiceRequest):
+    SerialNumber: serialNumberType
+    UserName: Optional[userNameType]
+
+
+class GetMFADeviceResponse(TypedDict, total=False):
+    UserName: Optional[userNameType]
+    SerialNumber: serialNumberType
+    EnableDate: Optional[dateType]
+    Certifications: Optional[CertificationMapType]
 
 
 class GetOpenIDConnectProviderRequest(ServiceRequest):
@@ -2270,7 +2279,6 @@ class UploadSigningCertificateResponse(TypedDict, total=False):
 
 
 class IamApi:
-
     service = "iam"
     version = "2010-05-08"
 
@@ -2731,6 +2739,15 @@ class IamApi:
     def get_login_profile(
         self, context: RequestContext, user_name: userNameType
     ) -> GetLoginProfileResponse:
+        raise NotImplementedError
+
+    @handler("GetMFADevice")
+    def get_mfa_device(
+        self,
+        context: RequestContext,
+        serial_number: serialNumberType,
+        user_name: userNameType = None,
+    ) -> GetMFADeviceResponse:
         raise NotImplementedError
 
     @handler("GetOpenIDConnectProvider")

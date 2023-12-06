@@ -7,16 +7,17 @@ from botocore.utils import ArnParser
 
 from localstack import config
 from localstack.aws.api.opensearch import DomainEndpointOptions, EngineType
-from localstack.config import EDGE_BIND_HOST
-from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
-from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
+from localstack.constants import LOCALHOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
     CustomEndpoint,
     EdgeProxiedElasticsearchCluster,
     EdgeProxiedOpensearchCluster,
     ElasticsearchCluster,
+    EndpointProxy,
+    FakeEndpointProxyServer,
     OpensearchCluster,
+    SecurityOptions,
 )
 from localstack.utils.common import (
     PortNotAvailableException,
@@ -26,6 +27,7 @@ from localstack.utils.common import (
     start_thread,
 )
 from localstack.utils.serving import Server
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -113,11 +115,16 @@ def build_cluster_endpoint(
                 assigned_port = external_service_ports.reserve_port()
         else:
             assigned_port = external_service_ports.reserve_port()
-        return f"{config.LOCALSTACK_HOSTNAME}:{assigned_port}"
+
+        host_definition = localstack_host(custom_port=assigned_port)
+        return host_definition.host_and_port()
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
-        return f"{config.LOCALSTACK_HOSTNAME}:{config.EDGE_PORT}/{engine_domain}/{domain_key.region}/{domain_key.domain_name}"
+        host_definition = localstack_host()
+        return f"{host_definition.host_and_port()}/{engine_domain}/{domain_key.region}/{domain_key.domain_name}"
+
     # or through a subdomain (domain-name.region.opensearch.localhost.localstack.cloud)
-    return f"{domain_key.domain_name}.{domain_key.region}.{engine_domain}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    host_definition = localstack_host()
+    return f"{domain_key.domain_name}.{domain_key.region}.{engine_domain}.{host_definition.host_and_port()}"
 
 
 def determine_custom_endpoint(
@@ -147,6 +154,7 @@ class ClusterManager:
         arn: str,
         version: str,
         endpoint_options: Optional[DomainEndpointOptions] = None,
+        security_options: Optional[SecurityOptions] = None,
         preferred_port: Optional[int] = None,
     ) -> Server:
         """
@@ -155,6 +163,7 @@ class ClusterManager:
         :param arn: of the cluster to create
         :param version: of the cluster to start (string including the EngineType)
         :param endpoint_options: DomainEndpointOptions (may contain information about a custom endpoint url)
+        :param security_options: SecurityOptions (may contain info on the security plugin config)
         :param preferred_port: port which should be preferred (only if OPENSEARCH_ENDPOINT_STRATEGY == "port")
         :return: None
         """
@@ -172,7 +181,7 @@ class ClusterManager:
         url = f"http://{endpoint}" if "://" not in endpoint else endpoint
 
         # call abstract cluster factory
-        cluster = self._create_cluster(arn, url, version)
+        cluster = self._create_cluster(arn, url, version, custom_endpoint, security_options)
         cluster.start()
 
         # save cluster into registry and return
@@ -193,7 +202,14 @@ class ClusterManager:
         cluster = self.get(arn)
         return cluster.is_up() if cluster else False
 
-    def _create_cluster(self, arn, url, version) -> Server:
+    def _create_cluster(
+        self,
+        arn: str,
+        url: str,
+        version: str,
+        custom_endpoint: CustomEndpoint,
+        security_options: SecurityOptions,
+    ) -> Server:
         """
         Abstract cluster factory.
 
@@ -248,22 +264,35 @@ class MultiplexingClusterManager(ClusterManager):
         self.endpoints = {}
         self.mutex = threading.RLock()
 
-    def _create_cluster(self, arn, url, version) -> Server:
+    def _create_cluster(
+        self,
+        arn: str,
+        url: str,
+        version: str,
+        custom_endpoint: CustomEndpoint,
+        security_options: SecurityOptions,
+    ) -> Server:
         with self.mutex:
             if not self.cluster:
                 engine_type = versions.get_engine_type(version)
                 # startup routine for the singleton cluster instance
                 if engine_type == EngineType.OpenSearch:
-                    self.cluster = OpensearchCluster(port=get_free_tcp_port(), arn=arn)
+                    self.cluster = OpensearchCluster(
+                        port=get_free_tcp_port(), arn=arn, security_options=security_options
+                    )
                 else:
-                    self.cluster = ElasticsearchCluster(port=get_free_tcp_port(), arn=arn)
+                    self.cluster = ElasticsearchCluster(
+                        port=get_free_tcp_port(), arn=arn, security_options=security_options
+                    )
 
                 def _start_async(*_):
                     LOG.info("starting %s on %s", type(self.cluster), self.cluster.url)
                     self.cluster.start()  # start may block during install
 
-                start_thread(_start_async)
-            cluster_endpoint = ClusterEndpoint(self.cluster, EndpointProxy(url, self.cluster.url))
+                start_thread(_start_async, name="opensearch-multiplex")
+            cluster_endpoint = ClusterEndpoint(
+                self.cluster, EndpointProxy(url, self.cluster.url, custom_endpoint=custom_endpoint)
+            )
             self.clusters[arn] = cluster_endpoint
             return cluster_endpoint
 
@@ -286,19 +315,42 @@ class MultiClusterManager(ClusterManager):
     Manages one cluster and endpoint per domain.
     """
 
-    def _create_cluster(self, arn, url, version) -> Server:
+    def _create_cluster(
+        self,
+        arn: str,
+        url: str,
+        version: str,
+        custom_endpoint: CustomEndpoint,
+        security_options: SecurityOptions,
+    ) -> Server:
         engine_type = versions.get_engine_type(version)
         if config.OPENSEARCH_ENDPOINT_STRATEGY != "port":
             if engine_type == EngineType.OpenSearch:
-                return EdgeProxiedOpensearchCluster(url=url, arn=arn, version=version)
+                return EdgeProxiedOpensearchCluster(
+                    url=url,
+                    arn=arn,
+                    version=version,
+                    custom_endpoint=custom_endpoint,
+                    security_options=security_options,
+                )
             else:
-                return EdgeProxiedElasticsearchCluster(url=url, arn=arn, version=version)
+                return EdgeProxiedElasticsearchCluster(
+                    url=url,
+                    arn=arn,
+                    version=version,
+                    custom_endpoint=custom_endpoint,
+                    security_options=security_options,
+                )
         else:
             port = _get_port_from_url(url)
             if engine_type == EngineType.OpenSearch:
-                return OpensearchCluster(port=port, host=EDGE_BIND_HOST, arn=arn, version=version)
+                return OpensearchCluster(
+                    port=port, host=config.GATEWAY_LISTEN[0].host, arn=arn, version=version
+                )
             else:
-                return ElasticsearchCluster(port=port, host=LOCALHOST, arn=arn, version=version)
+                return ElasticsearchCluster(
+                    port=port, host=config.GATEWAY_LISTEN[0].host, arn=arn, version=version
+                )
 
 
 class SingletonClusterManager(ClusterManager):
@@ -325,28 +377,43 @@ class SingletonClusterManager(ClusterManager):
         arn: str,
         version: str,
         endpoint_options: Optional[DomainEndpointOptions] = None,
+        security_options: Optional[SecurityOptions] = None,
         preferred_port: int = None,
     ) -> Server:
         with self.mutex:
-            return super().create(arn, version, endpoint_options, preferred_port)
+            return super().create(arn, version, endpoint_options, security_options, preferred_port)
 
-    def _create_cluster(self, arn, url, version) -> Server:
+    def _create_cluster(
+        self,
+        arn: str,
+        url: str,
+        version: str,
+        custom_endpoint: CustomEndpoint,
+        security_options: SecurityOptions,
+    ) -> Server:
         if not self.cluster:
             port = _get_port_from_url(url)
             engine_type = versions.get_engine_type(version)
             if engine_type == EngineType.OpenSearch:
                 self.cluster = OpensearchCluster(
-                    port=port, host=EDGE_BIND_HOST, version=version, arn=arn
+                    port=port,
+                    host=config.GATEWAY_LISTEN[0].host,
+                    version=version,
+                    arn=arn,
+                    security_options=security_options,
                 )
             else:
                 self.cluster = ElasticsearchCluster(
-                    port=port, host=LOCALHOST, version=version, arn=arn
+                    port=port,
+                    host=LOCALHOST,
+                    version=version,
+                    arn=arn,
+                    security_options=security_options,
                 )
 
         return self.cluster
 
     def remove(self, arn: str):
-
         with self.mutex:
             try:
                 cluster = self.clusters.pop(arn)
@@ -361,5 +428,14 @@ class SingletonClusterManager(ClusterManager):
 
 
 class CustomBackendManager(ClusterManager):
-    def _create_cluster(self, arn, url, version) -> Server:
-        return FakeEndpointProxyServer(EndpointProxy(url, config.OPENSEARCH_CUSTOM_BACKEND))
+    def _create_cluster(
+        self,
+        arn: str,
+        url: str,
+        version: str,
+        custom_endpoint: CustomEndpoint,
+        security_options: SecurityOptions,
+    ) -> Server:
+        return FakeEndpointProxyServer(
+            EndpointProxy(url, config.OPENSEARCH_CUSTOM_BACKEND, custom_endpoint)
+        )

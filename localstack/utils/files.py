@@ -3,6 +3,7 @@ import inspect
 import logging
 import os
 import shutil
+import stat
 import tempfile
 from pathlib import Path
 from typing import Dict
@@ -35,19 +36,33 @@ def parse_config_file(file_or_str: str, single_section: bool = True) -> Dict:
     return result
 
 
-def cache_dir() -> Path:
+def get_user_cache_dir() -> Path:
+    """
+    Returns the path of the user's cache dir (e.g., ~/.cache on Linux, or ~/Library/Caches on Mac).
+
+    :return: a Path pointing to the platform-specific cache dir of the user
+    """
     from localstack.utils.platform import is_linux, is_mac_os, is_windows
 
     if is_windows():
-        return Path(os.path.expandvars(r"%LOCALAPPDATA%\cache\localstack"))
+        return Path(os.path.expandvars(r"%LOCALAPPDATA%\cache"))
     if is_mac_os():
-        return Path.home() / "Library" / "Caches" / "localstack"
+        return Path.home() / "Library" / "Caches"
     if is_linux():
         string_path = os.environ.get("XDG_CACHE_HOME")
         if string_path and os.path.isabs(string_path):
             return Path(string_path)
     # Use the common place to store caches in Linux as a default
-    return Path.home() / ".cache" / "localstack"
+    return Path.home() / ".cache"
+
+
+def cache_dir() -> Path:
+    """
+    Returns the cache dir for localstack (e.g., ~/.cache/localstack)
+
+    :return: a Path pointing to the localstack cache dir
+    """
+    return get_user_cache_dir() / "localstack"
 
 
 def save_file(file, content, append=False, permissions=None):
@@ -139,15 +154,36 @@ def chown_r(path: str, user: str):
 
 
 def chmod_r(path: str, mode: int):
-    """Recursive chmod"""
+    """
+    Recursive chmod
+    :param path: path to file or directory
+    :param mode: permission mask as octal integer value
+    """
     if not os.path.exists(path):
         return
-    os.chmod(path, mode)
+    idempotent_chmod(path, mode)
     for root, dirnames, filenames in os.walk(path):
         for dirname in dirnames:
-            os.chmod(os.path.join(root, dirname), mode)
+            idempotent_chmod(os.path.join(root, dirname), mode)
         for filename in filenames:
-            os.chmod(os.path.join(root, filename), mode)
+            idempotent_chmod(os.path.join(root, filename), mode)
+
+
+def idempotent_chmod(path: str, mode: int):
+    """
+    Perform idempotent chmod on the given file path (non-recursively). The function attempts to call `os.chmod`, and
+    will catch and only re-raise exceptions (e.g., PermissionError) if the file does not have the given mode already.
+    :param path: path to file
+    :param mode: permission mask as octal integer value
+    """
+    try:
+        os.chmod(path, mode)
+    except Exception:
+        existing_mode = os.stat(path)
+        if mode in (existing_mode.st_mode, stat.S_IMODE(existing_mode.st_mode)):
+            # file already has the desired permissions -> return
+            return
+        raise
 
 
 def rm_rf(path: str):
@@ -253,9 +289,9 @@ def cleanup_tmp_files():
     del TMP_FILES[:]
 
 
-def new_tmp_file() -> str:
+def new_tmp_file(suffix: str = None) -> str:
     """Return a path to a new temporary file."""
-    tmp_file, tmp_path = tempfile.mkstemp()
+    tmp_file, tmp_path = tempfile.mkstemp(suffix=suffix)
     os.close(tmp_file)
     TMP_FILES.append(tmp_path)
     return tmp_path

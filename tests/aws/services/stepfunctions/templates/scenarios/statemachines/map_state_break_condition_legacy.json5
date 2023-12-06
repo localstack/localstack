@@ -1,0 +1,71 @@
+{
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "Result": [
+        1,
+        "Hello",
+        {},
+        3.3,
+        3,
+        4,
+        5
+      ],
+      "ResultPath": "$.arr",
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "ResultPath": null,
+      "InputPath": "$.arr",
+      "MaxConcurrency": 1,
+      "Iterator": {
+        "StartAt": "Equals3",
+        "States": {
+          "Equals3": {
+            "Choices": [
+              {
+                "And": [
+                  {
+                    "IsPresent": true,
+                    "Variable": "$"
+                  },
+                  {
+                    "And": [
+                      {
+                        "IsNumeric": true,
+                        "Variable": "$"
+                      },
+                      {
+                        "NumericEquals": 3,
+                        "Variable": "$"
+                      }
+                    ]
+                  }
+                ],
+                "Next": "Break"
+              }
+            ],
+            "Default": "Pass",
+            "Type": "Choice"
+          },
+          "Break": {
+            "Type": "Fail",
+            "Error": "SomeFailure",
+            "Cause": "This state machines raises a 'SomeFailure' failure."
+          },
+          "Pass": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "Next": "Final",
+    },
+    "Final": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

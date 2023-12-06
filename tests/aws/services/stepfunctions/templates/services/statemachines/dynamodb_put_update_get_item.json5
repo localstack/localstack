@@ -1,0 +1,39 @@
+{
+  "Comment": "DYNAMODB_PUT_UPDATE_GET_ITEM",
+  "StartAt": "PutItem",
+  "States": {
+    "PutItem": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName.$": "$.TableName",
+        "Item.$": "$.Item"
+      },
+      "ResultPath": "$.putItemOutput",
+      "Next": "UpdateItem"
+    },
+    "UpdateItem": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "ResultPath": "$.updateItemOutput",
+      "Parameters": {
+        "TableName.$": "$.TableName",
+        "Key.$": "$.Key",
+        "UpdateExpression.$": "$.UpdateExpression",
+        "ExpressionAttributeValues.$": "$.ExpressionAttributeValues",
+        "ReturnValues": "UPDATED_NEW",
+      },
+      "Next": "GetItem"
+    },
+    "GetItem": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "ResultPath": "$.getItemOutput",
+      "Parameters": {
+        "TableName.$": "$.TableName",
+        "Key.$": "$.Key"
+      },
+      "End": true
+    }
+  }
+}

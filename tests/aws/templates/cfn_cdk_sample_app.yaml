@@ -1,0 +1,48 @@
+Resources:
+  CdksampleQueue3139C8CD:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  CdksampleQueuePolicyFA91005A:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: sqs:SendMessage
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  Ref: CdksampleTopic7AD235A4
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Resource:
+              Fn::GetAtt:
+                - CdksampleQueue3139C8CD
+                - Arn
+        Version: "2012-10-17"
+      Queues:
+        - Ref: CdksampleQueue3139C8CD
+  CdksampleQueueCdksampleStackCdksampleTopicCB3FDFDDC0BCF47C:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      TopicArn:
+        Ref: CdksampleTopic7AD235A4
+      Endpoint:
+        Fn::GetAtt:
+          - CdksampleQueue3139C8CD
+          - Arn
+    DependsOn:
+      - CdksampleQueuePolicyFA91005A
+  CdksampleTopic7AD235A4:
+    Type: AWS::SNS::Topic
+Outputs:
+  QueueUrl:
+    Value:
+      Ref: CdksampleQueue3139C8CD
+  TopicArn:
+    Value:
+      Ref: CdksampleTopic7AD235A4

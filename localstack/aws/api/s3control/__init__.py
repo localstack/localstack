@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -17,6 +11,7 @@ AsyncRequestTokenARN = str
 AwsLambdaTransformationPayload = str
 AwsOrgArn = str
 Boolean = bool
+BucketIdentifierString = str
 BucketName = str
 ConfigId = str
 ConfirmRemoveSelfBucketAccess = bool
@@ -49,14 +44,19 @@ ManifestPrefixString = str
 MaxLength1024String = str
 MaxResults = int
 MinStorageBytesPercentage = float
+Minutes = int
 MultiRegionAccessPointAlias = str
 MultiRegionAccessPointClientToken = str
+MultiRegionAccessPointId = str
 MultiRegionAccessPointName = str
 NoSuchPublicAccessBlockConfigurationMessage = str
 NonEmptyMaxLength1024String = str
 NonEmptyMaxLength2048String = str
 NonEmptyMaxLength256String = str
 NonEmptyMaxLength64String = str
+NoncurrentVersionCount = int
+ObjectAgeValue = int
+ObjectLambdaAccessPointAliasValue = str
 ObjectLambdaAccessPointArn = str
 ObjectLambdaAccessPointName = str
 ObjectLambdaPolicy = str
@@ -64,9 +64,12 @@ ObjectLambdaSupportingAccessPointArn = str
 ObjectLockEnabledForBucket = bool
 Policy = str
 Prefix = str
+Priority = int
 PublicAccessBlockEnabled = bool
 RegionName = str
+ReplicaKmsKeyID = str
 ReportPrefixString = str
+Role = str
 S3AWSRegion = str
 S3AccessPointArn = str
 S3BucketArnString = str
@@ -74,15 +77,20 @@ S3ExpirationInDays = int
 S3KeyArnString = str
 S3ObjectVersionId = str
 S3RegionalBucketArn = str
+S3ResourceArn = str
 SSEKMSKeyId = str
 Setting = bool
 StorageLensArn = str
+StorageLensGroupArn = str
+StorageLensGroupName = str
 StorageLensPrefixLevelDelimiter = str
 StorageLensPrefixLevelMaxDepth = int
 StringForNextToken = str
+Suffix = str
 SuspendedCause = str
 TagKeyString = str
 TagValueString = str
+TrafficDialPercentage = int
 VpcId = str
 
 
@@ -116,6 +124,16 @@ class BucketLocationConstraint(str):
 class BucketVersioningStatus(str):
     Enabled = "Enabled"
     Suspended = "Suspended"
+
+
+class DeleteMarkerReplicationStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
+class ExistingObjectReplicationStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
 
 
 class ExpirationStatus(str):
@@ -179,6 +197,11 @@ class MFADeleteStatus(str):
     Disabled = "Disabled"
 
 
+class MetricsStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
 class MultiRegionAccessPointStatus(str):
     READY = "READY"
     INCONSISTENT_ACROSS_REGIONS = "INCONSISTENT_ACROSS_REGIONS"
@@ -193,13 +216,23 @@ class NetworkOrigin(str):
     VPC = "VPC"
 
 
+class ObjectLambdaAccessPointAliasStatus(str):
+    PROVISIONING = "PROVISIONING"
+    READY = "READY"
+
+
 class ObjectLambdaAllowedFeature(str):
     GetObject_Range = "GetObject-Range"
     GetObject_PartNumber = "GetObject-PartNumber"
+    HeadObject_Range = "HeadObject-Range"
+    HeadObject_PartNumber = "HeadObject-PartNumber"
 
 
 class ObjectLambdaTransformationConfigurationAction(str):
     GetObject = "GetObject"
+    HeadObject = "HeadObject"
+    ListObjects = "ListObjects"
+    ListObjectsV2 = "ListObjectsV2"
 
 
 class OperationName(str):
@@ -218,11 +251,42 @@ class OutputSchemaVersion(str):
     V_1 = "V_1"
 
 
+class OwnerOverride(str):
+    Destination = "Destination"
+
+
+class ReplicaModificationsStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
+class ReplicationRuleStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
 class ReplicationStatus(str):
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     REPLICA = "REPLICA"
     NONE = "NONE"
+
+
+class ReplicationStorageClass(str):
+    STANDARD = "STANDARD"
+    REDUCED_REDUNDANCY = "REDUCED_REDUNDANCY"
+    STANDARD_IA = "STANDARD_IA"
+    ONEZONE_IA = "ONEZONE_IA"
+    INTELLIGENT_TIERING = "INTELLIGENT_TIERING"
+    GLACIER = "GLACIER"
+    DEEP_ARCHIVE = "DEEP_ARCHIVE"
+    OUTPOSTS = "OUTPOSTS"
+    GLACIER_IR = "GLACIER_IR"
+
+
+class ReplicationTimeStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
 
 
 class RequestedJobStatus(str):
@@ -299,6 +363,11 @@ class S3StorageClass(str):
     INTELLIGENT_TIERING = "INTELLIGENT_TIERING"
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
     GLACIER_IR = "GLACIER_IR"
+
+
+class SseKmsEncryptedObjectsStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
 
 
 class TransitionStorageClass(str):
@@ -385,6 +454,10 @@ class AbortIncompleteMultipartUpload(TypedDict, total=False):
     DaysAfterInitiation: Optional[DaysAfterInitiation]
 
 
+class AccessControlTranslation(TypedDict, total=False):
+    Owner: OwnerOverride
+
+
 class VpcConfiguration(TypedDict, total=False):
     VpcId: VpcId
 
@@ -396,9 +469,33 @@ class AccessPoint(TypedDict, total=False):
     Bucket: BucketName
     AccessPointArn: Optional[S3AccessPointArn]
     Alias: Optional[Alias]
+    BucketAccountId: Optional[AccountId]
 
 
 AccessPointList = List[AccessPoint]
+StorageLensGroupLevelExclude = List[StorageLensGroupArn]
+StorageLensGroupLevelInclude = List[StorageLensGroupArn]
+
+
+class StorageLensGroupLevelSelectionCriteria(TypedDict, total=False):
+    Include: Optional[StorageLensGroupLevelInclude]
+    Exclude: Optional[StorageLensGroupLevelExclude]
+
+
+class StorageLensGroupLevel(TypedDict, total=False):
+    SelectionCriteria: Optional[StorageLensGroupLevelSelectionCriteria]
+
+
+class DetailedStatusCodesMetrics(TypedDict, total=False):
+    IsEnabled: Optional[IsEnabled]
+
+
+class AdvancedDataProtectionMetrics(TypedDict, total=False):
+    IsEnabled: Optional[IsEnabled]
+
+
+class AdvancedCostOptimizationMetrics(TypedDict, total=False):
+    IsEnabled: Optional[IsEnabled]
 
 
 class SelectionCriteria(TypedDict, total=False):
@@ -423,11 +520,18 @@ class ActivityMetrics(TypedDict, total=False):
 class BucketLevel(TypedDict, total=False):
     ActivityMetrics: Optional[ActivityMetrics]
     PrefixLevel: Optional[PrefixLevel]
+    AdvancedCostOptimizationMetrics: Optional[AdvancedCostOptimizationMetrics]
+    AdvancedDataProtectionMetrics: Optional[AdvancedDataProtectionMetrics]
+    DetailedStatusCodesMetrics: Optional[DetailedStatusCodesMetrics]
 
 
 class AccountLevel(TypedDict, total=False):
     ActivityMetrics: Optional[ActivityMetrics]
     BucketLevel: BucketLevel
+    AdvancedCostOptimizationMetrics: Optional[AdvancedCostOptimizationMetrics]
+    AdvancedDataProtectionMetrics: Optional[AdvancedDataProtectionMetrics]
+    DetailedStatusCodesMetrics: Optional[DetailedStatusCodesMetrics]
+    StorageLensGroupLevel: Optional[StorageLensGroupLevel]
 
 
 AsyncCreationTimestamp = datetime
@@ -468,6 +572,7 @@ class DeleteMultiRegionAccessPointInput(TypedDict, total=False):
 
 class Region(TypedDict, total=False):
     Bucket: BucketName
+    BucketAccountId: Optional[AccountId]
 
 
 RegionCreationList = List[Region]
@@ -544,8 +649,14 @@ class CreateAccessPointForObjectLambdaRequest(ServiceRequest):
     Configuration: ObjectLambdaConfiguration
 
 
+class ObjectLambdaAccessPointAlias(TypedDict, total=False):
+    Value: Optional[ObjectLambdaAccessPointAliasValue]
+    Status: Optional[ObjectLambdaAccessPointAliasStatus]
+
+
 class CreateAccessPointForObjectLambdaResult(TypedDict, total=False):
     ObjectLambdaAccessPointArn: Optional[ObjectLambdaAccessPointArn]
+    Alias: Optional[ObjectLambdaAccessPointAlias]
 
 
 class CreateAccessPointRequest(ServiceRequest):
@@ -554,6 +665,7 @@ class CreateAccessPointRequest(ServiceRequest):
     Bucket: BucketName
     VpcConfiguration: Optional[VpcConfiguration]
     PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
+    BucketAccountId: Optional[AccountId]
 
 
 class CreateAccessPointResult(TypedDict, total=False):
@@ -816,6 +928,68 @@ class CreateMultiRegionAccessPointResult(TypedDict, total=False):
     RequestTokenARN: Optional[AsyncRequestTokenARN]
 
 
+class Tag(TypedDict, total=False):
+    Key: TagKeyString
+    Value: TagValueString
+
+
+TagList = List[Tag]
+ObjectSizeValue = int
+
+
+class MatchObjectSize(TypedDict, total=False):
+    BytesGreaterThan: Optional[ObjectSizeValue]
+    BytesLessThan: Optional[ObjectSizeValue]
+
+
+class MatchObjectAge(TypedDict, total=False):
+    DaysGreaterThan: Optional[ObjectAgeValue]
+    DaysLessThan: Optional[ObjectAgeValue]
+
+
+MatchAnyTag = List[S3Tag]
+MatchAnySuffix = List[Suffix]
+MatchAnyPrefix = List[Prefix]
+
+
+class StorageLensGroupOrOperator(TypedDict, total=False):
+    MatchAnyPrefix: Optional[MatchAnyPrefix]
+    MatchAnySuffix: Optional[MatchAnySuffix]
+    MatchAnyTag: Optional[MatchAnyTag]
+    MatchObjectAge: Optional[MatchObjectAge]
+    MatchObjectSize: Optional[MatchObjectSize]
+
+
+class StorageLensGroupAndOperator(TypedDict, total=False):
+    MatchAnyPrefix: Optional[MatchAnyPrefix]
+    MatchAnySuffix: Optional[MatchAnySuffix]
+    MatchAnyTag: Optional[MatchAnyTag]
+    MatchObjectAge: Optional[MatchObjectAge]
+    MatchObjectSize: Optional[MatchObjectSize]
+
+
+class StorageLensGroupFilter(TypedDict, total=False):
+    MatchAnyPrefix: Optional[MatchAnyPrefix]
+    MatchAnySuffix: Optional[MatchAnySuffix]
+    MatchAnyTag: Optional[MatchAnyTag]
+    MatchObjectAge: Optional[MatchObjectAge]
+    MatchObjectSize: Optional[MatchObjectSize]
+    And: Optional[StorageLensGroupAndOperator]
+    Or: Optional[StorageLensGroupOrOperator]
+
+
+class StorageLensGroup(TypedDict, total=False):
+    Name: StorageLensGroupName
+    Filter: StorageLensGroupFilter
+    StorageLensGroupArn: Optional[StorageLensGroupArn]
+
+
+class CreateStorageLensGroupRequest(ServiceRequest):
+    AccountId: AccountId
+    StorageLensGroup: StorageLensGroup
+    Tags: Optional[TagList]
+
+
 CreationDate = datetime
 CreationTimestamp = datetime
 Date = datetime
@@ -851,6 +1025,11 @@ class DeleteBucketPolicyRequest(ServiceRequest):
     Bucket: BucketName
 
 
+class DeleteBucketReplicationRequest(ServiceRequest):
+    AccountId: AccountId
+    Bucket: BucketName
+
+
 class DeleteBucketRequest(ServiceRequest):
     AccountId: AccountId
     Bucket: BucketName
@@ -868,6 +1047,10 @@ class DeleteJobTaggingRequest(ServiceRequest):
 
 class DeleteJobTaggingResult(TypedDict, total=False):
     pass
+
+
+class DeleteMarkerReplication(TypedDict, total=False):
+    Status: DeleteMarkerReplicationStatus
 
 
 class DeleteMultiRegionAccessPointRequest(ServiceRequest):
@@ -896,6 +1079,11 @@ class DeleteStorageLensConfigurationTaggingRequest(ServiceRequest):
 
 class DeleteStorageLensConfigurationTaggingResult(TypedDict, total=False):
     pass
+
+
+class DeleteStorageLensGroupRequest(ServiceRequest):
+    Name: StorageLensGroupName
+    AccountId: AccountId
 
 
 class DescribeJobRequest(ServiceRequest):
@@ -973,6 +1161,34 @@ class DescribeMultiRegionAccessPointOperationResult(TypedDict, total=False):
     AsyncOperation: Optional[AsyncOperation]
 
 
+class ReplicationTimeValue(TypedDict, total=False):
+    Minutes: Optional[Minutes]
+
+
+class Metrics(TypedDict, total=False):
+    Status: MetricsStatus
+    EventThreshold: Optional[ReplicationTimeValue]
+
+
+class EncryptionConfiguration(TypedDict, total=False):
+    ReplicaKmsKeyID: Optional[ReplicaKmsKeyID]
+
+
+class ReplicationTime(TypedDict, total=False):
+    Status: ReplicationTimeStatus
+    Time: ReplicationTimeValue
+
+
+class Destination(TypedDict, total=False):
+    Account: Optional[AccountId]
+    Bucket: BucketIdentifierString
+    ReplicationTime: Optional[ReplicationTime]
+    AccessControlTranslation: Optional[AccessControlTranslation]
+    EncryptionConfiguration: Optional[EncryptionConfiguration]
+    Metrics: Optional[Metrics]
+    StorageClass: Optional[ReplicationStorageClass]
+
+
 Endpoints = Dict[NonEmptyMaxLength64String, NonEmptyMaxLength1024String]
 
 
@@ -986,6 +1202,10 @@ Regions = List[S3AWSRegion]
 class Exclude(TypedDict, total=False):
     Buckets: Optional[Buckets]
     Regions: Optional[Regions]
+
+
+class ExistingObjectReplication(TypedDict, total=False):
+    Status: ExistingObjectReplicationStatus
 
 
 class GetAccessPointConfigurationForObjectLambdaRequest(ServiceRequest):
@@ -1006,6 +1226,7 @@ class GetAccessPointForObjectLambdaResult(TypedDict, total=False):
     Name: Optional[ObjectLambdaAccessPointName]
     PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
     CreationDate: Optional[CreationDate]
+    Alias: Optional[ObjectLambdaAccessPointAlias]
 
 
 class GetAccessPointPolicyForObjectLambdaRequest(ServiceRequest):
@@ -1063,6 +1284,7 @@ class GetAccessPointResult(TypedDict, total=False):
     Alias: Optional[Alias]
     AccessPointArn: Optional[S3AccessPointArn]
     Endpoints: Optional[Endpoints]
+    BucketAccountId: Optional[AccountId]
 
 
 class GetBucketLifecycleConfigurationRequest(ServiceRequest):
@@ -1072,6 +1294,7 @@ class GetBucketLifecycleConfigurationRequest(ServiceRequest):
 
 class NoncurrentVersionExpiration(TypedDict, total=False):
     NoncurrentDays: Optional[Days]
+    NewerNoncurrentVersions: Optional[NoncurrentVersionCount]
 
 
 class NoncurrentVersionTransition(TypedDict, total=False):
@@ -1089,17 +1312,23 @@ class Transition(TypedDict, total=False):
 
 
 TransitionList = List[Transition]
+ObjectSizeLessThanBytes = int
+ObjectSizeGreaterThanBytes = int
 
 
 class LifecycleRuleAndOperator(TypedDict, total=False):
     Prefix: Optional[Prefix]
     Tags: Optional[S3TagSet]
+    ObjectSizeGreaterThan: Optional[ObjectSizeGreaterThanBytes]
+    ObjectSizeLessThan: Optional[ObjectSizeLessThanBytes]
 
 
 class LifecycleRuleFilter(TypedDict, total=False):
     Prefix: Optional[Prefix]
     Tag: Optional[S3Tag]
     And: Optional[LifecycleRuleAndOperator]
+    ObjectSizeGreaterThan: Optional[ObjectSizeGreaterThanBytes]
+    ObjectSizeLessThan: Optional[ObjectSizeLessThanBytes]
 
 
 class LifecycleExpiration(TypedDict, total=False):
@@ -1133,6 +1362,60 @@ class GetBucketPolicyRequest(ServiceRequest):
 
 class GetBucketPolicyResult(TypedDict, total=False):
     Policy: Optional[Policy]
+
+
+class GetBucketReplicationRequest(ServiceRequest):
+    AccountId: AccountId
+    Bucket: BucketName
+
+
+class ReplicaModifications(TypedDict, total=False):
+    Status: ReplicaModificationsStatus
+
+
+class SseKmsEncryptedObjects(TypedDict, total=False):
+    Status: SseKmsEncryptedObjectsStatus
+
+
+class SourceSelectionCriteria(TypedDict, total=False):
+    SseKmsEncryptedObjects: Optional[SseKmsEncryptedObjects]
+    ReplicaModifications: Optional[ReplicaModifications]
+
+
+class ReplicationRuleAndOperator(TypedDict, total=False):
+    Prefix: Optional[Prefix]
+    Tags: Optional[S3TagSet]
+
+
+class ReplicationRuleFilter(TypedDict, total=False):
+    Prefix: Optional[Prefix]
+    Tag: Optional[S3Tag]
+    And: Optional[ReplicationRuleAndOperator]
+
+
+class ReplicationRule(TypedDict, total=False):
+    ID: Optional[ID]
+    Priority: Optional[Priority]
+    Prefix: Optional[Prefix]
+    Filter: Optional[ReplicationRuleFilter]
+    Status: ReplicationRuleStatus
+    SourceSelectionCriteria: Optional[SourceSelectionCriteria]
+    ExistingObjectReplication: Optional[ExistingObjectReplication]
+    Destination: Destination
+    DeleteMarkerReplication: Optional[DeleteMarkerReplication]
+    Bucket: BucketIdentifierString
+
+
+ReplicationRules = List[ReplicationRule]
+
+
+class ReplicationConfiguration(TypedDict, total=False):
+    Role: Role
+    Rules: ReplicationRules
+
+
+class GetBucketReplicationResult(TypedDict, total=False):
+    ReplicationConfiguration: Optional[ReplicationConfiguration]
 
 
 class GetBucketRequest(ServiceRequest):
@@ -1209,6 +1492,7 @@ class GetMultiRegionAccessPointRequest(ServiceRequest):
 class RegionReport(TypedDict, total=False):
     Bucket: Optional[BucketName]
     Region: Optional[RegionName]
+    BucketAccountId: Optional[AccountId]
 
 
 RegionReportList = List[RegionReport]
@@ -1225,6 +1509,25 @@ class MultiRegionAccessPointReport(TypedDict, total=False):
 
 class GetMultiRegionAccessPointResult(TypedDict, total=False):
     AccessPoint: Optional[MultiRegionAccessPointReport]
+
+
+class GetMultiRegionAccessPointRoutesRequest(ServiceRequest):
+    AccountId: AccountId
+    Mrap: MultiRegionAccessPointId
+
+
+class MultiRegionAccessPointRoute(TypedDict, total=False):
+    Bucket: Optional[BucketName]
+    Region: Optional[RegionName]
+    TrafficDialPercentage: TrafficDialPercentage
+
+
+RouteList = List[MultiRegionAccessPointRoute]
+
+
+class GetMultiRegionAccessPointRoutesResult(TypedDict, total=False):
+    Mrap: Optional[MultiRegionAccessPointId]
+    Routes: Optional[RouteList]
 
 
 class GetPublicAccessBlockOutput(TypedDict, total=False):
@@ -1308,6 +1611,15 @@ class GetStorageLensConfigurationTaggingResult(TypedDict, total=False):
     Tags: Optional[StorageLensTags]
 
 
+class GetStorageLensGroupRequest(ServiceRequest):
+    Name: StorageLensGroupName
+    AccountId: AccountId
+
+
+class GetStorageLensGroupResult(TypedDict, total=False):
+    StorageLensGroup: Optional[StorageLensGroup]
+
+
 class JobListDescriptor(TypedDict, total=False):
     JobId: Optional[JobId]
     Description: Optional[NonEmptyMaxLength256String]
@@ -1336,6 +1648,7 @@ class ListAccessPointsForObjectLambdaRequest(ServiceRequest):
 class ObjectLambdaAccessPoint(TypedDict, total=False):
     Name: ObjectLambdaAccessPointName
     ObjectLambdaAccessPointArn: Optional[ObjectLambdaAccessPointArn]
+    Alias: Optional[ObjectLambdaAccessPointAlias]
 
 
 ObjectLambdaAccessPointList = List[ObjectLambdaAccessPoint]
@@ -1427,6 +1740,34 @@ class ListStorageLensConfigurationsResult(TypedDict, total=False):
     StorageLensConfigurationList: Optional[StorageLensConfigurationList]
 
 
+class ListStorageLensGroupEntry(TypedDict, total=False):
+    Name: StorageLensGroupName
+    StorageLensGroupArn: StorageLensGroupArn
+    HomeRegion: S3AWSRegion
+
+
+class ListStorageLensGroupsRequest(ServiceRequest):
+    AccountId: AccountId
+    NextToken: Optional[ContinuationToken]
+
+
+StorageLensGroupList = List[ListStorageLensGroupEntry]
+
+
+class ListStorageLensGroupsResult(TypedDict, total=False):
+    NextToken: Optional[ContinuationToken]
+    StorageLensGroupList: Optional[StorageLensGroupList]
+
+
+class ListTagsForResourceRequest(ServiceRequest):
+    AccountId: AccountId
+    ResourceArn: S3ResourceArn
+
+
+class ListTagsForResourceResult(TypedDict, total=False):
+    Tags: Optional[TagList]
+
+
 class PutAccessPointConfigurationForObjectLambdaRequest(ServiceRequest):
     AccountId: AccountId
     Name: ObjectLambdaAccessPointName
@@ -1456,6 +1797,12 @@ class PutBucketPolicyRequest(ServiceRequest):
     Bucket: BucketName
     ConfirmRemoveSelfBucketAccess: Optional[ConfirmRemoveSelfBucketAccess]
     Policy: Policy
+
+
+class PutBucketReplicationRequest(ServiceRequest):
+    AccountId: AccountId
+    Bucket: BucketName
+    ReplicationConfiguration: ReplicationConfiguration
 
 
 class Tagging(TypedDict, total=False):
@@ -1522,6 +1869,39 @@ class PutStorageLensConfigurationTaggingResult(TypedDict, total=False):
     pass
 
 
+class SubmitMultiRegionAccessPointRoutesRequest(ServiceRequest):
+    AccountId: AccountId
+    Mrap: MultiRegionAccessPointId
+    RouteUpdates: RouteList
+
+
+class SubmitMultiRegionAccessPointRoutesResult(TypedDict, total=False):
+    pass
+
+
+TagKeyList = List[TagKeyString]
+
+
+class TagResourceRequest(ServiceRequest):
+    AccountId: AccountId
+    ResourceArn: S3ResourceArn
+    Tags: TagList
+
+
+class TagResourceResult(TypedDict, total=False):
+    pass
+
+
+class UntagResourceRequest(ServiceRequest):
+    AccountId: AccountId
+    ResourceArn: S3ResourceArn
+    TagKeys: TagKeyList
+
+
+class UntagResourceResult(TypedDict, total=False):
+    pass
+
+
 class UpdateJobPriorityRequest(ServiceRequest):
     AccountId: AccountId
     JobId: JobId
@@ -1546,8 +1926,13 @@ class UpdateJobStatusResult(TypedDict, total=False):
     StatusUpdateReason: Optional[JobStatusUpdateReason]
 
 
-class S3ControlApi:
+class UpdateStorageLensGroupRequest(ServiceRequest):
+    Name: StorageLensGroupName
+    AccountId: AccountId
+    StorageLensGroup: StorageLensGroup
 
+
+class S3ControlApi:
     service = "s3control"
     version = "2018-08-20"
 
@@ -1560,6 +1945,7 @@ class S3ControlApi:
         bucket: BucketName,
         vpc_configuration: VpcConfiguration = None,
         public_access_block_configuration: PublicAccessBlockConfiguration = None,
+        bucket_account_id: AccountId = None,
     ) -> CreateAccessPointResult:
         raise NotImplementedError
 
@@ -1618,6 +2004,16 @@ class S3ControlApi:
     ) -> CreateMultiRegionAccessPointResult:
         raise NotImplementedError
 
+    @handler("CreateStorageLensGroup")
+    def create_storage_lens_group(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        storage_lens_group: StorageLensGroup,
+        tags: TagList = None,
+    ) -> None:
+        raise NotImplementedError
+
     @handler("DeleteAccessPoint")
     def delete_access_point(
         self, context: RequestContext, account_id: AccountId, name: AccessPointName
@@ -1660,6 +2056,12 @@ class S3ControlApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DeleteBucketReplication")
+    def delete_bucket_replication(
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+    ) -> None:
+        raise NotImplementedError
+
     @handler("DeleteBucketTagging")
     def delete_bucket_tagging(
         self, context: RequestContext, account_id: AccountId, bucket: BucketName
@@ -1696,6 +2098,12 @@ class S3ControlApi:
     def delete_storage_lens_configuration_tagging(
         self, context: RequestContext, config_id: ConfigId, account_id: AccountId
     ) -> DeleteStorageLensConfigurationTaggingResult:
+        raise NotImplementedError
+
+    @handler("DeleteStorageLensGroup")
+    def delete_storage_lens_group(
+        self, context: RequestContext, name: StorageLensGroupName, account_id: AccountId
+    ) -> None:
         raise NotImplementedError
 
     @handler("DescribeJob")
@@ -1773,6 +2181,12 @@ class S3ControlApi:
     ) -> GetBucketPolicyResult:
         raise NotImplementedError
 
+    @handler("GetBucketReplication")
+    def get_bucket_replication(
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+    ) -> GetBucketReplicationResult:
+        raise NotImplementedError
+
     @handler("GetBucketTagging")
     def get_bucket_tagging(
         self, context: RequestContext, account_id: AccountId, bucket: BucketName
@@ -1809,6 +2223,12 @@ class S3ControlApi:
     ) -> GetMultiRegionAccessPointPolicyStatusResult:
         raise NotImplementedError
 
+    @handler("GetMultiRegionAccessPointRoutes")
+    def get_multi_region_access_point_routes(
+        self, context: RequestContext, account_id: AccountId, mrap: MultiRegionAccessPointId
+    ) -> GetMultiRegionAccessPointRoutesResult:
+        raise NotImplementedError
+
     @handler("GetPublicAccessBlock")
     def get_public_access_block(
         self, context: RequestContext, account_id: AccountId
@@ -1825,6 +2245,12 @@ class S3ControlApi:
     def get_storage_lens_configuration_tagging(
         self, context: RequestContext, config_id: ConfigId, account_id: AccountId
     ) -> GetStorageLensConfigurationTaggingResult:
+        raise NotImplementedError
+
+    @handler("GetStorageLensGroup")
+    def get_storage_lens_group(
+        self, context: RequestContext, name: StorageLensGroupName, account_id: AccountId
+    ) -> GetStorageLensGroupResult:
         raise NotImplementedError
 
     @handler("ListAccessPoints")
@@ -1886,6 +2312,18 @@ class S3ControlApi:
     ) -> ListStorageLensConfigurationsResult:
         raise NotImplementedError
 
+    @handler("ListStorageLensGroups")
+    def list_storage_lens_groups(
+        self, context: RequestContext, account_id: AccountId, next_token: ContinuationToken = None
+    ) -> ListStorageLensGroupsResult:
+        raise NotImplementedError
+
+    @handler("ListTagsForResource")
+    def list_tags_for_resource(
+        self, context: RequestContext, account_id: AccountId, resource_arn: S3ResourceArn
+    ) -> ListTagsForResourceResult:
+        raise NotImplementedError
+
     @handler("PutAccessPointConfigurationForObjectLambda")
     def put_access_point_configuration_for_object_lambda(
         self,
@@ -1930,6 +2368,16 @@ class S3ControlApi:
         bucket: BucketName,
         policy: Policy,
         confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("PutBucketReplication")
+    def put_bucket_replication(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        bucket: BucketName,
+        replication_configuration: ReplicationConfiguration,
     ) -> None:
         raise NotImplementedError
 
@@ -1996,6 +2444,36 @@ class S3ControlApi:
     ) -> PutStorageLensConfigurationTaggingResult:
         raise NotImplementedError
 
+    @handler("SubmitMultiRegionAccessPointRoutes")
+    def submit_multi_region_access_point_routes(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        mrap: MultiRegionAccessPointId,
+        route_updates: RouteList,
+    ) -> SubmitMultiRegionAccessPointRoutesResult:
+        raise NotImplementedError
+
+    @handler("TagResource")
+    def tag_resource(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        resource_arn: S3ResourceArn,
+        tags: TagList,
+    ) -> TagResourceResult:
+        raise NotImplementedError
+
+    @handler("UntagResource")
+    def untag_resource(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        resource_arn: S3ResourceArn,
+        tag_keys: TagKeyList,
+    ) -> UntagResourceResult:
+        raise NotImplementedError
+
     @handler("UpdateJobPriority")
     def update_job_priority(
         self, context: RequestContext, account_id: AccountId, job_id: JobId, priority: JobPriority
@@ -2011,4 +2489,14 @@ class S3ControlApi:
         requested_job_status: RequestedJobStatus,
         status_update_reason: JobStatusUpdateReason = None,
     ) -> UpdateJobStatusResult:
+        raise NotImplementedError
+
+    @handler("UpdateStorageLensGroup")
+    def update_storage_lens_group(
+        self,
+        context: RequestContext,
+        name: StorageLensGroupName,
+        account_id: AccountId,
+        storage_lens_group: StorageLensGroup,
+    ) -> None:
         raise NotImplementedError

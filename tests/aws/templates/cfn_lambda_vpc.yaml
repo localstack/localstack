@@ -1,0 +1,311 @@
+Resources:
+  vpcA2121C38:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc
+  vpcPublicSubnet1Subnet2E65531E:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: vpcA2121C38
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.0.0/18
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PublicSubnet1
+  vpcPublicSubnet1RouteTable48A2DF9B:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: vpcA2121C38
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PublicSubnet1
+  vpcPublicSubnet1RouteTableAssociation5D3F4579:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: vpcPublicSubnet1RouteTable48A2DF9B
+      SubnetId:
+        Ref: vpcPublicSubnet1Subnet2E65531E
+  vpcPublicSubnet1DefaultRoute10708846:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: vpcPublicSubnet1RouteTable48A2DF9B
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: vpcIGWE57CBDCA
+    DependsOn:
+      - vpcVPCGW7984C166
+  vpcPublicSubnet1EIPDA49DCBE:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PublicSubnet1
+  vpcPublicSubnet1NATGateway9C16659E:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: vpcPublicSubnet1Subnet2E65531E
+      AllocationId:
+        Fn::GetAtt:
+          - vpcPublicSubnet1EIPDA49DCBE
+          - AllocationId
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PublicSubnet1
+    DependsOn:
+      - vpcPublicSubnet1DefaultRoute10708846
+      - vpcPublicSubnet1RouteTableAssociation5D3F4579
+  vpcPublicSubnet2Subnet009B674F:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: vpcA2121C38
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.64.0/18
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PublicSubnet2
+  vpcPublicSubnet2RouteTableEB40D4CB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: vpcA2121C38
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PublicSubnet2
+  vpcPublicSubnet2RouteTableAssociation21F81B59:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: vpcPublicSubnet2RouteTableEB40D4CB
+      SubnetId:
+        Ref: vpcPublicSubnet2Subnet009B674F
+  vpcPublicSubnet2DefaultRouteA1EC0F60:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: vpcPublicSubnet2RouteTableEB40D4CB
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: vpcIGWE57CBDCA
+    DependsOn:
+      - vpcVPCGW7984C166
+  vpcPublicSubnet2EIP9B3743B1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PublicSubnet2
+  vpcPublicSubnet2NATGateway9B8AE11A:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: vpcPublicSubnet2Subnet009B674F
+      AllocationId:
+        Fn::GetAtt:
+          - vpcPublicSubnet2EIP9B3743B1
+          - AllocationId
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PublicSubnet2
+    DependsOn:
+      - vpcPublicSubnet2DefaultRouteA1EC0F60
+      - vpcPublicSubnet2RouteTableAssociation21F81B59
+  vpcPrivateSubnet1Subnet934893E8:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: vpcA2121C38
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.128.0/18
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PrivateSubnet1
+  vpcPrivateSubnet1RouteTableB41A48CC:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: vpcA2121C38
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PrivateSubnet1
+  vpcPrivateSubnet1RouteTableAssociation67945127:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: vpcPrivateSubnet1RouteTableB41A48CC
+      SubnetId:
+        Ref: vpcPrivateSubnet1Subnet934893E8
+  vpcPrivateSubnet1DefaultRoute1AA8E2E5:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: vpcPrivateSubnet1RouteTableB41A48CC
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: vpcPublicSubnet1NATGateway9C16659E
+  vpcPrivateSubnet2Subnet7031C2BA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: vpcA2121C38
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.192.0/18
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PrivateSubnet2
+  vpcPrivateSubnet2RouteTable7280F23E:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: vpcA2121C38
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc/PrivateSubnet2
+  vpcPrivateSubnet2RouteTableAssociation007E94D3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: vpcPrivateSubnet2RouteTable7280F23E
+      SubnetId:
+        Ref: vpcPrivateSubnet2Subnet7031C2BA
+  vpcPrivateSubnet2DefaultRouteB0E07F99:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: vpcPrivateSubnet2RouteTable7280F23E
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: vpcPublicSubnet2NATGateway9B8AE11A
+  vpcIGWE57CBDCA:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: LambdaCfnStatesStack/vpc
+  vpcVPCGW7984C166:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: vpcA2121C38
+      InternetGatewayId:
+        Ref: vpcIGWE57CBDCA
+  SimpleFnServiceRole6574647D:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+    DependsOn:
+      - vpcPrivateSubnet1DefaultRoute1AA8E2E5
+      - vpcPrivateSubnet1RouteTableAssociation67945127
+      - vpcPrivateSubnet2DefaultRouteB0E07F99
+      - vpcPrivateSubnet2RouteTableAssociation007E94D3
+  SimpleFnSecurityGroup54272DA3:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Automatic security group for Lambda Function LambdaCfnStatesStackSimpleFnBE5FE3BD
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      VpcId:
+        Ref: vpcA2121C38
+    DependsOn:
+      - vpcPrivateSubnet1DefaultRoute1AA8E2E5
+      - vpcPrivateSubnet1RouteTableAssociation67945127
+      - vpcPrivateSubnet2DefaultRouteB0E07F99
+      - vpcPrivateSubnet2RouteTableAssociation007E94D3
+  SimpleFn7D0601E0:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+
+          def handler(event, context):
+              print(event)
+              return "hello"
+      Role:
+        Fn::GetAtt:
+          - SimpleFnServiceRole6574647D
+          - Arn
+      FunctionName:
+        Ref: FunctionNameParam
+      Handler: index.handler
+      Runtime: python3.9
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::GetAtt:
+              - SimpleFnSecurityGroup54272DA3
+              - GroupId
+        SubnetIds:
+          - Ref: vpcPrivateSubnet1Subnet934893E8
+          - Ref: vpcPrivateSubnet2Subnet7031C2BA
+    DependsOn:
+      - SimpleFnServiceRole6574647D
+      - vpcPrivateSubnet1DefaultRoute1AA8E2E5
+      - vpcPrivateSubnet1RouteTableAssociation67945127
+      - vpcPrivateSubnet2DefaultRouteB0E07F99
+      - vpcPrivateSubnet2RouteTableAssociation007E94D3
+Parameters:
+  FunctionNameParam:
+    Type: String

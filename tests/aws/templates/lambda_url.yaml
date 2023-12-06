@@ -1,0 +1,65 @@
+Resources:
+  FunctionServiceRole675BB04A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  Function76856677:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: "function to test lambda function url"
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              return {"hello": "world"}
+      Role:
+        Fn::GetAtt:
+          - FunctionServiceRole675BB04A
+          - Arn
+      Handler: index.handler
+      Runtime: python3.9
+    DependsOn:
+      - FunctionServiceRole675BB04A
+  FunctioninvokefunctionurlA70D8F37:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunctionUrl
+      FunctionName:
+        Fn::GetAtt:
+          - Function76856677
+          - Arn
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+  UrlD4FAABD0:
+    Type: AWS::Lambda::Url
+    Properties:
+      AuthType: NONE
+      TargetFunctionArn:
+        Fn::GetAtt:
+          - Function76856677
+          - Arn
+Outputs:
+  LambdaName:
+    Value:
+      Ref: Function76856677
+  LambdaUrl:
+    Value:
+      Fn::GetAtt:
+        - UrlD4FAABD0
+        - FunctionUrl
+  LambdaArn:
+    Value:
+      Fn::GetAtt:
+        - Function76856677
+        - Arn

@@ -1,31 +1,22 @@
-import os.path
 import re
 import threading
-import time
 import unittest
 from unittest.mock import MagicMock
 
 import pytest
 
-from localstack.services.generic_proxy import ProxyListener, start_proxy_server
-from localstack.utils.common import (
+from localstack.utils.collections import is_none_or_empty
+from localstack.utils.crypto import (
     PEM_CERT_END,
     PEM_CERT_START,
     PEM_KEY_END_REGEX,
     PEM_KEY_START_REGEX,
-    FileListener,
-    FileMappedDocument,
-    download,
     generate_ssl_cert,
-    get_free_tcp_port,
-    is_none_or_empty,
-    load_file,
-    new_tmp_file,
-    poll_condition,
-    rm_rf,
-    run,
-    synchronized,
 )
+from localstack.utils.files import load_file, new_tmp_file, rm_rf
+from localstack.utils.json import FileMappedDocument
+from localstack.utils.run import run
+from localstack.utils.sync import synchronized
 
 
 class SynchronizedTest(unittest.TestCase):
@@ -81,84 +72,6 @@ def test_run_cmd_as_str_or_list():
     assert "foo bar 123" == _run(["echo", "foo", "bar", "123"])
     with pytest.raises(FileNotFoundError):
         _run(["echo 'foo bar 123'"])
-
-
-@pytest.mark.parametrize("tail_engine", ["command", "tailer"])
-class TestFileListener:
-    def test_basic_usage(self, tail_engine, tmp_path):
-        lines = []
-
-        file = tmp_path / "log.txt"
-        file.touch()
-        fd = open(file, "a")
-        listener = FileListener(str(file), lines.append)
-        listener.use_tail_command = tail_engine != "tailer"
-
-        try:
-            listener.start()
-            assert listener.started.is_set()
-            fd.write("hello" + os.linesep)
-            fd.write("pytest" + os.linesep)
-            fd.flush()
-
-            assert poll_condition(lambda: len(lines) == 2, timeout=3), (
-                "expected two lines to appear. %s" % lines
-            )
-
-            assert lines[0] == "hello"
-            assert lines[1] == "pytest"
-        finally:
-            listener.close()
-
-        try:
-            fd.write("foobar" + os.linesep)
-            time.sleep(0.5)
-            assert len(lines) == 2, "expected listener.stop() to stop listening on new "
-        finally:
-            fd.close()
-
-    def test_callback_exception_ignored(self, tail_engine, tmp_path):
-        lines = []
-
-        def callback(line):
-            if "throw" in line:
-                raise ValueError("oh noes")
-
-            lines.append(line)
-
-        file = tmp_path / "log.txt"
-        file.touch()
-        fd = open(file, "a")
-        listener = FileListener(str(file), callback)
-        listener.use_tail_command = tail_engine != "tailer"
-
-        try:
-            listener.start()
-            assert listener.started.is_set()
-            fd.write("hello" + os.linesep)
-            fd.flush()
-            fd.write("throw" + os.linesep)
-            fd.write("pytest" + os.linesep)
-            fd.flush()
-
-            assert poll_condition(lambda: len(lines) == 2, timeout=3), (
-                "expected two lines to appear. %s" % lines
-            )
-
-            assert lines[0] == "hello"
-            assert lines[1] == "pytest"
-        finally:
-            fd.close()
-            listener.close()
-
-    def test_open_missing_file(self, tail_engine):
-        lines = []
-
-        listener = FileListener("/tmp/does/not/exist", lines.append)
-        listener.use_tail_command = tail_engine != "tailer"
-
-        with pytest.raises(FileNotFoundError):
-            listener.start()
 
 
 class TestFileMappedDocument:
@@ -260,24 +173,3 @@ def test_generate_ssl_cert():
     # clean up
     rm_rf(cert_file_name)
     rm_rf(key_file_name)
-
-
-def test_download_with_timeout():
-    class DownloadListener(ProxyListener):
-        def forward_request(self, method, path, data, headers):
-            if path == "/sleep":
-                time.sleep(2)
-            return {}
-
-    port = get_free_tcp_port()
-    proxy = start_proxy_server(port, update_listener=DownloadListener())
-
-    tmp_file = new_tmp_file()
-    download(f"http://localhost:{port}/", tmp_file)
-    assert load_file(tmp_file) == "{}"
-    with pytest.raises(TimeoutError):
-        download(f"http://localhost:{port}/sleep", tmp_file, timeout=1)
-
-    # clean up
-    proxy.stop()
-    rm_rf(tmp_file)

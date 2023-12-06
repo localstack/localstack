@@ -24,6 +24,9 @@ class Publisher(abc.ABC):
     def publish(self, events: List[Event]):
         raise NotImplementedError
 
+    def close(self):
+        pass
+
 
 class AnalyticsClientPublisher(Publisher):
     client: AnalyticsClient
@@ -34,6 +37,9 @@ class AnalyticsClientPublisher(Publisher):
 
     def publish(self, events: List[Event]):
         self.client.append_events(events)
+
+    def close(self):
+        self.client.close()
 
 
 class Printer(Publisher):
@@ -121,7 +127,7 @@ class PublisherBuffer(EventHandler):
             self.checked_flush()
 
     def run(self, *_):
-        flush_scheduler = start_thread(self._run_flush_schedule)
+        flush_scheduler = start_thread(self._run_flush_schedule, name="analytics-publishbuffer")
 
         try:
             while True:
@@ -139,6 +145,9 @@ class PublisherBuffer(EventHandler):
         finally:
             self._stopped.set()
             flush_scheduler.stop()
+            self._publisher.close()
+            if config.DEBUG_ANALYTICS:
+                LOG.debug("Exit analytics publisher")
 
     def _do_flush(self):
         queue = self._queue
@@ -248,6 +257,12 @@ class GlobalAnalyticsBus(PublisherBuffer):
             response = self._client.start_session(get_client_metadata())
             if config.DEBUG_ANALYTICS:
                 LOG.debug("session endpoint returned: %s", response)
+
+            if not response.track_events():
+                if config.DEBUG_ANALYTICS:
+                    LOG.debug("gracefully disabling analytics tracking")
+                self.tracking_disabled = True
+
         except Exception:
             self.tracking_disabled = True
             if config.DEBUG_ANALYTICS:
@@ -256,7 +271,7 @@ class GlobalAnalyticsBus(PublisherBuffer):
         finally:
             self._startup_complete = True
 
-        start_thread(self.run)
+        start_thread(self.run, name="global-analytics-bus")
 
         def _do_close():
             self.close_sync(timeout=2)

@@ -13,10 +13,9 @@ from hypercorn.asyncio import serve, tcp_server
 from hypercorn.config import Config
 from hypercorn.events import Closed
 from hypercorn.protocol import http_stream
-from quart import Quart
+from quart import Quart, make_response, request
 from quart import app as quart_app
 from quart import asgi as quart_asgi
-from quart import make_response, request
 from quart import utils as quart_utils
 from quart.app import _cancel_all_tasks
 
@@ -242,6 +241,7 @@ def run_server(
             kwargs["keyfile"] = key_file_name
             config.keyfile = key_file_name
         setup_quart_logging()
+        config.h11_pass_raw_headers = True
         config.bind = [f"{bind_address}:{port}" for bind_address in bind_addresses]
         config.workers = len(bind_addresses)
         loop = loop or ensure_event_loop()
@@ -283,7 +283,7 @@ def run_server(
 
     class ProxyThread(FuncThread):
         def __init__(self):
-            FuncThread.__init__(self, self.run_proxy, None)
+            FuncThread.__init__(self, self.run_proxy, None, name="proxy-thread")
             self.shutdown_event = None
             self.loop = None
 

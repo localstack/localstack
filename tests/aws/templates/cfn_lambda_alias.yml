@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  FunctionName:
+    Type: String
+  AliasName:
+    Type: String
+
+Resources:
+  MyFnServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref FunctionName
+      Code:
+        ZipFile: |
+          exports.handler = function(event) {
+            return {
+              statusCode: 200,
+              body: "Hello, World!" 
+            };
+          };
+      Role:
+        Fn::GetAtt:
+          - MyFnServiceRole
+          - Arn
+      Handler: index.handler
+      Runtime: nodejs18.x
+    DependsOn:
+      - MyFnServiceRole
+
+  Version:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Description: v1
+
+  FunctionAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref FunctionName
+      FunctionVersion: !GetAtt Version.Version
+      Name: !Ref AliasName
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1
+
+    DependsOn:
+      - LambdaFunction

@@ -1,0 +1,45 @@
+name: Generate pytest marker report
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "tests/**"
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  marker-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Cache LocalStack community dependencies (venv)
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.cfg') }}
+
+      - name: Install dependencies
+        run: make install-dev
+
+      - name: Collect marker report
+        env:
+          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
+          MARKER_REPORT_PROJECT_NAME: localstack
+          MARKER_REPORT_TINYBIRD_TOKEN: ${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}
+          MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}
+        run: |
+          . ./.venv/bin/activate
+          python -m pytest tests/aws/

@@ -6,6 +6,10 @@ from localstack import config, constants
 
 from .format import AddFormattedAttributes, DefaultFormatter
 
+# The log levels for modules are evaluated incrementally for logging granularity,
+# from highest (DEBUG) to lowest (TRACE_INTERNAL). Hence, each module below should have
+# higher level which serves as the default.
+
 default_log_levels = {
     "asyncio": logging.INFO,
     "boto3": logging.INFO,
@@ -18,10 +22,13 @@ default_log_levels = {
     "s3transfer": logging.INFO,
     "urllib3": logging.WARNING,
     "werkzeug": logging.WARNING,
+    "localstack.aws.accounts": logging.INFO,
     "localstack.aws.protocol.serializer": logging.INFO,
     "localstack.aws.serving.wsgi": logging.WARNING,
     "localstack.request": logging.INFO,
     "localstack.request.internal": logging.WARNING,
+    "localstack.state.inspect": logging.INFO,
+    "localstack_persistence": logging.INFO,
 }
 
 trace_log_levels = {
@@ -29,9 +36,11 @@ trace_log_levels = {
     "localstack.aws.serving.wsgi": logging.DEBUG,
     "localstack.request": logging.DEBUG,
     "localstack.request.internal": logging.INFO,
+    "localstack.state.inspect": logging.DEBUG,
 }
 
 trace_internal_log_levels = {
+    "localstack.aws.accounts": logging.DEBUG,
     "localstack.request.internal": logging.DEBUG,
 }
 
@@ -65,7 +74,7 @@ def setup_logging_from_config():
     if config.is_trace_logging_enabled():
         for name, level in trace_log_levels.items():
             logging.getLogger(name).setLevel(level)
-    if config.LS_LOG == "trace-internal":
+    if config.LS_LOG == constants.LS_LOG_TRACE_INTERNAL:
         for name, level in trace_internal_log_levels.items():
             logging.getLogger(name).setLevel(level)
 

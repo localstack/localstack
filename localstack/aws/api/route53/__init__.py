@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -129,6 +123,7 @@ class CloudWatchRegion(str):
     us_west_2 = "us-west-2"
     ca_central_1 = "ca-central-1"
     eu_central_1 = "eu-central-1"
+    eu_central_2 = "eu-central-2"
     eu_west_1 = "eu-west-1"
     eu_west_2 = "eu-west-2"
     eu_west_3 = "eu-west-3"
@@ -136,6 +131,7 @@ class CloudWatchRegion(str):
     me_south_1 = "me-south-1"
     me_central_1 = "me-central-1"
     ap_south_1 = "ap-south-1"
+    ap_south_2 = "ap-south-2"
     ap_southeast_1 = "ap-southeast-1"
     ap_southeast_2 = "ap-southeast-2"
     ap_southeast_3 = "ap-southeast-3"
@@ -148,11 +144,14 @@ class CloudWatchRegion(str):
     cn_north_1 = "cn-north-1"
     af_south_1 = "af-south-1"
     eu_south_1 = "eu-south-1"
+    eu_south_2 = "eu-south-2"
     us_gov_west_1 = "us-gov-west-1"
     us_gov_east_1 = "us-gov-east-1"
     us_iso_east_1 = "us-iso-east-1"
     us_iso_west_1 = "us-iso-west-1"
     us_isob_east_1 = "us-isob-east-1"
+    ap_southeast_4 = "ap-southeast-4"
+    il_central_1 = "il-central-1"
 
 
 class ComparisonOperator(str):
@@ -187,6 +186,10 @@ class HealthCheckType(str):
 class HostedZoneLimitType(str):
     MAX_RRSETS_BY_ZONE = "MAX_RRSETS_BY_ZONE"
     MAX_VPCS_ASSOCIATED_BY_ZONE = "MAX_VPCS_ASSOCIATED_BY_ZONE"
+
+
+class HostedZoneType(str):
+    PrivateHostedZone = "PrivateHostedZone"
 
 
 class InsufficientDataHealthStatus(str):
@@ -233,6 +236,7 @@ class ResourceRecordSetRegion(str):
     eu_west_2 = "eu-west-2"
     eu_west_3 = "eu-west-3"
     eu_central_1 = "eu-central-1"
+    eu_central_2 = "eu-central-2"
     ap_southeast_1 = "ap-southeast-1"
     ap_southeast_2 = "ap-southeast-2"
     ap_southeast_3 = "ap-southeast-3"
@@ -245,9 +249,14 @@ class ResourceRecordSetRegion(str):
     cn_northwest_1 = "cn-northwest-1"
     ap_east_1 = "ap-east-1"
     me_south_1 = "me-south-1"
+    me_central_1 = "me-central-1"
     ap_south_1 = "ap-south-1"
+    ap_south_2 = "ap-south-2"
     af_south_1 = "af-south-1"
     eu_south_1 = "eu-south-1"
+    eu_south_2 = "eu-south-2"
+    ap_southeast_4 = "ap-southeast-4"
+    il_central_1 = "il-central-1"
 
 
 class ReusableDelegationSetLimitType(str):
@@ -276,6 +285,7 @@ class VPCRegion(str):
     eu_west_2 = "eu-west-2"
     eu_west_3 = "eu-west-3"
     eu_central_1 = "eu-central-1"
+    eu_central_2 = "eu-central-2"
     ap_east_1 = "ap-east-1"
     me_south_1 = "me-south-1"
     us_gov_west_1 = "us-gov-west-1"
@@ -288,6 +298,7 @@ class VPCRegion(str):
     ap_southeast_2 = "ap-southeast-2"
     ap_southeast_3 = "ap-southeast-3"
     ap_south_1 = "ap-south-1"
+    ap_south_2 = "ap-south-2"
     ap_northeast_1 = "ap-northeast-1"
     ap_northeast_2 = "ap-northeast-2"
     ap_northeast_3 = "ap-northeast-3"
@@ -297,6 +308,9 @@ class VPCRegion(str):
     cn_north_1 = "cn-north-1"
     af_south_1 = "af-south-1"
     eu_south_1 = "eu-south-1"
+    eu_south_2 = "eu-south-2"
+    ap_southeast_4 = "ap-southeast-4"
+    il_central_1 = "il-central-1"
 
 
 class CidrBlockInUseException(ServiceException):
@@ -1596,6 +1610,7 @@ class ListHostedZonesRequest(ServiceRequest):
     Marker: Optional[PageMarker]
     MaxItems: Optional[PageMaxItems]
     DelegationSetId: Optional[ResourceId]
+    HostedZoneType: Optional[HostedZoneType]
 
 
 class ListHostedZonesResponse(TypedDict, total=False):
@@ -1863,7 +1878,6 @@ class UpdateTrafficPolicyInstanceResponse(TypedDict, total=False):
 
 
 class Route53Api:
-
     service = "route53"
     version = "2013-04-01"
 
@@ -2248,6 +2262,7 @@ class Route53Api:
         marker: PageMarker = None,
         max_items: PageMaxItems = None,
         delegation_set_id: ResourceId = None,
+        hosted_zone_type: HostedZoneType = None,
     ) -> ListHostedZonesResponse:
         raise NotImplementedError
 

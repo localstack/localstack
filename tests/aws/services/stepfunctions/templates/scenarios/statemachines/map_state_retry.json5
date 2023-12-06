@@ -1,0 +1,45 @@
+{
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "Result": [
+        1
+      ],
+      "ResultPath": "$.arr",
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "ResultPath": null,
+      "InputPath": "$.arr",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "HandleItemFail",
+        "States": {
+          "HandleItemFail": {
+            "Type": "Fail",
+            "Error": "HandleItemFailError",
+            "Cause": "HandleItemFailCause"
+          }
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "HandleItemFailError"
+          ],
+          "MaxAttempts": 2,
+        },
+      ],
+      "Next": "Final",
+    },
+    "Final": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

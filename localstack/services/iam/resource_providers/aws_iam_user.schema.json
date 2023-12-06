@@ -1,0 +1,112 @@
+{
+  "typeName": "AWS::IAM::User",
+  "description": "Resource Type definition for AWS::IAM::User",
+  "additionalProperties": false,
+  "properties": {
+    "Path": {
+      "type": "string"
+    },
+    "ManagedPolicyArns": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Policies": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Policy"
+      }
+    },
+    "UserName": {
+      "type": "string"
+    },
+    "Groups": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Id": {
+      "type": "string"
+    },
+    "Arn": {
+      "type": "string"
+    },
+    "LoginProfile": {
+      "$ref": "#/definitions/LoginProfile"
+    },
+    "Tags": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "PermissionsBoundary": {
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "Policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "PolicyDocument": {
+          "type": "object"
+        },
+        "PolicyName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "PolicyName",
+        "PolicyDocument"
+      ]
+    },
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Value": {
+          "type": "string"
+        },
+        "Key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    },
+    "LoginProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "PasswordResetRequired": {
+          "type": "boolean"
+        },
+        "Password": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Password"
+      ]
+    }
+  },
+  "createOnlyProperties": [
+    "/properties/UserName"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id",
+    "/properties/Arn"
+  ]
+}

@@ -1,40 +1,52 @@
+import base64
 import datetime
 import io
 import json
 import logging
 import os
+import random
+import re
 import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives import serialization as crypto_serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
-from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import CommonServiceException
 from localstack.aws.api.kms import (
     CreateAliasRequest,
     CreateGrantRequest,
     CreateKeyRequest,
-    DisabledException,
     EncryptionContextType,
     KeyMetadata,
-    KMSInvalidStateException,
-    NotFoundException,
+    KeyState,
+    KMSInvalidMacException,
+    KMSInvalidSignatureException,
+    MacAlgorithmSpec,
+    MessageType,
+    OriginType,
     SigningAlgorithmSpec,
     UnsupportedOperationException,
 )
+from localstack.services.kms.exceptions import ValidationException
+from localstack.services.kms.utils import is_valid_key_arn
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws.aws_stack import kms_alias_arn, kms_key_arn
+from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn
 from localstack.utils.crypto import decrypt, encrypt
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
+PATTERN_UUID = re.compile(
+    r"^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+)
+MULTI_REGION_PATTERN = re.compile(r"^mrk-[a-fA-F0-9]{32}$")
 
 SYMMETRIC_DEFAULT_MATERIAL_LENGTH = 32
 
@@ -51,16 +63,12 @@ ECC_CURVES = {
     "ECC_SECG_P256K1": ec.SECP256K1(),
 }
 
-
-class ValidationException(CommonServiceException):
-    def __init__(self, message: str):
-        super().__init__("ValidationException", message, 400, True)
-
-
-class AccessDeniedException(CommonServiceException):
-    def __init__(self, message: str):
-        super().__init__("AccessDeniedException", message, 400, True)
-
+HMAC_RANGE_KEY_LENGTHS = {
+    "HMAC_224": (28, 64),
+    "HMAC_256": (32, 64),
+    "HMAC_384": (48, 128),
+    "HMAC_512": (64, 128),
+}
 
 KEY_ID_LEN = 36
 # Moto uses IV_LEN of 12, as it is fine for GCM encryption mode, but we use CBC, so have to set it to 16.
@@ -89,6 +97,9 @@ RESERVED_ALIASES = [
     "alias/aws/xray",
 ]
 
+# list of key names that should be skipped when serializing the encryption context
+IGNORED_CONTEXT_KEYS = ["aws-crypto-public-key"]
+
 
 def _serialize_ciphertext_blob(ciphertext: Ciphertext) -> bytes:
     header = struct.pack(
@@ -107,12 +118,17 @@ def deserialize_ciphertext_blob(ciphertext_blob: bytes) -> Ciphertext:
     return Ciphertext(key_id=key_id.decode("utf-8"), iv=iv, ciphertext=ciphertext, tag=tag)
 
 
-def _serialize_encryption_context(encryption_context: EncryptionContextType) -> bytes:
-    aad = io.BytesIO()
-    for key, value in sorted(encryption_context.items(), key=lambda x: x[0]):
-        aad.write(key.encode("utf-8"))
-        aad.write(value.encode("utf-8"))
-    return aad.getvalue()
+def _serialize_encryption_context(encryption_context: Optional[EncryptionContextType]) -> bytes:
+    if encryption_context:
+        aad = io.BytesIO()
+        for key, value in sorted(encryption_context.items(), key=lambda x: x[0]):
+            # remove the reserved key-value pair from additional authentication data
+            if key not in IGNORED_CONTEXT_KEYS:
+                aad.write(key.encode("utf-8"))
+                aad.write(value.encode("utf-8"))
+        return aad.getvalue()
+    else:
+        return b""
 
 
 # Confusion alert!
@@ -137,6 +153,10 @@ class KmsCryptoKey:
     by AWS and is not used by AWS.
     """
 
+    public_key: Optional[bytes]
+    private_key: Optional[bytes]
+    key_material: bytes
+
     def __init__(self, key_spec: str):
         self.private_key = None
         self.public_key = None
@@ -149,28 +169,44 @@ class KmsCryptoKey:
         if key_spec == "SYMMETRIC_DEFAULT":
             return
 
-        public_format = None
         if key_spec.startswith("RSA"):
             key_size = RSA_CRYPTO_KEY_LENGTHS.get(key_spec)
-            self.key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
-            public_format = crypto_serialization.PublicFormat.PKCS1
+            key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
         elif key_spec.startswith("ECC"):
             curve = ECC_CURVES.get(key_spec)
-            self.key = ec.generate_private_key(curve)
-            public_format = crypto_serialization.PublicFormat.SubjectPublicKeyInfo
+            key = ec.generate_private_key(curve)
+        elif key_spec.startswith("HMAC"):
+            if key_spec not in HMAC_RANGE_KEY_LENGTHS:
+                raise ValidationException(
+                    f"1 validation error detected: Value '{key_spec}' at 'keySpec' "
+                    f"failed to satisfy constraint: Member must satisfy enum value set: "
+                    f"[RSA_2048, ECC_NIST_P384, ECC_NIST_P256, ECC_NIST_P521, HMAC_384, RSA_3072, "
+                    f"ECC_SECG_P256K1, RSA_4096, SYMMETRIC_DEFAULT, HMAC_256, HMAC_224, HMAC_512]"
+                )
+            minimum_length, maximum_length = HMAC_RANGE_KEY_LENGTHS.get(key_spec)
+            self.key_material = os.urandom(random.randint(minimum_length, maximum_length))
+            return
         else:
-            # Currently we do not support HMAC keys - symmetric keys that are used for GenerateMac / VerifyMac.
-            # We also do not support SM2 - asymmetric keys both suitable for ENCRYPT_DECRYPT and SIGN_VERIFY,
+            # We do not support SM2 - asymmetric keys both suitable for ENCRYPT_DECRYPT and SIGN_VERIFY,
             # but only used in China AWS regions.
             raise UnsupportedOperationException(f"KeySpec {key_spec} is not supported")
 
-        self.private_key = self.key.private_bytes(
+        self.private_key = key.private_bytes(
             crypto_serialization.Encoding.DER,
             crypto_serialization.PrivateFormat.PKCS8,
             crypto_serialization.NoEncryption(),
         )
-        self.public_key = self.key.public_key().public_bytes(
-            crypto_serialization.Encoding.DER, public_format
+        self.public_key = key.public_key().public_bytes(
+            crypto_serialization.Encoding.DER,
+            crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+
+    @property
+    def key(self) -> RSAPrivateKey:
+        return crypto_serialization.load_der_private_key(
+            self.private_key,
+            password=None,
+            backend=default_backend(),
         )
 
 
@@ -207,47 +243,104 @@ class KmsKey:
     def calculate_and_set_arn(self, account_id, region):
         self.metadata["Arn"] = kms_key_arn(self.metadata.get("KeyId"), account_id, region)
 
+    def generate_mac(self, msg: bytes, mac_algorithm: MacAlgorithmSpec) -> bytes:
+        h = self._get_hmac_context(mac_algorithm)
+        h.update(msg)
+        return h.finalize()
+
+    def verify_mac(self, msg: bytes, mac: bytes, mac_algorithm: MacAlgorithmSpec) -> bool:
+        h = self._get_hmac_context(mac_algorithm)
+        h.update(msg)
+        try:
+            h.verify(mac)
+            return True
+        except InvalidSignature:
+            raise KMSInvalidMacException()
+
     # Encrypt is a method of KmsKey and not of KmsCryptoKey only because it requires KeyId, and KmsCryptoKeys do not
     # hold KeyIds. Maybe it would be possible to remodel this better.
-    def encrypt(self, plaintext: bytes) -> bytes:
+    def encrypt(self, plaintext: bytes, encryption_context: EncryptionContextType = None) -> bytes:
         iv = os.urandom(IV_LEN)
-        ciphertext = encrypt(self.crypto_key.key_material, plaintext, iv)
-        # Moto uses GCM mode, while we use CBC, where tags do not seem to be relevant. So leaving them empty.
+        aad = _serialize_encryption_context(encryption_context=encryption_context)
+        ciphertext, tag = encrypt(self.crypto_key.key_material, plaintext, iv, aad)
         return _serialize_ciphertext_blob(
             ciphertext=Ciphertext(
-                key_id=self.metadata.get("KeyId"), iv=iv, ciphertext=ciphertext, tag=b""
+                key_id=self.metadata.get("KeyId"), iv=iv, ciphertext=ciphertext, tag=tag
             )
         )
 
     # The ciphertext has to be deserialized before this call.
-    def decrypt(self, ciphertext: Ciphertext) -> bytes:
-        return decrypt(self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv)
+    def decrypt(
+        self, ciphertext: Ciphertext, encryption_context: EncryptionContextType = None
+    ) -> bytes:
+        aad = _serialize_encryption_context(encryption_context=encryption_context)
+        return decrypt(
+            self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv, ciphertext.tag, aad
+        )
 
-    def sign(self, data: bytes, signing_algorithm: SigningAlgorithmSpec) -> bytes:
-        kwargs = self._construct_sign_verify_kwargs(signing_algorithm)
-        return self.crypto_key.key.sign(data=data, **kwargs)
+    def sign(
+        self, data: bytes, message_type: MessageType, signing_algorithm: SigningAlgorithmSpec
+    ) -> bytes:
+        kwargs = self._construct_sign_verify_kwargs(signing_algorithm, message_type)
+        try:
+            return self.crypto_key.key.sign(data=data, **kwargs)
+        except ValueError as exc:
+            raise ValidationException(str(exc))
 
     def verify(
-        self, data: bytes, signing_algorithm: SigningAlgorithmSpec, signature: bytes
+        self,
+        data: bytes,
+        message_type: MessageType,
+        signing_algorithm: SigningAlgorithmSpec,
+        signature: bytes,
     ) -> bool:
+        kwargs = self._construct_sign_verify_kwargs(signing_algorithm, message_type)
         try:
-            kwargs = self._construct_sign_verify_kwargs(signing_algorithm)
             self.crypto_key.key.public_key().verify(signature=signature, data=data, **kwargs)
             return True
+        except ValueError as exc:
+            raise ValidationException(str(exc))
         except InvalidSignature:
-            return False
+            # AWS itself raises this exception without any additional message.
+            raise KMSInvalidSignatureException()
 
-    def _construct_sign_verify_kwargs(self, signing_algorithm: SigningAlgorithmSpec) -> Dict:
+    def _get_hmac_context(self, mac_algorithm: MacAlgorithmSpec) -> hmac.HMAC:
+        if mac_algorithm == "HMAC_SHA_224":
+            h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA224())
+        elif mac_algorithm == "HMAC_SHA_256":
+            h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA256())
+        elif mac_algorithm == "HMAC_SHA_384":
+            h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA384())
+        elif mac_algorithm == "HMAC_SHA_512":
+            h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA512())
+        else:
+            raise ValidationException(
+                f"1 validation error detected: Value '{mac_algorithm}' at 'macAlgorithm' "
+                f"failed to satisfy constraint: Member must satisfy enum value set: "
+                f"[HMAC_SHA_384, HMAC_SHA_256, HMAC_SHA_224, HMAC_SHA_512]"
+            )
+        return h
+
+    def _construct_sign_verify_kwargs(
+        self, signing_algorithm: SigningAlgorithmSpec, message_type: MessageType
+    ) -> Dict:
         kwargs = {}
 
         if "SHA_256" in signing_algorithm:
-            kwargs["algorithm"] = hashes.SHA256()
+            hasher = hashes.SHA256()
         elif "SHA_384" in signing_algorithm:
-            kwargs["algorithm"] = hashes.SHA384()
+            hasher = hashes.SHA384()
         elif "SHA_512" in signing_algorithm:
-            kwargs["algorithm"] = hashes.SHA512()
+            hasher = hashes.SHA512()
         else:
-            LOG.warning("Unsupported hash type in SigningAlgorithm '%s'", signing_algorithm)
+            raise ValidationException(
+                f"Unsupported hash type in SigningAlgorithm '{signing_algorithm}'"
+            )
+
+        if message_type == MessageType.DIGEST:
+            kwargs["algorithm"] = utils.Prehashed(hasher)
+        else:
+            kwargs["algorithm"] = hasher
 
         if signing_algorithm.startswith("ECDSA"):
             kwargs["signature_algorithm"] = ec.ECDSA(algorithm=kwargs.pop("algorithm", None))
@@ -258,7 +351,7 @@ class KmsKey:
                 kwargs["padding"] = padding.PKCS1v15()
             elif "PSS" in signing_algorithm:
                 kwargs["padding"] = padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH
+                    mgf=padding.MGF1(hasher), salt_length=padding.PSS.MAX_LENGTH
                 )
             else:
                 LOG.warning("Unsupported padding in SigningAlgorithm '%s'", signing_algorithm)
@@ -286,13 +379,12 @@ class KmsKey:
         self.metadata = KeyMetadata()
         # Metadata fields coming from a creation request
         #
-        # Please keep in ind that tags of a key could be present in the request, they are not a part of metadata. At
-        # least in the sense of DescribeKey not returning them with the rest of the metadata. Instead, tags are more
-        # like aliases:
+        # We do not include tags into the metadata. Tags might be present in a key creation request, but our metadata
+        # only contains data displayed by DescribeKey. And tags are not there:
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_DescribeKey.html
         # "DescribeKey does not return the following information: ... Tags on the KMS key."
+
         self.metadata["Description"] = create_key_request.get("Description") or ""
-        self.metadata["KeyUsage"] = create_key_request.get("KeyUsage") or "ENCRYPT_DECRYPT"
         self.metadata["MultiRegion"] = create_key_request.get("MultiRegion") or False
         self.metadata["Origin"] = create_key_request.get("Origin") or "AWS_KMS"
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_CreateKey.html#KMS-CreateKey-request-CustomerMasterKeySpec
@@ -304,13 +396,20 @@ class KmsKey:
             or "SYMMETRIC_DEFAULT"
         )
         self.metadata["CustomerMasterKeySpec"] = self.metadata.get("KeySpec")
+        self.metadata["KeyUsage"] = self._get_key_usage(
+            create_key_request.get("KeyUsage"), self.metadata.get("KeySpec")
+        )
 
         # Metadata fields AWS introduces automatically
-        self.metadata["AWSAccountId"] = account_id or get_aws_account_id()
+        self.metadata["AWSAccountId"] = account_id
         self.metadata["CreationDate"] = datetime.datetime.now()
-        self.metadata["Enabled"] = True
+        self.metadata["Enabled"] = create_key_request.get("Origin") != OriginType.EXTERNAL
         self.metadata["KeyManager"] = "CUSTOMER"
-        self.metadata["KeyState"] = "Enabled"
+        self.metadata["KeyState"] = (
+            KeyState.Enabled
+            if create_key_request.get("Origin") != OriginType.EXTERNAL
+            else KeyState.PendingImport
+        )
         # https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html
         # "Notice that multi-Region keys have a distinctive key ID that begins with mrk-. You can use the mrk- prefix to
         # identify MRKs programmatically."
@@ -327,6 +426,7 @@ class KmsKey:
         self._populate_signing_algorithms(
             self.metadata.get("KeyUsage"), self.metadata.get("KeySpec")
         )
+        self._populate_mac_algorithms(self.metadata.get("KeyUsage"), self.metadata.get("KeySpec"))
 
     def add_tags(self, tags: List) -> None:
         # Just in case we get None from somewhere.
@@ -404,6 +504,35 @@ class KmsKey:
                 "RSASSA_PSS_SHA_512",
             ]
 
+    def _populate_mac_algorithms(self, key_usage: str, key_spec: str) -> None:
+        if key_usage != "GENERATE_VERIFY_MAC":
+            return
+        if key_spec == "HMAC_224":
+            self.metadata["MacAlgorithms"] = ["HMAC_SHA_224"]
+        elif key_spec == "HMAC_256":
+            self.metadata["MacAlgorithms"] = ["HMAC_SHA_256"]
+        elif key_spec == "HMAC_384":
+            self.metadata["MacAlgorithms"] = ["HMAC_SHA_384"]
+        elif key_spec == "HMAC_512":
+            self.metadata["MacAlgorithms"] = ["HMAC_SHA_512"]
+
+    def _get_key_usage(self, request_key_usage: str, key_spec: str) -> str:
+        if key_spec in HMAC_RANGE_KEY_LENGTHS:
+            if request_key_usage is None:
+                raise ValidationException(
+                    "You must specify a KeyUsage value for all KMS keys except for symmetric encryption keys."
+                )
+            elif request_key_usage != "GENERATE_VERIFY_MAC":
+                raise ValidationException(
+                    f"1 validation error detected: Value '{request_key_usage}' at 'keyUsage' "
+                    f"failed to satisfy constraint: Member must satisfy enum value set: "
+                    f"[ENCRYPT_DECRYPT, SIGN_VERIFY, GENERATE_VERIFY_MAC]"
+                )
+            else:
+                return "GENERATE_VERIFY_MAC"
+        else:
+            return request_key_usage or "ENCRYPT_DECRYPT"
+
 
 class KmsGrant:
     # AWS documentation doesn't seem to mention any metadata object for grants like it does mention KeyMetadata for
@@ -428,8 +557,14 @@ class KmsGrant:
     # simplicity.
     token: str
 
-    def __init__(self, create_grant_request: CreateGrantRequest):
+    def __init__(self, create_grant_request: CreateGrantRequest, account_id: str, region_name: str):
         self.metadata = dict(create_grant_request)
+
+        if is_valid_key_arn(self.metadata["KeyId"]):
+            self.metadata["KeyArn"] = self.metadata["KeyId"]
+        else:
+            self.metadata["KeyArn"] = kms_key_arn(self.metadata["KeyId"], account_id, region_name)
+
         self.metadata["GrantId"] = long_uid()
         self.metadata["CreationDate"] = datetime.datetime.now()
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_GrantListEntry.html
@@ -439,7 +574,11 @@ class KmsGrant:
         # The Name field is present with just an empty string value.
         self.metadata.setdefault("Name", "")
 
-        self.token = long_uid()
+        # Encode account ID and region in grant token.
+        # This way the grant can be located when being retired by grant principal.
+        # The token consists of account ID, region name and a UUID concatenated with ':' and encoded with base64
+        decoded_token = account_id + ":" + region_name + ":" + long_uid()
+        self.token = to_str(base64.b64encode(to_bytes(decoded_token)))
 
 
 class KmsAlias:
@@ -473,26 +612,19 @@ class KeyImportState:
     key: KmsKey
 
 
-def validate_alias_name(alias_name: str) -> None:
-    if not alias_name.startswith("alias/"):
-        raise ValidationException(
-            'Alias must start with the prefix "alias/". Please see '
-            "https://docs.aws.amazon.com/kms/latest/developerguide/kms-alias.html"
-        )
-
-
 class KmsStore(BaseStore):
     # maps key ids to keys
     keys: Dict[str, KmsKey] = LocalAttribute(default=dict)
 
     # According to AWS documentation on grants https://docs.aws.amazon.com/kms/latest/APIReference/API_RetireGrant.html
     # "Cross-account use: Yes. You can retire a grant on a KMS key in a different AWS account."
-    # We, however, currently only support grants on keys inside the same account.
-    #
+
     # maps grant ids to grants
     grants: Dict[str, KmsGrant] = LocalAttribute(default=dict)
-    # maps from grant names (used for idempotency) to grant ids
-    grant_names: Dict[str, str] = LocalAttribute(default=dict)
+
+    # maps from (grant names (used for idempotency), key id) to grant ids
+    grant_names: Dict[Tuple[str, str], str] = LocalAttribute(default=dict)
+
     # maps grant tokens to grant ids
     grant_tokens: Dict[str, str] = LocalAttribute(default=dict)
 
@@ -501,136 +633,6 @@ class KmsStore(BaseStore):
 
     # maps import tokens to import data
     imports: Dict[str, KeyImportState] = LocalAttribute(default=dict)
-
-    # While in AWS keys have more than Enabled, Disabled and PendingDeletion states, we currently only model these 3
-    # in LocalStack, so this function is limited to them.
-    #
-    # The current default values are based on most of the operations working in AWS with enabled keys, but failing with
-    # disabled and those pending deletion.
-    #
-    # If we decide to use the other states as well, we might want to come up with a better key state validation per
-    # operation. Can consult this page for what states are supported by various operations:
-    # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
-    def get_key(
-        self,
-        any_type_of_key_id: str,
-        any_key_state_allowed: bool = False,
-        enabled_key_allowed: bool = True,
-        disabled_key_allowed: bool = False,
-        pending_deletion_key_allowed: bool = False,
-    ) -> KmsKey:
-        if any_key_state_allowed:
-            enabled_key_allowed = True
-            disabled_key_allowed = True
-            pending_deletion_key_allowed = True
-        if not (enabled_key_allowed or disabled_key_allowed or pending_deletion_key_allowed):
-            raise ValueError("A key is requested, but all possible key states are prohibited")
-
-        key_id = self.get_key_id_from_any_id(any_type_of_key_id)
-        if key_id not in self.keys:
-            raise NotFoundException(f"Invalid keyID '{key_id}'")
-        key = self.keys[key_id]
-        if not disabled_key_allowed and key.metadata.get("KeyState") == "Disabled":
-            raise DisabledException(f"{key.metadata.get('Arn')} is disabled.")
-        if not pending_deletion_key_allowed and key.metadata.get("KeyState") == "PendingDeletion":
-            raise KMSInvalidStateException(f"{key.metadata.get('Arn')} is pending deletion.")
-        if not enabled_key_allowed and key.metadata.get("KeyState") == "Enabled":
-            raise KMSInvalidStateException(
-                f"{key.metadata.get('Arn')} is enabled, but the operation doesn't support "
-                f"such a state"
-            )
-        return self.keys[key_id]
-
-    # TODO account_id and region params here are somewhat redundant, the store is supposed to know them. But at the
-    #  moment there is no way to get them from the store itself. Should get rid of these params later.
-    def get_alias(self, alias_name_or_arn: str, account_id: str, region: str) -> KmsAlias:
-        if not alias_name_or_arn.startswith("arn:"):
-            alias_name = alias_name_or_arn
-        else:
-            if ":alias/" not in alias_name_or_arn:
-                raise ValidationException(f"{alias_name_or_arn} is not a valid alias ARN")
-            alias_name = "alias/" + alias_name_or_arn.split(":alias/")[1]
-
-        validate_alias_name(alias_name)
-
-        if alias_name not in self.aliases:
-            alias_arn = kms_alias_arn(alias_name, account_id, region)
-            # AWS itself uses AliasArn instead of AliasName in this exception.
-            raise NotFoundException(f"Alias {alias_arn} is not found.")
-
-        return self.aliases.get(alias_name)
-
-    # Both account_id and region here are only supposed to be used to generate things like proper ARNs etc. The
-    # store for the key is not going to be selected using these parameters. Such a store selection is supposed to
-    # happen before the call to this function is made.
-    def create_key(
-        self, request: CreateKeyRequest = None, account_id: str = None, region: str = None
-    ):
-        key = KmsKey(request, account_id, region)
-        key_id = key.metadata.get("KeyId")
-        self.keys[key_id] = key
-        return key
-
-    # Both account_id and region here are only supposed to be used to generate things like proper ARNs etc. The
-    # store for the key is not going to be selected using these parameters. Such a store selection is supposed to
-    # happen before the call to this function is made.
-    def create_alias(self, request: CreateAliasRequest, account_id: str = None, region: str = None):
-        alias = KmsAlias(request, account_id, region)
-        alias_name = request.get("AliasName")
-        self.aliases[alias_name] = alias
-
-    # TODO Currently we follow the old moto implementation where reserved aliases and corresponding keys are getting
-    #  generated on the fly when someone tries to access such an alias. This is not great, as such aliases and keys
-    #  are not visible to ListAliases prior to someone trying to access such an alias. A better way might be to
-    #  generate all such aliases and keys the moment we initialize a new set of stores. But it might be an
-    #  unnecessary overhead. Should decide later, which approach is better.
-    def _create_alias_if_reserved_and_not_exists(
-        self, alias_name: str, account_id: str = None, region: str = None
-    ):
-        if alias_name not in RESERVED_ALIASES or alias_name in self.aliases:
-            return
-        create_key_request = {}
-        key_id = self.create_key(create_key_request, account_id, region).metadata.get("KeyId")
-        create_alias_request = CreateAliasRequest(AliasName=alias_name, TargetKeyId=key_id)
-        alias = KmsAlias(create_alias_request, account_id, region)
-        self.aliases[alias_name] = alias
-
-    # In KMS, keys can be identified by
-    # - key ID
-    # - key ARN
-    # - key alias
-    # - key alias' ARN
-    # This function allows us to find a key by any of these identifiers.
-    def get_key_id_from_any_id(
-        self, some_id: str, account_id: str = None, region: str = None
-    ) -> str:
-        alias_name = None
-        key_id = None
-
-        if some_id.startswith("arn:"):
-            if ":alias/" in some_id:
-                alias_arn = some_id
-                alias_name = "alias/" + alias_arn.split(":alias/")[1]
-            elif ":key/" in some_id:
-                key_arn = some_id
-                key_id = key_arn.split(":key/")[1]
-            else:
-                raise ValueError(
-                    f"Supplied value of {some_id} is an ARN, but neither of a KMS key nor of a KMS key "
-                    f"alias"
-                )
-        elif some_id.startswith("alias/"):
-            alias_name = some_id
-        else:
-            key_id = some_id
-
-        if alias_name:
-            self._create_alias_if_reserved_and_not_exists(alias_name, account_id, region)
-            if alias_name not in self.aliases:
-                raise NotFoundException(f"Unable to find KMS alias with name {alias_name}")
-            key_id = self.aliases[alias_name].metadata["TargetKeyId"]
-
-        return key_id
 
 
 kms_stores = AccountRegionBundle("kms", KmsStore)

@@ -1,6 +1,11 @@
 import unittest
 
-from localstack.utils.collections import get_safe, pick_attributes, set_safe_mutable
+from localstack.utils.collections import (
+    dict_multi_values,
+    get_safe,
+    pick_attributes,
+    set_safe_mutable,
+)
 
 
 class GenericDictUtilsTest(unittest.TestCase):
@@ -103,3 +108,26 @@ class GenericDictUtilsTest(unittest.TestCase):
             "level_one_2": "level_one_2_value",
         }
         self.assertEqual(expected_whitelisted_dictionary, whitelisted_dictionary)
+
+    def test_dict_multi_values(self):
+        tt = [
+            {
+                "input": {"a": 1, "b": 2},
+                "expected": {"a": [1], "b": [2]},
+            },
+            {
+                "input": ["a", "b"],
+                "expected": {"a": ["b"]},
+            },
+            {
+                "input": [["a", "1"], ["b", "2"], ["b", "3"]],
+                "expected": {"a": ["1"], "b": ["2", "3"]},
+            },
+            {
+                "input": {"a": [1, 2], "b": [3, 4]},
+                "expected": {"a": [1, 2], "b": [3, 4]},
+            },
+        ]
+
+        for t in tt:
+            self.assertEqual(t["expected"], dict_multi_values(t["input"]))

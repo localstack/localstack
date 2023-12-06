@@ -1,17 +1,20 @@
-import sys
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 AccessPolicy = str
+AccountId = str
+AccountPolicyDocument = str
+AmazonResourceName = str
 Arn = str
+ClientToken = str
+DataProtectionPolicyDocument = str
 Days = int
 DefaultValue = float
+DeliveryDestinationName = str
+DeliveryDestinationPolicy = str
+DeliveryId = str
+DeliverySourceName = str
 Descending = bool
 DescribeLimit = int
 DescribeQueriesMaxResults = int
@@ -19,6 +22,7 @@ DestinationArn = str
 DestinationName = str
 DimensionsKey = str
 DimensionsValue = str
+EncryptionKey = str
 EventId = str
 EventMessage = str
 EventsLimit = int
@@ -32,13 +36,17 @@ FilterCount = int
 FilterName = str
 FilterPattern = str
 ForceUpdate = bool
+IncludeLinkedAccounts = bool
 Interleaved = bool
 KmsKeyId = str
 LogEventIndex = int
+LogGroupIdentifier = str
 LogGroupName = str
+LogGroupNamePattern = str
 LogRecordPointer = str
 LogStreamName = str
 LogStreamSearchedCompletely = bool
+LogType = str
 Message = str
 MetricName = str
 MetricNamespace = str
@@ -53,8 +61,10 @@ QueryDefinitionString = str
 QueryId = str
 QueryListMaxResults = int
 QueryString = str
+ResourceIdentifier = str
 RoleArn = str
 SequenceToken = str
+Service = str
 StartFromHead = bool
 StatsValue = float
 Success = bool
@@ -62,7 +72,21 @@ TagKey = str
 TagValue = str
 TargetArn = str
 Token = str
+Unmask = bool
 Value = str
+
+
+class DataProtectionStatus(str):
+    ACTIVATED = "ACTIVATED"
+    DELETED = "DELETED"
+    ARCHIVED = "ARCHIVED"
+    DISABLED = "DISABLED"
+
+
+class DeliveryDestinationType(str):
+    S3 = "S3"
+    CWL = "CWL"
+    FH = "FH"
 
 
 class Distribution(str):
@@ -79,9 +103,25 @@ class ExportTaskStatusCode(str):
     RUNNING = "RUNNING"
 
 
+class InheritedProperty(str):
+    ACCOUNT_DATA_PROTECTION = "ACCOUNT_DATA_PROTECTION"
+
+
 class OrderBy(str):
     LogStreamName = "LogStreamName"
     LastEventTime = "LastEventTime"
+
+
+class OutputFormat(str):
+    json = "json"
+    plain = "plain"
+    w3c = "w3c"
+    raw = "raw"
+    parquet = "parquet"
+
+
+class PolicyType(str):
+    DATA_PROTECTION_POLICY = "DATA_PROTECTION_POLICY"
 
 
 class QueryStatus(str):
@@ -92,6 +132,10 @@ class QueryStatus(str):
     Cancelled = "Cancelled"
     Timeout = "Timeout"
     Unknown = "Unknown"
+
+
+class Scope(str):
+    ALL = "ALL"
 
 
 class StandardUnit(str):
@@ -122,6 +166,18 @@ class StandardUnit(str):
     Terabits_Second = "Terabits/Second"
     Count_Second = "Count/Second"
     None_ = "None"
+
+
+class AccessDeniedException(ServiceException):
+    code: str = "AccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ConflictException(ServiceException):
+    code: str = "ConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class DataAlreadyAcceptedException(ServiceException):
@@ -191,10 +247,29 @@ class ResourceNotFoundException(ServiceException):
     status_code: int = 400
 
 
+class ServiceQuotaExceededException(ServiceException):
+    code: str = "ServiceQuotaExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ServiceUnavailableException(ServiceException):
     code: str = "ServiceUnavailableException"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class ThrottlingException(ServiceException):
+    code: str = "ThrottlingException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class TooManyTagsException(ServiceException):
+    code: str = "TooManyTagsException"
+    sender_fault: bool = False
+    status_code: int = 400
+    resourceName: Optional[AmazonResourceName]
 
 
 class UnrecognizedClientException(ServiceException):
@@ -203,16 +278,60 @@ class UnrecognizedClientException(ServiceException):
     status_code: int = 400
 
 
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+AccountIds = List[AccountId]
+Timestamp = int
+
+
+class AccountPolicy(TypedDict, total=False):
+    policyName: Optional[PolicyName]
+    policyDocument: Optional[AccountPolicyDocument]
+    lastUpdatedTime: Optional[Timestamp]
+    policyType: Optional[PolicyType]
+    scope: Optional[Scope]
+    accountId: Optional[AccountId]
+
+
+AccountPolicies = List[AccountPolicy]
+
+
 class AssociateKmsKeyRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
     kmsKeyId: KmsKeyId
+    resourceIdentifier: Optional[ResourceIdentifier]
 
 
 class CancelExportTaskRequest(ServiceRequest):
     taskId: ExportTaskId
 
 
-Timestamp = int
+Tags = Dict[TagKey, TagValue]
+
+
+class CreateDeliveryRequest(ServiceRequest):
+    deliverySourceName: DeliverySourceName
+    deliveryDestinationArn: Arn
+    tags: Optional[Tags]
+
+
+class Delivery(TypedDict, total=False):
+    id: Optional[DeliveryId]
+    arn: Optional[Arn]
+    deliverySourceName: Optional[DeliverySourceName]
+    deliveryDestinationArn: Optional[Arn]
+    deliveryDestinationType: Optional[DeliveryDestinationType]
+    tags: Optional[Tags]
+
+
+class CreateDeliveryResponse(TypedDict, total=False):
+    delivery: Optional[Delivery]
+
+
 CreateExportTaskRequest = TypedDict(
     "CreateExportTaskRequest",
     {
@@ -232,9 +351,6 @@ class CreateExportTaskResponse(TypedDict, total=False):
     taskId: Optional[ExportTaskId]
 
 
-Tags = Dict[TagKey, TagValue]
-
-
 class CreateLogGroupRequest(ServiceRequest):
     logGroupName: LogGroupName
     kmsKeyId: Optional[KmsKeyId]
@@ -244,6 +360,31 @@ class CreateLogGroupRequest(ServiceRequest):
 class CreateLogStreamRequest(ServiceRequest):
     logGroupName: LogGroupName
     logStreamName: LogStreamName
+
+
+class DeleteAccountPolicyRequest(ServiceRequest):
+    policyName: PolicyName
+    policyType: PolicyType
+
+
+class DeleteDataProtectionPolicyRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+
+
+class DeleteDeliveryDestinationPolicyRequest(ServiceRequest):
+    deliveryDestinationName: DeliveryDestinationName
+
+
+class DeleteDeliveryDestinationRequest(ServiceRequest):
+    name: DeliveryDestinationName
+
+
+class DeleteDeliveryRequest(ServiceRequest):
+    id: DeliveryId
+
+
+class DeleteDeliverySourceRequest(ServiceRequest):
+    name: DeliverySourceName
 
 
 class DeleteDestinationRequest(ServiceRequest):
@@ -283,6 +424,78 @@ class DeleteRetentionPolicyRequest(ServiceRequest):
 class DeleteSubscriptionFilterRequest(ServiceRequest):
     logGroupName: LogGroupName
     filterName: FilterName
+
+
+Deliveries = List[Delivery]
+
+
+class DeliveryDestinationConfiguration(TypedDict, total=False):
+    destinationResourceArn: Arn
+
+
+class DeliveryDestination(TypedDict, total=False):
+    name: Optional[DeliveryDestinationName]
+    arn: Optional[Arn]
+    deliveryDestinationType: Optional[DeliveryDestinationType]
+    outputFormat: Optional[OutputFormat]
+    deliveryDestinationConfiguration: Optional[DeliveryDestinationConfiguration]
+    tags: Optional[Tags]
+
+
+DeliveryDestinations = List[DeliveryDestination]
+ResourceArns = List[Arn]
+
+
+class DeliverySource(TypedDict, total=False):
+    name: Optional[DeliverySourceName]
+    arn: Optional[Arn]
+    resourceArns: Optional[ResourceArns]
+    service: Optional[Service]
+    logType: Optional[LogType]
+    tags: Optional[Tags]
+
+
+DeliverySources = List[DeliverySource]
+
+
+class DescribeAccountPoliciesRequest(ServiceRequest):
+    policyType: PolicyType
+    policyName: Optional[PolicyName]
+    accountIdentifiers: Optional[AccountIds]
+
+
+class DescribeAccountPoliciesResponse(TypedDict, total=False):
+    accountPolicies: Optional[AccountPolicies]
+
+
+class DescribeDeliveriesRequest(ServiceRequest):
+    nextToken: Optional[NextToken]
+    limit: Optional[DescribeLimit]
+
+
+class DescribeDeliveriesResponse(TypedDict, total=False):
+    deliveries: Optional[Deliveries]
+    nextToken: Optional[NextToken]
+
+
+class DescribeDeliveryDestinationsRequest(ServiceRequest):
+    nextToken: Optional[NextToken]
+    limit: Optional[DescribeLimit]
+
+
+class DescribeDeliveryDestinationsResponse(TypedDict, total=False):
+    deliveryDestinations: Optional[DeliveryDestinations]
+    nextToken: Optional[NextToken]
+
+
+class DescribeDeliverySourcesRequest(ServiceRequest):
+    nextToken: Optional[NextToken]
+    limit: Optional[DescribeLimit]
+
+
+class DescribeDeliverySourcesResponse(TypedDict, total=False):
+    deliverySources: Optional[DeliverySources]
+    nextToken: Optional[NextToken]
 
 
 class DescribeDestinationsRequest(ServiceRequest):
@@ -349,11 +562,15 @@ class DescribeExportTasksResponse(TypedDict, total=False):
 
 
 class DescribeLogGroupsRequest(ServiceRequest):
+    accountIdentifiers: Optional[AccountIds]
     logGroupNamePrefix: Optional[LogGroupName]
+    logGroupNamePattern: Optional[LogGroupNamePattern]
     nextToken: Optional[NextToken]
     limit: Optional[DescribeLimit]
+    includeLinkedAccounts: Optional[IncludeLinkedAccounts]
 
 
+InheritedProperties = List[InheritedProperty]
 StoredBytes = int
 
 
@@ -365,6 +582,8 @@ class LogGroup(TypedDict, total=False):
     arn: Optional[Arn]
     storedBytes: Optional[StoredBytes]
     kmsKeyId: Optional[KmsKeyId]
+    dataProtectionStatus: Optional[DataProtectionStatus]
+    inheritedProperties: Optional[InheritedProperties]
 
 
 LogGroups = List[LogGroup]
@@ -376,7 +595,8 @@ class DescribeLogGroupsResponse(TypedDict, total=False):
 
 
 class DescribeLogStreamsRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
+    logGroupIdentifier: Optional[LogGroupIdentifier]
     logStreamNamePrefix: Optional[LogStreamName]
     orderBy: Optional[OrderBy]
     descending: Optional[Descending]
@@ -536,7 +756,8 @@ class DescribeSubscriptionFiltersResponse(TypedDict, total=False):
 
 
 class DisassociateKmsKeyRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
+    resourceIdentifier: Optional[ResourceIdentifier]
 
 
 EventNumber = int
@@ -545,7 +766,8 @@ InputLogStreamNames = List[LogStreamName]
 
 
 class FilterLogEventsRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
+    logGroupIdentifier: Optional[LogGroupIdentifier]
     logStreamNames: Optional[InputLogStreamNames]
     logStreamNamePrefix: Optional[LogStreamName]
     startTime: Optional[Timestamp]
@@ -554,6 +776,7 @@ class FilterLogEventsRequest(ServiceRequest):
     nextToken: Optional[NextToken]
     limit: Optional[EventsLimit]
     interleaved: Optional[Interleaved]
+    unmask: Optional[Unmask]
 
 
 class SearchedLogStream(TypedDict, total=False):
@@ -581,14 +804,62 @@ class FilterLogEventsResponse(TypedDict, total=False):
     nextToken: Optional[NextToken]
 
 
+class GetDataProtectionPolicyRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+
+
+class GetDataProtectionPolicyResponse(TypedDict, total=False):
+    logGroupIdentifier: Optional[LogGroupIdentifier]
+    policyDocument: Optional[DataProtectionPolicyDocument]
+    lastUpdatedTime: Optional[Timestamp]
+
+
+class GetDeliveryDestinationPolicyRequest(ServiceRequest):
+    deliveryDestinationName: DeliveryDestinationName
+
+
+class Policy(TypedDict, total=False):
+    deliveryDestinationPolicy: Optional[DeliveryDestinationPolicy]
+
+
+class GetDeliveryDestinationPolicyResponse(TypedDict, total=False):
+    policy: Optional[Policy]
+
+
+class GetDeliveryDestinationRequest(ServiceRequest):
+    name: DeliveryDestinationName
+
+
+class GetDeliveryDestinationResponse(TypedDict, total=False):
+    deliveryDestination: Optional[DeliveryDestination]
+
+
+class GetDeliveryRequest(ServiceRequest):
+    id: DeliveryId
+
+
+class GetDeliveryResponse(TypedDict, total=False):
+    delivery: Optional[Delivery]
+
+
+class GetDeliverySourceRequest(ServiceRequest):
+    name: DeliverySourceName
+
+
+class GetDeliverySourceResponse(TypedDict, total=False):
+    deliverySource: Optional[DeliverySource]
+
+
 class GetLogEventsRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
+    logGroupIdentifier: Optional[LogGroupIdentifier]
     logStreamName: LogStreamName
     startTime: Optional[Timestamp]
     endTime: Optional[Timestamp]
     nextToken: Optional[NextToken]
     limit: Optional[EventsLimit]
     startFromHead: Optional[StartFromHead]
+    unmask: Optional[Unmask]
 
 
 class OutputLogEvent(TypedDict, total=False):
@@ -607,8 +878,9 @@ class GetLogEventsResponse(TypedDict, total=False):
 
 
 class GetLogGroupFieldsRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
     time: Optional[Timestamp]
+    logGroupIdentifier: Optional[LogGroupIdentifier]
 
 
 class LogGroupField(TypedDict, total=False):
@@ -625,6 +897,7 @@ class GetLogGroupFieldsResponse(TypedDict, total=False):
 
 class GetLogRecordRequest(ServiceRequest):
     logRecordPointer: LogRecordPointer
+    unmask: Optional[Unmask]
 
 
 LogRecord = Dict[Field, Value]
@@ -657,6 +930,7 @@ class GetQueryResultsResponse(TypedDict, total=False):
     results: Optional[QueryResults]
     statistics: Optional[QueryStatistics]
     status: Optional[QueryStatus]
+    encryptionKey: Optional[EncryptionKey]
 
 
 class InputLogEvent(TypedDict, total=False):
@@ -667,12 +941,23 @@ class InputLogEvent(TypedDict, total=False):
 InputLogEvents = List[InputLogEvent]
 
 
+class ListTagsForResourceRequest(ServiceRequest):
+    resourceArn: AmazonResourceName
+
+
+class ListTagsForResourceResponse(TypedDict, total=False):
+    tags: Optional[Tags]
+
+
 class ListTagsLogGroupRequest(ServiceRequest):
     logGroupName: LogGroupName
 
 
 class ListTagsLogGroupResponse(TypedDict, total=False):
     tags: Optional[Tags]
+
+
+LogGroupIdentifiers = List[LogGroupIdentifier]
 
 
 class MetricFilterMatchRecord(TypedDict, total=False):
@@ -682,6 +967,59 @@ class MetricFilterMatchRecord(TypedDict, total=False):
 
 
 MetricFilterMatches = List[MetricFilterMatchRecord]
+
+
+class PutAccountPolicyRequest(ServiceRequest):
+    policyName: PolicyName
+    policyDocument: AccountPolicyDocument
+    policyType: PolicyType
+    scope: Optional[Scope]
+
+
+class PutAccountPolicyResponse(TypedDict, total=False):
+    accountPolicy: Optional[AccountPolicy]
+
+
+class PutDataProtectionPolicyRequest(ServiceRequest):
+    logGroupIdentifier: LogGroupIdentifier
+    policyDocument: DataProtectionPolicyDocument
+
+
+class PutDataProtectionPolicyResponse(TypedDict, total=False):
+    logGroupIdentifier: Optional[LogGroupIdentifier]
+    policyDocument: Optional[DataProtectionPolicyDocument]
+    lastUpdatedTime: Optional[Timestamp]
+
+
+class PutDeliveryDestinationPolicyRequest(ServiceRequest):
+    deliveryDestinationName: DeliveryDestinationName
+    deliveryDestinationPolicy: DeliveryDestinationPolicy
+
+
+class PutDeliveryDestinationPolicyResponse(TypedDict, total=False):
+    policy: Optional[Policy]
+
+
+class PutDeliveryDestinationRequest(ServiceRequest):
+    name: DeliveryDestinationName
+    outputFormat: Optional[OutputFormat]
+    deliveryDestinationConfiguration: DeliveryDestinationConfiguration
+    tags: Optional[Tags]
+
+
+class PutDeliveryDestinationResponse(TypedDict, total=False):
+    deliveryDestination: Optional[DeliveryDestination]
+
+
+class PutDeliverySourceRequest(ServiceRequest):
+    name: DeliverySourceName
+    resourceArn: Arn
+    logType: LogType
+    tags: Optional[Tags]
+
+
+class PutDeliverySourceResponse(TypedDict, total=False):
+    deliverySource: Optional[DeliverySource]
 
 
 class PutDestinationPolicyRequest(ServiceRequest):
@@ -694,6 +1032,7 @@ class PutDestinationRequest(ServiceRequest):
     destinationName: DestinationName
     targetArn: TargetArn
     roleArn: RoleArn
+    tags: Optional[Tags]
 
 
 class PutDestinationResponse(TypedDict, total=False):
@@ -730,6 +1069,7 @@ class PutQueryDefinitionRequest(ServiceRequest):
     queryDefinitionId: Optional[QueryId]
     logGroupNames: Optional[LogGroupNames]
     queryString: QueryDefinitionString
+    clientToken: Optional[ClientToken]
 
 
 class PutQueryDefinitionResponse(TypedDict, total=False):
@@ -762,6 +1102,7 @@ class PutSubscriptionFilterRequest(ServiceRequest):
 class StartQueryRequest(ServiceRequest):
     logGroupName: Optional[LogGroupName]
     logGroupNames: Optional[LogGroupNames]
+    logGroupIdentifiers: Optional[LogGroupIdentifiers]
     startTime: Timestamp
     endTime: Timestamp
     queryString: QueryString
@@ -780,11 +1121,17 @@ class StopQueryResponse(TypedDict, total=False):
     success: Optional[Success]
 
 
+TagKeyList = List[TagKey]
 TagList = List[TagKey]
 
 
 class TagLogGroupRequest(ServiceRequest):
     logGroupName: LogGroupName
+    tags: Tags
+
+
+class TagResourceRequest(ServiceRequest):
+    resourceArn: AmazonResourceName
     tags: Tags
 
 
@@ -805,19 +1152,37 @@ class UntagLogGroupRequest(ServiceRequest):
     tags: TagList
 
 
-class LogsApi:
+class UntagResourceRequest(ServiceRequest):
+    resourceArn: AmazonResourceName
+    tagKeys: TagKeyList
 
+
+class LogsApi:
     service = "logs"
     version = "2014-03-28"
 
     @handler("AssociateKmsKey")
     def associate_kms_key(
-        self, context: RequestContext, log_group_name: LogGroupName, kms_key_id: KmsKeyId
+        self,
+        context: RequestContext,
+        kms_key_id: KmsKeyId,
+        log_group_name: LogGroupName = None,
+        resource_identifier: ResourceIdentifier = None,
     ) -> None:
         raise NotImplementedError
 
     @handler("CancelExportTask")
     def cancel_export_task(self, context: RequestContext, task_id: ExportTaskId) -> None:
+        raise NotImplementedError
+
+    @handler("CreateDelivery")
+    def create_delivery(
+        self,
+        context: RequestContext,
+        delivery_source_name: DeliverySourceName,
+        delivery_destination_arn: Arn,
+        tags: Tags = None,
+    ) -> CreateDeliveryResponse:
         raise NotImplementedError
 
     @handler("CreateExportTask", expand=False)
@@ -840,6 +1205,38 @@ class LogsApi:
     def create_log_stream(
         self, context: RequestContext, log_group_name: LogGroupName, log_stream_name: LogStreamName
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteAccountPolicy")
+    def delete_account_policy(
+        self, context: RequestContext, policy_name: PolicyName, policy_type: PolicyType
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteDataProtectionPolicy")
+    def delete_data_protection_policy(
+        self, context: RequestContext, log_group_identifier: LogGroupIdentifier
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteDelivery")
+    def delete_delivery(self, context: RequestContext, id: DeliveryId) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteDeliveryDestination")
+    def delete_delivery_destination(
+        self, context: RequestContext, name: DeliveryDestinationName
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteDeliveryDestinationPolicy")
+    def delete_delivery_destination_policy(
+        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteDeliverySource")
+    def delete_delivery_source(self, context: RequestContext, name: DeliverySourceName) -> None:
         raise NotImplementedError
 
     @handler("DeleteDestination")
@@ -888,6 +1285,34 @@ class LogsApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DescribeAccountPolicies")
+    def describe_account_policies(
+        self,
+        context: RequestContext,
+        policy_type: PolicyType,
+        policy_name: PolicyName = None,
+        account_identifiers: AccountIds = None,
+    ) -> DescribeAccountPoliciesResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDeliveries")
+    def describe_deliveries(
+        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+    ) -> DescribeDeliveriesResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDeliveryDestinations")
+    def describe_delivery_destinations(
+        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+    ) -> DescribeDeliveryDestinationsResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDeliverySources")
+    def describe_delivery_sources(
+        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+    ) -> DescribeDeliverySourcesResponse:
+        raise NotImplementedError
+
     @handler("DescribeDestinations")
     def describe_destinations(
         self,
@@ -913,9 +1338,12 @@ class LogsApi:
     def describe_log_groups(
         self,
         context: RequestContext,
+        account_identifiers: AccountIds = None,
         log_group_name_prefix: LogGroupName = None,
+        log_group_name_pattern: LogGroupNamePattern = None,
         next_token: NextToken = None,
         limit: DescribeLimit = None,
+        include_linked_accounts: IncludeLinkedAccounts = None,
     ) -> DescribeLogGroupsResponse:
         raise NotImplementedError
 
@@ -923,7 +1351,8 @@ class LogsApi:
     def describe_log_streams(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName,
+        log_group_name: LogGroupName = None,
+        log_group_identifier: LogGroupIdentifier = None,
         log_stream_name_prefix: LogStreamName = None,
         order_by: OrderBy = None,
         descending: Descending = None,
@@ -984,14 +1413,20 @@ class LogsApi:
         raise NotImplementedError
 
     @handler("DisassociateKmsKey")
-    def disassociate_kms_key(self, context: RequestContext, log_group_name: LogGroupName) -> None:
+    def disassociate_kms_key(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName = None,
+        resource_identifier: ResourceIdentifier = None,
+    ) -> None:
         raise NotImplementedError
 
     @handler("FilterLogEvents")
     def filter_log_events(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName,
+        log_group_name: LogGroupName = None,
+        log_group_identifier: LogGroupIdentifier = None,
         log_stream_names: InputLogStreamNames = None,
         log_stream_name_prefix: LogStreamName = None,
         start_time: Timestamp = None,
@@ -1000,32 +1435,67 @@ class LogsApi:
         next_token: NextToken = None,
         limit: EventsLimit = None,
         interleaved: Interleaved = None,
+        unmask: Unmask = None,
     ) -> FilterLogEventsResponse:
+        raise NotImplementedError
+
+    @handler("GetDataProtectionPolicy")
+    def get_data_protection_policy(
+        self, context: RequestContext, log_group_identifier: LogGroupIdentifier
+    ) -> GetDataProtectionPolicyResponse:
+        raise NotImplementedError
+
+    @handler("GetDelivery")
+    def get_delivery(self, context: RequestContext, id: DeliveryId) -> GetDeliveryResponse:
+        raise NotImplementedError
+
+    @handler("GetDeliveryDestination")
+    def get_delivery_destination(
+        self, context: RequestContext, name: DeliveryDestinationName
+    ) -> GetDeliveryDestinationResponse:
+        raise NotImplementedError
+
+    @handler("GetDeliveryDestinationPolicy")
+    def get_delivery_destination_policy(
+        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName
+    ) -> GetDeliveryDestinationPolicyResponse:
+        raise NotImplementedError
+
+    @handler("GetDeliverySource")
+    def get_delivery_source(
+        self, context: RequestContext, name: DeliverySourceName
+    ) -> GetDeliverySourceResponse:
         raise NotImplementedError
 
     @handler("GetLogEvents")
     def get_log_events(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName,
         log_stream_name: LogStreamName,
+        log_group_name: LogGroupName = None,
+        log_group_identifier: LogGroupIdentifier = None,
         start_time: Timestamp = None,
         end_time: Timestamp = None,
         next_token: NextToken = None,
         limit: EventsLimit = None,
         start_from_head: StartFromHead = None,
+        unmask: Unmask = None,
     ) -> GetLogEventsResponse:
         raise NotImplementedError
 
     @handler("GetLogGroupFields")
     def get_log_group_fields(
-        self, context: RequestContext, log_group_name: LogGroupName, time: Timestamp = None
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName = None,
+        time: Timestamp = None,
+        log_group_identifier: LogGroupIdentifier = None,
     ) -> GetLogGroupFieldsResponse:
         raise NotImplementedError
 
     @handler("GetLogRecord")
     def get_log_record(
-        self, context: RequestContext, log_record_pointer: LogRecordPointer
+        self, context: RequestContext, log_record_pointer: LogRecordPointer, unmask: Unmask = None
     ) -> GetLogRecordResponse:
         raise NotImplementedError
 
@@ -1035,10 +1505,67 @@ class LogsApi:
     ) -> GetQueryResultsResponse:
         raise NotImplementedError
 
+    @handler("ListTagsForResource")
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName
+    ) -> ListTagsForResourceResponse:
+        raise NotImplementedError
+
     @handler("ListTagsLogGroup")
     def list_tags_log_group(
         self, context: RequestContext, log_group_name: LogGroupName
     ) -> ListTagsLogGroupResponse:
+        raise NotImplementedError
+
+    @handler("PutAccountPolicy")
+    def put_account_policy(
+        self,
+        context: RequestContext,
+        policy_name: PolicyName,
+        policy_document: AccountPolicyDocument,
+        policy_type: PolicyType,
+        scope: Scope = None,
+    ) -> PutAccountPolicyResponse:
+        raise NotImplementedError
+
+    @handler("PutDataProtectionPolicy")
+    def put_data_protection_policy(
+        self,
+        context: RequestContext,
+        log_group_identifier: LogGroupIdentifier,
+        policy_document: DataProtectionPolicyDocument,
+    ) -> PutDataProtectionPolicyResponse:
+        raise NotImplementedError
+
+    @handler("PutDeliveryDestination")
+    def put_delivery_destination(
+        self,
+        context: RequestContext,
+        name: DeliveryDestinationName,
+        delivery_destination_configuration: DeliveryDestinationConfiguration,
+        output_format: OutputFormat = None,
+        tags: Tags = None,
+    ) -> PutDeliveryDestinationResponse:
+        raise NotImplementedError
+
+    @handler("PutDeliveryDestinationPolicy")
+    def put_delivery_destination_policy(
+        self,
+        context: RequestContext,
+        delivery_destination_name: DeliveryDestinationName,
+        delivery_destination_policy: DeliveryDestinationPolicy,
+    ) -> PutDeliveryDestinationPolicyResponse:
+        raise NotImplementedError
+
+    @handler("PutDeliverySource")
+    def put_delivery_source(
+        self,
+        context: RequestContext,
+        name: DeliverySourceName,
+        resource_arn: Arn,
+        log_type: LogType,
+        tags: Tags = None,
+    ) -> PutDeliverySourceResponse:
         raise NotImplementedError
 
     @handler("PutDestination")
@@ -1048,6 +1575,7 @@ class LogsApi:
         destination_name: DestinationName,
         target_arn: TargetArn,
         role_arn: RoleArn,
+        tags: Tags = None,
     ) -> PutDestinationResponse:
         raise NotImplementedError
 
@@ -1091,6 +1619,7 @@ class LogsApi:
         query_string: QueryDefinitionString,
         query_definition_id: QueryId = None,
         log_group_names: LogGroupNames = None,
+        client_token: ClientToken = None,
     ) -> PutQueryDefinitionResponse:
         raise NotImplementedError
 
@@ -1131,6 +1660,7 @@ class LogsApi:
         query_string: QueryString,
         log_group_name: LogGroupName = None,
         log_group_names: LogGroupNames = None,
+        log_group_identifiers: LogGroupIdentifiers = None,
         limit: EventsLimit = None,
     ) -> StartQueryResponse:
         raise NotImplementedError
@@ -1142,6 +1672,12 @@ class LogsApi:
     @handler("TagLogGroup")
     def tag_log_group(
         self, context: RequestContext, log_group_name: LogGroupName, tags: Tags
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("TagResource")
+    def tag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags
     ) -> None:
         raise NotImplementedError
 
@@ -1157,5 +1693,11 @@ class LogsApi:
     @handler("UntagLogGroup")
     def untag_log_group(
         self, context: RequestContext, log_group_name: LogGroupName, tags: TagList
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UntagResource")
+    def untag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
     ) -> None:
         raise NotImplementedError

@@ -1,7 +1,11 @@
+from localstack import config
 from localstack.aws import handlers
+from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.metric_handler import MetricHandler
 from localstack.aws.handlers.service_plugin import ServiceLoader
+from localstack.aws.trace import TracingHandlerChain
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceManager, ServicePluginManager
+from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 
 from .gateway import Gateway
 from .handlers.fallback import EmptyResponseHandler
@@ -23,14 +27,17 @@ class LocalstackAwsGateway(Gateway):
         self.request_handlers.extend(
             [
                 handlers.push_request_context,
+                handlers.add_internal_request_params,
+                handlers.handle_runtime_shutdown,
                 metric_collector.create_metric_handler_item,
+                handlers.preprocess_request,
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
                 handlers.enforce_cors,
                 handlers.content_decoder,
                 handlers.serve_localstack_resources,  # try to serve internal resources in /_localstack first
-                handlers.serve_default_listeners,  # legacy proxy default listeners
                 handlers.serve_edge_router_rules,
                 # start aws handler chain
+                handlers.parse_pre_signed_url_request,
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,
                 handlers.add_account_id,
@@ -68,6 +75,13 @@ class LocalstackAwsGateway(Gateway):
             ]
         )
 
+    def new_chain(self) -> HandlerChain:
+        if config.DEBUG_HANDLER_CHAIN:
+            return TracingHandlerChain(
+                self.request_handlers, self.response_handlers, self.exception_handlers
+            )
+        return super().new_chain()
+
 
 def main():
     """
@@ -85,13 +99,8 @@ def main():
     setup_logging()
 
     if use_ssl:
-        from localstack.services.generic_proxy import (
-            GenericProxy,
-            install_predefined_cert_if_available,
-        )
-
         install_predefined_cert_if_available()
-        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+        _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
         ssl_creds = (cert_file_name, key_file_name)
     else:
         ssl_creds = None

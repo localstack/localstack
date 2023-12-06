@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -190,6 +184,8 @@ OpsEntityItemCaptureTime = str
 OpsEntityItemKey = str
 OpsFilterKey = str
 OpsFilterValue = str
+OpsItemAccountId = str
+OpsItemArn = str
 OpsItemCategory = str
 OpsItemDataKey = str
 OpsItemDataValueString = str
@@ -275,6 +271,9 @@ PatchTitle = str
 PatchUnreportedNotApplicableCount = int
 PatchVendor = str
 PatchVersion = str
+Policy = str
+PolicyHash = str
+PolicyId = str
 Product = str
 PutInventoryMessage = str
 Region = str
@@ -283,6 +282,8 @@ RegistrationMetadataKey = str
 RegistrationMetadataValue = str
 RegistrationsCount = int
 RemainingCount = int
+RequireType = str
+ResourceArnString = str
 ResourceCount = int
 ResourceCountByStatus = str
 ResourceDataSyncAWSKMSKeyARN = str
@@ -300,6 +301,7 @@ ResourceDataSyncSourceType = str
 ResourceDataSyncState = str
 ResourceDataSyncType = str
 ResourceId = str
+ResourcePolicyMaxResults = int
 ResponseCode = int
 Reviewer = str
 S3BucketName = str
@@ -444,6 +446,7 @@ class AutomationExecutionStatus(str):
     ChangeCalendarOverrideRejected = "ChangeCalendarOverrideRejected"
     CompletedWithSuccess = "CompletedWithSuccess"
     CompletedWithFailure = "CompletedWithFailure"
+    Exited = "Exited"
 
 
 class AutomationSubtype(str):
@@ -526,8 +529,8 @@ class ComplianceUploadType(str):
 
 
 class ConnectionStatus(str):
-    Connected = "Connected"
-    NotConnected = "NotConnected"
+    connected = "connected"
+    notconnected = "notconnected"
 
 
 class DescribeActivationsFilterKeys(str):
@@ -601,6 +604,7 @@ class DocumentType(str):
     ProblemAnalysisTemplate = "ProblemAnalysisTemplate"
     CloudFormation = "CloudFormation"
     ConformancePackTemplate = "ConformancePackTemplate"
+    QuickSetup = "QuickSetup"
 
 
 class ExecutionMode(str):
@@ -713,6 +717,7 @@ class OperatingSystem(str):
     WINDOWS = "WINDOWS"
     AMAZON_LINUX = "AMAZON_LINUX"
     AMAZON_LINUX_2 = "AMAZON_LINUX_2"
+    AMAZON_LINUX_2022 = "AMAZON_LINUX_2022"
     UBUNTU = "UBUNTU"
     REDHAT_ENTERPRISE_LINUX = "REDHAT_ENTERPRISE_LINUX"
     SUSE = "SUSE"
@@ -722,6 +727,8 @@ class OperatingSystem(str):
     MACOS = "MACOS"
     RASPBIAN = "RASPBIAN"
     ROCKY_LINUX = "ROCKY_LINUX"
+    ALMA_LINUX = "ALMA_LINUX"
+    AMAZON_LINUX_2023 = "AMAZON_LINUX_2023"
 
 
 class OpsFilterOperatorType(str):
@@ -774,6 +781,7 @@ class OpsItemFilterKey(str):
     ChangeRequestByTemplate = "ChangeRequestByTemplate"
     ChangeRequestByTargetsResourceGroup = "ChangeRequestByTargetsResourceGroup"
     InsightByType = "InsightByType"
+    AccountId = "AccountId"
 
 
 class OpsItemFilterOperator(str):
@@ -928,7 +936,6 @@ class ResourceDataSyncS3Format(str):
 
 class ResourceType(str):
     ManagedInstance = "ManagedInstance"
-    Document = "Document"
     EC2Instance = "EC2Instance"
 
 
@@ -995,6 +1002,9 @@ class StepExecutionFilterKey(str):
     StepExecutionId = "StepExecutionId"
     StepName = "StepName"
     Action = "Action"
+    ParentStepExecutionId = "ParentStepExecutionId"
+    ParentStepIteration = "ParentStepIteration"
+    ParentStepIteratorValue = "ParentStepIteratorValue"
 
 
 class StopType(str):
@@ -1497,11 +1507,23 @@ class MaxDocumentSizeExceeded(ServiceException):
     status_code: int = 400
 
 
+class OpsItemAccessDeniedException(ServiceException):
+    code: str = "OpsItemAccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class OpsItemAlreadyExistsException(ServiceException):
     code: str = "OpsItemAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
     OpsItemId: Optional[String]
+
+
+class OpsItemConflictException(ServiceException):
+    code: str = "OpsItemConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 OpsItemParameterNamesList = List[String]
@@ -1670,6 +1692,30 @@ class ResourceLimitExceededException(ServiceException):
     code: str = "ResourceLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class ResourcePolicyConflictException(ServiceException):
+    code: str = "ResourcePolicyConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+ResourcePolicyParameterNamesList = List[String]
+
+
+class ResourcePolicyInvalidParameterException(ServiceException):
+    code: str = "ResourcePolicyInvalidParameterException"
+    sender_fault: bool = False
+    status_code: int = 400
+    ParameterNames: Optional[ResourcePolicyParameterNamesList]
+
+
+class ResourcePolicyLimitExceededException(ServiceException):
+    code: str = "ResourcePolicyLimitExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
+    Limit: Optional[Integer]
+    LimitType: Optional[String]
 
 
 class ServiceSettingNotFound(ServiceException):
@@ -1890,6 +1936,7 @@ class TargetLocation(TypedDict, total=False):
     TargetLocationMaxConcurrency: Optional[MaxConcurrency]
     TargetLocationMaxErrors: Optional[MaxErrors]
     ExecutionRoleName: Optional[ExecutionRoleName]
+    TargetLocationAlarmConfiguration: Optional[AlarmConfiguration]
 
 
 TargetLocations = List[TargetLocation]
@@ -2097,6 +2144,14 @@ class ResolvedTargets(TypedDict, total=False):
     Truncated: Optional[Boolean]
 
 
+class ParentStepDetails(TypedDict, total=False):
+    StepExecutionId: Optional[String]
+    StepName: Optional[String]
+    Action: Optional[AutomationActionName]
+    Iteration: Optional[Integer]
+    IteratorValue: Optional[String]
+
+
 ValidNextStepList = List[ValidNextStep]
 
 
@@ -2133,6 +2188,8 @@ class StepExecution(TypedDict, total=False):
     ValidNextSteps: Optional[ValidNextStepList]
     Targets: Optional[Targets]
     TargetLocation: Optional[TargetLocation]
+    TriggeredAlarms: Optional[AlarmStateInformationList]
+    ParentStepDetails: Optional[ParentStepDetails]
 
 
 StepExecutionList = List[StepExecution]
@@ -2172,6 +2229,7 @@ class AutomationExecution(TypedDict, total=False):
     OpsItemId: Optional[String]
     AssociationId: Optional[String]
     ChangeRequestName: Optional[ChangeRequestName]
+    Variables: Optional[AutomationParameterMap]
 
 
 AutomationExecutionFilterValueList = List[AutomationExecutionFilterValue]
@@ -2557,6 +2615,8 @@ class CreateAssociationResult(TypedDict, total=False):
 class DocumentRequires(TypedDict, total=False):
     Name: DocumentARN
     Version: Optional[DocumentVersion]
+    RequireType: Optional[RequireType]
+    VersionName: Optional[DocumentVersionName]
 
 
 DocumentRequiresList = List[DocumentRequires]
@@ -2689,10 +2749,12 @@ class CreateOpsItemRequest(ServiceRequest):
     ActualEndTime: Optional[DateTime]
     PlannedStartTime: Optional[DateTime]
     PlannedEndTime: Optional[DateTime]
+    AccountId: Optional[OpsItemAccountId]
 
 
 class CreateOpsItemResponse(TypedDict, total=False):
     OpsItemId: Optional[String]
+    OpsItemArn: Optional[OpsItemArn]
 
 
 class MetadataValue(TypedDict, total=False):
@@ -2844,6 +2906,14 @@ class DeleteMaintenanceWindowResult(TypedDict, total=False):
     WindowId: Optional[MaintenanceWindowId]
 
 
+class DeleteOpsItemRequest(ServiceRequest):
+    OpsItemId: OpsItemId
+
+
+class DeleteOpsItemResponse(TypedDict, total=False):
+    pass
+
+
 class DeleteOpsMetadataRequest(ServiceRequest):
     OpsMetadataArn: OpsMetadataArn
 
@@ -2886,6 +2956,16 @@ class DeleteResourceDataSyncRequest(ServiceRequest):
 
 
 class DeleteResourceDataSyncResult(TypedDict, total=False):
+    pass
+
+
+class DeleteResourcePolicyRequest(ServiceRequest):
+    ResourceArn: ResourceArnString
+    PolicyId: PolicyId
+    PolicyHash: PolicyHash
+
+
+class DeleteResourcePolicyResponse(TypedDict, total=False):
     pass
 
 
@@ -4285,6 +4365,7 @@ class GetMaintenanceWindowTaskResult(TypedDict, total=False):
 
 class GetOpsItemRequest(ServiceRequest):
     OpsItemId: OpsItemId
+    OpsItemArn: Optional[OpsItemArn]
 
 
 class OpsItem(TypedDict, total=False):
@@ -4309,6 +4390,7 @@ class OpsItem(TypedDict, total=False):
     ActualEndTime: Optional[DateTime]
     PlannedStartTime: Optional[DateTime]
     PlannedEndTime: Optional[DateTime]
+    OpsItemArn: Optional[OpsItemArn]
 
 
 class GetOpsItemResponse(TypedDict, total=False):
@@ -4505,6 +4587,26 @@ class GetPatchBaselineResult(TypedDict, total=False):
     ModifiedDate: Optional[DateTime]
     Description: Optional[BaselineDescription]
     Sources: Optional[PatchSourceList]
+
+
+class GetResourcePoliciesRequest(ServiceRequest):
+    ResourceArn: ResourceArnString
+    NextToken: Optional[String]
+    MaxResults: Optional[ResourcePolicyMaxResults]
+
+
+class GetResourcePoliciesResponseEntry(TypedDict, total=False):
+    PolicyId: Optional[PolicyId]
+    PolicyHash: Optional[PolicyHash]
+    Policy: Optional[Policy]
+
+
+GetResourcePoliciesResponseEntries = List[GetResourcePoliciesResponseEntry]
+
+
+class GetResourcePoliciesResponse(TypedDict, total=False):
+    NextToken: Optional[String]
+    Policies: Optional[GetResourcePoliciesResponseEntries]
 
 
 class GetServiceSettingRequest(ServiceRequest):
@@ -4930,6 +5032,18 @@ class PutParameterResult(TypedDict, total=False):
     Tier: Optional[ParameterTier]
 
 
+class PutResourcePolicyRequest(ServiceRequest):
+    ResourceArn: ResourceArnString
+    Policy: Policy
+    PolicyId: Optional[PolicyId]
+    PolicyHash: Optional[PolicyHash]
+
+
+class PutResourcePolicyResponse(TypedDict, total=False):
+    PolicyId: Optional[PolicyId]
+    PolicyHash: Optional[PolicyHash]
+
+
 class RegisterDefaultPatchBaselineRequest(ServiceRequest):
     BaselineId: BaselineId
 
@@ -5322,6 +5436,7 @@ class UpdateOpsItemRequest(ServiceRequest):
     ActualEndTime: Optional[DateTime]
     PlannedStartTime: Optional[DateTime]
     PlannedEndTime: Optional[DateTime]
+    OpsItemArn: Optional[OpsItemArn]
 
 
 class UpdateOpsItemResponse(TypedDict, total=False):
@@ -5390,7 +5505,6 @@ class UpdateServiceSettingResult(TypedDict, total=False):
 
 
 class SsmApi:
-
     service = "ssm"
     version = "2014-11-06"
 
@@ -5529,6 +5643,7 @@ class SsmApi:
         actual_end_time: DateTime = None,
         planned_start_time: DateTime = None,
         planned_end_time: DateTime = None,
+        account_id: OpsItemAccountId = None,
     ) -> CreateOpsItemResponse:
         raise NotImplementedError
 
@@ -5617,6 +5732,12 @@ class SsmApi:
     ) -> DeleteMaintenanceWindowResult:
         raise NotImplementedError
 
+    @handler("DeleteOpsItem")
+    def delete_ops_item(
+        self, context: RequestContext, ops_item_id: OpsItemId
+    ) -> DeleteOpsItemResponse:
+        raise NotImplementedError
+
     @handler("DeleteOpsMetadata")
     def delete_ops_metadata(
         self, context: RequestContext, ops_metadata_arn: OpsMetadataArn
@@ -5648,6 +5769,16 @@ class SsmApi:
         sync_name: ResourceDataSyncName,
         sync_type: ResourceDataSyncType = None,
     ) -> DeleteResourceDataSyncResult:
+        raise NotImplementedError
+
+    @handler("DeleteResourcePolicy")
+    def delete_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        policy_id: PolicyId,
+        policy_hash: PolicyHash,
+    ) -> DeleteResourcePolicyResponse:
         raise NotImplementedError
 
     @handler("DeregisterManagedInstance")
@@ -6153,7 +6284,9 @@ class SsmApi:
         raise NotImplementedError
 
     @handler("GetOpsItem")
-    def get_ops_item(self, context: RequestContext, ops_item_id: OpsItemId) -> GetOpsItemResponse:
+    def get_ops_item(
+        self, context: RequestContext, ops_item_id: OpsItemId, ops_item_arn: OpsItemArn = None
+    ) -> GetOpsItemResponse:
         raise NotImplementedError
 
     @handler("GetOpsMetadata")
@@ -6228,6 +6361,16 @@ class SsmApi:
         patch_group: PatchGroup,
         operating_system: OperatingSystem = None,
     ) -> GetPatchBaselineForPatchGroupResult:
+        raise NotImplementedError
+
+    @handler("GetResourcePolicies")
+    def get_resource_policies(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        next_token: String = None,
+        max_results: ResourcePolicyMaxResults = None,
+    ) -> GetResourcePoliciesResponse:
         raise NotImplementedError
 
     @handler("GetServiceSetting")
@@ -6454,6 +6597,17 @@ class SsmApi:
     def put_parameter(
         self, context: RequestContext, request: PutParameterRequest
     ) -> PutParameterResult:
+        raise NotImplementedError
+
+    @handler("PutResourcePolicy")
+    def put_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        policy: Policy,
+        policy_id: PolicyId = None,
+        policy_hash: PolicyHash = None,
+    ) -> PutResourcePolicyResponse:
         raise NotImplementedError
 
     @handler("RegisterDefaultPatchBaseline")
@@ -6789,6 +6943,7 @@ class SsmApi:
         actual_end_time: DateTime = None,
         planned_start_time: DateTime = None,
         planned_end_time: DateTime = None,
+        ops_item_arn: OpsItemArn = None,
     ) -> UpdateOpsItemResponse:
         raise NotImplementedError
 

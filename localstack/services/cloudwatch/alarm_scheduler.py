@@ -3,10 +3,11 @@ import logging
 import math
 import threading
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery, StateValue
-from localstack.utils.aws import aws_stack
+from localstack.aws.connect import connect_to
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.scheduler import Scheduler
 
 if TYPE_CHECKING:
@@ -37,7 +38,7 @@ class AlarmScheduler:
         """
         super().__init__()
         self.scheduler = Scheduler()
-        self.thread = threading.Thread(target=self.scheduler.run)
+        self.thread = threading.Thread(target=self.scheduler.run, name="cloudwatch-scheduler")
         self.thread.start()
         self.scheduled_alarms = {}
 
@@ -53,6 +54,9 @@ class AlarmScheduler:
         starting a new one"""
         alarm_details = get_metric_alarm_details_for_alarm_arn(alarm_arn)
         self.delete_scheduler_for_alarm(alarm_arn)
+        if not alarm_details:
+            LOG.warning("Scheduling alarm failed: could not find alarm %s", alarm_arn)
+            return
 
         if not self._is_alarm_supported(alarm_details):
             LOG.warning(
@@ -91,9 +95,8 @@ class AlarmScheduler:
         """
         Only used re-create persistent state. Reschedules alarms that already exist
         """
-        service = "cloudwatch"
-        for region in aws_stack.get_valid_regions_for_service(service):
-            client = aws_stack.connect_to_service(service, region_name=region)
+        for region in aws_stack.get_valid_regions_for_service("cloudwatch"):
+            client = connect_to(region_name=region).cloudwatch
             result = client.describe_alarms()
             for metric_alarm in result["MetricAlarms"]:
                 arn = metric_alarm["AlarmArn"]
@@ -115,15 +118,18 @@ class AlarmScheduler:
         return True
 
 
-def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> MetricAlarm:
-    alarm_name = aws_stack.extract_resource_from_arn(alarm_arn).split(":", 1)[1]
+def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> Optional[MetricAlarm]:
+    alarm_name = arns.extract_resource_from_arn(alarm_arn).split(":", 1)[1]
     client = get_cloudwatch_client_for_region_of_alarm(alarm_arn)
-    return client.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"][0]
+    metric_alarms = client.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"]
+    return metric_alarms[0] if metric_alarms else None
 
 
 def get_cloudwatch_client_for_region_of_alarm(alarm_arn: str) -> "CloudWatchClient":
-    region = aws_stack.extract_region_from_arn(alarm_arn)
-    return aws_stack.connect_to_service("cloudwatch", region_name=region)
+    parsed_arn = arns.parse_arn(alarm_arn)
+    region = parsed_arn["region"]
+    access_key_id = parsed_arn["account"]
+    return connect_to(region_name=region, aws_access_key_id=access_key_id).cloudwatch
 
 
 def generate_metric_query(alarm_details: MetricAlarm) -> MetricDataQuery:
@@ -279,6 +285,10 @@ def calculate_alarm_state(alarm_arn: str) -> None:
     :param alarm_arn: the arn of the alarm to be evaluated
     """
     alarm_details = get_metric_alarm_details_for_alarm_arn(alarm_arn)
+    if not alarm_details:
+        LOG.warning("Could not find alarm %s", alarm_arn)
+        return
+
     client = get_cloudwatch_client_for_region_of_alarm(alarm_arn)
 
     query_date = datetime.utcnow().strftime(format="%Y-%m-%dT%H:%M:%S+0000")

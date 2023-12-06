@@ -1,0 +1,79 @@
+name: CLI Tests
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/tests-cli.yml"
+      - "localstack/**"
+      - "tests/**"
+      - "setup.py"
+      - "pyproject.toml"
+      - "setup.cfg"
+      - "Dockerfile"
+      - "Dockerfile.rh"
+      - "docker-compose.yml"
+      - "bin/**"
+    branches:
+      - master
+      - release/*
+  push:
+    paths:
+      - ".github/workflows/tests-cli.yml"
+      - "localstack/**"
+      - "tests/**"
+      - "setup.py"
+      - "pyproject.toml"
+      - "setup.cfg"
+      - "Dockerfile"
+      - "Dockerfile.rh"
+      - "docker-compose.yml"
+      - "bin/**"
+    branches:
+      - master
+      - release/*
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  # Set non-job-specific environment variables for pytest-tinybird
+  TINYBIRD_URL: https://api.tinybird.co
+  TINYBIRD_DATASOURCE: ${{ github.event.repository.name }}-tests-cli
+  TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_SHA: ${{ github.sha }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  # report to tinybird if executed on master
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+
+jobs:
+  cli-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.8", "3.9", "3.10", "3.11", "3.12" ]
+    timeout-minutes: 10
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}-${{ matrix.python-version }}
+      CI_JOB_ID: ${{ github.job }}-${{ matrix.python-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install CLI test dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -e .
+          pip install pytest pytest-tinybird
+      - name: Run CLI tests
+        env:
+          PYTEST_ADDOPTS: "${{ env.TINYBIRD_PYTEST_ARGS }}-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s"
+        run: |
+          python -m pytest tests/cli/

@@ -1,11 +1,6 @@
-import sys
-from typing import Dict, List
+from typing import Dict, List, TypedDict
 
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
-
+import pytest
 from botocore.parsers import create_parser
 
 from localstack.aws.api import (
@@ -16,6 +11,7 @@ from localstack.aws.api import (
     ServiceRequest,
     handler,
 )
+from localstack.aws.api.sqs import SendMessageRequest
 from localstack.aws.skeleton import DispatchTable, ServiceRequestDispatcher, Skeleton
 from localstack.aws.spec import load_service
 
@@ -127,6 +123,19 @@ class TestSqsApiNotImplemented:
         raise NotImplementedError
 
 
+class TestSqsApiNotImplementedWithMessage:
+    service = "sqs"
+    version = "2012-11-05"
+
+    @handler("SendMessage", expand=False)
+    def send_message(
+        self,
+        context: RequestContext,
+        request: SendMessageRequest,
+    ) -> SendMessageResult:
+        raise NotImplementedError("We will implement it soon, that's a promise!")
+
+
 """ Test implementations """
 
 
@@ -146,7 +155,7 @@ def _get_sqs_request_headers():
 
 
 def test_skeleton_e2e_sqs_send_message():
-    sqs_service = load_service("sqs")
+    sqs_service = load_service("sqs-query")
     skeleton = Skeleton(sqs_service, TestSqsApi())
     context = RequestContext()
     context.account = "test"
@@ -163,7 +172,7 @@ def test_skeleton_e2e_sqs_send_message():
     result = skeleton.invoke(context)
 
     # Use the parser from botocore to parse the serialized response
-    response_parser = create_parser(sqs_service.protocol)
+    response_parser = create_parser("query")
     parsed_response = response_parser.parse(
         result.to_readonly_response_dict(), sqs_service.operation_model("SendMessage").output_shape
     )
@@ -171,7 +180,7 @@ def test_skeleton_e2e_sqs_send_message():
     # Test the ResponseMetadata and delete it afterwards
     assert "ResponseMetadata" in parsed_response
     assert "RequestId" in parsed_response["ResponseMetadata"]
-    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
+    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 36
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
     assert parsed_response["ResponseMetadata"]["HTTPStatusCode"] == 200
     del parsed_response["ResponseMetadata"]
@@ -186,9 +195,23 @@ def test_skeleton_e2e_sqs_send_message():
     }
 
 
-def test_skeleton_e2e_sqs_send_message_not_implemented():
-    sqs_service = load_service("sqs")
-    skeleton = Skeleton(sqs_service, TestSqsApiNotImplemented())
+@pytest.mark.parametrize(
+    "api_class, oracle_message",
+    [
+        (
+            TestSqsApiNotImplemented(),
+            "API action 'SendMessage' for service 'sqs' not yet implemented or pro feature"
+            " - please check https://docs.localstack.cloud/references/coverage/coverage_sqs/ for further information",
+        ),
+        (
+            TestSqsApiNotImplementedWithMessage(),
+            "We will implement it soon, that's a promise!",
+        ),
+    ],
+)
+def test_skeleton_e2e_sqs_send_message_not_implemented(api_class, oracle_message):
+    sqs_service = load_service("sqs-query")
+    skeleton = Skeleton(sqs_service, api_class)
     context = RequestContext()
     context.account = "test"
     context.region = "us-west-1"
@@ -212,16 +235,15 @@ def test_skeleton_e2e_sqs_send_message_not_implemented():
     # Test the ResponseMetadata
     assert "ResponseMetadata" in parsed_response
     assert "RequestId" in parsed_response["ResponseMetadata"]
-    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
+    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 36
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
     assert parsed_response["ResponseMetadata"]["HTTPStatusCode"] == 501
 
-    # Compare the (remaining) actual eror payload
+    # Compare the (remaining) actual error payload
     assert "Error" in parsed_response
     assert parsed_response["Error"] == {
         "Code": "InternalFailure",
-        "Message": "API action 'SendMessage' for service 'sqs' not yet implemented or pro feature - check "
-        "https://docs.localstack.cloud/aws/feature-coverage for further information",
+        "Message": oracle_message,
     }
 
 
@@ -232,7 +254,7 @@ def test_dispatch_common_service_exception():
     table: DispatchTable = {}
     table["DeleteQueue"] = delete_queue
 
-    sqs_service = load_service("sqs")
+    sqs_service = load_service("sqs-query")
     skeleton = Skeleton(sqs_service, table)
 
     context = RequestContext()
@@ -265,7 +287,7 @@ def test_dispatch_common_service_exception():
 def test_dispatch_missing_method_returns_internal_failure():
     table: DispatchTable = {}
 
-    sqs_service = load_service("sqs")
+    sqs_service = load_service("sqs-query")
     skeleton = Skeleton(sqs_service, table)
 
     context = RequestContext()
@@ -290,8 +312,8 @@ def test_dispatch_missing_method_returns_internal_failure():
     assert "Error" in parsed_response
     assert parsed_response["Error"] == {
         "Code": "InternalFailure",
-        "Message": "API action 'DeleteQueue' for service 'sqs' not yet implemented or pro feature - check "
-        "https://docs.localstack.cloud/aws/feature-coverage for further information",
+        "Message": "API action 'DeleteQueue' for service 'sqs' not yet implemented or pro feature - please check "
+        "https://docs.localstack.cloud/references/coverage/coverage_sqs/ for further information",
     }
 
 

@@ -1,11 +1,13 @@
 import logging
+import os
 import re
 import threading
 from datetime import datetime, timezone
 from random import randint
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
-from localstack.aws.accounts import get_aws_account_id
+from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.opensearch import (
     ARN,
@@ -46,6 +48,7 @@ from localstack.aws.api.opensearch import (
     EncryptionAtRestOptionsStatus,
     EngineType,
     GetCompatibleVersionsResponse,
+    IPAddressType,
     ListDomainNamesResponse,
     ListTagsResponse,
     ListVersionsResponse,
@@ -55,6 +58,7 @@ from localstack.aws.api.opensearch import (
     NextToken,
     NodeToNodeEncryptionOptions,
     NodeToNodeEncryptionOptionsStatus,
+    OffPeakWindowOptions,
     OpensearchApi,
     OpenSearchPartitionInstanceType,
     OptionState,
@@ -66,6 +70,7 @@ from localstack.aws.api.opensearch import (
     ServiceSoftwareOptions,
     SnapshotOptions,
     SnapshotOptionsStatus,
+    SoftwareUpdateOptions,
     StringList,
     TagList,
     TLSSecurityPolicy,
@@ -78,21 +83,27 @@ from localstack.aws.api.opensearch import (
     VPCDerivedInfoStatus,
     VPCOptions,
 )
-from localstack.config import LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.opensearch import versions
+from localstack.services.opensearch.cluster import SecurityOptions
 from localstack.services.opensearch.cluster_manager import (
     ClusterManager,
     DomainKey,
     create_cluster_manager,
 )
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
-from localstack.utils.aws import aws_stack
+from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import AssetDirectory, StateVisitor
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
-from localstack.utils.objects import singleton_factory
 from localstack.utils.serving import Server
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
+
+# The singleton for the ClusterManager instance.
+# The singleton is implemented this way only to be able to overwrite its value during tests.
+__CLUSTER_MANAGER = None
 
 # mutex for modifying domains
 _domain_mutex = threading.RLock()
@@ -106,10 +117,18 @@ DEFAULT_OPENSEARCH_CLUSTER_CONFIG = ClusterConfig(
     DedicatedMasterCount=1,
 )
 
+DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS = DomainEndpointOptions(
+    EnforceHTTPS=False,
+    TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
+    CustomEndpointEnabled=False,
+)
 
-@singleton_factory
+
 def cluster_manager() -> ClusterManager:
-    return create_cluster_manager()
+    global __CLUSTER_MANAGER
+    if __CLUSTER_MANAGER is None:
+        __CLUSTER_MANAGER = create_cluster_manager()
+    return __CLUSTER_MANAGER
 
 
 def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str):
@@ -121,7 +140,7 @@ def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str)
 
     LOG.debug("cluster state polling for %s returned! status = %s", domain_name, is_up)
     with _domain_mutex:
-        store = OpensearchProvider.get_store()
+        store = OpensearchProvider.get_store(cluster.account_id, cluster.region_name)
         status = store.opensearch_domains.get(domain_name)
         if status is not None:
             status["Processing"] = False
@@ -131,19 +150,24 @@ def create_cluster(
     domain_key: DomainKey,
     engine_version: str,
     domain_endpoint_options: Optional[DomainEndpointOptions],
+    security_options: Optional[SecurityOptions],
     preferred_port: Optional[int] = None,
 ):
     """
-    Uses the ClusterManager to create a new cluster for the given domain_name in the region of the current request
-    context. NOT thread safe, needs to be called around _domain_mutex.
+    Uses the ClusterManager to create a new cluster for the given domain key. NOT thread safe, needs to be called
+    around _domain_mutex.
     If the preferred_port is given, this port will be preferred (if OPENSEARCH_ENDPOINT_STRATEGY == "port").
     """
-    store = OpensearchProvider.get_store()
+    store = opensearch_stores[domain_key.account][domain_key.region]
 
     manager = cluster_manager()
     engine_version = engine_version or OPENSEARCH_DEFAULT_VERSION
     cluster = manager.create(
-        domain_key.arn, engine_version, domain_endpoint_options, preferred_port
+        arn=domain_key.arn,
+        version=engine_version,
+        endpoint_options=domain_endpoint_options,
+        security_options=security_options,
+        preferred_port=preferred_port,
     )
 
     # FIXME: in AWS, the Endpoint is set once the cluster is running, not before (like here), but our tests and
@@ -152,7 +176,7 @@ def create_cluster(
     # Replacing only 0.0.0.0 here as usage of this bind address mostly means running in docker which is used locally
     # If another bind address is used we want to keep it in the endpoint as this is a conscious user decision to
     # access from another device on the network.
-    status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", LOCALSTACK_HOSTNAME)
+    status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", localstack_host().host)
     status["EngineVersion"] = engine_version
 
     if cluster.is_up():
@@ -168,7 +192,8 @@ def create_cluster(
 
 
 def _remove_cluster(domain_key: DomainKey):
-    store = OpensearchProvider.get_store()
+    parsed_arn = parse_arn(domain_key.arn)
+    store = OpensearchProvider.get_store(parsed_arn["account"], parsed_arn["region"])
     cluster_manager().remove(domain_key.arn)
     del store.opensearch_domains[domain_key.domain_name]
 
@@ -280,7 +305,8 @@ def get_domain_config_status() -> OptionStatus:
 
 
 def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
-    store = OpensearchProvider.get_store()
+    parsed_arn = parse_arn(domain_key.arn)
+    store = OpensearchProvider.get_store(parsed_arn["account"], parsed_arn["region"])
     stored_status: DomainStatus = (
         store.opensearch_domains.get(domain_key.domain_name) or DomainStatus()
     )
@@ -335,18 +361,13 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             AutomatedUpdateDate=datetime.fromtimestamp(0, tz=timezone.utc),
             OptionalDeployment=True,
         ),
-        DomainEndpointOptions=DomainEndpointOptions(
-            EnforceHTTPS=False,
-            TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
-            CustomEndpointEnabled=False,
-        ),
+        DomainEndpointOptions=stored_status.get("DomainEndpointOptions")
+        or DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS,
         AdvancedSecurityOptions=AdvancedSecurityOptions(
             Enabled=False, InternalUserDatabaseEnabled=False
         ),
         AutoTuneOptions=AutoTuneOptionsOutput(State=AutoTuneState.ENABLE_IN_PROGRESS),
     )
-    if stored_status.get("Endpoint"):
-        new_status["Endpoint"] = new_status.get("Endpoint")
     return new_status
 
 
@@ -358,7 +379,8 @@ def _ensure_domain_exists(arn: ARN) -> None:
     :return: None if the domain exists, otherwise raises an exception
     :raises: ValidationException if the domain for the given ARN cannot be found
     """
-    store = OpensearchProvider.get_store()
+    parsed_arn = parse_arn(arn)
+    store = OpensearchProvider.get_store(parsed_arn["account"], parsed_arn["region"])
     domain_key = DomainKey.from_arn(arn)
     domain_status = store.opensearch_domains.get(domain_key.domain_name)
     if domain_status is None:
@@ -379,10 +401,73 @@ def is_valid_domain_name(name: str) -> bool:
     return True if _domain_name_pattern.match(name) else False
 
 
-class OpensearchProvider(OpensearchApi):
+def validate_endpoint_options(endpoint_options: DomainEndpointOptions):
+    custom_endpoint = endpoint_options.get("CustomEndpoint", "")
+    custom_endpoint_enabled = endpoint_options.get("CustomEndpointEnabled", False)
+
+    if custom_endpoint and not custom_endpoint_enabled:
+        raise ValidationException(
+            "CustomEndpointEnabled flag should be set in order to use CustomEndpoint."
+        )
+    if custom_endpoint_enabled and not custom_endpoint:
+        raise ValidationException(
+            "Please provide CustomEndpoint field to create a custom endpoint."
+        )
+
+
+class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
     @staticmethod
-    def get_store() -> OpenSearchStore:
-        return opensearch_stores[get_aws_account_id()][aws_stack.get_region()]
+    def get_store(account_id: str, region_name: str) -> OpenSearchStore:
+        return opensearch_stores[account_id][region_name]
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(opensearch_stores)
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, "opensearch")))
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, "elasticsearch")))
+
+    def on_after_state_load(self):
+        """Starts clusters whose metadata has been restored."""
+        for account_id, region, store in opensearch_stores.iter_stores():
+            for domain_name, domain_status in store.opensearch_domains.items():
+                domain_key = DomainKey(domain_name, region, account_id)
+                if cluster_manager().get(domain_key.arn):
+                    # cluster already restored in previous call to on_after_state_load
+                    continue
+
+                LOG.info(f"Restoring domain {domain_name} in region {region}.")
+                try:
+                    preferred_port = None
+                    if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
+                        # try to parse the previous port to re-use it for the re-created cluster
+                        if "Endpoint" in domain_status:
+                            preferred_port = urlparse(f"http://{domain_status['Endpoint']}").port
+
+                    engine_version = domain_status.get("EngineVersion")
+                    domain_endpoint_options = domain_status.get("DomainEndpointOptions", {})
+                    security_options = SecurityOptions.from_input(
+                        domain_status.get("AdvancedSecurityOptions")
+                    )
+
+                    create_cluster(
+                        domain_key=domain_key,
+                        engine_version=engine_version,
+                        domain_endpoint_options=domain_endpoint_options,
+                        security_options=security_options,
+                        preferred_port=preferred_port,
+                    )
+                except Exception:
+                    LOG.exception(f"Could not restore domain {domain_name} in region {region}.")
+
+    def on_before_state_reset(self):
+        self._stop_clusters()
+
+    def on_before_stop(self):
+        self._stop_clusters()
+
+    def _stop_clusters(self):
+        for account_id, region, store in opensearch_stores.iter_stores():
+            for domain_name in store.opensearch_domains.keys():
+                cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
 
     def create_domain(
         self,
@@ -392,6 +477,7 @@ class OpensearchProvider(OpensearchApi):
         cluster_config: ClusterConfig = None,
         ebs_options: EBSOptions = None,
         access_policies: PolicyDocument = None,
+        ip_address_type: IPAddressType = None,
         snapshot_options: SnapshotOptions = None,
         vpc_options: VPCOptions = None,
         cognito_options: CognitoOptions = None,
@@ -403,14 +489,19 @@ class OpensearchProvider(OpensearchApi):
         advanced_security_options: AdvancedSecurityOptionsInput = None,
         tag_list: TagList = None,
         auto_tune_options: AutoTuneOptionsInput = None,
+        off_peak_window_options: OffPeakWindowOptions = None,
+        software_update_options: SoftwareUpdateOptions = None,
     ) -> CreateDomainResponse:
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
 
         if not is_valid_domain_name(domain_name):
             # TODO: this should use the server-side validation framework at some point.
             raise ValidationException(
                 "Member must satisfy regular expression pattern: [a-z][a-z0-9\\-]+"
             )
+
+        if domain_endpoint_options:
+            validate_endpoint_options(domain_endpoint_options)
 
         with _domain_mutex:
             if domain_name in store.opensearch_domains:
@@ -422,13 +513,18 @@ class OpensearchProvider(OpensearchApi):
                 region=context.region,
                 account=context.account_id,
             )
+            security_options = SecurityOptions.from_input(advanced_security_options)
 
             # "create" domain data
             store.opensearch_domains[domain_name] = get_domain_status(domain_key)
+            if domain_endpoint_options:
+                store.opensearch_domains[domain_name]["DomainEndpointOptions"] = (
+                    DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS | domain_endpoint_options
+                )
 
             # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
             # TODO handle additional parameters (cluster config,...)
-            create_cluster(domain_key, engine_version, domain_endpoint_options)
+            create_cluster(domain_key, engine_version, domain_endpoint_options, security_options)
 
             # set the tags
             self.add_tags(context, domain_key.arn, tag_list)
@@ -446,7 +542,7 @@ class OpensearchProvider(OpensearchApi):
             region=context.region,
             account=context.account_id,
         )
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         with _domain_mutex:
             if domain_name not in store.opensearch_domains:
                 raise ResourceNotFoundException(f"Domain not found: {domain_name}")
@@ -459,7 +555,7 @@ class OpensearchProvider(OpensearchApi):
     def describe_domain(
         self, context: RequestContext, domain_name: DomainName
     ) -> DescribeDomainResponse:
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         domain_key = DomainKey(
             domain_name=domain_name,
             region=context.region,
@@ -481,7 +577,7 @@ class OpensearchProvider(OpensearchApi):
             region=context.region,
             account=context.account_id,
         )
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         with _domain_mutex:
             domain_status = store.opensearch_domains.get(domain_key.domain_name, None)
             if domain_status is None:
@@ -510,7 +606,7 @@ class OpensearchProvider(OpensearchApi):
     def list_domain_names(
         self, context: RequestContext, engine_type: EngineType = None
     ) -> ListDomainNamesResponse:
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         domain_names = [
             DomainInfo(
                 DomainName=DomainName(domain_name),
@@ -542,7 +638,7 @@ class OpensearchProvider(OpensearchApi):
     ) -> GetCompatibleVersionsResponse:
         version_filter = None
         if domain_name:
-            store = self.get_store()
+            store = self.get_store(context.account_id, context.region)
             with _domain_mutex:
                 domain = store.opensearch_domains.get(domain_name)
                 if not domain:
@@ -565,7 +661,7 @@ class OpensearchProvider(OpensearchApi):
             region=context.region,
             account=context.account_id,
         )
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         with _domain_mutex:
             if domain_name not in store.opensearch_domains:
                 raise ResourceNotFoundException(f"Domain not found: {domain_name}")
@@ -574,13 +670,13 @@ class OpensearchProvider(OpensearchApi):
 
     def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
         _ensure_domain_exists(arn)
-        self.get_store().TAGS.tag_resource(arn, tag_list)
+        self.get_store(context.account_id, context.region).TAGS.tag_resource(arn, tag_list)
 
     def list_tags(self, context: RequestContext, arn: ARN) -> ListTagsResponse:
         _ensure_domain_exists(arn)
 
         # The tagging service returns a dictionary with the given root name
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         tags = store.TAGS.list_tags_for_resource(arn=arn, root_name="root")
         # Extract the actual list of tags for the typed response
         tag_list: TagList = tags["root"]
@@ -588,4 +684,4 @@ class OpensearchProvider(OpensearchApi):
 
     def remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
         _ensure_domain_exists(arn)
-        self.get_store().TAGS.untag_resource(arn, tag_keys)
+        self.get_store(context.account_id, context.region).TAGS.untag_resource(arn, tag_keys)

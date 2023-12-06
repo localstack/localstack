@@ -6,17 +6,20 @@ from base64 import b64encode
 import dateutil.parser
 import pytest
 
+from localstack.aws.api.sns import InvalidParameterException
+from localstack.services.sns.models import SnsMessage
 from localstack.services.sns.provider import (
-    check_filter_policy,
-    create_sns_message_body,
+    encode_subscription_token_with_region,
+    get_region_from_subscription_token,
     is_raw_message_delivery,
 )
+from localstack.services.sns.publisher import SubscriptionFilter, create_sns_message_body
 
 
 @pytest.fixture
 def subscriber():
     return {
-        "SubscriptionArn": "arn",
+        "SubscriptionArn": "arn:aws:sns:jupiter-south-1:123456789012:MyTopic:6b0e71bd-7e97-4d97-80ce-4a0994e55286",
         "Protocol": "sqs",
         "RawMessageDelivery": "false",
         "TopicArn": "arn",
@@ -27,14 +30,19 @@ def subscriber():
 class TestSns:
     def test_create_sns_message_body_raw_message_delivery(self, subscriber):
         subscriber["RawMessageDelivery"] = "true"
-        action = {"Message": ["msg"]}
-        result = create_sns_message_body(subscriber, action)
+        message_ctx = SnsMessage(
+            message="msg",
+            type="Notification",
+        )
+        result = create_sns_message_body(message_ctx, subscriber)
         assert "msg" == result
 
     def test_create_sns_message_body(self, subscriber):
-        action = {"Message": ["msg"]}
-
-        result_str = create_sns_message_body(subscriber, action, str(uuid.uuid4()))
+        message_ctx = SnsMessage(
+            message="msg",
+            type="Notification",
+        )
+        result_str = create_sns_message_body(message_ctx, subscriber)
         result = json.loads(result_str)
         try:
             uuid.UUID(result.pop("MessageId"))
@@ -54,18 +62,14 @@ class TestSns:
             "Message": "msg",
             "Signature": "EXAMPLEpH+..",
             "SignatureVersion": "1",
-            "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+            "SigningCertURL": "https://sns.jupiter-south-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             "TopicArn": "arn",
             "Type": "Notification",
-            "UnsubscribeURL": "http://localhost:4566/?Action=Unsubscribe&SubscriptionArn=arn",
+            "UnsubscribeURL": f"http://localhost.localstack.cloud:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
         }
         assert expected_sns_body == result
 
         # Now add a subject and message attributes
-        action = {
-            "Message": ["msg"],
-            "Subject": ["subject"],
-        }
         message_attributes = {
             "attr1": {
                 "DataType": "String",
@@ -76,9 +80,13 @@ class TestSns:
                 "BinaryValue": b"\x02\x03\x04",
             },
         }
-        result_str = create_sns_message_body(
-            subscriber, action, str(uuid.uuid4()), message_attributes
+        message_ctx = SnsMessage(
+            type="Notification",
+            message="msg",
+            subject="subject",
+            message_attributes=message_attributes,
         )
+        result_str = create_sns_message_body(message_ctx, subscriber)
         result = json.loads(result_str)
         del result["MessageId"]
         del result["Timestamp"]
@@ -87,10 +95,10 @@ class TestSns:
             "Subject": "subject",
             "Signature": "EXAMPLEpH+..",
             "SignatureVersion": "1",
-            "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+            "SigningCertURL": "https://sns.jupiter-south-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             "TopicArn": "arn",
             "Type": "Notification",
-            "UnsubscribeURL": "http://localhost:4566/?Action=Unsubscribe&SubscriptionArn=arn",
+            "UnsubscribeURL": f"http://localhost.localstack.cloud:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
             "MessageAttributes": {
                 "attr1": {
                     "Type": "String",
@@ -105,56 +113,61 @@ class TestSns:
         assert msg == result
 
     def test_create_sns_message_body_json_structure(self, subscriber):
-        action = {
-            "Message": ['{"default": {"message": "abc"}}'],
-            "MessageStructure": ["json"],
-        }
-        result_str = create_sns_message_body(subscriber, action)
+        message_ctx = SnsMessage(
+            type="Notification",
+            message=json.loads('{"default": {"message": "abc"}}'),
+            message_structure="json",
+        )
+
+        result_str = create_sns_message_body(message_ctx, subscriber)
         result = json.loads(result_str)
 
         assert {"message": "abc"} == result["Message"]
 
     def test_create_sns_message_body_json_structure_raw_delivery(self, subscriber):
         subscriber["RawMessageDelivery"] = "true"
-        action = {
-            "Message": ['{"default": {"message": "abc"}}'],
-            "MessageStructure": ["json"],
-        }
-        result = create_sns_message_body(subscriber, action)
+        message_ctx = SnsMessage(
+            type="Notification",
+            message=json.loads('{"default": {"message": "abc"}}'),
+            message_structure="json",
+        )
+
+        result = create_sns_message_body(message_ctx, subscriber)
 
         assert {"message": "abc"} == result
 
-    def test_create_sns_message_body_json_structure_without_default_key(self, subscriber):
-        action = {"Message": ['{"message": "abc"}'], "MessageStructure": ["json"]}
-        with pytest.raises(Exception) as exc:
-            create_sns_message_body(subscriber, action)
-        assert "Unable to find 'default' key in message payload" == str(exc.value)
-
     def test_create_sns_message_body_json_structure_sqs_protocol(self, subscriber):
-        action = {
-            "Message": ['{"default": "default message", "sqs": "sqs message"}'],
-            "MessageStructure": ["json"],
-        }
-        result_str = create_sns_message_body(subscriber, action)
-        result = json.loads(result_str)
+        message_ctx = SnsMessage(
+            type="Notification",
+            message=json.loads('{"default": "default message", "sqs": "sqs message"}'),
+            message_structure="json",
+        )
 
+        result_str = create_sns_message_body(message_ctx, subscriber)
+        result = json.loads(result_str)
         assert "sqs message" == result["Message"]
 
     def test_create_sns_message_body_json_structure_raw_delivery_sqs_protocol(self, subscriber):
         subscriber["RawMessageDelivery"] = "true"
-        action = {
-            "Message": [
+        message_ctx = SnsMessage(
+            type="Notification",
+            message=json.loads(
                 '{"default": {"message": "default version"}, "sqs": {"message": "sqs version"}}'
-            ],
-            "MessageStructure": ["json"],
-        }
-        result = create_sns_message_body(subscriber, action)
+            ),
+            message_structure="json",
+        )
+
+        result = create_sns_message_body(message_ctx, subscriber)
 
         assert {"message": "sqs version"} == result
 
     def test_create_sns_message_timestamp_millis(self, subscriber):
-        action = {"Message": ["msg"]}
-        result_str = create_sns_message_body(subscriber, action)
+        message_ctx = SnsMessage(
+            type="Notification",
+            message="msg",
+        )
+
+        result_str = create_sns_message_body(message_ctx, subscriber)
         result = json.loads(result_str)
         timestamp = result.pop("Timestamp")
         end = timestamp[-5:]
@@ -183,7 +196,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['soccer', 'rugby', 'hockey']",
+                        "Value": '["soccer", "rugby", "hockey"]',
                     }
                 },
                 True,
@@ -213,7 +226,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['soccer', 'rugby', 'hockey']",
+                        "Value": '["soccer", "rugby", "hockey"]',
                     }
                 },
                 True,
@@ -236,7 +249,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['soccer', 'rugby', 'hockey']",
+                        "Value": '["soccer", "rugby", "hockey"]',
                     }
                 },
                 False,
@@ -265,7 +278,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['soccer', 'rugby', 'hockey']",
+                        "Value": '["soccer", "rugby", "hockey"]',
                     }
                 },
                 True,
@@ -357,7 +370,7 @@ class TestSns:
             (
                 "logical OR with match on an array",
                 {"filter": ["test1", "test2", {"prefix": "typ"}]},
-                {"filter": {"Type": "String.Array", "Value": "['test1', 'other']"}},
+                {"filter": {"Type": "String.Array", "Value": '["test1", "other"]'}},
                 True,
             ),
             (
@@ -372,7 +385,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['anything', 'something']",
+                        "Value": '["anything", "something"]',
                     }
                 },
                 False,
@@ -461,7 +474,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['anything', 'something']",
+                        "Value": '["anything", "something"]',
                     }
                 },
                 True,
@@ -490,13 +503,28 @@ class TestSns:
                 {"field": {"Type": "String", "Value": "anything"}},
                 False,
             ),
+            (
+                "can match on String.Array containing boolean",
+                {"field": [True]},
+                {"field": {"Type": "String.Array", "Value": "[true]"}},
+                True,
+            ),
+            (
+                "can not match on values that are not valid JSON strings",
+                {"field": ["anything"]},
+                {"field": {"Type": "String.Array", "Value": "['anything']"}},
+                False,
+            ),
         ]
 
+        sub_filter = SubscriptionFilter()
         for test in test_data:
             filter_policy = test[1]
             attributes = test[2]
             expected = test[3]
-            assert expected == check_filter_policy(filter_policy, attributes)
+            assert expected == sub_filter.check_filter_policy_on_message_attributes(
+                filter_policy, attributes
+            )
 
     def test_is_raw_message_delivery(self, subscriber):
         valid_true_values = ["true", "True", True]
@@ -514,3 +542,73 @@ class TestSns:
 
         del subscriber["RawMessageDelivery"]
         assert not is_raw_message_delivery(subscriber)
+
+    def test_filter_policy_on_message_body(self):
+        test_data = [
+            (
+                {"f1": ["v1", "v2"]},  # f1 must be v1 OR v2 (f1=v1 OR f1=v2)
+                (
+                    ({"f1": "v1", "f2": "v4"}, True),
+                    ({"f1": "v2", "f2": "v5"}, True),
+                    ({"f1": "v3", "f2": "v5"}, False),
+                ),
+            ),
+            (
+                {"f1": ["v1"]},  # f1 must be v1 (f1=v1)
+                (
+                    ({"f1": "v1", "f2": "v4"}, True),
+                    ({"f1": "v2", "f2": "v5"}, False),
+                    ({"f1": "v3", "f2": "v5"}, False),
+                ),
+            ),
+            (
+                {"f1": ["v1"], "f2": ["v4"]},  # f1 must be v1 AND f2 must be v4 (f1=v1 AND f2=v4)
+                (
+                    ({"f1": "v1", "f2": "v4"}, True),
+                    ({"f1": "v2", "f2": "v5"}, False),
+                    ({"f1": "v3", "f2": "v5"}, False),
+                ),
+            ),
+            (
+                {"f2": ["v5"]},  # f2 must be v5 (f2=v5)
+                (
+                    ({"f1": "v1", "f2": "v4"}, False),
+                    ({"f1": "v2", "f2": "v5"}, True),
+                    ({"f1": "v3", "f2": "v5"}, True),
+                ),
+            ),
+            (
+                {
+                    "f1": ["v1", "v2"],
+                    "f2": ["v4"],
+                },  # f1 must be v1 or v2 AND f2 must be v4 ((f1=v1 OR f1=v2) AND f2=v4)
+                (
+                    ({"f1": "v1", "f2": "v4"}, True),
+                    ({"f1": "v2", "f2": "v5"}, False),
+                    ({"f1": "v3", "f2": "v5"}, False),
+                ),
+            ),
+        ]
+
+        sub_filter = SubscriptionFilter()
+        for filter_policy, messages in test_data:
+            for message_body, expected in messages:
+                assert expected == sub_filter.check_filter_policy_on_message_body(
+                    filter_policy, message_body=json.dumps(message_body)
+                ), (filter_policy, message_body)
+
+    @pytest.mark.parametrize("region", ["us-east-1", "eu-central-1", "us-west-2", "my-region"])
+    def test_region_encoded_subscription_token(self, region):
+        token = encode_subscription_token_with_region(region)
+        assert len(token) == 64
+        token_region = get_region_from_subscription_token(token)
+        assert token_region == region
+
+    @pytest.mark.parametrize(
+        "token", ["abcdef123", "mynothexstring", "us-west-2", b"test", b"test2f", "test2f"]
+    )
+    def test_decode_token_with_no_region_encoded(self, token):
+        with pytest.raises(InvalidParameterException) as e:
+            get_region_from_subscription_token(token)
+
+        assert e.match("Invalid parameter: Token")

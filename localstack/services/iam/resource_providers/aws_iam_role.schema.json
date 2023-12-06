@@ -1,0 +1,183 @@
+{
+  "typeName": "AWS::IAM::Role",
+  "$schema": "https://raw.githubusercontent.com/aws-cloudformation/cloudformation-resource-schema/master/src/main/resources/schema/provider.definition.schema.v1.json",
+  "description": "Resource Type definition for AWS::IAM::Role",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-iam.git",
+  "definitions": {
+    "Policy": {
+      "description": "The inline policy document that is embedded in the specified IAM role.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "PolicyDocument": {
+          "description": "The policy document.",
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "PolicyName": {
+          "description": "The friendly name (not ARN) identifying the policy.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "PolicyName",
+        "PolicyDocument"
+      ]
+    },
+    "Tag": {
+      "description": "A key-value pair to associate with a resource.",
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "description": "The key name of the tag. You can specify a value that is 1 to 128 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -."
+        },
+        "Value": {
+          "type": "string",
+          "description": "The value for the tag. You can specify a value that is 0 to 256 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -."
+        }
+      },
+      "required": [
+        "Key",
+        "Value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "Arn": {
+      "description": "The Amazon Resource Name (ARN) for the role.",
+      "type": "string"
+    },
+    "AssumeRolePolicyDocument": {
+      "description": "The trust policy that is associated with this role.",
+      "type": [
+        "object",
+        "string"
+      ]
+    },
+    "Description": {
+      "description": "A description of the role that you provide.",
+      "type": "string"
+    },
+    "ManagedPolicyArns": {
+      "description": "A list of Amazon Resource Names (ARNs) of the IAM managed policies that you want to attach to the role. ",
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "MaxSessionDuration": {
+      "description": "The maximum session duration (in seconds) that you want to set for the specified role. If you do not specify a value for this setting, the default maximum of one hour is applied. This setting can have a value from 1 hour to 12 hours. ",
+      "type": "integer"
+    },
+    "Path": {
+      "description": "The path to the role.",
+      "type": "string"
+    },
+    "PermissionsBoundary": {
+      "description": "The ARN of the policy used to set the permissions boundary for the role.",
+      "type": "string"
+    },
+    "Policies": {
+      "description": "Adds or updates an inline policy document that is embedded in the specified IAM role. ",
+      "type": "array",
+      "insertionOrder": false,
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Policy"
+      }
+    },
+    "RoleId": {
+      "description": "The stable and unique string identifying the role.",
+      "type": "string"
+    },
+    "RoleName": {
+      "description": "A name for the IAM role, up to 64 characters in length.",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "A list of tags that are attached to the role.",
+      "type": "array",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "AssumeRolePolicyDocument"
+  ],
+  "readOnlyProperties": [
+    "/properties/Arn",
+    "/properties/RoleId"
+  ],
+  "createOnlyProperties": [
+    "/properties/Path",
+    "/properties/RoleName"
+  ],
+  "primaryIdentifier": [
+    "/properties/RoleName"
+  ],
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": false,
+    "tagProperty": "/properties/Tags"
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "iam:CreateRole",
+        "iam:PutRolePolicy",
+        "iam:AttachRolePolicy",
+        "iam:GetRolePolicy"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "iam:GetRole",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:GetRolePolicy"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "iam:UpdateRole",
+        "iam:UpdateRoleDescription",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:AttachRolePolicy",
+        "iam:DeleteRolePermissionsBoundary",
+        "iam:PutRolePermissionsBoundary",
+        "iam:DeleteRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:TagRole",
+        "iam:UntagRole"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "iam:DeleteRole",
+        "iam:DetachRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRole",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "iam:ListRoles"
+      ]
+    }
+  }
+}

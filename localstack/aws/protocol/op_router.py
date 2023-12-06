@@ -13,7 +13,17 @@ from localstack.http.request import get_raw_path
 
 
 class GreedyPathConverter(PathConverter):
+    """
+    This converter makes sure that the path ``/mybucket//mykey`` can be matched to the pattern
+    ``<Bucket>/<path:Key>`` and will result in `Key` being `/mykey`.
+    """
+
     regex = ".*?"
+
+    part_isolating = False
+    """From the werkzeug docs: If a custom converter can match a forward slash, /, it should have the
+    attribute part_isolating set to False. This will ensure that rules using the custom converter are
+    correctly matched."""
 
 
 class _HttpOperation(NamedTuple):
@@ -28,7 +38,18 @@ class _HttpOperation(NamedTuple):
 
     @staticmethod
     def from_operation(op: OperationModel) -> "_HttpOperation":
-        uri = op.http.get("requestUri")
+        # botocore >= 1.28 might modify the internal model (specifically for S3).
+        # It will modify the request URI to strip the bucket name from the path and set the original value at
+        # "authPath".
+        # Since botocore 1.31.2, botocore will strip the query from the `authPart`
+        # We need to add it back from `requestUri` field
+        # Use authPath if set, otherwise use the regular requestUri.
+        if auth_path := op.http.get("authPath"):
+            path, sep, query = op.http.get("requestUri", "").partition("?")
+            uri = f"{auth_path.rstrip('/')}{sep}{query}"
+        else:
+            uri = op.http.get("requestUri")
+
         method = op.http.get("method")
         deprecated = op.deprecated
 
@@ -241,7 +262,9 @@ def _create_service_map(service: ServiceModel) -> Map:
             # if there is only a single operation for a (path, method) combination,
             # the default Werkzeug rule can be used directly (this is the case for most rules)
             op = ops[0]
-            rules.append(_StrictMethodRule(string=rule_string, method=method, endpoint=op.operation))  # type: ignore
+            rules.append(
+                _StrictMethodRule(string=rule_string, method=method, endpoint=op.operation)
+            )  # type: ignore
         else:
             # if there is an ambiguity with only the (path, method) combination,
             # a custom rule - which can use additional request metadata - needs to be used
@@ -249,8 +272,11 @@ def _create_service_map(service: ServiceModel) -> Map:
 
     return Map(
         rules=rules,
+        # don't be strict about trailing slashes when matching
         strict_slashes=False,
+        # we can't really use werkzeug's merge-slashes since it uses HTTP redirects to solve it
         merge_slashes=False,
+        # get service-specific converters
         converters={"path": GreedyPathConverter},
     )
 
@@ -284,7 +310,15 @@ class RestServiceOperationRouter:
             # specified. the specs do _not_ contain any operations on OPTIONS methods at all.
             # avoid matching issues for preflight requests by matching against a similar GET request instead.
             method = request.method if request.method != "OPTIONS" else "GET"
-            rule, args = matcher.match(get_raw_path(request), method=method, return_rule=True)
+
+            path = get_raw_path(request)
+            # trailing slashes are ignored in smithy matching,
+            # see https://smithy.io/1.0/spec/core/http-traits.html#literal-character-sequences and this
+            # makes sure that, e.g., in s3, `GET /mybucket/` is not matched to `GetBucket` and not to
+            # `GetObject` and the associated rule.
+            path = path.rstrip("/")
+
+            rule, args = matcher.match(path, method=method, return_rule=True)
         except MethodNotAllowed as e:
             # MethodNotAllowed (405) exception is raised if a path is matching, but the method does not.
             # Our router handles this as a 404.

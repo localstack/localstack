@@ -1,0 +1,247 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_create_execute_api_vpc_endpoint": {
+    "recorded-date": "18-03-2023, 22:01:10",
+    "recorded-content": {
+      "endpoint-details": {
+        "CreationTimestamp": "timestamp",
+        "DnsEntries": [
+          {
+            "DnsName": "<dns-name:1>",
+            "HostedZoneId": "<hosted-zone-id:1>"
+          }
+        ],
+        "DnsOptions": {
+          "DnsRecordIpType": "ipv4"
+        },
+        "Groups": [
+          {
+            "GroupId": "<group-id:1>",
+            "GroupName": "<group-name:1>"
+          }
+        ],
+        "IpAddressType": "ipv4",
+        "OwnerId": "111111111111",
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "*",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "PrivateDnsEnabled": true,
+        "RequesterManaged": false,
+        "RouteTableIds": [],
+        "ServiceName": "com.amazonaws.<region>.execute-api",
+        "State": "available",
+        "Tags": [],
+        "VpcEndpointId": "<vpc-endpoint-id:1>",
+        "VpcEndpointType": "Interface",
+        "VpcId": "<vpc-id:1>"
+      },
+      "api-details": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "PRIVATE"
+          ],
+          "vpcEndpointIds": [
+            "<vpc-endpoint-id:1>"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "policy": {
+          "Statement": [
+            {
+              "Action": "execute-api:Invoke",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Resource": "arn:aws:execute-api:<region>:111111111111:<id:1>/*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_responses": {
+    "recorded-date": "26-05-2023, 19:44:45",
+    "recorded-content": {
+      "put-method-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-response-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "<uri:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-response-get": {
+        "responseTemplates": {},
+        "selectionPattern": "2\\d{2}",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-integration-response-get": {
+        "responseTemplates": {},
+        "selectionPattern": "2\\d{2}",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-method-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "connectionType": "INTERNET",
+          "httpMethod": "POST",
+          "integrationResponses": {
+            "200": {
+              "responseTemplates": {},
+              "selectionPattern": "2\\d{2}",
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "<uri:1>"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deploy": {
+        "createdDate": "datetime",
+        "id": "<id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete-integration-response-get": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-method-get-after-int-resp-delete": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "connectionType": "INTERNET",
+          "httpMethod": "POST",
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "<uri:1>"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-method-put": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "PUT",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-response-put": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-put": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "<uri:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-response-put": {
+        "contentHandling": "CONVERT_TO_BINARY",
+        "selectionPattern": "2\\d{2}",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-integration-response-put": {
+        "contentHandling": "CONVERT_TO_BINARY",
+        "selectionPattern": "2\\d{2}",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

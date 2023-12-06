@@ -1,0 +1,541 @@
+{
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
+    "recorded-date": "27-05-2023, 19:00:45",
+    "recorded-content": {
+      "rest_api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "<name:1>",
+          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-name": "stack-name"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,POST'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "responseTemplates": {},
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {},
+          "requestTemplates": {},
+          "timeoutInMillis": 29000,
+          "type": "HTTP_PROXY",
+          "uri": "http://www.example.com"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {},
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true
+            },
+            "statusCode": "200"
+          }
+        },
+        "requestModels": {},
+        "requestParameters": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
+    "recorded-date": "01-03-2023, 23:36:31",
+    "recorded-content": {
+      "rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "policy": {
+          "Statement": [
+            {
+              "Action": "*",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Resource": "*",
+              "Sid": "AllowInvokeAPI"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "tags": {
+          "aws:cloudformation:logical-id": "MyApi",
+          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-name": "stack-name"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
+    "recorded-date": "02-06-2023, 18:26:01",
+    "recorded-content": {
+      "rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "REGIONAL"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "ApiGatewayRestApi",
+          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-name": "stack-name"
+        },
+        "version": "1.0.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/pets",
+            "pathPart": "pets",
+            "resourceMethods": {
+              "GET": {}
+            }
+          },
+          {
+            "id": "<id:4>",
+            "parentId": "<id:3>",
+            "path": "/pets/{petId}",
+            "pathPart": "{petId}",
+            "resourceMethods": {
+              "GET": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
+    "recorded-date": "05-07-2023, 20:11:14",
+    "recorded-content": {
+      "get-resources": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "path": "/"
+          },
+          {
+            "id": "<id:2>",
+            "parentId": "<id:1>",
+            "path": "/validated",
+            "pathPart": "validated",
+            "resourceMethods": {
+              "ANY": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "description": "This is a default empty schema model",
+            "id": "<id:3>",
+            "name": "<name:1>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:1> Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "This is a default error schema model",
+            "id": "<id:4>",
+            "name": "<name:2>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:2> Schema",
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<id:5>",
+            "name": "<name:3>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:3>",
+              "type": "object",
+              "properties": {
+                "integer_field": {
+                  "type": "number"
+                },
+                "string_field": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "string_field",
+                "integer_field"
+              ]
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-request-validators": {
+        "items": [
+          {
+            "id": "<id:6>",
+            "name": "<name:4>",
+            "validateRequestBody": true,
+            "validateRequestParameters": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-method-any": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:2>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {},
+              "responseTemplates": {},
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "NEVER",
+          "requestParameters": {},
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {},
+            "responseParameters": {},
+            "statusCode": "200"
+          }
+        },
+        "requestModels": {
+          "application/json": "<name:3>"
+        },
+        "requestParameters": {},
+        "requestValidatorId": "<id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_with_apigateway_resources": {
+    "recorded-date": "05-07-2023, 20:54:14",
+    "recorded-content": {
+      "get-method-post": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "integrationResponses": {
+            "202": {
+              "responseParameters": {},
+              "responseTemplates": {
+                "application/json": {
+                  "operation": "celeste_account_create",
+                  "data": {
+                    "key": "123e4567-e89b-12d3-a456-426614174000",
+                    "secret": "123e4567-e89b-12d3-a456-426614174000"
+                  }
+                }
+              },
+              "selectionPattern": "2\\d{2}",
+              "statusCode": "202"
+            },
+            "500": {
+              "responseParameters": {},
+              "responseTemplates": {
+                "application/json": {
+                  "message": "Unknown <name:2>"
+                }
+              },
+              "selectionPattern": "5\\d{2}",
+              "statusCode": "500"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestParameters": {},
+          "requestTemplates": {
+            "application/json": "<name:3>"
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "202": {
+            "responseModels": {
+              "application/json": "<name:4>"
+            },
+            "responseParameters": {},
+            "statusCode": "202"
+          },
+          "500": {
+            "responseModels": {
+              "application/json": "<name:4>"
+            },
+            "responseParameters": {},
+            "statusCode": "500"
+          }
+        },
+        "operationName": "create_account",
+        "requestModels": {},
+        "requestParameters": {
+          "method.request.path.account": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "description": "This is a default empty schema model",
+            "id": "<id:1>",
+            "name": "<name:1>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:1> Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "This is a default error schema model",
+            "id": "<id:2>",
+            "name": "<name:2>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:2> Schema",
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<id:3>",
+            "name": "<name:3>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "AccountCreate",
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "email": {
+                  "format": "email",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<id:4>",
+            "name": "<name:4>",
+            "schema": {}
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
+    "recorded-date": "06-07-2023, 21:01:08",
+    "recorded-content": {
+      "get-resources": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "path": "/",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-authorizers": {
+        "items": [
+          {
+            "authType": "custom",
+            "authorizerUri": "<authorizer-uri:1>",
+            "id": "<id:2>",
+            "identitySource": "method.request.header.Authorization",
+            "name": "<name:1>",
+            "type": "TOKEN"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-method-GET": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "httpMethod": "POST",
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "AWS_PROXY",
+          "uri": "<uri:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-method-OPTIONS": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Credentials": "'true'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,x-test-header'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET,PUT'",
+                "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8000'"
+              },
+              "responseTemplates": {
+                "application/json": {}
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Credentials": false,
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

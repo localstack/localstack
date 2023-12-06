@@ -1,0 +1,120 @@
+{
+  "typeName": "AWS::EC2::DHCPOptions",
+  "description": "Resource Type definition for AWS::EC2::DHCPOptions",
+  "additionalProperties": false,
+  "properties": {
+    "DhcpOptionsId": {
+      "type": "string"
+    },
+    "DomainName": {
+      "type": "string",
+      "description": "This value is used to complete unqualified DNS hostnames."
+    },
+    "DomainNameServers": {
+      "type": "array",
+      "description": "The IPv4 addresses of up to four domain name servers, or AmazonProvidedDNS.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "NetbiosNameServers": {
+      "type": "array",
+      "description": "The IPv4 addresses of up to four NetBIOS name servers.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "NetbiosNodeType": {
+      "type": "integer",
+      "description": "The NetBIOS node type (1, 2, 4, or 8)."
+    },
+    "NtpServers": {
+      "type": "array",
+      "description": "The IPv4 addresses of up to four Network Time Protocol (NTP) servers.",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Tags": {
+      "type": "array",
+      "description": "Any tags assigned to the DHCP options set.",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    }
+  },
+  "definitions": {
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "Value": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    }
+  },
+  "taggable": true,
+  "createOnlyProperties": [
+    "/properties/NetbiosNameServers",
+    "/properties/NetbiosNodeType",
+    "/properties/NtpServers",
+    "/properties/DomainName",
+    "/properties/DomainNameServers"
+  ],
+  "readOnlyProperties": [
+    "/properties/DhcpOptionsId"
+  ],
+  "primaryIdentifier": [
+    "/properties/DhcpOptionsId"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ec2:CreateDhcpOptions",
+        "ec2:DescribeDhcpOptions",
+        "ec2:CreateTags"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ec2:DescribeDhcpOptions",
+        "ec2:DescribeTags"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ec2:CreateTags",
+        "ec2:DescribeDhcpOptions",
+        "ec2:DeleteTags"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ec2:DeleteDhcpOptions",
+        "ec2:DeleteTags"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ec2:DescribeDhcpOptions"
+      ]
+    }
+  }
+}

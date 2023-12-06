@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -36,6 +30,7 @@ ResourceTagKey = str
 ResourceTagValue = str
 ReverseOrder = bool
 SignalName = str
+StartAtPreviousStartedEvent = bool
 Tag = str
 TaskPriority = str
 TaskToken = str
@@ -104,6 +99,7 @@ class ContinueAsNewWorkflowExecutionFailedCause(str):
 
 class DecisionTaskTimeoutType(str):
     START_TO_CLOSE = "START_TO_CLOSE"
+    SCHEDULE_TO_START = "SCHEDULE_TO_START"
 
 
 class DecisionType(str):
@@ -890,6 +886,8 @@ class DecisionTaskCompletedEventAttributes(TypedDict, total=False):
     executionContext: Optional[Data]
     scheduledEventId: EventId
     startedEventId: EventId
+    taskList: Optional[TaskList]
+    taskListScheduleToStartTimeout: Optional[DurationInSecondsOptional]
 
 
 class DecisionTaskStartedEventAttributes(TypedDict, total=False):
@@ -901,6 +899,7 @@ class DecisionTaskScheduledEventAttributes(TypedDict, total=False):
     taskList: TaskList
     taskPriority: Optional[TaskPriority]
     startToCloseTimeout: Optional[DurationInSecondsOptional]
+    scheduleToStartTimeout: Optional[DurationInSecondsOptional]
 
 
 class WorkflowExecutionCancelRequestedEventAttributes(TypedDict, total=False):
@@ -1239,6 +1238,7 @@ class PollForDecisionTaskInput(ServiceRequest):
     nextPageToken: Optional[PageToken]
     maximumPageSize: Optional[PageSize]
     reverseOrder: Optional[ReverseOrder]
+    startAtPreviousStartedEvent: Optional[StartAtPreviousStartedEvent]
 
 
 class RecordActivityTaskHeartbeatInput(ServiceRequest):
@@ -1308,6 +1308,8 @@ class RespondDecisionTaskCompletedInput(ServiceRequest):
     taskToken: TaskToken
     decisions: Optional[DecisionList]
     executionContext: Optional[Data]
+    taskList: Optional[TaskList]
+    taskListScheduleToStartTimeout: Optional[DurationInSecondsOptional]
 
 
 class Run(TypedDict, total=False):
@@ -1450,7 +1452,6 @@ class WorkflowTypeInfos(TypedDict, total=False):
 
 
 class SwfApi:
-
     service = "swf"
     version = "2012-01-25"
 
@@ -1637,6 +1638,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
+        start_at_previous_started_event: StartAtPreviousStartedEvent = None,
     ) -> DecisionTask:
         raise NotImplementedError
 
@@ -1730,6 +1732,8 @@ class SwfApi:
         task_token: TaskToken,
         decisions: DecisionList = None,
         execution_context: Data = None,
+        task_list: TaskList = None,
+        task_list_schedule_to_start_timeout: DurationInSecondsOptional = None,
     ) -> None:
         raise NotImplementedError
 

@@ -3,9 +3,9 @@ import logging
 from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
-from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm
+from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm, MetricDatum
 
-from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.accounts import get_account_id_from_access_key_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AlarmNames,
@@ -13,6 +13,10 @@ from localstack.aws.api.cloudwatch import (
     CloudwatchApi,
     DescribeAlarmsInput,
     DescribeAlarmsOutput,
+    GetMetricDataInput,
+    GetMetricDataOutput,
+    GetMetricStatisticsInput,
+    GetMetricStatisticsOutput,
     ListTagsForResourceOutput,
     PutCompositeAlarmInput,
     PutMetricAlarmInput,
@@ -22,20 +26,23 @@ from localstack.aws.api.cloudwatch import (
     TagResourceOutput,
     UntagResourceOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request
 from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws.arns import extract_account_id_from_arn
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.patch import patch
 from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
 from localstack.utils.threads import start_worker_thread
 
-PATH_GET_RAW_METRICS = "/cloudwatch/metrics/raw"
+PATH_GET_RAW_METRICS = "/_aws/cloudwatch/metrics/raw"
+DEPRECATED_PATH_GET_RAW_METRICS = "/cloudwatch/metrics/raw"
 MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 
 LOG = logging.getLogger(__name__)
@@ -61,10 +68,10 @@ def update_state(target, self, reason, reason_data, state_value):
     else:
         actions = self.insufficient_data_actions
     for action in actions:
-        data = aws_stack.parse_arn(action)
+        data = arns.parse_arn(action)
         # test for sns - can this be done in a more generic way?
         if data["service"] == "sns":
-            service = aws_stack.connect_to_service(data["service"])
+            service = connect_to.get_client(data["service"])
             subject = f"""{self.state_value}: "{self.name}" in {self.region_name}"""
             message = create_message_response_update_state(self, old_state)
             service.publish(TopicArn=action, Subject=subject, Message=message)
@@ -137,7 +144,7 @@ def put_metric_alarm(
 
 def create_message_response_update_state(alarm, old_state):
     response = {
-        "AWSAccountId": get_aws_account_id(),
+        "AWSAccountId": extract_account_id_from_arn(alarm.alarm_arn),
         "OldStateValue": old_state,
         "AlarmName": alarm.name,
         "AlarmDescription": alarm.description or "",
@@ -225,10 +232,20 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
-        self.alarm_scheduler = AlarmScheduler()
+        self.start_alarm_scheduler()
 
-    def on_before_start(self):
-        # re-schedule alarms for persistence use-case
+    def on_before_state_reset(self):
+        self.shutdown_alarm_scheduler()
+
+    def on_after_state_reset(self):
+        self.start_alarm_scheduler()
+
+    def on_before_state_load(self):
+        self.shutdown_alarm_scheduler()
+
+    def on_after_state_load(self):
+        self.start_alarm_scheduler()
+
         def restart_alarms(*args):
             poll_condition(lambda: SERVICE_PLUGINS.is_running("cloudwatch"))
             self.alarm_scheduler.restart_existing_alarms()
@@ -236,22 +253,36 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         start_worker_thread(restart_alarms)
 
     def on_before_stop(self):
+        self.shutdown_alarm_scheduler()
+
+    def start_alarm_scheduler(self):
+        if not self.alarm_scheduler:
+            LOG.debug("starting cloudwatch scheduler")
+            self.alarm_scheduler = AlarmScheduler()
+
+    def shutdown_alarm_scheduler(self):
+        LOG.debug("stopping cloudwatch scheduler")
         self.alarm_scheduler.shutdown_scheduler()
+        self.alarm_scheduler = None
 
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames) -> None:
         moto.call_moto(context)
         for alarm_name in alarm_names:
-            arn = aws_stack.cloudwatch_alarm_arn(alarm_name)
+            arn = arns.cloudwatch_alarm_arn(alarm_name, context.account_id, context.region)
             self.alarm_scheduler.delete_scheduler_for_alarm(arn)
 
     def get_raw_metrics(self, request: Request):
         region = aws_stack.extract_region_from_auth_header(request.headers)
         account_id = (
-            extract_access_key_id_from_auth_header(request.headers) or DEFAULT_AWS_ACCOUNT_ID
+            get_account_id_from_access_key_id(
+                extract_access_key_id_from_auth_header(request.headers)
+            )
+            or DEFAULT_AWS_ACCOUNT_ID
         )
         backend = cloudwatch_backends[account_id][region]
         if backend:
-            result = backend.metric_data
+            result = [m for m in backend.metric_data if isinstance(m, MetricDatum)]
+            # TODO handle aggregated metrics as well (MetricAggregatedDatum)
         else:
             result = []
 
@@ -285,15 +316,34 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self.tags.tag_resource(resource_arn, tags)
         return TagResourceOutput()
 
+    @handler("GetMetricData", expand=False)
+    def get_metric_data(
+        self, context: RequestContext, request: GetMetricDataInput
+    ) -> GetMetricDataOutput:
+        result = moto.call_moto(context)
+        # moto currently uses hardcoded label metric_name + stat
+        # parity tests shows that default is MetricStat, but there might also be a label explicitly set
+        metric_data_queries = request["MetricDataQueries"]
+        for i in range(0, len(metric_data_queries)):
+            metric_query = metric_data_queries[i]
+            label = metric_query.get("Label") or metric_query.get("MetricStat", {}).get(
+                "Metric", {}
+            ).get("MetricName")
+            if label:
+                result["MetricDataResults"][i]["Label"] = label
+        if "Messages" not in result:
+            # parity tests reveals that an empty messages list is added
+            result["Messages"] = []
+        return result
+
     @handler("PutMetricAlarm", expand=False)
     def put_metric_alarm(
         self,
         context: RequestContext,
         request: PutMetricAlarmInput,
     ) -> None:
-
         # missing will be the default, when not set (but it will not explicitly be set)
-        if not request.get("TreatMissingData", "missing") in [
+        if request.get("TreatMissingData", "missing") not in [
             "breaching",
             "notBreaching",
             "ignore",
@@ -310,7 +360,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 if value % 60 != 0:
                     raise ValidationError("Period must be 10, 30 or a multiple of 60")
         if request.get("Statistic"):
-            if not request.get("Statistic") in [
+            if request.get("Statistic") not in [
                 "SampleCount",
                 "Average",
                 "Sum",
@@ -324,7 +374,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         moto.call_moto(context)
 
         name = request.get("AlarmName")
-        arn = aws_stack.cloudwatch_alarm_arn(name)
+        arn = arns.cloudwatch_alarm_arn(name, context.account_id, context.region)
         self.tags.tag_resource(arn, request.get("Tags"))
         self.alarm_scheduler.schedule_metric_alarm(arn)
 
@@ -382,5 +432,18 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             _cleanup_describe_output(c)
         for m in response["MetricAlarms"]:
             _cleanup_describe_output(m)
+
+        return response
+
+    @handler("GetMetricStatistics", expand=False)
+    def get_metric_statistics(
+        self, context: RequestContext, request: GetMetricStatisticsInput
+    ) -> GetMetricStatisticsOutput:
+        response = moto.call_moto(context)
+
+        # cleanup -> ExtendendStatics is not included in AWS response if it returned empty
+        for datapoint in response.get("Datapoints"):
+            if "ExtendedStatistics" in datapoint and not datapoint.get("ExtendedStatistics"):
+                datapoint.pop("ExtendedStatistics")
 
         return response

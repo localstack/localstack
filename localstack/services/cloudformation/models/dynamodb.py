@@ -1,53 +1,88 @@
-from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_AWS_NO_VALUE
-from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
+from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_AWS_NO_VALUE,
+    generate_default_name,
+)
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid
 
 
-def get_ddb_provisioned_throughput(params, **kwargs):
-    args = params.get("ProvisionedThroughput")
+def get_ddb_provisioned_throughput(
+    account_id: str,
+    region_name: str,
+    properties: dict,
+    logical_resource_id: str,
+    resource: dict,
+    stack_name: str,
+) -> dict | None:
+    # see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html#cfn-dynamodb-table-provisionedthroughput
+    args = properties.get("ProvisionedThroughput")
     if args == PLACEHOLDER_AWS_NO_VALUE:
-        return {}
-    is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
-    if is_ondemand and args is None:
+        return None
+    is_ondemand = properties.get("BillingMode") == "PAY_PER_REQUEST"
+    # if the BillingMode is set to PAY_PER_REQUEST, you cannot specify ProvisionedThroughput
+    # if the BillingMode is set to PROVISIONED (default), you have to specify ProvisionedThroughput
+
+    if args is None:
+        if is_ondemand:
+            # do not return default value if it's on demand
+            return
+
+        # return default values if it's not on demand
+        return {
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5,
+        }
+
+    if isinstance(args["ReadCapacityUnits"], str):
+        args["ReadCapacityUnits"] = int(args["ReadCapacityUnits"])
+    if isinstance(args["WriteCapacityUnits"], str):
+        args["WriteCapacityUnits"] = int(args["WriteCapacityUnits"])
+
+    return args
+
+
+def get_ddb_global_sec_indexes(
+    account_id: str,
+    region_name: str,
+    properties: dict,
+    logical_resource_id: str,
+    resource: dict,
+    stack_name: str,
+) -> list | None:
+    args: list = properties.get("GlobalSecondaryIndexes")
+    is_ondemand = properties.get("BillingMode") == "PAY_PER_REQUEST"
+    if not args:
         return
-    if args:
-        if isinstance(args["ReadCapacityUnits"], str):
-            args["ReadCapacityUnits"] = int(args["ReadCapacityUnits"])
-        if isinstance(args["WriteCapacityUnits"], str):
-            args["WriteCapacityUnits"] = int(args["WriteCapacityUnits"])
+
+    for index in args:
+        # we ignore ContributorInsightsSpecification as not supported yet in DynamoDB and CloudWatch
+        index.pop("ContributorInsightsSpecification", None)
+        provisioned_throughput = index.get("ProvisionedThroughput")
+        if is_ondemand and provisioned_throughput is None:
+            pass  # optional for API calls
+        elif provisioned_throughput is not None:
+            # convert types
+            if isinstance((read_units := provisioned_throughput["ReadCapacityUnits"]), str):
+                provisioned_throughput["ReadCapacityUnits"] = int(read_units)
+            if isinstance((write_units := provisioned_throughput["WriteCapacityUnits"]), str):
+                provisioned_throughput["WriteCapacityUnits"] = int(write_units)
+        else:
+            raise Exception("Can't specify ProvisionedThroughput with PAY_PER_REQUEST")
     return args
 
 
-def get_ddb_global_sec_indexes(params, **kwargs):
-    args = params.get("GlobalSecondaryIndexes")
-    is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
+def get_ddb_kinesis_stream_specification(
+    account_id: str,
+    region_name: str,
+    properties: dict,
+    logical_resource_id: str,
+    resource: dict,
+    stack_name: str,
+) -> dict:
+    args = properties.get("KinesisStreamSpecification")
     if args:
-        for index in args:
-            provisioned_throughput = index.get("ProvisionedThroughput")
-            if is_ondemand and provisioned_throughput is None:
-                pass  # optional for API calls
-            elif provisioned_throughput is not None:
-                # convert types
-                if isinstance(provisioned_throughput["ReadCapacityUnits"], str):
-                    provisioned_throughput["ReadCapacityUnits"] = int(
-                        provisioned_throughput["ReadCapacityUnits"]
-                    )
-                if isinstance(provisioned_throughput["WriteCapacityUnits"], str):
-                    provisioned_throughput["WriteCapacityUnits"] = int(
-                        provisioned_throughput["WriteCapacityUnits"]
-                    )
-            else:
-                raise Exception("Can't specify ProvisionedThroughput with PAY_PER_REQUEST")
-
-    return args
-
-
-def get_ddb_kinesis_stream_specification(params, **kwargs):
-    args = params.get("KinesisStreamSpecification")
-    if args:
-        args["TableName"] = params["TableName"]
+        args["TableName"] = properties["TableName"]
     return args
 
 
@@ -56,47 +91,42 @@ class DynamoDBTable(GenericBaseModel):
     def cloudformation_type():
         return "AWS::DynamoDB::Table"
 
-    def get_cfn_attribute(self, attribute_name):
-        actual_attribute = "LatestStreamArn" if attribute_name == "StreamArn" else attribute_name
-        value = self.props.get("Table", {}).get(actual_attribute)
-        if value:
-            return value
-        return super(DynamoDBTable, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        table_name = self.props.get("TableName")
-        if attribute in REF_ID_ATTRS:
-            return table_name
-        return aws_stack.dynamodb_table_arn(table_name)
-
     def fetch_state(self, stack_name, resources):
-        table_name = self.props.get("TableName") or self.resource_id
-        table_name = self.resolve_refs_recursively(stack_name, table_name, resources)
-        return aws_stack.connect_to_service("dynamodb").describe_table(TableName=table_name)
+        table_name = self.props.get("TableName") or self.logical_resource_id
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).dynamodb.describe_table(TableName=table_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        is_pay_per_request = resource.get("Properties", {}).get("BillingMode") == "PAY_PER_REQUEST"
-        if not is_pay_per_request:
-            resource["Properties"]["ProvisionedThroughput"] = {
-                "ReadCapacityUnits": 5,
-                "WriteCapacityUnits": 5,
-            }
+        table_name = resource.get("Properties", {}).get("TableName")
+        resource["Properties"]["TableName"] = table_name or generate_default_name(
+            stack_name, resource["LogicalResourceId"]
+        )
 
     @classmethod
     def get_deploy_templates(cls):
-        def _pre_create(resource_id, resources, resource_type, func, stack_name):
-            resource = resources[resource_id]
-            props = resource["Properties"]
-
-            def _generate_res_name():  # TODO: generalize
-                return "%s-%s-%s" % (stack_name, resource_id, short_uid())
-
-            props["TableName"] = props.get("TableName") or _generate_res_name()
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            table_name = result["TableDescription"]["TableName"]
+            connect_to(aws_access_key_id=account_id, region_name=region_name).dynamodb.get_waiter(
+                "table_exists"
+            ).wait(TableName=table_name)
+            desc_table = connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).dynamodb.describe_table(TableName=table_name)
+            resource["Properties"]["Arn"] = desc_table["Table"]["TableArn"]
+            if stream_arn := desc_table["Table"].get("LatestStreamArn"):
+                resource["Properties"]["StreamArn"] = stream_arn
+            resource["PhysicalResourceId"] = table_name
 
         return {
             "create": [
-                {"function": _pre_create},
                 {
                     "function": "create_table",
                     "parameters": {
@@ -107,14 +137,16 @@ class DynamoDBTable(GenericBaseModel):
                         "ProvisionedThroughput": get_ddb_provisioned_throughput,
                         "LocalSecondaryIndexes": "LocalSecondaryIndexes",
                         "GlobalSecondaryIndexes": get_ddb_global_sec_indexes,
-                        "StreamSpecification": lambda params, **kwargs: (
+                        "StreamSpecification": lambda account_id, region_name, properties, logical_resource_id, *args, **kwargs: (
                             common.merge_dicts(
-                                params.get("StreamSpecification"),
+                                properties.get("StreamSpecification"),
                                 {"StreamEnabled": True},
                                 default=None,
                             )
                         ),
+                        "Tags": "Tags",
                     },
+                    "result_handler": _handle_result,
                 },
                 {
                     "function": "enable_kinesis_streaming_destination",

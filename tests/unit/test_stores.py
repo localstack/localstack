@@ -1,21 +1,12 @@
+import unittest
+
 import pytest
-from pytest import fixture
 
-from localstack.services.stores import (
-    AccountRegionBundle,
-    BaseStore,
-    CrossRegionAttribute,
-    LocalAttribute,
-)
+from localstack.services.stores import AccountRegionBundle, BaseStore
 
 
-@fixture
-def sample_stores() -> AccountRegionBundle:
-    class SampleStore(BaseStore):
-        CROSS_REGION_ATTR = CrossRegionAttribute(default=list)
-        region_specific_attr = LocalAttribute(default=list)
-
-    return AccountRegionBundle("zzz", SampleStore, validate=False)
+class SampleStore(BaseStore):
+    pass
 
 
 class TestStores:
@@ -33,24 +24,45 @@ class TestStores:
 
         store1.region_specific_attr.extend([1, 2, 3])
         store1.CROSS_REGION_ATTR.extend(["a", "b", "c"])
+        store1.CROSS_ACCOUNT_ATTR.extend([100j, 200j, 300j])
         store2.region_specific_attr.extend([4, 5, 6])
+        store2.CROSS_ACCOUNT_ATTR.extend([400j])
         store3.region_specific_attr.extend([7, 8, 9])
         store3.CROSS_REGION_ATTR.extend([0.1, 0.2, 0.3])
+        store3.CROSS_ACCOUNT_ATTR.extend([500j])
+
+        # Ensure all stores are affected by cross-account attributes
+        assert store1.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j, 400j, 500j]
+        assert store2.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j, 400j, 500j]
+        assert store3.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j, 400j, 500j]
+
+        assert store1.CROSS_ACCOUNT_ATTR.pop() == 500j
+
+        assert store2.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j, 400j]
+        assert store3.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j, 400j]
 
         # Ensure other account stores are not affected by RegionBundle reset
+        # Ensure cross-account attributes are not affected by RegionBundle reset
         sample_stores[account1].reset()
 
         assert store1.region_specific_attr == []
         assert store1.CROSS_REGION_ATTR == []
+        assert store1.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j, 400j]
         assert store2.region_specific_attr == []
         assert store2.CROSS_REGION_ATTR == []
+        assert store2.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j, 400j]
         assert store3.region_specific_attr == [7, 8, 9]
         assert store3.CROSS_REGION_ATTR == [0.1, 0.2, 0.3]
+        assert store3.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j, 400j]
 
+        # Ensure AccountRegionBundle reset
         sample_stores.reset()
 
+        assert store1.CROSS_ACCOUNT_ATTR == []
+        assert store2.CROSS_ACCOUNT_ATTR == []
         assert store3.region_specific_attr == []
         assert store3.CROSS_REGION_ATTR == []
+        assert store3.CROSS_ACCOUNT_ATTR == []
 
         # Ensure essential properties are retained after reset
         assert store1._region_name == eu_region
@@ -121,10 +133,20 @@ class TestStores:
             != id(backend1_ap._global)
         )
 
-    def test_valid_regions(self):
-        class SampleStore(BaseStore):
-            pass
+        # Ensure cross-account data sharing
+        backend1_eu.CROSS_ACCOUNT_ATTR.extend([100j, 200j, 300j])
+        assert backend1_ap.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j]
+        assert backend1_eu.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j]
+        assert backend2_ap.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j]
+        assert backend2_eu.CROSS_ACCOUNT_ATTR == [100j, 200j, 300j]
+        assert (
+            id(backend1_ap._universal)
+            == id(backend1_eu._universal)
+            == id(backend2_ap._universal)
+            == id(backend2_eu._universal)
+        )
 
+    def test_valid_regions(self):
         stores = AccountRegionBundle("sns", SampleStore)
         account1 = "696969696969"
 
@@ -137,3 +159,15 @@ class TestStores:
         with pytest.raises(Exception) as exc:
             assert stores[account1]["invalid-region"]
         exc.match("not a valid AWS region")
+
+    @unittest.mock.patch("localstack.config.ALLOW_NONSTANDARD_REGIONS", True)
+    def test_nonstandard_regions(self):
+        stores = AccountRegionBundle("sns", SampleStore)
+        account1 = "696969696969"
+
+        # assert regular and extended regions work
+        assert stores[account1]["us-east-1"]
+        assert stores[account1]["us-gov-west-1"]
+
+        # assert non-standard regions work
+        assert stores[account1]["pluto-south-3"]

@@ -1,0 +1,15 @@
+Parameters:
+  Name:
+    Type: String
+Resources:
+  BrokenPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName:
+        Ref: Name
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: '*'
+            Resource: '*'

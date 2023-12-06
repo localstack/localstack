@@ -1,37 +1,43 @@
 from typing import Dict
 
+import localstack.services.route53resolver.utils
 from localstack.aws.api.route53resolver import (
     FirewallConfig,
+    FirewallDomainList,
+    FirewallDomains,
+    FirewallRule,
     FirewallRuleGroup,
+    FirewallRuleGroupAssociation,
+    ResolverQueryLogConfig,
+    ResolverQueryLogConfigAssociation,
+    ResolverQueryLogConfigStatus,
     ResourceNotFoundException,
 )
-from localstack.services.generic_proxy import RegionBackend
 from localstack.services.route53resolver.utils import get_firewall_config_id, validate_vpc
-from localstack.utils.aws import aws_stack
+from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
 
-class Route53ResolverBackend(RegionBackend):
-    # maps firewall rule groups set ID to firewall rule groups set details
-    firewall_rule_groups: Dict[str, FirewallRuleGroup]
+class Route53ResolverStore(BaseStore):
+    firewall_configs: Dict[str, FirewallConfig] = LocalAttribute(default=dict)
+    firewall_domain_lists: Dict[str, FirewallDomainList] = LocalAttribute(default=dict)
+    firewall_domains: Dict[str, FirewallDomains] = LocalAttribute(default=dict)
+    firewall_rules: Dict[str, FirewallRule] = LocalAttribute(default=dict)
+    firewall_rule_groups: Dict[str, FirewallRuleGroup] = LocalAttribute(default=dict)
+    firewall_rule_group_associations: Dict[str, FirewallRuleGroupAssociation] = LocalAttribute(
+        default=dict
+    )
+    resolver_query_log_configs: Dict[str, ResolverQueryLogConfig] = LocalAttribute(default=dict)
+    resolver_query_log_config_associations: Dict[
+        str, ResolverQueryLogConfigAssociation
+    ] = LocalAttribute(default=dict)
 
-    def __init__(self):
-        self.firewall_rule_groups = {}
-        self.firewall_domain_lists = {}
-        self.firewall_domains = {}
-        self.firewall_rules = {}
-        self.firewall_rule_group_associations = {}
-        self.resolver_query_log_configs = {}
-        self.resolver_query_log_config_associations = {}
-        self.firewall_configs = {}
-
-    ## helper functions for the backend
     def get_firewall_rule_group(self, id):
         """returns firewall rule group with the given id if it exists"""
 
         firewall_rule_group = self.firewall_rule_groups.get(id)
         if not firewall_rule_group:
             raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"Can't find the resource with ID '{id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return firewall_rule_group
 
@@ -49,7 +55,7 @@ class Route53ResolverBackend(RegionBackend):
         firewall_rule_group_association = self.firewall_rule_group_associations.get(id)
         if not firewall_rule_group_association:
             raise ResourceNotFoundException(
-                f"[RSLVR-02025] Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"[RSLVR-02025] Can't find the resource with ID '{id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return self.firewall_rule_group_associations.get(id)
 
@@ -74,7 +80,7 @@ class Route53ResolverBackend(RegionBackend):
         firewall_domain_list = self.firewall_domain_lists.get(id)
         if not firewall_domain_list:
             raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"Can't find the resource with ID '{id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return firewall_domain_list
 
@@ -94,7 +100,7 @@ class Route53ResolverBackend(RegionBackend):
         )
         if not firewall_rule:
             raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return firewall_rule
 
@@ -112,7 +118,7 @@ class Route53ResolverBackend(RegionBackend):
         resolver_query_log_config = self.resolver_query_log_configs.get(id)
         if not resolver_query_log_config:
             raise ResourceNotFoundException(
-                f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return resolver_query_log_config
 
@@ -121,6 +127,7 @@ class Route53ResolverBackend(RegionBackend):
 
         self.get_resolver_query_log_config(id)
         resolver_query_log_config = self.resolver_query_log_configs.pop(id)
+        resolver_query_log_config["Status"] = ResolverQueryLogConfigStatus.DELETING
         return resolver_query_log_config
 
     def get_resolver_query_log_config_associations(self, id):
@@ -129,7 +136,7 @@ class Route53ResolverBackend(RegionBackend):
         resolver_query_log_config_association = self.resolver_query_log_config_associations.get(id)
         if not resolver_query_log_config_association:
             raise ResourceNotFoundException(
-                f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return resolver_query_log_config_association
 
@@ -145,7 +152,7 @@ class Route53ResolverBackend(RegionBackend):
                 and association.get("ResourceId") == resource_id
             ):
                 raise ResourceNotFoundException(
-                    f"[RSLVR-01602] The specified query logging configuration association doesn't exist. Trace Id: '{aws_stack.get_trace_id()}'"
+                    f"[RSLVR-01602] The specified query logging configuration association doesn't exist. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
                 )
             association["Status"] = "DELETING"
             association_id = association.get("Id")
@@ -168,3 +175,6 @@ class Route53ResolverBackend(RegionBackend):
             )
             self.firewall_configs[resource_id] = firewall_config
         return firewall_config
+
+
+route53resolver_stores = AccountRegionBundle("route53resolver", Route53ResolverStore)

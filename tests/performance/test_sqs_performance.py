@@ -1,6 +1,12 @@
 from datetime import datetime
 
-from localstack.utils.aws.aws_stack import create_external_boto_client, get_sqs_queue_url
+from localstack.aws.connect import connect_externally_to
+from localstack.constants import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
+from localstack.utils.aws.arns import sqs_queue_url_for_arn
 
 QUEUE_NAME = "test-perf-3610"
 NUM_MESSAGES = 300
@@ -16,7 +22,11 @@ def print_duration(start, num_msgs, action):
 
 
 def send_messages():
-    sqs = create_external_boto_client("sqs")
+    sqs = connect_externally_to(
+        region_name=TEST_AWS_REGION_NAME,
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+    ).sqs
     queue_url = sqs.create_queue(QueueName=QUEUE_NAME)["QueueUrl"]
 
     print("Starting to send %s messages" % NUM_MESSAGES)
@@ -27,8 +37,12 @@ def send_messages():
 
 
 def receive_messages():
-    sqs = create_external_boto_client("sqs")
-    queue_url = get_sqs_queue_url(QUEUE_NAME)
+    sqs = connect_externally_to(
+        region_name=TEST_AWS_REGION_NAME,
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+    ).sqs
+    queue_url = sqs_queue_url_for_arn(QUEUE_NAME)
     messages = []
 
     start = datetime.now()

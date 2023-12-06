@@ -1,0 +1,13 @@
+{
+    "Comment": "ARRAY_2",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.Array($.FunctionInput.fst, $.FunctionInput.snd)"
+            },
+            "End": true,
+        },
+    },
+}

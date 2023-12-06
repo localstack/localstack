@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -20,6 +14,7 @@ AwsRegion = str
 BaseResourceId = str
 Boolean = bool
 ChannelName = str
+ClientToken = str
 ComplianceScore = str
 ConfigRuleName = str
 Configuration = str
@@ -38,6 +33,8 @@ DescribeConformancePackComplianceLimit = int
 DescribePendingAggregationRequestsLimit = int
 EmptiableStringWithCharLimit256 = str
 ErrorMessage = str
+EvaluationContextIdentifier = str
+EvaluationTimeout = int
 Expression = str
 FieldName = str
 GetConformancePackComplianceDetailsLimit = int
@@ -45,6 +42,7 @@ GroupByAPILimit = int
 IncludeGlobalResourceTypes = bool
 Integer = int
 Limit = int
+ListResourceEvaluationsPageItemLimit = int
 Name = str
 NextToken = str
 OrganizationConfigRuleName = str
@@ -63,6 +61,8 @@ QueryName = str
 RecorderName = str
 RelatedEvent = str
 RelationshipName = str
+ResourceConfiguration = str
+ResourceEvaluationId = str
 ResourceId = str
 ResourceName = str
 ResourceTypeString = str
@@ -159,6 +159,11 @@ class DeliveryStatus(str):
     Not_Applicable = "Not_Applicable"
 
 
+class EvaluationMode(str):
+    DETECTIVE = "DETECTIVE"
+    PROACTIVE = "PROACTIVE"
+
+
 class EventSource(str):
     aws_config = "aws.config"
 
@@ -249,6 +254,12 @@ class RecorderStatus(str):
     Failure = "Failure"
 
 
+class RecordingStrategyType(str):
+    ALL_SUPPORTED_RESOURCE_TYPES = "ALL_SUPPORTED_RESOURCE_TYPES"
+    INCLUSION_BY_RESOURCE_TYPES = "INCLUSION_BY_RESOURCE_TYPES"
+    EXCLUSION_BY_RESOURCE_TYPES = "EXCLUSION_BY_RESOURCE_TYPES"
+
+
 class RemediationExecutionState(str):
     QUEUED = "QUEUED"
     IN_PROGRESS = "IN_PROGRESS"
@@ -266,10 +277,20 @@ class RemediationTargetType(str):
     SSM_DOCUMENT = "SSM_DOCUMENT"
 
 
+class ResourceConfigurationSchemaType(str):
+    CFN_RESOURCE_SCHEMA = "CFN_RESOURCE_SCHEMA"
+
+
 class ResourceCountGroupKey(str):
     RESOURCE_TYPE = "RESOURCE_TYPE"
     ACCOUNT_ID = "ACCOUNT_ID"
     AWS_REGION = "AWS_REGION"
+
+
+class ResourceEvaluationStatus(str):
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+    SUCCEEDED = "SUCCEEDED"
 
 
 class ResourceType(str):
@@ -419,6 +440,263 @@ class ResourceType(str):
     AWS_EC2_TransitGatewayAttachment = "AWS::EC2::TransitGatewayAttachment"
     AWS_EC2_TransitGatewayRouteTable = "AWS::EC2::TransitGatewayRouteTable"
     AWS_DMS_Certificate = "AWS::DMS::Certificate"
+    AWS_AppConfig_Application = "AWS::AppConfig::Application"
+    AWS_AppSync_GraphQLApi = "AWS::AppSync::GraphQLApi"
+    AWS_DataSync_LocationSMB = "AWS::DataSync::LocationSMB"
+    AWS_DataSync_LocationFSxLustre = "AWS::DataSync::LocationFSxLustre"
+    AWS_DataSync_LocationS3 = "AWS::DataSync::LocationS3"
+    AWS_DataSync_LocationEFS = "AWS::DataSync::LocationEFS"
+    AWS_DataSync_Task = "AWS::DataSync::Task"
+    AWS_DataSync_LocationNFS = "AWS::DataSync::LocationNFS"
+    AWS_EC2_NetworkInsightsAccessScopeAnalysis = "AWS::EC2::NetworkInsightsAccessScopeAnalysis"
+    AWS_EKS_FargateProfile = "AWS::EKS::FargateProfile"
+    AWS_Glue_Job = "AWS::Glue::Job"
+    AWS_GuardDuty_ThreatIntelSet = "AWS::GuardDuty::ThreatIntelSet"
+    AWS_GuardDuty_IPSet = "AWS::GuardDuty::IPSet"
+    AWS_SageMaker_Workteam = "AWS::SageMaker::Workteam"
+    AWS_SageMaker_NotebookInstanceLifecycleConfig = (
+        "AWS::SageMaker::NotebookInstanceLifecycleConfig"
+    )
+    AWS_ServiceDiscovery_Service = "AWS::ServiceDiscovery::Service"
+    AWS_ServiceDiscovery_PublicDnsNamespace = "AWS::ServiceDiscovery::PublicDnsNamespace"
+    AWS_SES_ContactList = "AWS::SES::ContactList"
+    AWS_SES_ConfigurationSet = "AWS::SES::ConfigurationSet"
+    AWS_Route53_HostedZone = "AWS::Route53::HostedZone"
+    AWS_IoTEvents_Input = "AWS::IoTEvents::Input"
+    AWS_IoTEvents_DetectorModel = "AWS::IoTEvents::DetectorModel"
+    AWS_IoTEvents_AlarmModel = "AWS::IoTEvents::AlarmModel"
+    AWS_ServiceDiscovery_HttpNamespace = "AWS::ServiceDiscovery::HttpNamespace"
+    AWS_Events_EventBus = "AWS::Events::EventBus"
+    AWS_ImageBuilder_ContainerRecipe = "AWS::ImageBuilder::ContainerRecipe"
+    AWS_ImageBuilder_DistributionConfiguration = "AWS::ImageBuilder::DistributionConfiguration"
+    AWS_ImageBuilder_InfrastructureConfiguration = "AWS::ImageBuilder::InfrastructureConfiguration"
+    AWS_DataSync_LocationObjectStorage = "AWS::DataSync::LocationObjectStorage"
+    AWS_DataSync_LocationHDFS = "AWS::DataSync::LocationHDFS"
+    AWS_Glue_Classifier = "AWS::Glue::Classifier"
+    AWS_Route53RecoveryReadiness_Cell = "AWS::Route53RecoveryReadiness::Cell"
+    AWS_Route53RecoveryReadiness_ReadinessCheck = "AWS::Route53RecoveryReadiness::ReadinessCheck"
+    AWS_ECR_RegistryPolicy = "AWS::ECR::RegistryPolicy"
+    AWS_Backup_ReportPlan = "AWS::Backup::ReportPlan"
+    AWS_Lightsail_Certificate = "AWS::Lightsail::Certificate"
+    AWS_RUM_AppMonitor = "AWS::RUM::AppMonitor"
+    AWS_Events_Endpoint = "AWS::Events::Endpoint"
+    AWS_SES_ReceiptRuleSet = "AWS::SES::ReceiptRuleSet"
+    AWS_Events_Archive = "AWS::Events::Archive"
+    AWS_Events_ApiDestination = "AWS::Events::ApiDestination"
+    AWS_Lightsail_Disk = "AWS::Lightsail::Disk"
+    AWS_FIS_ExperimentTemplate = "AWS::FIS::ExperimentTemplate"
+    AWS_DataSync_LocationFSxWindows = "AWS::DataSync::LocationFSxWindows"
+    AWS_SES_ReceiptFilter = "AWS::SES::ReceiptFilter"
+    AWS_GuardDuty_Filter = "AWS::GuardDuty::Filter"
+    AWS_SES_Template = "AWS::SES::Template"
+    AWS_AmazonMQ_Broker = "AWS::AmazonMQ::Broker"
+    AWS_AppConfig_Environment = "AWS::AppConfig::Environment"
+    AWS_AppConfig_ConfigurationProfile = "AWS::AppConfig::ConfigurationProfile"
+    AWS_Cloud9_EnvironmentEC2 = "AWS::Cloud9::EnvironmentEC2"
+    AWS_EventSchemas_Registry = "AWS::EventSchemas::Registry"
+    AWS_EventSchemas_RegistryPolicy = "AWS::EventSchemas::RegistryPolicy"
+    AWS_EventSchemas_Discoverer = "AWS::EventSchemas::Discoverer"
+    AWS_FraudDetector_Label = "AWS::FraudDetector::Label"
+    AWS_FraudDetector_EntityType = "AWS::FraudDetector::EntityType"
+    AWS_FraudDetector_Variable = "AWS::FraudDetector::Variable"
+    AWS_FraudDetector_Outcome = "AWS::FraudDetector::Outcome"
+    AWS_IoT_Authorizer = "AWS::IoT::Authorizer"
+    AWS_IoT_SecurityProfile = "AWS::IoT::SecurityProfile"
+    AWS_IoT_RoleAlias = "AWS::IoT::RoleAlias"
+    AWS_IoT_Dimension = "AWS::IoT::Dimension"
+    AWS_IoTAnalytics_Datastore = "AWS::IoTAnalytics::Datastore"
+    AWS_Lightsail_Bucket = "AWS::Lightsail::Bucket"
+    AWS_Lightsail_StaticIp = "AWS::Lightsail::StaticIp"
+    AWS_MediaPackage_PackagingGroup = "AWS::MediaPackage::PackagingGroup"
+    AWS_Route53RecoveryReadiness_RecoveryGroup = "AWS::Route53RecoveryReadiness::RecoveryGroup"
+    AWS_ResilienceHub_ResiliencyPolicy = "AWS::ResilienceHub::ResiliencyPolicy"
+    AWS_Transfer_Workflow = "AWS::Transfer::Workflow"
+    AWS_EKS_IdentityProviderConfig = "AWS::EKS::IdentityProviderConfig"
+    AWS_EKS_Addon = "AWS::EKS::Addon"
+    AWS_Glue_MLTransform = "AWS::Glue::MLTransform"
+    AWS_IoT_Policy = "AWS::IoT::Policy"
+    AWS_IoT_MitigationAction = "AWS::IoT::MitigationAction"
+    AWS_IoTTwinMaker_Workspace = "AWS::IoTTwinMaker::Workspace"
+    AWS_IoTTwinMaker_Entity = "AWS::IoTTwinMaker::Entity"
+    AWS_IoTAnalytics_Dataset = "AWS::IoTAnalytics::Dataset"
+    AWS_IoTAnalytics_Pipeline = "AWS::IoTAnalytics::Pipeline"
+    AWS_IoTAnalytics_Channel = "AWS::IoTAnalytics::Channel"
+    AWS_IoTSiteWise_Dashboard = "AWS::IoTSiteWise::Dashboard"
+    AWS_IoTSiteWise_Project = "AWS::IoTSiteWise::Project"
+    AWS_IoTSiteWise_Portal = "AWS::IoTSiteWise::Portal"
+    AWS_IoTSiteWise_AssetModel = "AWS::IoTSiteWise::AssetModel"
+    AWS_IVS_Channel = "AWS::IVS::Channel"
+    AWS_IVS_RecordingConfiguration = "AWS::IVS::RecordingConfiguration"
+    AWS_IVS_PlaybackKeyPair = "AWS::IVS::PlaybackKeyPair"
+    AWS_KinesisAnalyticsV2_Application = "AWS::KinesisAnalyticsV2::Application"
+    AWS_RDS_GlobalCluster = "AWS::RDS::GlobalCluster"
+    AWS_S3_MultiRegionAccessPoint = "AWS::S3::MultiRegionAccessPoint"
+    AWS_DeviceFarm_TestGridProject = "AWS::DeviceFarm::TestGridProject"
+    AWS_Budgets_BudgetsAction = "AWS::Budgets::BudgetsAction"
+    AWS_Lex_Bot = "AWS::Lex::Bot"
+    AWS_CodeGuruReviewer_RepositoryAssociation = "AWS::CodeGuruReviewer::RepositoryAssociation"
+    AWS_IoT_CustomMetric = "AWS::IoT::CustomMetric"
+    AWS_Route53Resolver_FirewallDomainList = "AWS::Route53Resolver::FirewallDomainList"
+    AWS_RoboMaker_RobotApplicationVersion = "AWS::RoboMaker::RobotApplicationVersion"
+    AWS_EC2_TrafficMirrorSession = "AWS::EC2::TrafficMirrorSession"
+    AWS_IoTSiteWise_Gateway = "AWS::IoTSiteWise::Gateway"
+    AWS_Lex_BotAlias = "AWS::Lex::BotAlias"
+    AWS_LookoutMetrics_Alert = "AWS::LookoutMetrics::Alert"
+    AWS_IoT_AccountAuditConfiguration = "AWS::IoT::AccountAuditConfiguration"
+    AWS_EC2_TrafficMirrorTarget = "AWS::EC2::TrafficMirrorTarget"
+    AWS_S3_StorageLens = "AWS::S3::StorageLens"
+    AWS_IoT_ScheduledAudit = "AWS::IoT::ScheduledAudit"
+    AWS_Events_Connection = "AWS::Events::Connection"
+    AWS_EventSchemas_Schema = "AWS::EventSchemas::Schema"
+    AWS_MediaPackage_PackagingConfiguration = "AWS::MediaPackage::PackagingConfiguration"
+    AWS_KinesisVideo_SignalingChannel = "AWS::KinesisVideo::SignalingChannel"
+    AWS_AppStream_DirectoryConfig = "AWS::AppStream::DirectoryConfig"
+    AWS_LookoutVision_Project = "AWS::LookoutVision::Project"
+    AWS_Route53RecoveryControl_Cluster = "AWS::Route53RecoveryControl::Cluster"
+    AWS_Route53RecoveryControl_SafetyRule = "AWS::Route53RecoveryControl::SafetyRule"
+    AWS_Route53RecoveryControl_ControlPanel = "AWS::Route53RecoveryControl::ControlPanel"
+    AWS_Route53RecoveryControl_RoutingControl = "AWS::Route53RecoveryControl::RoutingControl"
+    AWS_Route53RecoveryReadiness_ResourceSet = "AWS::Route53RecoveryReadiness::ResourceSet"
+    AWS_RoboMaker_SimulationApplication = "AWS::RoboMaker::SimulationApplication"
+    AWS_RoboMaker_RobotApplication = "AWS::RoboMaker::RobotApplication"
+    AWS_HealthLake_FHIRDatastore = "AWS::HealthLake::FHIRDatastore"
+    AWS_Pinpoint_Segment = "AWS::Pinpoint::Segment"
+    AWS_Pinpoint_ApplicationSettings = "AWS::Pinpoint::ApplicationSettings"
+    AWS_Events_Rule = "AWS::Events::Rule"
+    AWS_EC2_DHCPOptions = "AWS::EC2::DHCPOptions"
+    AWS_EC2_NetworkInsightsPath = "AWS::EC2::NetworkInsightsPath"
+    AWS_EC2_TrafficMirrorFilter = "AWS::EC2::TrafficMirrorFilter"
+    AWS_EC2_IPAM = "AWS::EC2::IPAM"
+    AWS_IoTTwinMaker_Scene = "AWS::IoTTwinMaker::Scene"
+    AWS_NetworkManager_TransitGatewayRegistration = (
+        "AWS::NetworkManager::TransitGatewayRegistration"
+    )
+    AWS_CustomerProfiles_Domain = "AWS::CustomerProfiles::Domain"
+    AWS_AutoScaling_WarmPool = "AWS::AutoScaling::WarmPool"
+    AWS_Connect_PhoneNumber = "AWS::Connect::PhoneNumber"
+    AWS_AppConfig_DeploymentStrategy = "AWS::AppConfig::DeploymentStrategy"
+    AWS_AppFlow_Flow = "AWS::AppFlow::Flow"
+    AWS_AuditManager_Assessment = "AWS::AuditManager::Assessment"
+    AWS_CloudWatch_MetricStream = "AWS::CloudWatch::MetricStream"
+    AWS_DeviceFarm_InstanceProfile = "AWS::DeviceFarm::InstanceProfile"
+    AWS_DeviceFarm_Project = "AWS::DeviceFarm::Project"
+    AWS_EC2_EC2Fleet = "AWS::EC2::EC2Fleet"
+    AWS_EC2_SubnetRouteTableAssociation = "AWS::EC2::SubnetRouteTableAssociation"
+    AWS_ECR_PullThroughCacheRule = "AWS::ECR::PullThroughCacheRule"
+    AWS_GroundStation_Config = "AWS::GroundStation::Config"
+    AWS_ImageBuilder_ImagePipeline = "AWS::ImageBuilder::ImagePipeline"
+    AWS_IoT_FleetMetric = "AWS::IoT::FleetMetric"
+    AWS_IoTWireless_ServiceProfile = "AWS::IoTWireless::ServiceProfile"
+    AWS_NetworkManager_Device = "AWS::NetworkManager::Device"
+    AWS_NetworkManager_GlobalNetwork = "AWS::NetworkManager::GlobalNetwork"
+    AWS_NetworkManager_Link = "AWS::NetworkManager::Link"
+    AWS_NetworkManager_Site = "AWS::NetworkManager::Site"
+    AWS_Panorama_Package = "AWS::Panorama::Package"
+    AWS_Pinpoint_App = "AWS::Pinpoint::App"
+    AWS_Redshift_ScheduledAction = "AWS::Redshift::ScheduledAction"
+    AWS_Route53Resolver_FirewallRuleGroupAssociation = (
+        "AWS::Route53Resolver::FirewallRuleGroupAssociation"
+    )
+    AWS_SageMaker_AppImageConfig = "AWS::SageMaker::AppImageConfig"
+    AWS_SageMaker_Image = "AWS::SageMaker::Image"
+    AWS_ECS_TaskSet = "AWS::ECS::TaskSet"
+    AWS_Cassandra_Keyspace = "AWS::Cassandra::Keyspace"
+    AWS_Signer_SigningProfile = "AWS::Signer::SigningProfile"
+    AWS_Amplify_App = "AWS::Amplify::App"
+    AWS_AppMesh_VirtualNode = "AWS::AppMesh::VirtualNode"
+    AWS_AppMesh_VirtualService = "AWS::AppMesh::VirtualService"
+    AWS_AppRunner_VpcConnector = "AWS::AppRunner::VpcConnector"
+    AWS_AppStream_Application = "AWS::AppStream::Application"
+    AWS_CodeArtifact_Repository = "AWS::CodeArtifact::Repository"
+    AWS_EC2_PrefixList = "AWS::EC2::PrefixList"
+    AWS_EC2_SpotFleet = "AWS::EC2::SpotFleet"
+    AWS_Evidently_Project = "AWS::Evidently::Project"
+    AWS_Forecast_Dataset = "AWS::Forecast::Dataset"
+    AWS_IAM_SAMLProvider = "AWS::IAM::SAMLProvider"
+    AWS_IAM_ServerCertificate = "AWS::IAM::ServerCertificate"
+    AWS_Pinpoint_Campaign = "AWS::Pinpoint::Campaign"
+    AWS_Pinpoint_InAppTemplate = "AWS::Pinpoint::InAppTemplate"
+    AWS_SageMaker_Domain = "AWS::SageMaker::Domain"
+    AWS_Transfer_Agreement = "AWS::Transfer::Agreement"
+    AWS_Transfer_Connector = "AWS::Transfer::Connector"
+    AWS_KinesisFirehose_DeliveryStream = "AWS::KinesisFirehose::DeliveryStream"
+    AWS_Amplify_Branch = "AWS::Amplify::Branch"
+    AWS_AppIntegrations_EventIntegration = "AWS::AppIntegrations::EventIntegration"
+    AWS_AppMesh_Route = "AWS::AppMesh::Route"
+    AWS_Athena_PreparedStatement = "AWS::Athena::PreparedStatement"
+    AWS_EC2_IPAMScope = "AWS::EC2::IPAMScope"
+    AWS_Evidently_Launch = "AWS::Evidently::Launch"
+    AWS_Forecast_DatasetGroup = "AWS::Forecast::DatasetGroup"
+    AWS_GreengrassV2_ComponentVersion = "AWS::GreengrassV2::ComponentVersion"
+    AWS_GroundStation_MissionProfile = "AWS::GroundStation::MissionProfile"
+    AWS_MediaConnect_FlowEntitlement = "AWS::MediaConnect::FlowEntitlement"
+    AWS_MediaConnect_FlowVpcInterface = "AWS::MediaConnect::FlowVpcInterface"
+    AWS_MediaTailor_PlaybackConfiguration = "AWS::MediaTailor::PlaybackConfiguration"
+    AWS_MSK_Configuration = "AWS::MSK::Configuration"
+    AWS_Personalize_Dataset = "AWS::Personalize::Dataset"
+    AWS_Personalize_Schema = "AWS::Personalize::Schema"
+    AWS_Personalize_Solution = "AWS::Personalize::Solution"
+    AWS_Pinpoint_EmailTemplate = "AWS::Pinpoint::EmailTemplate"
+    AWS_Pinpoint_EventStream = "AWS::Pinpoint::EventStream"
+    AWS_ResilienceHub_App = "AWS::ResilienceHub::App"
+    AWS_ACMPCA_CertificateAuthority = "AWS::ACMPCA::CertificateAuthority"
+    AWS_AppConfig_HostedConfigurationVersion = "AWS::AppConfig::HostedConfigurationVersion"
+    AWS_AppMesh_VirtualGateway = "AWS::AppMesh::VirtualGateway"
+    AWS_AppMesh_VirtualRouter = "AWS::AppMesh::VirtualRouter"
+    AWS_AppRunner_Service = "AWS::AppRunner::Service"
+    AWS_CustomerProfiles_ObjectType = "AWS::CustomerProfiles::ObjectType"
+    AWS_DMS_Endpoint = "AWS::DMS::Endpoint"
+    AWS_EC2_CapacityReservation = "AWS::EC2::CapacityReservation"
+    AWS_EC2_ClientVpnEndpoint = "AWS::EC2::ClientVpnEndpoint"
+    AWS_Kendra_Index = "AWS::Kendra::Index"
+    AWS_KinesisVideo_Stream = "AWS::KinesisVideo::Stream"
+    AWS_Logs_Destination = "AWS::Logs::Destination"
+    AWS_Pinpoint_EmailChannel = "AWS::Pinpoint::EmailChannel"
+    AWS_S3_AccessPoint = "AWS::S3::AccessPoint"
+    AWS_NetworkManager_CustomerGatewayAssociation = (
+        "AWS::NetworkManager::CustomerGatewayAssociation"
+    )
+    AWS_NetworkManager_LinkAssociation = "AWS::NetworkManager::LinkAssociation"
+    AWS_IoTWireless_MulticastGroup = "AWS::IoTWireless::MulticastGroup"
+    AWS_Personalize_DatasetGroup = "AWS::Personalize::DatasetGroup"
+    AWS_IoTTwinMaker_ComponentType = "AWS::IoTTwinMaker::ComponentType"
+    AWS_CodeBuild_ReportGroup = "AWS::CodeBuild::ReportGroup"
+    AWS_SageMaker_FeatureGroup = "AWS::SageMaker::FeatureGroup"
+    AWS_MSK_BatchScramSecret = "AWS::MSK::BatchScramSecret"
+    AWS_AppStream_Stack = "AWS::AppStream::Stack"
+    AWS_IoT_JobTemplate = "AWS::IoT::JobTemplate"
+    AWS_IoTWireless_FuotaTask = "AWS::IoTWireless::FuotaTask"
+    AWS_IoT_ProvisioningTemplate = "AWS::IoT::ProvisioningTemplate"
+    AWS_InspectorV2_Filter = "AWS::InspectorV2::Filter"
+    AWS_Route53Resolver_ResolverQueryLoggingConfigAssociation = (
+        "AWS::Route53Resolver::ResolverQueryLoggingConfigAssociation"
+    )
+    AWS_ServiceDiscovery_Instance = "AWS::ServiceDiscovery::Instance"
+    AWS_Transfer_Certificate = "AWS::Transfer::Certificate"
+    AWS_MediaConnect_FlowSource = "AWS::MediaConnect::FlowSource"
+    AWS_APS_RuleGroupsNamespace = "AWS::APS::RuleGroupsNamespace"
+    AWS_CodeGuruProfiler_ProfilingGroup = "AWS::CodeGuruProfiler::ProfilingGroup"
+    AWS_Route53Resolver_ResolverQueryLoggingConfig = (
+        "AWS::Route53Resolver::ResolverQueryLoggingConfig"
+    )
+    AWS_Batch_SchedulingPolicy = "AWS::Batch::SchedulingPolicy"
+    AWS_ACMPCA_CertificateAuthorityActivation = "AWS::ACMPCA::CertificateAuthorityActivation"
+    AWS_AppMesh_GatewayRoute = "AWS::AppMesh::GatewayRoute"
+    AWS_AppMesh_Mesh = "AWS::AppMesh::Mesh"
+    AWS_Connect_Instance = "AWS::Connect::Instance"
+    AWS_Connect_QuickConnect = "AWS::Connect::QuickConnect"
+    AWS_EC2_CarrierGateway = "AWS::EC2::CarrierGateway"
+    AWS_EC2_IPAMPool = "AWS::EC2::IPAMPool"
+    AWS_EC2_TransitGatewayConnect = "AWS::EC2::TransitGatewayConnect"
+    AWS_EC2_TransitGatewayMulticastDomain = "AWS::EC2::TransitGatewayMulticastDomain"
+    AWS_ECS_CapacityProvider = "AWS::ECS::CapacityProvider"
+    AWS_IAM_InstanceProfile = "AWS::IAM::InstanceProfile"
+    AWS_IoT_CACertificate = "AWS::IoT::CACertificate"
+    AWS_IoTTwinMaker_SyncJob = "AWS::IoTTwinMaker::SyncJob"
+    AWS_KafkaConnect_Connector = "AWS::KafkaConnect::Connector"
+    AWS_Lambda_CodeSigningConfig = "AWS::Lambda::CodeSigningConfig"
+    AWS_NetworkManager_ConnectPeer = "AWS::NetworkManager::ConnectPeer"
+    AWS_ResourceExplorer2_Index = "AWS::ResourceExplorer2::Index"
 
 
 class ResourceValueType(str):
@@ -436,6 +714,12 @@ class SortOrder(str):
 
 class ConformancePackTemplateValidationException(ServiceException):
     code: str = "ConformancePackTemplateValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class IdempotentParameterMismatch(ServiceException):
+    code: str = "IdempotentParameterMismatch"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -846,11 +1130,13 @@ class EvaluationResultQualifier(TypedDict, total=False):
     ConfigRuleName: Optional[ConfigRuleName]
     ResourceType: Optional[StringWithCharLimit256]
     ResourceId: Optional[BaseResourceId]
+    EvaluationMode: Optional[EvaluationMode]
 
 
 class EvaluationResultIdentifier(TypedDict, total=False):
     EvaluationResultQualifier: Optional[EvaluationResultQualifier]
     OrderingTimestamp: Optional[Date]
+    ResourceEvaluationId: Optional[ResourceEvaluationId]
 
 
 class AggregateEvaluationResult(TypedDict, total=False):
@@ -989,6 +1275,13 @@ class ConfigExportDeliveryInfo(TypedDict, total=False):
     nextDeliveryTime: Optional[Date]
 
 
+class EvaluationModeConfiguration(TypedDict, total=False):
+    Mode: Optional[EvaluationMode]
+
+
+EvaluationModes = List[EvaluationModeConfiguration]
+
+
 class CustomPolicyDetails(TypedDict, total=False):
     PolicyRuntime: PolicyRuntime
     PolicyText: PolicyText
@@ -1029,6 +1322,7 @@ class ConfigRule(TypedDict, total=False):
     MaximumExecutionFrequency: Optional[MaximumExecutionFrequency]
     ConfigRuleState: Optional[ConfigRuleState]
     CreatedBy: Optional[StringWithCharLimit256]
+    EvaluationModes: Optional[EvaluationModes]
 
 
 class ConfigRuleComplianceFilters(TypedDict, total=False):
@@ -1131,13 +1425,25 @@ class ConfigurationItem(TypedDict, total=False):
 
 
 ConfigurationItemList = List[ConfigurationItem]
+
+
+class RecordingStrategy(TypedDict, total=False):
+    useOnly: Optional[RecordingStrategyType]
+
+
 ResourceTypeList = List[ResourceType]
+
+
+class ExclusionByResourceTypes(TypedDict, total=False):
+    resourceTypes: Optional[ResourceTypeList]
 
 
 class RecordingGroup(TypedDict, total=False):
     allSupported: Optional[AllSupported]
     includeGlobalResourceTypes: Optional[IncludeGlobalResourceTypes]
     resourceTypes: Optional[ResourceTypeList]
+    exclusionByResourceTypes: Optional[ExclusionByResourceTypes]
+    recordingStrategy: Optional[RecordingStrategy]
 
 
 class ConfigurationRecorder(TypedDict, total=False):
@@ -1466,9 +1772,14 @@ class DescribeConfigRuleEvaluationStatusResponse(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+class DescribeConfigRulesFilters(TypedDict, total=False):
+    EvaluationMode: Optional[EvaluationMode]
+
+
 class DescribeConfigRulesRequest(ServiceRequest):
     ConfigRuleNames: Optional[ConfigRuleNames]
     NextToken: Optional[String]
+    Filters: Optional[DescribeConfigRulesFilters]
 
 
 class DescribeConfigRulesResponse(TypedDict, total=False):
@@ -1871,6 +2182,10 @@ class Evaluation(TypedDict, total=False):
     OrderingTimestamp: OrderingTimestamp
 
 
+class EvaluationContext(TypedDict, total=False):
+    EvaluationContextIdentifier: Optional[EvaluationContextIdentifier]
+
+
 class EvaluationResult(TypedDict, total=False):
     EvaluationResultIdentifier: Optional[EvaluationResultIdentifier]
     ComplianceType: Optional[ComplianceType]
@@ -1881,6 +2196,13 @@ class EvaluationResult(TypedDict, total=False):
 
 
 EvaluationResults = List[EvaluationResult]
+
+
+class EvaluationStatus(TypedDict, total=False):
+    Status: ResourceEvaluationStatus
+    FailureReason: Optional[StringWithCharLimit1024]
+
+
 Evaluations = List[Evaluation]
 
 
@@ -2014,10 +2336,11 @@ class GetComplianceDetailsByConfigRuleResponse(TypedDict, total=False):
 
 
 class GetComplianceDetailsByResourceRequest(ServiceRequest):
-    ResourceType: StringWithCharLimit256
-    ResourceId: BaseResourceId
+    ResourceType: Optional[StringWithCharLimit256]
+    ResourceId: Optional[BaseResourceId]
     ComplianceTypes: Optional[ComplianceTypes]
     NextToken: Optional[String]
+    ResourceEvaluationId: Optional[ResourceEvaluationId]
 
 
 class GetComplianceDetailsByResourceResponse(TypedDict, total=False):
@@ -2178,6 +2501,27 @@ class GetResourceConfigHistoryResponse(TypedDict, total=False):
     nextToken: Optional[NextToken]
 
 
+class GetResourceEvaluationSummaryRequest(ServiceRequest):
+    ResourceEvaluationId: ResourceEvaluationId
+
+
+class ResourceDetails(TypedDict, total=False):
+    ResourceId: BaseResourceId
+    ResourceType: StringWithCharLimit256
+    ResourceConfiguration: ResourceConfiguration
+    ResourceConfigurationSchemaType: Optional[ResourceConfigurationSchemaType]
+
+
+class GetResourceEvaluationSummaryResponse(TypedDict, total=False):
+    ResourceEvaluationId: Optional[ResourceEvaluationId]
+    EvaluationMode: Optional[EvaluationMode]
+    EvaluationStatus: Optional[EvaluationStatus]
+    EvaluationStartTimestamp: Optional[Date]
+    Compliance: Optional[ComplianceType]
+    EvaluationContext: Optional[EvaluationContext]
+    ResourceDetails: Optional[ResourceDetails]
+
+
 class GetStoredQueryRequest(ServiceRequest):
     QueryName: QueryName
 
@@ -2255,6 +2599,37 @@ ResourceIdentifierList = List[ResourceIdentifier]
 class ListDiscoveredResourcesResponse(TypedDict, total=False):
     resourceIdentifiers: Optional[ResourceIdentifierList]
     nextToken: Optional[NextToken]
+
+
+class TimeWindow(TypedDict, total=False):
+    StartTime: Optional[Date]
+    EndTime: Optional[Date]
+
+
+class ResourceEvaluationFilters(TypedDict, total=False):
+    EvaluationMode: Optional[EvaluationMode]
+    TimeWindow: Optional[TimeWindow]
+    EvaluationContextIdentifier: Optional[EvaluationContextIdentifier]
+
+
+class ListResourceEvaluationsRequest(ServiceRequest):
+    Filters: Optional[ResourceEvaluationFilters]
+    Limit: Optional[ListResourceEvaluationsPageItemLimit]
+    NextToken: Optional[String]
+
+
+class ResourceEvaluation(TypedDict, total=False):
+    ResourceEvaluationId: Optional[ResourceEvaluationId]
+    EvaluationMode: Optional[EvaluationMode]
+    EvaluationStartTimestamp: Optional[Date]
+
+
+ResourceEvaluations = List[ResourceEvaluation]
+
+
+class ListResourceEvaluationsResponse(TypedDict, total=False):
+    ResourceEvaluations: Optional[ResourceEvaluations]
+    NextToken: Optional[String]
 
 
 class ListStoredQueriesRequest(ServiceRequest):
@@ -2507,6 +2882,18 @@ class StartRemediationExecutionResponse(TypedDict, total=False):
     FailedItems: Optional[ResourceKeys]
 
 
+class StartResourceEvaluationRequest(ServiceRequest):
+    ResourceDetails: ResourceDetails
+    EvaluationContext: Optional[EvaluationContext]
+    EvaluationMode: EvaluationMode
+    EvaluationTimeout: Optional[EvaluationTimeout]
+    ClientToken: Optional[ClientToken]
+
+
+class StartResourceEvaluationResponse(TypedDict, total=False):
+    ResourceEvaluationId: Optional[ResourceEvaluationId]
+
+
 class StopConfigurationRecorderRequest(ServiceRequest):
     ConfigurationRecorderName: RecorderName
 
@@ -2525,7 +2912,6 @@ class UntagResourceRequest(ServiceRequest):
 
 
 class ConfigApi:
-
     service = "config"
     version = "2014-11-12"
 
@@ -2718,6 +3104,7 @@ class ConfigApi:
         context: RequestContext,
         config_rule_names: ConfigRuleNames = None,
         next_token: String = None,
+        filters: DescribeConfigRulesFilters = None,
     ) -> DescribeConfigRulesResponse:
         raise NotImplementedError
 
@@ -2961,10 +3348,11 @@ class ConfigApi:
     def get_compliance_details_by_resource(
         self,
         context: RequestContext,
-        resource_type: StringWithCharLimit256,
-        resource_id: BaseResourceId,
+        resource_type: StringWithCharLimit256 = None,
+        resource_id: BaseResourceId = None,
         compliance_types: ComplianceTypes = None,
         next_token: String = None,
+        resource_evaluation_id: ResourceEvaluationId = None,
     ) -> GetComplianceDetailsByResourceResponse:
         raise NotImplementedError
 
@@ -3060,6 +3448,12 @@ class ConfigApi:
     ) -> GetResourceConfigHistoryResponse:
         raise NotImplementedError
 
+    @handler("GetResourceEvaluationSummary")
+    def get_resource_evaluation_summary(
+        self, context: RequestContext, resource_evaluation_id: ResourceEvaluationId
+    ) -> GetResourceEvaluationSummaryResponse:
+        raise NotImplementedError
+
     @handler("GetStoredQuery")
     def get_stored_query(
         self, context: RequestContext, query_name: QueryName
@@ -3101,6 +3495,16 @@ class ConfigApi:
         include_deleted_resources: Boolean = None,
         next_token: NextToken = None,
     ) -> ListDiscoveredResourcesResponse:
+        raise NotImplementedError
+
+    @handler("ListResourceEvaluations")
+    def list_resource_evaluations(
+        self,
+        context: RequestContext,
+        filters: ResourceEvaluationFilters = None,
+        limit: ListResourceEvaluationsPageItemLimit = None,
+        next_token: String = None,
+    ) -> ListResourceEvaluationsResponse:
         raise NotImplementedError
 
     @handler("ListStoredQueries")
@@ -3297,6 +3701,18 @@ class ConfigApi:
     def start_remediation_execution(
         self, context: RequestContext, config_rule_name: ConfigRuleName, resource_keys: ResourceKeys
     ) -> StartRemediationExecutionResponse:
+        raise NotImplementedError
+
+    @handler("StartResourceEvaluation")
+    def start_resource_evaluation(
+        self,
+        context: RequestContext,
+        resource_details: ResourceDetails,
+        evaluation_mode: EvaluationMode,
+        evaluation_context: EvaluationContext = None,
+        evaluation_timeout: EvaluationTimeout = None,
+        client_token: ClientToken = None,
+    ) -> StartResourceEvaluationResponse:
         raise NotImplementedError
 
     @handler("StopConfigurationRecorder")

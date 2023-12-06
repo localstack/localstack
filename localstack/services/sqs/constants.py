@@ -26,8 +26,15 @@ INTERNAL_QUEUE_ATTRIBUTES = [
     QueueAttributeName.ApproximateNumberOfMessages,
     QueueAttributeName.ApproximateNumberOfMessagesDelayed,
     QueueAttributeName.ApproximateNumberOfMessagesNotVisible,
-    QueueAttributeName.ContentBasedDeduplication,
     QueueAttributeName.CreatedTimestamp,
     QueueAttributeName.LastModifiedTimestamp,
     QueueAttributeName.QueueArn,
 ]
+
+# URL regexes for various endpoint strategies
+STANDARD_STRATEGY_URL_REGEX = r"sqs.(?P<region_name>[a-z0-9-]{1,})\.[^:]+:\d{4,5}\/(?P<account_id>\d{12})\/(?P<queue_name>[a-zA-Z0-9_-]+(.fifo)?)$"
+DOMAIN_STRATEGY_URL_REGEX = r"((?P<region_name>[a-z0-9-]{1,})\.)?queue\.[^:]+:\d{4,5}\/(?P<account_id>\d{12})\/(?P<queue_name>[a-zA-Z0-9_-]+(.fifo)?)$"
+PATH_STRATEGY_URL_REGEX = r"[^:]+:\d{4,5}\/queue\/(?P<region_name>[a-z0-9-]{1,})\/(?P<account_id>\d{12})\/(?P<queue_name>[a-zA-Z0-9_-]+(.fifo)?)$"
+LEGACY_STRATEGY_URL_REGEX = (
+    r"[^:]+:\d{4,5}\/(?P<account_id>\d{12})\/(?P<queue_name>[a-zA-Z0-9_-]+(.fifo)?)$"
+)

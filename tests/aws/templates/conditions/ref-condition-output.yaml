@@ -1,0 +1,19 @@
+Parameters:
+  OptionParameter:
+    Type: String
+    AllowedValues:
+      - option-a
+      - option-b
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Condition: ShouldCreateTopic
+
+Conditions:
+  ShouldCreateTopic: !Equals
+    - !Ref OptionParameter
+    - option-a
+
+Outputs:
+  TopicRef:
+    Value: !Ref MyTopic

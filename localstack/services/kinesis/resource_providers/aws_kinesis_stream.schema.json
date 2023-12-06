@@ -1,0 +1,173 @@
+{
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-kinesis.git",
+  "handlers": {
+    "read": {
+      "permissions": [
+        "kinesis:DescribeStreamSummary",
+        "kinesis:ListTagsForStream"
+      ]
+    },
+    "create": {
+      "permissions": [
+        "kinesis:EnableEnhancedMonitoring",
+        "kinesis:DescribeStreamSummary",
+        "kinesis:CreateStream",
+        "kinesis:IncreaseStreamRetentionPeriod",
+        "kinesis:StartStreamEncryption",
+        "kinesis:AddTagsToStream",
+        "kinesis:ListTagsForStream"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "kinesis:EnableEnhancedMonitoring",
+        "kinesis:DisableEnhancedMonitoring",
+        "kinesis:DescribeStreamSummary",
+        "kinesis:UpdateShardCount",
+        "kinesis:UpdateStreamMode",
+        "kinesis:IncreaseStreamRetentionPeriod",
+        "kinesis:DecreaseStreamRetentionPeriod",
+        "kinesis:StartStreamEncryption",
+        "kinesis:StopStreamEncryption",
+        "kinesis:AddTagsToStream",
+        "kinesis:RemoveTagsFromStream",
+        "kinesis:ListTagsForStream"
+      ],
+      "timeoutInMinutes": 240
+    },
+    "list": {
+      "permissions": [
+        "kinesis:ListStreams"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "kinesis:DescribeStreamSummary",
+        "kinesis:DeleteStream",
+        "kinesis:RemoveTagsFromStream"
+      ]
+    }
+  },
+  "typeName": "AWS::Kinesis::Stream",
+  "readOnlyProperties": [
+    "/properties/Arn"
+  ],
+  "description": "Resource Type definition for AWS::Kinesis::Stream",
+  "createOnlyProperties": [
+    "/properties/Name"
+  ],
+  "additionalProperties": false,
+  "primaryIdentifier": [
+    "/properties/Name"
+  ],
+  "definitions": {
+    "StreamModeDetails": {
+      "description": "When specified, enables or updates the mode of stream. Default is PROVISIONED.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "StreamMode": {
+          "description": "The mode of the stream",
+          "type": "string",
+          "enum": [
+            "ON_DEMAND",
+            "PROVISIONED"
+          ]
+        }
+      },
+      "required": [
+        "StreamMode"
+      ]
+    },
+    "StreamEncryption": {
+      "description": "When specified, enables or updates server-side encryption using an AWS KMS key for a specified stream. Removing this property from your stack template and updating your stack disables encryption.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "EncryptionType": {
+          "description": "The encryption type to use. The only valid value is KMS. ",
+          "type": "string",
+          "enum": [
+            "KMS"
+          ]
+        },
+        "KeyId": {
+          "minLength": 1,
+          "description": "The GUID for the customer-managed AWS KMS key to use for encryption. This value can be a globally unique identifier, a fully specified Amazon Resource Name (ARN) to either an alias or a key, or an alias name prefixed by \"alias/\".You can also use a master key owned by Kinesis Data Streams by specifying the alias aws/kinesis.",
+          "type": "string",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "EncryptionType",
+        "KeyId"
+      ]
+    },
+    "Tag": {
+      "description": "An arbitrary set of tags (key-value pairs) to associate with the Kinesis stream.",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "Value": {
+          "minLength": 0,
+          "description": "The value for the tag. You can specify a value that is 0 to 255 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
+          "type": "string",
+          "maxLength": 255
+        },
+        "Key": {
+          "minLength": 1,
+          "description": "The key name of the tag. You can specify a value that is 1 to 128 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "Key",
+        "Value"
+      ]
+    }
+  },
+  "properties": {
+    "StreamModeDetails": {
+      "default": {
+        "StreamMode": "PROVISIONED"
+      },
+      "description": "The mode in which the stream is running.",
+      "$ref": "#/definitions/StreamModeDetails"
+    },
+    "StreamEncryption": {
+      "description": "When specified, enables or updates server-side encryption using an AWS KMS key for a specified stream.",
+      "$ref": "#/definitions/StreamEncryption"
+    },
+    "Arn": {
+      "description": "The Amazon resource name (ARN) of the Kinesis stream",
+      "type": "string"
+    },
+    "RetentionPeriodHours": {
+      "description": "The number of hours for the data records that are stored in shards to remain accessible.",
+      "type": "integer",
+      "minimum": 24
+    },
+    "Tags": {
+      "uniqueItems": false,
+      "description": "An arbitrary set of tags (key\u2013value pairs) to associate with the Kinesis stream.",
+      "insertionOrder": false,
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "Name": {
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9_.-]+$",
+      "description": "The name of the Kinesis stream.",
+      "type": "string",
+      "maxLength": 128
+    },
+    "ShardCount": {
+      "description": "The number of shards that the stream uses. Required when StreamMode = PROVISIONED is passed.",
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

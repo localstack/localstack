@@ -6,6 +6,8 @@ from datetime import date, datetime
 from json import JSONDecodeError
 from typing import Any, Union
 
+from localstack.config import HostAndPort
+
 from .numbers import is_number
 from .strings import to_str
 from .time import timestamp_millis
@@ -19,6 +21,8 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, o):
         import yaml  # leave import here, to avoid breaking our Lambda tests!
 
+        if isinstance(o, HostAndPort):
+            return str(o)
         if isinstance(o, decimal.Decimal):
             if o % 1 > 0:
                 return float(o)
@@ -176,7 +180,7 @@ def assign_to_path(target, path: str, value, delimiter: str = "."):
             target,
         )
         return
-    path_end = int(parts[-1]) if is_number(parts[-1]) else parts[-1]
+    path_end = int(parts[-1]) if is_number(parts[-1]) else parts[-1].replace("~1", "/")
     parent[path_end] = value
     return target
 

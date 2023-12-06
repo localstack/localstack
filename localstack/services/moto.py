@@ -1,19 +1,20 @@
 """
 This module provides tools to call moto using moto and botocore internals without going through the moto HTTP server.
 """
+import copy
 import sys
 from functools import lru_cache
 from typing import Callable, Optional, Union
 
 import moto.backends as moto_backends
+from moto.core import BackendDict
 from moto.core.exceptions import RESTError
-from moto.core.utils import BackendDict
 from moto.moto_server.utilities import RegexConverter
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Map, Rule
 
 from localstack import __version__ as localstack_version
-from localstack import config
+from localstack import constants
 from localstack.aws.api import (
     CommonServiceException,
     HttpRequest,
@@ -29,6 +30,7 @@ from localstack.aws.forwarder import (
 from localstack.aws.skeleton import DispatchTable
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Response
+from localstack.http.request import get_full_raw_path, get_raw_current_url
 
 MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
 
@@ -56,6 +58,7 @@ def call_moto_with_request(
 
     :param context: the original request context
     :param service_request: the dictionary containing the service request parameters
+    :param override_headers: whether to override headers that are also request parameters
     :return: an ASF ServiceResponse (same as a service provider would return)
     """
     local_context = create_aws_request_context(
@@ -64,8 +67,10 @@ def call_moto_with_request(
         parameters=service_request,
         region=context.region,
     )
-
-    local_context.request.headers.update(context.request.headers)
+    # we keep the headers from the original request, but override them with the ones created from the `service_request`
+    headers = copy.deepcopy(context.request.headers)
+    headers.update(local_context.request.headers)
+    local_context.request.headers = headers
 
     return call_moto(local_context)
 
@@ -106,9 +111,18 @@ def dispatch_to_moto(context: RequestContext) -> Response:
 
     # this is where we skip the HTTP roundtrip between the moto server and the boto client
     dispatch = get_dispatcher(service.service_name, request.path)
-
     try:
-        status, headers, content = dispatch(request, request.url, request.headers)
+        # we use the full_raw_url as moto might do some path decoding (in S3 for example)
+        raw_url = get_raw_current_url(
+            request.scheme, request.host, request.root_path, get_full_raw_path(request)
+        )
+        response = dispatch(request, raw_url, request.headers)
+        if not response:
+            # some operations are only partially implemented by moto
+            # e.g. the request will be resolved, but then the request method is not handled
+            # it will return None in that case, e.g. for: apigateway TestInvokeAuthorizer + UpdateGatewayResponse
+            raise NotImplementedError
+        status, headers, content = response
         if isinstance(content, str) and len(content) == 0:
             # moto often returns an empty string to indicate an empty body.
             # use None instead to ensure that body-related headers aren't overwritten when creating the response object.
@@ -126,7 +140,7 @@ def get_dispatcher(service: str, path: str) -> MotoDispatcher:
         rule = next(url_map.iter_rules())
         return rule.endpoint
 
-    matcher = url_map.bind(config.LOCALSTACK_HOSTNAME)
+    matcher = url_map.bind(constants.LOCALHOST)
     try:
         endpoint, _ = matcher.match(path_info=path)
     except NotFound as e:

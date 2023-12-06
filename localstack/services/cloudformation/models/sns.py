@@ -2,12 +2,12 @@ import json
 
 from botocore.exceptions import ClientError
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     is_none_or_empty_value,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import canonicalize_bool_to_str
 
 
@@ -16,12 +16,11 @@ class SNSTopic(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SNS::Topic"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.sns_topic_arn(self.props["TopicName"])
-
     def fetch_state(self, stack_name, resources):
-        topic_name = self.resolve_refs_recursively(stack_name, self.props["TopicName"], resources)
-        topics = aws_stack.connect_to_service("sns").list_topics()
+        topic_name = self.props["TopicName"]
+        topics = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).sns.list_topics()
         result = list(
             filter(
                 lambda item: item["TopicArn"].split(":")[-1] == topic_name,
@@ -40,14 +39,21 @@ class SNSTopic(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_params(params, *args, **kwargs):
+        def _create_params(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict:
             attributes = {}
-            dedup = params.get("ContentBasedDeduplication")
-            display_name = params.get("DisplayName")
-            fifo_topic = params.get("FifoTopic")
-            kms_master_key = params.get("KmsMasterKeyId")
-            tags = params.get("Tags") or []
-            topic_name = params.get("TopicName")
+            dedup = properties.get("ContentBasedDeduplication")
+            display_name = properties.get("DisplayName")
+            fifo_topic = properties.get("FifoTopic")
+            kms_master_key = properties.get("KmsMasterKeyId")
+            tags = properties.get("Tags") or []
+            topic_name = properties.get("TopicName")
             if dedup is not None:
                 attributes["ContentBasedDeduplication"] = canonicalize_bool_to_str(dedup)
             if display_name:
@@ -59,9 +65,16 @@ class SNSTopic(GenericBaseModel):
             result = {"Name": topic_name, "Attributes": attributes, "Tags": tags}
             return result
 
-        def _topic_arn(params, resources, resource_id, **kwargs):
-            resource = cls(resources[resource_id])
-            return resource.physical_resource_id or resource.get_physical_resource_id()
+        def _topic_arn(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict:
+            provider = cls(account_id, region_name, resource)
+            return provider.physical_resource_id
 
         def _list_all_topics(sns_client):
             rs = sns_client.list_topics()
@@ -75,13 +88,19 @@ class SNSTopic(GenericBaseModel):
 
             return topics
 
-        def _add_topics(resource_id, resources, resource_type, func, stack_name):
-            sns_client = aws_stack.connect_to_service("sns")
+        def _add_topics(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: str,
+            stack_name: str,
+        ):
+            sns_client = connect_to(aws_access_key_id=account_id, region_name=region_name).sns
             topics = _list_all_topics(sns_client)
             topics_by_name = {t["TopicArn"].split(":")[-1]: t for t in topics}
 
-            resource = cls(resources[resource_id])
-            props = resource.props
+            provider = cls(account_id, region_name, resource)
+            props = provider.props
 
             subscriptions = props.get("Subscription", [])
             for subscription in subscriptions:
@@ -93,11 +112,22 @@ class SNSTopic(GenericBaseModel):
                     TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
                 )
 
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["TopicArn"]
+            resource["Properties"]["TopicArn"] = result["TopicArn"]
+
         return {
             "create": [
                 {
                     "function": "create_topic",
                     "parameters": _create_params,
+                    "result_handler": _handle_result,
                 },
                 {"function": _add_topics},
             ],
@@ -113,16 +143,14 @@ class SNSSubscription(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SNS::Subscription"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("SubscriptionArn")
-
     def fetch_state(self, stack_name, resources):
         props = self.props
         topic_arn = props.get("TopicArn")
-        topic_arn = self.resolve_refs_recursively(stack_name, topic_arn, resources)
         if topic_arn is None:
             return
-        subs = aws_stack.connect_to_service("sns").list_subscriptions_by_topic(TopicArn=topic_arn)
+        subs = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).sns.list_subscriptions_by_topic(TopicArn=topic_arn)
         result = [
             sub
             for sub in subs["Subscriptions"]
@@ -133,22 +161,45 @@ class SNSSubscription(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def sns_subscription_arn(params, resources, resource_id, **kwargs):
-            resource = resources[resource_id]
+        def sns_subscription_arn(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict:
             return resource["PhysicalResourceId"]
 
-        def sns_subscription_params(params, **kwargs):
+        def sns_subscription_params(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict:
             def attr_val(val):
                 return json.dumps(val) if isinstance(val, (dict, list)) else str(val)
 
             attrs = [
                 "DeliveryPolicy",
                 "FilterPolicy",
+                "FilterPolicyScope",
                 "RawMessageDelivery",
                 "RedrivePolicy",
             ]
-            result = {a: attr_val(params[a]) for a in attrs if a in params}
+            result = {a: attr_val(properties[a]) for a in attrs if a in properties}
             return result
+
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["SubscriptionArn"]
 
         return {
             "create": {
@@ -159,6 +210,7 @@ class SNSSubscription(GenericBaseModel):
                     "Endpoint": "Endpoint",
                     "Attributes": sns_subscription_params,
                 },
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "unsubscribe",
@@ -173,11 +225,10 @@ class SNSTopicPolicy(GenericBaseModel):
         return "AWS::SNS::TopicPolicy"
 
     def fetch_state(self, stack_name, resources):
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).sns
         result = {}
         props = self.props
         for topic_arn in props["Topics"]:
-            topic_arn = self.resolve_refs_recursively(stack_name, topic_arn, resources)
             result[topic_arn] = None
             attrs = sns_client.get_topic_attributes(TopicArn=topic_arn)
             policy = attrs["Attributes"].get("Policy")
@@ -194,14 +245,18 @@ class SNSTopicPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
-            sns_client = aws_stack.connect_to_service("sns")
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def _create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            sns_client = connect_to(aws_access_key_id=account_id, region_name=region_name).sns
+            provider = cls(account_id, region_name, resource)
+            props = provider.props
 
-            resources[resource_id]["PhysicalResourceId"] = generate_default_name(
-                stack_name, resource_id
-            )
+            resource["PhysicalResourceId"] = generate_default_name(stack_name, logical_resource_id)
 
             policy = json.dumps(props["PolicyDocument"])
             for topic_arn in props["Topics"]:
@@ -209,10 +264,16 @@ class SNSTopicPolicy(GenericBaseModel):
                     TopicArn=topic_arn, AttributeName="Policy", AttributeValue=policy
                 )
 
-        def _delete(resource_id, resources, *args, **kwargs):
-            sns_client = aws_stack.connect_to_service("sns")
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def _delete(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            sns_client = connect_to(aws_access_key_id=account_id, region_name=region_name).sns
+            provider = cls(account_id, region_name, resource)
+            props = provider.props
 
             for topic_arn in props["Topics"]:
                 try:

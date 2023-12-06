@@ -1,15 +1,14 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 AWSKMSKeyARN = str
+AmazonOpenSearchServerlessBufferingIntervalInSeconds = int
+AmazonOpenSearchServerlessBufferingSizeInMBs = int
+AmazonOpenSearchServerlessCollectionEndpoint = str
+AmazonOpenSearchServerlessIndexName = str
+AmazonOpenSearchServerlessRetryDurationInSeconds = int
 AmazonopensearchserviceBufferingIntervalInSeconds = int
 AmazonopensearchserviceBufferingSizeInMBs = int
 AmazonopensearchserviceClusterEndpoint = str
@@ -56,6 +55,7 @@ ListDeliveryStreamsInputLimit = int
 ListTagsForDeliveryStreamInputLimit = int
 LogGroupName = str
 LogStreamName = str
+MSKClusterARN = str
 NonEmptyString = str
 NonEmptyStringWithoutWhitespace = str
 NonNegativeIntegerObject = int
@@ -74,7 +74,13 @@ SizeInMBs = int
 SplunkRetryDurationInSeconds = int
 TagKey = str
 TagValue = str
+TopicName = str
 Username = str
+
+
+class AmazonOpenSearchServerlessS3BackupMode(str):
+    FailedDocumentsOnly = "FailedDocumentsOnly"
+    AllDocuments = "AllDocuments"
 
 
 class AmazonopensearchserviceIndexRotationPeriod(str):
@@ -98,9 +104,19 @@ class CompressionFormat(str):
     HADOOP_SNAPPY = "HADOOP_SNAPPY"
 
 
+class Connectivity(str):
+    PUBLIC = "PUBLIC"
+    PRIVATE = "PRIVATE"
+
+
 class ContentEncoding(str):
     NONE = "NONE"
     GZIP = "GZIP"
+
+
+class DefaultDocumentIdFormat(str):
+    FIREHOSE_DEFAULT = "FIREHOSE_DEFAULT"
+    NO_DOCUMENT_ID = "NO_DOCUMENT_ID"
 
 
 class DeliveryStreamEncryptionStatus(str):
@@ -141,6 +157,7 @@ class DeliveryStreamStatus(str):
 class DeliveryStreamType(str):
     DirectPut = "DirectPut"
     KinesisStreamAsSource = "KinesisStreamAsSource"
+    MSKAsSource = "MSKAsSource"
 
 
 class ElasticsearchIndexRotationPeriod(str):
@@ -207,10 +224,12 @@ class ProcessorParameterName(str):
     BufferIntervalInSeconds = "BufferIntervalInSeconds"
     SubRecordType = "SubRecordType"
     Delimiter = "Delimiter"
+    CompressionFormat = "CompressionFormat"
 
 
 class ProcessorType(str):
     RecordDeAggregation = "RecordDeAggregation"
+    Decompression = "Decompression"
     Lambda = "Lambda"
     MetadataExtraction = "MetadataExtraction"
     AppendDelimiterToRecord = "AppendDelimiterToRecord"
@@ -273,9 +292,9 @@ class ServiceUnavailableException(ServiceException):
     status_code: int = 400
 
 
-class AmazonopensearchserviceBufferingHints(TypedDict, total=False):
-    IntervalInSeconds: Optional[AmazonopensearchserviceBufferingIntervalInSeconds]
-    SizeInMBs: Optional[AmazonopensearchserviceBufferingSizeInMBs]
+class AmazonOpenSearchServerlessBufferingHints(TypedDict, total=False):
+    IntervalInSeconds: Optional[AmazonOpenSearchServerlessBufferingIntervalInSeconds]
+    SizeInMBs: Optional[AmazonOpenSearchServerlessBufferingSizeInMBs]
 
 
 SecurityGroupIdList = List[NonEmptyStringWithoutWhitespace]
@@ -340,20 +359,17 @@ class S3DestinationConfiguration(TypedDict, total=False):
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
 
 
-class AmazonopensearchserviceRetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[AmazonopensearchserviceRetryDurationInSeconds]
+class AmazonOpenSearchServerlessRetryOptions(TypedDict, total=False):
+    DurationInSeconds: Optional[AmazonOpenSearchServerlessRetryDurationInSeconds]
 
 
-class AmazonopensearchserviceDestinationConfiguration(TypedDict, total=False):
+class AmazonOpenSearchServerlessDestinationConfiguration(TypedDict, total=False):
     RoleARN: RoleARN
-    DomainARN: Optional[AmazonopensearchserviceDomainARN]
-    ClusterEndpoint: Optional[AmazonopensearchserviceClusterEndpoint]
-    IndexName: AmazonopensearchserviceIndexName
-    TypeName: Optional[AmazonopensearchserviceTypeName]
-    IndexRotationPeriod: Optional[AmazonopensearchserviceIndexRotationPeriod]
-    BufferingHints: Optional[AmazonopensearchserviceBufferingHints]
-    RetryOptions: Optional[AmazonopensearchserviceRetryOptions]
-    S3BackupMode: Optional[AmazonopensearchserviceS3BackupMode]
+    CollectionEndpoint: Optional[AmazonOpenSearchServerlessCollectionEndpoint]
+    IndexName: AmazonOpenSearchServerlessIndexName
+    BufferingHints: Optional[AmazonOpenSearchServerlessBufferingHints]
+    RetryOptions: Optional[AmazonOpenSearchServerlessRetryOptions]
+    S3BackupMode: Optional[AmazonOpenSearchServerlessS3BackupMode]
     S3Configuration: S3DestinationConfiguration
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
@@ -378,16 +394,13 @@ class S3DestinationDescription(TypedDict, total=False):
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
 
 
-class AmazonopensearchserviceDestinationDescription(TypedDict, total=False):
+class AmazonOpenSearchServerlessDestinationDescription(TypedDict, total=False):
     RoleARN: Optional[RoleARN]
-    DomainARN: Optional[AmazonopensearchserviceDomainARN]
-    ClusterEndpoint: Optional[AmazonopensearchserviceClusterEndpoint]
-    IndexName: Optional[AmazonopensearchserviceIndexName]
-    TypeName: Optional[AmazonopensearchserviceTypeName]
-    IndexRotationPeriod: Optional[AmazonopensearchserviceIndexRotationPeriod]
-    BufferingHints: Optional[AmazonopensearchserviceBufferingHints]
-    RetryOptions: Optional[AmazonopensearchserviceRetryOptions]
-    S3BackupMode: Optional[AmazonopensearchserviceS3BackupMode]
+    CollectionEndpoint: Optional[AmazonOpenSearchServerlessCollectionEndpoint]
+    IndexName: Optional[AmazonOpenSearchServerlessIndexName]
+    BufferingHints: Optional[AmazonOpenSearchServerlessBufferingHints]
+    RetryOptions: Optional[AmazonOpenSearchServerlessRetryOptions]
+    S3BackupMode: Optional[AmazonOpenSearchServerlessS3BackupMode]
     S3DestinationDescription: Optional[S3DestinationDescription]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
@@ -405,6 +418,64 @@ class S3DestinationUpdate(TypedDict, total=False):
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
 
 
+class AmazonOpenSearchServerlessDestinationUpdate(TypedDict, total=False):
+    RoleARN: Optional[RoleARN]
+    CollectionEndpoint: Optional[AmazonOpenSearchServerlessCollectionEndpoint]
+    IndexName: Optional[AmazonOpenSearchServerlessIndexName]
+    BufferingHints: Optional[AmazonOpenSearchServerlessBufferingHints]
+    RetryOptions: Optional[AmazonOpenSearchServerlessRetryOptions]
+    S3Update: Optional[S3DestinationUpdate]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+
+
+class AmazonopensearchserviceBufferingHints(TypedDict, total=False):
+    IntervalInSeconds: Optional[AmazonopensearchserviceBufferingIntervalInSeconds]
+    SizeInMBs: Optional[AmazonopensearchserviceBufferingSizeInMBs]
+
+
+class DocumentIdOptions(TypedDict, total=False):
+    DefaultDocumentIdFormat: DefaultDocumentIdFormat
+
+
+class AmazonopensearchserviceRetryOptions(TypedDict, total=False):
+    DurationInSeconds: Optional[AmazonopensearchserviceRetryDurationInSeconds]
+
+
+class AmazonopensearchserviceDestinationConfiguration(TypedDict, total=False):
+    RoleARN: RoleARN
+    DomainARN: Optional[AmazonopensearchserviceDomainARN]
+    ClusterEndpoint: Optional[AmazonopensearchserviceClusterEndpoint]
+    IndexName: AmazonopensearchserviceIndexName
+    TypeName: Optional[AmazonopensearchserviceTypeName]
+    IndexRotationPeriod: Optional[AmazonopensearchserviceIndexRotationPeriod]
+    BufferingHints: Optional[AmazonopensearchserviceBufferingHints]
+    RetryOptions: Optional[AmazonopensearchserviceRetryOptions]
+    S3BackupMode: Optional[AmazonopensearchserviceS3BackupMode]
+    S3Configuration: S3DestinationConfiguration
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    VpcConfiguration: Optional[VpcConfiguration]
+    DocumentIdOptions: Optional[DocumentIdOptions]
+
+
+class AmazonopensearchserviceDestinationDescription(TypedDict, total=False):
+    RoleARN: Optional[RoleARN]
+    DomainARN: Optional[AmazonopensearchserviceDomainARN]
+    ClusterEndpoint: Optional[AmazonopensearchserviceClusterEndpoint]
+    IndexName: Optional[AmazonopensearchserviceIndexName]
+    TypeName: Optional[AmazonopensearchserviceTypeName]
+    IndexRotationPeriod: Optional[AmazonopensearchserviceIndexRotationPeriod]
+    BufferingHints: Optional[AmazonopensearchserviceBufferingHints]
+    RetryOptions: Optional[AmazonopensearchserviceRetryOptions]
+    S3BackupMode: Optional[AmazonopensearchserviceS3BackupMode]
+    S3DestinationDescription: Optional[S3DestinationDescription]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    VpcConfigurationDescription: Optional[VpcConfigurationDescription]
+    DocumentIdOptions: Optional[DocumentIdOptions]
+
+
 class AmazonopensearchserviceDestinationUpdate(TypedDict, total=False):
     RoleARN: Optional[RoleARN]
     DomainARN: Optional[AmazonopensearchserviceDomainARN]
@@ -417,6 +488,12 @@ class AmazonopensearchserviceDestinationUpdate(TypedDict, total=False):
     S3Update: Optional[S3DestinationUpdate]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    DocumentIdOptions: Optional[DocumentIdOptions]
+
+
+class AuthenticationConfiguration(TypedDict, total=False):
+    RoleARN: RoleARN
+    Connectivity: Connectivity
 
 
 ColumnToJsonKeyMappings = Dict[NonEmptyStringWithoutWhitespace, NonEmptyString]
@@ -426,6 +503,12 @@ class CopyCommand(TypedDict, total=False):
     DataTableName: DataTableName
     DataTableColumns: Optional[DataTableColumns]
     CopyOptions: Optional[CopyOptions]
+
+
+class MSKSourceConfiguration(TypedDict, total=False):
+    MSKClusterARN: MSKClusterARN
+    TopicName: TopicName
+    AuthenticationConfiguration: AuthenticationConfiguration
 
 
 class Tag(TypedDict, total=False):
@@ -515,6 +598,7 @@ class ElasticsearchDestinationConfiguration(TypedDict, total=False):
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     VpcConfiguration: Optional[VpcConfiguration]
+    DocumentIdOptions: Optional[DocumentIdOptions]
 
 
 class RedshiftRetryOptions(TypedDict, total=False):
@@ -657,6 +741,10 @@ class CreateDeliveryStreamInput(ServiceRequest):
     SplunkDestinationConfiguration: Optional[SplunkDestinationConfiguration]
     HttpEndpointDestinationConfiguration: Optional[HttpEndpointDestinationConfiguration]
     Tags: Optional[TagDeliveryStreamInputTagList]
+    AmazonOpenSearchServerlessDestinationConfiguration: Optional[
+        AmazonOpenSearchServerlessDestinationConfiguration
+    ]
+    MSKSourceConfiguration: Optional[MSKSourceConfiguration]
 
 
 class CreateDeliveryStreamOutput(TypedDict, total=False):
@@ -721,6 +809,7 @@ class ElasticsearchDestinationDescription(TypedDict, total=False):
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     VpcConfigurationDescription: Optional[VpcConfigurationDescription]
+    DocumentIdOptions: Optional[DocumentIdOptions]
 
 
 class RedshiftDestinationDescription(TypedDict, total=False):
@@ -763,9 +852,19 @@ class DestinationDescription(TypedDict, total=False):
     ]
     SplunkDestinationDescription: Optional[SplunkDestinationDescription]
     HttpEndpointDestinationDescription: Optional[HttpEndpointDestinationDescription]
+    AmazonOpenSearchServerlessDestinationDescription: Optional[
+        AmazonOpenSearchServerlessDestinationDescription
+    ]
 
 
 DestinationDescriptionList = List[DestinationDescription]
+
+
+class MSKSourceDescription(TypedDict, total=False):
+    MSKClusterARN: Optional[MSKClusterARN]
+    TopicName: Optional[TopicName]
+    AuthenticationConfiguration: Optional[AuthenticationConfiguration]
+    DeliveryStartTimestamp: Optional[DeliveryStartTimestamp]
 
 
 class KinesisStreamSourceDescription(TypedDict, total=False):
@@ -776,6 +875,7 @@ class KinesisStreamSourceDescription(TypedDict, total=False):
 
 class SourceDescription(TypedDict, total=False):
     KinesisStreamSourceDescription: Optional[KinesisStreamSourceDescription]
+    MSKSourceDescription: Optional[MSKSourceDescription]
 
 
 Timestamp = datetime
@@ -833,6 +933,7 @@ class ElasticsearchDestinationUpdate(TypedDict, total=False):
     S3Update: Optional[S3DestinationUpdate]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    DocumentIdOptions: Optional[DocumentIdOptions]
 
 
 class ExtendedS3DestinationUpdate(TypedDict, total=False):
@@ -1000,6 +1101,9 @@ class UpdateDestinationInput(ServiceRequest):
     AmazonopensearchserviceDestinationUpdate: Optional[AmazonopensearchserviceDestinationUpdate]
     SplunkDestinationUpdate: Optional[SplunkDestinationUpdate]
     HttpEndpointDestinationUpdate: Optional[HttpEndpointDestinationUpdate]
+    AmazonOpenSearchServerlessDestinationUpdate: Optional[
+        AmazonOpenSearchServerlessDestinationUpdate
+    ]
 
 
 class UpdateDestinationOutput(TypedDict, total=False):
@@ -1007,7 +1111,6 @@ class UpdateDestinationOutput(TypedDict, total=False):
 
 
 class FirehoseApi:
-
     service = "firehose"
     version = "2015-08-04"
 
@@ -1027,6 +1130,8 @@ class FirehoseApi:
         splunk_destination_configuration: SplunkDestinationConfiguration = None,
         http_endpoint_destination_configuration: HttpEndpointDestinationConfiguration = None,
         tags: TagDeliveryStreamInputTagList = None,
+        amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
+        msk_source_configuration: MSKSourceConfiguration = None,
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1131,5 +1236,6 @@ class FirehoseApi:
         amazonopensearchservice_destination_update: AmazonopensearchserviceDestinationUpdate = None,
         splunk_destination_update: SplunkDestinationUpdate = None,
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
+        amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
     ) -> UpdateDestinationOutput:
         raise NotImplementedError

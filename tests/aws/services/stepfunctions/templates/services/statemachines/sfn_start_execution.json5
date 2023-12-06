@@ -1,0 +1,16 @@
+{
+  "Comment": "SFN_START_EXECUTION",
+  "StartAt": "StartExecution",
+  "States": {
+    "StartExecution": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::states:startExecution",
+      "Parameters": {
+        "StateMachineArn.$": "$.StateMachineArn",
+        "Input.$": "$.Input",
+        "Name.$": "$.Name"
+      },
+      "End": true,
+    }
+  }
+}

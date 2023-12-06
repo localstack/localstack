@@ -1,0 +1,141 @@
+{
+  "tests/aws/services/acm/test_acm.py::TestACM::test_certificate_for_subdomain_wildcard": {
+    "recorded-date": "18-04-2023, 19:01:27",
+    "recorded-content": {
+      "request-cert": {
+        "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-cert": {
+        "Certificate": {
+          "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+          "CreatedAt": "datetime",
+          "DomainName": "*.<domain-name>",
+          "DomainValidationOptions": [
+            {
+              "DomainName": "*.<domain-name>",
+              "ResourceRecord": {
+                "Name": "<record-prefix>.<domain-name>.",
+                "Type": "CNAME",
+                "Value": "<record-value>"
+              },
+              "ValidationDomain": "*.<domain-name>",
+              "ValidationMethod": "DNS",
+              "ValidationStatus": "PENDING_VALIDATION"
+            }
+          ],
+          "ExtendedKeyUsages": [],
+          "InUseBy": [],
+          "Issuer": "Amazon",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [],
+          "Options": {
+            "CertificateTransparencyLoggingPreference": "ENABLED"
+          },
+          "RenewalEligibility": "INELIGIBLE",
+          "SignatureAlgorithm": "SHA256WITHRSA",
+          "Status": "PENDING_VALIDATION",
+          "Subject": "CN=*.<domain-name>",
+          "SubjectAlternativeNames": [
+            "*.<domain-name>"
+          ],
+          "Type": "AMAZON_ISSUED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-cert-2": {
+        "Certificate": {
+          "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+          "CreatedAt": "datetime",
+          "DomainName": "*.<domain-name>",
+          "DomainValidationOptions": [
+            {
+              "DomainName": "*.<domain-name>",
+              "ResourceRecord": {
+                "Name": "<record-prefix>.<domain-name>.",
+                "Type": "CNAME",
+                "Value": "<record-value>"
+              },
+              "ValidationDomain": "*.<domain-name>",
+              "ValidationMethod": "DNS",
+              "ValidationStatus": "SUCCESS"
+            }
+          ],
+          "ExtendedKeyUsages": [
+            {
+              "Name": "TLS_WEB_SERVER_AUTHENTICATION",
+              "OID": "<o-i-d:1>"
+            },
+            {
+              "Name": "TLS_WEB_CLIENT_AUTHENTICATION",
+              "OID": "<o-i-d:2>"
+            }
+          ],
+          "InUseBy": [],
+          "IssuedAt": "datetime",
+          "Issuer": "Amazon",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [
+            {
+              "Name": "DIGITAL_SIGNATURE"
+            },
+            {
+              "Name": "KEY_ENCIPHERMENT"
+            }
+          ],
+          "NotAfter": "datetime",
+          "NotBefore": "datetime",
+          "Options": {
+            "CertificateTransparencyLoggingPreference": "ENABLED"
+          },
+          "RenewalEligibility": "INELIGIBLE",
+          "Serial": "<serial:1>",
+          "SignatureAlgorithm": "SHA256WITHRSA",
+          "Status": "ISSUED",
+          "Subject": "CN=*.<domain-name>",
+          "SubjectAlternativeNames": [
+            "*.<domain-name>"
+          ],
+          "Type": "AMAZON_ISSUED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-cert": [
+        {
+          "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+          "DomainName": "*.<domain-name>",
+          "SubjectAlternativeNameSummaries": [
+            "*.<domain-name>"
+          ],
+          "HasAdditionalSubjectAlternativeNames": false,
+          "Status": "ISSUED",
+          "Type": "AMAZON_ISSUED",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [
+            "DIGITAL_SIGNATURE",
+            "KEY_ENCIPHERMENT"
+          ],
+          "ExtendedKeyUsages": [
+            "TLS_WEB_SERVER_AUTHENTICATION",
+            "TLS_WEB_CLIENT_AUTHENTICATION"
+          ],
+          "InUse": false,
+          "RenewalEligibility": "INELIGIBLE",
+          "NotBefore": "datetime",
+          "NotAfter": "datetime",
+          "CreatedAt": "datetime",
+          "IssuedAt": "datetime"
+        }
+      ]
+    }
+  }
+}

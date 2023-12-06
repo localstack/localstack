@@ -1,14 +1,15 @@
+import contextlib
 import logging
 import threading
 import time
 from typing import Dict
 
-import bson
+from bson.json_util import dumps
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
+from localstack.aws.connect import connect_to
 from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, resources
 from localstack.utils.common import now_utc
 
 DDB_KINESIS_STREAM_NAME_PREFIX = "__ddb_stream_"
@@ -19,10 +20,8 @@ _SEQUENCE_MTX = threading.RLock()
 _SEQUENCE_NUMBER_COUNTER = 1
 
 
-def get_dynamodbstreams_store(account_id: str = None, region: str = None) -> DynamoDbStreamsStore:
-    return dynamodbstreams_stores[account_id or get_aws_account_id()][
-        region or aws_stack.get_region()
-    ]
+def get_dynamodbstreams_store(account_id: str, region: str) -> DynamoDbStreamsStore:
+    return dynamodbstreams_stores[account_id][region]
 
 
 def get_and_increment_sequence_number_counter() -> int:
@@ -34,62 +33,73 @@ def get_and_increment_sequence_number_counter() -> int:
 
 
 def add_dynamodb_stream(
-    table_name, latest_stream_label=None, view_type=StreamViewType.NEW_AND_OLD_IMAGES, enabled=True
-):
-    if enabled:
-        store = get_dynamodbstreams_store()
-        # create kinesis stream as a backend
-        stream_name = get_kinesis_stream_name(table_name)
-        aws_stack.create_kinesis_stream(stream_name)
-        latest_stream_label = latest_stream_label or "latest"
-        stream = {
-            "StreamArn": aws_stack.dynamodb_stream_arn(
-                table_name=table_name, latest_stream_label=latest_stream_label
-            ),
-            "TableName": table_name,
-            "StreamLabel": latest_stream_label,
-            "StreamStatus": StreamStatus.ENABLING,
-            "KeySchema": [],
-            "Shards": [],
-            "StreamViewType": view_type,
-            "shards_id_map": {},
-        }
-        store.ddb_streams[table_name] = stream
+    account_id: str,
+    region_name: str,
+    table_name: str,
+    latest_stream_label: str | None = None,
+    view_type: StreamViewType = StreamViewType.NEW_AND_OLD_IMAGES,
+    enabled: bool = True,
+) -> None:
+    if not enabled:
+        return
+
+    store = get_dynamodbstreams_store(account_id, region_name)
+    # create kinesis stream as a backend
+    stream_name = get_kinesis_stream_name(table_name)
+    resources.create_kinesis_stream(
+        connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis,
+        stream_name=stream_name,
+    )
+    latest_stream_label = latest_stream_label or "latest"
+    stream = {
+        "StreamArn": arns.dynamodb_stream_arn(
+            table_name=table_name,
+            latest_stream_label=latest_stream_label,
+            account_id=account_id,
+            region_name=region_name,
+        ),
+        "TableName": table_name,
+        "StreamLabel": latest_stream_label,
+        "StreamStatus": StreamStatus.ENABLING,
+        "KeySchema": [],
+        "Shards": [],
+        "StreamViewType": view_type,
+        "shards_id_map": {},
+    }
+    store.ddb_streams[table_name] = stream
 
 
-def get_stream_for_table(table_arn: str) -> dict:
-    store = get_dynamodbstreams_store()
+def get_stream_for_table(account_id: str, region_name: str, table_arn: str) -> dict:
+    store = get_dynamodbstreams_store(account_id, region_name)
     table_name = table_name_from_stream_arn(table_arn)
     return store.ddb_streams.get(table_name)
 
 
-def forward_events(records: Dict) -> None:
-    kinesis = aws_stack.connect_to_service("kinesis")
+def forward_events(account_id: str, region_name: str, records: dict) -> None:
+    kinesis = connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis
     for record in records:
         table_arn = record.pop("eventSourceARN", "")
-        stream = get_stream_for_table(table_arn)
-        if stream:
+        if stream := get_stream_for_table(account_id, region_name, table_arn):
             table_name = table_name_from_stream_arn(stream["StreamArn"])
             stream_name = get_kinesis_stream_name(table_name)
             kinesis.put_record(
                 StreamName=stream_name,
-                Data=bson.dumps(record),
+                Data=dumps(record),
                 PartitionKey="TODO",
             )
 
 
-def delete_streams(table_arn: str) -> None:
-    store = get_dynamodbstreams_store()
+def delete_streams(account_id: str, region_name: str, table_arn: str) -> None:
+    store = get_dynamodbstreams_store(account_id, region_name)
     table_name = table_name_from_table_arn(table_arn)
-    stream = store.ddb_streams.pop(table_name, None)
-    if stream:
+    if store.ddb_streams.pop(table_name, None):
         stream_name = get_kinesis_stream_name(table_name)
-        try:
-            aws_stack.connect_to_service("kinesis").delete_stream(StreamName=stream_name)
+        with contextlib.suppress(Exception):
+            connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis.delete_stream(
+                StreamName=stream_name
+            )
             # sleep a bit, as stream deletion can take some time ...
             time.sleep(1)
-        except Exception:
-            pass  # ignore "stream not found" errors
 
 
 def get_kinesis_stream_name(table_name: str) -> str:

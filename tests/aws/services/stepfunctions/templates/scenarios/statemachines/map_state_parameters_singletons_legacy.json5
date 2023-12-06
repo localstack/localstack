@@ -1,0 +1,45 @@
+{
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "Result": {
+        "detail": {
+          "delivery-partner": "UQS",
+          "shipped": [
+            "A", "B", "C"
+          ]
+        }
+      },
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "ResultPath": "$.detail.shipped_output",
+      "InputPath": "$.detail",
+      "ItemsPath": "$.shipped",
+      "MaxConcurrency": 1,
+      "Parameters": {
+        "original_input.$": "$",
+        "iteration_input_value.$": "$$.Map.Item.Value",
+        "iteration_index.$": "$$.Map.Item.Index",
+        "from_input_constant.$": "$.delivery-partner",
+        "constant_value": "HelloWorld"
+      },
+      "Iterator": {
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "Next": "Final",
+    },
+    "Final": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

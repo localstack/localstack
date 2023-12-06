@@ -1,0 +1,69 @@
+{
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "Result": {
+        "detail": {
+          "delivery-partner": "UQS",
+          "shipped": [
+            {
+              "prod": "R31",
+              "dest-code": 9511,
+              "quantity": 1344
+            },
+            {
+              "prod": "S39",
+              "dest-code": 9511,
+              "quantity": 40
+            },
+            {
+              "prod": "R31",
+              "dest-code": 9833,
+              "quantity": 12
+            },
+            {
+              "prod": "R40",
+              "dest-code": 9860,
+              "quantity": 887
+            },
+            {
+              "prod": "R40",
+              "dest-code": 9511,
+              "quantity": 1220
+            }
+          ]
+        }
+      },
+      "Next": "MapState"
+    },
+    "MapState": {
+      "Type": "Map",
+      "ResultPath": "$.detail.shipped_output",
+      "InputPath": "$.detail",
+      "ItemsPath": "$.shipped",
+      "MaxConcurrency": 1,
+      "Parameters": {
+        "original_input.$": "$",
+        "iteration_input_value.$": "$$.Map.Item.Value",
+        "iteration_index.$": "$$.Map.Item.Index",
+        "from_input_constant.$": "$.delivery-partner",
+        "constant_value": "HelloWorld"
+      },
+      "Iterator": {
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "Next": "Final",
+    },
+    "Final": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

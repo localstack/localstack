@@ -1,0 +1,34 @@
+Parameters:
+  BillingModeParameter:
+    Type: String
+
+Resources:
+  DynamoDBTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        Fn::If:
+          - ShouldUsePayPerRequestBilling
+          - !Ref "AWS::NoValue"
+          - ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      BillingMode:
+        Fn::If:
+          - ShouldUsePayPerRequestBilling
+          - PAY_PER_REQUEST
+          - !Ref "AWS::NoValue"
+      StreamSpecification:
+        StreamViewType: "NEW_AND_OLD_IMAGES"
+
+Conditions:
+  ShouldUsePayPerRequestBilling: !Equals [!Ref BillingModeParameter, "PAY_PER_REQUEST"]
+
+Outputs:
+  TableName:
+    Value: !Ref DynamoDBTable

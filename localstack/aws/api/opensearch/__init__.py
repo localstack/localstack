@@ -1,19 +1,16 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 ARN = str
+AWSAccount = str
+AvailabilityZone = str
 BackendRole = str
 Boolean = bool
 ChangeProgressStageName = str
 ChangeProgressStageStatus = str
+ClientToken = str
 CloudWatchLogsLogGroupArn = str
 CommitMessage = str
 ConnectionAlias = str
@@ -22,38 +19,52 @@ ConnectionStatusMessage = str
 DeploymentType = str
 DescribePackagesFilterValue = str
 Description = str
+DomainArn = str
 DomainId = str
 DomainName = str
 DomainNameFqdn = str
 Double = float
 DryRun = bool
+Endpoint = str
+EngineVersion = str
 ErrorMessage = str
 ErrorType = str
 GUID = str
 IdentityPoolId = str
 InstanceCount = int
 InstanceRole = str
+InstanceTypeString = str
 Integer = int
 IntegerClass = int
 Issue = str
 KmsKeyId = str
 LimitName = str
 LimitValue = str
+MaintenanceStatusMessage = str
 MaxResults = int
 MaximumInstanceCount = int
 Message = str
 MinimumInstanceCount = int
 NextToken = str
+NodeId = str
 NonEmptyString = str
+NumberOfAZs = str
+NumberOfNodes = str
+NumberOfShards = str
 OwnerId = str
 PackageDescription = str
 PackageID = str
 PackageName = str
 PackageVersion = str
 Password = str
+PluginClassName = str
+PluginDescription = str
+PluginName = str
+PluginVersion = str
 PolicyDocument = str
 ReferencePath = str
 Region = str
+RequestId = str
 ReservationToken = str
 RoleArn = str
 S3BucketName = str
@@ -73,6 +84,29 @@ UpgradeName = str
 UserPoolId = str
 Username = str
 VersionString = str
+VolumeSize = str
+VpcEndpointId = str
+
+
+class ActionSeverity(str):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
+class ActionStatus(str):
+    PENDING_UPDATE = "PENDING_UPDATE"
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETED = "COMPLETED"
+    NOT_ELIGIBLE = "NOT_ELIGIBLE"
+    ELIGIBLE = "ELIGIBLE"
+
+
+class ActionType(str):
+    SERVICE_SOFTWARE_UPDATE = "SERVICE_SOFTWARE_UPDATE"
+    JVM_HEAP_SIZE_TUNING = "JVM_HEAP_SIZE_TUNING"
+    JVM_YOUNG_GEN_TUNING = "JVM_YOUNG_GEN_TUNING"
 
 
 class AutoTuneDesiredState(str):
@@ -96,6 +130,11 @@ class AutoTuneType(str):
     SCHEDULED_ACTION = "SCHEDULED_ACTION"
 
 
+class ConnectionMode(str):
+    DIRECT = "DIRECT"
+    VPC_ENDPOINT = "VPC_ENDPOINT"
+
+
 class DeploymentStatus(str):
     PENDING_UPDATE = "PENDING_UPDATE"
     IN_PROGRESS = "IN_PROGRESS"
@@ -108,6 +147,15 @@ class DescribePackagesFilterName(str):
     PackageID = "PackageID"
     PackageName = "PackageName"
     PackageStatus = "PackageStatus"
+    PackageType = "PackageType"
+    EngineVersion = "EngineVersion"
+
+
+class DomainHealth(str):
+    Red = "Red"
+    Yellow = "Yellow"
+    Green = "Green"
+    NotAvailable = "NotAvailable"
 
 
 class DomainPackageStatus(str):
@@ -118,9 +166,25 @@ class DomainPackageStatus(str):
     DISSOCIATION_FAILED = "DISSOCIATION_FAILED"
 
 
+class DomainState(str):
+    Active = "Active"
+    Processing = "Processing"
+    NotAvailable = "NotAvailable"
+
+
+class DryRunMode(str):
+    Basic = "Basic"
+    Verbose = "Verbose"
+
+
 class EngineType(str):
     OpenSearch = "OpenSearch"
     Elasticsearch = "Elasticsearch"
+
+
+class IPAddressType(str):
+    ipv4 = "ipv4"
+    dualstack = "dualstack"
 
 
 class InboundConnectionStatusCode(str):
@@ -139,6 +203,37 @@ class LogType(str):
     SEARCH_SLOW_LOGS = "SEARCH_SLOW_LOGS"
     ES_APPLICATION_LOGS = "ES_APPLICATION_LOGS"
     AUDIT_LOGS = "AUDIT_LOGS"
+
+
+class MaintenanceStatus(str):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    TIMED_OUT = "TIMED_OUT"
+
+
+class MaintenanceType(str):
+    REBOOT_NODE = "REBOOT_NODE"
+    RESTART_SEARCH_PROCESS = "RESTART_SEARCH_PROCESS"
+    RESTART_DASHBOARD = "RESTART_DASHBOARD"
+
+
+class MasterNodeStatus(str):
+    Available = "Available"
+    UnAvailable = "UnAvailable"
+
+
+class NodeStatus(str):
+    Active = "Active"
+    StandBy = "StandBy"
+    NotAvailable = "NotAvailable"
+
+
+class NodeType(str):
+    Data = "Data"
+    Ultrawarm = "Ultrawarm"
+    Master = "Master"
 
 
 class OpenSearchPartitionInstanceType(str):
@@ -284,6 +379,12 @@ class PackageStatus(str):
 
 class PackageType(str):
     TXT_DICTIONARY = "TXT-DICTIONARY"
+    ZIP_PLUGIN = "ZIP-PLUGIN"
+
+
+class PrincipalType(str):
+    AWS_ACCOUNT = "AWS_ACCOUNT"
+    AWS_SERVICE = "AWS_SERVICE"
 
 
 class ReservedInstancePaymentOption(str):
@@ -297,6 +398,12 @@ class RollbackOnDisable(str):
     DEFAULT_ROLLBACK = "DEFAULT_ROLLBACK"
 
 
+class ScheduleAt(str):
+    NOW = "NOW"
+    TIMESTAMP = "TIMESTAMP"
+    OFF_PEAK_WINDOW = "OFF_PEAK_WINDOW"
+
+
 class ScheduledAutoTuneActionType(str):
     JVM_HEAP_SIZE_TUNING = "JVM_HEAP_SIZE_TUNING"
     JVM_YOUNG_GEN_TUNING = "JVM_YOUNG_GEN_TUNING"
@@ -306,6 +413,16 @@ class ScheduledAutoTuneSeverityType(str):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
+
+
+class ScheduledBy(str):
+    CUSTOMER = "CUSTOMER"
+    SYSTEM = "SYSTEM"
+
+
+class SkipUnavailableStatus(str):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
 
 
 class TLSSecurityPolicy(str):
@@ -337,6 +454,27 @@ class VolumeType(str):
     gp3 = "gp3"
 
 
+class VpcEndpointErrorCode(str):
+    ENDPOINT_NOT_FOUND = "ENDPOINT_NOT_FOUND"
+    SERVER_ERROR = "SERVER_ERROR"
+
+
+class VpcEndpointStatus(str):
+    CREATING = "CREATING"
+    CREATE_FAILED = "CREATE_FAILED"
+    ACTIVE = "ACTIVE"
+    UPDATING = "UPDATING"
+    UPDATE_FAILED = "UPDATE_FAILED"
+    DELETING = "DELETING"
+    DELETE_FAILED = "DELETE_FAILED"
+
+
+class ZoneStatus(str):
+    Active = "Active"
+    StandBy = "StandBy"
+    NotAvailable = "NotAvailable"
+
+
 class AccessDeniedException(ServiceException):
     code: str = "AccessDeniedException"
     sender_fault: bool = False
@@ -353,6 +491,12 @@ class ConflictException(ServiceException):
     code: str = "ConflictException"
     sender_fault: bool = False
     status_code: int = 409
+
+
+class DependencyFailureException(ServiceException):
+    code: str = "DependencyFailureException"
+    sender_fault: bool = False
+    status_code: int = 424
 
 
 class DisabledOperationException(ServiceException):
@@ -397,6 +541,17 @@ class ResourceNotFoundException(ServiceException):
     status_code: int = 409
 
 
+Long = int
+SlotList = List[Long]
+
+
+class SlotNotAvailableException(ServiceException):
+    code: str = "SlotNotAvailableException"
+    sender_fault: bool = False
+    status_code: int = 409
+    SlotSuggestions: Optional[SlotList]
+
+
 class ValidationException(ServiceException):
     code: str = "ValidationException"
     sender_fault: bool = False
@@ -427,6 +582,7 @@ class InboundConnection(TypedDict, total=False):
     RemoteDomainInfo: Optional[DomainInformationContainer]
     ConnectionId: Optional[ConnectionId]
     ConnectionStatus: Optional[InboundConnectionStatus]
+    ConnectionMode: Optional[ConnectionMode]
 
 
 class AcceptInboundConnectionResponse(TypedDict, total=False):
@@ -561,6 +717,21 @@ class AssociatePackageResponse(TypedDict, total=False):
     DomainPackageDetails: Optional[DomainPackageDetails]
 
 
+class AuthorizeVpcEndpointAccessRequest(ServiceRequest):
+    DomainName: DomainName
+    Account: AWSAccount
+
+
+class AuthorizedPrincipal(TypedDict, total=False):
+    PrincipalType: Optional[PrincipalType]
+    Principal: Optional[String]
+
+
+class AuthorizeVpcEndpointAccessResponse(TypedDict, total=False):
+    AuthorizedPrincipal: AuthorizedPrincipal
+
+
+AuthorizedPrincipalList = List[AuthorizedPrincipal]
 AutoTuneDate = datetime
 
 
@@ -605,16 +776,19 @@ class AutoTuneOptions(TypedDict, total=False):
     DesiredState: Optional[AutoTuneDesiredState]
     RollbackOnDisable: Optional[RollbackOnDisable]
     MaintenanceSchedules: Optional[AutoTuneMaintenanceScheduleList]
+    UseOffPeakWindow: Optional[Boolean]
 
 
 class AutoTuneOptionsInput(TypedDict, total=False):
     DesiredState: Optional[AutoTuneDesiredState]
     MaintenanceSchedules: Optional[AutoTuneMaintenanceScheduleList]
+    UseOffPeakWindow: Optional[Boolean]
 
 
 class AutoTuneOptionsOutput(TypedDict, total=False):
     State: Optional[AutoTuneState]
     ErrorMessage: Optional[String]
+    UseOffPeakWindow: Optional[Boolean]
 
 
 class AutoTuneStatus(TypedDict, total=False):
@@ -629,6 +803,19 @@ class AutoTuneStatus(TypedDict, total=False):
 class AutoTuneOptionsStatus(TypedDict, total=False):
     Options: Optional[AutoTuneOptions]
     Status: Optional[AutoTuneStatus]
+
+
+class AvailabilityZoneInfo(TypedDict, total=False):
+    AvailabilityZoneName: Optional[AvailabilityZone]
+    ZoneStatus: Optional[ZoneStatus]
+    ConfiguredDataNodeCount: Optional[NumberOfNodes]
+    AvailableDataNodeCount: Optional[NumberOfNodes]
+    TotalShards: Optional[NumberOfShards]
+    TotalUnAssignedShards: Optional[NumberOfShards]
+
+
+AvailabilityZoneInfoList = List[AvailabilityZoneInfo]
+AvailabilityZoneList = List[AvailabilityZone]
 
 
 class CancelServiceSoftwareUpdateRequest(ServiceRequest):
@@ -699,6 +886,7 @@ class ClusterConfig(TypedDict, total=False):
     WarmType: Optional[OpenSearchWarmPartitionInstanceType]
     WarmCount: Optional[IntegerClass]
     ColdStorageOptions: Optional[ColdStorageOptions]
+    MultiAZWithStandbyEnabled: Optional[Boolean]
 
 
 class ClusterConfigStatus(TypedDict, total=False):
@@ -727,6 +915,37 @@ class CompatibleVersionsMap(TypedDict, total=False):
 
 
 CompatibleVersionsList = List[CompatibleVersionsMap]
+
+
+class CrossClusterSearchConnectionProperties(TypedDict, total=False):
+    SkipUnavailable: Optional[SkipUnavailableStatus]
+
+
+class ConnectionProperties(TypedDict, total=False):
+    Endpoint: Optional[Endpoint]
+    CrossClusterSearch: Optional[CrossClusterSearchConnectionProperties]
+
+
+class SoftwareUpdateOptions(TypedDict, total=False):
+    AutoSoftwareUpdateEnabled: Optional[Boolean]
+
+
+StartTimeMinutes = int
+StartTimeHours = int
+
+
+class WindowStartTime(TypedDict, total=False):
+    Hours: StartTimeHours
+    Minutes: StartTimeMinutes
+
+
+class OffPeakWindow(TypedDict, total=False):
+    WindowStartTime: Optional[WindowStartTime]
+
+
+class OffPeakWindowOptions(TypedDict, total=False):
+    Enabled: Optional[Boolean]
+    OffPeakWindow: Optional[OffPeakWindow]
 
 
 class DomainEndpointOptions(TypedDict, total=False):
@@ -777,6 +996,7 @@ class CreateDomainRequest(ServiceRequest):
     ClusterConfig: Optional[ClusterConfig]
     EBSOptions: Optional[EBSOptions]
     AccessPolicies: Optional[PolicyDocument]
+    IPAddressType: Optional[IPAddressType]
     SnapshotOptions: Optional[SnapshotOptions]
     VPCOptions: Optional[VPCOptions]
     CognitoOptions: Optional[CognitoOptions]
@@ -788,6 +1008,8 @@ class CreateDomainRequest(ServiceRequest):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
     TagList: Optional[TagList]
     AutoTuneOptions: Optional[AutoTuneOptionsInput]
+    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
+    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
 
 
 class VPCDerivedInfo(TypedDict, total=False):
@@ -807,6 +1029,7 @@ class DomainStatus(TypedDict, total=False):
     Created: Optional[Boolean]
     Deleted: Optional[Boolean]
     Endpoint: Optional[ServiceUrl]
+    EndpointV2: Optional[ServiceUrl]
     Endpoints: Optional[EndpointsMap]
     Processing: Optional[Boolean]
     UpgradeProcessing: Optional[Boolean]
@@ -814,6 +1037,7 @@ class DomainStatus(TypedDict, total=False):
     ClusterConfig: ClusterConfig
     EBSOptions: Optional[EBSOptions]
     AccessPolicies: Optional[PolicyDocument]
+    IPAddressType: Optional[IPAddressType]
     SnapshotOptions: Optional[SnapshotOptions]
     VPCOptions: Optional[VPCDerivedInfo]
     CognitoOptions: Optional[CognitoOptions]
@@ -826,6 +1050,8 @@ class DomainStatus(TypedDict, total=False):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptions]
     AutoTuneOptions: Optional[AutoTuneOptionsOutput]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
+    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
+    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
 
 
 class CreateDomainResponse(TypedDict, total=False):
@@ -836,6 +1062,8 @@ class CreateOutboundConnectionRequest(ServiceRequest):
     LocalDomainInfo: DomainInformationContainer
     RemoteDomainInfo: DomainInformationContainer
     ConnectionAlias: ConnectionAlias
+    ConnectionMode: Optional[ConnectionMode]
+    ConnectionProperties: Optional[ConnectionProperties]
 
 
 class OutboundConnectionStatus(TypedDict, total=False):
@@ -849,6 +1077,8 @@ class CreateOutboundConnectionResponse(TypedDict, total=False):
     ConnectionAlias: Optional[ConnectionAlias]
     ConnectionStatus: Optional[OutboundConnectionStatus]
     ConnectionId: Optional[ConnectionId]
+    ConnectionMode: Optional[ConnectionMode]
+    ConnectionProperties: Optional[ConnectionProperties]
 
 
 class PackageSource(TypedDict, total=False):
@@ -861,6 +1091,17 @@ class CreatePackageRequest(ServiceRequest):
     PackageType: PackageType
     PackageDescription: Optional[PackageDescription]
     PackageSource: PackageSource
+
+
+UncompressedPluginSizeInBytes = int
+
+
+class PluginProperties(TypedDict, total=False):
+    Name: Optional[PluginName]
+    Description: Optional[PluginDescription]
+    Version: Optional[PluginVersion]
+    ClassName: Optional[PluginClassName]
+    UncompressedSizeInBytes: Optional[UncompressedPluginSizeInBytes]
 
 
 CreatedAt = datetime
@@ -876,10 +1117,31 @@ class PackageDetails(TypedDict, total=False):
     LastUpdatedAt: Optional[LastUpdated]
     AvailablePackageVersion: Optional[PackageVersion]
     ErrorDetails: Optional[ErrorDetails]
+    EngineVersion: Optional[EngineVersion]
+    AvailablePluginProperties: Optional[PluginProperties]
 
 
 class CreatePackageResponse(TypedDict, total=False):
     PackageDetails: Optional[PackageDetails]
+
+
+class CreateVpcEndpointRequest(ServiceRequest):
+    DomainArn: DomainArn
+    VpcOptions: VPCOptions
+    ClientToken: Optional[ClientToken]
+
+
+class VpcEndpoint(TypedDict, total=False):
+    VpcEndpointId: Optional[VpcEndpointId]
+    VpcEndpointOwner: Optional[AWSAccount]
+    DomainArn: Optional[DomainArn]
+    VpcOptions: Optional[VPCDerivedInfo]
+    Status: Optional[VpcEndpointStatus]
+    Endpoint: Optional[Endpoint]
+
+
+class CreateVpcEndpointResponse(TypedDict, total=False):
+    VpcEndpoint: VpcEndpoint
 
 
 class DeleteDomainRequest(ServiceRequest):
@@ -908,6 +1170,8 @@ class OutboundConnection(TypedDict, total=False):
     ConnectionId: Optional[ConnectionId]
     ConnectionAlias: Optional[ConnectionAlias]
     ConnectionStatus: Optional[OutboundConnectionStatus]
+    ConnectionMode: Optional[ConnectionMode]
+    ConnectionProperties: Optional[ConnectionProperties]
 
 
 class DeleteOutboundConnectionResponse(TypedDict, total=False):
@@ -920,6 +1184,21 @@ class DeletePackageRequest(ServiceRequest):
 
 class DeletePackageResponse(TypedDict, total=False):
     PackageDetails: Optional[PackageDetails]
+
+
+class DeleteVpcEndpointRequest(ServiceRequest):
+    VpcEndpointId: VpcEndpointId
+
+
+class VpcEndpointSummary(TypedDict, total=False):
+    VpcEndpointId: Optional[VpcEndpointId]
+    VpcEndpointOwner: Optional[String]
+    DomainArn: Optional[DomainArn]
+    Status: Optional[VpcEndpointStatus]
+
+
+class DeleteVpcEndpointResponse(TypedDict, total=False):
+    VpcEndpointSummary: VpcEndpointSummary
 
 
 class DescribeDomainAutoTunesRequest(ServiceRequest):
@@ -944,6 +1223,16 @@ class DescribeDomainChangeProgressResponse(TypedDict, total=False):
 
 class DescribeDomainConfigRequest(ServiceRequest):
     DomainName: DomainName
+
+
+class SoftwareUpdateOptionsStatus(TypedDict, total=False):
+    Options: Optional[SoftwareUpdateOptions]
+    Status: Optional[OptionStatus]
+
+
+class OffPeakWindowOptionsStatus(TypedDict, total=False):
+    Options: Optional[OffPeakWindowOptions]
+    Status: Optional[OptionStatus]
 
 
 class DomainEndpointOptionsStatus(TypedDict, total=False):
@@ -976,6 +1265,11 @@ class SnapshotOptionsStatus(TypedDict, total=False):
     Status: OptionStatus
 
 
+class IPAddressTypeStatus(TypedDict, total=False):
+    Options: IPAddressType
+    Status: OptionStatus
+
+
 class EBSOptionsStatus(TypedDict, total=False):
     Options: EBSOptions
     Status: OptionStatus
@@ -991,6 +1285,7 @@ class DomainConfig(TypedDict, total=False):
     ClusterConfig: Optional[ClusterConfigStatus]
     EBSOptions: Optional[EBSOptionsStatus]
     AccessPolicies: Optional[AccessPoliciesStatus]
+    IPAddressType: Optional[IPAddressTypeStatus]
     SnapshotOptions: Optional[SnapshotOptionsStatus]
     VPCOptions: Optional[VPCDerivedInfoStatus]
     CognitoOptions: Optional[CognitoOptionsStatus]
@@ -1002,10 +1297,61 @@ class DomainConfig(TypedDict, total=False):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsStatus]
     AutoTuneOptions: Optional[AutoTuneOptionsStatus]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
+    OffPeakWindowOptions: Optional[OffPeakWindowOptionsStatus]
+    SoftwareUpdateOptions: Optional[SoftwareUpdateOptionsStatus]
 
 
 class DescribeDomainConfigResponse(TypedDict, total=False):
     DomainConfig: DomainConfig
+
+
+class DescribeDomainHealthRequest(ServiceRequest):
+    DomainName: DomainName
+
+
+class EnvironmentInfo(TypedDict, total=False):
+    AvailabilityZoneInformation: Optional[AvailabilityZoneInfoList]
+
+
+EnvironmentInfoList = List[EnvironmentInfo]
+
+
+class DescribeDomainHealthResponse(TypedDict, total=False):
+    DomainState: Optional[DomainState]
+    AvailabilityZoneCount: Optional[NumberOfAZs]
+    ActiveAvailabilityZoneCount: Optional[NumberOfAZs]
+    StandByAvailabilityZoneCount: Optional[NumberOfAZs]
+    DataNodeCount: Optional[NumberOfNodes]
+    DedicatedMaster: Optional[Boolean]
+    MasterEligibleNodeCount: Optional[NumberOfNodes]
+    WarmNodeCount: Optional[NumberOfNodes]
+    MasterNode: Optional[MasterNodeStatus]
+    ClusterHealth: Optional[DomainHealth]
+    TotalShards: Optional[NumberOfShards]
+    TotalUnAssignedShards: Optional[NumberOfShards]
+    EnvironmentInformation: Optional[EnvironmentInfoList]
+
+
+class DescribeDomainNodesRequest(ServiceRequest):
+    DomainName: DomainName
+
+
+class DomainNodesStatus(TypedDict, total=False):
+    NodeId: Optional[NodeId]
+    NodeType: Optional[NodeType]
+    AvailabilityZone: Optional[AvailabilityZone]
+    InstanceType: Optional[OpenSearchPartitionInstanceType]
+    NodeStatus: Optional[NodeStatus]
+    StorageType: Optional[StorageTypeName]
+    StorageVolumeType: Optional[VolumeType]
+    StorageSize: Optional[VolumeSize]
+
+
+DomainNodesStatusList = List[DomainNodesStatus]
+
+
+class DescribeDomainNodesResponse(TypedDict, total=False):
+    DomainNodesStatusList: Optional[DomainNodesStatusList]
 
 
 class DescribeDomainRequest(ServiceRequest):
@@ -1028,6 +1374,39 @@ DomainStatusList = List[DomainStatus]
 
 class DescribeDomainsResponse(TypedDict, total=False):
     DomainStatusList: DomainStatusList
+
+
+class DescribeDryRunProgressRequest(ServiceRequest):
+    DomainName: DomainName
+    DryRunId: Optional[GUID]
+    LoadDryRunConfig: Optional[Boolean]
+
+
+class DryRunResults(TypedDict, total=False):
+    DeploymentType: Optional[DeploymentType]
+    Message: Optional[Message]
+
+
+class ValidationFailure(TypedDict, total=False):
+    Code: Optional[String]
+    Message: Optional[String]
+
+
+ValidationFailures = List[ValidationFailure]
+
+
+class DryRunProgressStatus(TypedDict, total=False):
+    DryRunId: GUID
+    DryRunStatus: String
+    CreationDate: String
+    UpdateDate: String
+    ValidationFailures: Optional[ValidationFailures]
+
+
+class DescribeDryRunProgressResponse(TypedDict, total=False):
+    DryRunProgressStatus: Optional[DryRunProgressStatus]
+    DryRunConfig: Optional[DomainStatus]
+    DryRunResults: Optional[DryRunResults]
 
 
 ValueStringList = List[NonEmptyString]
@@ -1178,9 +1557,6 @@ class DescribeReservedInstancesRequest(ServiceRequest):
     NextToken: Optional[NextToken]
 
 
-Long = int
-
-
 class ReservedInstance(TypedDict, total=False):
     ReservationName: Optional[ReservationToken]
     ReservedInstanceId: Optional[GUID]
@@ -1206,6 +1582,28 @@ class DescribeReservedInstancesResponse(TypedDict, total=False):
     ReservedInstances: Optional[ReservedInstanceList]
 
 
+VpcEndpointIdList = List[VpcEndpointId]
+
+
+class DescribeVpcEndpointsRequest(ServiceRequest):
+    VpcEndpointIds: VpcEndpointIdList
+
+
+class VpcEndpointError(TypedDict, total=False):
+    VpcEndpointId: Optional[VpcEndpointId]
+    ErrorCode: Optional[VpcEndpointErrorCode]
+    ErrorMessage: Optional[String]
+
+
+VpcEndpointErrorList = List[VpcEndpointError]
+VpcEndpoints = List[VpcEndpoint]
+
+
+class DescribeVpcEndpointsResponse(TypedDict, total=False):
+    VpcEndpoints: VpcEndpoints
+    VpcEndpointErrors: VpcEndpointErrorList
+
+
 class DissociatePackageRequest(ServiceRequest):
     PackageID: PackageID
     DomainName: DomainName
@@ -1221,12 +1619,21 @@ class DomainInfo(TypedDict, total=False):
 
 
 DomainInfoList = List[DomainInfo]
+
+
+class DomainMaintenanceDetails(TypedDict, total=False):
+    MaintenanceId: Optional[RequestId]
+    DomainName: Optional[DomainName]
+    Action: Optional[MaintenanceType]
+    NodeId: Optional[NodeId]
+    Status: Optional[MaintenanceStatus]
+    StatusMessage: Optional[MaintenanceStatusMessage]
+    CreatedAt: Optional[UpdateTimestamp]
+    UpdatedAt: Optional[UpdateTimestamp]
+
+
+DomainMaintenanceList = List[DomainMaintenanceDetails]
 DomainPackageDetailsList = List[DomainPackageDetails]
-
-
-class DryRunResults(TypedDict, total=False):
-    DeploymentType: Optional[DeploymentType]
-    Message: Optional[Message]
 
 
 class GetCompatibleVersionsRequest(ServiceRequest):
@@ -1235,6 +1642,20 @@ class GetCompatibleVersionsRequest(ServiceRequest):
 
 class GetCompatibleVersionsResponse(TypedDict, total=False):
     CompatibleVersions: Optional[CompatibleVersionsList]
+
+
+class GetDomainMaintenanceStatusRequest(ServiceRequest):
+    DomainName: DomainName
+    MaintenanceId: RequestId
+
+
+class GetDomainMaintenanceStatusResponse(TypedDict, total=False):
+    Status: Optional[MaintenanceStatus]
+    StatusMessage: Optional[MaintenanceStatusMessage]
+    NodeId: Optional[NodeId]
+    Action: Optional[MaintenanceType]
+    CreatedAt: Optional[UpdateTimestamp]
+    UpdatedAt: Optional[UpdateTimestamp]
 
 
 class GetPackageVersionHistoryRequest(ServiceRequest):
@@ -1247,6 +1668,7 @@ class PackageVersionHistory(TypedDict, total=False):
     PackageVersion: Optional[PackageVersion]
     CommitMessage: Optional[CommitMessage]
     CreatedAt: Optional[CreatedAt]
+    PluginProperties: Optional[PluginProperties]
 
 
 PackageVersionHistoryList = List[PackageVersionHistory]
@@ -1314,9 +1736,23 @@ class InstanceTypeDetails(TypedDict, total=False):
     AdvancedSecurityEnabled: Optional[Boolean]
     WarmEnabled: Optional[Boolean]
     InstanceRole: Optional[InstanceRoleList]
+    AvailabilityZones: Optional[AvailabilityZoneList]
 
 
 InstanceTypeDetailsList = List[InstanceTypeDetails]
+
+
+class ListDomainMaintenancesRequest(ServiceRequest):
+    DomainName: DomainName
+    Action: Optional[MaintenanceType]
+    Status: Optional[MaintenanceStatus]
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+
+
+class ListDomainMaintenancesResponse(TypedDict, total=False):
+    DomainMaintenances: Optional[DomainMaintenanceList]
+    NextToken: Optional[NextToken]
 
 
 class ListDomainNamesRequest(ServiceRequest):
@@ -1343,6 +1779,8 @@ class ListInstanceTypeDetailsRequest(ServiceRequest):
     DomainName: Optional[DomainName]
     MaxResults: Optional[MaxResults]
     NextToken: Optional[NextToken]
+    RetrieveAZs: Optional[Boolean]
+    InstanceType: Optional[InstanceTypeString]
 
 
 class ListInstanceTypeDetailsResponse(TypedDict, total=False):
@@ -1361,6 +1799,32 @@ class ListPackagesForDomainResponse(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+class ListScheduledActionsRequest(ServiceRequest):
+    DomainName: DomainName
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+
+
+class ScheduledAction(TypedDict, total=False):
+    Id: String
+    Type: ActionType
+    Severity: ActionSeverity
+    ScheduledTime: Long
+    Description: Optional[String]
+    ScheduledBy: Optional[ScheduledBy]
+    Status: Optional[ActionStatus]
+    Mandatory: Optional[Boolean]
+    Cancellable: Optional[Boolean]
+
+
+ScheduledActionsList = List[ScheduledAction]
+
+
+class ListScheduledActionsResponse(TypedDict, total=False):
+    ScheduledActions: Optional[ScheduledActionsList]
+    NextToken: Optional[NextToken]
+
+
 class ListTagsRequest(ServiceRequest):
     ARN: ARN
 
@@ -1377,6 +1841,38 @@ class ListVersionsRequest(ServiceRequest):
 class ListVersionsResponse(TypedDict, total=False):
     Versions: Optional[VersionList]
     NextToken: Optional[NextToken]
+
+
+class ListVpcEndpointAccessRequest(ServiceRequest):
+    DomainName: DomainName
+    NextToken: Optional[NextToken]
+
+
+class ListVpcEndpointAccessResponse(TypedDict, total=False):
+    AuthorizedPrincipalList: AuthorizedPrincipalList
+    NextToken: NextToken
+
+
+class ListVpcEndpointsForDomainRequest(ServiceRequest):
+    DomainName: DomainName
+    NextToken: Optional[NextToken]
+
+
+VpcEndpointSummaryList = List[VpcEndpointSummary]
+
+
+class ListVpcEndpointsForDomainResponse(TypedDict, total=False):
+    VpcEndpointSummaryList: VpcEndpointSummaryList
+    NextToken: NextToken
+
+
+class ListVpcEndpointsRequest(ServiceRequest):
+    NextToken: Optional[NextToken]
+
+
+class ListVpcEndpointsResponse(TypedDict, total=False):
+    VpcEndpointSummaryList: VpcEndpointSummaryList
+    NextToken: NextToken
 
 
 class PurchaseReservedInstanceOfferingRequest(ServiceRequest):
@@ -1403,8 +1899,29 @@ class RemoveTagsRequest(ServiceRequest):
     TagKeys: StringList
 
 
+class RevokeVpcEndpointAccessRequest(ServiceRequest):
+    DomainName: DomainName
+    Account: AWSAccount
+
+
+class RevokeVpcEndpointAccessResponse(TypedDict, total=False):
+    pass
+
+
+class StartDomainMaintenanceRequest(ServiceRequest):
+    DomainName: DomainName
+    Action: MaintenanceType
+    NodeId: Optional[NodeId]
+
+
+class StartDomainMaintenanceResponse(TypedDict, total=False):
+    MaintenanceId: Optional[RequestId]
+
+
 class StartServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
+    ScheduleAt: Optional[ScheduleAt]
+    DesiredStartTime: Optional[Long]
 
 
 class StartServiceSoftwareUpdateResponse(TypedDict, total=False):
@@ -1420,6 +1937,7 @@ class UpdateDomainConfigRequest(ServiceRequest):
     CognitoOptions: Optional[CognitoOptions]
     AdvancedOptions: Optional[AdvancedOptions]
     AccessPolicies: Optional[PolicyDocument]
+    IPAddressType: Optional[IPAddressType]
     LogPublishingOptions: Optional[LogPublishingOptions]
     EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
     DomainEndpointOptions: Optional[DomainEndpointOptions]
@@ -1427,11 +1945,15 @@ class UpdateDomainConfigRequest(ServiceRequest):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
     AutoTuneOptions: Optional[AutoTuneOptions]
     DryRun: Optional[DryRun]
+    DryRunMode: Optional[DryRunMode]
+    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
+    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
 
 
 class UpdateDomainConfigResponse(TypedDict, total=False):
     DomainConfig: DomainConfig
     DryRunResults: Optional[DryRunResults]
+    DryRunProgressStatus: Optional[DryRunProgressStatus]
 
 
 class UpdatePackageRequest(ServiceRequest):
@@ -1443,6 +1965,27 @@ class UpdatePackageRequest(ServiceRequest):
 
 class UpdatePackageResponse(TypedDict, total=False):
     PackageDetails: Optional[PackageDetails]
+
+
+class UpdateScheduledActionRequest(ServiceRequest):
+    DomainName: DomainName
+    ActionID: String
+    ActionType: ActionType
+    ScheduleAt: ScheduleAt
+    DesiredStartTime: Optional[Long]
+
+
+class UpdateScheduledActionResponse(TypedDict, total=False):
+    ScheduledAction: Optional[ScheduledAction]
+
+
+class UpdateVpcEndpointRequest(ServiceRequest):
+    VpcEndpointId: VpcEndpointId
+    VpcOptions: VPCOptions
+
+
+class UpdateVpcEndpointResponse(TypedDict, total=False):
+    VpcEndpoint: VpcEndpoint
 
 
 class UpgradeDomainRequest(ServiceRequest):
@@ -1462,7 +2005,6 @@ class UpgradeDomainResponse(TypedDict, total=False):
 
 
 class OpensearchApi:
-
     service = "opensearch"
     version = "2021-01-01"
 
@@ -1482,6 +2024,12 @@ class OpensearchApi:
     ) -> AssociatePackageResponse:
         raise NotImplementedError
 
+    @handler("AuthorizeVpcEndpointAccess")
+    def authorize_vpc_endpoint_access(
+        self, context: RequestContext, domain_name: DomainName, account: AWSAccount
+    ) -> AuthorizeVpcEndpointAccessResponse:
+        raise NotImplementedError
+
     @handler("CancelServiceSoftwareUpdate")
     def cancel_service_software_update(
         self, context: RequestContext, domain_name: DomainName
@@ -1497,6 +2045,7 @@ class OpensearchApi:
         cluster_config: ClusterConfig = None,
         ebs_options: EBSOptions = None,
         access_policies: PolicyDocument = None,
+        ip_address_type: IPAddressType = None,
         snapshot_options: SnapshotOptions = None,
         vpc_options: VPCOptions = None,
         cognito_options: CognitoOptions = None,
@@ -1508,6 +2057,8 @@ class OpensearchApi:
         advanced_security_options: AdvancedSecurityOptionsInput = None,
         tag_list: TagList = None,
         auto_tune_options: AutoTuneOptionsInput = None,
+        off_peak_window_options: OffPeakWindowOptions = None,
+        software_update_options: SoftwareUpdateOptions = None,
     ) -> CreateDomainResponse:
         raise NotImplementedError
 
@@ -1518,6 +2069,8 @@ class OpensearchApi:
         local_domain_info: DomainInformationContainer,
         remote_domain_info: DomainInformationContainer,
         connection_alias: ConnectionAlias,
+        connection_mode: ConnectionMode = None,
+        connection_properties: ConnectionProperties = None,
     ) -> CreateOutboundConnectionResponse:
         raise NotImplementedError
 
@@ -1530,6 +2083,16 @@ class OpensearchApi:
         package_source: PackageSource,
         package_description: PackageDescription = None,
     ) -> CreatePackageResponse:
+        raise NotImplementedError
+
+    @handler("CreateVpcEndpoint")
+    def create_vpc_endpoint(
+        self,
+        context: RequestContext,
+        domain_arn: DomainArn,
+        vpc_options: VPCOptions,
+        client_token: ClientToken = None,
+    ) -> CreateVpcEndpointResponse:
         raise NotImplementedError
 
     @handler("DeleteDomain")
@@ -1554,6 +2117,12 @@ class OpensearchApi:
     def delete_package(
         self, context: RequestContext, package_id: PackageID
     ) -> DeletePackageResponse:
+        raise NotImplementedError
+
+    @handler("DeleteVpcEndpoint")
+    def delete_vpc_endpoint(
+        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId
+    ) -> DeleteVpcEndpointResponse:
         raise NotImplementedError
 
     @handler("DescribeDomain")
@@ -1584,10 +2153,32 @@ class OpensearchApi:
     ) -> DescribeDomainConfigResponse:
         raise NotImplementedError
 
+    @handler("DescribeDomainHealth")
+    def describe_domain_health(
+        self, context: RequestContext, domain_name: DomainName
+    ) -> DescribeDomainHealthResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDomainNodes")
+    def describe_domain_nodes(
+        self, context: RequestContext, domain_name: DomainName
+    ) -> DescribeDomainNodesResponse:
+        raise NotImplementedError
+
     @handler("DescribeDomains")
     def describe_domains(
         self, context: RequestContext, domain_names: DomainNameList
     ) -> DescribeDomainsResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDryRunProgress")
+    def describe_dry_run_progress(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        dry_run_id: GUID = None,
+        load_dry_run_config: Boolean = None,
+    ) -> DescribeDryRunProgressResponse:
         raise NotImplementedError
 
     @handler("DescribeInboundConnections")
@@ -1650,6 +2241,12 @@ class OpensearchApi:
     ) -> DescribeReservedInstancesResponse:
         raise NotImplementedError
 
+    @handler("DescribeVpcEndpoints")
+    def describe_vpc_endpoints(
+        self, context: RequestContext, vpc_endpoint_ids: VpcEndpointIdList
+    ) -> DescribeVpcEndpointsResponse:
+        raise NotImplementedError
+
     @handler("DissociatePackage")
     def dissociate_package(
         self, context: RequestContext, package_id: PackageID, domain_name: DomainName
@@ -1660,6 +2257,12 @@ class OpensearchApi:
     def get_compatible_versions(
         self, context: RequestContext, domain_name: DomainName = None
     ) -> GetCompatibleVersionsResponse:
+        raise NotImplementedError
+
+    @handler("GetDomainMaintenanceStatus")
+    def get_domain_maintenance_status(
+        self, context: RequestContext, domain_name: DomainName, maintenance_id: RequestId
+    ) -> GetDomainMaintenanceStatusResponse:
         raise NotImplementedError
 
     @handler("GetPackageVersionHistory")
@@ -1688,6 +2291,18 @@ class OpensearchApi:
     ) -> GetUpgradeStatusResponse:
         raise NotImplementedError
 
+    @handler("ListDomainMaintenances")
+    def list_domain_maintenances(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        action: MaintenanceType = None,
+        status: MaintenanceStatus = None,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+    ) -> ListDomainMaintenancesResponse:
+        raise NotImplementedError
+
     @handler("ListDomainNames")
     def list_domain_names(
         self, context: RequestContext, engine_type: EngineType = None
@@ -1712,6 +2327,8 @@ class OpensearchApi:
         domain_name: DomainName = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        retrieve_azs: Boolean = None,
+        instance_type: InstanceTypeString = None,
     ) -> ListInstanceTypeDetailsResponse:
         raise NotImplementedError
 
@@ -1725,6 +2342,16 @@ class OpensearchApi:
     ) -> ListPackagesForDomainResponse:
         raise NotImplementedError
 
+    @handler("ListScheduledActions")
+    def list_scheduled_actions(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+    ) -> ListScheduledActionsResponse:
+        raise NotImplementedError
+
     @handler("ListTags")
     def list_tags(self, context: RequestContext, arn: ARN) -> ListTagsResponse:
         raise NotImplementedError
@@ -1733,6 +2360,24 @@ class OpensearchApi:
     def list_versions(
         self, context: RequestContext, max_results: MaxResults = None, next_token: NextToken = None
     ) -> ListVersionsResponse:
+        raise NotImplementedError
+
+    @handler("ListVpcEndpointAccess")
+    def list_vpc_endpoint_access(
+        self, context: RequestContext, domain_name: DomainName, next_token: NextToken = None
+    ) -> ListVpcEndpointAccessResponse:
+        raise NotImplementedError
+
+    @handler("ListVpcEndpoints")
+    def list_vpc_endpoints(
+        self, context: RequestContext, next_token: NextToken = None
+    ) -> ListVpcEndpointsResponse:
+        raise NotImplementedError
+
+    @handler("ListVpcEndpointsForDomain")
+    def list_vpc_endpoints_for_domain(
+        self, context: RequestContext, domain_name: DomainName, next_token: NextToken = None
+    ) -> ListVpcEndpointsForDomainResponse:
         raise NotImplementedError
 
     @handler("PurchaseReservedInstanceOffering")
@@ -1755,9 +2400,29 @@ class OpensearchApi:
     def remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
         raise NotImplementedError
 
+    @handler("RevokeVpcEndpointAccess")
+    def revoke_vpc_endpoint_access(
+        self, context: RequestContext, domain_name: DomainName, account: AWSAccount
+    ) -> RevokeVpcEndpointAccessResponse:
+        raise NotImplementedError
+
+    @handler("StartDomainMaintenance")
+    def start_domain_maintenance(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        action: MaintenanceType,
+        node_id: NodeId = None,
+    ) -> StartDomainMaintenanceResponse:
+        raise NotImplementedError
+
     @handler("StartServiceSoftwareUpdate")
     def start_service_software_update(
-        self, context: RequestContext, domain_name: DomainName
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        schedule_at: ScheduleAt = None,
+        desired_start_time: Long = None,
     ) -> StartServiceSoftwareUpdateResponse:
         raise NotImplementedError
 
@@ -1773,6 +2438,7 @@ class OpensearchApi:
         cognito_options: CognitoOptions = None,
         advanced_options: AdvancedOptions = None,
         access_policies: PolicyDocument = None,
+        ip_address_type: IPAddressType = None,
         log_publishing_options: LogPublishingOptions = None,
         encryption_at_rest_options: EncryptionAtRestOptions = None,
         domain_endpoint_options: DomainEndpointOptions = None,
@@ -1780,6 +2446,9 @@ class OpensearchApi:
         advanced_security_options: AdvancedSecurityOptionsInput = None,
         auto_tune_options: AutoTuneOptions = None,
         dry_run: DryRun = None,
+        dry_run_mode: DryRunMode = None,
+        off_peak_window_options: OffPeakWindowOptions = None,
+        software_update_options: SoftwareUpdateOptions = None,
     ) -> UpdateDomainConfigResponse:
         raise NotImplementedError
 
@@ -1792,6 +2461,24 @@ class OpensearchApi:
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
     ) -> UpdatePackageResponse:
+        raise NotImplementedError
+
+    @handler("UpdateScheduledAction")
+    def update_scheduled_action(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        action_id: String,
+        action_type: ActionType,
+        schedule_at: ScheduleAt,
+        desired_start_time: Long = None,
+    ) -> UpdateScheduledActionResponse:
+        raise NotImplementedError
+
+    @handler("UpdateVpcEndpoint")
+    def update_vpc_endpoint(
+        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId, vpc_options: VPCOptions
+    ) -> UpdateVpcEndpointResponse:
         raise NotImplementedError
 
     @handler("UpgradeDomain")

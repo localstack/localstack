@@ -2,17 +2,17 @@ import abc
 import functools
 import logging
 import os
+from collections import defaultdict
 from enum import Enum
 from inspect import getmodule
-from typing import Callable, Dict, List, Optional
+from threading import RLock
+from typing import Callable, List, Optional, Tuple
 
 from plugin import Plugin, PluginManager, PluginSpec
 
 from localstack import config
 
 LOG = logging.getLogger(__name__)
-
-PLUGIN_NAMESPACE = "localstack.packages"
 
 
 class PackageException(Exception):
@@ -24,7 +24,11 @@ class PackageException(Exception):
 class NoSuchVersionException(PackageException):
     """Exception indicating that a requested installer version is not available / supported."""
 
-    pass
+    def __init__(self, package: str = None, version: str = None):
+        message = "Unable to find requested version"
+        if package and version:
+            message += f"Unable to find requested version '{version}' for package '{package}'"
+        super().__init__(message)
 
 
 class InstallTarget(Enum):
@@ -52,13 +56,19 @@ class PackageInstaller(abc.ABC):
     multiple versions).
     """
 
-    def __init__(self, name: str, version: str):
+    def __init__(self, name: str, version: str, install_lock: Optional[RLock] = None):
         """
         :param name: technical package name, f.e. "opensearch"
         :param version: version of the package to install
+        :param install_lock: custom lock which should be used for this package installer instance for the
+                             complete #install call. Defaults to a per-instance reentrant lock (RLock).
+                             Package instances create one installer per version. Therefore, by default, the lock
+                             ensures that package installations of the same package and version are mutually exclusive.
         """
         self.name = name
         self.version = version
+        self.install_lock = install_lock or RLock()
+        self._setup_for_target: dict[InstallTarget, bool] = defaultdict(lambda: False)
 
     def install(self, target: Optional[InstallTarget] = None) -> None:
         """
@@ -71,14 +81,21 @@ class PackageInstaller(abc.ABC):
         try:
             if not target:
                 target = InstallTarget.VAR_LIBS
-            if not self.is_installed():
-                LOG.debug("Starting installation of %s...", self.name)
-                self._prepare_installation(target)
-                self._install(target)
-                self._post_process(target)
-                LOG.debug("Installation of %s finished.", self.name)
-            else:
-                LOG.debug("Installation of %s skipped (already installed).", self.name)
+            # We have to acquire the lock before checking if the package is installed, as the is_installed check
+            # is _only_ reliable if no other thread is currently actually installing
+            with self.install_lock:
+                # Skip the installation if it's already installed
+                if not self.is_installed():
+                    LOG.debug("Starting installation of %s...", self.name)
+                    self._prepare_installation(target)
+                    self._install(target)
+                    self._post_process(target)
+                    LOG.debug("Installation of %s finished.", self.name)
+                else:
+                    LOG.debug("Installation of %s skipped (already installed).", self.name)
+                    if not self._setup_for_target[target]:
+                        LOG.debug("Performing runtime setup for already installed package.")
+                        self._setup_existing_installation(target)
         except PackageException as e:
             raise e
         except Exception as e:
@@ -121,6 +138,17 @@ class PackageInstaller(abc.ABC):
                  (f.e. /var/lib/localstack/lib/dynamodblocal/latest/DynamoDBLocal.jar)
         """
         raise NotImplementedError()
+
+    def _setup_existing_installation(self, target: InstallTarget) -> None:
+        """
+        Internal function to perform the setup for an existing installation, f.e. adding a path to an environment.
+        This is only necessary for certain installers (like the PythonPackageInstaller).
+        This function will _always_ be executed _exactly_ once within a Python session for a specific installer
+        instance and target, if #install is called for the respective target.
+        :param target: of the installation
+        :return: None
+        """
+        pass
 
     def _prepare_installation(self, target: InstallTarget) -> None:
         """
@@ -185,14 +213,18 @@ class Package(abc.ABC):
     def get_installer(self, version: str | None = None) -> PackageInstaller:
         """
         Returns the installer instance for a specific version of the package.
+
+        It is important that this be LRU cached. Installers have a mutex lock to prevent races, and it is necessary
+        that this method returns the same installer instance for a given version.
+
         :param version: version of the package to install. If None, the default version of the package will be used.
         :return: PackageInstaller instance for the given version.
         :raises NoSuchVersionException: If the given version is not supported.
         """
         if not version:
-            version = self.default_version
+            return self.get_installer(self.default_version)
         if version not in self.get_versions():
-            raise NoSuchVersionException()
+            raise NoSuchVersionException(package=self.name, version=version)
         return self._get_installer(version)
 
     def get_versions(self) -> List[str]:
@@ -215,48 +247,73 @@ class Package(abc.ABC):
         return self.name
 
 
-class PackageRepository(PluginManager):
+class MultiPackageInstaller(PackageInstaller):
     """
-    PackageRepository is a plugin manager for PackagesPlugin instances.
-    It discovers all plugins in the namespace "localstack.packages" and provides convenience functions to
-    list the packages for each service.
+    PackageInstaller implementation which composes of multiple package installers.
     """
 
-    # TODO couple the packages plugins to service providers instead of services
-    #  - maybe integrate these into the ServicePluginManager
+    def __init__(self, name: str, version: str, package_installer: List[PackageInstaller]):
+        """
+        :param name: of the (multi-)package installer
+        :param version: of this (multi-)package installer
+        :param package_installer: List of installers this multi-package installer consists of
+        """
+        super().__init__(name=name, version=version)
 
-    def __init__(self):
-        super().__init__(namespace=PLUGIN_NAMESPACE)
+        assert isinstance(package_installer, list)
+        assert len(package_installer) > 0
+        self.package_installer = package_installer
 
-    def get_service_packages(self) -> Dict[str, List[Package]]:
-        result = {}
-        self.load_all()
-        container_names = self.list_names()
-        for container_name in container_names:
-            container = self.get_container(container_name)
-            service = container.plugin.service
-            _packages: List[Package] = container.plugin.get_packages()
-            result[service] = _packages
-        return result
+    def install(self, target: Optional[InstallTarget] = None) -> None:
+        """
+        Installs the different packages this installer is composed of.
+
+        :param target: which defines where to install the packages.
+        :return: None
+        """
+        for package_installer in self.package_installer:
+            package_installer.install(target=target)
+
+    def get_installed_dir(self) -> str | None:
+        # By default, use the installed-dir of the first package
+        return self.package_installer[0].get_installed_dir()
+
+    def _install(self, target: InstallTarget) -> None:
+        # This package installer actually only calls other installers, we pass here
+        pass
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        # By default, use the install-dir of the first package
+        return self.package_installer[0]._get_install_dir(target)
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        # By default, use the install-marker-path of the first package
+        return self.package_installer[0]._get_install_marker_path(install_dir)
+
+
+PLUGIN_NAMESPACE = "localstack.packages"
 
 
 class PackagesPlugin(Plugin):
     """
     Plugin implementation for Package plugins.
-    A package plugin bundles a specific service with a set of packages which are used by the service.
+    A package plugin exposes a specific package instance.
     """
 
-    service: str
+    api: str
+    name: str
 
     def __init__(
         self,
-        service: str,
-        get_packages: Callable[[], Package | List[Package]],
+        name: str,
+        scope: str,
+        get_package: Callable[[], Package | List[Package]],
         should_load: Callable[[], bool] = None,
     ) -> None:
         super().__init__()
-        self.service = service
-        self._get_packages = get_packages
+        self.name = name
+        self.scope = scope
+        self._get_package = get_package
         self._should_load = should_load
 
     def should_load(self) -> bool:
@@ -264,33 +321,79 @@ class PackagesPlugin(Plugin):
             return self._should_load()
         return True
 
-    def get_packages(self) -> List[Package]:
+    def get_package(self) -> Package:
         """
-        :return: list of package instances which are used by the service this PackagePlugin is associated with.
+        :return: returns the package instance of this package plugin
         """
-        _packages = self._get_packages()
-        return _packages if isinstance(_packages, list) else [_packages]
+        return self._get_package()
 
 
-def packages(
-    service: Optional[str] = None,
-    name: Optional[str] = "default",
-    should_load: Callable[[], bool] = None,
+class NoSuchPackageException(PackageException):
+    """Exception raised by the PackagesPluginManager to indicate that a package / version is not available."""
+
+    pass
+
+
+class PackagesPluginManager(PluginManager[PackagesPlugin]):
+    """PluginManager which simplifies the loading / access of PackagesPlugins and their exposed package instances."""
+
+    def __init__(self):
+        super().__init__(PLUGIN_NAMESPACE)
+
+    def get_all_packages(self) -> List[Tuple[str, str, Package]]:
+        return sorted(
+            [(plugin.name, plugin.scope, plugin.get_package()) for plugin in self.load_all()]
+        )
+
+    def get_packages(
+        self, package_names: List[str], version: Optional[str] = None
+    ) -> List[Package]:
+        # Plugin names are unique, but there could be multiple packages with the same name in different scopes
+        plugin_specs_per_name = defaultdict(list)
+        # Plugin names have the format "<package-name>/<scope>", build a dict of specs per package name for the lookup
+        for plugin_spec in self.list_plugin_specs():
+            (package_name, _, _) = plugin_spec.name.rpartition("/")
+            plugin_specs_per_name[package_name].append(plugin_spec)
+
+        package_instances: List[Package] = []
+        for package_name in package_names:
+            plugin_specs = plugin_specs_per_name.get(package_name)
+            if not plugin_specs:
+                raise NoSuchPackageException(
+                    f"unable to locate installer for package {package_name}"
+                )
+            for plugin_spec in plugin_specs:
+                package_instance = self.load(plugin_spec.name).get_package()
+                package_instances.append(package_instance)
+                if version and version not in package_instance.get_versions():
+                    raise NoSuchPackageException(
+                        f"unable to locate installer for package {package_name} and version {version}"
+                    )
+
+        return package_instances
+
+
+def package(
+    name: str = None, scope: str = "community", should_load: Optional[Callable[[], bool]] = None
 ):
     """
     Decorator for marking methods that create Package instances as a PackagePlugin.
     Methods marked with this decorator are discoverable as a PluginSpec within the namespace "localstack.packages",
-    with the name "<service>:<name>". If service is not explicitly specified, then the parent module name is used as
+    with the name "<name>:<scope>". If api is not explicitly specified, then the parent module name is used as
     service name.
     """
 
     def wrapper(fn):
-        _service = service or getmodule(fn).__name__.split(".")[-2]
+        _name = name or getmodule(fn).__name__.split(".")[-2]
 
         @functools.wraps(fn)
         def factory() -> PackagesPlugin:
-            return PackagesPlugin(service=_service, get_packages=fn, should_load=should_load)
+            return PackagesPlugin(name=_name, scope=scope, get_package=fn, should_load=should_load)
 
-        return PluginSpec(PLUGIN_NAMESPACE, f"{_service}:{name}", factory=factory)
+        return PluginSpec(PLUGIN_NAMESPACE, f"{_name}/{scope}", factory=factory)
 
     return wrapper
+
+
+# TODO remove (only used for migrating to new #package decorator)
+packages = package

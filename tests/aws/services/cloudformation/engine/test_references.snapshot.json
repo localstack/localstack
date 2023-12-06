@@ -1,0 +1,40 @@
+{
+  "tests/aws/services/cloudformation/engine/test_references.py::TestDependsOn::test_depends_on_with_missing_reference": {
+    "recorded-date": "10-07-2023, 15:22:26",
+    "recorded-content": {
+      "depends_on_nonexisting_exception": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Unresolved resource dependencies [NonExistingResource] in the Resources block of the template",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_references.py::TestFnSub::test_fn_sub_cases": {
+    "recorded-date": "23-08-2023, 20:41:02",
+    "recorded-content": {
+      "outputs": {
+        "ListRefGetAtt": "unimportant",
+        "ListRefGetAttMapping": "unimportant",
+        "ListRefMultipleMix": "Param1Value-<region>-Param1Value",
+        "ListRefParam": "Param1Value",
+        "ListRefPseudoParam": "<region>",
+        "ListRefResourceDirect": "Param1Value",
+        "ListRefResourceMappingRef": "Param1Value",
+        "ListStatic": "this is a static string",
+        "StringRefGetAtt": "unimportant",
+        "StringRefMultiple": "Param1Value - Param1Value",
+        "StringRefParam": "Param1Value",
+        "StringRefPseudoParam": "<region>",
+        "StringRefResource": "Param1Value",
+        "StringStatic": "this is a static string",
+        "UrlSuffixPseudoParam": "<url-suffix>"
+      }
+    }
+  }
+}

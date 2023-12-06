@@ -169,7 +169,7 @@ class RegexTransformer:
 class KeyValueBasedTransformer:
     def __init__(
         self,
-        match_fn: Callable[[str, str], Optional[str]],
+        match_fn: Callable[[str, Any], Optional[str]],
         replacement: str,
         replace_reference: bool = True,
     ):
@@ -179,7 +179,7 @@ class KeyValueBasedTransformer:
 
     def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
         for k, v in input_data.items():
-            if match_result := self.match_fn(k, v):
+            if (match_result := self.match_fn(k, v)) is not None:
                 if self.replace_reference:
                     _register_serialized_reference_replacement(
                         ctx, reference_value=match_result, replacement=self.replacement
@@ -195,9 +195,10 @@ class KeyValueBasedTransformer:
                             f"Replacing value for key '{k}' with '{self.replacement}'. (Original value: {str(v)})"
                         )
                         input_data[k] = self.replacement
-            elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
+            elif isinstance(v, list) and len(v) > 0:
                 for i in range(0, len(v)):
-                    v[i] = self.transform(v[i], ctx=ctx)
+                    if isinstance(v[i], dict):
+                        v[i] = self.transform(v[i], ctx=ctx)
             elif isinstance(v, dict):
                 input_data[k] = self.transform(v, ctx=ctx)
 
@@ -227,7 +228,7 @@ class SortingTransformer:
             if k == self.key:
                 if not isinstance(v, list):
                     raise ValueError("SortingTransformer should only be applied to lists.")
-                input_data[k] = sorted(v, key=self.sorting_fn)
+                input_data[k] = sorted(self._transform(v, ctx=ctx), key=self.sorting_fn)
             else:
                 input_data[k] = self._transform(v, ctx=ctx)
         return input_data

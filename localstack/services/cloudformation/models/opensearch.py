@@ -3,18 +3,29 @@ from localstack.aws.api.opensearch import (
     OpenSearchPartitionInstanceType,
     OpenSearchWarmPartitionInstanceType,
 )
-from localstack.services.cloudformation.deployment_utils import remove_none_values
+from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.deployment_utils import (
+    generate_default_name,
+    remove_none_values,
+)
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
-from localstack.utils.collections import select_attributes
+from localstack.utils.aws import arns
+from localstack.utils.collections import convert_to_typed_dict
 
 
 # OpenSearch still uses "es" ARNs
 # See examples in:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html
-def opensearch_add_tags_params(params, **kwargs):
-    es_arn = aws_stack.es_domain_arn(params.get("DomainName"))
-    tags = params.get("Tags", [])
+def opensearch_add_tags_params(
+    account_id: str,
+    region_name: str,
+    properties: dict,
+    logical_resource_id: str,
+    resource: dict,
+    stack_name: str,
+):
+    es_arn = arns.elasticsearch_domain_arn(properties.get("DomainName"), account_id, region_name)
+    tags = properties.get("Tags", [])
     return {"ARN": es_arn, "TagList": tags}
 
 
@@ -23,32 +34,37 @@ class OpenSearchDomain(GenericBaseModel):
     def cloudformation_type():
         return "AWS::OpenSearchService::Domain"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        domain_name = self._domain_name()
-        if attribute == "Arn":
-            # As mentioned above, OpenSearch still uses "es" ARNs
-            return aws_stack.elasticsearch_domain_arn(domain_name)
-        return domain_name
-
     def fetch_state(self, stack_name, resources):
         domain_name = self._domain_name()
-        domain_name = self.resolve_refs_recursively(stack_name, domain_name, resources)
-        return aws_stack.connect_to_service("opensearch").describe_domain(DomainName=domain_name)
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).opensearch.describe_domain(DomainName=domain_name)
 
     def _domain_name(self):
-        return self.props.get("DomainName") or self.resource_id
+        return self.props.get("DomainName") or self.logical_resource_id
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        domain_name = resource.get("Properties", {}).get("DomainName")
+        if not domain_name:
+            # name must have a minimum length of 3 and a maximum length of 28
+            # only lower case is valid for domain name, pattern: [a-z][a-z0-9\-]+
+            resource["Properties"]["DomainName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            ).lower()[0:28]
 
     @staticmethod
     def get_deploy_templates():
-        def _create_params(params, **kwargs):
-            # Tags handled outside of creation
-            attributes = [
-                attribute
-                for attribute in CreateDomainRequest.__annotations__.keys()
-                if "Tag" not in attribute
-            ]
-            result = select_attributes(params, attributes)
-            result = remove_none_values(result)
+        def _create_params(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            properties = remove_none_values(properties)
+            result = convert_to_typed_dict(CreateDomainRequest, properties)
             cluster_config = result.get("ClusterConfig")
             if isinstance(cluster_config, dict):
                 # set defaults required for boto3 calls
@@ -60,11 +76,22 @@ class OpenSearchDomain(GenericBaseModel):
                 )
             return result
 
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["DomainStatus"]["DomainName"]
+            resource["Properties"]["DomainEndpoint"] = result["DomainStatus"]["Endpoint"]
+
         return {
             "create": [
                 {
                     "function": "create_domain",
                     "parameters": _create_params,
+                    "result_handler": _handle_result,
                 },
                 {"function": "add_tags", "parameters": opensearch_add_tags_params},
             ],

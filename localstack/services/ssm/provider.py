@@ -1,29 +1,91 @@
 import copy
 import json
+import logging
 import time
 from abc import ABC
 from typing import Dict, Optional
 
+from moto.ssm.models import SimpleSystemManagerBackend, ssm_backends
+
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.ssm import (
+    AlarmConfiguration,
+    BaselineDescription,
+    BaselineId,
+    BaselineName,
     Boolean,
+    ClientToken,
+    CreateMaintenanceWindowResult,
+    CreatePatchBaselineResult,
+    DeleteMaintenanceWindowResult,
     DeleteParameterResult,
+    DeletePatchBaselineResult,
+    DeregisterTargetFromMaintenanceWindowResult,
+    DeregisterTaskFromMaintenanceWindowResult,
+    DescribeMaintenanceWindowsResult,
+    DescribeMaintenanceWindowTargetsResult,
+    DescribeMaintenanceWindowTasksResult,
+    DescribePatchBaselinesResult,
     GetParameterResult,
     GetParametersResult,
     LabelParameterVersionResult,
+    LoggingInfo,
+    MaintenanceWindowAllowUnassociatedTargets,
+    MaintenanceWindowCutoff,
+    MaintenanceWindowDescription,
+    MaintenanceWindowDurationHours,
+    MaintenanceWindowFilterList,
+    MaintenanceWindowId,
+    MaintenanceWindowMaxResults,
+    MaintenanceWindowName,
+    MaintenanceWindowOffset,
+    MaintenanceWindowResourceType,
+    MaintenanceWindowSchedule,
+    MaintenanceWindowStringDateTime,
+    MaintenanceWindowTargetId,
+    MaintenanceWindowTaskArn,
+    MaintenanceWindowTaskCutoffBehavior,
+    MaintenanceWindowTaskId,
+    MaintenanceWindowTaskInvocationParameters,
+    MaintenanceWindowTaskParameters,
+    MaintenanceWindowTaskPriority,
+    MaintenanceWindowTaskType,
+    MaintenanceWindowTimezone,
+    MaxConcurrency,
+    MaxErrors,
+    NextToken,
+    OperatingSystem,
+    OwnerInformation,
     ParameterLabelList,
     ParameterName,
     ParameterNameList,
+    PatchAction,
+    PatchBaselineMaxResults,
+    PatchComplianceLevel,
+    PatchFilterGroup,
+    PatchIdList,
+    PatchOrchestratorFilterList,
+    PatchRuleGroup,
+    PatchSourceList,
     PSParameterName,
     PSParameterVersion,
     PutParameterRequest,
     PutParameterResult,
+    RegisterTargetWithMaintenanceWindowResult,
+    RegisterTaskWithMaintenanceWindowResult,
+    ServiceRole,
     SsmApi,
+    TagList,
+    Targets,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto, call_moto_with_request
-from localstack.utils.aws import aws_stack
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import remove_attributes
 from localstack.utils.objects import keys_to_lower
+from localstack.utils.patch import patch
+
+LOG = logging.getLogger(__name__)
 
 PARAM_PREFIX_SECRETSMANAGER = "/aws/reference/secretsmanager"
 
@@ -43,6 +105,15 @@ class InvalidParameterNameException(ValidationException):
         super().__init__(msg)
 
 
+class DoesNotExistException(CommonServiceException):
+    def __init__(self, window_id):
+        super().__init__(
+            "DoesNotExistException",
+            message=f"Maintenance window {window_id} does not exist",
+            sender_fault=True,
+        )
+
+
 # TODO: check if _normalize_name(..) calls are still required here
 class SsmProvider(SsmApi, ABC):
     def get_parameters(
@@ -52,7 +123,7 @@ class SsmProvider(SsmApi, ABC):
         with_decryption: Boolean = None,
     ) -> GetParametersResult:
         if SsmProvider._has_secrets(names):
-            return SsmProvider._get_params_and_secrets(names)
+            return SsmProvider._get_params_and_secrets(context.account_id, context.region, names)
 
         norm_names = list([SsmProvider._normalize_name(name, validate=True) for name in names])
         request = {"Names": norm_names, "WithDecryption": bool(with_decryption)}
@@ -75,7 +146,7 @@ class SsmProvider(SsmApi, ABC):
             moto_res = call_moto_with_request(context, request)
         else:
             moto_res = call_moto(context)
-        SsmProvider._notify_event_subscribers(nname, "Create")
+        SsmProvider._notify_event_subscribers(context.account_id, context.region, nname, "Create")
         return PutParameterResult(**moto_res)
 
     def get_parameter(
@@ -92,7 +163,9 @@ class SsmProvider(SsmApi, ABC):
             service = details[3]
             if service == "secretsmanager":
                 resource_name = "/".join(details[4:])
-                result = SsmProvider._get_secrets_information(norm_name, resource_name)
+                result = SsmProvider._get_secrets_information(
+                    context.account_id, context.region, norm_name, resource_name
+                )
 
         if not result:
             result = call_moto_with_request(
@@ -106,7 +179,7 @@ class SsmProvider(SsmApi, ABC):
     def delete_parameter(
         self, context: RequestContext, name: PSParameterName
     ) -> DeleteParameterResult:
-        SsmProvider._notify_event_subscribers(name, "Delete")
+        SsmProvider._notify_event_subscribers(context.account_id, context.region, name, "Delete")
         call_moto(context)  # Return type is an emtpy type.
         return DeleteParameterResult()
 
@@ -117,8 +190,149 @@ class SsmProvider(SsmApi, ABC):
         labels: ParameterLabelList,
         parameter_version: PSParameterVersion = None,
     ) -> LabelParameterVersionResult:
-        SsmProvider._notify_event_subscribers(name, "LabelParameterVersion")
+        SsmProvider._notify_event_subscribers(
+            context.account_id, context.region, name, "LabelParameterVersion"
+        )
         return LabelParameterVersionResult(**call_moto(context))
+
+    def create_patch_baseline(
+        self,
+        context: RequestContext,
+        name: BaselineName,
+        operating_system: OperatingSystem = None,
+        global_filters: PatchFilterGroup = None,
+        approval_rules: PatchRuleGroup = None,
+        approved_patches: PatchIdList = None,
+        approved_patches_compliance_level: PatchComplianceLevel = None,
+        approved_patches_enable_non_security: Boolean = None,
+        rejected_patches: PatchIdList = None,
+        rejected_patches_action: PatchAction = None,
+        description: BaselineDescription = None,
+        sources: PatchSourceList = None,
+        client_token: ClientToken = None,
+        tags: TagList = None,
+    ) -> CreatePatchBaselineResult:
+        return CreatePatchBaselineResult(**call_moto(context))
+
+    def delete_patch_baseline(
+        self,
+        context: RequestContext,
+        baseline_id: BaselineId,
+    ) -> DeletePatchBaselineResult:
+        return DeletePatchBaselineResult(**call_moto(context))
+
+    def describe_patch_baselines(
+        self,
+        context: RequestContext,
+        filters: PatchOrchestratorFilterList = None,
+        max_results: PatchBaselineMaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribePatchBaselinesResult:
+        return DescribePatchBaselinesResult(**call_moto(context))
+
+    def register_target_with_maintenance_window(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        resource_type: MaintenanceWindowResourceType,
+        targets: Targets,
+        owner_information: OwnerInformation = None,
+        name: MaintenanceWindowName = None,
+        description: MaintenanceWindowDescription = None,
+        client_token: ClientToken = None,
+    ) -> RegisterTargetWithMaintenanceWindowResult:
+        return RegisterTargetWithMaintenanceWindowResult(**call_moto(context))
+
+    def deregister_target_from_maintenance_window(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        window_target_id: MaintenanceWindowTargetId,
+        safe: Boolean = None,
+    ) -> DeregisterTargetFromMaintenanceWindowResult:
+        return DeregisterTargetFromMaintenanceWindowResult(**call_moto(context))
+
+    def describe_maintenance_window_targets(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        filters: MaintenanceWindowFilterList = None,
+        max_results: MaintenanceWindowMaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribeMaintenanceWindowTargetsResult:
+        return DescribeMaintenanceWindowTargetsResult(**call_moto(context))
+
+    def create_maintenance_window(
+        self,
+        context: RequestContext,
+        name: MaintenanceWindowName,
+        schedule: MaintenanceWindowSchedule,
+        duration: MaintenanceWindowDurationHours,
+        cutoff: MaintenanceWindowCutoff,
+        allow_unassociated_targets: MaintenanceWindowAllowUnassociatedTargets,
+        description: MaintenanceWindowDescription = None,
+        start_date: MaintenanceWindowStringDateTime = None,
+        end_date: MaintenanceWindowStringDateTime = None,
+        schedule_timezone: MaintenanceWindowTimezone = None,
+        schedule_offset: MaintenanceWindowOffset = None,
+        client_token: ClientToken = None,
+        tags: TagList = None,
+    ) -> CreateMaintenanceWindowResult:
+        return CreateMaintenanceWindowResult(**call_moto(context))
+
+    def delete_maintenance_window(
+        self, context: RequestContext, window_id: MaintenanceWindowId
+    ) -> DeleteMaintenanceWindowResult:
+        return DeleteMaintenanceWindowResult(**call_moto(context))
+
+    def describe_maintenance_windows(
+        self,
+        context: RequestContext,
+        filters: MaintenanceWindowFilterList = None,
+        max_results: MaintenanceWindowMaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribeMaintenanceWindowsResult:
+        return DescribeMaintenanceWindowsResult(**call_moto(context))
+
+    def register_task_with_maintenance_window(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        task_arn: MaintenanceWindowTaskArn,
+        task_type: MaintenanceWindowTaskType,
+        targets: Targets = None,
+        service_role_arn: ServiceRole = None,
+        task_parameters: MaintenanceWindowTaskParameters = None,
+        task_invocation_parameters: MaintenanceWindowTaskInvocationParameters = None,
+        priority: MaintenanceWindowTaskPriority = None,
+        max_concurrency: MaxConcurrency = None,
+        max_errors: MaxErrors = None,
+        logging_info: LoggingInfo = None,
+        name: MaintenanceWindowName = None,
+        description: MaintenanceWindowDescription = None,
+        client_token: ClientToken = None,
+        cutoff_behavior: MaintenanceWindowTaskCutoffBehavior = None,
+        alarm_configuration: AlarmConfiguration = None,
+    ) -> RegisterTaskWithMaintenanceWindowResult:
+        return RegisterTaskWithMaintenanceWindowResult(**call_moto(context))
+
+    def deregister_task_from_maintenance_window(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        window_task_id: MaintenanceWindowTaskId,
+    ) -> DeregisterTaskFromMaintenanceWindowResult:
+        return DeregisterTaskFromMaintenanceWindowResult(**call_moto(context))
+
+    def describe_maintenance_window_tasks(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        filters: MaintenanceWindowFilterList = None,
+        max_results: MaintenanceWindowMaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribeMaintenanceWindowTasksResult:
+        return DescribeMaintenanceWindowTasksResult(**call_moto(context))
 
     # utility methods below
 
@@ -148,9 +362,9 @@ class SsmProvider(SsmApi, ABC):
 
     @staticmethod
     def _get_secrets_information(
-        name: ParameterName, resource_name: str
+        account_id: str, region_name: str, name: ParameterName, resource_name: str
     ) -> Optional[GetParameterResult]:
-        client = aws_stack.connect_to_service("secretsmanager")
+        client = connect_to(aws_access_key_id=account_id, region_name=region_name).secretsmanager
         try:
             secret_info = client.get_secret_value(SecretId=resource_name)
             secret_info.pop("ResponseMetadata", None)
@@ -174,14 +388,16 @@ class SsmProvider(SsmApi, ABC):
             return None
 
     @staticmethod
-    def _get_params_and_secrets(names: ParameterNameList) -> GetParametersResult:
-        ssm_client = aws_stack.connect_to_service("ssm")
+    def _get_params_and_secrets(
+        account_id: str, region_name: str, names: ParameterNameList
+    ) -> GetParametersResult:
+        ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
         result = {"Parameters": [], "InvalidParameters": []}
 
         for name in names:
             if name.startswith(PARAM_PREFIX_SECRETSMANAGER):
                 secret = SsmProvider._get_secrets_information(
-                    name, name[len(PARAM_PREFIX_SECRETSMANAGER) + 1 :]
+                    account_id, region_name, name, name[len(PARAM_PREFIX_SECRETSMANAGER) + 1 :]
                 )
                 if secret is not None:
                     secret = secret["Parameter"]
@@ -201,9 +417,17 @@ class SsmProvider(SsmApi, ABC):
         return GetParametersResult(**result)
 
     @staticmethod
-    def _notify_event_subscribers(name: ParameterName, operation: str):
+    def _notify_event_subscribers(
+        account_id: str, region_name: str, name: ParameterName, operation: str
+    ):
+        if not is_api_enabled("events"):
+            LOG.warning(
+                "Service 'events' is not enabled: skip emitting SSM event. "
+                "Please check your 'SERVICES' configuration variable."
+            )
+            return
         """Publish an EventBridge event to notify subscribers of changes."""
-        events = aws_stack.connect_to_service("events")
+        events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
         detail = {"name": name, "operation": operation}
         event = {
             "Source": "aws.ssm",
@@ -211,3 +435,21 @@ class SsmProvider(SsmApi, ABC):
             "DetailType": "Parameter Store Change",
         }
         events.put_events(Entries=[event])
+
+
+@patch(SimpleSystemManagerBackend.get_maintenance_window)
+def get_maintenance_window(fn, self, window_id):
+    """Get a maintenance window by ID."""
+    store = ssm_backends[self.account_id][self.region_name]
+    if not store.windows.get(window_id):
+        raise DoesNotExistException(window_id)
+    return fn(self, window_id)
+
+
+@patch(SimpleSystemManagerBackend.delete_maintenance_window)
+def delete_maintenance_window(fn, self, window_id):
+    """Delete a maintenance window by ID."""
+    store = ssm_backends[self.account_id][self.region_name]
+    if not store.windows.get(window_id):
+        raise DoesNotExistException(window_id)
+    return fn(self, window_id)

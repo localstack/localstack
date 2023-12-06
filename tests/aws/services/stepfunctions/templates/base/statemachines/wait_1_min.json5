@@ -1,0 +1,18 @@
+{
+  "Comment": "WAIT_1_MIN",
+  "StartAt": "State_1",
+  "States": {
+    "State_1": {
+      "Type": "Wait",
+      "Seconds": 60,
+      "Next": "State_2"
+    },
+    "State_2": {
+      "Type": "Pass",
+      "Result": {
+        "Arg1": "argument1",
+      },
+      "End": true,
+    },
+  },
+}

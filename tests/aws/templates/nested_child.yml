@@ -1,0 +1,16 @@
+Parameters:
+  NameForBucketToCreate:
+    Type: String
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref NameForBucketToCreate
+#      BucketName: "asrsdfasfd"
+  
+Outputs:
+  BucketArn:
+    Value: !GetAtt [Bucket, Arn]
+    Export:
+      Name: NestedBucketArn

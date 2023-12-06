@@ -11,7 +11,7 @@ class VirtualEnvironment:
     Encapsulates methods to operate and navigate on a python virtual environment.
     """
 
-    def __init__(self, venv_dir: str | os.PathLike[str]):
+    def __init__(self, venv_dir: Union[str, os.PathLike]):
         self._venv_dir = venv_dir
 
     def create(self):
@@ -74,11 +74,11 @@ class VirtualEnvironment:
         return matches[0]
 
     def inject_to_sys_path(self):
-        if path := str(self.site_dir):
-            if path not in sys.path:
-                sys.path.append(path)
+        path = str(self.site_dir)
+        if path and path not in sys.path:
+            sys.path.append(path)
 
-    def add_pth(self, name, path: Union[str, os.PathLike[str], "VirtualEnvironment"]) -> None:
+    def add_pth(self, name, path: Union[str, os.PathLike, "VirtualEnvironment"]) -> None:
         """
         Add a <name>.pth file into the virtual environment and append the given path to it. Does nothing if the path
         is already in the file.

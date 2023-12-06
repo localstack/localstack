@@ -60,6 +60,7 @@ def html_to_rst(html: str):
     doc = doc.replace("\_", "_")  # noqa: W605
     doc = doc.replace("\|", "|")  # noqa: W605
     doc = doc.replace("\ ", " ")  # noqa: W605
+    doc = doc.replace("\\", "\\\\")  # noqa: W605
     rst = doc.strip()
     return rst
 
@@ -221,19 +222,22 @@ class ShapeNode:
 
     def _print_as_typed_dict(self, output, doc=True, quote_types=False):
         name = to_valid_python_name(self.shape.name)
-        q = '"' if quote_types else ""
         output.write('%s = TypedDict("%s", {\n' % (name, name))
         for k, v in self.shape.members.items():
+            member_name = to_valid_python_name(v.name)
+            # check if the member name is the same as the type name (recursive types need to use forward references)
+            recursive_type = name == member_name
+            q = '"' if quote_types or recursive_type else ""
             if k in self.shape.required_members:
                 if v.serialization.get("eventstream"):
-                    output.write(f'    "{k}": Iterator[{q}{to_valid_python_name(v.name)}{q}],\n')
+                    output.write(f'    "{k}": Iterator[{q}{member_name}{q}],\n')
                 else:
-                    output.write(f'    "{k}": {q}{to_valid_python_name(v.name)}{q},\n')
+                    output.write(f'    "{k}": {q}{member_name}{q},\n')
             else:
                 if v.serialization.get("eventstream"):
-                    output.write(f'    "{k}": Iterator[{q}{to_valid_python_name(v.name)}{q}],\n')
+                    output.write(f'    "{k}": Iterator[{q}{member_name}{q}],\n')
                 else:
-                    output.write(f'    "{k}": Optional[{q}{to_valid_python_name(v.name)}{q}],\n')
+                    output.write(f'    "{k}": Optional[{q}{member_name}{q}],\n')
         output.write("}, total=False)")
 
     def print_shape_doc(self, output, shape):
@@ -311,13 +315,10 @@ class ShapeNode:
 
 
 def generate_service_types(output, service: ServiceModel, doc=True):
-    output.write("import sys\n")
-    output.write("from typing import Dict, List, Optional, Iterator, Iterable, IO, Union\n")
+    output.write(
+        "from typing import Dict, List, Optional, Iterator, Iterable, IO, Union, TypedDict\n"
+    )
     output.write("from datetime import datetime\n")
-    output.write("if sys.version_info >= (3, 8):\n")
-    output.write("    from typing import TypedDict\n")
-    output.write("else:\n")
-    output.write("    from typing_extensions import TypedDict\n")
     output.write("\n")
     output.write(
         "from localstack.aws.api import handler, RequestContext, ServiceException, ServiceRequest"
@@ -495,26 +496,7 @@ def generate_code(service_name: str, doc: bool = False) -> str:
     output = io.StringIO()
     generate_service_types(output, model, doc=doc)
     generate_service_api(output, model, doc=doc)
-
-    code = output.getvalue()
-
-    try:
-        import autoflake
-        import isort
-        from black import FileMode, format_str
-
-        # try to remove unused imports
-        code = autoflake.fix_code(code, remove_all_unused_imports=True)
-
-        # try to format with black
-        code = format_str(code, mode=FileMode(line_length=100))
-
-        # try to sort imports
-        code = isort.code(code, config=isort.Config(profile="black", line_length=100))
-    except Exception:
-        pass
-
-    return code
+    return output.getvalue()
 
 
 def create_code_directory(service_name: str, code: str, base_path: str):

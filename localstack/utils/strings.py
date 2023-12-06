@@ -9,8 +9,6 @@ import uuid
 import zlib
 from typing import Dict, List, Union
 
-from botocore.httpchecksum import CrtCrc32cChecksum
-
 from localstack.config import DEFAULT_ENCODING
 
 _unprintables = (
@@ -153,6 +151,9 @@ def checksum_crc32(string: Union[str, bytes]) -> str:
 
 
 def checksum_crc32c(string: Union[str, bytes]):
+    # import botocore locally here to avoid a dependency of the CLI to botocore
+    from botocore.httpchecksum import CrtCrc32cChecksum
+
     checksum = CrtCrc32cChecksum()
     checksum.update(to_bytes(string))
     return base64.b64encode(checksum.digest()).decode()
@@ -185,3 +186,11 @@ def base64_decode(data: Union[str, bytes]) -> bytes:
 
 def get_random_hex(length: int) -> str:
     return "".join(random.choices(string.hexdigits[:16], k=length)).lower()
+
+
+def remove_leading_extra_slashes(input: str) -> str:
+    """
+    Remove leading extra slashes from the given input string.
+    Example: '///foo/bar' -> '/foo/bar'
+    """
+    return re.sub(r"^/+", "/", input)

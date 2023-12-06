@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -50,6 +44,7 @@ class FilterNameStringType(str):
     tag_key = "tag-key"
     tag_value = "tag-value"
     primary_region = "primary-region"
+    owning_service = "owning-service"
     all = "all"
 
 
@@ -237,6 +232,7 @@ class DescribeSecretRequest(ServiceRequest):
 TimestampType = datetime
 SecretVersionStagesType = List[SecretVersionStageType]
 SecretVersionsToStagesMapType = Dict[SecretVersionIdType, SecretVersionStagesType]
+NextRotationDateType = datetime
 LastChangedDateType = datetime
 LastRotatedDateType = datetime
 
@@ -259,6 +255,7 @@ class DescribeSecretResponse(TypedDict, total=False):
     LastChangedDate: Optional[LastChangedDateType]
     LastAccessedDate: Optional[LastAccessedDateType]
     DeletedDate: Optional[DeletedDateType]
+    NextRotationDate: Optional[NextRotationDateType]
     Tags: Optional[TagListType]
     VersionIdsToStages: Optional[SecretVersionsToStagesMapType]
     OwningService: Optional[OwningServiceType]
@@ -349,6 +346,7 @@ class ListSecretVersionIdsResponse(TypedDict, total=False):
 
 
 class ListSecretsRequest(ServiceRequest):
+    IncludePlannedDeletion: Optional[BooleanType]
     MaxResults: Optional[MaxResultsType]
     NextToken: Optional[NextTokenType]
     Filters: Optional[FiltersListType]
@@ -367,6 +365,7 @@ class SecretListEntry(TypedDict, total=False):
     LastChangedDate: Optional[LastChangedDateType]
     LastAccessedDate: Optional[LastAccessedDateType]
     DeletedDate: Optional[DeletedDateType]
+    NextRotationDate: Optional[NextRotationDateType]
     Tags: Optional[TagListType]
     SecretVersionsToStages: Optional[SecretVersionsToStagesMapType]
     OwningService: Optional[OwningServiceType]
@@ -522,7 +521,6 @@ class ValidateResourcePolicyResponse(TypedDict, total=False):
 
 
 class SecretsmanagerApi:
-
     service = "secretsmanager"
     version = "2017-10-17"
 
@@ -616,6 +614,7 @@ class SecretsmanagerApi:
     def list_secrets(
         self,
         context: RequestContext,
+        include_planned_deletion: BooleanType = None,
         max_results: MaxResultsType = None,
         next_token: NextTokenType = None,
         filters: FiltersListType = None,

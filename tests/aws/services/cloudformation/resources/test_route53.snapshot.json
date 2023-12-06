@@ -1,0 +1,25 @@
+{
+  "tests/aws/services/cloudformation/resources/test_route53.py::test_create_health_check": {
+    "recorded-date": "22-09-2023, 13:50:49",
+    "recorded-content": {
+      "HealthCheck": {
+        "CallerReference": "<caller-reference:1>",
+        "HealthCheckConfig": {
+          "Disabled": false,
+          "EnableSNI": false,
+          "FailureThreshold": 3,
+          "FullyQualifiedDomainName": "localstacktest.com",
+          "IPAddress": "1.1.1.1",
+          "Inverted": false,
+          "MeasureLatency": false,
+          "Port": 80,
+          "RequestInterval": 30,
+          "ResourcePath": "/health",
+          "Type": "HTTP"
+        },
+        "HealthCheckVersion": 1,
+        "Id": "<id:1>"
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+Parameters:
+  TopicName:
+    Type: String
+
+  TopicNameSuffix:
+    Type: String
+
+  TopicNameSuffixSelector:
+    Type: String
+
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        "Fn::Join":
+          - "-"
+          - - !Ref TopicName
+            - !FindInMap [TopicSuffixMap, !Ref TopicNameSuffixSelector, Suffix]
+
+Mappings:
+  TopicSuffixMap:
+    A:
+      Suffix: !Ref TopicNameSuffix
+    B:
+      Suffix: suffix-b

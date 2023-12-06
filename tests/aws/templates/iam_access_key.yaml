@@ -1,0 +1,34 @@
+Parameters:
+  UserName:
+    Type: String
+  Status:
+    Type: String
+    Default: Active
+  Serial:
+    Type: String
+    Default: 1
+
+Resources:
+  User:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: 
+        Ref: UserName
+
+  Credentials:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: 
+        Ref: UserName
+      Serial:
+        Ref: Serial
+      Status:
+        Ref: Status
+    DependsOn: User
+
+Outputs:
+  AccessKeyId:
+    Value:
+      !Ref Credentials
+  SecretAccessKey:
+    Value: !GetAtt Credentials.SecretAccessKey

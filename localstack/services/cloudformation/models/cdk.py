@@ -1,6 +1,6 @@
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.json import canonical_json
-from localstack.utils.strings import md5, short_uid
+from localstack.utils.strings import md5
 
 
 class CDKMetadata(GenericBaseModel):
@@ -13,22 +13,24 @@ class CDKMetadata(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         return self.props
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        # return a synthetic ID here, as some parts of the CFn engine depend on PhysicalResourceId being resolvable
-        return md5(canonical_json(self.props))
-
-    @staticmethod
-    def add_defaults(resource, stack_name: str):
-        resource["Properties"]["PhysicalResourceId"] = (
-            resource["Properties"].get("PhysicalResourceId") or f"cdk-meta-{short_uid()}"
-        )
+    def update_resource(self, new_resource, stack_name, resources):
+        return True
 
     @staticmethod
     def get_deploy_templates():
         def _no_op(*args, **kwargs):
             pass
 
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = md5(canonical_json(resource["Properties"]))
+
         return {
-            "create": {"function": _no_op},
+            "create": {"function": _no_op, "result_handler": _handle_result},
             "delete": {"function": _no_op},
         }

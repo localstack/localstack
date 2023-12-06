@@ -1,13 +1,18 @@
 import json
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 from threading import Thread
 from typing import List
 
+import pytest
 import requests
+import websocket
 from werkzeug import Request, Response
+
+from localstack.http.asgi import ASGILifespanListener, WebSocketEnvironment
 
 LOG = logging.getLogger(__name__)
 
@@ -94,6 +99,43 @@ def test_chunked_transfer_encoding_response(serve_asgi_adapter):
     assert next(it) == b"baz"
 
 
+def test_chunked_transfer_encoding_client_timeout(serve_asgi_adapter):
+    # this test makes sure that creating a response with a generator automatically creates a
+    # transfer-encoding=chunked response
+
+    generator_exited = threading.Event()
+    continue_request = threading.Event()
+
+    @Request.application
+    def app(_request: Request) -> Response:
+        def _gen():
+            try:
+                yield "foo"
+                yield "bar\n"
+                continue_request.wait()
+                # only three are needed, let's send some more to make sure
+                for _ in range(10):
+                    yield "baz\n"
+            except GeneratorExit:
+                generator_exited.set()
+
+        return Response(_gen(), 200)
+
+    server = serve_asgi_adapter(app)
+
+    with requests.get(server.url, stream=True) as response:
+        assert response.headers["Transfer-Encoding"] == "chunked"
+
+        it = response.iter_lines()
+
+        assert next(it) == b"foobar"
+
+    # request is now closed, continue the response generator
+    continue_request.set()
+    # this flag is only set when generator is exited
+    assert generator_exited.wait(timeout=10)
+
+
 def test_chunked_transfer_encoding_request(serve_asgi_adapter):
     request_list: List[Request] = []
 
@@ -126,6 +168,41 @@ def test_chunked_transfer_encoding_request(serve_asgi_adapter):
     assert response.text == "foobar\nbaz"
 
     assert request_list[0].headers["Transfer-Encoding"].lower() == "chunked"
+
+
+def test_close_iterable_response(serve_asgi_adapter):
+    class IterableResponse:
+        def __init__(self, data: list[bytes]):
+            self.data = data
+            self.closed = False
+
+        def __iter__(self):
+            for packet in self.data:
+                yield packet
+
+        def close(self):
+            # should be called through the werkzeug layers
+            self.closed = True
+
+    iterable = IterableResponse([b"foo", b"bar"])
+
+    @Request.application
+    def app(request: Request) -> Response:
+        return Response(iterable, 200)
+
+    server = serve_asgi_adapter(app)
+
+    response = requests.get(server.url, stream=True)
+
+    gen = response.iter_content(chunk_size=3)
+    assert next(gen) == b"foo"
+    assert next(gen) == b"bar"
+    assert not iterable.closed
+
+    with pytest.raises(StopIteration):
+        next(gen)
+
+    assert iterable.closed
 
 
 def test_input_stream_methods(serve_asgi_adapter):
@@ -212,6 +289,32 @@ def test_multipart_post(serve_asgi_adapter):
     assert response.json() == {"foo": "bar", "baz": "ed"}
 
 
+def test_multipart_post_large_payload(serve_asgi_adapter):
+    @Request.application
+    def app(request: Request) -> Response:
+        try:
+            assert request.mimetype == "multipart/form-data"
+
+            result = {}
+            for k, file_storage in request.files.items():
+                result[k] = len(file_storage.stream.read())
+
+            return Response(json.dumps(result), 200)
+        except Exception:
+            LOG.exception("error")
+            raise
+
+    server = serve_asgi_adapter(app)
+
+    payload = (
+        "\0" * 70_000
+    )  # there's a chunk size of 65536 configured in werkzeug which is what we're testing here
+
+    response = requests.post(server.url, files={"file": payload})
+    assert response.ok
+    assert response.json() == {"file": 70_000}
+
+
 def test_utf8_path(serve_asgi_adapter):
     @Request.application
     def app(request: Request) -> Response:
@@ -267,3 +370,76 @@ def test_serve_multiple_apps(serve_asgi_adapter):
     result5 = response5_ftr.result(timeout=2)
     assert result5.ok
     assert result5.text == "ok1"
+
+
+def test_lifespan_listener(serve_asgi_adapter):
+    events = Queue()
+
+    @Request.application
+    def app(request: Request) -> Response:
+        events.put("request")
+        return Response("ok", 200)
+
+    class LifespanListener(ASGILifespanListener):
+        def on_startup(self):
+            events.put("startup")
+
+        def on_shutdown(self):
+            events.put("shutdown")
+
+    listener = LifespanListener()
+
+    server = serve_asgi_adapter(app, listener)
+
+    assert events.get(timeout=5) == "startup"
+    assert events.qsize() == 0
+
+    assert requests.get(server.url).ok
+
+    assert events.get(timeout=5) == "request"
+    assert events.qsize() == 0
+
+    server.shutdown()
+
+    assert events.get(timeout=5) == "shutdown"
+    assert events.qsize() == 0
+
+
+def test_websocket_listener(serve_asgi_adapter):
+    class WebsocketApp:
+        def __call__(self, environ: WebSocketEnvironment):
+            ws = environ["asgi.websocket"]
+            event = ws.receive()
+            assert event["type"] == "websocket.connect"
+            ws.send(
+                {
+                    "type": "websocket.accept",
+                    "subprotocol": None,
+                    "headers": [(b"X-Foo-Bar", b"foobar")],
+                }
+            )
+
+            event = ws.receive()
+            assert event == {"type": "websocket.receive", "text": "hello world", "bytes": None}
+
+            ws.send(
+                {
+                    "type": "websocket.send",
+                    "text": f"echo: {event['text']}",
+                }
+            )
+
+            ws.send({"type": "websocket.close", "code": 1000, "reason": "test done"})
+
+    server = serve_asgi_adapter(None, websocket_listener=WebsocketApp())
+
+    client = websocket.WebSocket()
+    client.connect(server.url.replace("http://", "ws://"))
+    assert client.handshake_response.status == 101
+    assert client.handshake_response.headers
+    assert client.handshake_response.headers["connection"] == "Upgrade"
+    assert client.handshake_response.headers["x-foo-bar"] == "foobar"
+
+    client.send("hello world")
+    assert client.recv() == "echo: hello world"
+    client.close()

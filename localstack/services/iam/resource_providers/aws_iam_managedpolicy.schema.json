@@ -1,0 +1,57 @@
+{
+  "typeName": "AWS::IAM::ManagedPolicy",
+  "description": "Resource Type definition for AWS::IAM::ManagedPolicy",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "type": "string"
+    },
+    "Description": {
+      "type": "string"
+    },
+    "Groups": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "ManagedPolicyName": {
+      "type": "string"
+    },
+    "Path": {
+      "type": "string"
+    },
+    "PolicyDocument": {
+      "type": "object"
+    },
+    "Roles": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Users": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "PolicyDocument"
+  ],
+  "createOnlyProperties": [
+    "/properties/ManagedPolicyName",
+    "/properties/Description",
+    "/properties/Path"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

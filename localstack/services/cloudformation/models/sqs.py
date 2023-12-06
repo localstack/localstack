@@ -3,17 +3,14 @@ import logging
 
 from botocore.exceptions import ClientError
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_RESOURCE_NAME,
     generate_default_name,
     params_list_to_dict,
     params_select_attributes,
 )
-from localstack.services.cloudformation.service_models import (
-    DependencyNotYetSatisfied,
-    GenericBaseModel,
-)
-from localstack.utils.aws import aws_stack
+from localstack.services.cloudformation.service_models import GenericBaseModel
+from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
 
 LOG = logging.getLogger(__name__)
@@ -24,17 +21,26 @@ class QueuePolicy(GenericBaseModel):
     def cloudformation_type(cls):
         return "AWS::SQS::QueuePolicy"
 
+    def fetch_state(self, stack_name, resources):
+        if self.resource_json.get("PhysicalResourceId"):
+            return {"something": "something"}  # gotta return <something> since {} is falsey :)
+
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
-            sqs_client = aws_stack.connect_to_service("sqs")
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def _create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            sqs_client = connect_to(aws_access_key_id=account_id, region_name=region_name).sqs
+            resource_provider = cls(account_id, region_name, resource)
+            props = resource_provider.props
 
-            # TODO: generalize/support in get_physical_resource_id
-            resources[resource_id]["PhysicalResourceId"] = "%s-%s-%s" % (
+            resource["PhysicalResourceId"] = "%s-%s-%s" % (
                 stack_name,
-                resource_id,
+                logical_resource_id,
                 short_uid(),
             )
 
@@ -42,10 +48,16 @@ class QueuePolicy(GenericBaseModel):
             for queue in props["Queues"]:
                 sqs_client.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": policy})
 
-        def _delete(resource_id, resources, *args, **kwargs):
-            sqs_client = aws_stack.connect_to_service("sqs")
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def _delete(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            sqs_client = connect_to(aws_access_key_id=account_id, region_name=region_name).sqs
+            resource_provider = cls(account_id, region_name, resource)
+            props = resource_provider.props
 
             for queue in props["Queues"]:
                 try:
@@ -67,26 +79,9 @@ class SQSQueue(GenericBaseModel):
     def cloudformation_type(cls):
         return "AWS::SQS::Queue"
 
-    def get_resource_name(self):
-        return self.props.get("QueueName")
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        queue_url = None
-        props = self.props
-        try:
-            queue_url = aws_stack.get_sqs_queue_url(props.get("QueueName"))
-        except Exception as e:
-            if "NonExistentQueue" in str(e):
-                raise DependencyNotYetSatisfied(
-                    resource_ids=self.resource_id, message="Unable to get queue: %s" % e
-                )
-        if attribute == "Arn":
-            return aws_stack.sqs_queue_arn(props.get("QueueName"))
-        return queue_url
-
     def fetch_state(self, stack_name, resources):
-        queue_name = self.resolve_refs_recursively(stack_name, self.props["QueueName"], resources)
-        sqs_client = aws_stack.connect_to_service("sqs")
+        queue_name = self.props["QueueName"]
+        sqs_client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).sqs
         queues = sqs_client.list_queues()
         result = list(
             filter(
@@ -117,19 +112,34 @@ class SQSQueue(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _queue_url(params, resources, resource_id, **kwargs):
-            resource = cls(resources[resource_id])
-            props = resource.props
-            queue_url = resource.physical_resource_id or props.get("QueueUrl")
+        def _queue_url(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            provider = cls(account_id, region_name, resource)
+            queue_url = provider.physical_resource_id or properties.get("QueueUrl")
             if queue_url:
                 return queue_url
-            return aws_stack.sqs_queue_url_for_arn(props["QueueArn"])
+            return arns.sqs_queue_url_for_arn(properties["QueueArn"])
+
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = result["QueueUrl"]
 
         return {
             "create": {
                 "function": "create_queue",
                 "parameters": {
-                    "QueueName": ["QueueName", PLACEHOLDER_RESOURCE_NAME],
+                    "QueueName": "QueueName",
                     "Attributes": params_select_attributes(
                         "ContentBasedDeduplication",
                         "DelaySeconds",
@@ -142,6 +152,7 @@ class SQSQueue(GenericBaseModel):
                     ),
                     "tags": params_list_to_dict("Tags"),
                 },
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_queue",

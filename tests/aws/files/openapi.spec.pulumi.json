@@ -1,0 +1,150 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "apiGateway",
+    "version": "1.0"
+  },
+  "paths": {
+    "/{proxy+}": {
+      "options": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "schema": {
+              "type": "object"
+            },
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Methods": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Headers": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": 200,
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "responseTemplates": {
+                "application/json": ""
+              }
+            }
+          },
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
+          },
+          "passthroughBehavior": "when_no_match",
+          "type": "mock"
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/just_do_it": {
+      "get": {
+        "x-amazon-apigateway-integration": {
+          "uri": "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations",
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "POST",
+          "type": "aws_proxy"
+        },
+        "security": [
+          {
+            "Auth0": []
+          },
+          {
+            "api_key": []
+          }
+        ]
+      }
+    }
+  },
+  "x-amazon-apigateway-binary-media-types": [
+    "*/*"
+  ],
+  "x-amazon-apigateway-gateway-responses": {
+    "UNAUTHORIZED": {
+      "statusCode": 401,
+      "responseParameters": {
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Headers": "'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, Origin, X-Requested-With, Accept'",
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Methods": "'GET, POST, OPTIONS, PUT, PATCH, DELETE'",
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Origin": "'*'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\":$context.error.messageString}"
+      }
+    },
+    "ACCESS_DENIED": {
+      "statusCode": 401,
+      "responseParameters": {
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Headers": "'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, Origin, X-Requested-With, Accept'",
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Methods": "'GET, POST, OPTIONS, PUT, PATCH, DELETE'",
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Origin": "'*'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\":$context.error.messageString}"
+      }
+    },
+    "MISSING_AUTHENTICATION_TOKEN": {
+      "statusCode": 401,
+      "responseParameters": {
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Headers": "'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, Origin, X-Requested-With, Accept'",
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Methods": "'GET, POST, OPTIONS, PUT, PATCH, DELETE'",
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Origin": "'*'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\":$context.error.messageString}"
+      }
+    },
+    "EXPIRED_TOKEN": {
+      "statusCode": 403,
+      "responseParameters": {
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Headers": "'Content-Type, Authorization, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, Origin, X-Requested-With, Accept'",
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Methods": "'GET, POST, OPTIONS, PUT, PATCH, DELETE'",
+        "gatewayresponse.header.method.response.header.Access-Control-Allow-Origin": "'*'"
+      },
+      "responseTemplates": {
+        "application/json": "{\"message\":$context.error.messageString}"
+      }
+    }
+  },
+  "x-amazon-apigateway-api-key-source": "HEADER",
+  "securityDefinitions": {
+    "Auth0": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "x-amazon-apigateway-authtype": "oauth2",
+      "x-amazon-apigateway-authorizer": {
+        "type": "token",
+        "authorizerUri": "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:000000000000:function:apiGwAuthorizerLambda-2152989/invocations",
+        "authorizerCredentials": "",
+        "identitySource": ""
+      }
+    },
+    "api_key": {
+      "type": "apiKey",
+      "name": "x-api-key",
+      "in": "header"
+    }
+  }
+}

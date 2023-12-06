@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -45,6 +39,8 @@ GetMetricDataLabelTimezone = str
 GetMetricDataMaxDatapoints = int
 HistoryData = str
 HistorySummary = str
+IncludeLinkedAccounts = bool
+IncludeLinkedAccountsMetrics = bool
 InsightRuleAggregationStatistic = str
 InsightRuleContributorKey = str
 InsightRuleContributorKeyLabel = str
@@ -124,6 +120,10 @@ class ComparisonOperator(str):
     GreaterThanUpperThreshold = "GreaterThanUpperThreshold"
 
 
+class EvaluationState(str):
+    PARTIAL_DATA = "PARTIAL_DATA"
+
+
 class HistoryItemType(str):
     ConfigurationUpdate = "ConfigurationUpdate"
     StateUpdate = "StateUpdate"
@@ -192,6 +192,7 @@ class StatusCode(str):
     Complete = "Complete"
     InternalError = "InternalError"
     PartialData = "PartialData"
+    Forbidden = "Forbidden"
 
 
 class ConcurrentModificationException(ServiceException):
@@ -537,6 +538,8 @@ class MetricAlarm(TypedDict, total=False):
     EvaluateLowSampleCountPercentile: Optional[EvaluateLowSampleCountPercentile]
     Metrics: Optional[MetricDataQueries]
     ThresholdMetricId: Optional[MetricId]
+    EvaluationState: Optional[EvaluationState]
+    StateTransitionedTimestamp: Optional[Timestamp]
 
 
 MetricAlarms = List[MetricAlarm]
@@ -782,10 +785,12 @@ class MetricStreamStatisticsConfiguration(TypedDict, total=False):
 
 
 MetricStreamStatisticsConfigurations = List[MetricStreamStatisticsConfiguration]
+MetricStreamFilterMetricNames = List[MetricName]
 
 
 class MetricStreamFilter(TypedDict, total=False):
     Namespace: Optional[Namespace]
+    MetricNames: Optional[MetricStreamFilterMetricNames]
 
 
 MetricStreamFilters = List[MetricStreamFilter]
@@ -803,6 +808,7 @@ class GetMetricStreamOutput(TypedDict, total=False):
     LastUpdateDate: Optional[Timestamp]
     OutputFormat: Optional[MetricStreamOutputFormat]
     StatisticsConfigurations: Optional[MetricStreamStatisticsConfigurations]
+    IncludeLinkedAccountsMetrics: Optional[IncludeLinkedAccountsMetrics]
 
 
 class GetMetricWidgetImageInput(ServiceRequest):
@@ -881,14 +887,18 @@ class ListMetricsInput(ServiceRequest):
     Dimensions: Optional[DimensionFilters]
     NextToken: Optional[NextToken]
     RecentlyActive: Optional[RecentlyActive]
+    IncludeLinkedAccounts: Optional[IncludeLinkedAccounts]
+    OwningAccount: Optional[AccountId]
 
 
+OwningAccounts = List[AccountId]
 Metrics = List[Metric]
 
 
 class ListMetricsOutput(TypedDict, total=False):
     Metrics: Optional[Metrics]
     NextToken: Optional[NextToken]
+    OwningAccounts: Optional[OwningAccounts]
 
 
 class ListTagsForResourceInput(ServiceRequest):
@@ -1035,6 +1045,7 @@ class PutMetricStreamInput(ServiceRequest):
     OutputFormat: MetricStreamOutputFormat
     Tags: Optional[TagList]
     StatisticsConfigurations: Optional[MetricStreamStatisticsConfigurations]
+    IncludeLinkedAccountsMetrics: Optional[IncludeLinkedAccountsMetrics]
 
 
 class PutMetricStreamOutput(TypedDict, total=False):
@@ -1086,7 +1097,6 @@ class UntagResourceOutput(TypedDict, total=False):
 
 
 class CloudwatchApi:
-
     service = "cloudwatch"
     version = "2010-08-01"
 
@@ -1314,6 +1324,8 @@ class CloudwatchApi:
         dimensions: DimensionFilters = None,
         next_token: NextToken = None,
         recently_active: RecentlyActive = None,
+        include_linked_accounts: IncludeLinkedAccounts = None,
+        owning_account: AccountId = None,
     ) -> ListMetricsOutput:
         raise NotImplementedError
 
@@ -1425,6 +1437,7 @@ class CloudwatchApi:
         exclude_filters: MetricStreamFilters = None,
         tags: TagList = None,
         statistics_configurations: MetricStreamStatisticsConfigurations = None,
+        include_linked_accounts_metrics: IncludeLinkedAccountsMetrics = None,
     ) -> PutMetricStreamOutput:
         raise NotImplementedError
 

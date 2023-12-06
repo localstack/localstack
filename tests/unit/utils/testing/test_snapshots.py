@@ -3,18 +3,21 @@ import pytest
 from localstack.testing.snapshots import SnapshotSession
 from localstack.testing.snapshots.report import _format_json_path
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
-from localstack.testing.snapshots.transformer_utility import _resource_name_transformer
+from localstack.testing.snapshots.transformer_utility import (
+    TransformerUtility,
+    _resource_name_transformer,
+)
 
 
 class TestSnapshotManager:
     def test_simple_diff_nochange(self):
-        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
         sm.recorded_state = {"key_a": {"a": 3}}
         sm.match("key_a", {"a": 3})
         sm._assert_all()
 
     def test_simple_diff_change(self):
-        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
         sm.recorded_state = {"key_a": {"a": 3}}
         sm.match("key_a", {"a": 5})
         with pytest.raises(Exception) as ctx:
@@ -22,7 +25,7 @@ class TestSnapshotManager:
         ctx.match("Parity snapshot failed")
 
     def test_multiple_assertmatch_with_same_key_fail(self):
-        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
         sm.recorded_state = {"key_a": {"a": 3}}
         sm.match("key_a", {"a": 3})
         with pytest.raises(Exception) as ctx:
@@ -30,7 +33,7 @@ class TestSnapshotManager:
         ctx.match("used multiple times in the same test scope")
 
     def test_context_replacement(self):
-        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
         sm.add_transformer(
             KeyValueBasedTransformer(lambda k, v: v if k == "aaa" else None, replacement="A")
         )
@@ -38,9 +41,16 @@ class TestSnapshotManager:
         sm.match("key_a", {"aaa": "something", "bbb": "something hello"})
         sm._assert_all()
 
+    def test_context_replacement_no_change(self):
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
+        sm.add_transformer(TransformerUtility.key_value("name"))
+        sm.recorded_state = {"key_a": {"name": ""}}
+        sm.match("key_a", {"name": ""})
+        sm._assert_all()
+
     def test_match_order_reference_replacement(self):
         """tests if the reference-replacement works as expected, e.g., using alphabetical order of keys"""
-        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
 
         sm.add_transformer(KeyValueBasedTransformer(_resource_name_transformer, "resource"))
 
@@ -83,8 +93,16 @@ class TestSnapshotManager:
         )
         sm._assert_all()
 
+    def test_reference_replacement_skip_outer_keys(self):
+        """Test if the reference replacement properly skips the snapshot keys on the outermost level"""
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
+        sm.add_transformer(TransformerUtility.key_value("name"))
+        sm.recorded_state = {"key_a": {"name": "<name:1>"}}
+        sm.match("key_a", {"name": "key"})
+        sm._assert_all()
+
     def test_replacement_key_value(self):
-        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
         sm.add_transformer(
             KeyValueBasedTransformer(
                 # returns last two characters of value -> only this should be replaced
@@ -100,7 +118,7 @@ class TestSnapshotManager:
         sm._assert_all()
 
     def test_dot_in_skip_verification_path(self):
-        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
         sm.recorded_state = {
             "key_a": {"aaa": "hello", "aab": "this is a test", "b": {"a.aa": "another test"}}
         }
@@ -120,6 +138,12 @@ class TestSnapshotManager:
 
         skip_path_escaped = ["$..aab", "$..b.'a.aa'"]
         sm._assert_all(skip_verification_paths=skip_path_escaped)
+
+    def test_non_homogeneous_list(self):
+        sm = SnapshotSession(scope_key="A", verify=True, base_file_path="", update=False)
+        sm.recorded_state = {"key1": [{"key2": "value1"}, "value2", 3]}
+        sm.match("key1", [{"key2": "value1"}, "value2", 3])
+        sm._assert_all()
 
 
 def test_json_diff_format():

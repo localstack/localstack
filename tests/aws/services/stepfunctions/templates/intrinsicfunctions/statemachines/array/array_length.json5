@@ -1,0 +1,13 @@
+{
+    "Comment": "ARRAY_LENGTH",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.ArrayLength($.FunctionInput)"
+            },
+            "End": true,
+        },
+    },
+}

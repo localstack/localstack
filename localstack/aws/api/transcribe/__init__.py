@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -53,6 +47,8 @@ class CLMLanguageCode(str):
     es_US = "es-US"
     en_GB = "en-GB"
     en_AU = "en-AU"
+    de_DE = "de-DE"
+    ja_JP = "ja-JP"
 
 
 class CallAnalyticsJobStatus(str):
@@ -60,6 +56,11 @@ class CallAnalyticsJobStatus(str):
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
+
+
+class InputType(str):
+    REAL_TIME = "REAL_TIME"
+    POST_CALL = "POST_CALL"
 
 
 class LanguageCode(str):
@@ -100,6 +101,8 @@ class LanguageCode(str):
     th_TH = "th-TH"
     en_ZA = "en-ZA"
     en_NZ = "en-NZ"
+    vi_VN = "vi-VN"
+    sv_SE = "sv-SE"
 
 
 class MediaFormat(str):
@@ -110,6 +113,7 @@ class MediaFormat(str):
     ogg = "ogg"
     amr = "amr"
     webm = "webm"
+    m4a = "m4a"
 
 
 class MedicalContentIdentificationType(str):
@@ -170,6 +174,10 @@ class Specialty(str):
 class SubtitleFormat(str):
     vtt = "vtt"
     srt = "srt"
+
+
+class ToxicityCategory(str):
+    ALL = "ALL"
 
 
 class TranscriptFilterType(str):
@@ -379,6 +387,7 @@ class CategoryProperties(TypedDict, total=False):
     Rules: Optional[RuleList]
     CreateTime: Optional[DateTime]
     LastUpdateTime: Optional[DateTime]
+    InputType: Optional[InputType]
 
 
 CategoryPropertiesList = List[CategoryProperties]
@@ -387,6 +396,7 @@ CategoryPropertiesList = List[CategoryProperties]
 class CreateCallAnalyticsCategoryRequest(ServiceRequest):
     CategoryName: CategoryName
     Rules: RuleList
+    InputType: Optional[InputType]
 
 
 class CreateCallAnalyticsCategoryResponse(TypedDict, total=False):
@@ -447,6 +457,7 @@ class CreateVocabularyFilterRequest(ServiceRequest):
     Words: Optional[Words]
     VocabularyFilterFileUri: Optional[Uri]
     Tags: Optional[TagList]
+    DataAccessRoleArn: Optional[DataAccessRoleArn]
 
 
 class CreateVocabularyFilterResponse(TypedDict, total=False):
@@ -464,6 +475,7 @@ class CreateVocabularyRequest(ServiceRequest):
     Phrases: Optional[Phrases]
     VocabularyFileUri: Optional[Uri]
     Tags: Optional[TagList]
+    DataAccessRoleArn: Optional[DataAccessRoleArn]
 
 
 class CreateVocabularyResponse(TypedDict, total=False):
@@ -607,6 +619,14 @@ class GetTranscriptionJobRequest(ServiceRequest):
     TranscriptionJobName: TranscriptionJobName
 
 
+ToxicityCategories = List[ToxicityCategory]
+
+
+class ToxicityDetectionSettings(TypedDict, total=False):
+    ToxicityCategories: ToxicityCategories
+
+
+ToxicityDetection = List[ToxicityDetectionSettings]
 SubtitleFileUris = List[Uri]
 SubtitleFormats = List[SubtitleFormat]
 
@@ -669,6 +689,7 @@ class TranscriptionJob(TypedDict, total=False):
     Tags: Optional[TagList]
     Subtitles: Optional[SubtitlesOutput]
     LanguageIdSettings: Optional[LanguageIdSettingsMap]
+    ToxicityDetection: Optional[ToxicityDetection]
 
 
 class GetTranscriptionJobResponse(TypedDict, total=False):
@@ -824,6 +845,7 @@ class TranscriptionJobSummary(TypedDict, total=False):
     IdentifyMultipleLanguages: Optional[Boolean]
     IdentifiedLanguageScore: Optional[IdentifiedLanguageScore]
     LanguageCodes: Optional[LanguageCodeList]
+    ToxicityDetection: Optional[ToxicityDetection]
 
 
 TranscriptionJobSummaries = List[TranscriptionJobSummary]
@@ -928,6 +950,7 @@ class StartTranscriptionJobRequest(ServiceRequest):
     Subtitles: Optional[Subtitles]
     Tags: Optional[TagList]
     LanguageIdSettings: Optional[LanguageIdSettingsMap]
+    ToxicityDetection: Optional[ToxicityDetection]
 
 
 class StartTranscriptionJobResponse(TypedDict, total=False):
@@ -958,6 +981,7 @@ class UntagResourceResponse(TypedDict, total=False):
 class UpdateCallAnalyticsCategoryRequest(ServiceRequest):
     CategoryName: CategoryName
     Rules: RuleList
+    InputType: Optional[InputType]
 
 
 class UpdateCallAnalyticsCategoryResponse(TypedDict, total=False):
@@ -981,6 +1005,7 @@ class UpdateVocabularyFilterRequest(ServiceRequest):
     VocabularyFilterName: VocabularyFilterName
     Words: Optional[Words]
     VocabularyFilterFileUri: Optional[Uri]
+    DataAccessRoleArn: Optional[DataAccessRoleArn]
 
 
 class UpdateVocabularyFilterResponse(TypedDict, total=False):
@@ -994,6 +1019,7 @@ class UpdateVocabularyRequest(ServiceRequest):
     LanguageCode: LanguageCode
     Phrases: Optional[Phrases]
     VocabularyFileUri: Optional[Uri]
+    DataAccessRoleArn: Optional[DataAccessRoleArn]
 
 
 class UpdateVocabularyResponse(TypedDict, total=False):
@@ -1004,13 +1030,16 @@ class UpdateVocabularyResponse(TypedDict, total=False):
 
 
 class TranscribeApi:
-
     service = "transcribe"
     version = "2017-10-26"
 
     @handler("CreateCallAnalyticsCategory")
     def create_call_analytics_category(
-        self, context: RequestContext, category_name: CategoryName, rules: RuleList
+        self,
+        context: RequestContext,
+        category_name: CategoryName,
+        rules: RuleList,
+        input_type: InputType = None,
     ) -> CreateCallAnalyticsCategoryResponse:
         raise NotImplementedError
 
@@ -1046,6 +1075,7 @@ class TranscribeApi:
         phrases: Phrases = None,
         vocabulary_file_uri: Uri = None,
         tags: TagList = None,
+        data_access_role_arn: DataAccessRoleArn = None,
     ) -> CreateVocabularyResponse:
         raise NotImplementedError
 
@@ -1058,6 +1088,7 @@ class TranscribeApi:
         words: Words = None,
         vocabulary_filter_file_uri: Uri = None,
         tags: TagList = None,
+        data_access_role_arn: DataAccessRoleArn = None,
     ) -> CreateVocabularyFilterResponse:
         raise NotImplementedError
 
@@ -1284,6 +1315,7 @@ class TranscribeApi:
         subtitles: Subtitles = None,
         tags: TagList = None,
         language_id_settings: LanguageIdSettingsMap = None,
+        toxicity_detection: ToxicityDetection = None,
     ) -> StartTranscriptionJobResponse:
         raise NotImplementedError
 
@@ -1301,7 +1333,11 @@ class TranscribeApi:
 
     @handler("UpdateCallAnalyticsCategory")
     def update_call_analytics_category(
-        self, context: RequestContext, category_name: CategoryName, rules: RuleList
+        self,
+        context: RequestContext,
+        category_name: CategoryName,
+        rules: RuleList,
+        input_type: InputType = None,
     ) -> UpdateCallAnalyticsCategoryResponse:
         raise NotImplementedError
 
@@ -1323,6 +1359,7 @@ class TranscribeApi:
         language_code: LanguageCode,
         phrases: Phrases = None,
         vocabulary_file_uri: Uri = None,
+        data_access_role_arn: DataAccessRoleArn = None,
     ) -> UpdateVocabularyResponse:
         raise NotImplementedError
 
@@ -1333,5 +1370,6 @@ class TranscribeApi:
         vocabulary_filter_name: VocabularyFilterName,
         words: Words = None,
         vocabulary_filter_file_uri: Uri = None,
+        data_access_role_arn: DataAccessRoleArn = None,
     ) -> UpdateVocabularyFilterResponse:
         raise NotImplementedError

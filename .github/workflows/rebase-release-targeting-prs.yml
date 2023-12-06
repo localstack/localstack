@@ -1,16 +1,15 @@
-name: Rebase PRs targeting release branches
+name: Rebase PRs targeting Release Branches
 on:
   push:
     branches:
-    # TODO use a better pattern here (once there's a clear branch name pattern)
-    - 'v[0-9]+'
+    - 'release/*'
 jobs:
   rebase:
     runs-on: ubuntu-latest
     steps:
       - name: Determine base ref
         id: determine-base-ref
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           result-encoding: string
           script: |

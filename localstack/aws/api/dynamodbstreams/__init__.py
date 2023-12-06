@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -227,7 +221,6 @@ class ListStreamsOutput(TypedDict, total=False):
 
 
 class DynamodbstreamsApi:
-
     service = "dynamodbstreams"
     version = "2012-08-10"
 

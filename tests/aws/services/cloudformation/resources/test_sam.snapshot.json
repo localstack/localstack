@@ -1,0 +1,24 @@
+{
+  "tests/aws/services/cloudformation/resources/test_sam.py::test_sam_policies": {
+    "recorded-date": "11-07-2023, 18:08:53",
+    "recorded-content": {
+      "list_attached_role_policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:aws:iam::aws:policy/service-role/<policy-name:1>",
+            "PolicyName": "<policy-name:1>"
+          },
+          {
+            "PolicyArn": "arn:aws:iam::aws:policy/<policy-name:2>",
+            "PolicyName": "<policy-name:2>"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -7,14 +7,14 @@ from typing import Dict, Optional
 
 from moto.events.models import events_backends
 
+from localstack.aws.connect import connect_to
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.utils import collections
-from localstack.utils.aws.aws_stack import (
-    connect_to_service,
+from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
     extract_region_from_arn,
     firehose_name,
-    get_sqs_queue_url,
+    sqs_queue_url_for_arn,
 )
 from localstack.utils.http import add_path_parameters_to_url, add_query_params_to_url
 from localstack.utils.http import safe_requests as requests
@@ -34,13 +34,25 @@ def send_event_to_target(
     target_attributes: Dict = None,
     asynchronous: bool = True,
     target: Dict = None,
+    role: str = None,
+    source_arn: str = None,
+    source_service: str = None,
 ):
     region = extract_region_from_arn(target_arn)
+
     if target is None:
         target = {}
+    if role:
+        clients = connect_to.with_assumed_role(
+            role_arn=role, service_principal=source_service, region_name=region
+        )
+    else:
+        clients = connect_to(region_name=region)
 
     if ":lambda:" in target_arn:
-        lambda_client = connect_to_service("lambda")
+        lambda_client = clients.lambda_.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         lambda_client.invoke(
             FunctionName=target_arn,
             Payload=to_bytes(json.dumps(event)),
@@ -48,23 +60,34 @@ def send_event_to_target(
         )
 
     elif ":sns:" in target_arn:
-        sns_client = connect_to_service("sns", region_name=region)
+        sns_client = clients.sns.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         sns_client.publish(TopicArn=target_arn, Message=json.dumps(event))
 
     elif ":sqs:" in target_arn:
-        sqs_client = connect_to_service("sqs", region_name=region)
-        queue_url = get_sqs_queue_url(target_arn)
+        sqs_client = clients.sqs.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
+        queue_url = sqs_queue_url_for_arn(target_arn)
         msg_group_id = collections.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
-        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
+        sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
+        )
 
     elif ":states:" in target_arn:
-        stepfunctions_client = connect_to_service("stepfunctions", region_name=region)
+        account_id = extract_account_id_from_arn(target_arn)
+        stepfunctions_client = connect_to(
+            aws_access_key_id=account_id, region_name=region
+        ).stepfunctions
         stepfunctions_client.start_execution(stateMachineArn=target_arn, input=json.dumps(event))
 
     elif ":firehose:" in target_arn:
         delivery_stream_name = firehose_name(target_arn)
-        firehose_client = connect_to_service("firehose", region_name=region)
+        firehose_client = clients.firehose.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         firehose_client.put_record(
             DeliveryStreamName=delivery_stream_name,
             Record={"Data": to_bytes(json.dumps(event))},
@@ -75,15 +98,20 @@ def send_event_to_target(
             send_event_to_api_destination(target_arn, event, target.get("HttpParameters"))
 
         else:
-            events_client = connect_to_service("events", region_name=region)
+            events_client = clients.events.request_metadata(
+                service_principal=source_service, source_arn=source_arn
+            )
             eventbus_name = target_arn.split(":")[-1].split("/")[-1]
+            detail = event.get("detail") or event
+            resources = event.get("resources") or [source_arn] if source_arn else []
             events_client.put_events(
                 Entries=[
                     {
                         "EventBusName": eventbus_name,
-                        "Source": event.get("source"),
-                        "DetailType": event.get("detail-type"),
-                        "Detail": event.get("detail"),
+                        "Source": event.get("source", source_service) or "",
+                        "DetailType": event.get("detail-type", ""),
+                        "Detail": json.dumps(detail),
+                        "Resources": resources,
                     }
                 ]
             )
@@ -97,7 +125,9 @@ def send_event_to_target(
 
         stream_name = target_arn.split("/")[-1]
         partition_key = collections.get_safe(event, partition_key_path, event["id"])
-        kinesis_client = connect_to_service("kinesis", region_name=region)
+        kinesis_client = clients.kinesis.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
 
         kinesis_client.put_record(
             StreamName=stream_name,
@@ -106,8 +136,10 @@ def send_event_to_target(
         )
 
     elif ":logs:" in target_arn:
-        log_group_name = target_arn.split(":")[-1]
-        logs_client = connect_to_service("logs", region_name=region)
+        log_group_name = target_arn.split(":")[6]
+        logs_client = clients.logs.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         log_stream_name = str(uuid.uuid4())
         logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
         logs_client.put_log_events(
@@ -185,9 +217,11 @@ def send_event_to_api_destination(target_arn, event, http_parameters: Optional[D
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
 
     # ARN format: ...:api-destination/{name}/{uuid}
+    account_id = extract_account_id_from_arn(target_arn)
     region = extract_region_from_arn(target_arn)
+
     api_destination_name = target_arn.split(":")[-1].split("/")[1]
-    events_client = connect_to_service("events", region_name=region)
+    events_client = connect_to(aws_access_key_id=account_id, region_name=region).events
     destination = events_client.describe_api_destination(Name=api_destination_name)
 
     # get destination endpoint details

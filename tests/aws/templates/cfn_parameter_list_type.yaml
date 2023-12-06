@@ -1,0 +1,14 @@
+Parameters:
+  ParamsList:
+    # fun fact: this type works but is not documented in the docs
+    # see: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
+    Type: List<String>
+Resources:
+  MyParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Join ["|", !Ref ParamsList]
+Outputs:
+  ParamValue:
+    Value: !GetAtt MyParam.Value

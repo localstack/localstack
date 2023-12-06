@@ -1,20 +1,20 @@
-import json
 import re
 
 from botocore.exceptions import ClientError
 
-from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.aws.connect import connect_to
+from localstack.config import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.services.cloudformation.cfn_utils import rename_params
 from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_RESOURCE_NAME,
     dump_json_params,
     generate_default_name,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.services.s3 import s3_listener, s3_utils
-from localstack.utils.aws import aws_stack
-from localstack.utils.cloudformation.cfn_utils import rename_params
+from localstack.services.s3.utils import normalize_bucket_name
+from localstack.utils.aws import arns
 from localstack.utils.common import canonical_json, md5
 from localstack.utils.testutil import delete_all_s3_objects
+from localstack.utils.urls import localstack_host
 
 
 class S3BucketPolicy(GenericBaseModel):
@@ -22,17 +22,25 @@ class S3BucketPolicy(GenericBaseModel):
     def cloudformation_type():
         return "AWS::S3::BucketPolicy"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        policy = self.props.get("Policy")
-        return policy and md5(canonical_json(json.loads(policy)))
-
     def fetch_state(self, stack_name, resources):
-        bucket_name = self.props.get("Bucket") or self.resource_id
-        bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
-        return aws_stack.connect_to_service("s3").get_bucket_policy(Bucket=bucket_name)
+        bucket_name = self.props.get("Bucket") or self.logical_resource_id
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).s3.get_bucket_policy(Bucket=bucket_name)
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["PhysicalResourceId"] = md5(
+                canonical_json(resource["Properties"]["PolicyDocument"])
+            )
+
         return {
             "create": {
                 "function": "put_bucket_policy",
@@ -40,6 +48,7 @@ class S3BucketPolicy(GenericBaseModel):
                     dump_json_params(None, "PolicyDocument"),
                     {"PolicyDocument": "Policy", "Bucket": "Bucket"},
                 ),
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_bucket_policy", "parameters": {"Bucket": "Bucket"}},
         }
@@ -50,18 +59,15 @@ class S3Bucket(GenericBaseModel):
     def cloudformation_type():
         return "AWS::S3::Bucket"
 
-    def get_resource_name(self):
-        return self.normalize_bucket_name(self.props.get("BucketName"))
-
     @staticmethod
     def normalize_bucket_name(bucket_name):
-        return s3_utils.normalize_bucket_name(bucket_name)
+        return normalize_bucket_name(bucket_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
         role_name = resource.get("Properties", {}).get("BucketName")
         if not role_name:
-            resource["Properties"]["BucketName"] = s3_listener.normalize_bucket_name(
+            resource["Properties"]["BucketName"] = normalize_bucket_name(
                 generate_default_name(stack_name, resource["LogicalResourceId"])
             )
 
@@ -71,8 +77,67 @@ class S3Bucket(GenericBaseModel):
             """Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read')"""
             return re.sub("(?<!^)(?=[A-Z])", "-", acl).lower()
 
-        def s3_bucket_notification_config(params, **kwargs):
-            notif_config = params.get("NotificationConfiguration")
+        def transform_website_configuration(website_configuration: dict) -> dict:
+            if not website_configuration:
+                return {}
+            output = {}
+            if index := website_configuration.get("IndexDocument"):
+                output["IndexDocument"] = {"Suffix": index}
+            if error := website_configuration.get("ErrorDocument"):
+                output["ErrorDocument"] = {"Key": error}
+            if redirect_all := website_configuration.get("RedirectAllRequestsTo"):
+                output["RedirectAllRequestsTo"] = redirect_all
+
+            for r in website_configuration.get("RoutingRules", []):
+                rule = {}
+                if condition := r.get("RoutingRuleCondition"):
+                    rule["Condition"] = condition
+                if redirect := r.get("RedirectRule"):
+                    rule["Redirect"] = redirect
+                output.setdefault("RoutingRules", []).append(rule)
+
+            return output
+
+        def transform_cfn_cors(cors_config):
+            # See https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketCors.html
+            # https://docs.aws.amazon.com/AmazonS3/latest/API/API_CORSRule.html
+            # only AllowedMethods and AllowedOrigins are required
+            if not cors_config:
+                return {}
+
+            cors_rules = []
+            for cfn_rule in cors_config.get("CorsRules", []):
+                rule = {
+                    "AllowedOrigins": cfn_rule.get("AllowedOrigins"),
+                    "AllowedMethods": cfn_rule.get("AllowedMethods"),
+                }
+                # we should not pass those to PutBucketCors if they are None, as S3 will provide default values and
+                # does not accept None
+                if (allowed_headers := cfn_rule.get("AllowedHeaders")) is not None:
+                    rule["AllowedHeaders"] = allowed_headers
+
+                if (allowed_headers := cfn_rule.get("ExposedHeaders")) is not None:
+                    rule["ExposeHeaders"] = allowed_headers
+
+                if (allowed_headers := cfn_rule.get("MaxAge")) is not None:
+                    rule["MaxAgeSeconds"] = allowed_headers
+
+                if (allowed_headers := cfn_rule.get("Id")) is not None:
+                    rule["ID"] = allowed_headers
+
+                cors_rules.append(rule)
+
+            return {"CORSRules": cors_rules}
+
+        def s3_bucket_notification_config(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict | None:
+            notif_config = properties.get("NotificationConfiguration")
             if not notif_config:
                 return None
 
@@ -105,44 +170,83 @@ class S3Bucket(GenericBaseModel):
 
             # construct final result
             result = {
-                "Bucket": params.get("BucketName") or PLACEHOLDER_RESOURCE_NAME,
+                "Bucket": properties.get("BucketName"),
                 "NotificationConfiguration": {
                     "LambdaFunctionConfigurations": lambda_configs,
                     "QueueConfigurations": queue_configs,
                     "TopicConfigurations": topic_configs,
                 },
             }
+            if notif_config.get("EventBridgeConfiguration", {}).get("EventBridgeEnabled"):
+                result["NotificationConfiguration"]["EventBridgeConfiguration"] = {}
+
             return result
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
-            s3 = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            bucket_name = resource["Properties"]["BucketName"]
+            resource["PhysicalResourceId"] = bucket_name
+            resource["Properties"]["Arn"] = arns.s3_bucket_arn(bucket_name)
+            domain_name = f"{bucket_name}.{S3_VIRTUAL_HOSTNAME}"
+            resource["Properties"]["DomainName"] = domain_name
+            resource["Properties"]["RegionalDomainName"] = domain_name
+            # by default (parity) s3 website only supports http
+            #   https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html
+            #   "Amazon S3 website endpoints do not support HTTPS. If you want to use HTTPS,
+            #   you can use Amazon CloudFront [...]"
+            resource["Properties"][
+                "WebsiteURL"
+            ] = f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{localstack_host().port}"
+            # resource["Properties"]["DualStackDomainName"] = ?
+
+        def _pre_delete(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3 = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
                 s3.delete_bucket_policy(Bucket=bucket_name)
             except Exception:
                 pass
-            s3_listener.remove_bucket_notification(resource["PhysicalResourceId"])
             # TODO: divergence from how AWS deals with bucket deletes (should throw an error)
             try:
-                delete_all_s3_objects(bucket_name)
+                delete_all_s3_objects(s3, bucket_name)
             except Exception as e:
                 if "NoSuchBucket" not in str(e):
                     raise
 
-        def _add_bucket_tags(resource_id, resources, resource_type, func, stack_name):
-            s3 = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
+        def _add_bucket_tags(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3 = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             tags = props.get("Tags", [])
             if len(tags) > 0:
                 s3.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": tags})
 
-        def _put_bucket_versioning(resource_id, resources, resource_type, func, stack_name):
-            s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
+        def _put_bucket_versioning(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             versioning_config = props.get("VersioningConfiguration")
@@ -154,9 +258,48 @@ class S3Bucket(GenericBaseModel):
                     },
                 )
 
-        def _create_bucket(resource_id, resources, resource_type, func, stack_name):
-            s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
+        def _put_bucket_cors_configuration(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            cors_configuration = transform_cfn_cors(props.get("CorsConfiguration"))
+            if cors_configuration:
+                s3_client.put_bucket_cors(
+                    Bucket=bucket_name,
+                    CORSConfiguration=cors_configuration,
+                )
+
+        def _put_bucket_website_configuration(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            website_config = transform_website_configuration(props.get("WebsiteConfiguration"))
+            if website_config:
+                s3_client.put_bucket_website(
+                    Bucket=bucket_name,
+                    WebsiteConfiguration=website_config,
+                )
+
+        def _create_bucket(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
@@ -168,21 +311,26 @@ class S3Bucket(GenericBaseModel):
                         "Bucket": bucket_name,
                         "ACL": convert_acl_cf_to_s3(props.get("AccessControl", "PublicRead")),
                     }
-                    if aws_stack.get_region() != "us-east-1":
+                    if region_name != "us-east-1":
                         params["CreateBucketConfiguration"] = {
-                            "LocationConstraint": aws_stack.get_region()
+                            "LocationConstraint": region_name,
                         }
                     s3_client.create_bucket(**params)
 
         result = {
             "create": [
-                {"function": _create_bucket},
+                {
+                    "function": _create_bucket,
+                    "result_handler": _handle_result,
+                },
                 {
                     "function": "put_bucket_notification_configuration",
                     "parameters": s3_bucket_notification_config,
                 },
                 {"function": _put_bucket_versioning},
+                {"function": _put_bucket_cors_configuration},
                 {"function": _add_bucket_tags},
+                {"function": _put_bucket_website_configuration},
             ],
             "delete": [
                 {"function": _pre_delete},
@@ -193,10 +341,9 @@ class S3Bucket(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        bucket_name = self._get_bucket_name()
-        bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
+        bucket_name = props["BucketName"]
         bucket_name = self.normalize_bucket_name(bucket_name)
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).s3
         response = s3_client.get_bucket_location(Bucket=bucket_name)
         notifs = props.get("NotificationConfiguration")
         if not response or not notifs:
@@ -209,24 +356,10 @@ class S3Bucket(GenericBaseModel):
         )
         if notifs and not has_notifs:
             return None
+
+        website_config_props = props.get("WebsiteConfiguration")
+        website_config = s3_client.get_bucket_website_configuration(Bucket=bucket_name)
+        if website_config_props and not website_config:
+            return None
+
         return response
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name in ["DomainName", "RegionalDomainName"]:
-            bucket_name = self._get_bucket_name()
-            return "%s.%s" % (bucket_name, S3_VIRTUAL_HOSTNAME)
-
-        if attribute_name == "WebsiteURL":
-            bucket_name = self.props.get("BucketName")
-            return f"https://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}"
-
-        return super(S3Bucket, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        bucket_name = self.props.get("BucketName")
-        if attribute == "Arn":
-            return aws_stack.s3_bucket_arn(bucket_name)
-        return bucket_name
-
-    def _get_bucket_name(self):
-        return self.props.get("BucketName") or self.resource_id

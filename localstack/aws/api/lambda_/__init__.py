@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import IO, Dict, Iterable, List, Optional, Union
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import IO, Dict, Iterable, Iterator, List, Optional, TypedDict, Union
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -19,6 +13,8 @@ BisectBatchOnFunctionError = bool
 Boolean = bool
 CodeSigningConfigArn = str
 CodeSigningConfigId = str
+CollectionName = str
+DatabaseName = str
 Description = str
 DestinationArn = str
 Enabled = bool
@@ -45,6 +41,7 @@ LayerPermissionAllowedPrincipal = str
 LayerVersionArn = str
 LicenseInfo = str
 LocalMountPath = str
+LogGroup = str
 MasterRegion = str
 MaxAge = int
 MaxFunctionEventInvokeConfigListItems = int
@@ -53,6 +50,7 @@ MaxLayerListItems = int
 MaxListItems = int
 MaxProvisionedConcurrencyConfigListItems = int
 MaximumBatchingWindowInSeconds = int
+MaximumConcurrency = int
 MaximumEventAgeInSeconds = int
 MaximumRecordAgeInSeconds = int
 MaximumRetryAttempts = int
@@ -63,6 +61,7 @@ NameSpacedFunctionArn = str
 NamespacedFunctionName = str
 NamespacedStatementId = str
 NonNegativeInteger = int
+NullableBoolean = bool
 OrganizationId = str
 Origin = str
 ParallelizationFactor = int
@@ -75,6 +74,7 @@ Queue = str
 ReservedConcurrentExecutions = int
 ResourceArn = str
 RoleArn = str
+RuntimeVersionArn = str
 S3Bucket = str
 S3Key = str
 S3ObjectVersion = str
@@ -99,6 +99,15 @@ Weight = float
 WorkingDirectory = str
 
 
+class ApplicationLogLevel(str):
+    TRACE = "TRACE"
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARN = "WARN"
+    ERROR = "ERROR"
+    FATAL = "FATAL"
+
+
 class Architecture(str):
     x86_64 = "x86_64"
     arm64 = "arm64"
@@ -117,6 +126,11 @@ class EventSourcePosition(str):
     TRIM_HORIZON = "TRIM_HORIZON"
     LATEST = "LATEST"
     AT_TIMESTAMP = "AT_TIMESTAMP"
+
+
+class FullDocument(str):
+    UpdateLookup = "UpdateLookup"
+    Default = "Default"
 
 
 class FunctionResponseType(str):
@@ -138,6 +152,11 @@ class InvocationType(str):
     DryRun = "DryRun"
 
 
+class InvokeMode(str):
+    BUFFERED = "BUFFERED"
+    RESPONSE_STREAM = "RESPONSE_STREAM"
+
+
 class LastUpdateStatus(str):
     Successful = "Successful"
     Failed = "Failed"
@@ -155,6 +174,22 @@ class LastUpdateStatusReasonCode(str):
     ImageDeleted = "ImageDeleted"
     ImageAccessDenied = "ImageAccessDenied"
     InvalidImage = "InvalidImage"
+    KMSKeyAccessDenied = "KMSKeyAccessDenied"
+    KMSKeyNotFound = "KMSKeyNotFound"
+    InvalidStateKMSKey = "InvalidStateKMSKey"
+    DisabledKMSKey = "DisabledKMSKey"
+    EFSIOError = "EFSIOError"
+    EFSMountConnectivityError = "EFSMountConnectivityError"
+    EFSMountFailure = "EFSMountFailure"
+    EFSMountTimeout = "EFSMountTimeout"
+    InvalidRuntime = "InvalidRuntime"
+    InvalidZipFileException = "InvalidZipFileException"
+    FunctionError = "FunctionError"
+
+
+class LogFormat(str):
+    JSON = "JSON"
+    Text = "Text"
 
 
 class LogType(str):
@@ -171,6 +206,11 @@ class ProvisionedConcurrencyStatusEnum(str):
     IN_PROGRESS = "IN_PROGRESS"
     READY = "READY"
     FAILED = "FAILED"
+
+
+class ResponseStreamingInvocationType(str):
+    RequestResponse = "RequestResponse"
+    DryRun = "DryRun"
 
 
 class Runtime(str):
@@ -201,6 +241,25 @@ class Runtime(str):
     ruby2_7 = "ruby2.7"
     provided = "provided"
     provided_al2 = "provided.al2"
+    nodejs18_x = "nodejs18.x"
+    python3_10 = "python3.10"
+    java17 = "java17"
+    ruby3_2 = "ruby3.2"
+    python3_11 = "python3.11"
+    nodejs20_x = "nodejs20.x"
+    provided_al2023 = "provided.al2023"
+    python3_12 = "python3.12"
+    java21 = "java21"
+
+
+class SnapStartApplyOn(str):
+    PublishedVersions = "PublishedVersions"
+    None_ = "None"
+
+
+class SnapStartOptimizationStatus(str):
+    On = "On"
+    Off = "Off"
 
 
 class SourceAccessType(str):
@@ -235,6 +294,23 @@ class StateReasonCode(str):
     ImageDeleted = "ImageDeleted"
     ImageAccessDenied = "ImageAccessDenied"
     InvalidImage = "InvalidImage"
+    KMSKeyAccessDenied = "KMSKeyAccessDenied"
+    KMSKeyNotFound = "KMSKeyNotFound"
+    InvalidStateKMSKey = "InvalidStateKMSKey"
+    DisabledKMSKey = "DisabledKMSKey"
+    EFSIOError = "EFSIOError"
+    EFSMountConnectivityError = "EFSMountConnectivityError"
+    EFSMountFailure = "EFSMountFailure"
+    EFSMountTimeout = "EFSMountTimeout"
+    InvalidRuntime = "InvalidRuntime"
+    InvalidZipFileException = "InvalidZipFileException"
+    FunctionError = "FunctionError"
+
+
+class SystemLogLevel(str):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARN = "WARN"
 
 
 class ThrottleReason(str):
@@ -245,11 +321,18 @@ class ThrottleReason(str):
     )
     ReservedFunctionInvocationRateLimitExceeded = "ReservedFunctionInvocationRateLimitExceeded"
     CallerRateLimitExceeded = "CallerRateLimitExceeded"
+    ConcurrentSnapshotCreateLimitExceeded = "ConcurrentSnapshotCreateLimitExceeded"
 
 
 class TracingMode(str):
     Active = "Active"
     PassThrough = "PassThrough"
+
+
+class UpdateRuntimeOn(str):
+    Auto = "Auto"
+    Manual = "Manual"
+    FunctionUpdate = "FunctionUpdate"
 
 
 class CodeSigningConfigNotFoundException(ServiceException):
@@ -428,6 +511,13 @@ class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
     Type: Optional[String]
 
 
+class RecursiveInvocationException(ServiceException):
+    code: str = "RecursiveInvocationException"
+    sender_fault: bool = False
+    status_code: int = 400
+    Type: Optional[String]
+
+
 class RequestTooLargeException(ServiceException):
     code: str = "RequestTooLargeException"
     sender_fault: bool = False
@@ -467,6 +557,27 @@ class ServiceException(ServiceException):
     code: str = "ServiceException"
     sender_fault: bool = False
     status_code: int = 500
+    Type: Optional[String]
+
+
+class SnapStartException(ServiceException):
+    code: str = "SnapStartException"
+    sender_fault: bool = False
+    status_code: int = 400
+    Type: Optional[String]
+
+
+class SnapStartNotReadyException(ServiceException):
+    code: str = "SnapStartNotReadyException"
+    sender_fault: bool = False
+    status_code: int = 409
+    Type: Optional[String]
+
+
+class SnapStartTimeoutException(ServiceException):
+    code: str = "SnapStartTimeoutException"
+    sender_fault: bool = False
+    status_code: int = 408
     Type: Optional[String]
 
 
@@ -632,6 +743,16 @@ class CreateCodeSigningConfigResponse(TypedDict, total=False):
     CodeSigningConfig: CodeSigningConfig
 
 
+class DocumentDBEventSourceConfig(TypedDict, total=False):
+    DatabaseName: Optional[DatabaseName]
+    CollectionName: Optional[CollectionName]
+    FullDocument: Optional[FullDocument]
+
+
+class ScalingConfig(TypedDict, total=False):
+    MaximumConcurrency: Optional[MaximumConcurrency]
+
+
 class SelfManagedKafkaEventSourceConfig(TypedDict, total=False):
     ConsumerGroupId: Optional[URI]
 
@@ -704,6 +825,19 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
     AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
+    ScalingConfig: Optional[ScalingConfig]
+    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
+
+
+class LoggingConfig(TypedDict, total=False):
+    LogFormat: Optional[LogFormat]
+    ApplicationLogLevel: Optional[ApplicationLogLevel]
+    SystemLogLevel: Optional[SystemLogLevel]
+    LogGroup: Optional[LogGroup]
+
+
+class SnapStart(TypedDict, total=False):
+    ApplyOn: Optional[SnapStartApplyOn]
 
 
 class EphemeralStorage(TypedDict, total=False):
@@ -751,6 +885,7 @@ SubnetIds = List[SubnetId]
 class VpcConfig(TypedDict, total=False):
     SubnetIds: Optional[SubnetIds]
     SecurityGroupIds: Optional[SecurityGroupIds]
+    Ipv6AllowedForDualStack: Optional[NullableBoolean]
 
 
 class FunctionCode(TypedDict, total=False):
@@ -784,6 +919,8 @@ class CreateFunctionRequest(ServiceRequest):
     CodeSigningConfigArn: Optional[CodeSigningConfigArn]
     Architectures: Optional[ArchitecturesList]
     EphemeralStorage: Optional[EphemeralStorage]
+    SnapStart: Optional[SnapStart]
+    LoggingConfig: Optional[LoggingConfig]
 
 
 class CreateFunctionUrlConfigRequest(ServiceRequest):
@@ -791,6 +928,7 @@ class CreateFunctionUrlConfigRequest(ServiceRequest):
     Qualifier: Optional[FunctionUrlQualifier]
     AuthType: FunctionUrlAuthType
     Cors: Optional[Cors]
+    InvokeMode: Optional[InvokeMode]
 
 
 class CreateFunctionUrlConfigResponse(TypedDict, total=False):
@@ -799,6 +937,7 @@ class CreateFunctionUrlConfigResponse(TypedDict, total=False):
     AuthType: FunctionUrlAuthType
     Cors: Optional[Cors]
     CreationTime: Timestamp
+    InvokeMode: Optional[InvokeMode]
 
 
 class DeleteAliasRequest(ServiceRequest):
@@ -887,6 +1026,8 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
     AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
+    ScalingConfig: Optional[ScalingConfig]
+    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
 
 
 EventSourceMappingsList = List[EventSourceMappingConfiguration]
@@ -898,6 +1039,21 @@ class FunctionCodeLocation(TypedDict, total=False):
     Location: Optional[String]
     ImageUri: Optional[String]
     ResolvedImageUri: Optional[String]
+
+
+class RuntimeVersionError(TypedDict, total=False):
+    ErrorCode: Optional[String]
+    Message: Optional[SensitiveString]
+
+
+class RuntimeVersionConfig(TypedDict, total=False):
+    RuntimeVersionArn: Optional[RuntimeVersionArn]
+    Error: Optional[RuntimeVersionError]
+
+
+class SnapStartResponse(TypedDict, total=False):
+    ApplyOn: Optional[SnapStartApplyOn]
+    OptimizationStatus: Optional[SnapStartOptimizationStatus]
 
 
 class ImageConfigError(TypedDict, total=False):
@@ -928,6 +1084,7 @@ class VpcConfigResponse(TypedDict, total=False):
     SubnetIds: Optional[SubnetIds]
     SecurityGroupIds: Optional[SecurityGroupIds]
     VpcId: Optional[VpcId]
+    Ipv6AllowedForDualStack: Optional[NullableBoolean]
 
 
 class FunctionConfiguration(TypedDict, total=False):
@@ -964,6 +1121,9 @@ class FunctionConfiguration(TypedDict, total=False):
     SigningJobArn: Optional[Arn]
     Architectures: Optional[ArchitecturesList]
     EphemeralStorage: Optional[EphemeralStorage]
+    SnapStart: Optional[SnapStartResponse]
+    RuntimeVersionConfig: Optional[RuntimeVersionConfig]
+    LoggingConfig: Optional[LoggingConfig]
 
 
 class FunctionEventInvokeConfig(TypedDict, total=False):
@@ -985,6 +1145,7 @@ class FunctionUrlConfig(TypedDict, total=False):
     LastModifiedTime: Timestamp
     Cors: Optional[Cors]
     AuthType: FunctionUrlAuthType
+    InvokeMode: Optional[InvokeMode]
 
 
 FunctionUrlConfigList = List[FunctionUrlConfig]
@@ -1067,6 +1228,7 @@ class GetFunctionUrlConfigResponse(TypedDict, total=False):
     Cors: Optional[Cors]
     CreationTime: Timestamp
     LastModifiedTime: Timestamp
+    InvokeMode: Optional[InvokeMode]
 
 
 class GetLayerVersionByArnRequest(ServiceRequest):
@@ -1132,6 +1294,17 @@ class GetProvisionedConcurrencyConfigResponse(TypedDict, total=False):
     LastModified: Optional[Timestamp]
 
 
+class GetRuntimeManagementConfigRequest(ServiceRequest):
+    FunctionName: NamespacedFunctionName
+    Qualifier: Optional[Qualifier]
+
+
+class GetRuntimeManagementConfigResponse(TypedDict, total=False):
+    UpdateRuntimeOn: Optional[UpdateRuntimeOn]
+    RuntimeVersionArn: Optional[RuntimeVersionArn]
+    FunctionArn: Optional[NameSpacedFunctionArn]
+
+
 class InvocationRequest(ServiceRequest):
     Payload: Optional[IO[Blob]]
     FunctionName: NamespacedFunctionName
@@ -1156,6 +1329,37 @@ class InvokeAsyncRequest(ServiceRequest):
 
 class InvokeAsyncResponse(TypedDict, total=False):
     Status: Optional[HttpStatus]
+
+
+class InvokeResponseStreamUpdate(TypedDict, total=False):
+    Payload: Optional[Blob]
+
+
+class InvokeWithResponseStreamCompleteEvent(TypedDict, total=False):
+    ErrorCode: Optional[String]
+    ErrorDetails: Optional[String]
+    LogResult: Optional[String]
+
+
+class InvokeWithResponseStreamRequest(ServiceRequest):
+    Payload: Optional[IO[Blob]]
+    FunctionName: NamespacedFunctionName
+    InvocationType: Optional[ResponseStreamingInvocationType]
+    LogType: Optional[LogType]
+    ClientContext: Optional[String]
+    Qualifier: Optional[Qualifier]
+
+
+class InvokeWithResponseStreamResponseEvent(TypedDict, total=False):
+    PayloadChunk: Optional[InvokeResponseStreamUpdate]
+    InvokeComplete: Optional[InvokeWithResponseStreamCompleteEvent]
+
+
+class InvokeWithResponseStreamResponse(TypedDict, total=False):
+    StatusCode: Optional[Integer]
+    ExecutedVersion: Optional[Version]
+    EventStream: Iterator[InvokeWithResponseStreamResponseEvent]
+    ResponseStreamContentType: Optional[String]
 
 
 class LayerVersionContentInput(TypedDict, total=False):
@@ -1400,6 +1604,19 @@ class PutProvisionedConcurrencyConfigResponse(TypedDict, total=False):
     LastModified: Optional[Timestamp]
 
 
+class PutRuntimeManagementConfigRequest(ServiceRequest):
+    FunctionName: FunctionName
+    Qualifier: Optional[Qualifier]
+    UpdateRuntimeOn: UpdateRuntimeOn
+    RuntimeVersionArn: Optional[RuntimeVersionArn]
+
+
+class PutRuntimeManagementConfigResponse(TypedDict, total=False):
+    UpdateRuntimeOn: UpdateRuntimeOn
+    FunctionArn: FunctionArn
+    RuntimeVersionArn: Optional[RuntimeVersionArn]
+
+
 class RemoveLayerVersionPermissionRequest(ServiceRequest):
     LayerName: LayerName
     VersionNumber: LayerVersionNumber
@@ -1462,6 +1679,8 @@ class UpdateEventSourceMappingRequest(ServiceRequest):
     SourceAccessConfigurations: Optional[SourceAccessConfigurations]
     TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
+    ScalingConfig: Optional[ScalingConfig]
+    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
 
 
 class UpdateFunctionCodeRequest(ServiceRequest):
@@ -1495,6 +1714,8 @@ class UpdateFunctionConfigurationRequest(ServiceRequest):
     FileSystemConfigs: Optional[FileSystemConfigList]
     ImageConfig: Optional[ImageConfig]
     EphemeralStorage: Optional[EphemeralStorage]
+    SnapStart: Optional[SnapStart]
+    LoggingConfig: Optional[LoggingConfig]
 
 
 class UpdateFunctionEventInvokeConfigRequest(ServiceRequest):
@@ -1510,6 +1731,7 @@ class UpdateFunctionUrlConfigRequest(ServiceRequest):
     Qualifier: Optional[FunctionUrlQualifier]
     AuthType: Optional[FunctionUrlAuthType]
     Cors: Optional[Cors]
+    InvokeMode: Optional[InvokeMode]
 
 
 class UpdateFunctionUrlConfigResponse(TypedDict, total=False):
@@ -1519,10 +1741,10 @@ class UpdateFunctionUrlConfigResponse(TypedDict, total=False):
     Cors: Optional[Cors]
     CreationTime: Timestamp
     LastModifiedTime: Timestamp
+    InvokeMode: Optional[InvokeMode]
 
 
 class LambdaApi:
-
     service = "lambda"
     version = "2015-03-31"
 
@@ -1605,6 +1827,8 @@ class LambdaApi:
         function_response_types: FunctionResponseTypeList = None,
         amazon_managed_kafka_event_source_config: AmazonManagedKafkaEventSourceConfig = None,
         self_managed_kafka_event_source_config: SelfManagedKafkaEventSourceConfig = None,
+        scaling_config: ScalingConfig = None,
+        document_db_event_source_config: DocumentDBEventSourceConfig = None,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
@@ -1634,6 +1858,8 @@ class LambdaApi:
         code_signing_config_arn: CodeSigningConfigArn = None,
         architectures: ArchitecturesList = None,
         ephemeral_storage: EphemeralStorage = None,
+        snap_start: SnapStart = None,
+        logging_config: LoggingConfig = None,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -1645,6 +1871,7 @@ class LambdaApi:
         auth_type: FunctionUrlAuthType,
         qualifier: FunctionUrlQualifier = None,
         cors: Cors = None,
+        invoke_mode: InvokeMode = None,
     ) -> CreateFunctionUrlConfigResponse:
         raise NotImplementedError
 
@@ -1814,6 +2041,15 @@ class LambdaApi:
     ) -> GetProvisionedConcurrencyConfigResponse:
         raise NotImplementedError
 
+    @handler("GetRuntimeManagementConfig")
+    def get_runtime_management_config(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        qualifier: Qualifier = None,
+    ) -> GetRuntimeManagementConfigResponse:
+        raise NotImplementedError
+
     @handler("Invoke")
     def invoke(
         self,
@@ -1834,6 +2070,19 @@ class LambdaApi:
         function_name: NamespacedFunctionName,
         invoke_args: IO[BlobStream],
     ) -> InvokeAsyncResponse:
+        raise NotImplementedError
+
+    @handler("InvokeWithResponseStream")
+    def invoke_with_response_stream(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        invocation_type: ResponseStreamingInvocationType = None,
+        log_type: LogType = None,
+        client_context: String = None,
+        qualifier: Qualifier = None,
+        payload: IO[Blob] = None,
+    ) -> InvokeWithResponseStreamResponse:
         raise NotImplementedError
 
     @handler("ListAliases")
@@ -2016,6 +2265,17 @@ class LambdaApi:
     ) -> PutProvisionedConcurrencyConfigResponse:
         raise NotImplementedError
 
+    @handler("PutRuntimeManagementConfig")
+    def put_runtime_management_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        update_runtime_on: UpdateRuntimeOn,
+        qualifier: Qualifier = None,
+        runtime_version_arn: RuntimeVersionArn = None,
+    ) -> PutRuntimeManagementConfigResponse:
+        raise NotImplementedError
+
     @handler("RemoveLayerVersionPermission")
     def remove_layer_version_permission(
         self,
@@ -2090,6 +2350,8 @@ class LambdaApi:
         source_access_configurations: SourceAccessConfigurations = None,
         tumbling_window_in_seconds: TumblingWindowInSeconds = None,
         function_response_types: FunctionResponseTypeList = None,
+        scaling_config: ScalingConfig = None,
+        document_db_event_source_config: DocumentDBEventSourceConfig = None,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
@@ -2131,6 +2393,8 @@ class LambdaApi:
         file_system_configs: FileSystemConfigList = None,
         image_config: ImageConfig = None,
         ephemeral_storage: EphemeralStorage = None,
+        snap_start: SnapStart = None,
+        logging_config: LoggingConfig = None,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2154,5 +2418,6 @@ class LambdaApi:
         qualifier: FunctionUrlQualifier = None,
         auth_type: FunctionUrlAuthType = None,
         cors: Cors = None,
+        invoke_mode: InvokeMode = None,
     ) -> UpdateFunctionUrlConfigResponse:
         raise NotImplementedError

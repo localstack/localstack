@@ -9,6 +9,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
 
+from localstack.cli.exceptions import CLIError
+
 console = Console()
 
 
@@ -53,7 +55,7 @@ def find(where, exclude, include, output):
     elif output == "dict":
         rprint(dict(plugins))
     else:
-        raise click.ClickException("unknown output format %s" % output)
+        raise CLIError("unknown output format %s" % output)
 
 
 @cli.command("list")

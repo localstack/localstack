@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to exercise AWS::SSM::Parameter
+Parameters:
+  AttributeValue:
+    Type: String
+    Description: Value of the parameter to be changed
+Resources:
+  MyResource:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Ref AttributeValue
+Outputs:
+  MyRef:
+    Value:
+      Ref: MyResource
+  MyOutput:
+    Value: !GetAtt MyResource.Value

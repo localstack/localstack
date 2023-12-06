@@ -1,13 +1,9 @@
 from unittest import mock
 
-import requests
-
 from localstack.constants import VERSION
 from localstack.http import Request
-from localstack.services.generic_proxy import ProxyListener
-from localstack.services.internal import HealthResource, LocalstackResourceHandler
+from localstack.services.internal import CloudFormationUi, HealthResource
 from localstack.services.plugins import ServiceManager, ServiceState
-from localstack.utils.testutil import proxy_server
 
 
 class TestHealthResource:
@@ -26,6 +22,8 @@ class TestHealthResource:
         )
 
         state = resource.on_get(Request("GET", "/", body=b"None"))
+        # edition may return a different value depending on how the tests are run
+        state.pop("edition", None)
 
         assert state == {
             "features": {
@@ -55,6 +53,7 @@ class TestHealthResource:
         resource.on_put(Request("PUT", "/", body=b'{"features:initScripts": "initialized"}'))
 
         state = resource.on_get(Request("GET", "/", body=b"None"))
+        state.pop("edition", None)
 
         assert state == {
             "features": {
@@ -68,39 +67,10 @@ class TestHealthResource:
         }
 
 
-class TestLocalstackResourceHandlerIntegration:
-    def test_health(self, monkeypatch):
-        with proxy_server(LocalstackResourceHandler()) as url:
-            # legacy endpoint
-            response = requests.get(f"{url}/health")
-            assert response.ok
-            assert "services" in response.json()
-
-            # new internal endpoint
-            response = requests.get(f"{url}/_localstack/health")
-            assert response.ok
-            assert "services" in response.json()
-
-    def test_cloudformation_ui(self):
-        with proxy_server(LocalstackResourceHandler()) as url:
-            # make sure it renders
-            response = requests.get(f"{url}/_localstack/cloudformation/deploy")
-            assert response.ok
-            assert "</html>" in response.text, "deploy UI did not render HTML"
-            assert "text/html" in response.headers.get("content-type", "")
-
-    def test_fallthrough(self):
-        class RaiseError(ProxyListener):
-            def forward_request(self, method, path, data, headers):
-                raise ValueError("this error is expected")
-
-        with proxy_server([LocalstackResourceHandler(), RaiseError()]) as url:
-            # the RaiseError handler is called since this is not a /_localstack resource
-            response = requests.get(f"{url}/foobar")
-            assert not response.ok
-            assert response.status_code >= 500
-
-            # internal paths are 404ed
-            response = requests.get(f"{url}/_localstack/foobar")
-            assert not response.ok
-            assert response.status_code == 404
+class TestCloudFormationUiResource:
+    def test_get(self):
+        resource = CloudFormationUi()
+        response = resource.on_get(Request("GET", "/", body=b"None"))
+        assert response.status == "200 OK"
+        assert "</html>" in response.get_data(as_text=True), "deploy UI did not render HTML"
+        assert "text/html" in response.headers.get("content-type", "")

@@ -148,6 +148,19 @@ def patch(target, pass_target=True):
         echo("foo")
         # will print "echo foo"
 
+    When you are patching classes, with ``pass_target=True``, the unbound function will be passed as the first
+    argument before ``self``.
+
+    For example::
+
+        @patch(target=MyEchoer.do_echo, pass_target=True)
+        def my_patch(fn, self, *args):
+            return fn(self, *args)
+
+        @patch(target=MyEchoer.do_echo, pass_target=False)
+        def my_patch(self, *args):
+            ...
+
     :param target: the function or method to patch
     :param pass_target: whether to pass the target to the patching function as first parameter
     :returns: the same function, but with a patch created

@@ -1,0 +1,9 @@
+{
+  "Comment": "RAISE_EMPTY_FAILURE",
+  "StartAt": "FailState",
+  "States": {
+    "FailState": {
+      "Type": "Fail"
+    },
+  },
+}

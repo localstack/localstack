@@ -1,0 +1,130 @@
+{
+  "typeName": "AWS::CloudWatch::CompositeAlarm",
+  "description": "The AWS::CloudWatch::CompositeAlarm type specifies an alarm which aggregates the states of other Alarms (Metric or Composite Alarms) as defined by the AlarmRule expression",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-cloudwatch.git",
+  "properties": {
+    "Arn": {
+      "type": "string",
+      "description": "Amazon Resource Name (ARN) of the alarm",
+      "minLength": 1,
+      "maxLength": 1600
+    },
+    "AlarmName": {
+      "description": "The name of the Composite Alarm",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "AlarmRule": {
+      "type": "string",
+      "description": "Expression which aggregates the state of other Alarms (Metric or Composite Alarms)",
+      "minLength": 1,
+      "maxLength": 10240
+    },
+    "AlarmDescription": {
+      "type": "string",
+      "description": "The description of the alarm",
+      "minLength": 0,
+      "maxLength": 1024
+    },
+    "ActionsEnabled": {
+      "description": "Indicates whether actions should be executed during any changes to the alarm state. The default is TRUE.",
+      "type": "boolean"
+    },
+    "OKActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Amazon Resource Name (ARN) of the action",
+        "minLength": 1,
+        "maxLength": 1024
+      },
+      "description": "The actions to execute when this alarm transitions to the OK state from any other state. Each action is specified as an Amazon Resource Name (ARN).",
+      "maxItems": 5
+    },
+    "AlarmActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Amazon Resource Name (ARN) of the action",
+        "minLength": 1,
+        "maxLength": 1024
+      },
+      "description": "The list of actions to execute when this alarm transitions into an ALARM state from any other state. Specify each action as an Amazon Resource Name (ARN).",
+      "maxItems": 5
+    },
+    "InsufficientDataActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Amazon Resource Name (ARN) of the action",
+        "minLength": 1,
+        "maxLength": 1024
+      },
+      "description": "The actions to execute when this alarm transitions to the INSUFFICIENT_DATA state from any other state. Each action is specified as an Amazon Resource Name (ARN).",
+      "maxItems": 5
+    },
+    "ActionsSuppressor": {
+      "description": "Actions will be suppressed if the suppressor alarm is in the ALARM state. ActionsSuppressor can be an AlarmName or an Amazon Resource Name (ARN) from an existing alarm. ",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1600
+    },
+    "ActionsSuppressorWaitPeriod": {
+      "description": "Actions will be suppressed if ExtensionPeriod is active. The length of time that actions are suppressed is in seconds.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "ActionsSuppressorExtensionPeriod": {
+      "description": "Actions will be suppressed if WaitPeriod is active. The length of time that actions are suppressed is in seconds.",
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "AlarmRule"
+  ],
+  "readOnlyProperties": [
+    "/properties/Arn"
+  ],
+  "createOnlyProperties": [
+    "/properties/AlarmName"
+  ],
+  "primaryIdentifier": [
+    "/properties/AlarmName"
+  ],
+  "additionalProperties": false,
+  "handlers": {
+    "create": {
+      "permissions": [
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:PutCompositeAlarm"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "cloudwatch:DescribeAlarms"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:PutCompositeAlarm"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:DeleteAlarms"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "cloudwatch:DescribeAlarms"
+      ]
+    }
+  },
+  "tagging": {
+    "taggable": false
+  }
+}

@@ -1,7 +1,5 @@
 import os
 
-import localstack_client.config
-
 import localstack
 
 # LocalStack version
@@ -33,22 +31,15 @@ LOCALHOST_HOSTNAME = "localhost.localstack.cloud"
 LOCALSTACK_MAVEN_VERSION = "0.2.21"
 MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
 
-# map of default service APIs and ports to be spun up (fetch map from localstack_client)
-DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
+# URL of localstack's artifacts repository on GitHub
+ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
+
+# Download URLs
+SSL_CERT_URL = f"{ARTIFACTS_REPO}/raw/master/local-certs/server.key"
+SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
 
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
-
-# Fallback Account ID if not available in the client request
-DEFAULT_AWS_ACCOUNT_ID = "000000000000"
-
-# AWS user account ID used for tests - TODO move to config.py
-if "TEST_AWS_ACCOUNT_ID" not in os.environ:
-    os.environ["TEST_AWS_ACCOUNT_ID"] = DEFAULT_AWS_ACCOUNT_ID
-
-# Values used by tests
-TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
-TEST_AWS_REGION_NAME = "us-west-2"
 
 # root code folder
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -74,6 +65,7 @@ PATH_USER_REQUEST = "_user_request_"
 
 # name of LocalStack Docker image
 DOCKER_IMAGE_NAME = "localstack/localstack"
+DOCKER_IMAGE_NAME_PRO = "localstack/localstack-pro"
 DOCKER_IMAGE_NAME_FULL = "localstack/localstack-full"
 
 # backdoor API path used to retrieve or update config variables
@@ -128,34 +120,23 @@ ELASTICSEARCH_PLUGIN_LIST = [
 ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 
 # the version of opensearch which is used by default
-OPENSEARCH_DEFAULT_VERSION = "OpenSearch_1.1"
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.9"
 
 # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
 OPENSEARCH_PLUGIN_LIST = [
     "ingest-attachment",
 ]
 
-ELASTICMQ_JAR_URL = (
-    "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar"
-)
-STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
-KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
-
-
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
 # new analytics API endpoint
 ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack.cloud/v1"
 
-# environment variable to indicates that this process is running the Web UI
-LOCALSTACK_WEB_PROCESS = "LOCALSTACK_WEB_PROCESS"
+# environment variable to indicates this process should run the localstack infrastructure
 LOCALSTACK_INFRA_PROCESS = "LOCALSTACK_INFRA_PROCESS"
 
-# default AWS region us-east-1
+# AWS region us-east-1
 AWS_REGION_US_EAST_1 = "us-east-1"
-
-# default lambda registry
-DEFAULT_LAMBDA_CONTAINER_REGISTRY = "lambci/lambda"
 
 # environment variable to override max pool connections
 try:
@@ -163,18 +144,26 @@ try:
 except Exception:
     MAX_POOL_CONNECTIONS = 150
 
-# test credentials used for generating signature for S3 presigned URLs (to be used by external clients)
-TEST_AWS_ACCESS_KEY_ID = "test"
-TEST_AWS_SECRET_ACCESS_KEY = "test"
+# Fallback Account ID if not available in the client request
+DEFAULT_AWS_ACCOUNT_ID = "000000000000"
 
-# credentials being used for internal calls
+# Credentials used in the test suite
+# These can be overridden if the tests are being run against AWS
+# If a structured access key ID is used, it must correspond to the account ID
+TEST_AWS_ACCOUNT_ID = os.getenv("TEST_AWS_ACCOUNT_ID") or DEFAULT_AWS_ACCOUNT_ID
+TEST_AWS_ACCESS_KEY_ID = os.getenv("TEST_AWS_ACCESS_KEY_ID") or "test"
+TEST_AWS_SECRET_ACCESS_KEY = os.getenv("TEST_AWS_SECRET_ACCESS_KEY") or "test"
+TEST_AWS_REGION_NAME = os.getenv("TEST_AWS_REGION") or "us-east-1"
+
+# Additional credentials used in the test suite (when running cross-account tests)
+SECONDARY_TEST_AWS_ACCOUNT_ID = os.getenv("SECONDARY_TEST_AWS_ACCOUNT_ID") or "000000000002"
+SECONDARY_TEST_AWS_ACCESS_KEY_ID = os.getenv("SECONDARY_TEST_AWS_ACCESS_KEY_ID") or "000000000002"
+SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = os.getenv("SECONDARY_TEST_AWS_SECRET_ACCESS_KEY") or "test2"
+SECONDARY_TEST_AWS_REGION_NAME = os.getenv("SECONDARY_TEST_AWS_REGION") or "ap-southeast-1"
+
+# Credentials used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
-
-# This header must be set to the AWS Account ID
-# Presence of this header in an incoming request typically means that the request originated within localstack,
-# i.e. it is an internal cross-service call.
-HEADER_LOCALSTACK_ACCOUNT_ID = "x-localstack-account-id"
 
 # trace log levels (excluding/including internal API calls), configurable via $LS_LOG
 LS_LOG_TRACE = "trace"
@@ -184,22 +173,26 @@ TRACE_LOG_LEVELS = [LS_LOG_TRACE, LS_LOG_TRACE_INTERNAL]
 # list of official docker images
 OFFICIAL_IMAGES = [
     "localstack/localstack",
-    "localstack/localstack-light",
-    "localstack/localstack-full",
+    "localstack/localstack-pro",
 ]
-
-# s3 virtual host name
-S3_VIRTUAL_HOSTNAME = "s3.%s" % LOCALHOST_HOSTNAME
-S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALHOST_HOSTNAME
 
 # port for debug py
 DEFAULT_DEVELOP_PORT = 5678
 
 # Default bucket name of the s3 bucket used for local lambda development
-DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
+# This name should be accepted by all IaC tools, so should respect s3 bucket naming conventions
+DEFAULT_BUCKET_MARKER_LOCAL = "hot-reload"
+LEGACY_DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
 
 # user that starts the opensearch process if the current user is root
 OS_USER_OPENSEARCH = "localstack"
 
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."
+
+# Regex for `Credential` field in the Authorization header in AWS signature version v4
+# The format is as follows:
+#   Credential=<access-key-id>/<date>/<region-name>/<service-name>/aws4_request
+# eg.
+#   Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request
+AUTH_CREDENTIAL_REGEX = r"Credential=(?P<access_key_id>[a-zA-Z0-9-_.]{1,})/(?P<date>\d{8})/(?P<region_name>[a-z0-9-]{1,})/(?P<service_name>[a-z0-9]{1,})/"

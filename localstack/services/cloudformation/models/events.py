@@ -1,16 +1,14 @@
 import json
 
+from botocore.exceptions import ClientError
+
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     select_parameters,
 )
-from localstack.services.cloudformation.service_models import (
-    REF_ATTRS,
-    REF_ID_ATTRS,
-    GenericBaseModel,
-)
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
@@ -20,23 +18,26 @@ class EventConnection(GenericBaseModel):
         return "AWS::Events::Connection"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("events")
-        conn_name = self.resolve_refs_recursively(stack_name, self.props.get("Name"), resources)
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
+        conn_name = self.props.get("Name")
         return client.describe_connection(Name=conn_name)
-
-    def get_cfn_attribute(self, attribute_name):
-        props = self.props
-        if attribute_name in REF_ID_ATTRS:
-            return props.get("Name")
-        if attribute_name == "Arn":
-            return props.get("ConnectionArn")
-        # TODO: handle "SecretArn" attribute
-        return super(EventConnection, self).get_cfn_attribute(attribute_name)
 
     @classmethod
     def get_deploy_templates(cls):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["Properties"]["Arn"] = result["ConnectionArn"]
+            # TODO
+            # resource["Properties"]["SecretArn"] = ?
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+
         return {
-            "create": {"function": "create_connection"},
+            "create": {"function": "create_connection", "result_handler": _handle_result},
             "delete": {"function": "delete_connection", "parameters": ["Name"]},
         }
 
@@ -47,24 +48,28 @@ class EventBus(GenericBaseModel):
         return "AWS::Events::EventBus"
 
     def fetch_state(self, stack_name, resources):
-        event_bus_name = self.resolve_refs_recursively(
-            stack_name, self.props.get("Name"), resources
-        )
-        client = aws_stack.connect_to_service("events")
+        event_bus_name = self.props.get("Name")
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
         return client.describe_event_bus(Name=event_bus_name)
-
-    def get_cfn_attribute(self, attribute_name):
-        props = self.props
-        if attribute_name in REF_ATTRS + ["Name"]:
-            return props.get("Name")
-        if attribute_name == "Arn":
-            return props.get("Arn")
-        return super(EventBus, self).get_cfn_attribute(attribute_name)
 
     @classmethod
     def get_deploy_templates(cls):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["Properties"]["Arn"] = result["EventBusArn"]
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+
         return {
-            "create": {"function": "create_event_bus", "parameters": ["Name"]},
+            "create": {
+                "function": "create_event_bus",
+                "parameters": ["Name"],
+                "result_handler": _handle_result,
+            },
             "delete": {"function": "delete_event_bus", "parameters": ["Name"]},
         }
 
@@ -74,17 +79,19 @@ class EventsRule(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Events::Rule"
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return self.params.get("Arn") or aws_stack.events_rule_arn(self.params.get("Name"))
-        return super(EventsRule, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name")
-
     def fetch_state(self, stack_name, resources):
-        rule_name = self.resolve_refs_recursively(stack_name, self.props.get("Name"), resources)
-        result = aws_stack.connect_to_service("events").describe_rule(Name=rule_name) or {}
+        rule_name = self.props.get("Name")
+
+        kwargs = {"Name": rule_name}
+        if bus_name := self.props.get("EventBusName"):
+            kwargs["EventBusName"] = bus_name
+
+        result = (
+            connect_to(
+                aws_access_key_id=self.account_id, region_name=self.region_name
+            ).events.describe_rule(**kwargs)
+            or {}
+        )
         return result if result.get("Name") else None
 
     @staticmethod
@@ -97,7 +104,14 @@ class EventsRule(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def events_put_rule_params(params, **kwargs):
+        def events_put_rule_params(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict:
             attrs = [
                 "ScheduleExpression",
                 "EventPattern",
@@ -106,7 +120,9 @@ class EventsRule(GenericBaseModel):
                 "Name",
                 "EventBusName",
             ]
-            result = select_parameters(*attrs)(params, **kwargs)
+            result = select_parameters(*attrs)(
+                account_id, region_name, properties, logical_resource_id, resource, stack_name
+            )
 
             # TODO: remove this when refactoring events (prefix etc. was excluded here already to avoid most of the wrong behavior)
             def wrap_in_lists(o, **kwargs):
@@ -126,9 +142,14 @@ class EventsRule(GenericBaseModel):
                 result["EventPattern"] = json.dumps(wrapped)
             return result
 
-        def _delete_rule(resource_id, resources, *args, **kwargs):
-            events = aws_stack.connect_to_service("events")
-            resource = resources[resource_id]
+        def _delete_rule(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
             props = resource["Properties"]
             rule_name = props["Name"]
             targets = events.list_targets_by_rule(Rule=rule_name)["Targets"]
@@ -137,9 +158,14 @@ class EventsRule(GenericBaseModel):
                 events.remove_targets(Rule=rule_name, Ids=target_ids, Force=True)
             events.delete_rule(Name=rule_name)
 
-        def _put_targets(resource_id, resources, *args, **kwargs):
-            events = aws_stack.connect_to_service("events")
-            resource = resources[resource_id]
+        def _put_targets(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
             props = resource["Properties"]
             rule_name = props["Name"]
             event_bus_name = props.get("EventBusName")
@@ -149,9 +175,23 @@ class EventsRule(GenericBaseModel):
             elif len(targets) > 0:
                 events.put_targets(Rule=rule_name, Targets=targets)
 
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["Properties"]["Arn"] = result["RuleArn"]
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+
         return {
             "create": [
-                {"function": "put_rule", "parameters": events_put_rule_params},
+                {
+                    "function": "put_rule",
+                    "parameters": events_put_rule_params,
+                    "result_handler": _handle_result,
+                },
                 {"function": _put_targets},
             ],
             "delete": {"function": _delete_rule},
@@ -165,9 +205,14 @@ class EventBusPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
-            events = aws_stack.connect_to_service("events")
-            resource = resources[resource_id]
+        def _create(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
             props = resource["Properties"]
 
             resource["PhysicalResourceId"] = f"EventBusPolicy-{short_uid()}"
@@ -202,9 +247,14 @@ class EventBusPolicy(GenericBaseModel):
                     **optional_condition,
                 )
 
-        def _delete(resource_id, resources, resource_type, func, stack_name):
-            events = aws_stack.connect_to_service("events")
-            resource = resources[resource_id]
+        def _delete(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            events = connect_to(aws_access_key_id=account_id, region_name=region_name).events
             props = resource["Properties"]
             statement_id = props["StatementId"]
             event_bus_name = props.get("EventBusName")
@@ -214,7 +264,10 @@ class EventBusPolicy(GenericBaseModel):
                     StatementId=statement_id, RemoveAllPermissions=False, **optional_event_bus_name
                 )
             except Exception as err:
-                if err.response["Error"]["Code"] == "ResourceNotFoundException":
+                if (
+                    isinstance(err, ClientError)
+                    and err.response["Error"]["Code"] == "ResourceNotFoundException"
+                ):
                     pass  # expected behavior ("parent" resource event bus already deleted)
                 else:
                     raise err

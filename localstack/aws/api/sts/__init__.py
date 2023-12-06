@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -21,6 +15,7 @@ accountType = str
 arnType = str
 assumedRoleIdType = str
 clientTokenType = str
+contextAssertionType = str
 decodedMessageType = str
 durationSecondsType = int
 encodedMessageType = str
@@ -44,6 +39,7 @@ tagKeyType = str
 tagValueType = str
 tokenCodeType = str
 tokenType = str
+unrestrictedSessionPolicyDocumentType = str
 urlType = str
 userIdType = str
 userNameType = str
@@ -98,6 +94,12 @@ class RegionDisabledException(ServiceException):
     status_code: int = 403
 
 
+class ProvidedContext(TypedDict, total=False):
+    ProviderArn: Optional[arnType]
+    ContextAssertion: Optional[contextAssertionType]
+
+
+ProvidedContextsListType = List[ProvidedContext]
 tagKeyListType = List[tagKeyType]
 
 
@@ -120,7 +122,7 @@ class AssumeRoleRequest(ServiceRequest):
     RoleArn: arnType
     RoleSessionName: roleSessionNameType
     PolicyArns: Optional[policyDescriptorListType]
-    Policy: Optional[sessionPolicyDocumentType]
+    Policy: Optional[unrestrictedSessionPolicyDocumentType]
     DurationSeconds: Optional[roleDurationSecondsType]
     Tags: Optional[tagListType]
     TransitiveTagKeys: Optional[tagKeyListType]
@@ -128,6 +130,7 @@ class AssumeRoleRequest(ServiceRequest):
     SerialNumber: Optional[serialNumberType]
     TokenCode: Optional[tokenCodeType]
     SourceIdentity: Optional[sourceIdentityType]
+    ProvidedContexts: Optional[ProvidedContextsListType]
 
 
 class AssumedRoleUser(TypedDict, total=False):
@@ -249,7 +252,6 @@ class GetSessionTokenResponse(TypedDict, total=False):
 
 
 class StsApi:
-
     service = "sts"
     version = "2011-06-15"
 
@@ -260,7 +262,7 @@ class StsApi:
         role_arn: arnType,
         role_session_name: roleSessionNameType,
         policy_arns: policyDescriptorListType = None,
-        policy: sessionPolicyDocumentType = None,
+        policy: unrestrictedSessionPolicyDocumentType = None,
         duration_seconds: roleDurationSecondsType = None,
         tags: tagListType = None,
         transitive_tag_keys: tagKeyListType = None,
@@ -268,6 +270,7 @@ class StsApi:
         serial_number: serialNumberType = None,
         token_code: tokenCodeType = None,
         source_identity: sourceIdentityType = None,
+        provided_contexts: ProvidedContextsListType = None,
     ) -> AssumeRoleResponse:
         raise NotImplementedError
 

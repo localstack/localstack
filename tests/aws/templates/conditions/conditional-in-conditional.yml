@@ -1,0 +1,35 @@
+Parameters:
+  SelectedRegion:
+    Type: String
+  Environment:
+    Type: String
+    AllowedValues:
+      - "production"
+      - "staging"
+      - "dev"
+Conditions:
+  IsUSEast: !Equals
+    - !Ref SelectedRegion
+    - "us-east-1"
+  IsProduction: !Equals
+    - !Ref Environment
+    - "production"
+  IsUSEastProduction: !And
+    - !Condition IsProduction
+    - !Condition IsUSEast
+
+Resources:
+  ResultParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /aml/patching/patching-result
+      Type: String
+      Value: !If
+        - IsUSEastProduction
+        - "true"
+        - "false"
+
+Outputs:
+  Result:
+    Description: "Result parameter"
+    Value: !GetAtt ResultParameter.Value

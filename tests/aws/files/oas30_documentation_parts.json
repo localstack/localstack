@@ -1,0 +1,85 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "description": "description",
+    "version": "1",
+    "title": "doc"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Method description.",
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-amazon-apigateway-documentation": {
+    "version": "1.0.3",
+    "documentationParts": [
+      {
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "description": "API description",
+          "info": {
+            "description": "API info description 4",
+            "version": "API info version 3"
+          }
+        }
+      },
+      {
+        "location": {
+          "type": "METHOD",
+          "method": "GET"
+        },
+        "properties": {
+          "description": "Method description."
+        }
+      },
+      {
+        "location": {
+          "type": "MODEL",
+          "name": "Empty"
+        },
+        "properties": {
+          "title": "Empty Schema"
+        }
+      },
+      {
+        "location": {
+          "type": "RESPONSE",
+          "method": "GET",
+          "statusCode": "200"
+        },
+        "properties": {
+          "description": "200 response"
+        }
+      }
+    ]
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Empty": {
+        "type": "object",
+        "title": "Empty Schema"
+      }
+    }
+  }
+}

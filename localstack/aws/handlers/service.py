@@ -3,12 +3,13 @@ import logging
 import traceback
 from collections import defaultdict
 from functools import lru_cache
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
 from botocore.model import OperationModel, ServiceModel
 
 from localstack import config
 from localstack.http import Response
+from localstack.utils.coverage_docs import get_coverage_link_for_service
 
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
@@ -127,10 +128,7 @@ class ServiceRequestRouter(Handler):
 
         self.handlers[key] = handler
 
-    def add_provider(self, provider: Any, service: Optional[Union[str, ServiceModel]] = None):
-        if not service:
-            service = provider.service
-
+    def add_provider(self, provider: Any, service: Union[str, ServiceModel]):
         self.add_skeleton(create_skeleton(service, provider))
 
     def add_skeleton(self, skeleton: Skeleton):
@@ -150,7 +148,9 @@ class ServiceRequestRouter(Handler):
         message = f"no handler for operation '{operation_name}' on service '{service_name}'"
         error = CommonServiceException("InternalFailure", message, status_code=501)
         serializer = create_serializer(context.service)
-        return serializer.serialize_error_to_response(error, operation, context.request.headers)
+        return serializer.serialize_error_to_response(
+            error, operation, context.request.headers, context.request_id
+        )
 
 
 class ServiceExceptionSerializer(ExceptionHandler):
@@ -184,10 +184,8 @@ class ServiceExceptionSerializer(ExceptionHandler):
 
         if operation and isinstance(exception, NotImplementedError):
             action_name = operation.name
-            message = (
-                f"API action '{action_name}' for service '{service_name}' not yet implemented or pro feature"
-                f" - check https://docs.localstack.cloud/aws/feature-coverage for further information"
-            )
+            exception_message: str | None = exception.args[0] if exception.args else None
+            message = exception_message or get_coverage_link_for_service(service_name, action_name)
             LOG.info(message)
             error = CommonServiceException("InternalFailure", message, status_code=501)
             context.service_exception = error
@@ -225,7 +223,9 @@ class ServiceExceptionSerializer(ExceptionHandler):
             context.service_exception = error
 
         serializer = create_serializer(context.service)  # TODO: serializer cache
-        return serializer.serialize_error_to_response(error, operation, context.request.headers)
+        return serializer.serialize_error_to_response(
+            error, operation, context.request.headers, context.request_id
+        )
 
 
 class ServiceResponseParser(Handler):

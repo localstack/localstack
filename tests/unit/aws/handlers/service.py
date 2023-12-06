@@ -3,7 +3,7 @@ import pytest
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.forwarder import create_aws_request_context
-from localstack.aws.handlers.service import ServiceResponseParser
+from localstack.aws.handlers.service import ServiceExceptionSerializer, ServiceResponseParser
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.http import Request, Response
 
@@ -26,7 +26,7 @@ class TestServiceResponseHandler:
         context = create_aws_request_context("sqs", "CreateQueue", {"QueueName": "foobar"})
         backend_response = {"QueueUrl": "http://localhost:4566/000000000000/foobar"}
         http_response = create_serializer(context.service).serialize_to_response(
-            backend_response, context.operation, context.request.headers
+            backend_response, context.operation, context.request.headers, context.request_id
         )
 
         service_response_handler_chain.handle(context, http_response)
@@ -36,7 +36,7 @@ class TestServiceResponseHandler:
         context = create_aws_request_context("s3", "GetObject", {"Bucket": "foo", "Key": "bar.bin"})
         backend_response = {"Body": b"\x00\x01foo", "ContentType": "application/octet-stream"}
         http_response = create_serializer(context.service).serialize_to_response(
-            backend_response, context.operation, context.request.headers
+            backend_response, context.operation, context.request.headers, context.request_id
         )
 
         service_response_handler_chain.handle(context, http_response)
@@ -112,7 +112,7 @@ class TestServiceResponseHandler:
 
     def test_nothing_set_does_nothing(self, service_response_handler_chain):
         context = RequestContext()
-        context.request = Request("GET", "/health")
+        context.request = Request("GET", "/_localstack/health")
 
         service_response_handler_chain.handle(context, Response("ok", 200))
 
@@ -128,3 +128,19 @@ class TestServiceResponseHandler:
 
         assert context.service_response is None
         assert isinstance(context.service_exception, ValueError)
+
+    @pytest.mark.parametrize(
+        "message, output", [("", "not yet implemented or pro feature"), ("Ups!", "Ups!")]
+    )
+    def test_not_implemented_error(self, service_response_handler_chain, message, output):
+        context = create_aws_request_context(
+            "opensearch", "DescribeDomain", {"DomainName": "foobar"}
+        )
+        not_implemented_exception = NotImplementedError(message)
+
+        ServiceExceptionSerializer().create_exception_response(not_implemented_exception, context)
+
+        assert output in context.service_exception.message
+        assert context.service_exception.code == "InternalFailure"
+        assert not context.service_exception.sender_fault
+        assert context.service_exception.status_code == 501

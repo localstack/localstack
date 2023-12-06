@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  HealthCheck:
+    Type: 'AWS::Route53::HealthCheck'
+    Properties:
+      HealthCheckConfig:
+        IPAddress: 1.1.1.1
+        Port: 80
+        Type: HTTP
+        ResourcePath: '/health'
+        FullyQualifiedDomainName: localstacktest.com
+        RequestInterval: 30
+        FailureThreshold: 3
+      HealthCheckTags:
+        -
+          Key: SampleKey1
+          Value: SampleValue1
+        -
+          Key: SampleKey2
+          Value: SampleValue2
+
+Outputs:
+    HealthCheckId:
+        Value: !Ref HealthCheck

@@ -90,24 +90,6 @@
     },
     {
       "op": "add",
-      "path": "/shapes/ListObjectsOutput/members/BucketRegion",
-      "value": {
-        "shape": "BucketRegion",
-        "location": "header",
-        "locationName": "x-amz-bucket-region"
-      }
-    },
-    {
-      "op": "add",
-      "path": "/shapes/ListObjectsV2Output/members/BucketRegion",
-      "value": {
-        "shape": "BucketRegion",
-        "location": "header",
-        "locationName": "x-amz-bucket-region"
-      }
-    },
-    {
-      "op": "add",
       "path": "/operations/PutBucketPolicy/http/responseCode",
       "value": 204
     },
@@ -125,7 +107,22 @@
     },
     {
       "op": "add",
+      "path": "/shapes/BucketAlreadyOwnedByYou/error",
+      "value": {
+        "httpStatusCode": 409
+      }
+    },
+    {
+      "op": "add",
       "path": "/shapes/GetObjectOutput/members/StatusCode",
+      "value": {
+        "shape": "GetObjectResponseStatusCode",
+        "location": "statusCode"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/HeadObjectOutput/members/StatusCode",
       "value": {
         "shape": "GetObjectResponseStatusCode",
         "location": "statusCode"
@@ -143,6 +140,44 @@
       "path": "/shapes/NoSuchKey/error",
       "value": {
         "httpStatusCode": 404
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchKey/members/DeleteMarker",
+      "value": {
+        "shape": "DeleteMarker",
+        "location": "header",
+        "locationName": "x-amz-delete-marker"
+      }
+    },
+      {
+      "op": "add",
+      "path": "/shapes/NoSuchKey/members/VersionId",
+      "value": {
+        "shape": "ObjectVersionId",
+        "location": "header",
+        "locationName": "x-amz-version-id"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchVersion",
+      "value": {
+        "type": "structure",
+        "members": {
+          "VersionId": {
+            "shape": "ObjectVersionId"
+          },
+          "Key": {
+            "shape": "ObjectKey"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p></p>",
+        "exception": true
       }
     },
     {
@@ -208,38 +243,6 @@
         "location": "header",
         "locationName": "expires"
       }
-    },
-    {
-      "op": "remove",
-      "path": "/shapes/DeleteObjectsOutput"
-    },
-    {
-      "op": "add",
-      "path": "/shapes/DeleteResult",
-      "value": {
-        "type": "structure",
-        "members": {
-          "Deleted": {
-            "shape": "DeletedObjects",
-            "documentation": "<p>Container element for a successful delete. It identifies the object that was successfully deleted.</p>"
-          },
-          "RequestCharged": {
-            "shape": "RequestCharged",
-            "location": "header",
-            "locationName": "x-amz-request-charged"
-          },
-          "Errors": {
-            "shape": "Errors",
-            "documentation": "<p>Container for a failed delete action that describes the object that Amazon S3 attempted to delete and the error it encountered.</p>",
-            "locationName": "Error"
-          }
-        }
-      }
-    },
-    {
-      "op": "replace",
-      "path": "/operations/DeleteObjects/output/shape",
-      "value": "DeleteResult"
     },
     {
       "op": "add",
@@ -613,6 +616,540 @@
           "httpStatusCode": 404
         },
         "documentation": "<p>The specified bucket does not have a website configuration</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchUpload/members/UploadId",
+      "value": {
+        "shape": "MultipartUploadId"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchUpload/error",
+      "value": {
+        "httpStatusCode": 404
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ReplicationConfigurationNotFoundError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The replication configuration was not found.</p>",
+        "exception": true
+      }
+    },
+    {
+        "op": "add",
+        "path": "/shapes/BucketCannedACL/enum/4",
+        "value": "log-delivery-write",
+        "documentation": "<p>Not included in the specs, but valid value according to the docs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl</p>"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/BadRequest",
+      "value": {
+        "type": "structure",
+        "members": {
+          "HostId": {
+            "shape": "HostId"
+          }
+        },
+        "documentation": "<p>Insufficient information. Origin request header needed.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/AccessForbidden",
+      "value": {
+        "type": "structure",
+        "members": {
+          "HostId": {
+            "shape": "HostId"
+          },
+          "Method": {
+            "shape": "HttpMethod"
+          },
+          "ResourceType": {
+            "shape": "ResourceType"
+          }
+        },
+        "error": {
+          "httpStatusCode": 403
+        },
+        "documentation": "<p>CORSResponse</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/HttpMethod",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ResourceType",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchCORSConfiguration",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The CORS configuration does not exist</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/MissingSecurityHeader",
+      "value": {
+        "type": "structure",
+        "members": {
+          "MissingHeaderName": {
+            "shape": "MissingHeaderName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>Your request was missing a required header</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/MissingHeaderName",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidPartOrder",
+      "value": {
+        "type": "structure",
+        "members": {
+          "UploadId": {
+            "shape": "MultipartUploadId"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The list of parts was not in ascending order. Parts must be ordered by part number.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidStorageClass",
+      "value": {
+        "type": "structure",
+        "members": {
+          "StorageClassRequested": {
+            "shape": "StorageClass"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The storage class you specified is not valid</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsOutput/members/BucketRegion",
+      "value": {
+        "shape": "BucketRegion",
+        "location": "header",
+        "locationName": "x-amz-bucket-region"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsV2Output/members/BucketRegion",
+      "value": {
+        "shape": "BucketRegion",
+        "location": "header",
+        "locationName": "x-amz-bucket-region"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ResourceType",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/MethodNotAllowed",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Method": {
+            "shape": "HttpMethod"
+          },
+          "ResourceType": {
+            "shape": "ResourceType"
+          },
+          "DeleteMarker": {
+            "shape": "DeleteMarker",
+            "location": "header",
+            "locationName": "x-amz-delete-marker"
+          },
+          "VersionId": {
+            "shape": "ObjectVersionId",
+            "location": "header",
+            "locationName": "x-amz-version-id"
+          },
+          "Allow": {
+            "shape": "HttpMethod",
+            "location": "header",
+            "locationName": "allow"
+          }
+        },
+        "error": {
+          "httpStatusCode": 405
+        },
+        "documentation": "<p>The specified method is not allowed against this resource.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListBucketsOutput/members/Buckets"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListBucketsOutput/members/Buckets",
+      "value": {
+        "shape":"Buckets",
+        "documentation":"<p>The list of buckets owned by the requester.</p>"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListObjectsOutput/members/Contents"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsOutput/members/Contents",
+      "value": {
+        "shape":"ObjectList",
+        "documentation":"<p>Metadata about each object returned.</p>"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListObjectsV2Output/members/Contents"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsV2Output/members/Contents",
+      "value": {
+        "shape":"ObjectList",
+        "documentation":"<p>Metadata about each object returned.</p>"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/CrossLocationLoggingProhibitted",
+      "value": {
+        "type": "structure",
+        "members": {
+          "TargetBucketLocation": {
+            "shape": "BucketRegion"
+          },
+          "SourceBucketLocation": {
+            "shape": "BucketRegion"
+          }
+        },
+        "error": {
+          "httpStatusCode": 403
+        },
+        "documentation": "<p>Cross S3 location logging not allowed. </p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidTargetBucketForLogging",
+      "value": {
+        "type": "structure",
+        "members": {
+          "TargetBucket": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The target bucket for logging does not exist</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketInventoryConfiguration/http/responseCode",
+      "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketAnalyticsConfiguration/http/responseCode",
+      "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketIntelligentTieringConfiguration/http/responseCode",
+      "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/shapes/BucketNotEmpty",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 409
+        },
+        "documentation": "<p>The bucket you tried to delete is not empty</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/MinSizeAllowed",
+      "value": {
+        "type": "long"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ProposedSize",
+      "value": {
+        "type": "long"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/EntityTooSmall",
+      "value": {
+        "type": "structure",
+        "members": {
+          "ETag": {
+            "shape": "ETag"
+          },
+          "MinSizeAllowed": {
+            "shape": "MinSizeAllowed"
+          },
+          "PartNumber": {
+            "shape": "PartNumber"
+          },
+          "ProposedSize": {
+            "shape": "ProposedSize"
+          }
+        },
+        "documentation": "<p>Your proposed upload is smaller than the minimum allowed object size. Each part must be at least 5 MB in size, except the last part.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidPart",
+      "value": {
+        "type": "structure",
+        "members": {
+          "ETag": {
+            "shape": "ETag"
+          },
+          "UploadId": {
+            "shape": "MultipartUploadId"
+          },
+          "PartNumber": {
+            "shape": "PartNumber"
+          }
+        },
+        "documentation": "<p>One or more of the specified parts could not be found. The part might not have been uploaded, or the specified entity tag might not have matched the part's entity tag.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchTagSet",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>There is no tag set associated with the bucket.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketTagging/http/responseCode",
+      "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidTag",
+      "value": {
+        "type": "structure",
+        "members": {
+          "TagKey": {
+            "shape": "ObjectKey"
+          },
+          "TagValue": {
+            "shape": "Value"
+          }
+        },
+        "documentation": "<p>The tag provided was not a valid tag. This error can occur if the tag did not pass input validation.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ObjectLockConfigurationNotFoundError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>Object Lock configuration does not exist for this bucket</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidPartNumber",
+      "value": {
+        "type": "structure",
+        "members": {
+          "PartNumberRequested": {
+            "shape": "PartNumber"
+          },
+          "ActualPartCount": {
+            "shape": "PartNumber"
+          }
+        },
+        "error": {
+          "httpStatusCode": 416
+        },
+        "documentation": "<p>The requested partnumber is not satisfiable</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/OwnershipControlsNotFoundError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The bucket ownership controls were not found</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchPublicAccessBlockConfiguration",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The public access block configuration was not found</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchBucketPolicy",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The bucket policy does not exist</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidObjectState/error",
+      "value": {
+        "httpStatusCode": 403
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidDigest",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Content_MD5": {
+            "shape": "ContentMD5",
+            "locationName":"Content-MD5"
+          }
+        },
+        "documentation": "<p>The Content-MD5 you specified was invalid.</p>",
         "exception": true
       }
     }

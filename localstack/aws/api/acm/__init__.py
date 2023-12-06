@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -18,6 +12,7 @@ IdempotencyToken = str
 MaxItems = int
 NextToken = str
 NullableBoolean = bool
+PcaArn = str
 PositiveInteger = int
 PrivateKey = str
 ServiceErrorMessage = str
@@ -499,8 +494,9 @@ class RequestCertificateRequest(ServiceRequest):
     IdempotencyToken: Optional[IdempotencyToken]
     DomainValidationOptions: Optional[DomainValidationOptionList]
     Options: Optional[CertificateOptions]
-    CertificateAuthorityArn: Optional[Arn]
+    CertificateAuthorityArn: Optional[PcaArn]
     Tags: Optional[TagList]
+    KeyAlgorithm: Optional[KeyAlgorithm]
 
 
 class RequestCertificateResponse(TypedDict, total=False):
@@ -519,7 +515,6 @@ class UpdateCertificateOptionsRequest(ServiceRequest):
 
 
 class AcmApi:
-
     service = "acm"
     version = "2015-12-08"
 
@@ -618,8 +613,9 @@ class AcmApi:
         idempotency_token: IdempotencyToken = None,
         domain_validation_options: DomainValidationOptionList = None,
         options: CertificateOptions = None,
-        certificate_authority_arn: Arn = None,
+        certificate_authority_arn: PcaArn = None,
         tags: TagList = None,
+        key_algorithm: KeyAlgorithm = None,
     ) -> RequestCertificateResponse:
         raise NotImplementedError
 

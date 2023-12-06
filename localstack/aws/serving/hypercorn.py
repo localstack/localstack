@@ -29,6 +29,7 @@ def serve(
     :param kwargs: any oder parameters that can be passed to the hypercorn.Config object
     """
     config = Config()
+    config.h11_pass_raw_headers = True
     config.bind = f"{host}:{port}"
     config.use_reloader = use_reloader
 

@@ -1,6 +1,9 @@
+import os
+
 from moto.redshift import responses as redshift_responses
 from moto.redshift.models import redshift_backends
 
+from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.redshift import (
     ClusterSecurityGroupMessage,
@@ -8,6 +11,7 @@ from localstack.aws.api.redshift import (
     RedshiftApi,
 )
 from localstack.services.moto import call_moto
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.common import recurse_object
 from localstack.utils.patch import patch
 
@@ -31,6 +35,10 @@ def itemize(fn, data, parent_key=None, *args, **kwargs):
 
 
 class RedshiftProvider(RedshiftApi):
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(redshift_backends)
+        visitor.visit(AssetDirectory(self.service, os.path.join(config.dirs.data, "redshift")))
+
     @handler("DescribeClusterSecurityGroups", expand=False)
     def describe_cluster_security_groups(
         self,

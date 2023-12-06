@@ -9,7 +9,6 @@ from localstack.http import Response
 from localstack.http.request import restore_payload
 from localstack.logging.format import AwsTraceLoggingFormatter, TraceLoggingFormatter
 from localstack.logging.setup import create_default_handler
-from localstack.utils.aws.aws_stack import is_internal_call_context
 
 LOG = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ class ExceptionLogger(ExceptionHandler):
 
 class ResponseLogger:
     def __call__(self, _: HandlerChain, context: RequestContext, response: Response):
-        if context.request.path == "/health":
+        if context.request.path == "/health" or context.request.path == "/_localstack/health":
             # special case so the health check doesn't spam the logs
             return
         self._log(context, response)
@@ -82,8 +81,7 @@ class ResponseLogger:
     def _log(self, context: RequestContext, response: Response):
         aws_logger = self.aws_logger
         http_logger = self.http_logger
-        is_internal_call = is_internal_call_context(context.request.headers)
-        if is_internal_call:
+        if context.is_internal_call:
             aws_logger = self.internal_aws_logger
             http_logger = self.internal_http_logger
         if context.operation:
@@ -96,6 +94,9 @@ class ResponseLogger:
                     response.status_code,
                     context.service_exception.code,
                     extra={
+                        # context
+                        "account_id": context.account_id,
+                        "region": context.region,
                         # request
                         "input_type": context.operation.input_shape.name
                         if context.operation.input_shape
@@ -115,6 +116,9 @@ class ResponseLogger:
                     context.operation.name,
                     response.status_code,
                     extra={
+                        # context
+                        "account_id": context.account_id,
+                        "region": context.region,
                         # request
                         "input_type": context.operation.input_shape.name
                         if context.operation.input_shape
@@ -143,7 +147,7 @@ class ResponseLogger:
                     "request_headers": dict(context.request.headers),
                     # response
                     "output_type": "Response",
-                    "output": response.data,
+                    "output": "StreamingBody(unknown)" if response.is_streamed else response.data,
                     "response_headers": dict(response.headers),
                 },
             )

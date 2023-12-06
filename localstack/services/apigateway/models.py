@@ -1,27 +1,64 @@
 from typing import Any, Dict, List
 
+from requests.structures import CaseInsensitiveDict
+
+from localstack.aws.api.apigateway import (
+    Authorizer,
+    DocumentationPart,
+    DocumentationVersion,
+    DomainName,
+    GatewayResponse,
+    GatewayResponseType,
+    Model,
+    RequestValidator,
+    RestApi,
+)
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
     CrossRegionAttribute,
     LocalAttribute,
 )
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns
+
+
+class RestApiContainer:
+    # contains the RestApi dictionary. We're not making use of it yet, still using moto data.
+    rest_api: RestApi
+    # maps AuthorizerId -> Authorizer
+    authorizers: Dict[str, Authorizer]
+    # maps RequestValidatorId -> RequestValidator
+    validators: Dict[str, RequestValidator]
+    # map DocumentationPartId -> DocumentationPart
+    documentation_parts: Dict[str, DocumentationPart]
+    # map doc version name -> DocumentationVersion
+    documentation_versions: Dict[str, DocumentationVersion]
+    # not used yet, still in moto
+    gateway_responses: Dict[GatewayResponseType, GatewayResponse]
+    # maps Model name -> Model
+    models: Dict[str, Model]
+    # maps Model name -> resolved dict Model, so we don't need to load the JSON everytime
+    resolved_models: Dict[str, dict]
+    # maps ResourceId of a Resource to its children ResourceIds
+    resource_children: Dict[str, List[str]]
+
+    def __init__(self, rest_api: RestApi):
+        self.rest_api = rest_api
+        self.authorizers = {}
+        self.validators = {}
+        self.documentation_parts = {}
+        self.documentation_versions = {}
+        self.gateway_responses = {}
+        self.models = {}
+        self.resolved_models = {}
+        self.resource_children = {}
 
 
 class ApiGatewayStore(BaseStore):
-    # TODO: introduce a RestAPI class to encapsulate the variables below
-    # maps (API id) -> [authorizers]
-    authorizers: Dict[str, List[Dict]] = LocalAttribute(default=dict)
-
-    # maps (API id) -> [validators]
-    validators: Dict[str, List[Dict]] = LocalAttribute(default=dict)
-
-    # maps (API id) -> [documentation_parts]
-    documentation_parts: Dict[str, List[Dict]] = LocalAttribute(default=dict)
-
-    # maps (API id) -> [gateway_responses]
-    gateway_responses: Dict[str, List[Dict]] = LocalAttribute(default=dict)
+    # maps (API id) -> RestApiContainer
+    # TODO: remove CaseInsensitiveDict, and lower the value of the ID when getting it from the tags
+    rest_apis: Dict[str, RestApiContainer] = LocalAttribute(default=CaseInsensitiveDict)
 
     # account details
     account: Dict[str, Any] = LocalAttribute(default=dict)
@@ -35,6 +72,9 @@ class ApiGatewayStore(BaseStore):
     # maps cert ID to client certificate details
     client_certificates: Dict[str, Dict] = LocalAttribute(default=dict)
 
+    # maps domain name to domain name model
+    domain_names: Dict[str, DomainName] = LocalAttribute(default=dict)
+
     # maps resource ARN to tags
     TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
 
@@ -43,7 +83,9 @@ class ApiGatewayStore(BaseStore):
 
         self.account.update(
             {
-                "cloudwatchRoleArn": aws_stack.role_arn("api-gw-cw-role"),
+                "cloudwatchRoleArn": arns.iam_role_arn(
+                    "api-gw-cw-role", DEFAULT_AWS_ACCOUNT_ID
+                ),  # FIXME: account ID must be of the current store
                 "throttleSettings": {"burstLimit": 1000, "rateLimit": 500},
                 "features": ["UsagePlans"],
                 "apiKeyVersion": "1",

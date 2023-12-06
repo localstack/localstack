@@ -1,28 +1,24 @@
 import logging
 import os
-import threading
+import re
 from abc import ABC
 from functools import lru_cache
-from typing import Callable, Dict, List
+from sys import version_info
+from typing import Optional
 
 import requests
 
 from localstack import config
-from localstack.utils.platform import in_docker, is_debian, is_redhat
-from localstack.utils.run import run
 
-from ..utils.files import chmod_r, mkdir
+from ..constants import LOCALSTACK_VENV_FOLDER
+from ..utils.archives import download_and_extract
+from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
 from ..utils.http import download
+from ..utils.run import is_root, run
+from ..utils.venv import VirtualEnvironment
 from .api import InstallTarget, PackageException, PackageInstaller
 
 LOG = logging.getLogger(__name__)
-
-
-# Lock which is used for OS package installations (to avoid locking issues)
-OS_PACKAGE_INSTALL_LOCK = threading.RLock()
-
-# Cache directory for APT / the debian package manager.
-_DEBIAN_CACHE_DIR = os.path.join(config.dirs.cache, "apt")
 
 
 class SystemNotSupportedException(PackageException):
@@ -31,137 +27,21 @@ class SystemNotSupportedException(PackageException):
     pass
 
 
-class OSPackageInstaller(PackageInstaller, ABC):
+class ExecutableInstaller(PackageInstaller, ABC):
     """
-    TODO make sure to log the output of all "run" commands (at least on trace level)
-    Package installer abstraction for packages which are installed on operating system level, using the OS package
-    manager.
-    These packages are exceptional, since they cannot be installed to a specific target.
-    If an OS level package is about to be installed to VAR_LIBS (i.e. it is installed at runtime and should persist
-    across container-recreations), a warning will be logged and - depending on the OS - there might be some caching
-    optimizations.
+    This installer simply adds a clean interface for accessing a downloaded executable directly
     """
 
-    def __init__(self, name: str, version: str):
-        super().__init__(name, version)
-
-    def _get_install_dir(self, target: InstallTarget) -> str:
-        return self._os_switch(
-            debian=self._debian_get_install_dir,
-            redhat=self._redhat_get_install_dir,
-            target=target,
-        )
-
-    @staticmethod
-    def _os_switch(debian: Callable, redhat: Callable, **kwargs):
-        if not in_docker():
-            raise SystemNotSupportedException(
-                "OS level packages are only installed within docker containers."
-            )
-        if is_debian():
-            return debian(**kwargs)
-        elif is_redhat():
-            return redhat(**kwargs)
-        else:
-            raise SystemNotSupportedException(
-                "The current operating system is currently not supported."
-            )
-
-    def _prepare_installation(self, target: InstallTarget) -> None:
-        if target != InstallTarget.STATIC_LIBS:
-            LOG.warning(
-                "%s will be installed as an OS package, even though install target is _not_ set to be static.",
-                self.name,
-            )
-        with OS_PACKAGE_INSTALL_LOCK:
-            self._os_switch(
-                debian=self._debian_prepare_install,
-                redhat=self._redhat_prepare_install,
-                target=target,
-            )
-
-    def _install(self, target: InstallTarget) -> None:
-        with OS_PACKAGE_INSTALL_LOCK:
-            self._os_switch(debian=self._debian_install, redhat=self._redhat_install, target=target)
-
-    def _post_process(self, target: InstallTarget) -> None:
-        with OS_PACKAGE_INSTALL_LOCK:
-            self._os_switch(
-                debian=self._debian_post_process, redhat=self._redhat_post_process, target=target
-            )
-
-    def _get_install_marker_path(self, install_dir: str) -> str:
-        return self._os_switch(
-            debian=self._debian_get_install_marker_path,
-            redhat=self._redhat_get_install_marker_path,
-            install_dir=install_dir,
-        )
-
-    def _debian_get_install_dir(self, target: InstallTarget) -> str:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on Debian."
-        )
-
-    def _debian_get_install_marker_path(self, install_dir: str) -> str:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on Debian."
-        )
-
-    def _debian_packages(self) -> List[str]:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on Debian."
-        )
-
-    def _debian_prepare_install(self, target: InstallTarget) -> None:
-        run(self._debian_cmd_prefix() + ["update"])
-
-    def _debian_install(self, target: InstallTarget) -> None:
-        debian_packages = self._debian_packages()
-        LOG.debug("Downloading packages %s to folder: %s", debian_packages, _DEBIAN_CACHE_DIR)
-        cmd = self._debian_cmd_prefix() + ["-d", "install"] + debian_packages
-        run(cmd)
-        cmd = self._debian_cmd_prefix() + ["install"] + debian_packages
-        run(cmd)
-
-    def _debian_post_process(self, target: InstallTarget) -> None:
-        # TODO maybe remove the debian cache dir here?
-        pass
-
-    def _debian_cmd_prefix(self) -> List[str]:
-        """Return the apt command prefix, configuring the local package cache folders"""
-        return [
-            "apt",
-            f"-o=dir::cache={_DEBIAN_CACHE_DIR}",
-            f"-o=dir::cache::archives={_DEBIAN_CACHE_DIR}",
-            "-y",
-        ]
-
-    def _redhat_get_install_dir(self, target: InstallTarget) -> str:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on RedHat."
-        )
-
-    def _redhat_get_install_marker_path(self, install_dir: str) -> str:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on Debian."
-        )
-
-    def _redhat_packages(self) -> List[str]:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on RedHat."
-        )
-
-    def _redhat_prepare_install(self, target: InstallTarget) -> None:
-        pass
-
-    def _redhat_install(self, target: InstallTarget) -> None:
-        run(["dnf", "install", "-y"] + self._redhat_packages())
-
-    def _redhat_post_process(self, target: InstallTarget) -> None:
-        run(["dnf", "clean", "all"])
+    def get_executable_path(self) -> str | None:
+        """
+        :return: the path to the downloaded binary or None if it's not yet downloaded / installed.
+        """
+        install_dir = self.get_installed_dir()
+        if install_dir:
+            return self._get_install_marker_path(install_dir)
 
 
-class DownloadInstaller(PackageInstaller):
+class DownloadInstaller(ExecutableInstaller):
     def __init__(self, name: str, version: str):
         super().__init__(name, version)
 
@@ -173,24 +53,88 @@ class DownloadInstaller(PackageInstaller):
         binary_name = os.path.basename(url)
         return os.path.join(install_dir, binary_name)
 
-    def get_executable_path(self) -> str | None:
-        """
-        :return: the path to the downloaded binary or None if it's not yet downloaded / installed.
-        """
-        install_dir = self.get_installed_dir()
-        if install_dir:
-            return self._get_install_marker_path(install_dir)
-
     def _install(self, target: InstallTarget) -> None:
         target_directory = self._get_install_dir(target)
         mkdir(target_directory)
         download_url = self._get_download_url()
         target_path = self._get_install_marker_path(target_directory)
         download(download_url, target_path)
-        chmod_r(target_path, 0o777)
 
 
-class GitHubReleaseInstaller(DownloadInstaller):
+class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
+    def __init__(self, name: str, version: str, extract_single_directory: bool = False):
+        """
+        :param name: technical package name, f.e. "opensearch"
+        :param version: version of the package to install
+        :param extract_single_directory: whether to extract files from single root folder in the archive
+        """
+        super().__init__(name, version)
+        self.extract_single_directory = extract_single_directory
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        raise NotImplementedError()
+
+    def _get_download_url(self) -> str:
+        raise NotImplementedError()
+
+    def get_installed_dir(self) -> str | None:
+        installed_dir = super().get_installed_dir()
+        subdir = self._get_archive_subdir()
+
+        # If the specific installer defines a subdirectory, we return the subdirectory.
+        # f.e. /var/lib/localstack/lib/amazon-mq/5.16.5/apache-activemq-5.16.5/
+        if installed_dir and subdir:
+            return os.path.join(installed_dir, subdir)
+
+        return installed_dir
+
+    def _get_archive_subdir(self) -> str | None:
+        """
+        :return: name of the subdirectory contained in the archive or none if the package content is at the root level
+                of the archive
+        """
+        return None
+
+    def get_executable_path(self) -> str | None:
+        subdir = self._get_archive_subdir()
+        if subdir is None:
+            return super().get_executable_path()
+        else:
+            install_dir = self.get_installed_dir()
+            if install_dir:
+                install_dir = install_dir[: -len(subdir)]
+                return self._get_install_marker_path(install_dir)
+
+    def _install(self, target: InstallTarget) -> None:
+        target_directory = self._get_install_dir(target)
+        mkdir(target_directory)
+        download_url = self._get_download_url()
+        archive_name = os.path.basename(download_url)
+        download_and_extract(
+            download_url,
+            retries=3,
+            tmp_archive=os.path.join(config.dirs.tmp, archive_name),
+            target_dir=target_directory,
+        )
+        if self.extract_single_directory:
+            dir_contents = os.listdir(target_directory)
+            if len(dir_contents) != 1:
+                return
+            target_subdir = os.path.join(target_directory, dir_contents[0])
+            if not os.path.isdir(target_subdir):
+                return
+            os.rename(target_subdir, f"{target_directory}.backup")
+            rm_rf(target_directory)
+            os.rename(f"{target_directory}.backup", target_directory)
+
+
+class PermissionDownloadInstaller(DownloadInstaller, ABC):
+    def _install(self, target: InstallTarget) -> None:
+        super()._install(target)
+        chmod_r(self.get_executable_path(), 0o777)
+
+
+class GitHubReleaseInstaller(PermissionDownloadInstaller):
     """
     Installer which downloads an asset from a GitHub project's tag.
     """
@@ -203,13 +147,18 @@ class GitHubReleaseInstaller(DownloadInstaller):
 
     @lru_cache()
     def _get_download_url(self) -> str:
-        response = requests.get(self.github_tag_url)
+        asset_name = self._get_github_asset_name()
+        # try to use a token when calling the GH API for increased API rate limits
+        headers = None
+        gh_token = os.environ.get("GITHUB_API_TOKEN")
+        if gh_token:
+            headers = {"authorization": f"Bearer {gh_token}"}
+        response = requests.get(self.github_tag_url, headers=headers)
         if not response.ok:
             raise PackageException(
                 f"Could not get list of releases from {self.github_tag_url}: {response.text}"
             )
         github_release = response.json()
-        asset_name = self._get_github_asset_name(github_release)
         download_url = None
         for asset in github_release.get("assets", []):
             # find the correct binary in the release
@@ -222,11 +171,127 @@ class GitHubReleaseInstaller(DownloadInstaller):
             )
         return download_url
 
-    def _get_github_asset_name(self, github_release: Dict) -> str:
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        # Use the GitHub asset name instead of the download URL (since the download URL needs to be fetched online).
+        return os.path.join(install_dir, self._get_github_asset_name())
+
+    def _get_github_asset_name(self) -> str:
         """
         Determines the name of the asset to download.
+        The asset name must be determinable without having any online data (because it is used in offline scenarios to
+        determine if the package is already installed).
 
-        :param github_release: GitHub Release JSON data
         :return: name of the asset to download from the GitHub project's tag / version
         """
         raise NotImplementedError()
+
+
+class NodePackageInstaller(ExecutableInstaller):
+    """Package installer for Node / NPM packages."""
+
+    def __init__(
+        self,
+        package_name: str,
+        version: str,
+        package_spec: Optional[str] = None,
+        main_module: str = "main.js",
+    ):
+        """
+        Initializes the Node / NPM package installer.
+        :param package_name: npm package name
+        :param version: version of the package which should be installed
+        :param package_spec: optional package spec for the installation.
+                If not set, the package name and version will be used for the installation.
+        :param main_module: main module file of the package
+        """
+        super().__init__(package_name, version)
+        self.package_name = package_name
+        # If the package spec is not explicitly set (f.e. to a repo), we build it and pin the version
+        self.package_spec = package_spec or f"{self.package_name}@{version}"
+        self.main_module = main_module
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "node_modules", self.package_name, self.main_module)
+
+    def _install(self, target: InstallTarget) -> None:
+        target_dir = self._get_install_dir(target)
+
+        run(
+            [
+                "npm",
+                "install",
+                "--prefix",
+                target_dir,
+                self.package_spec,
+            ]
+        )
+        # npm 9+ does _not_ set the ownership of files anymore if run as root
+        # - https://github.blog/changelog/2022-10-24-npm-v9-0-0-released/
+        # - https://github.com/npm/cli/pull/5704
+        # - https://github.com/localstack/localstack/issues/7620
+        if is_root():
+            # if the package was installed as root, set the ownership manually
+            LOG.debug("Setting ownership root:root on %s", target_dir)
+            chown_r(target_dir, "root")
+
+
+LOCALSTACK_VENV = VirtualEnvironment(LOCALSTACK_VENV_FOLDER)
+
+
+class PythonPackageInstaller(PackageInstaller):
+    """
+    Package installer which allows the runtime-installation of additional python packages used by certain services.
+    f.e. vosk as offline speech recognition toolkit (which is ~7MB in size compressed and ~26MB uncompressed).
+    """
+
+    normalized_name: str
+    """Normalized package name according to PEP440."""
+
+    def __init__(self, name: str, version: str, *args, **kwargs):
+        super().__init__(name, version, *args, **kwargs)
+        self.normalized_name = self._normalize_package_name(name)
+
+    def _normalize_package_name(self, name: str):
+        """
+        Normalized the Python package name according to PEP440.
+        https://packaging.python.org/en/latest/specifications/name-normalization/#name-normalization
+        """
+        return re.sub(r"[-_.]+", "-", name).lower()
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        # all python installers share a venv
+        return os.path.join(target.value, "python-packages")
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        python_subdir = f"python{version_info[0]}.{version_info[1]}"
+        dist_info_dir = f"{self.normalized_name}-{self.version}.dist-info"
+        # the METADATA file is mandatory, use it as install marker
+        return os.path.join(
+            install_dir, "lib", python_subdir, "site-packages", dist_info_dir, "METADATA"
+        )
+
+    def _get_venv(self, target: InstallTarget) -> VirtualEnvironment:
+        venv_dir = self._get_install_dir(target)
+        return VirtualEnvironment(venv_dir)
+
+    def _prepare_installation(self, target: InstallTarget) -> None:
+        # make sure the venv is properly set up before installing the package
+        venv = self._get_venv(target)
+        if not venv.exists:
+            LOG.info("creating virtual environment at %s", venv.venv_dir)
+            venv.create()
+            LOG.info("adding localstack venv path %s", venv.venv_dir)
+            venv.add_pth("localstack-venv", LOCALSTACK_VENV)
+        LOG.debug("injecting venv into path %s", venv.venv_dir)
+        venv.inject_to_sys_path()
+
+    def _install(self, target: InstallTarget) -> None:
+        venv = self._get_venv(target)
+        python_bin = os.path.join(venv.venv_dir, "bin/python")
+
+        # run pip via the python binary of the venv
+        run([python_bin, "-m", "pip", "install", f"{self.name}=={self.version}"], print_error=False)
+
+    def _setup_existing_installation(self, target: InstallTarget) -> None:
+        """If the venv is already present, it just needs to be initialized once."""
+        self._prepare_installation(target)

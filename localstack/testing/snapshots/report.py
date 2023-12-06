@@ -44,7 +44,7 @@ class PatchPath(str):
             raise ValueError("Incompatible types")
 
         parts = zip(self.split("/"), other.split("/"))
-        for (sa, sb) in parts:
+        for sa, sb in parts:
             if sa < sb:
                 return True
 
@@ -127,7 +127,7 @@ def render_report(result: SnapshotMatchResult):
 
     printstr = f">> match key: {result.key}\n"
 
-    for (a, b) in sorted(lines, key=lambda x: PatchPath(x[0])):
+    for a, b in sorted(lines, key=lambda x: PatchPath(x[0])):
         printstr += f"\t{b}\n"
 
     # you can add more entries to the lists to combine effects (e.g. red & underlined)

@@ -1,12 +1,13 @@
 from io import BytesIO
 from typing import Mapping, Union
+from urllib.parse import urlparse
 
 from werkzeug import Request, Response
 from werkzeug.datastructures import Headers
 from werkzeug.test import EnvironBuilder
 
 from .client import HttpClient, SimpleRequestsClient
-from .request import restore_payload, set_environment_headers
+from .request import get_raw_path, restore_payload, set_environment_headers
 
 
 def forward(
@@ -19,21 +20,37 @@ def forward(
     Convenience method that creates a new Proxy and immediately calls proxy.forward(...). See ``Proxy`` for more
     information.
     """
-    return Proxy(forward_base_url=forward_base_url).forward(
-        request, forward_path=forward_path, headers=headers
-    )
+    with Proxy(forward_base_url=forward_base_url) as proxy:
+        return proxy.forward(request, forward_path=forward_path, headers=headers)
 
 
-class Proxy:
-    def __init__(self, forward_base_url: str, client: HttpClient = None):
+class Proxy(HttpClient):
+    preserve_host: bool
+
+    def __init__(
+        self, forward_base_url: str, client: HttpClient = None, preserve_host: bool = True
+    ):
         """
         Creates a new HTTP Proxy which can be used to forward incoming requests according to the configuration.
 
         :param forward_base_url: the base url (backend) to forward the requests to.
         :param client: the HTTP Client used to make the requests
+        :param preserve_host: True to ensure that the Host header of the incoming request is preserved.
+                              If False, then the Host header will be set to the Host from the perspective of the Proxy.
         """
         self.forward_base_url = forward_base_url
         self.client = client or SimpleRequestsClient()
+        self.preserve_host = preserve_host
+
+    def request(self, request: Request, server: str | None = None) -> Response:
+        """
+        Compatibility with HttpClient interface. A call is equivalent to ``Proxy.forward(request, None, None)``.
+
+        :param request: the request to proxy
+        :param server: ignored for a proxy, since the server is already set by `forward_base_url`.
+        :return: the proxied response
+        """
+        return self.forward(request)
 
     def forward(
         self,
@@ -47,8 +64,8 @@ class Proxy:
         :param request: the base request to forward (with the original URL and path data)
         :param forward_path: the path to forward the request to. if set, the original path will be replaced completely,
             otherwise the original path will be used
-        :param headers:
-        :return:
+        :param headers: additional custom headers to send as part of the proxy request
+        :return: the proxied response
         """
         headers = Headers(headers) if headers else Headers()
 
@@ -59,12 +76,20 @@ class Proxy:
                 headers["X-Forwarded-For"] = f"{client_ip}"
 
         if forward_path is None:
-            forward_path = request.path
+            forward_path = get_raw_path(request)
         if forward_path:
             forward_path = "/" + forward_path.lstrip("/")
 
         proxy_request = _copy_request(request, self.forward_base_url, forward_path, headers)
-        return self.client.request(proxy_request)
+
+        if self.preserve_host and "Host" in request.headers:
+            proxy_request.headers["Host"] = request.headers["Host"]
+
+        target = urlparse(self.forward_base_url)
+        return self.client.request(proxy_request, server=f"{target.scheme}://{target.netloc}")
+
+    def close(self):
+        self.client.close()
 
 
 class ProxyHandler:
@@ -86,16 +111,20 @@ class ProxyHandler:
         }
     """
 
-    def __init__(self, forward_base_url: str):
+    def __init__(self, forward_base_url: str, client: HttpClient = None):
         """
         Creates a new Proxy with the given ``forward_base_url`` (see ``Proxy``).
 
         :param forward_base_url: the base url (backend) to forward the requests to.
+        :param client: the HTTP Client used to make the requests
         """
-        self.proxy = Proxy(forward_base_url=forward_base_url)
+        self.proxy = Proxy(forward_base_url=forward_base_url, client=client)
 
     def __call__(self, request: Request, **kwargs) -> Response:
         return self.proxy.forward(request, forward_path=kwargs.get("path", ""))
+
+    def close(self):
+        self.proxy.close()
 
 
 def _copy_request(
@@ -114,6 +143,8 @@ def _copy_request(
     :return: a new request with slightly modified underlying environment but the same data stream
     """
     # ensure that the headers in the env are set on the environment
+    # FIXME: we should preserve header casing like we do with the `asgi.headers` property in the  asgi/wsgi bridge to
+    #  pass through the raw headers.
     set_environment_headers(request.environ, request.headers)
     builder = EnvironBuilder.from_environ(request.environ)
 
@@ -129,7 +160,21 @@ def _copy_request(
 
     # FIXME: unfortunately, EnvironBuilder expects the input stream to be seekable, but we don't have that when using
     #  the asgi/wsgi bridge. we need a better way of dealing with IO!
-    builder.input_stream = BytesIO(restore_payload(request))
+    data = restore_payload(request)
+    builder.input_stream = BytesIO(data)
+    builder.content_length = len(data)
+    # Since the payload is completely restored, the proxy forwarding is not streamed.
+    # Therefore, we need to remove a potential "chunked" Transfer-Encoding
+    if builder.headers.get("Transfer-Encoding", None) == "chunked":
+        builder.headers.pop("Transfer-Encoding")
 
     new_request = builder.get_request()
+
+    # explicitly set the path in the environment and in the newly created request
+    if path is not None:
+        new_request.environ["RAW_URI"] = path or "/"
+
+    # copy headers s.t. they are no longer immutable (by default, EnvironHeaders are used)
+    new_request.headers = Headers(new_request.headers)
+
     return new_request

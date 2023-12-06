@@ -1,15 +1,9 @@
 """Concurrency synchronization utilities"""
 import functools
-import sys
 import threading
 import time
 from collections import defaultdict
-from typing import Callable
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
+from typing import Callable, Literal, TypeVar
 
 
 class ShortCircuitWaitException(Exception):
@@ -51,7 +45,10 @@ def wait_until(
         return wait_until(fn, next_wait, max_retries, strategy, _retries + 1, _max_wait)
 
 
-def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
+T = TypeVar("T")
+
+
+def retry(function: Callable[..., T], retries=3, sleep=1.0, sleep_before=0, **kwargs) -> T:
     raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)

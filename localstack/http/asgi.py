@@ -6,24 +6,60 @@ import math
 import typing as t
 from asyncio import AbstractEventLoop
 from concurrent.futures import Executor
-from tempfile import SpooledTemporaryFile
+from io import BufferedReader, RawIOBase
 from urllib.parse import quote, unquote, urlparse
 
 if t.TYPE_CHECKING:
     from _typeshed import WSGIApplication, WSGIEnvironment
-    from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, HTTPScope, Scope
+    from hypercorn.typing import (
+        ASGIReceiveCallable,
+        ASGISendCallable,
+        HTTPScope,
+        Scope,
+        WebsocketAcceptEvent,
+        WebsocketCloseEvent,
+        WebsocketConnectEvent,
+        WebsocketDisconnectEvent,
+        WebsocketReceiveEvent,
+        WebsocketResponseBodyEvent,
+        WebsocketResponseStartEvent,
+        WebsocketScope,
+        WebsocketSendEvent,
+    )
+
+    _WebsocketResponse = t.Union[
+        WebsocketAcceptEvent,
+        WebsocketSendEvent,
+        WebsocketResponseStartEvent,
+        WebsocketResponseBodyEvent,
+        WebsocketCloseEvent,
+    ]
+
+    _WebsocketRequest = t.Union[
+        WebsocketConnectEvent,
+        WebsocketReceiveEvent,
+        WebsocketDisconnectEvent,
+    ]
 
 LOG = logging.getLogger(__name__)
 
+WebSocketEnvironment: t.TypeAlias = t.Dict[str, t.Any]
+"""Special WSGIEnvironment that has an `asgi.websocket` key that stores a `Websocket` instance."""
 
-def populate_wsgi_environment(environ: "WSGIEnvironment", scope: "HTTPScope"):
+
+def populate_wsgi_environment(
+    environ: t.Union["WSGIEnvironment", WebSocketEnvironment],
+    scope: t.Union["HTTPScope", "WebsocketScope"],
+):
     """
-    Adds the non-IO parts (e.g., excluding wsgi.input) from the ASGI HTTPScope to the WSGI Environment.
+    Adds the non-IO parts (e.g., excluding wsgi.input) from the ASGI HTTPScope to the WSGI Environment. See
+    WSGI Compatibility for more information on why this works:
+    https://asgi.readthedocs.io/en/latest/specs/www.html#wsgi-compatibility
 
     :param environ: the WSGI environment to populate
     :param scope: the ASGI scope as source
     """
-    environ["REQUEST_METHOD"] = scope["method"]
+    environ["REQUEST_METHOD"] = scope.get("method", "GET")
     # path/uri info
     # prepare the paths for the "WSGI decoding dance" done by werkzeug
     environ["SCRIPT_NAME"] = unquote(quote(scope.get("root_path", "").rstrip("/")), "latin-1")
@@ -79,41 +115,62 @@ def populate_wsgi_environment(environ: "WSGIEnvironment", scope: "HTTPScope"):
     environ["asgi.headers"] = headers
 
 
-async def to_async_generator(
-    it: t.Iterator,
-    loop: t.Optional[AbstractEventLoop] = None,
-    executor: t.Optional[Executor] = None,
-) -> t.AsyncGenerator:
-    """
-    Wraps a given synchronous Iterator as an async generator, where each invocation to ``next(it)``
-    will be wrapped in a coroutine execution.
+class _AsyncGeneratorWrapper:
+    def __init__(
+        self,
+        it: t.Iterator,
+        loop: t.Optional[AbstractEventLoop] = None,
+        executor: t.Optional[Executor] = None,
+    ):
+        """
+        Wraps a given synchronous Iterator as an async generator, where each invocation to ``next(it)``
+        will be wrapped in a coroutine execution.
 
-    :param it: the iterator to wrap
-    :param loop: the event loop to run the next invocations
-    :param executor: the executor to run the synchronous code
-    :return: an async generator
-    """
-    loop = loop or asyncio.get_event_loop()
-    stop = object()
+        :param it: the iterator to wrap
+        :param loop: the event loop to run the next invocations
+        :param executor: the executor to run the synchronous code
+        """
+        self.it = it
+        self.loop = loop or asyncio.get_event_loop()
+        self.executor = executor
 
-    def _next_sync():
+    def _next_sync(self):
         try:
-            # this call may potentially call blocking IO, which is why we call it in an executor
-            return next(it)
+            return next(self.it)
         except StopIteration:
-            return stop
+            raise StopAsyncIteration
 
-    while True:
-        val = await loop.run_in_executor(executor, _next_sync)
-        if val is stop:
-            return
-        yield val
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        val = await self.loop.run_in_executor(self.executor, self._next_sync)
+        return val
+
+    async def aclose(self):
+        if close := getattr(self.it, "close", None):
+            return await self.loop.run_in_executor(self.executor, close)
 
 
-class HTTPRequestEventStreamAdapter:
+def create_wsgi_input(
+    receive: "ASGIReceiveCallable", event_loop: t.Optional[AbstractEventLoop] = None
+) -> t.IO[bytes]:
     """
-    An adapter to expose an ASGIReceiveCallable coroutine that returns HTTPRequestEvent
-    instances, as a PEP 3333 InputStream for consumption in synchronous WSGI/Werkzeug code.
+    Factory for exposing an ASGIReceiveCallable as an IO stream.
+
+    :param receive: the receive callable
+    :param event_loop: the event loop used by the event stream adapter
+    :return: a new IO stream that wraps the given receive callable.
+    """
+    return BufferedReader(RawHTTPRequestEventStreamAdapter(receive, event_loop))
+
+
+class RawHTTPRequestEventStreamAdapter(RawIOBase):
+    """
+    An adapter to expose an ASGIReceiveCallable coroutine that returns HTTPRequestEvent instances as an IO
+    stream for synchronous WSGI/Werkzeug code. The adapter is a Raw IO stream, meaning it does not have
+    optimized ``read``, ``readline``, or ``readlines`` methods. Make sure to use a ``BufferedReader`` around
+    the stream adapter.
     """
 
     def __init__(
@@ -123,111 +180,54 @@ class HTTPRequestEventStreamAdapter:
         self.receive = receive
         self.event_loop = event_loop or asyncio.get_event_loop()
 
+        # internal state
         self._more_body = True
-        self._buffer = bytearray()
-        self._buffer_file = SpooledTemporaryFile()
+        self._buffered_body = None
+        self._buffered_body_pos = 0
 
-    def _read_into(self, buf: bytearray) -> t.Tuple[int, bool]:
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, buf: bytearray | memoryview) -> int:
         if not self._more_body:
-            return 0, False
+            return 0
 
-        recv_future = asyncio.run_coroutine_threadsafe(self.receive(), self.event_loop)
-        event = recv_future.result()
-        # TODO: disconnect events
-        body = event["body"]
-        more = event.get("more_body", False)
-        buf.extend(body)
-        self._more_body = more
-        return len(body), more
+        # max bytes we can write into the buffer
+        buf_size = len(buf)
 
-    def read(self, size: t.Optional[int] = None) -> bytes:
-        """
-        Reads up to ``size`` bytes from the object and returns them. As a convenience, if ``size`` is unspecified or
-        ``-1``, all bytes until EOF are returned. Like RawIOBase specifies, only one system call is ever made (in
-        this case, a call to the ASGI receive callable). Fewer than ``size`` bytes may be returned if the underlying
-        call returns fewer than ``size`` bytes.
+        # _buffered_body holds the carry-over of what we didn't read in the last iteration
+        if self._buffered_body is None:
+            # read from the underlying socket stream
+            recv_future = asyncio.run_coroutine_threadsafe(self.receive(), self.event_loop)
+            event = recv_future.result()
+            # TODO: disconnect events
+            more = event.get("more_body", False)
 
-        :param size: the number of bytes to read
-        :return:
-        """
-        buf = self._buffer
-
-        if not buf and not self._more_body:
-            return b""
-
-        if size is None or size == -1:
-            while True:
-                read, more = self._read_into(buf)
-                if not more:
-                    break
-
-            arr = bytes(buf)
-            buf.clear()
-            return arr
-
-        if len(buf) < size:
-            self._read_into(buf)
-
-        copy = bytes(buf[:size])
-        self._buffer = buf[size:]
-        return copy
-
-    def readline(self, size: t.Optional[int] = None) -> bytes:
-        buf = self._buffer
-        size = size if size is not None else -1
-
-        while True:
-            i = buf.find(b"\n")  # FIXME: scans the whole buffer every time
-
-            if i >= 0:
-                if 0 < size < i:
-                    break  # no '\n' in range
-                else:
-                    arr = bytes(buf[: (i + 1)])
-                    self._buffer = buf[(i + 1) :]
-                    return arr
-
-            # ensure the buffer has at least `size` bytes (or all)
-            if size > 0:
-                if len(buf) >= size:
-                    break
-            _, more = self._read_into(buf)
             if not more:
-                break
+                self._more_body = False
+                return 0
 
-        if size > 0:
-            arr = bytes(buf[:size])
-            self._buffer = buf[size:]
-            return arr
+            body = self._buffered_body = event["body"]
+            pos = self._buffered_body_pos = 0
         else:
-            arr = bytes(buf)
-            buf.clear()
-            return arr
+            body = self._buffered_body
+            pos = self._buffered_body_pos
 
-    def readlines(self, size: t.Optional[int] = None) -> t.List[bytes]:
-        if size is None or size < 0:
-            return [line for line in self]
+        remaining = len(body) - pos
 
-        lines = []
-        while size > 0:
-            try:
-                line = self.__next__()
-            except StopIteration:
-                return lines
+        if remaining <= buf_size:
+            # the easiest case, where we write the entire remaining event body into the buffer. we may return
+            # less than the buffer size allows, but that's ok for raw IO streams.
+            buf[:remaining] = body[pos:]
+            self._buffered_body = None
+            return remaining
 
-            lines.append(line)
-            size = size - len(line)
+        # in this case, we can read at max buf_size from the body into the buffer, and need to save the
+        # rest for the next call
+        buf[:buf_size] = body[pos : pos + buf_size]
+        self._buffered_body_pos = pos + buf_size
 
-        return lines
-
-    def __next__(self):
-        line = self.readline()
-        if line == b"" and not self._more_body:
-            raise StopIteration()
-        return line
-
-    def __iter__(self):
-        return self
+        return buf_size
 
 
 class WsgiStartResponse:
@@ -295,6 +295,10 @@ class WsgiStartResponse:
     async def write(self, data: bytes) -> None:
         if not self.started:
             raise ValueError("not started the response yet")
+        if getattr(self.send.__self__, "closed", None):
+            # the connection has been closed from the client side, set finalized=True to avoid sending more responses
+            self.finalized = True
+            raise BrokenPipeError("Connection closed")
         await self.send({"type": "http.response.body", "body": data, "more_body": True})
         self.sent += len(data)
         if self.sent >= self.content_length:
@@ -307,6 +311,144 @@ class WsgiStartResponse:
         if not self.finalized:
             self.finalized = True
             await self.send({"type": "http.response.body", "body": b"", "more_body": False})
+
+
+class ASGILifespanListener:
+    """
+    Simple event handler that is attached to the ASGIAdapter and called on ASGI lifespan events. See
+    https://asgi.readthedocs.io/en/latest/specs/lifespan.html.
+    """
+
+    def on_startup(self):
+        pass
+
+    def on_shutdown(self):
+        pass
+
+
+class ASGIWebSocket:
+    """
+    A wrapper around an ASGI ``WebsocketScope`` and relevant IO objects that can be used to interact with the websocket
+    in synchronous code.
+
+    For send and receive event formats, see https://asgi.readthedocs.io/en/latest/specs/www.html#websocket.
+    """
+
+    _scope: "WebsocketScope"
+    _receive: "ASGIReceiveCallable"
+    _send: "ASGISendCallable"
+
+    def __init__(
+        self,
+        scope: "WebsocketScope",
+        receive: "ASGIReceiveCallable",
+        send: "ASGISendCallable",
+        loop: AbstractEventLoop,
+    ):
+        self._scope = scope
+        self._receive = receive
+        self._send = send
+        self._loop = loop
+
+    async def send_async(self, event: "_WebsocketResponse"):
+        await self._send(event)
+
+    async def receive_async(self) -> "_WebsocketRequest":
+        return await self._receive()
+
+    def send(self, event: "_WebsocketResponse", timeout: float = None) -> None:
+        """
+        Sends an event to the Websocket. Events can be:
+
+        - websocket.accept: https://asgi.readthedocs.io/en/latest/specs/www.html#accept-send-event
+        - websocket.send: https://asgi.readthedocs.io/en/latest/specs/www.html#send-send-event
+        - websocket.close: https://asgi.readthedocs.io/en/latest/specs/www.html#close-send-event
+
+        :param event: The event to send
+        :param timeout: The number of seconds to wait for the result of the async call
+        """
+        return asyncio.run_coroutine_threadsafe(self.send_async(event), self._loop).result(
+            timeout=timeout
+        )
+
+    def receive(self, timeout: float = None) -> "_WebsocketRequest":
+        """
+        Listens on the websocket and returns the next event. Events can be:
+
+        - websocket.connect: https://asgi.readthedocs.io/en/latest/specs/www.html#connect-receive-event
+        - websocket.receive: https://asgi.readthedocs.io/en/latest/specs/www.html#receive-receive-event
+        - websocket.disconnect: https://asgi.readthedocs.io/en/latest/specs/www.html#disconnect-receive-event-ws
+
+        :param timeout: The number of seconds to wait for the event
+        :return: The received event
+        """
+        return asyncio.run_coroutine_threadsafe(self.receive_async(), self._loop).result(timeout)
+
+    def respond(
+        self, status: int, headers: list[tuple[str, str]] = None, body: t.Iterable[bytes] = None
+    ):
+        self.send(
+            {
+                "type": "websocket.http.response.start",
+                "status": status,
+                "headers": [(h[0].encode("latin1"), h[1].encode("latin1")) for h in headers],
+            }
+        )
+        if body:
+            for chunk in body:
+                self.send(
+                    {
+                        "type": "websocket.http.response.body",
+                        "body": chunk,
+                        "more_body": True,
+                    }
+                )
+        self.send(
+            {
+                "type": "websocket.http.response.body",
+                "body": b"",
+                "more_body": False,
+            }
+        )
+
+
+class WebSocketListener(t.Protocol):
+    """
+    Similar protocol to a WSGIApplication, only it expects a Websocket instead of a WSGIEnvironment.
+    """
+
+    def __call__(self, environ: WebSocketEnvironment):
+        """
+        Called when a new Websocket connection is established. To initiate the connection, you need to perform the
+        connect handshake yourself. First, receive the ``websocket.connect`` event, and then send the
+        ``websocket.accept`` event. Here's a minimal example::
+
+            def accept(self, environ: WebsocketEnvironment):
+                websocket = environ['asgi.websocket']
+                event = websocket.receive()
+                if event['type'] == "websocket.connect":
+                    websocket.send({
+                        "type": "websocket.accept",
+                        "subprotocol": None,
+                        "headers": [],
+                    })
+                else:
+                    websocket.send({
+                        "type": "websocket.close",
+                        "code": 1002, # protocol error
+                        "reason": None,
+                    })
+                    return
+
+                while True:
+                    event = websocket.receive()
+                    if event["type"] == "websocket.disconnect":
+                        return
+                    print(event)
+
+        :param environ: The new Websocket environment
+        """
+        raise NotImplementedError
 
 
 class ASGIAdapter:
@@ -325,10 +467,14 @@ class ASGIAdapter:
         wsgi_app: "WSGIApplication",
         event_loop: AbstractEventLoop = None,
         executor: Executor = None,
+        lifespan_listener: ASGILifespanListener = None,
+        websocket_listener: WebSocketListener = None,
     ):
         self.wsgi_app = wsgi_app
         self.event_loop = event_loop or asyncio.get_event_loop()
         self.executor = executor
+        self.lifespan_listener = lifespan_listener or ASGILifespanListener()
+        self.websocket_listener = websocket_listener
 
     async def __call__(
         self, scope: "Scope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
@@ -342,6 +488,12 @@ class ASGIAdapter:
         """
         if scope["type"] == "http":
             return await self.handle_http(scope, receive, send)
+
+        if scope["type"] == "lifespan":
+            return await self.handle_lifespan(scope, receive, send)
+
+        if scope["type"] == "websocket":
+            return await self.handle_websocket(scope, receive, send)
 
         raise NotImplementedError("Unhandled protocol %s" % scope["type"])
 
@@ -360,10 +512,9 @@ class ASGIAdapter:
         environ: "WSGIEnvironment" = {}
         populate_wsgi_environment(environ, scope)
         # add IO wrappers
-        environ["wsgi.input"] = HTTPRequestEventStreamAdapter(receive, event_loop=self.event_loop)
-        environ[
-            "wsgi.input_terminated"
-        ] = True  # indicates that the stream is EOF terminated per request
+        environ["wsgi.input"] = create_wsgi_input(receive, event_loop=self.event_loop)
+        # indicate that the stream is EOF terminated per request
+        environ["wsgi.input_terminated"] = True
         return environ
 
     async def handle_http(
@@ -371,17 +522,26 @@ class ASGIAdapter:
     ):
         env = self.to_wsgi_environment(scope, receive)
 
-        response = WsgiStartResponse(send, self.event_loop)
+        try:
+            response = WsgiStartResponse(send, self.event_loop)
 
-        iterable = await self.event_loop.run_in_executor(
-            self.executor, self.wsgi_app, env, response
-        )
+            iterable = await self.event_loop.run_in_executor(
+                self.executor, self.wsgi_app, env, response
+            )
+        except Exception as e:
+            LOG.error(
+                "Error while trying to schedule execution: %s with environment %s",
+                e,
+                env,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise
 
         try:
             if iterable:
                 # Generators are also Iterators
                 if isinstance(iterable, t.Iterator):
-                    iterable = to_async_generator(iterable)
+                    iterable = _AsyncGeneratorWrapper(iterable)
 
                 if isinstance(iterable, (t.AsyncIterator, t.AsyncIterable)):
                     async for packet in iterable:
@@ -389,5 +549,80 @@ class ASGIAdapter:
                 else:
                     for packet in iterable:
                         await response.write(packet)
+        except ConnectionError as e:
+            client_info = "unknown"
+            if client := scope.get("client"):
+                address, port = client
+                client_info = f"{address}:{port}"
+            LOG.debug("Error while writing responses: %s (client_info: %s)", e, client_info)
         finally:
+            if iterable and hasattr(iterable, "aclose"):
+                await iterable.aclose()
             await response.close()
+
+    def to_websocket_environment(
+        self,
+        scope: "WebsocketScope",
+        receive: "ASGIReceiveCallable",
+        send: "ASGISendCallable",
+    ) -> WebSocketEnvironment:
+        """
+        Creates an IO-ready pseudo-WSGI environment from the given ASGI Websocket scope.
+
+        :param scope: the websocket scope
+        :param receive: receive callable
+        :param send: send callable
+        :return: a new websocket environment
+        """
+        environ: WebSocketEnvironment = {}
+        populate_wsgi_environment(environ, scope)
+        environ["REQUEST_METHOD"] = "WEBSOCKET"
+        environ["asgi.websocket"] = ASGIWebSocket(scope, receive, send, self.event_loop)
+        return environ
+
+    async def handle_websocket(
+        self, scope: "WebsocketScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
+    ):
+        if not self.websocket_listener:
+            raise NotImplementedError("No websocket listener attached")
+
+        # populate a pseudo-WSGI environment with "WEBSOCKET" as method
+        # this can later be used to construct a sans-IO Werkzeug request
+        environ = self.to_websocket_environment(scope, receive, send)
+
+        try:
+            await self.event_loop.run_in_executor(self.executor, self.websocket_listener, environ)
+        except Exception as e:
+            LOG.error(
+                "Error while trying to schedule execution: %s with environment %s",
+                e,
+                environ,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise
+
+    async def handle_lifespan(
+        self, scope: "HTTPScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
+    ):
+        while True:
+            message = await receive()
+            if message["type"] == "lifespan.startup":
+                try:
+                    await self.event_loop.run_in_executor(
+                        self.executor, self.lifespan_listener.on_startup
+                    )
+                    await send({"type": "lifespan.startup.complete"})
+                except Exception as e:
+                    await send({"type": "lifespan.startup.failed", "message": f"{e}"})
+
+            elif message["type"] == "lifespan.shutdown":
+                try:
+                    await self.event_loop.run_in_executor(
+                        self.executor, self.lifespan_listener.on_shutdown
+                    )
+                    await send({"type": "lifespan.shutdown.complete"})
+                except Exception as e:
+                    await send({"type": "lifespan.shutdown.failed", "message": f"{e}"})
+                return
+            else:
+                return

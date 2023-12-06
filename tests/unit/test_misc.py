@@ -5,24 +5,15 @@ import time
 import unittest
 
 import yaml
-from requests.models import Response
 
 from localstack import config
-from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.utils import async_utils, config_listener
-from localstack.utils.aws import aws_stack
-from localstack.utils.common import TMP_FILES, download, json_safe, load_file, now_utc, parallelize
+from localstack.utils.common import json_safe, now_utc
 from localstack.utils.container_utils.container_client import PortMappings
 from localstack.utils.http import create_chunked_data, parse_chunked_data
 
 
 class TestMisc(unittest.TestCase):
-    def test_environment(self):
-        env = aws_stack.Environment.from_json({"prefix": "foobar1"})
-        self.assertEqual("foobar1", env.prefix)
-        env = aws_stack.Environment.from_string("foobar2")
-        self.assertEqual("foobar2", env.prefix)
-
     def test_parse_chunked_data(self):
         # See: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
         chunked = "4\r\nWiki\r\n5\r\npedia\r\nE\r\n in\r\n\r\nchunks.\r\n0\r\n\r\n"
@@ -44,7 +35,7 @@ class TestMisc(unittest.TestCase):
         if isinstance(obj["Version"], datetime.date):
             obj = json_safe(obj)
             self.assertEqual(str, type(obj["Version"]))
-            self.assertEqual("2012-10-17", obj["Version"])
+            self.assertEqual("2012-10-17T00:00:00.000Z", obj["Version"])
 
     def test_timstamp_millis(self):
         t1 = now_utc()
@@ -72,6 +63,62 @@ class TestMisc(unittest.TestCase):
         map.add([234, 237], [345, 348])
         self.assertEqual("-p 123-124:123-124 -p 234-237:345-348", map.to_str())
 
+    def test_port_mappings_single_protocol(self):
+        map = PortMappings()
+        map.add(port=53, protocol="udp")
+        self.assertEqual("-p 53:53/udp", map.to_str())
+
+    def test_port_mappings_single_protocol_range(self):
+        map = PortMappings()
+        map.add(port=[123, 1337], protocol="tcp")
+        map.add(port=[124, 1338], protocol="tcp")
+        self.assertEqual("-p 123-1338:123-1338", map.to_str())
+
+    def test_port_mappings_multi_protocol(self):
+        map = PortMappings()
+        map.add(port=53, protocol="tcp")
+        map.add(port=53, protocol="udp")
+        self.assertEqual("-p 53:53 -p 53:53/udp", map.to_str())
+
+    def test_port_mappings_multi_protocol_range(self):
+        map = PortMappings()
+        map.add(port=[122, 1336], protocol="tcp")
+        map.add(port=[123, 1337], protocol="udp")
+
+        map.add(port=[123, 1337], protocol="tcp")
+        map.add(port=[124, 1338], protocol="udp")
+        self.assertEqual("-p 122-1337:122-1337 -p 123-1338:123-1338/udp", map.to_str())
+
+    def test_port_mappings_dict(self):
+        map = PortMappings()
+        map.add(port=[122, 124], protocol="tcp")
+        map.add(port=[123, 125], protocol="udp")
+
+        map.add(port=[123, 125], protocol="tcp")
+        map.add(port=[124, 126], protocol="udp")
+        self.assertEqual(
+            {
+                "122/tcp": 122,
+                "123/tcp": 123,
+                "123/udp": 123,
+                "124/tcp": 124,
+                "124/udp": 124,
+                "125/tcp": 125,
+                "125/udp": 125,
+                "126/udp": 126,
+            },
+            map.to_dict(),
+        )
+
+    def test_port_mappings_list(self):
+        map = PortMappings()
+        map.add(port=[122, 124], protocol="tcp")
+        map.add(port=[123, 125], protocol="udp")
+
+        map.add(port=[123, 125], protocol="tcp")
+        map.add(port=[124, 126], protocol="udp")
+        self.assertEqual(["-p", "122-125:122-125", "-p", "123-126:123-126/udp"], map.to_list())
+
     def test_update_config_variable(self):
         config_listener.update_config_variable("foo", "bar")
         self.assertEqual("bar", config.foo)
@@ -92,37 +139,3 @@ class TestMisc(unittest.TestCase):
         loop.run_until_complete(asyncio.gather(*handlers))
         self.assertEqual(num_items, len(results))
         thread_pool.shutdown()
-
-
-# This test is not enabled in CI, it is just used for manual
-# testing to debug https://github.com/localstack/localstack/issues/213
-def run_parallel_download():
-
-    file_length = 10000000
-
-    class DownloadListener(ProxyListener):
-        def forward_request(self, method, path, data, headers):
-            sleep_time = int(path.replace("/", ""))
-            time.sleep(sleep_time)
-            response = Response()
-            response.status_code = 200
-            response._content = ("%s" % sleep_time) * file_length
-            return response
-
-    test_port = 12124
-    tmp_file_pattern = "/tmp/test.%s"
-
-    proxy = start_proxy_server(test_port, update_listener=DownloadListener())
-
-    def do_download(param):
-        tmp_file = tmp_file_pattern % param
-        TMP_FILES.append(tmp_file)
-        download("http://localhost:%s/%s" % (test_port, param), tmp_file)
-
-    values = [1, 2, 3]
-    parallelize(do_download, values)
-    proxy.stop()
-
-    for val in values:
-        tmp_file = tmp_file_pattern % val
-        assert len(load_file(tmp_file)) == file_length

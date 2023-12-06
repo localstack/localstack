@@ -109,7 +109,7 @@ def run(
                         if o:
                             os.write(sys.stdout.fileno(), o)
 
-            FuncThread(pipe_streams).start()
+            FuncThread(pipe_streams, name="pipe-streams").start()
 
         return process
     except subprocess.CalledProcessError as e:
@@ -151,9 +151,54 @@ def run_for_max_seconds(max_secs, _function, *args, **kwargs):
         time.sleep(0.5)
 
 
+def run_interactive(command: List[str]):
+    """
+    Run an interactive command in a subprocess. This blocks the current thread and attaches sys.stdin to
+    the process. Copied from https://stackoverflow.com/a/43012138/804840
+
+    :param command: the command to pass to subprocess.Popen
+    """
+    # save original tty setting then set it to raw mode
+    import pty
+    import termios
+    import tty
+
+    old_tty = termios.tcgetattr(sys.stdin)
+    tty.setraw(sys.stdin.fileno())
+
+    # open pseudo-terminal to interact with subprocess
+    master_fd, slave_fd = pty.openpty()
+
+    try:
+        # use os.setsid() make it run in a new process group, or bash job control will not be enabled
+        p = subprocess.Popen(
+            command,
+            preexec_fn=os.setsid,
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            universal_newlines=True,
+        )
+
+        while p.poll() is None:
+            r, w, e = select.select([sys.stdin, master_fd], [], [])
+            if sys.stdin in r:
+                d = os.read(sys.stdin.fileno(), 10240)
+                os.write(master_fd, d)
+                if d == b"\x04":
+                    break
+            elif master_fd in r:
+                o = os.read(master_fd, 10240)
+                if o:
+                    os.write(sys.stdout.fileno(), o)
+    finally:
+        # restore tty settings back
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_tty)
+
+
 def is_command_available(cmd: str) -> bool:
     try:
-        run("which %s" % cmd, print_error=False)
+        run(["which", cmd], print_error=False)
         return True
     except Exception:
         return False
@@ -213,6 +258,8 @@ class ShellCommandThread(FuncThread):
         log_listener: Callable = None,
         stop_listener: Callable = None,
         strip_color: bool = False,
+        name: Optional[str] = None,
+        cwd: Optional[str] = None,
     ):
         params = params if params is not None else {}
         env_vars = env_vars if env_vars is not None else {}
@@ -229,7 +276,10 @@ class ShellCommandThread(FuncThread):
         self.stop_listener = stop_listener
         self.strip_color = strip_color
         self.started = threading.Event()
-        FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
+        self.cwd = cwd
+        FuncThread.__init__(
+            self, self.run_cmd, params, quiet=quiet, name=(name or "shell-cmd-thread")
+        )
 
     def run_cmd(self, params):
         while True:
@@ -271,6 +321,7 @@ class ShellCommandThread(FuncThread):
                 env_vars=self.env_vars,
                 inherit_cwd=self.inherit_cwd,
                 inherit_env=self.inherit_env,
+                cwd=self.cwd,
             )
             self.started.set()
             if outfile:
@@ -425,7 +476,6 @@ class CaptureOutput:
         return proxy
 
     def _ident(self):
-        # TODO: On some systems we seem to be running into a stack overflow with LAMBDA_EXECUTOR=local here!
         return threading.current_thread().ident
 
     def stdout(self):

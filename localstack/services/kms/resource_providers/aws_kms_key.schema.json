@@ -1,0 +1,172 @@
+{
+  "typeName": "AWS::KMS::Key",
+  "description": "The AWS::KMS::Key resource specifies an AWS KMS key in AWS Key Management Service (AWS KMS). Authorized users can use the AWS KMS key to encrypt and decrypt small amounts of data (up to 4096 bytes), but they are more commonly used to generate data keys. You can also use AWS KMS keys to encrypt data stored in AWS services that are integrated with AWS KMS or within their applications.",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-kms",
+  "definitions": {
+    "Tag": {
+      "description": "A key-value pair to associate with a resource.",
+      "type": "object",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "description": "The key name of the tag. You can specify a value that is 1 to 128 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "Value": {
+          "type": "string",
+          "description": "The value for the tag. You can specify a value that is 0 to 256 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
+          "minLength": 0,
+          "maxLength": 256
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Key",
+        "Value"
+      ]
+    }
+  },
+  "properties": {
+    "Description": {
+      "description": "A description of the AWS KMS key. Use a description that helps you to distinguish this AWS KMS key from others in the account, such as its intended use.",
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 8192
+    },
+    "Enabled": {
+      "description": "Specifies whether the AWS KMS key is enabled. Disabled AWS KMS keys cannot be used in cryptographic operations.",
+      "type": "boolean"
+    },
+    "EnableKeyRotation": {
+      "description": "Enables automatic rotation of the key material for the specified AWS KMS key. By default, automation key rotation is not enabled.",
+      "type": "boolean"
+    },
+    "KeyPolicy": {
+      "description": "The key policy that authorizes use of the AWS KMS key. The key policy must observe the following rules.",
+      "type": [
+        "object",
+        "string"
+      ]
+    },
+    "KeyUsage": {
+      "description": "Determines the cryptographic operations for which you can use the AWS KMS key. The default value is ENCRYPT_DECRYPT. This property is required only for asymmetric AWS KMS keys. You can't change the KeyUsage value after the AWS KMS key is created.",
+      "type": "string",
+      "default": "ENCRYPT_DECRYPT",
+      "enum": [
+        "ENCRYPT_DECRYPT",
+        "SIGN_VERIFY",
+        "GENERATE_VERIFY_MAC"
+      ]
+    },
+    "KeySpec": {
+      "description": "Specifies the type of AWS KMS key to create. The default value is SYMMETRIC_DEFAULT. This property is required only for asymmetric AWS KMS keys. You can't change the KeySpec value after the AWS KMS key is created.",
+      "type": "string",
+      "default": "SYMMETRIC_DEFAULT",
+      "enum": [
+        "SYMMETRIC_DEFAULT",
+        "RSA_2048",
+        "RSA_3072",
+        "RSA_4096",
+        "ECC_NIST_P256",
+        "ECC_NIST_P384",
+        "ECC_NIST_P521",
+        "ECC_SECG_P256K1",
+        "HMAC_224",
+        "HMAC_256",
+        "HMAC_384",
+        "HMAC_512",
+        "SM2"
+      ]
+    },
+    "MultiRegion": {
+      "description": "Specifies whether the AWS KMS key should be Multi-Region. You can't change the MultiRegion value after the AWS KMS key is created.",
+      "type": "boolean",
+      "default": false
+    },
+    "PendingWindowInDays": {
+      "description": "Specifies the number of days in the waiting period before AWS KMS deletes an AWS KMS key that has been removed from a CloudFormation stack. Enter a value between 7 and 30 days. The default value is 30 days.",
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 30
+    },
+    "Tags": {
+      "description": "An array of key-value pairs to apply to this resource.",
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      }
+    },
+    "Arn": {
+      "type": "string"
+    },
+    "KeyId": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "KeyPolicy"
+  ],
+  "readOnlyProperties": [
+    "/properties/Arn",
+    "/properties/KeyId"
+  ],
+  "primaryIdentifier": [
+    "/properties/KeyId"
+  ],
+  "writeOnlyProperties": [
+    "/properties/PendingWindowInDays"
+  ],
+  "tagging": {
+    "taggable": true,
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "cloudFormationSystemTags": false
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "kms:CreateKey",
+        "kms:EnableKeyRotation",
+        "kms:DisableKey",
+        "kms:TagResource"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "kms:DescribeKey",
+        "kms:GetKeyPolicy",
+        "kms:GetKeyRotationStatus",
+        "kms:ListResourceTags"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "kms:DescribeKey",
+        "kms:DisableKey",
+        "kms:DisableKeyRotation",
+        "kms:EnableKey",
+        "kms:EnableKeyRotation",
+        "kms:PutKeyPolicy",
+        "kms:TagResource",
+        "kms:UntagResource",
+        "kms:UpdateKeyDescription"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "kms:DescribeKey",
+        "kms:ScheduleKeyDeletion"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "kms:ListKeys",
+        "kms:DescribeKey"
+      ]
+    }
+  }
+}

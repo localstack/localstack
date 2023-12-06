@@ -2,15 +2,14 @@ import base64
 import io
 import itertools
 import os
-import socket
 import threading
 import time
 import zipfile
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 import pytest
-import pytz
 import yaml
+from zoneinfo import ZoneInfo
 
 from localstack import config
 from localstack.utils import common
@@ -76,7 +75,7 @@ class TestCommon:
 
     def test_now_utc(self):
         env = common.now_utc()
-        test = datetime.now(pytz.UTC).timestamp()
+        test = datetime.now(timezone.utc).timestamp()
         assert test == pytest.approx(env, 1)
 
     def test_is_number(self):
@@ -95,18 +94,18 @@ class TestCommon:
 
     def test_mktime_with_tz(self):
         # see https://en.wikipedia.org/wiki/File:1000000000seconds.jpg
-        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.utc)
+        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=timezone.utc)
         assert int(common.mktime(dt)) == 1000000000
 
-        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.timezone("EST"))
+        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=ZoneInfo("EST"))
         assert int(common.mktime(dt)) == 1000000000 + (5 * 60 * 60)  # EST is UTC-5
 
     def test_mktime_millis_with_tz(self):
         # see https://en.wikipedia.org/wiki/File:1000000000
-        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.utc)
+        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=timezone.utc)
         assert int(common.mktime(dt, millis=True) / 1000) == 1000000000
 
-        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.timezone("EST"))
+        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=ZoneInfo("EST"))
         assert int(common.mktime(dt, millis=True)) / 1000 == 1000000000 + (
             5 * 60 * 60
         )  # EST is UTC-5
@@ -165,31 +164,6 @@ class TestCommon:
         }
         result = common.clone_safe(obj)
         assert result == {"foo": ["value", 123, 1.23, True]}
-
-    def test_free_tcp_port_blacklist_raises_exception(self):
-        blacklist = range(0, 70000)  # blacklist all existing ports
-        with pytest.raises(Exception) as ctx:
-            common.get_free_tcp_port(blacklist)
-
-        assert "Unable to determine free TCP" in str(ctx.value)
-
-    def test_port_can_be_bound(self):
-        port = common.get_free_tcp_port()
-        assert common.port_can_be_bound(port)
-
-    def test_port_can_be_bound_illegal_port(self):
-        assert not common.port_can_be_bound(9999999999)
-
-    def test_port_can_be_bound_already_bound(self):
-        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            tcp.bind(("", 0))
-            addr, port = tcp.getsockname()
-            assert not common.port_can_be_bound(port)
-        finally:
-            tcp.close()
-
-        assert common.port_can_be_bound(port)
 
     def test_to_unique_item_list(self):
         assert common.to_unique_items_list([1, 1, 2, 2, 3]) == [1, 2, 3]
@@ -456,8 +430,6 @@ class TestCommonFileOperations:
         assert not fp.exists()
 
     def test_cp_r(self, tmp_path):
-        pytest.skip("this test does not work on python3.7 due to an issue shutil used by cp_r")
-
         source = tmp_path / "source"
         target = tmp_path / "target"
 
@@ -515,7 +487,8 @@ class TestCommonFileOperations:
 
     def test_unzip_bad_crc(self):
         """Test unzipping of files with incorrect CRC codes - usually works with native `unzip` command,
-        but seems to fail with zipfile module under certain Python versions (extracts 0-bytes files)"""
+        but seems to fail with zipfile module under certain Python versions (extracts 0-bytes files)
+        """
 
         # base64-encoded zip file with a single entry with incorrect CRC (created by Node.js 18 / Serverless)
         zip_base64 = """
@@ -600,7 +573,7 @@ class TestExternalServicePortsManager:
         self, external_service_ports_manager: ExternalServicePortsManager
     ):
         with pytest.raises(PortNotAvailableException):
-            external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START + 1)
+            external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_END + 1)
 
     def test_reserve_any_port_within_range(
         self, external_service_ports_manager: ExternalServicePortsManager
@@ -611,6 +584,7 @@ class TestExternalServicePortsManager:
     def test_reserve_port_all_reserved(
         self, external_service_ports_manager: ExternalServicePortsManager
     ):
+        external_service_ports_manager.reserve_port()
         external_service_ports_manager.reserve_port()
         with pytest.raises(PortNotAvailableException):
             external_service_ports_manager.reserve_port()

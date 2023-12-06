@@ -6,6 +6,7 @@ import pytest
 from botocore.awsrequest import prepare_request_dict
 from botocore.serialize import create_serializer
 
+from localstack import config
 from localstack.aws.protocol.parser import (
     OperationNotFoundParserError,
     ProtocolParserError,
@@ -16,7 +17,6 @@ from localstack.aws.protocol.parser import (
 )
 from localstack.aws.spec import load_service
 from localstack.http import Request as HttpRequest
-from localstack.services.s3 import s3_utils
 from localstack.utils.common import to_bytes, to_str
 
 
@@ -43,9 +43,9 @@ def test_query_parser():
     }
 
 
-def test_sqs_parse_tag_map_with_member_name_as_location():
+def test_sqs_query_parse_tag_map_with_member_name_as_location():
     # see https://github.com/localstack/localstack/issues/4391
-    parser = create_parser(load_service("sqs"))
+    parser = create_parser(load_service("sqs-query"))
 
     # with "Tag." it works (this is the default request)
     request = HttpRequest(
@@ -116,7 +116,7 @@ def test_query_parser_uri():
 
 def test_query_parser_flattened_map():
     """Simple test with a flattened map (SQS SetQueueAttributes request)."""
-    parser = QueryRequestParser(load_service("sqs"))
+    parser = QueryRequestParser(load_service("sqs-query"))
     request = HttpRequest(
         body=to_bytes(
             "Action=SetQueueAttributes&Version=2012-11-05&"
@@ -250,7 +250,7 @@ def test_query_parser_non_flattened_list_structure_changed_name():
 
 def test_query_parser_flattened_list_structure():
     """Simple test with a flattened list of structures."""
-    parser = QueryRequestParser(load_service("sqs"))
+    parser = QueryRequestParser(load_service("sqs-query"))
     request = HttpRequest(
         body=to_bytes(
             "Action=DeleteMessageBatch&"
@@ -301,6 +301,15 @@ def _botocore_parser_integration_test(
 
     operation_model = service.operation_model(action)
     serialized_request = serializer.serialize_to_request(kwargs, operation_model)
+
+    # botocore >= 1.28 might modify the url path of the request dict (specifically for S3).
+    # It will then set the original url path as "auth_path". If the auth_path is set, we reset the url_path.
+    # Since botocore 1.31.2, botocore will strip the query from the `authPart`
+    # We need to add it back from `requestUri` field
+    if auth_path := serialized_request.get("auth_path"):
+        path, sep, query = serialized_request["url_path"].partition("?")
+        serialized_request["url_path"] = f"{auth_path}{sep}{query}"
+
     prepare_request_dict(serialized_request, "")
     split_url = urlsplit(serialized_request.get("url"))
     path = split_url.path
@@ -377,7 +386,7 @@ def test_query_parser_sqs_with_botocore():
 
 def test_query_parser_empty_required_members_sqs_with_botocore():
     _botocore_parser_integration_test(
-        service="sqs",
+        service="sqs-query",
         action="SendMessageBatch",
         QueueUrl="string",
         Entries=[],
@@ -389,6 +398,22 @@ def test_query_parser_no_input_shape_autoscaling_with_botocore():
     _botocore_parser_integration_test(
         service="autoscaling",
         action="DescribeMetricCollectionTypes",
+    )
+
+
+def test_query_parser_iot_with_botocore():
+    """Test if timestamp for 'rest-json' is parsed correctly"""
+    start = datetime(2023, 1, 10, tzinfo=timezone.utc)
+    end = datetime(2023, 1, 11, tzinfo=timezone.utc)
+    _botocore_parser_integration_test(
+        service="iot",
+        action="ListAuditMitigationActionsTasks",
+        endTime=end,
+        startTime=start,
+        expected={
+            "endTime": end,
+            "startTime": start,
+        },
     )
 
 
@@ -729,7 +754,7 @@ def test_restjson_opensearch_with_botocore():
     )
 
 
-def test_restjson_awslambda_invoke_with_botocore():
+def test_restjson_lambda_invoke_with_botocore():
     _botocore_parser_integration_test(
         service="lambda",
         action="Invoke",
@@ -1060,6 +1085,17 @@ def test_s3_get_object_keys_with_slashes():
     )
 
 
+def test_s3_put_object_keys_with_trailing_slash_and_special_characters():
+    _botocore_parser_integration_test(
+        service="s3",
+        action="PutObject",
+        Bucket="test-bucket",
+        Key="test@key/",
+        ContentLength=0,
+        Metadata={},
+    )
+
+
 def test_restxml_headers_parsing():
     """Test the parsing of a map with the location trait 'headers'."""
     _botocore_parser_integration_test(
@@ -1084,6 +1120,12 @@ def test_restxml_header_list_parsing():
     )
 
 
+def test_restxml_header_optional_list_parsing():
+    """Tests that non-existing header list attributes are working correctly."""
+    # OptionalObjectAttributes (the "x-amz-optional-object-attributes") in ListObjectsV2Request is optional
+    _botocore_parser_integration_test(service="s3", action="ListObjectsV2", Bucket="test-bucket")
+
+
 def test_restxml_header_date_parsing():
     """Test the parsing of a map with the location trait 'headers'."""
     _botocore_parser_integration_test(
@@ -1098,11 +1140,12 @@ def test_restxml_header_date_parsing():
     )
 
 
+@pytest.mark.skipif(
+    config.LEGACY_V2_S3_PROVIDER, reason="v2 provider does not rely on virtual host parser"
+)
 def test_s3_virtual_host_addressing():
     """Test the parsing of an S3 bucket request using the bucket encoded in the domain."""
-    request = HttpRequest(
-        method="PUT", headers={"host": s3_utils.get_bucket_hostname("test-bucket")}
-    )
+    request = HttpRequest(method="PUT", headers={"host": "test-bucket.s3.example.com"})
     parser = create_parser(load_service("s3"))
     parsed_operation_model, parsed_request = parser.parse(request)
     assert parsed_operation_model.name == "CreateBucket"

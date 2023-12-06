@@ -1,0 +1,13 @@
+{
+    "Comment": "BASE_64_ENCODE",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.Base64Encode($.FunctionInput)",
+            },
+            "End": true,
+        },
+    },
+}

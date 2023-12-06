@@ -1,0 +1,143 @@
+{
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_internet_gateway_ref_and_attr": {
+    "recorded-date": "13-02-2023, 17:13:41",
+    "recorded-content": {
+      "outputs": {
+        "IdAttachment": "<internet-gateway-ref:1>",
+        "RefAttachment": "<internet-gateway-ref:1>"
+      },
+      "description": {
+        "DriftInformation": {
+          "StackResourceDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTimestamp": "timestamp",
+        "LogicalResourceId": "Gateway",
+        "Metadata": {},
+        "PhysicalResourceId": "<internet-gateway-ref:1>",
+        "ResourceStatus": "CREATE_COMPLETE",
+        "ResourceType": "AWS::EC2::InternetGateway",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_dhcp_options": {
+    "recorded-date": "19-10-2023, 14:51:28",
+    "recorded-content": {
+      "description": {
+        "DhcpConfigurations": [
+          {
+            "Key": "domain-name",
+            "Values": [
+              {
+                "Value": "example.com"
+              }
+            ]
+          },
+          {
+            "Key": "domain-name-servers",
+            "Values": [
+              {
+                "Value": "AmazonProvidedDNS"
+              }
+            ]
+          },
+          {
+            "Key": "netbios-name-servers",
+            "Values": [
+              {
+                "Value": "10.2.5.1"
+              }
+            ]
+          },
+          {
+            "Key": "netbios-node-type",
+            "Values": [
+              {
+                "Value": "2"
+              }
+            ]
+          },
+          {
+            "Key": "ntp-servers",
+            "Values": [
+              {
+                "Value": "10.2.5.1"
+              }
+            ]
+          }
+        ],
+        "DhcpOptionsId": "<dhcp-options-id:1>",
+        "OwnerId": "111111111111",
+        "Tags": [
+          {
+            "Key": "project",
+            "Value": "123"
+          },
+          {
+            "Key": "aws:cloudformation:logical-id",
+            "Value": "myDhcpOptions"
+          },
+          {
+            "Key": "aws:cloudformation:stack-name",
+            "Value": "stack-698b113f"
+          },
+          {
+            "Key": "aws:cloudformation:stack-id",
+            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-698b113f/d892a0f0-6eb8-11ee-ab19-0a5372e03565"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_transit_gateway_attachment": {
+    "recorded-date": "20-10-2023, 08:55:07",
+    "recorded-content": {
+      "attachment": {
+        "Association": {
+          "State": "associated",
+          "TransitGatewayRouteTableId": "<transit-gateway-route-table-id:1>"
+        },
+        "CreationTime": "datetime",
+        "ResourceId": "<resource-id:1>",
+        "ResourceOwnerId": "111111111111",
+        "ResourceType": "vpc",
+        "State": "available",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "example-tag"
+          }
+        ],
+        "TransitGatewayAttachmentId": "<transit-gateway-attachment-id:1>",
+        "TransitGatewayId": "<transit-gateway-id:1>",
+        "TransitGatewayOwnerId": "111111111111"
+      },
+      "gateway": {
+        "CreationTime": "datetime",
+        "Description": "TGW Route Integration Test",
+        "Options": {
+          "AmazonSideAsn": 65000,
+          "AssociationDefaultRouteTableId": "<transit-gateway-route-table-id:1>",
+          "AutoAcceptSharedAttachments": "disable",
+          "DefaultRouteTableAssociation": "enable",
+          "DefaultRouteTablePropagation": "enable",
+          "DnsSupport": "enable",
+          "MulticastSupport": "disable",
+          "PropagationDefaultRouteTableId": "<transit-gateway-route-table-id:1>",
+          "VpnEcmpSupport": "enable"
+        },
+        "OwnerId": "111111111111",
+        "State": "available",
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-d2a69315/f9376240-6f4f-11ee-87a2-0a5f03ecaf83"
+          }
+        ],
+        "TransitGatewayArn": "arn:aws:ec2:<region>:111111111111:transit-gateway/<transit-gateway-id:1>",
+        "TransitGatewayId": "<transit-gateway-id:1>"
+      }
+    }
+  }
+}

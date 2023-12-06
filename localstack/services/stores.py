@@ -5,7 +5,7 @@ Stores provide storage for AWS service providers and are analogous to Moto's Bac
 
 By convention, Stores are to be defined in `models` submodule of the service
 by subclassing BaseStore e.g. `localstack.services.sqs.models.SqsStore`
-Also by convention, cross-region attributes are declared in CAPITAL_CASE
+Also by convention, cross-region and cross-account attributes are declared in CAPITAL_CASE
 
     class SqsStore(BaseStore):
         queues: dict[str, SqsQueue] =  LocalAttribute(default=dict)
@@ -32,8 +32,9 @@ While not recommended, store classes may define member helper functions and prop
 import re
 from collections.abc import Callable
 from threading import RLock
-from typing import Any, Generic, Type, TypeVar, Union
+from typing import Any, Generic, Iterator, Type, TypeVar, Union
 
+from localstack import config
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
 LOCAL_ATTR_PREFIX = "attr_"
@@ -114,6 +115,47 @@ class CrossRegionAttribute:
             )
 
 
+class CrossAccountAttribute:
+    """
+    Descriptor protocol for marking a store attributes as shared across all regions and accounts.
+
+    This should be used for resources that are identified by ARNs.
+    """
+
+    def __init__(self, default: Union[Callable, int, float, str, bool, None]):
+        """
+        :param default: The default value assigned to the cross-account attribute.
+            This must be a scalar or a callable.
+        """
+        self.default = default
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, obj: BaseStoreType, objtype=None) -> Any:
+        self._check_account_store_association(obj)
+
+        if self.name not in obj._universal.keys():
+            if isinstance(self.default, Callable):
+                obj._universal[self.name] = self.default()
+            else:
+                obj._universal[self.name] = self.default
+
+        return obj._universal[self.name]
+
+    def __set__(self, obj: BaseStoreType, value: Any):
+        self._check_account_store_association(obj)
+
+        obj._universal[self.name] = value
+
+    def _check_account_store_association(self, obj):
+        if not hasattr(obj, "_universal"):
+            # Raise if a Store is instantiated outside an AccountRegionBundle
+            raise AttributeError(
+                "Could not resolve cross-account attribute because there is no associated AccountRegionBundle"
+            )
+
+
 #
 # Base models
 #
@@ -123,6 +165,12 @@ class BaseStore:
     """
     Base class for defining stores for LocalStack providers.
     """
+
+    _service_name: str
+    _account_id: str
+    _region_name: str
+    _global: dict
+    _universal: dict
 
     def __repr__(self):
         try:
@@ -154,6 +202,7 @@ class RegionBundle(dict, Generic[BaseStoreType]):
         account_id: str,
         validate: bool = True,
         lock: RLock = None,
+        universal: dict = None,
     ):
         self.store = store
         self.account_id = account_id
@@ -163,12 +212,22 @@ class RegionBundle(dict, Generic[BaseStoreType]):
 
         self.valid_regions = get_valid_regions_for_service(service_name)
 
-        # Keeps track of all cross-region attributes
+        # Keeps track of all cross-region attributes. This dict is maintained at
+        # a region level (hence in RegionBundle). A ref is passed to every store
+        # intialised in this region so that backref is possible.
         self._global = {}
 
+        # Keeps track of all cross-account attributes. This dict is maintained at
+        # the account level (ie. AccountRegionBundle). A ref is passed down from
+        # AccountRegionBundle to RegionBundle to individual stores to enable backref.
+        self._universal = universal
+
     def __getitem__(self, region_name) -> BaseStoreType:
-        if self.validate and region_name not in self.valid_regions:
-            # Tip: Try using a valid region or valid service name
+        if (
+            not config.ALLOW_NONSTANDARD_REGIONS
+            and self.validate
+            and region_name not in self.valid_regions
+        ):
             raise ValueError(
                 f"'{region_name}' is not a valid AWS region name for {self.service_name}"
             )
@@ -178,7 +237,8 @@ class RegionBundle(dict, Generic[BaseStoreType]):
                 store_obj = self.store()
 
                 store_obj._global = self._global
-                store_obj._service_name = self.service_name
+                store_obj._universal = self._universal
+                store_obj.service_name = self.service_name
                 store_obj._account_id = self.account_id
                 store_obj._region_name = region_name
 
@@ -186,8 +246,20 @@ class RegionBundle(dict, Generic[BaseStoreType]):
 
         return super().__getitem__(region_name)
 
-    def reset(self):
-        """Clear all store data."""
+    def reset(self, _reset_universal: bool = False):
+        """
+        Clear all store data.
+
+        This only deletes the data held in the stores. All instantiated stores
+        are retained. This includes data shared by all stores in this account
+        and marked by the CrossRegionAttribute descriptor.
+
+        Data marked by CrossAccountAttribute descriptor is only cleared when
+        `_reset_universal` is set. Note that this escapes the logical boundary of
+        the account associated with this RegionBundle and affects *all* accounts.
+        Hence this argument is not intended for public use and is only used when
+        invoking this method from AccountRegionBundle.
+        """
         # For safety, clear data in all referenced store instances, if any
         for store_inst in self.values():
             attrs = list(store_inst.__dict__.keys())
@@ -195,6 +267,9 @@ class RegionBundle(dict, Generic[BaseStoreType]):
                 # reset the cross-region attributes
                 if attr == "_global":
                     store_inst._global.clear()
+
+                if attr == "_universal" and _reset_universal:
+                    store_inst._universal.clear()
 
                 # reset the local attributes
                 elif attr.startswith(LOCAL_ATTR_PREFIX):
@@ -222,6 +297,11 @@ class AccountRegionBundle(dict, Generic[BaseStoreType]):
         self.validate = validate
         self.lock = RLock()
 
+        # Keeps track of all cross-account attributes. This dict is maintained at
+        # the account level (hence in AccountRegionBundle). A ref is passed to
+        # every region bundle, which in turn passes it to every store in it.
+        self._universal = {}
+
     def __getitem__(self, account_id: str) -> RegionBundle[BaseStoreType]:
         if self.validate and not re.match(r"\d{12}", account_id):
             raise ValueError(f"'{account_id}' is not a valid AWS account ID")
@@ -234,15 +314,33 @@ class AccountRegionBundle(dict, Generic[BaseStoreType]):
                     account_id=account_id,
                     validate=self.validate,
                     lock=self.lock,
+                    universal=self._universal,
                 )
 
         return super().__getitem__(account_id)
 
     def reset(self):
-        """Clear all store data."""
+        """
+        Clear all store data.
+
+        This only deletes the data held in the stores. All instantiated stores are retained.
+        """
         # For safety, clear all referenced region bundles, if any
         for region_bundle in self.values():
-            region_bundle.reset()
+            region_bundle.reset(_reset_universal=True)
+
+        self._universal.clear()
 
         with self.lock:
             self.clear()
+
+    def iter_stores(self) -> Iterator[tuple[str, str, BaseStoreType]]:
+        """
+        Iterate over a flattened view of all stores in this AccountRegionBundle, where each record is a
+        tuple of account id, region name, and the store within that account and region. Example::
+
+        :return: an iterator
+        """
+        for account_id, region_stores in self.items():
+            for region_name, store in region_stores.items():
+                yield account_id, region_name, store

@@ -1,0 +1,158 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_iam_username_defaultname": {
+    "recorded-date": "31-05-2022, 11:29:45",
+    "recorded-content": {
+      "get_iam_user": {
+        "User": {
+          "Path": "/",
+          "UserName": "<user-name:1>",
+          "UserId": "<user-id:1>",
+          "Arn": "arn:aws:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managed_policy_with_empty_resource": {
+    "recorded-date": "11-07-2023, 18:10:41",
+    "recorded-content": {
+      "outputs": {
+        "PolicyArn": "arn:aws:iam::111111111111:policy/<policy-name:1>",
+        "StreamARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "TableARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>",
+        "TableName": "<resource:2>"
+      },
+      "managed_policy": {
+        "Policy": {
+          "Arn": "arn:aws:iam::111111111111:policy/<policy-name:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "datetime",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
+          "Path": "/",
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<policy-name:1>",
+          "Tags": [],
+          "UpdateDate": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_iam_user_access_key": {
+    "recorded-date": "11-07-2023, 08:23:54",
+    "recorded-content": {
+      "key_outputs": {
+        "AccessKeyId": "<key-id:1>",
+        "SecretAccessKey": "<secret-access-key:1>"
+      },
+      "access_key": {
+        "AccessKeyId": "<key-id:1>",
+        "CreateDate": "datetime",
+        "Status": "Active",
+        "UserName": "<user-name:1>"
+      },
+      "access_key_updated": {
+        "AccessKeyId": "<key-id:2>",
+        "CreateDate": "datetime",
+        "Status": "Inactive",
+        "UserName": "<user-name:1>"
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_update_inline_policy": {
+    "recorded-date": "05-04-2023, 11:55:22",
+    "recorded-content": {
+      "user_inline_policy": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:PutObject",
+                "s3:ListBucket"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "<policy-name:1>",
+        "UserName": "<user-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "role_inline_policy": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:GetObject",
+                "s3:ListBucket"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "<policy-name:1>",
+        "RoleName": "<role-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "user_updated_inline_policy": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "<policy-name:1>",
+        "UserName": "<user-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "role_updated_inline_policy": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:ListBucket"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "<policy-name:1>",
+        "RoleName": "<role-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

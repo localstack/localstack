@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  SignerArn:
+    Type: String
+
+Resources:
+  CodeSigningConfig:
+    Type: "AWS::Lambda::CodeSigningConfig"
+    Properties:
+      Description: "Code Signing"
+      AllowedPublishers:
+        SigningProfileVersionArns:
+          - !Ref SignerArn
+      CodeSigningPolicies:
+        UntrustedArtifactOnDeployment: Enforce
+
+Outputs:
+  RefValue:
+    Value: !Ref CodeSigningConfig
+  Arn:
+    Value: !GetAtt [CodeSigningConfig, CodeSigningConfigArn]
+  Id:
+    Value: !GetAtt [CodeSigningConfig, CodeSigningConfigId]

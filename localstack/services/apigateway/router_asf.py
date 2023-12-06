@@ -13,10 +13,14 @@ from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import get_api_account_id_and_region
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.utils.aws.aws_responses import LambdaResponse
+from localstack.utils.strings import remove_leading_extra_slashes
 
 LOG = logging.getLogger(__name__)
 
 
+# TODO: with the latest snapshot tests, we might start moving away from the
+# invocation context property decorators and use the url_params directly,
+# something asked for a long time.
 def to_invocation_context(
     request: Request, url_params: Dict[str, Any] = None
 ) -> ApiInvocationContext:
@@ -31,7 +35,13 @@ def to_invocation_context(
         url_params = {}
 
     method = request.method
-    path = request.full_path if request.query_string else request.path
+    # Base path is not URL-decoded.
+    # Example: test%2Balias@gmail.com => test%2Balias@gmail.com
+    raw_uri = path = request.environ.get("RAW_URI")
+    if raw_uri.startswith("//"):
+        # if starts with //, then replace the first // with /
+        path = remove_leading_extra_slashes(raw_uri)
+
     data = restore_payload(request)
     headers = Headers(request.headers)
 
@@ -49,7 +59,10 @@ def to_invocation_context(
     #   has side-effects (f.e. setting the region in a thread local)!
     #   It would be best to use a small (immutable) context for the already parsed params and the Request object
     #   and use it everywhere.
-    return ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
+    ctx = ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
+    ctx.raw_uri = raw_uri
+
+    return ctx
 
 
 def convert_response(result: RequestsResponse) -> Response:
@@ -94,26 +107,30 @@ class ApigatewayRouter:
     def register_routes(self) -> None:
         """Registers parameterized routes for API Gateway user invocations."""
         if self.registered:
-            LOG.debug("Skipped API gateway route registration (routes already registered).")
+            LOG.debug("Skipped API Gateway route registration (routes already registered).")
             return
         self.registered = True
-        LOG.debug("Registering parameterized API gateway routes.")
+        LOG.debug("Registering parameterized API Gateway routes.")
+        host_pattern = "<regex('[^-]+'):api_id><regex('(-vpce-[^.]+)?'):vpce_suffix>.execute-api.<regex('.*'):server>"
         self.router.add(
             "/",
-            host="<api_id>.execute-api.<regex('.*'):server>",
+            host=host_pattern,
             endpoint=self.invoke_rest_api,
             defaults={"path": "", "stage": None},
+            strict_slashes=True,
         )
         self.router.add(
             "/<stage>/",
-            host="<api_id>.execute-api.<regex('.*'):server>",
+            host=host_pattern,
             endpoint=self.invoke_rest_api,
             defaults={"path": ""},
+            strict_slashes=False,
         )
         self.router.add(
             "/<stage>/<path:path>",
-            host="<api_id>.execute-api.<regex('.*'):server>",
+            host=host_pattern,
             endpoint=self.invoke_rest_api,
+            strict_slashes=True,
         )
 
         # add the localstack-specific _user_request_ routes
@@ -125,12 +142,16 @@ class ApigatewayRouter:
         self.router.add(
             "/restapis/<api_id>/<stage>/_user_request_/<path:path>",
             endpoint=self.invoke_rest_api,
+            strict_slashes=True,
         )
 
-    def invoke_rest_api(self, request: Request, **url_params: Dict[str, Any]) -> Response:
-        if not get_api_account_id_and_region(url_params["api_id"])[1]:
+    def invoke_rest_api(self, request: Request, **url_params: Dict[str, str]) -> Response:
+        account_id, region_name = get_api_account_id_and_region(url_params["api_id"])
+        if not region_name:
             return Response(status=404)
         invocation_context = to_invocation_context(request, url_params)
+        invocation_context.region_name = region_name
+        invocation_context.account_id = account_id
         result = invoke_rest_api_from_request(invocation_context)
         if result is not None:
             return convert_response(result)

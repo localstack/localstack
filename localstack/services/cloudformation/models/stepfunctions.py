@@ -2,12 +2,9 @@ import logging
 import re
 from typing import Dict
 
-from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_RESOURCE_NAME,
-    generate_default_name,
-)
+from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 
 LOG = logging.getLogger(__name__)
@@ -22,20 +19,29 @@ class SFNActivity(GenericBaseModel):
         activity_arn = self.physical_resource_id
         if not activity_arn:
             return None
-        client = aws_stack.connect_to_service("stepfunctions")
+        client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).stepfunctions
         result = client.describe_activity(activityArn=activity_arn)
         return result
 
     @staticmethod
     def get_deploy_templates():
-        def _store_arn(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["activityArn"]
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["Properties"]["Arn"] = result["activityArn"]
+            resource["PhysicalResourceId"] = result["activityArn"]
 
         return {
             "create": {
                 "function": "create_activity",
-                "parameters": {"name": ["Name", PLACEHOLDER_RESOURCE_NAME], "tags": "Tags"},
-                "result_handler": _store_arn,
+                "parameters": {"name": "Name", "tags": "Tags"},
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_activity",
@@ -49,16 +55,11 @@ class SFNStateMachine(GenericBaseModel):
     def cloudformation_type():
         return "AWS::StepFunctions::StateMachine"
 
-    def get_resource_name(self):
-        return self.props.get("StateMachineName")
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("stateMachineArn")
-
     def fetch_state(self, stack_name, resources):
-        sm_name = self.props.get("StateMachineName") or self.resource_id
-        sm_name = self.resolve_refs_recursively(stack_name, sm_name, resources)
-        sfn_client = aws_stack.connect_to_service("stepfunctions")
+        sm_name = self.props.get("StateMachineName") or self.logical_resource_id
+        sfn_client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).stepfunctions
         state_machines = sfn_client.list_state_machines()["stateMachines"]
         sm_arn = [m["stateMachineArn"] for m in state_machines if m["name"] == sm_name]
         if not sm_arn:
@@ -68,7 +69,9 @@ class SFNStateMachine(GenericBaseModel):
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
-        client = aws_stack.connect_to_service("stepfunctions")
+        client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).stepfunctions
         sm_arn = self.props.get("stateMachineArn")
         if not sm_arn:
             self.state = self.fetch_state(stack_name=stack_name, resources=resources)
@@ -89,34 +92,55 @@ class SFNStateMachine(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_params(params, **kwargs):
-            def _get_definition(params):
-                definition_str = params.get("DefinitionString")
-                s3_location = params.get("DefinitionS3Location")
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
+            resource["Properties"]["Arn"] = result["stateMachineArn"]
+            resource["Properties"]["Name"] = resource["Properties"]["StateMachineName"]
+            # resource["Properties"]["StateMachineRevisionId"] = ?
+            resource["PhysicalResourceId"] = result["stateMachineArn"]
+
+        def _create_params(
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ) -> dict:
+            def _get_definition(properties):
+                # TODO: support "Definition" parameter
+                definition_str = properties.get("DefinitionString")
+                s3_location = properties.get("DefinitionS3Location")
                 if not definition_str and s3_location:
                     # TODO: currently not covered by tests - add a test to mimick the behavior of "sam deploy ..."
-                    s3_client = aws_stack.connect_to_service("s3")
+                    s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
                     LOG.debug("Fetching state machine definition from S3: %s", s3_location)
                     result = s3_client.get_object(
                         Bucket=s3_location["Bucket"], Key=s3_location["Key"]
                     )
                     definition_str = to_str(result["Body"].read())
-                substitutions = params.get("DefinitionSubstitutions")
+                substitutions = properties.get("DefinitionSubstitutions")
                 if substitutions is not None:
                     definition_str = _apply_substitutions(definition_str, substitutions)
                 return definition_str
 
             return {
-                "name": params.get("StateMachineName", PLACEHOLDER_RESOURCE_NAME),
-                "definition": _get_definition(params),
-                "roleArn": params.get("RoleArn"),
-                "type": params.get("StateMachineType", None),
+                "name": properties.get("StateMachineName"),
+                "definition": _get_definition(properties),
+                "roleArn": properties.get("RoleArn"),
+                "type": properties.get("StateMachineType", None),
             }
 
         return {
             "create": {
                 "function": "create_state_machine",
                 "parameters": _create_params,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_state_machine",

@@ -1,0 +1,200 @@
+{
+  "typeName": "AWS::CloudWatch::Alarm",
+  "description": "Resource Type definition for AWS::CloudWatch::Alarm",
+  "additionalProperties": false,
+  "properties": {
+    "ThresholdMetricId": {
+      "type": "string"
+    },
+    "EvaluateLowSampleCountPercentile": {
+      "type": "string"
+    },
+    "ExtendedStatistic": {
+      "type": "string"
+    },
+    "ComparisonOperator": {
+      "type": "string"
+    },
+    "TreatMissingData": {
+      "type": "string"
+    },
+    "Dimensions": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "$ref": "#/definitions/Dimension"
+      }
+    },
+    "Period": {
+      "type": "integer"
+    },
+    "EvaluationPeriods": {
+      "type": "integer"
+    },
+    "Unit": {
+      "type": "string"
+    },
+    "Namespace": {
+      "type": "string"
+    },
+    "OKActions": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "AlarmActions": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "MetricName": {
+      "type": "string"
+    },
+    "ActionsEnabled": {
+      "type": "boolean"
+    },
+    "Metrics": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/MetricDataQuery"
+      }
+    },
+    "AlarmDescription": {
+      "type": "string"
+    },
+    "AlarmName": {
+      "type": "string"
+    },
+    "Statistic": {
+      "type": "string"
+    },
+    "InsufficientDataActions": {
+      "type": "array",
+      "uniqueItems": false,
+      "items": {
+        "type": "string"
+      }
+    },
+    "Id": {
+      "type": "string"
+    },
+    "Arn": {
+      "type": "string"
+    },
+    "DatapointsToAlarm": {
+      "type": "integer"
+    },
+    "Threshold": {
+      "type": "number"
+    }
+  },
+  "definitions": {
+    "MetricStat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Period": {
+          "type": "integer"
+        },
+        "Metric": {
+          "$ref": "#/definitions/Metric"
+        },
+        "Stat": {
+          "type": "string"
+        },
+        "Unit": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Stat",
+        "Period",
+        "Metric"
+      ]
+    },
+    "Metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "MetricName": {
+          "type": "string"
+        },
+        "Dimensions": {
+          "type": "array",
+          "uniqueItems": false,
+          "items": {
+            "$ref": "#/definitions/Dimension"
+          }
+        },
+        "Namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "Dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Value": {
+          "type": "string"
+        },
+        "Name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Name"
+      ]
+    },
+    "MetricDataQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "AccountId": {
+          "type": "string"
+        },
+        "ReturnData": {
+          "type": "boolean"
+        },
+        "Expression": {
+          "type": "string"
+        },
+        "Label": {
+          "type": "string"
+        },
+        "MetricStat": {
+          "$ref": "#/definitions/MetricStat"
+        },
+        "Period": {
+          "type": "integer"
+        },
+        "Id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Id"
+      ]
+    }
+  },
+  "required": [
+    "ComparisonOperator",
+    "EvaluationPeriods"
+  ],
+  "createOnlyProperties": [
+    "/properties/AlarmName"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id",
+    "/properties/Arn"
+  ]
+}

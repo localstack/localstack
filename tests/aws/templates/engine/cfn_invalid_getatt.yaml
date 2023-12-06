@@ -1,0 +1,10 @@
+Resources:
+  MyResource:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: unimportant
+
+Outputs:
+  InvalidOutput:
+    Value: !GetAtt MyResource.Invalid

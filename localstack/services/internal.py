@@ -2,23 +2,55 @@
 import json
 import logging
 import os
+import re
+import time
 from collections import defaultdict
-from typing import List, Optional
+from datetime import datetime
+from typing import List
 
 import requests
 from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
-from localstack.http import Request, Response, Router
-from localstack.http.adapters import RouterListener
-from localstack.http.dispatcher import resource_dispatcher
-from localstack.services.infra import SHUTDOWN_INFRA, terminate_all_processes_in_docker
+from localstack.deprecations import deprecated_endpoint
+from localstack.http import Request, Resource, Response, Router
+from localstack.http.dispatcher import handler_dispatcher
+from localstack.services.infra import exit_infra, signal_supervisor_restart
+from localstack.utils.analytics.metadata import (
+    get_client_metadata,
+    get_localstack_edition,
+    is_license_activated,
+)
 from localstack.utils.collections import merge_recursive
+from localstack.utils.config_listener import update_config_variable
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.numbers import is_number
+from localstack.utils.objects import singleton_factory
+from localstack.utils.server.http2_server import HTTP_METHODS
 
 LOG = logging.getLogger(__name__)
+
+
+class DeprecatedResource:
+    """
+    Resource class which wraps a given resource in the deprecated_endpoint (i.e. logs deprecation warnings on every
+    invocation).
+    """
+
+    def __init__(self, resource, previous_path: str, deprecation_version: str, new_path: str):
+        for http_method in HTTP_METHODS:
+            fn_name = f"on_{http_method.lower()}"
+            fn = getattr(resource, fn_name, None)
+            if fn:
+                wrapped = deprecated_endpoint(
+                    fn,
+                    previous_path=previous_path,
+                    deprecation_version=deprecation_version,
+                    new_path=new_path,
+                )
+                setattr(self, fn_name, wrapped)
 
 
 class HealthResource:
@@ -39,9 +71,10 @@ class HealthResource:
             return Response("invalid request", 400)
 
         # backdoor API to support restarting the instance
-        if data.get("action") in ["kill", "restart"]:
-            terminate_all_processes_in_docker()
-            SHUTDOWN_INFRA.set()
+        if data.get("action") == "restart":
+            signal_supervisor_restart()
+        elif data.get("action") == "kill":
+            exit_infra(0)
 
         return Response("ok", 200)
 
@@ -54,14 +87,21 @@ class HealthResource:
         if reload:
             self.service_manager.check_all()
         services = {
-            service: state.value for service, state in self.service_manager.get_states().items()
+            service: state.value
+            for service, state in self.service_manager.get_states().items()
+            # TODO remove this as soon as the sqs-query service is gone
+            if service != "sqs-query"
         }
 
         # build state dict from internal state and merge into it the service states
         result = dict(self.state)
         result = merge_recursive({"services": services}, result)
+        result["edition"] = get_localstack_edition()
         result["version"] = constants.VERSION
         return result
+
+    def on_head(self, request: Request):
+        return Response("ok", 200)
 
     def on_put(self, request: Request):
         data = request.get_json(True, True) or {}
@@ -81,6 +121,33 @@ class HealthResource:
 
         self.state = merge_recursive(state, self.state, overwrite=True)
         return {"status": "OK"}
+
+
+class InfoResource:
+    """
+    Resource that is exposed to /_localstack/info and used to get generalized information about the current
+    localstack instance.
+    """
+
+    def on_get(self, request):
+        return self.get_info_data()
+
+    @staticmethod
+    def get_info_data() -> dict:
+        client_metadata = get_client_metadata()
+        uptime = int(time.time() - config.load_start_time)
+
+        return {
+            "version": client_metadata.version,
+            "edition": get_localstack_edition() or "unknown",
+            "is_license_activated": is_license_activated(),
+            "session_id": client_metadata.session_id,
+            "machine_id": client_metadata.machine_id,
+            "system": client_metadata.system,
+            "is_docker": client_metadata.is_docker,
+            "server_time_utc": datetime.utcnow().isoformat(timespec="seconds"),
+            "uptime": uptime,
+        }
 
 
 class CloudFormationUi:
@@ -118,6 +185,13 @@ class CloudFormationUi:
         return Response(deploy_html, mimetype="text/html")
 
 
+class UsageResource:
+    def on_get(self, request):
+        from localstack.utils import diagnose
+
+        return call_safe(diagnose.get_usage) or {}
+
+
 class DiagnoseResource:
     def on_get(self, request):
         from localstack.utils import diagnose
@@ -130,6 +204,7 @@ class DiagnoseResource:
                     "kernel": call_safe(diagnose.get_host_kernel_version),
                 },
             },
+            "info": call_safe(InfoResource.get_info_data),
             "services": call_safe(diagnose.get_service_stats),
             "config": call_safe(diagnose.get_localstack_config),
             "docker-inspect": call_safe(diagnose.inspect_main_container),
@@ -137,6 +212,7 @@ class DiagnoseResource:
             "file-tree": call_safe(diagnose.get_file_tree),
             "important-endpoints": call_safe(diagnose.resolve_endpoints),
             "logs": call_safe(diagnose.get_localstack_logs),
+            "usage": call_safe(diagnose.get_usage),
         }
 
 
@@ -157,6 +233,7 @@ class PluginsResource:
             hooks.prepare_host.manager,
             hooks.on_infra_ready.manager,
             hooks.on_infra_start.manager,
+            hooks.on_infra_shutdown.manager,
         ]
 
         def get_plugin_details(_manager: PluginManager, _name: str):
@@ -222,13 +299,35 @@ class InitScriptsStageResource:
         }
 
 
+class ConfigResource:
+    def on_get(self, request):
+        from localstack.utils import diagnose
+
+        return call_safe(diagnose.get_localstack_config)
+
+    def on_post(self, request: Request):
+        data = request.get_json(force=True)
+        variable = data.get("variable", "")
+        if not re.match(r"^[_a-zA-Z0-9]+$", variable):
+            return Response("{}", mimetype="application/json", status=400)
+        new_value = data.get("value")
+        if is_number(new_value):
+            new_value = float(new_value)
+        update_config_variable(variable, new_value)
+        value = getattr(config, variable, None)
+        return {
+            "variable": variable,
+            "value": value,
+        }
+
+
 class LocalstackResources(Router):
     """
     Router for localstack-internal HTTP resources.
     """
 
     def __init__(self):
-        super().__init__(dispatcher=resource_dispatcher(pass_response=False))
+        super().__init__(dispatcher=handler_dispatcher())
         self.add_default_routes()
         # TODO: load routes as plugins
 
@@ -236,58 +335,32 @@ class LocalstackResources(Router):
         from localstack.services.plugins import SERVICE_PLUGINS
 
         health_resource = HealthResource(SERVICE_PLUGINS)
-        plugins_resource = PluginsResource()
+        self.add(Resource("/_localstack/health", health_resource))
+        self.add(Resource("/_localstack/info", InfoResource()))
+        self.add(Resource("/_localstack/plugins", PluginsResource()))
+        self.add(Resource("/_localstack/init", InitScriptsResource()))
+        self.add(Resource("/_localstack/init/<stage>", InitScriptsStageResource()))
+        self.add(Resource("/_localstack/cloudformation/deploy", CloudFormationUi()))
 
-        # two special routes for legacy support (before `/_localstack` was introduced)
-        super().add("/health", health_resource)
-
-        self.add("/health", health_resource)
-        self.add("/plugins", plugins_resource)
-        self.add("/init", InitScriptsResource())
-        self.add("/init/<stage>", InitScriptsStageResource())
-        self.add("/cloudformation/deploy", CloudFormationUi())
+        if config.ENABLE_CONFIG_UPDATES:
+            LOG.warning(
+                "Enabling config endpoint, "
+                "please be aware that this can expose sensitive information via your network."
+            )
+            self.add(Resource("/_localstack/config", ConfigResource()))
 
         if config.DEBUG:
             LOG.warning(
                 "Enabling diagnose endpoint, "
                 "please be aware that this can expose sensitive information via your network."
             )
-            self.add("/diagnose", DiagnoseResource())
-
-    def add(self, path, *args, **kwargs):
-        super().add(f"{constants.INTERNAL_RESOURCE_PATH}{path}", *args, **kwargs)
+            self.add(Resource("/_localstack/diagnose", DiagnoseResource()))
+            self.add(Resource("/_localstack/usage", UsageResource()))
 
 
-class LocalstackResourceHandler(RouterListener):
-    """
-    Adapter to serve LocalstackResources through the edge proxy.
-    """
-
-    resources: LocalstackResources
-
-    def __init__(self, resources: LocalstackResources = None) -> None:
-        super().__init__(resources or get_internal_apis(), fall_through=False)
-
-    def forward_request(self, method, path, data, headers):
-        try:
-            return super().forward_request(method, path, data, headers)
-        except NotFound:
-            if not path.startswith(constants.INTERNAL_RESOURCE_PATH + "/"):
-                # only return 404 if we're accessing an internal resource, otherwise fall back to the other listeners
-                return True
-            else:
-                LOG.warning("Unable to find handler for path: %s", path)
-                return 404
-
-
-INTERNAL_APIS: Optional[LocalstackResources] = None
-
-
+@singleton_factory
 def get_internal_apis() -> LocalstackResources:
     """
     Get the LocalstackResources singleton.
     """
-    global INTERNAL_APIS
-    if not INTERNAL_APIS:
-        INTERNAL_APIS = LocalstackResources()
-    return INTERNAL_APIS
+    return LocalstackResources()

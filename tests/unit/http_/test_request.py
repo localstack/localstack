@@ -137,6 +137,24 @@ def test_get_raw_path_with_query():
     assert get_raw_path(request) == "/foo%2Fbar/ed"
 
 
+def test_get_raw_path_with_prefix_slashes():
+    request = Request("GET", "/foo/bar/ed", raw_path="//foo%2Fbar/ed?fizz=buzz")
+
+    assert request.path == "/foo/bar/ed"
+    assert request.environ["RAW_URI"] == "//foo%2Fbar/ed?fizz=buzz"
+    assert get_raw_path(request) == "//foo%2Fbar/ed"
+
+
+def test_get_raw_path_with_full_uri():
+    # raw_path is actually raw_uri in the WSGI environment
+    # it can be a full URL
+    request = Request("GET", "/foo/bar/ed", raw_path="http://localhost:4566/foo%2Fbar/ed")
+
+    assert request.path == "/foo/bar/ed"
+    assert request.environ["RAW_URI"] == "http://localhost:4566/foo%2Fbar/ed"
+    assert get_raw_path(request) == "/foo%2Fbar/ed"
+
+
 def test_headers_retain_dashes():
     request = Request("GET", "/foo/bar/ed", {"X-Amz-Meta--foo_bar-ed": "foobar"})
     assert "x-amz-meta--foo_bar-ed" in request.headers

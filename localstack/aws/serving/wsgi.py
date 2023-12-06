@@ -2,12 +2,13 @@ import logging
 from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
-    from _typeshed.wsgi import WSGIEnvironment, StartResponse
+    from _typeshed.wsgi import StartResponse, WSGIEnvironment
 
-from werkzeug.datastructures import Headers
+from werkzeug.datastructures import Headers, MultiDict
 from werkzeug.wrappers import Request
 
 from localstack.http import Response
+from localstack.utils import strings
 
 from ..gateway import Gateway
 
@@ -39,7 +40,14 @@ class WsgiGateway:
         if "asgi.headers" in environ:
             # restores raw headers from ASGI scope, which allows dashes in header keys
             # see https://github.com/pallets/werkzeug/issues/940
-            request.headers = Headers(environ["asgi.headers"])
+            request.headers = Headers(
+                MultiDict(
+                    [
+                        (strings.to_str(k, "latin-1"), strings.to_str(v, "latin-1"))
+                        for (k, v) in environ["asgi.headers"]
+                    ]
+                )
+            )
         else:
             # by default, werkzeug requests from environ are immutable
             request.headers = Headers(request.headers)

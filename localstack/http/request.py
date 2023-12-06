@@ -1,6 +1,6 @@
 from io import BytesIO
 from typing import IO, TYPE_CHECKING, Dict, Mapping, Optional, Tuple, Union
-from urllib.parse import quote, unquote, urlencode
+from urllib.parse import quote, unquote, urlencode, urlparse
 
 if TYPE_CHECKING:
     from _typeshed.wsgi import WSGIEnvironment
@@ -176,19 +176,32 @@ class Request(WerkzeugRequest):
                 headers[h] = self.headers[h]
         self.headers = headers
 
+    @classmethod
+    def application(cls, *args):
+        # werkzeug's application decorator assumes its Request constructor signature, which our Request doesn't support.
+        # using ``application`` from our request therefore creates runtime errors. this makes sure no one runs into
+        # these problems. if we want to support it, we need to create compatibility with werkzeug's Request constructor
+        raise NotImplementedError
+
 
 def get_raw_path(request) -> str:
     """
     Returns the raw_path inside the request without the query string. The request can either be a Quart Request
-    object (that encodes the raw path in request.scope['raw_path']) or a Werkzeug WSGi request (that encodes the raw
-    path in request.environ['RAW_URI']).
+    object (that encodes the raw path in request.scope['raw_path']) or a Werkzeug WSGI request (that encodes the raw
+    URI in request.environ['RAW_URI']).
 
     :param request: the request object
     :return: the raw path if any
     """
     if hasattr(request, "environ"):
         # werkzeug/flask request (already a string, and contains the query part)
-        return request.environ.get("RAW_URI", request.path).split("?")[0]
+        # we need to parse it, because the RAW_URI can contain a full URL if it is specified in the HTTP request
+        raw_uri: str = request.environ.get("RAW_URI", "")
+        if raw_uri.startswith("//"):
+            # if the RAW_URI starts with double slashes, `urlparse` will fail to decode it as path only
+            # it also means that we already only have the path, so we just need to remove the query string
+            return raw_uri.split("?")[0]
+        return urlparse(raw_uri or request.path).path
 
     if hasattr(request, "scope"):
         # quart request raw_path comes as bytes, and without the query part
@@ -208,6 +221,58 @@ def get_full_raw_path(request) -> str:
     return raw_path
 
 
+def get_raw_base_url(request: Request) -> str:
+    """
+    Returns the base URL (with original URL encoding). This does not include the query string.
+    This is the encoding-preserving equivalent to `request.base_url`.
+    """
+    return get_raw_current_url(
+        request.scheme, request.host, request.root_path, get_raw_path(request)
+    )
+
+
+def get_raw_current_url(
+    scheme: str,
+    host: str,
+    root_path: Optional[str] = None,
+    path: Optional[str] = None,
+    query_string: Optional[bytes] = None,
+) -> str:
+    """
+    `werkzeug.sansio.utils.get_current_url` implementation without
+    any encoding dances.
+    The given paths and query string are directly used without any encodings
+    (to avoid any double encodings).
+    It can be used to recreate the raw URL for a request.
+
+    :param scheme: The protocol the request used, like ``"https"``.
+    :param host: The host the request was made to. See :func:`get_host`.
+    :param root_path: Prefix that the application is mounted under. This
+        is prepended to ``path``.
+    :param path: The path part of the URL after ``root_path``.
+    :param query_string: The portion of the URL after the "?".
+    """
+    url = [scheme, "://", host]
+
+    if root_path is None:
+        url.append("/")
+        return "".join(url)
+
+    url.append(root_path.rstrip("/"))
+    url.append("/")
+
+    if path is None:
+        return "".join(url)
+
+    url.append(path.lstrip("/"))
+
+    if query_string:
+        url.append("?")
+        url.append(query_string)
+
+    return "".join(url)
+
+
 def restore_payload(request: Request) -> bytes:
     """
     This method takes a request and restores the original payload from it even after it has been consumed. A werkzeug
@@ -219,6 +284,9 @@ def restore_payload(request: Request) -> bytes:
       inevitably become the the basis of proxying werkzeug requests. The alternative is to build our own request object
       that memoizes the original payload before parsing.
     """
+    if request.shallow:
+        return b""
+
     data = request.data
 
     if request.method != "POST":

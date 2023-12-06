@@ -1,0 +1,27 @@
+{
+  "Comment": "AWS_SDK_TASK_ERROR_S3_LIST_OBJECTS",
+  "StartAt": "CreateSecret",
+  "States": {
+    "CreateSecret": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:listObjects",
+      "Parameters": {
+        "Bucket.$": "$.Bucket"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.TaskFailed"
+          ],
+          "ResultPath": "$.TaskFailedError",
+          "Next": "TaskFailedHandler"
+        }
+      ],
+      "End": true
+    },
+    "TaskFailedHandler": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

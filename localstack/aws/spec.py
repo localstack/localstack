@@ -21,6 +21,16 @@ def load_spec_patches() -> Dict[str, list]:
         return json.load(fd)
 
 
+# Path for custom specs which are not (anymore) provided by botocore
+LOCALSTACK_BUILTIN_DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
+
+class LocalStackBuiltInDataLoaderMixin(Loader):
+    def __init__(self, *args, **kwargs):
+        # add the builtin data path to the extra_search_paths to ensure they are discovered by the loader
+        super().__init__(*args, extra_search_paths=[LOCALSTACK_BUILTIN_DATA_PATH], **kwargs)
+
+
 class PatchingLoader(Loader):
     """
     A custom botocore Loader that applies JSON patches from the given json patch file to the specs as they are loaded.
@@ -29,6 +39,7 @@ class PatchingLoader(Loader):
     patches: Dict[str, list]
 
     def __init__(self, patches: Dict[str, list], *args, **kwargs):
+        # add the builtin data path to the extra_search_paths to ensure they are discovered by the loader
         super().__init__(*args, **kwargs)
         self.patches = patches
 
@@ -42,7 +53,12 @@ class PatchingLoader(Loader):
         return result
 
 
-loader = PatchingLoader(load_spec_patches())
+class CustomLoader(PatchingLoader, LocalStackBuiltInDataLoaderMixin):
+    # Class mixing the different loader features (patching, localstack specific data)
+    pass
+
+
+loader = CustomLoader(load_spec_patches())
 
 
 def list_services(model_type="service-2") -> List[ServiceModel]:

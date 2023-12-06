@@ -1,0 +1,33 @@
+Parameters:
+  BucketName:
+    Type: String
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref BucketName
+      # this config is required to run the sample with AWS
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: False
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+      # website config is what we actually want to test
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+        RoutingRules:
+          - RoutingRuleCondition:
+              HttpErrorCodeReturnedEquals: '404'
+              KeyPrefixEquals: out1/
+            RedirectRule:
+              ReplaceKeyWith: "redirected.html"
+Outputs:
+  BucketNameOutput:
+    Value:
+      Ref: S3Bucket
+  WebsiteURL:
+    Value: !GetAtt
+      - S3Bucket
+      - WebsiteURL
+    Description: URL for website hosted on S3

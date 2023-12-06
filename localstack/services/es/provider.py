@@ -11,9 +11,6 @@ from localstack.aws.api.es import (
     AdvancedOptions,
     AdvancedSecurityOptionsInput,
     AutoTuneOptionsInput,
-)
-from localstack.aws.api.es import BaseException as EsBaseException
-from localstack.aws.api.es import (
     CognitoOptions,
     CompatibleElasticsearchVersionsList,
     CompatibleVersionsMap,
@@ -62,6 +59,7 @@ from localstack.aws.api.es import (
     ValidationException,
     VPCOptions,
 )
+from localstack.aws.api.es import BaseException as EsBaseException
 from localstack.aws.api.opensearch import (
     ClusterConfig,
     CompatibleVersionsList,
@@ -69,7 +67,7 @@ from localstack.aws.api.opensearch import (
     DomainStatus,
     VersionString,
 )
-from localstack.utils.aws import aws_stack
+from localstack.aws.connect import connect_to
 
 
 def _version_to_opensearch(
@@ -141,11 +139,12 @@ def _clusterconfig_to_opensearch(
 ) -> Optional[ClusterConfig]:
     if elasticsearch_cluster_config is not None:
         result = cast(ClusterConfig, elasticsearch_cluster_config)
-        result["InstanceType"] = _instancetype_to_opensearch(result.get("InstanceType"))
-        result["DedicatedMasterType"] = _instancetype_to_opensearch(
-            result.get("DedicatedMasterType")
-        )
-        result["WarmType"] = _instancetype_to_opensearch(result.get("WarmType"))
+        if instance_type := result.get("InstanceType"):
+            result["InstanceType"] = _instancetype_to_opensearch(instance_type)
+        if dedicated_master_type := result.get("DedicatedMasterType"):
+            result["DedicatedMasterType"] = _instancetype_to_opensearch(dedicated_master_type)
+        if warm_type := result.get("WarmType"):
+            result["WarmType"] = _instancetype_to_opensearch(warm_type)
         return result
 
 
@@ -229,7 +228,9 @@ class EsProvider(EsApi):
         auto_tune_options: AutoTuneOptionsInput = None,
         tag_list: TagList = None,
     ) -> CreateElasticsearchDomainResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
         # If no version is given, we set our default elasticsearch version
         engine_version = (
             _version_to_opensearch(elasticsearch_version)
@@ -267,7 +268,9 @@ class EsProvider(EsApi):
     def delete_elasticsearch_domain(
         self, context: RequestContext, domain_name: DomainName
     ) -> DeleteElasticsearchDomainResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
 
         with exception_mapper():
             domain_status = opensearch_client.delete_domain(
@@ -280,7 +283,9 @@ class EsProvider(EsApi):
     def describe_elasticsearch_domain(
         self, context: RequestContext, domain_name: DomainName
     ) -> DescribeElasticsearchDomainResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
 
         with exception_mapper():
             opensearch_status = opensearch_client.describe_domain(
@@ -294,7 +299,9 @@ class EsProvider(EsApi):
     def update_elasticsearch_domain_config(
         self, context: RequestContext, payload: UpdateElasticsearchDomainConfigRequest
     ) -> UpdateElasticsearchDomainConfigResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
 
         payload: Dict
         if "ElasticsearchClusterConfig" in payload:
@@ -313,7 +320,9 @@ class EsProvider(EsApi):
     def describe_elasticsearch_domains(
         self, context: RequestContext, domain_names: DomainNameList
     ) -> DescribeElasticsearchDomainsResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
 
         with exception_mapper():
             opensearch_status_list = opensearch_client.describe_domains(
@@ -326,7 +335,9 @@ class EsProvider(EsApi):
     def list_domain_names(
         self, context: RequestContext, engine_type: EngineType = None
     ) -> ListDomainNamesResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
         # Only hand the EngineType param to boto if it's set
         kwargs = {}
         if engine_type:
@@ -343,7 +354,9 @@ class EsProvider(EsApi):
         max_results: MaxResults = None,
         next_token: NextToken = None,
     ) -> ListElasticsearchVersionsResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
         # Construct the arguments as kwargs to not set None values at all (boto doesn't like that)
         kwargs = {
             key: value
@@ -363,7 +376,9 @@ class EsProvider(EsApi):
     def get_compatible_elasticsearch_versions(
         self, context: RequestContext, domain_name: DomainName = None
     ) -> GetCompatibleElasticsearchVersionsResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
         # Only hand the DomainName param to boto if it's set
         kwargs = {}
         if domain_name:
@@ -382,7 +397,9 @@ class EsProvider(EsApi):
     def describe_elasticsearch_domain_config(
         self, context: RequestContext, domain_name: DomainName
     ) -> DescribeElasticsearchDomainConfigResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
 
         with exception_mapper():
             domain_config = opensearch_client.describe_domain_config(DomainName=domain_name).get(
@@ -394,13 +411,17 @@ class EsProvider(EsApi):
         )
 
     def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
 
         with exception_mapper():
             opensearch_client.add_tags(ARN=arn, TagList=tag_list)
 
     def list_tags(self, context: RequestContext, arn: ARN) -> ListTagsResponse:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
 
         with exception_mapper():
             response = opensearch_client.list_tags(ARN=arn)
@@ -408,7 +429,9 @@ class EsProvider(EsApi):
         return ListTagsResponse(TagList=response.get("TagList"))
 
     def remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
-        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+        opensearch_client = connect_to(
+            region_name=context.region, aws_access_key_id=context.account_id
+        ).opensearch
 
         with exception_mapper():
             opensearch_client.remove_tags(ARN=arn, TagKeys=tag_keys)

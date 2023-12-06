@@ -1,7 +1,8 @@
 import logging
 import os
 import re
-from typing import Dict, Union
+import traceback
+from typing import Dict, Optional, Union
 from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
@@ -173,7 +174,13 @@ def get_proxies() -> Dict[str, str]:
     return proxy_map
 
 
-def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None):
+def download(
+    url: str,
+    path: str,
+    verify_ssl: bool = True,
+    timeout: float = None,
+    request_headers: Optional[dict] = None,
+):
     """Downloads file at url to the given path. Raises TimeoutError if the optional timeout (in secs) is reached."""
 
     # make sure we're creating a new session here to enable parallel file downloads
@@ -188,29 +195,43 @@ def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None
 
     r = None
     try:
-        r = s.get(url, stream=True, verify=_verify, timeout=timeout)
+        r = s.get(url, stream=True, verify=_verify, timeout=timeout, headers=request_headers)
         # check status code before attempting to read body
         if not r.ok:
             raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
 
-        total = 0
+        total_size = 0
+        if r.headers.get("Content-Length"):
+            total_size = int(r.headers.get("Content-Length"))
+
+        total_written = 0
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
-        LOG.debug(
-            "Starting download from %s to %s (%s bytes)", url, path, r.headers.get("Content-Length")
-        )
+        LOG.debug("Starting download from %s to %s", url, path)
         with open(path, "wb") as f:
             iter_length = 0
             iter_limit = 1000000  # print a log line for every 1MB chunk
             for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
-                total += len(chunk)
+                total_written += len(chunk)
                 iter_length += len(chunk)
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
                 else:
-                    LOG.debug("Empty chunk %s (total %s) from %s", chunk, total, url)
+                    LOG.debug(
+                        "Empty chunk %s (total %dK of %dK) from %s",
+                        chunk,
+                        total_written / 1024,
+                        total_size / 1024,
+                        url,
+                    )
                 if iter_length >= iter_limit:
-                    LOG.debug("Written %s bytes (total %s) to %s", iter_length, total, path)
+                    LOG.debug(
+                        "Written %dK (total %dK of %dK) to %s",
+                        iter_length / 1024,
+                        total_written / 1024,
+                        total_size / 1024,
+                        path,
+                    )
                     iter_length = 0
             f.flush()
             os.fsync(f)
@@ -219,7 +240,10 @@ def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None
             download(url, path, verify_ssl)
             return
         LOG.debug(
-            "Done downloading %s, response code %s, total bytes %d", url, r.status_code, total
+            "Done downloading %s, response code %s, total %dK",
+            url,
+            r.status_code,
+            total_written / 1024,
         )
     except requests.exceptions.ReadTimeout as e:
         raise TimeoutError(f"Timeout ({timeout}) reached on download: {url} - {e}")
@@ -227,6 +251,38 @@ def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None
         if r is not None:
             r.close()
         s.close()
+
+
+def download_github_artifact(url: str, target_file: str, timeout: int = None):
+    """Download file from main URL or fallback URL (to avoid firewall errors if github.com is blocked).
+    Optionally allows to define a timeout in seconds."""
+
+    def do_download(
+        download_url: str, request_headers: Optional[dict] = None, print_error: bool = False
+    ):
+        try:
+            download(download_url, target_file, timeout=timeout, request_headers=request_headers)
+            return True
+        except Exception as e:
+            if print_error:
+                LOG.info(
+                    "Unable to download Github artifact from from %s to %s: %s %s"
+                    % (url, target_file, e, traceback.format_exc())
+                )
+
+    # if a GitHub API token is set, use it to avoid rate limiting issues
+    gh_token = os.environ.get("GITHUB_API_TOKEN")
+    gh_auth_headers = None
+    if gh_token:
+        gh_auth_headers = {"authorization": f"Bearer {gh_token}"}
+    result = do_download(url, request_headers=gh_auth_headers)
+    if not result:
+        # TODO: use regex below to allow different branch names than "master"
+        url = url.replace("https://github.com", "https://cdn.jsdelivr.net/gh")
+        # The URL structure is https://cdn.jsdelivr.net/gh/user/repo@branch/file.js
+        url = url.replace("/raw/master/", "@master/")
+        # Do not send the GitHub auth token to the CDN
+        do_download(url, print_error=True)
 
 
 # TODO move to aws_responses.py?

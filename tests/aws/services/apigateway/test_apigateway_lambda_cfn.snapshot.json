@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_lambda_cfn.py::TestApigatewayLambdaIntegration::test_scenario_validate_infra": {
+    "recorded-date": "17-08-2023, 08:43:11",
+    "recorded-content": {
+      "resources": {
+        "ApiId": "<api-id:1>",
+        "restapiEndpointC67DEFEA": "https://<api-id:1>.execute-api.<region>.amazonaws.com/prod/"
+      }
+    }
+  }
+}

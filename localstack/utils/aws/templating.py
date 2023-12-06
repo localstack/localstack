@@ -1,4 +1,3 @@
-import copy
 import json
 import re
 from typing import Any, Dict
@@ -7,6 +6,15 @@ import airspeed
 
 from localstack.utils.objects import recurse_object
 from localstack.utils.patch import patch
+
+
+# remove this patch fails test_api_gateway_kinesis_integration
+# we need to validate against AWS behavior before removing this patch
+@patch(airspeed.operators.VariableExpression.calculate)
+def calculate(fn, self, *args, **kwarg):
+    result = fn(self, *args, **kwarg)
+    result = "" if result is None else result
+    return result
 
 
 class VelocityUtil:
@@ -28,7 +36,15 @@ class VelocityUtil:
 class VtlTemplate:
     """Utility class for rendering Velocity templates"""
 
-    def render_vtl(self, template, variables: Dict, as_json=False):
+    def render_vtl(self, template: str, variables: Dict, as_json=False) -> str | dict:
+        """
+        Render the given VTL template against the dict of variables. Note that this is a
+        potentially mutating operation which may change the values of `variables` in-place.
+        :param template: the template string
+        :param variables: dict of variables available to the template
+        :param as_json: whether to return the result as parsed JSON dict
+        :return: the rendered template string value (or dict)
+        """
         if variables is None:
             variables = {}
 
@@ -66,9 +82,8 @@ class VtlTemplate:
                         obj[k] = ExtendedString(v)
             return obj
 
-        # loop through the variables and enable certain additional util
-        # functions (e.g., string utils)
-        variables = copy.deepcopy(variables or {})
+        # loop through the variables and enable certain additional util functions (e.g., string utils)
+        variables = {} if variables is None else variables
         recurse_object(variables, apply)
 
         # prepare and render template
@@ -105,85 +120,3 @@ def render_velocity_template(template, context, variables=None, as_json=False):
     context = context or {}
     context.update(variables or {})
     return VtlTemplate().render_vtl(template, context, as_json=as_json)
-
-
-# START of patches for airspeed
-# TODO: contribute these patches upstream!
-
-
-airspeed.MacroDefinition.RESERVED_NAMES = airspeed.MacroDefinition.RESERVED_NAMES + ("return",)
-
-
-@patch(airspeed.VariableExpression.calculate)
-def calculate(fn, self, *args, **kwarg):
-    result = fn(self, *args, **kwarg)
-    result = "" if result is None else result
-    return result
-
-
-class ReturnDirective(airspeed.EvaluateDirective):
-    """Defines an airspeed VTL directive that supports `#return(...)` expressions"""
-
-    START = re.compile(r"#return\b(.*)")
-
-    def evaluate_raw(self, stream, namespace, loader):
-        import json
-
-        value = self.value.calculate(namespace, loader)
-        str_value = str(value)
-        # string conversion of certain values (e.g., dict->JSON)
-        if isinstance(value, dict):
-            try:
-                str_value = json.dumps(value)
-            except Exception:
-                pass
-        stream.write(str_value)
-
-
-@patch(airspeed.Block.parse, pass_target=False)
-def parse(self):
-    # need to copy the entire function body, no easier way to apply the patch here..
-    self.children = []
-    while True:
-        try:
-            self.children.append(
-                self.next_element(
-                    (
-                        airspeed.Text,
-                        airspeed.FormalReference,
-                        airspeed.Comment,
-                        airspeed.IfDirective,
-                        airspeed.SetDirective,
-                        airspeed.ForeachDirective,
-                        airspeed.IncludeDirective,
-                        airspeed.ParseDirective,
-                        airspeed.MacroDefinition,
-                        airspeed.DefineDefinition,
-                        airspeed.StopDirective,
-                        airspeed.UserDefinedDirective,
-                        airspeed.EvaluateDirective,
-                        ReturnDirective,
-                        airspeed.MacroCall,
-                        airspeed.FallthroughHashText,
-                    )
-                )
-            )
-        except airspeed.NoMatch:
-            break
-
-
-def dict_put(self, key, value):
-    existing = self.get(key)
-    self.update({key: value})
-    return existing
-
-
-def dict_put_all(self, values):
-    self.update(values)
-
-
-airspeed.__additional_methods__[dict]["put"] = dict_put
-airspeed.__additional_methods__[dict]["putAll"] = dict_put_all
-
-
-# END of patches for airspeed

@@ -1,0 +1,23 @@
+Parameters:
+  QueueName:
+    Type: String
+  Qualifier:
+    Type: String
+Resources:
+  TestQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref QueueName
+      Tags:
+        - Key: test
+          Value: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${CdkBootstrapVersion}"
+  CdkBootstrapVersion:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Type: String
+      Name: !Sub "/cdk-bootstrap/${Qualifier}/version"
+      Value: "..."
+Outputs:
+  QueueURL:
+    Value:
+      Ref: TestQueue

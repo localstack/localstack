@@ -1,0 +1,47 @@
+Parameters:
+  FnRole:
+    Type: String
+  # TODO: verify if the log group needs to exist for logs to be added
+  LogGroupName:
+    Type: String
+  LogRoleARN:
+    Type: String
+
+Resources:
+  MyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role: !Ref FnRole
+      Runtime: python3.9
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import json
+        
+          def handler(event, context):
+              print(f"{event=}")
+          
+              fragment = event["fragment"]
+              
+              fragment["Resources"] = {
+                  "MyNewTopic": {
+                      "Type": "AWS::SNS::Topic",
+                      "Properties": {}
+                  }
+              }
+              fragment.pop("Conditions", None)
+              fragment.pop("Mappings", None)
+                
+              return {
+                "requestId": event["requestId"],
+                "status": "SUCCESS",
+                "fragment": fragment,
+              }
+
+  MyMacro:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      FunctionName: !GetAtt MyFunction.Arn
+      Name: MyMacro
+      LogGroupName: !Ref LogGroupName
+      LogRoleARN: !Ref LogRoleARN

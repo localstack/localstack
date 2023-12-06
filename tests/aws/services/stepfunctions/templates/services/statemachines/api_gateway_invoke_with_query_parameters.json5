@@ -1,0 +1,20 @@
+{
+  "Comment": "API_GATEWAY_INVOKE_WITH_QUERY_PARAMETERS",
+  "StartAt": "ApiGatewayInvoke",
+  "States": {
+    "ApiGatewayInvoke": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::apigateway:invoke",
+      "Parameters": {
+        "ApiEndpoint.$": "$.ApiEndpoint",
+        "Method.$": "$.Method",
+        "Path.$": "$.Path",
+        "Stage.$": "$.Stage",
+        "RequestBody.$": "$.RequestBody",
+        "QueryParameters.$": "$.QueryParameters",
+        "AllowNullValues.$": "$.AllowNullValues"
+      },
+      "End": true
+    }
+  }
+}

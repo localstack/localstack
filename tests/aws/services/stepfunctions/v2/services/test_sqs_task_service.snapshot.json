@@ -1,0 +1,388 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message": {
+    "recorded-date": "22-06-2023, 13:41:17",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendSQS"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "QueueUrl": "<sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "region": "<region>",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "3caa9a099bc4e58ae7923f68c5d7d081",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "378"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "378",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "SendSQS",
+              "output": {
+                "MD5OfMessageBody": "3caa9a099bc4e58ae7923f68c5d7d081",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "378"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "378",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "3caa9a099bc4e58ae7923f68c5d7d081",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "378"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "378",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_unsupported_parameters": {
+    "recorded-date": "22-06-2023, 13:41:34",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "MessageBody": "test",
+                "MessageSystemAttribute": {
+                  "AWSTraceHeader": "test"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "MessageBody": "test",
+                "MessageSystemAttribute": {
+                  "AWSTraceHeader": "test"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendSQS"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "QueueUrl": "<sqs_queue_url>",
+                "MessageBody": "test"
+              },
+              "region": "<region>",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "098f6bcd4621d373cade4e832627b4f6",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "378"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "378",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "SendSQS",
+              "output": {
+                "MD5OfMessageBody": "098f6bcd4621d373cade4e832627b4f6",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "378"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "378",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "098f6bcd4621d373cade4e832627b4f6",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "378"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "378",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

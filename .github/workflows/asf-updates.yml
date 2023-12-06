@@ -10,22 +10,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Open Source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up system wide dependencies
         run: |
-          sudo apt-get install libsasl2-dev jq
+          sudo apt-get update
+          sudo apt-get install jq
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.11
         id: setup-python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.8
+          python-version: '3.11'
 
       - name: Cache LocalStack community dependencies (venv)
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .venv
           key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.cfg') }}
@@ -43,6 +44,9 @@ jobs:
           source .venv/bin/activate
           python3 -m localstack.aws.scaffold upgrade
 
+      - name: Format code
+        run: make format-modified
+
       - name: Check for changes
         id: check-for-changes
         run: |
@@ -51,10 +55,12 @@ jobs:
           # Store the result in target/diff-check.log and store the diff count in the GitHub Action output "diff-count"
           mkdir -p target
           (git diff --name-only origin/asf-auto-updates localstack/aws/api/ 2>/dev/null || git diff --name-only origin/master localstack/aws/api/ 2>/dev/null) | tee target/diff-check.log
-          echo "::set-output name=diff-count::$(cat target/diff-check.log | wc -l)"
+          echo "diff-count=$(cat target/diff-check.log | wc -l)" >> $GITHUB_OUTPUT
 
           # Store a (multiline-sanitized) list of changed services (compared to the master) in the GitHub Action output "changed-services"
-          echo "::set-output name=changed-services::$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g' | sed -z 's/\n/%0A/g' | sed -z 's/\r/%0D/g')"
+          echo "changed-services<<EOF" >> $GITHUB_OUTPUT
+          echo "$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Read PR markdown template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
@@ -66,14 +72,14 @@ jobs:
       - name: Add changed services to template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         id: markdown
-        uses: mad9000/actions-find-and-replace-string@2
+        uses: mad9000/actions-find-and-replace-string@4
         with:
           source: ${{ steps.template.outputs.content }}
           find: '{{ SERVICES }}'
           replace: ${{ steps.check-for-changes.outputs.changed-services }}
 
       - name: Create PR
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v5
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         with:
           title: "Update ASF APIs"
@@ -82,6 +88,6 @@ jobs:
           author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
           committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
           commit-message: "update generated ASF APIs to latest version"
-          labels: "area: asf"
+          labels: "area: asf, area: dependencies, semver: patch"
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           reviewers: alexrashed

@@ -1,0 +1,68 @@
+Parameters:
+  ParameterName:
+    Type: String
+  Param1:
+    Type: String
+    Default: Param1Value
+
+# we need to have at least resource for the stack to deploy
+Resources:
+  MyResource:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: unimportant
+      Name: !Ref Param1
+
+
+Outputs:
+  # String format
+  StringStatic:
+    Value: !Sub 'this is a static string'
+  StringRefParam:
+    Value: !Sub "${Param1}"
+  StringRefResource:
+    Value: !Sub "${MyResource}"
+  StringRefPseudoParam:
+    Value: !Sub "${AWS::Region}"
+  StringRefMultiple:
+    Value: !Sub "${Param1} - ${MyResource}"
+  StringRefGetAtt:
+    Value: !Sub "${MyResource.Value}"
+
+  # List format with mapping
+  ListStatic:
+    Value: !Sub
+      - 'this is a static string'
+      - somekey: somevalue  # need to add at least one key-value pair here otherwise CFn complains
+  ListRefParam:
+    Value: !Sub
+      - "${Param1}"
+      - somekey: somevalue
+  ListRefResourceDirect:
+    Value: !Sub
+      - "${MyResource}"
+      - somekey: somevalue
+  ListRefResourceMappingRef:
+    Value: !Sub
+      - "${MyResourceRef}"
+      - MyResourceRef: !Ref MyResource
+  ListRefPseudoParam:
+    Value: !Sub
+      - "${AWS::Region}"
+      - somekey: somevalue
+  ListRefMultipleMix:
+    Value: !Sub
+      - "${MyResourceRef}-${AWS::Region}-${Param1}"
+      - MyResourceRef: !Ref MyResource
+  ListRefGetAtt:
+    Value: !Sub
+      - "${MyResource.Value}"
+      - somekey: somevalue
+  ListRefGetAttMapping:
+    Value: !Sub
+      - "${ParamValue}"
+      - ParamValue: !GetAtt MyResource.Value
+  UrlSuffixPseudoParam:
+    Value:
+      "Fn::Sub": "${AWS::URLSuffix}"

@@ -1,11 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict
-else:
-    from typing_extensions import TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -1378,7 +1372,6 @@ class VerifyEmailIdentityResponse(TypedDict, total=False):
 
 
 class SesApi:
-
     service = "ses"
     version = "2010-12-01"
 

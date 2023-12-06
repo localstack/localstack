@@ -1,17 +1,27 @@
+import json
+import re
 from abc import ABC
 from datetime import datetime, timezone
 
 from botocore.parsers import ResponseParserError
 from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
-from moto.ec2 import ec2_backends
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
-from moto.ec2.models import SubnetBackend, TransitGatewayAttachmentBackend
+from moto.ec2.models import (
+    EC2Backend,
+    SubnetBackend,
+    TransitGatewayAttachmentBackend,
+    VPCBackend,
+    ec2_backends,
+)
+from moto.ec2.models.launch_templates import LaunchTemplate as MotoLaunchTemplate
 from moto.ec2.models.subnets import Subnet
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
     AvailabilityZone,
     Boolean,
+    CreateLaunchTemplateRequest,
+    CreateLaunchTemplateResult,
     CreateSubnetRequest,
     CreateSubnetResult,
     CreateTransitGatewayRequest,
@@ -27,8 +37,19 @@ from localstack.aws.api.ec2 import (
     DescribeSubnetsResult,
     DescribeTransitGatewaysRequest,
     DescribeTransitGatewaysResult,
+    DescribeVpcEndpointServicesRequest,
+    DescribeVpcEndpointServicesResult,
+    DescribeVpcEndpointsRequest,
+    DescribeVpcEndpointsResult,
+    DnsOptions,
+    DnsOptionsSpecification,
+    DnsRecordIpType,
     Ec2Api,
     InstanceType,
+    IpAddressType,
+    LaunchTemplate,
+    ModifyLaunchTemplateRequest,
+    ModifyLaunchTemplateResult,
     ModifySubnetAttributeRequest,
     ModifyVpcEndpointResult,
     OfferingClassType,
@@ -45,6 +66,7 @@ from localstack.aws.api.ec2 import (
     RevokeSecurityGroupEgressResult,
     RIProductDescription,
     String,
+    SubnetConfigurationsList,
     Tenancy,
     VpcEndpointId,
     VpcEndpointRouteTableIdList,
@@ -52,9 +74,15 @@ from localstack.aws.api.ec2 import (
     VpcEndpointSubnetIdList,
     scope,
 )
+from localstack.services.ec2.exceptions import (
+    InvalidLaunchTemplateIdError,
+    InvalidLaunchTemplateNameError,
+    MissingParameterError,
+)
+from localstack.services.ec2.models import get_ec2_backend
 from localstack.services.moto import call_moto
 from localstack.utils.patch import patch
-from localstack.utils.strings import first_char_to_upper, long_uid
+from localstack.utils.strings import first_char_to_upper, long_uid, short_uid
 
 # additional subnet attributes not yet supported upstream
 ADDITIONAL_SUBNET_ATTRS = ("private_dns_name_options_on_launch", "enable_dns64")
@@ -67,26 +95,27 @@ class Ec2Provider(Ec2Api, ABC):
         context: RequestContext,
         describe_availability_zones_request: DescribeAvailabilityZonesRequest,
     ) -> DescribeAvailabilityZonesResult:
-        backend = ec2_backends[context.account_id][context.region]
-
-        availability_zones = []
+        backend = get_ec2_backend(context.account_id, context.region)
         zone_names = describe_availability_zones_request.get("ZoneNames")
-        if zone_names:
-            for zone in zone_names:
-                zone_detail = backend.get_zone_by_name(zone)
-                if zone_detail:
-                    availability_zones.append(
-                        AvailabilityZone(
-                            State="available",
-                            Messages=[],
-                            RegionName=zone_detail.region_name,
-                            ZoneName=zone_detail.name,
-                            ZoneId=zone_detail.zone_id,
-                        )
-                    )
-
+        zone_ids = describe_availability_zones_request.get("ZoneIds")
+        if zone_names or zone_ids:
+            filters = {
+                "zone-name": zone_names,
+                "zone-id": zone_ids,
+            }
+            filtered_zones = backend.describe_availability_zones(filters)
+            availability_zones = [
+                AvailabilityZone(
+                    State="available",
+                    Messages=[],
+                    RegionName=zone.region_name,
+                    ZoneName=zone.name,
+                    ZoneId=zone.zone_id,
+                    ZoneType=zone.zone_type,
+                )
+                for zone in filtered_zones
+            ]
             return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
-
         return call_moto(context)
 
     @handler("DescribeReservedInstancesOfferings", expand=False)
@@ -173,9 +202,12 @@ class Ec2Provider(Ec2Api, ABC):
         remove_subnet_ids: VpcEndpointSubnetIdList = None,
         add_security_group_ids: VpcEndpointSecurityGroupIdList = None,
         remove_security_group_ids: VpcEndpointSecurityGroupIdList = None,
+        ip_address_type: IpAddressType = None,
+        dns_options: DnsOptionsSpecification = None,
         private_dns_enabled: Boolean = None,
+        subnet_configurations: SubnetConfigurationsList = None,
     ) -> ModifyVpcEndpointResult:
-        backend = ec2_backends[context.account_id][context.region]
+        backend = get_ec2_backend(context.account_id, context.region)
 
         vpc_endpoint = backend.vpc_end_points.get(vpc_endpoint_id)
         if not vpc_endpoint:
@@ -215,7 +247,7 @@ class Ec2Provider(Ec2Api, ABC):
             if not isinstance(e, ResponseParserError) and "InvalidParameterValue" not in str(e):
                 raise
 
-            backend = ec2_backends[context.account_id][context.region]
+            backend = get_ec2_backend(context.account_id, context.region)
 
             # fix setting subnet attributes currently not supported upstream
             subnet_id = request["SubnetId"]
@@ -246,7 +278,7 @@ class Ec2Provider(Ec2Api, ABC):
         self, context: RequestContext, request: CreateSubnetRequest
     ) -> CreateSubnetResult:
         response = call_moto(context)
-        backend = ec2_backends[context.account_id][context.region]
+        backend = get_ec2_backend(context.account_id, context.region)
         subnet_id = response["Subnet"]["SubnetId"]
         host_type = request.get("PrivateDnsHostnameTypeOnLaunch", "ip-name")
         attr_name = camelcase_to_underscores("PrivateDnsNameOptionsOnLaunch")
@@ -264,7 +296,7 @@ class Ec2Provider(Ec2Api, ABC):
             return call_moto(context)
         except Exception as e:
             if "specified rule does not exist" in str(e):
-                backend = ec2_backends[context.account_id][context.region]
+                backend = get_ec2_backend(context.account_id, context.region)
                 group_id = revoke_security_group_egress_request["GroupId"]
                 group = backend.get_security_group_by_name_or_id(group_id)
                 if group and not group.egress_rules:
@@ -278,7 +310,7 @@ class Ec2Provider(Ec2Api, ABC):
         request: DescribeSubnetsRequest,
     ) -> DescribeSubnetsResult:
         result = call_moto(context)
-        backend = ec2_backends[context.account_id][context.region]
+        backend = get_ec2_backend(context.account_id, context.region)
         # add additional/missing attributes in subnet responses
         for subnet in result.get("Subnets", []):
             subnet_obj = backend.subnets[subnet["AvailabilityZone"]].get(subnet["SubnetId"])
@@ -296,7 +328,7 @@ class Ec2Provider(Ec2Api, ABC):
         request: CreateTransitGatewayRequest,
     ) -> CreateTransitGatewayResult:
         result = call_moto(context)
-        backend = ec2_backends[context.account_id][context.region]
+        backend = get_ec2_backend(context.account_id, context.region)
         transit_gateway_id = result["TransitGateway"]["TransitGatewayId"]
         transit_gateway = backend.transit_gateways.get(transit_gateway_id)
         result.get("TransitGateway").get("Options").update(transit_gateway.options)
@@ -309,11 +341,120 @@ class Ec2Provider(Ec2Api, ABC):
         request: DescribeTransitGatewaysRequest,
     ) -> DescribeTransitGatewaysResult:
         result = call_moto(context)
-        backend = ec2_backends[context.account_id][context.region]
+        backend = get_ec2_backend(context.account_id, context.region)
         for transit_gateway in result.get("TransitGateways", []):
             transit_gateway_id = transit_gateway["TransitGatewayId"]
             tgw = backend.transit_gateways.get(transit_gateway_id)
             transit_gateway["Options"].update(tgw.options)
+        return result
+
+    @handler("CreateLaunchTemplate", expand=False)
+    def create_launch_template(
+        self,
+        context: RequestContext,
+        request: CreateLaunchTemplateRequest,
+    ) -> CreateLaunchTemplateResult:
+        # parameter validation
+        if not request["LaunchTemplateData"]:
+            raise MissingParameterError(parameter="LaunchTemplateData")
+
+        name = request["LaunchTemplateName"]
+        if len(name) < 3 or len(name) > 128 or not re.fullmatch(r"[a-zA-Z0-9.\-_()/]*", name):
+            raise InvalidLaunchTemplateNameError()
+
+        return call_moto(context)
+
+    @handler("ModifyLaunchTemplate", expand=False)
+    def modify_launch_template(
+        self,
+        context: RequestContext,
+        request: ModifyLaunchTemplateRequest,
+    ) -> ModifyLaunchTemplateResult:
+        backend = get_ec2_backend(context.account_id, context.region)
+        template_id = (
+            request["LaunchTemplateId"]
+            or backend.launch_template_name_to_ids[request["LaunchTemplateName"]]
+        )
+        template: MotoLaunchTemplate = backend.launch_templates[template_id]
+
+        # check if defaultVersion exists
+        if request["DefaultVersion"]:
+            try:
+                template.versions[int(request["DefaultVersion"]) - 1]
+            except IndexError:
+                raise InvalidLaunchTemplateIdError()
+
+        template.default_version_number = int(request["DefaultVersion"])
+
+        return ModifyLaunchTemplateResult(
+            LaunchTemplate=LaunchTemplate(
+                LaunchTemplateId=template.id,
+                LaunchTemplateName=template.name,
+                CreateTime=template.create_time,
+                DefaultVersionNumber=template.default_version_number,
+                LatestVersionNumber=template.latest_version_number,
+                Tags=template.tags,
+            )
+        )
+
+    @handler("DescribeVpcEndpointServices", expand=False)
+    def describe_vpc_endpoint_services(
+        self,
+        context: RequestContext,
+        request: DescribeVpcEndpointServicesRequest,
+    ) -> DescribeVpcEndpointServicesResult:
+        ep_services = VPCBackend._collect_default_endpoint_services(
+            account_id=context.account_id, region=context.region
+        )
+
+        moto_backend = get_moto_backend(context)
+        service_names = [s["ServiceName"] for s in ep_services]
+        execute_api_name = f"com.amazonaws.{context.region}.execute-api"
+
+        if execute_api_name not in service_names:
+            # ensure that the service entry for execute-api exists
+            zones = moto_backend.describe_availability_zones()
+            zones = [zone.name for zone in zones]
+            private_dns_name = f"*.execute-api.{context.region}.amazonaws.com"
+            service = {
+                "ServiceName": execute_api_name,
+                "ServiceId": f"vpce-svc-{short_uid()}",
+                "ServiceType": [{"ServiceType": "Interface"}],
+                "AvailabilityZones": zones,
+                "Owner": "amazon",
+                "BaseEndpointDnsNames": [f"execute-api.{context.region}.vpce.amazonaws.com"],
+                "PrivateDnsName": private_dns_name,
+                "PrivateDnsNames": [{"PrivateDnsName": private_dns_name}],
+                "VpcEndpointPolicySupported": True,
+                "AcceptanceRequired": False,
+                "ManagesVpcEndpoints": False,
+                "PrivateDnsNameVerificationState": "verified",
+                "SupportedIpAddressTypes": ["ipv4"],
+            }
+            ep_services.append(service)
+
+        return call_moto(context)
+
+    @handler("DescribeVpcEndpoints", expand=False)
+    def describe_vpc_endpoints(
+        self,
+        context: RequestContext,
+        request: DescribeVpcEndpointsRequest,
+    ) -> DescribeVpcEndpointsResult:
+        result: DescribeVpcEndpointsResult = call_moto(context)
+
+        for endpoint in result.get("VpcEndpoints"):
+            endpoint.setdefault("DnsOptions", DnsOptions(DnsRecordIpType=DnsRecordIpType.ipv4))
+            endpoint.setdefault("IpAddressType", IpAddressType.ipv4)
+            endpoint.setdefault("RequesterManaged", False)
+            endpoint.setdefault("RouteTableIds", [])
+            # AWS parity: Version should not be contained in the policy response
+            policy = endpoint.get("PolicyDocument")
+            if policy and '"Version":' in policy:
+                policy = json.loads(policy)
+                policy.pop("Version", None)
+                endpoint["PolicyDocument"] = json.dumps(policy)
+
         return result
 
 
@@ -332,6 +473,11 @@ def modify_subnet_attribute(fn, self, subnet_id, attr_name, attr_value):
         setattr(subnet, attr_name, attr_value)
         return
     return fn(self, subnet_id, attr_name, attr_value)
+
+
+def get_moto_backend(context: RequestContext) -> EC2Backend:
+    """Get the moto EC2 backend for the given request context"""
+    return ec2_backends[context.account_id][context.region]
 
 
 @patch(Subnet.get_filter_value)

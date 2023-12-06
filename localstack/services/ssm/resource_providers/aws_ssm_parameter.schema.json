@@ -1,0 +1,50 @@
+{
+  "typeName": "AWS::SSM::Parameter",
+  "description": "Resource Type definition for AWS::SSM::Parameter",
+  "additionalProperties": false,
+  "properties": {
+    "Type": {
+      "type": "string"
+    },
+    "Description": {
+      "type": "string"
+    },
+    "Policies": {
+      "type": "string"
+    },
+    "AllowedPattern": {
+      "type": "string"
+    },
+    "Tier": {
+      "type": "string"
+    },
+    "Value": {
+      "type": "string"
+    },
+    "DataType": {
+      "type": "string"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "Tags": {
+      "type": "object"
+    },
+    "Name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "Type",
+    "Value"
+  ],
+  "createOnlyProperties": [
+    "/properties/Name"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

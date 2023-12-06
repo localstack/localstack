@@ -1,9 +1,14 @@
+import base64
+import json
 import logging
 import os
 import queue
+import re
 import socket
 import threading
-from typing import Dict, List, Optional, Tuple, Union
+from time import sleep
+from typing import Dict, List, Optional, Tuple, Union, cast
+from urllib.parse import quote
 
 import docker
 from docker import DockerClient
@@ -11,18 +16,22 @@ from docker.errors import APIError, ContainerError, DockerException, ImageNotFou
 from docker.models.containers import Container
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
+from localstack.utils.collections import ensure_list
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
     CancellableStream,
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
+    DockerNotAvailable,
+    DockerPlatform,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
     PortMappings,
     RegistryConnectionError,
     SimpleVolumeBind,
+    Ulimit,
     Util,
 )
 from localstack.utils.strings import to_bytes, to_str
@@ -33,22 +42,45 @@ SDK_ISDIR = 1 << 31
 
 
 class SdkDockerClient(ContainerClient):
-    """Class for managing docker using the python docker sdk"""
+    """
+    Class for managing Docker (or Podman) using the Python Docker SDK.
+
+    The client also supports targeting Podman engines, as Podman is almost a drop-in replacement
+    for Docker these days (with ongoing efforts to further streamline the two), and the Docker SDK
+    is doing some of the heavy lifting for us to support both target platforms.
+    """
 
     docker_client: Optional[DockerClient]
 
     def __init__(self):
         try:
-            self.docker_client = docker.from_env()
+            self.docker_client = self._create_client()
             logging.getLogger("urllib3").setLevel(logging.INFO)
-        except DockerException:
+        except DockerNotAvailable:
             self.docker_client = None
 
     def client(self):
         if self.docker_client:
             return self.docker_client
-        else:
-            raise ContainerException("Docker not available")
+        # if the initialization failed before, try to initialize on-demand
+        self.docker_client = self._create_client()
+        return self.docker_client
+
+    @staticmethod
+    def _create_client():
+        from localstack.config import DOCKER_SDK_DEFAULT_RETRIES, DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS
+
+        for attempt in range(0, DOCKER_SDK_DEFAULT_RETRIES + 1):
+            try:
+                return docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
+            except DockerException as e:
+                LOG.debug("Creating Docker SDK client failed: %s", e, exc_info=e)
+                if attempt < DOCKER_SDK_DEFAULT_RETRIES:
+                    # wait for a second before retrying
+                    sleep(1)
+                else:
+                    # we are out of attempts
+                    raise DockerNotAvailable("Docker not available") from e
 
     def _read_from_sock(self, sock: socket, tty: bool):
         """Reads multiplexed messages from a socket returned by attach_socket.
@@ -77,14 +109,25 @@ class SdkDockerClient(ContainerClient):
         # https://github.com/docker/cli/blob/e3dfc2426e51776a3263cab67fbba753dd3adaa9/cli/command/container/cp.go#L260
         # The isDir Bit is the most significant bit in the 32bit struct:
         # https://golang.org/src/os/types.go?s=2650:2683
-        stats = {}
-        try:
-            _, stats = container.get_archive(container_path)
-            target_exists = True
-        except APIError:
-            target_exists = False
+        api_client = self.client().api
+
+        def _head(path_suffix, **kwargs):
+            return api_client.head(
+                api_client.base_url + path_suffix, **api_client._set_request_timeout(kwargs)
+            )
+
+        escaped_id = quote(container.id, safe="/:")
+        result = _head(f"/containers/{escaped_id}/archive", params={"path": container_path})
+        stats = result.headers.get("X-Docker-Container-Path-Stat")
+        target_exists = result.ok
+
+        if target_exists:
+            stats = json.loads(base64.b64decode(stats).decode("utf-8"))
         target_is_dir = target_exists and bool(stats["mode"] & SDK_ISDIR)
         return target_exists, target_is_dir
+
+    def get_system_info(self) -> dict:
+        return self.client().info()
 
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         # LOG.debug("Getting container status for container: %s", container_name) #  too verbose
@@ -101,9 +144,7 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def stop_container(self, container_name: str, timeout: int = None) -> None:
-        if timeout is None:
-            timeout = self.STOP_TIMEOUT
+    def stop_container(self, container_name: str, timeout: int = 10) -> None:
         LOG.debug("Stopping container: %s", container_name)
         try:
             container = self.client().containers.get(container_name)
@@ -213,11 +254,11 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def pull_image(self, docker_image: str) -> None:
+    def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         LOG.debug("Pulling Docker image: %s", docker_image)
         # some path in the docker image string indicates a custom repository
         try:
-            self.client().images.pull(docker_image)
+            self.client().images.pull(docker_image, platform=platform)
         except ImageNotFound:
             raise NoSuchImage(docker_image)
         except APIError as e:
@@ -233,15 +274,28 @@ class SdkDockerClient(ContainerClient):
                     raise NoSuchImage(docker_image)
                 if "is denied" in to_str(result):
                     raise AccessDenied(docker_image)
+                if "requesting higher privileges than access token allows" in to_str(result):
+                    raise AccessDenied(docker_image)
+                if "access token has insufficient scopes" in to_str(result):
+                    raise AccessDenied(docker_image)
                 if "connection refused" in to_str(result):
                     raise RegistryConnectionError(result)
                 raise ContainerException(result)
         except ImageNotFound:
             raise NoSuchImage(docker_image)
         except APIError as e:
+            # note: error message 'image not known' raised by Podman API
+            if "image not known" in str(e):
+                raise NoSuchImage(docker_image)
             raise ContainerException() from e
 
-    def build_image(self, dockerfile_path: str, image_name: str, context_path: str = None):
+    def build_image(
+        self,
+        dockerfile_path: str,
+        image_name: str,
+        context_path: str = None,
+        platform: Optional[DockerPlatform] = None,
+    ):
         try:
             dockerfile_path = Util.resolve_dockerfile_path(dockerfile_path)
             context_path = context_path or os.path.dirname(dockerfile_path)
@@ -251,6 +305,7 @@ class SdkDockerClient(ContainerClient):
                 dockerfile=dockerfile_path,
                 tag=image_name,
                 rm=True,
+                platform=platform,
             )
         except APIError as e:
             raise ContainerException("Unable to build Docker image") from e
@@ -265,19 +320,26 @@ class SdkDockerClient(ContainerClient):
                 raise NoSuchImage(source_ref)
             raise ContainerException("Unable to tag Docker image") from e
 
-    def get_docker_image_names(self, strip_latest=True, include_tags=True):
+    def get_docker_image_names(
+        self,
+        strip_latest: bool = True,
+        include_tags: bool = True,
+        strip_wellknown_repo_prefixes: bool = True,
+    ):
         try:
             images = self.client().images.list()
             image_names = [tag for image in images for tag in image.tags if image.tags]
             if not include_tags:
-                image_names = list(map(lambda image_name: image_name.split(":")[0], image_names))
+                image_names = [image_name.rpartition(":")[0] for image_name in image_names]
+            if strip_wellknown_repo_prefixes:
+                image_names = Util.strip_wellknown_repo_prefixes(image_names)
             if strip_latest:
                 Util.append_without_latest(image_names)
             return image_names
         except APIError as e:
             raise ContainerException() from e
 
-    def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
+    def get_container_logs(self, container_name_or_id: str, safe: bool = False) -> str:
         try:
             container = self.client().containers.get(container_name_or_id)
             return to_str(container.logs())
@@ -307,14 +369,41 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(
+        self,
+        image_name: str,
+        pull: bool = True,
+        strip_wellknown_repo_prefixes: bool = True,
+    ) -> Dict[str, Union[dict, list, str]]:
         try:
-            return self.client().images.get(image_name).attrs
+            result = self.client().images.get(image_name).attrs
+            if strip_wellknown_repo_prefixes:
+                if result.get("RepoDigests"):
+                    result["RepoDigests"] = Util.strip_wellknown_repo_prefixes(
+                        result["RepoDigests"]
+                    )
+                if result.get("RepoTags"):
+                    result["RepoTags"] = Util.strip_wellknown_repo_prefixes(result["RepoTags"])
+            return result
         except NotFound:
             if pull:
                 self.pull_image(image_name)
                 return self.inspect_image(image_name, pull=False)
             raise NoSuchImage(image_name)
+        except APIError as e:
+            raise ContainerException() from e
+
+    def create_network(self, network_name: str) -> None:
+        try:
+            return self.client().networks.create(name=network_name).id
+        except APIError as e:
+            raise ContainerException() from e
+
+    def delete_network(self, network_name: str) -> None:
+        try:
+            return self.client().networks.get(network_name).remove()
+        except NotFound:
+            raise NoSuchNetwork(network_name)
         except APIError as e:
             raise ContainerException() from e
 
@@ -388,6 +477,8 @@ class SdkDockerClient(ContainerClient):
             if not force:
                 raise NoSuchImage(image)
         except APIError as e:
+            if "image not known" in str(e):
+                raise NoSuchImage(image)
             raise ContainerException() from e
 
     def commit(
@@ -447,10 +538,12 @@ class SdkDockerClient(ContainerClient):
                 # start listener thread
                 start_worker_thread(wait_for_result)
                 thread_started.wait()
-                # start container
-                container.start()
-                # start awaiting container result
-                start_waiting.set()
+                try:
+                    # start container
+                    container.start()
+                finally:
+                    # start awaiting container result
+                    start_waiting.set()
 
                 # handle container input/output
                 # under windows, the socket has no __enter__ / cannot be used as context manager
@@ -483,6 +576,11 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
+    def attach_to_container(self, container_name_or_id: str):
+        client: DockerClient = self.client()
+        container = cast(Container, client.containers.get(container_name_or_id))
+        container.attach()
+
     def create_container(
         self,
         image_name: str,
@@ -496,23 +594,48 @@ class SdkDockerClient(ContainerClient):
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
+        exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
         cap_add: Optional[List[str]] = None,
         cap_drop: Optional[List[str]] = None,
         security_opt: Optional[List[str]] = None,
         network: Optional[str] = None,
-        dns: Optional[str] = None,
+        dns: Optional[Union[str, List[str]]] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
+        labels: Optional[Dict[str, str]] = None,
+        platform: Optional[DockerPlatform] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
         if additional_flags:
-            env_vars, ports, mount_volumes, extra_hosts, network = Util.parse_additional_flags(
-                additional_flags, env_vars, ports, mount_volumes, network
+            parsed_flags = Util.parse_additional_flags(
+                additional_flags,
+                env_vars=env_vars,
+                mounts=mount_volumes,
+                network=network,
+                platform=platform,
+                privileged=privileged,
+                ports=ports,
+                ulimits=ulimits,
+                user=user,
+                dns=dns,
             )
+            env_vars = parsed_flags.env_vars
+            extra_hosts = parsed_flags.extra_hosts
+            mount_volumes = parsed_flags.mounts
+            labels = parsed_flags.labels
+            network = parsed_flags.network
+            platform = parsed_flags.platform
+            privileged = parsed_flags.privileged
+            ports = parsed_flags.ports
+            ulimits = parsed_flags.ulimits
+            user = parsed_flags.user
+            dns = parsed_flags.dns
+
         try:
             kwargs = {}
             if cap_add:
@@ -522,13 +645,27 @@ class SdkDockerClient(ContainerClient):
             if security_opt:
                 kwargs["security_opt"] = security_opt
             if dns:
-                kwargs["dns"] = [dns]
+                kwargs["dns"] = ensure_list(dns)
+            if exposed_ports:
+                # This is not exactly identical to --expose, as they are listed in the "HostConfig" on docker inspect
+                # but the behavior should be identical
+                kwargs["ports"] = {port: [] for port in exposed_ports}
             if ports:
-                kwargs["ports"] = ports.to_dict()
+                kwargs.setdefault("ports", {})
+                kwargs["ports"].update(ports.to_dict())
             if workdir:
                 kwargs["working_dir"] = workdir
             if privileged:
                 kwargs["privileged"] = True
+            if labels:
+                kwargs["labels"] = labels
+            if ulimits:
+                kwargs["ulimits"] = [
+                    docker.types.Ulimit(
+                        name=ulimit.name, soft=ulimit.soft_limit, hard=ulimit.hard_limit
+                    )
+                    for ulimit in ulimits
+                ]
             mounts = None
             if mount_volumes:
                 mounts = Util.convert_mount_list_to_dict(mount_volumes)
@@ -548,13 +685,15 @@ class SdkDockerClient(ContainerClient):
                     network=network,
                     volumes=mounts,
                     extra_hosts=extra_hosts,
+                    platform=platform,
                     **kwargs,
                 )
 
             try:
                 container = create_container()
             except ImageNotFound:
-                self.pull_image(image_name)
+                LOG.debug("Image not found. Pulling image %s", image_name)
+                self.pull_image(image_name, platform)
                 container = create_container()
             return container.id
         except ImageNotFound:
@@ -576,6 +715,7 @@ class SdkDockerClient(ContainerClient):
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
+        exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
         cap_add: Optional[List[str]] = None,
@@ -585,11 +725,21 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
         try:
+            kwargs = {}
+            if ulimits:
+                kwargs["ulimits"] = [
+                    docker.types.Ulimit(
+                        name=ulimit.name, soft=ulimit.soft_limit, hard=ulimit.hard_limit
+                    )
+                    for ulimit in ulimits
+                ]
             container = self.create_container(
                 image_name,
                 name=name,
@@ -601,6 +751,7 @@ class SdkDockerClient(ContainerClient):
                 command=command,
                 mount_volumes=mount_volumes,
                 ports=ports,
+                exposed_ports=exposed_ports,
                 env_vars=env_vars,
                 user=user,
                 cap_add=cap_add,
@@ -611,6 +762,8 @@ class SdkDockerClient(ContainerClient):
                 additional_flags=additional_flags,
                 workdir=workdir,
                 privileged=privileged,
+                platform=platform,
+                **kwargs,
             )
             result = self.start_container(
                 container_name_or_id=container,
@@ -679,3 +832,31 @@ class SdkDockerClient(ContainerClient):
             raise NoSuchContainer(container_name_or_id)
         except APIError as e:
             raise ContainerException() from e
+
+    def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
+        LOG.debug("Docker login for %s", username)
+        try:
+            self.client().login(username, password=password, registry=registry, reauth=True)
+        except APIError as e:
+            raise ContainerException() from e
+
+
+# apply patches required for podman API compatibility
+
+
+@property
+def _container_image(self):
+    image_id = self.attrs.get("ImageID", self.attrs["Image"])
+    if image_id is None:
+        return None
+    image_ref = image_id
+    # Fix for podman API response: Docker returns "sha:..." for `Image`, podman returns "<image-name>:<tag>".
+    # See https://github.com/containers/podman/issues/8329 . Without this check, the Docker client would
+    # blindly strip off the suffix after the colon `:` (which is the `<tag>` in podman's case) which would
+    # then lead to "no such image" errors.
+    if re.match("sha256:[0-9a-f]{64}", image_id, flags=re.IGNORECASE):
+        image_ref = image_id.split(":")[1]
+    return self.client.images.get(image_ref)
+
+
+Container.image = _container_image

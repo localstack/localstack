@@ -1,0 +1,89 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Test Global Authorizer",
+    "version": "1.0"
+  },
+  "paths": {
+    "/pets": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "type": "http"
+        }
+      }
+    },
+    "/echo/{data}": {
+      "x-amazon-apigateway-any-method": {
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseTemplates": {
+                "application/json": "{\"echo\": \"$input.params('data')\", \"response\": \"mocked\"}"
+              }
+            }
+          },
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
+          },
+          "passthroughBehavior": "when_no_templates"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Empty": {
+        "title": "Empty Schema",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "GatewayAuthorizer": {
+        "type": "apiKey",
+        "description": "API key authentication via the 'X-Api-Key' header",
+        "name": "X-Api-Key",
+        "in": "header",
+        "x-amazon-apigateway-authorizer": {
+          "type": "request",
+          "authorizerUri": "${authorizer_lambda_invocation_arn}",
+          "identitySource": "method.request.header.Custom-Authorization",
+          "authorizerResultTtlInSeconds": 300
+        },
+        "x-amazon-apigateway-authtype": "custom"
+      }
+    }
+  },
+  "security": [
+    {
+      "GatewayAuthorizer": []
+    }
+  ],
+  "x-amazon-apigateway-api-key-source": "AUTHORIZER"
+}
