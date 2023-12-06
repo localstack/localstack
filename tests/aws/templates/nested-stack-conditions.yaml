@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  Bucket:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:
+        Fn::Join:
+          - ""
+          - - https://s3.
+            - Ref: AWS::Region
+            - "."
+            - Ref: AWS::URLSuffix
+            - {{ s3_bucket_url }}
+      Parameters:
+        BucketBaseName: {{ s3_bucket_name }}
+        Mode: prod
+Outputs:
+  ProdBucket:
+    Value: !GetAtt Bucket.Outputs.ProdBucket

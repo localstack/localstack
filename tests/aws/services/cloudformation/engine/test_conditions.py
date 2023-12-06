@@ -425,3 +425,25 @@ class TestCloudFormationConditions:
 
         managed_policy_arn = stack.outputs["PolicyArn"]
         assert aws_client.iam.get_policy(PolicyArn=managed_policy_arn)
+
+    @markers.aws.validated
+    def test_condition_on_outputs(self, deploy_cfn_template, aws_client):
+        """
+        The stack has 2 outputs.
+        Each is gated by a different condition value ("test" vs. "prod").
+        Only one of them should be returned for the stack outputs
+        """
+        nested_bucket_name = f"test-bucket-{short_uid()}"
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/nested-stack-conditions.nested.yaml"
+            ),
+            parameters={
+                "BucketBaseName": nested_bucket_name,
+                "Mode": "prod",
+            },
+        )
+        assert "TestBucket" not in stack.outputs
+        assert stack.outputs["ProdBucket"] == f"{nested_bucket_name}-prod"
+        assert aws_client.s3.head_bucket(Bucket=stack.outputs["ProdBucket"])
