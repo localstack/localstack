@@ -34,15 +34,16 @@ class ArrayRange(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        range_vals = [env.stack.pop(), env.stack.pop(), env.stack.pop()]
+        range_vals = env.stack.pop()
+
         for range_val in range_vals:
             if not isinstance(range_val, (int, float)):
                 raise TypeError(
                     f"Expected 3 integer arguments for function type '{type(self)}', but got: '{range_vals}'."
                 )
-        step = round(range_vals[0])
+        first = round(range_vals[0])
         last = round(range_vals[1])
-        first = round(range_vals[2])
+        step = round(range_vals[2])
 
         if step <= 0:
             raise ValueError(f"Expected step argument to be non negative, but got: '{step}'.")
