@@ -1,12 +1,14 @@
 import json
 import logging
 import re
+from datetime import datetime
 from json import JSONDecodeError
 from typing import Optional, Pattern
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
 from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
 from localstack.testing.snapshots.transformer import (
+    PATTERN_ISO8601,
     JsonpathTransformer,
     KeyValueBasedTransformer,
     RegexTransformer,
@@ -746,7 +748,7 @@ def _change_set_id_transformer(key: str, val: str) -> str:
 
 # TODO maybe move to a different place?
 # Basic Transformation - added automatically to each snapshot (in the fixture)
-SNAPSHOT_BASIC_TRANSFORMER = [
+SNAPSHOT_BASIC_TRANSFORMER_NEW = [
     ResponseMetaDataTransformer(),
     KeyValueBasedTransformer(
         lambda k, v: (
@@ -757,19 +759,33 @@ SNAPSHOT_BASIC_TRANSFORMER = [
         "uuid",
     ),
     TimestampTransformer(),
-    # RegexTransformer(PATTERN_ISO8601, "date"),
-    # KeyValueBasedTransformer(
-    #     lambda k, v: (v if isinstance(v, datetime) else None), "2022-06-13T13:48:01Z", replace_reference=False
-    # ),
-    # KeyValueBasedTransformer(
-    #     lambda k, v: str(v)
-    #     if (
-    #         re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k)
-    #         or k in ("creationTime", "ingestionTime")
-    #     )
-    #     and not PATTERN_ISO8601.match(str(v))
-    #     else None,
-    #     "timestamp",
-    #     replace_reference=False,
-    # ),
+]
+
+SNAPSHOT_BASIC_TRANSFORMER = [
+    ResponseMetaDataTransformer(),
+    KeyValueBasedTransformer(
+        lambda k, v: (
+            v
+            if (isinstance(v, str) and k.lower().endswith("id") and re.match(PATTERN_UUID, v))
+            else None
+        ),
+        "uuid",
+    ),
+    RegexTransformer(PATTERN_ISO8601, "date"),
+    KeyValueBasedTransformer(
+        lambda k, v: (v if isinstance(v, datetime) else None),
+        "2022-06-13T13:48:01Z",
+        replace_reference=False,
+    ),
+    KeyValueBasedTransformer(
+        lambda k, v: str(v)
+        if (
+            re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k)
+            or k in ("creationTime", "ingestionTime")
+        )
+        and not PATTERN_ISO8601.match(str(v))
+        else None,
+        "timestamp",
+        replace_reference=False,
+    ),
 ]
