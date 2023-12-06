@@ -27,10 +27,10 @@ STAT_TO_SQLITE_COLUMNS = {
 }
 
 STAT_TO_SQLITE_FUNC_2 = {
-    "Sum": "SUM(value) ",
-    "Average": "SUM(value), SUM(count) ",
-    "Minimum": "MIN(value) ",
-    "Maximum": "MAX(value) ",
+    "Sum": "SUM(value)",
+    "Average": "SUM(value)",
+    "Minimum": "MIN(value)",
+    "Maximum": "MAX(value)",
     "SampleCount": "Sum(count)",
 }
 
@@ -207,20 +207,20 @@ class CloudwatchDatabase:
                 metric.get("Namespace"),
                 metric.get("MetricName"),
             )
-            #
-            dimension_filter = ""
-            for dimension in dimensions:
-                dimension_filter += "AND dimensions LIKE ? "
-                data = data + (f"%{dimension.get('Name')}={dimension.get('Value')}%",)
-
             unit_filter = ""
             if unit:
                 unit_filter = "AND unit LIKE ? "
-                data = data + (unit,)
+                data += (unit,)
+
+            dimension_filter = ""
+            for dimension in dimensions:
+                dimension_filter += "AND dimensions LIKE ? "
+                data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
 
             sql_query = f"""
             SELECT
-            {STAT_TO_SQLITE_FUNC_2[stat]}
+                {STAT_TO_SQLITE_FUNC_2[stat]},
+                SUM(count)
             FROM (
                 SELECT
                 value, 1 as count,
@@ -234,9 +234,9 @@ class CloudwatchDatabase:
             ) AS combined
             WHERE account_id = ? AND region = ?
             AND namespace = ? AND metric_name = ?
-            AND timestamp >= ? AND timestamp < ?
-            {dimension_filter}
             {unit_filter}
+            {dimension_filter}
+            AND timestamp >= ? AND timestamp < ?
             ORDER BY {order_by}
             """
 
@@ -249,19 +249,14 @@ class CloudwatchDatabase:
                     data + (start_time_unix, next_start_time),
                 )
                 result_row = cur.fetchone()
-                start_time_unix = next_start_time
 
-                cleaned_result = None
-                if stat == "SampleCount" and result_row[0] is not None:
-                    cleaned_result = result_row[0]
-                elif stat == "Average" and result_row[1]:
-                    cleaned_result = result_row[0] / result_row[1]
-                else:
-                    cleaned_result = result_row[0]
-
-                if cleaned_result:
+                if result_row[1]:
+                    calculated_result = (
+                        result_row[0] / result_row[1] if stat == "Average" else result_row[0]
+                    )
                     timestamps.append(start_time_unix)
-                    values.append(cleaned_result)
+                    values.append(calculated_result)
+                start_time_unix = next_start_time
 
             return {
                 "timestamps": timestamps,

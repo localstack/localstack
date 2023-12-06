@@ -519,7 +519,9 @@ class TestCloudwatch:
             assert len(response["MetricDataResults"][0]["Values"]) > 0
             snapshot.match("get_metric_data", response)
 
-        retry(assert_results, retries=10, sleep_before=1)
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0
+        retry(assert_results, retries=retries, sleep_before=sleep_before)
 
     @markers.aws.only_localstack
     def test_raw_metric_data(self, aws_client):
