@@ -129,6 +129,7 @@ def _snapshot_session(request: SubRequest, account_id, region):
     # TODO: temporary to migrate to new default transformers.
     #   remove this after all exemptions are gone
     exemptions = [
+        "tests/aws/services/acm",
         "tests/aws/services/apigateway",
         "tests/aws/services/cloudwatch",
         "tests/aws/services/cloudformation",
@@ -142,11 +143,15 @@ def _snapshot_session(request: SubRequest, account_id, region):
         "tests/aws/services/route53",
         "tests/aws/services/route53resolver",
         "tests/aws/services/s3",
+        "tests/aws/services/secretsmanager",
         "tests/aws/services/ses",
         "tests/aws/services/sns",
         "tests/aws/services/stepfunctions",
         "tests/aws/services/sqs",
+        "tests/aws/services/transcribe",
         "tests/aws/scenario/bookstore",
+        "tests/aws/scenario/note_taking",
+        "tests/aws/scenario/loan_broker",
         "localstack_ext",
         "localstack-ext",
     ]
