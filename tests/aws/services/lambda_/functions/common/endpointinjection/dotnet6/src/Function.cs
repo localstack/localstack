@@ -1,8 +1,6 @@
 using System.Collections;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
-using System.Linq;
 
 using Amazon.Lambda.Core;
 using Amazon.Runtime;
@@ -20,23 +18,19 @@ namespace dotnet6
 
         public async Task FunctionHandler(object input, ILambdaContext context)
         {
-            AmazonSQSClient sqsClient;
-            if (Environment.GetEnvironmentVariable("CONFIGURE_CLIENT") == "1") {
-                sqsClient = new AmazonSQSClient(new AmazonSQSConfig()
-                    {
-                        ServiceURL = Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL"),
-                        AuthenticationRegion = "us-east-1",
-                    }
-                );
-            } else {
-                sqsClient = new AmazonSQSClient(new AmazonSQSConfig()
-                    {
-                        AuthenticationRegion = "us-east-1",
-                    }
-                );
+            AmazonSQSConfig sqsClientConfig = new AmazonSQSConfig();
+            string endpointUrl = Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL");
+            if (endpointUrl != null) {
+                sqsClientConfig = new AmazonSQSConfig
+                {
+                    ServiceURL = endpointUrl,
+                };
             }
+            AmazonSQSClient sqsClient = new AmazonSQSClient(sqsClientConfig);
 
-            await sqsClient.ListQueuesAsync("");
+            ListQueuesRequest request = new ListQueuesRequest();
+            ListQueuesResponse response = await sqsClient.ListQueuesAsync(request);
+            Console.WriteLine("QueueUrls: [" + string.Join(", ", response.QueueUrls) + "]");
         }
     }
 }

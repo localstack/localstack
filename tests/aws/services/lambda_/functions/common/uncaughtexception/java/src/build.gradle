@@ -2,31 +2,22 @@ plugins {
     id 'java'
 }
 
+java {
+    // Target oldest tested Java runtime
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation platform('software.amazon.awssdk:bom:2.10.73')
-    implementation platform('com.amazonaws:aws-xray-recorder-sdk-bom:2.4.0')
-    implementation 'software.amazon.awssdk:lambda'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-core'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-core'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2-instrumentor'
-    implementation 'com.amazonaws:aws-lambda-java-core:1.2.1'
-    implementation 'com.amazonaws:aws-lambda-java-events:2.2.9'
-    implementation 'com.google.code.gson:gson:2.8.6'
-    implementation 'org.apache.logging.log4j:log4j-api:[2.17.1,)'
-    implementation 'org.apache.logging.log4j:log4j-core:[2.17.1,)'
-    runtimeOnly 'org.apache.logging.log4j:log4j-slf4j18-impl:[2.17.1,)'
-    runtimeOnly 'com.amazonaws:aws-lambda-java-log4j2:1.5.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
-}
+    // AWS Java libraries https://github.com/aws/aws-lambda-java-libs
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
 
-test {
-    useJUnitPlatform()
+     // SLF4J logging
+    implementation 'org.slf4j:slf4j-nop:2.0.9'
 }
 
 task packageFat(type: Zip) {
@@ -55,11 +46,6 @@ task packageSkinny(type: Zip) {
 tasks.withType(AbstractArchiveTask) {
     preserveFileTimestamps = false
     reproducibleFileOrder = true
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 build.dependsOn packageSkinny

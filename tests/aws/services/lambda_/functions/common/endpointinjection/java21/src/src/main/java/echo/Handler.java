@@ -2,17 +2,6 @@ package echo;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
-import com.amazonaws.services.sqs.model.ListQueuesRequest;
-import com.amazonaws.services.sqs.model.ListQueuesResult;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-// v2
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
@@ -33,12 +22,7 @@ import java.util.concurrent.Future;
 public class Handler implements RequestHandler<Map<String, String>, String> {
 
     public String handleRequest(Map<String, String> event, Context context) {
-        // Inspect ssl property for the Java AWS SDK v1 client. Removed in v2.
-        System.out.println("com.amazonaws.sdk.disableCertChecking=" + System.getProperty("com.amazonaws.sdk.disableCertChecking"));
-
-        // v1
-        ListQueuesResult responseV1 = this.getSqsClientV1().listQueues(new ListQueuesRequest());
-        System.out.println("QueueUrls (SDK v1)=" + responseV1.getQueueUrls().toString());
+        // Test only the Java AWS SDK v2 clients because v1 is not shipped by default in the Java runtimes >=java17
 
         // v2 synchronous: test both apache and urlconnection http clients to ensure both are instrumented
         ListQueuesResponse response = this.getSqsClient().listQueues();
@@ -57,17 +41,6 @@ public class Handler implements RequestHandler<Map<String, String>, String> {
         }
 
         return "ok";
-    }
-
-    private AmazonSQS getSqsClientV1() {
-        String endpointUrl = System.getenv("AWS_ENDPOINT_URL");
-        String region = System.getenv("AWS_REGION");
-        if (endpointUrl != null) {
-            return AmazonSQSClientBuilder.standard()
-                    .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpointUrl, region))
-                    .build();
-        }
-        return AmazonSQSClientBuilder.standard().build();
     }
 
     private SqsClient getSqsClient() {

@@ -3,9 +3,8 @@ plugins {
 }
 
 java {
-    // Target oldest tested Java runtime
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 repositories {
@@ -13,6 +12,15 @@ repositories {
 }
 
 dependencies {
+    // AWS SDK v2: https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/home.html
+    implementation platform('software.amazon.awssdk:bom:2.21.33')
+    // SQS and HTTP clients
+    implementation 'software.amazon.awssdk:sqs'
+    compileOnly 'software.amazon.awssdk:apache-client'
+    implementation 'software.amazon.awssdk:url-connection-client'
+    implementation 'software.amazon.awssdk:aws-crt-client'
+    implementation 'software.amazon.awssdk:netty-nio-client'
+
     // AWS Java libraries https://github.com/aws/aws-lambda-java-libs
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
 
