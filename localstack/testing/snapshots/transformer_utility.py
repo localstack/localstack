@@ -773,9 +773,7 @@ SNAPSHOT_BASIC_TRANSFORMER = [
     ),
     RegexTransformer(PATTERN_ISO8601, "date"),
     KeyValueBasedTransformer(
-        lambda k, v: (v if isinstance(v, datetime) else None),
-        "2022-06-13T13:48:01Z",
-        replace_reference=False,
+        lambda k, v: (v if isinstance(v, datetime) else None), "datetime", replace_reference=False
     ),
     KeyValueBasedTransformer(
         lambda k, v: str(v)
