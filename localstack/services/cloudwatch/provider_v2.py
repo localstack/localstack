@@ -533,7 +533,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         extended_statistics: ExtendedStatistics = None,
         unit: StandardUnit = None,
     ) -> GetMetricStatisticsOutput:
-        stat_datapoints = []
+        stat_datapoints = {}
         for stat in statistics:
             query_result = self.cloudwatch_database.get_metric_data_stat(
                 account_id=context.account_id,
@@ -555,10 +555,11 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 ),
             )
 
-            datapoints = query_result.get("datapoints", {})
-            for timestamp, datapoint_result in datapoints.items():
+            timestamps = query_result.get("timestamps", [])
+            values = query_result.get("values", [])
+            for i, timestamp in enumerate(timestamps):
                 stat_datapoints.setdefault(timestamp, {})
-                stat_datapoints[timestamp][stat] = datapoint_result
+                stat_datapoints[timestamp][stat] = values[i]
 
         datapoints = []
         for timestamp, stats in stat_datapoints.items():
