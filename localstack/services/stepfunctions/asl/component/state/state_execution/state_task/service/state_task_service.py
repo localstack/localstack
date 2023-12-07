@@ -51,8 +51,9 @@ class StateTaskService(StateTask, abc.ABC):
     def _get_sfn_resource_type(self) -> str:
         return self.resource.service_name
 
-    def _get_timed_out_failure_event(self) -> FailureEvent:
+    def _get_timed_out_failure_event(self, env: Environment) -> FailureEvent:
         return FailureEvent(
+            env=env,
             error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
             event_type=HistoryEventType.TaskTimedOut,
             event_details=EventDetails(

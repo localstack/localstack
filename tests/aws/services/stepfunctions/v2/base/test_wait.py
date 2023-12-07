@@ -23,8 +23,9 @@ class TestSfnWait:
         "timestamp_suffix",
         [
             # valid formats
-            # TODO: re-enable
             # "Z",
+            # ".000000Z",
+            # ".00",
             # ".000000Z",
             # ".000Z",
             # invalid formats

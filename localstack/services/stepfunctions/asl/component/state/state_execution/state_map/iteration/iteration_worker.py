@@ -90,6 +90,7 @@ class IterationWorker(abc.ABC):
                     error_name = CustomErrorName(error_name=error_name)
                 raise FailureEventException(
                     failure_event=FailureEvent(
+                        env=env,
                         error_name=error_name,
                         event_type=HistoryEventType.MapIterationFailed,
                         event_details=EventDetails(
@@ -101,6 +102,7 @@ class IterationWorker(abc.ABC):
             elif isinstance(end_program_state, ProgramStopped):
                 raise FailureEventException(
                     failure_event=FailureEvent(
+                        env=env,
                         error_name=CustomErrorName(error_name=HistoryEventType.MapIterationAborted),
                         event_type=HistoryEventType.MapIterationAborted,
                         event_details=EventDetails(

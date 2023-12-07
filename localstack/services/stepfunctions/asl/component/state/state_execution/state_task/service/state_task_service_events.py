@@ -42,6 +42,7 @@ class StateTaskServiceEvents(StateTaskServiceCallback):
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, SfnFailedEntryCountException):
             return FailureEvent(
+                env=env,
                 error_name=self._FAILED_ENTRY_ERROR_NAME,
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(
