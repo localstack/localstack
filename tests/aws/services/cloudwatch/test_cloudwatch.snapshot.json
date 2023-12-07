@@ -1563,22 +1563,45 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_handle_different_units": {
-    "recorded-date": "07-12-2023, 12:45:26",
+    "recorded-date": "07-12-2023, 14:03:11",
     "recorded-content": {
       "get_metric_statistics_with_different_units": {
         "Datapoints": [
           {
             "Average": 1.0,
             "Timestamp": "timestamp",
-            "Unit": "Seconds"
+            "Unit": "Count"
           },
           {
             "Average": 1.0,
             "Timestamp": "timestamp",
-            "Unit": "Count"
+            "Unit": "Seconds"
           }
         ],
-        "Label": "m-f09fdf34",
+        "Label": "m-test",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_different_units": {
+    "recorded-date": "07-12-2023, 14:04:49",
+    "recorded-content": {
+      "get_metric_data_with_different_units": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "m1",
+            "Label": "m-test",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

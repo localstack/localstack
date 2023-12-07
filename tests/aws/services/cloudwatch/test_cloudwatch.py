@@ -1966,9 +1966,12 @@ class TestCloudwatch:
         retry(assert_ordering, retries=10, sleep=1.0)
 
     @markers.aws.validated
+    # @pytest.mark.skip(
+    #     reason="it's not supported by moto"
+    # )
     def test_handle_different_units(self, aws_client, snapshot):
         namespace = f"n-sp-{short_uid()}"
-        metric_name = f"m-{short_uid()}"
+        metric_name = "m-test"
         now = datetime.utcnow().replace(tzinfo=timezone.utc)
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
@@ -1999,6 +2002,58 @@ class TestCloudwatch:
             )
             assert len(response["Datapoints"]) == 2
             snapshot.match("get_metric_statistics_with_different_units", response)
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0.0
+        retry(assert_results, retries=retries, sleep=1.0, sleep_before=sleep_before)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MetricDataResults..Label"], condition=is_new_provider
+    )
+    def test_get_metric_data_with_different_units(self, aws_client, snapshot):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = "m-test"
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": now,
+                    "Value": 1,
+                    "Unit": "Seconds",
+                },
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": now,
+                    "Value": 1,
+                    "Unit": "Count",
+                },
+            ],
+        )
+
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                            "Unit": "Seconds",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=60),
+                MaxDatapoints=10,
+            )
+            snapshot.match("get_metric_data_with_different_units", response)
 
         retries = 10 if is_aws_cloud() else 1
         sleep_before = 2 if is_aws_cloud() else 0.0
