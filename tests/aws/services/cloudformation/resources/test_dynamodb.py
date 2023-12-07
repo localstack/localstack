@@ -113,7 +113,7 @@ def test_billing_mode_as_conditional(deploy_cfn_template, snapshot, aws_client, 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "Table.DeletionProtectionEnabled",
+        "$..Table.DeletionProtectionEnabled",
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
         "$..Table.Replicas",
