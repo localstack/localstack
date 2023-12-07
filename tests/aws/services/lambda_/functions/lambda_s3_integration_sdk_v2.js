@@ -7,12 +7,12 @@ exports.handler = async (event, context, callback) => {
     let s3;
     if (process.env.AWS_ENDPOINT_URL) {
         const CREDENTIALS = {
-            secretAccessKey: 'test',
-            accessKeyId: 'test',
+            secretAccessKey: process.env.SECRET_KEY,
+            accessKeyId: process.env.ACCESS_KEY,
         };
         s3 = new AWS.S3({
             endpoint: "http://s3.localhost.localstack.cloud:4566",
-            region: 'us-east-1',
+            region: process.env.AWS_REGION,
             signatureVersion: 'v4', // Required for the presigned URL functionality with extra headers
             credentials: CREDENTIALS
           });

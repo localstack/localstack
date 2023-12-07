@@ -6366,9 +6366,14 @@ class TestS3PresignedUrl:
         )
         snapshot.match("copy-obj", response)
 
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version="s3v4", s3={"payload_signing_enabled": True}),
+            endpoint_url=_endpoint_url(),
+        )
+
         # Create copy object to try to match s3a setting Content-MD5
         dest_key2 = "dest"
-        url = aws_client.s3.generate_presigned_url(
+        url = presigned_client.generate_presigned_url(
             "copy_object",
             Params={
                 "Bucket": s3_bucket,
@@ -6377,7 +6382,9 @@ class TestS3PresignedUrl:
             },
         )
 
-        request_response = requests.put(url, verify=False)
+        request_response = requests.put(
+            url, headers={"x-amz-copy-source": f"{s3_bucket}/{src_key}"}, verify=False
+        )
         assert request_response.status_code == 200
 
     @markers.aws.only_localstack
@@ -6673,6 +6680,10 @@ class TestS3PresignedUrl:
             runtime=Runtime.nodejs14_x,
             handler="lambda_s3_integration_presign.handler",
             role=lambda_su_role,
+            envvars={
+                "ACCESS_KEY": TEST_AWS_ACCESS_KEY_ID,
+                "SECRET_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+            },
         )
         s3_create_bucket(Bucket=function_name)
 
@@ -6740,6 +6751,10 @@ class TestS3PresignedUrl:
             runtime=Runtime.nodejs14_x,
             handler="lambda_s3_integration_sdk_v2.handler",
             role=lambda_su_role,
+            envvars={
+                "ACCESS_KEY": TEST_AWS_ACCESS_KEY_ID,
+                "SECRET_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+            },
         )
         s3_create_bucket(Bucket=function_name)
 
