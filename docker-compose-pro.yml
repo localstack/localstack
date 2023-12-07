@@ -9,6 +9,7 @@ services:
       - "127.0.0.1:4510-4559:4510-4559"  # external services port range
       - "127.0.0.1:443:443"              # LocalStack HTTPS Gateway (required for Pro)
     environment:
+      # LocalStack configuration: https://docs.localstack.cloud/references/configuration
       - DEBUG=${DEBUG-}
       - PERSISTENCE=${PERSISTENCE-}
       - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY-}  # required for Pro
