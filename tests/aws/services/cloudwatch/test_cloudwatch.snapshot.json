@@ -1561,5 +1561,29 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_handle_different_units": {
+    "recorded-date": "07-12-2023, 12:45:26",
+    "recorded-content": {
+      "get_metric_statistics_with_different_units": {
+        "Datapoints": [
+          {
+            "Average": 1.0,
+            "Timestamp": "timestamp",
+            "Unit": "Seconds"
+          },
+          {
+            "Average": 1.0,
+            "Timestamp": "timestamp",
+            "Unit": "Count"
+          }
+        ],
+        "Label": "m-f09fdf34",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

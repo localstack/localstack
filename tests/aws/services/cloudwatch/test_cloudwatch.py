@@ -1965,6 +1965,45 @@ class TestCloudwatch:
 
         retry(assert_ordering, retries=10, sleep=1.0)
 
+    @markers.aws.validated
+    def test_handle_different_units(self, aws_client, snapshot):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": now,
+                    "Value": 1,
+                    "Unit": "Seconds",
+                },
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": now,
+                    "Value": 1,
+                    "Unit": "Count",
+                },
+            ],
+        )
+
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_statistics(
+                Namespace=namespace,
+                MetricName=metric_name,
+                StartTime=now - timedelta(seconds=60),
+                EndTime=now + timedelta(seconds=60),
+                Period=60,
+                Statistics=["Average"],
+            )
+            assert len(response["Datapoints"]) == 2
+            snapshot.match("get_metric_statistics_with_different_units", response)
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0.0
+        retry(assert_results, retries=retries, sleep=1.0, sleep_before=sleep_before)
+
 
 def _check_alarm_triggered(
     expected_state,
