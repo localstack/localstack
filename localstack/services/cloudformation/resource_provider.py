@@ -77,6 +77,7 @@ PROVIDER_DEFAULTS = {
     "AWS::CloudFront::CloudFrontOriginAccessIdentity": "ResourceProvider",
     "AWS::CloudFront::Function": "ResourceProvider",
     "AWS::CloudFront::OriginRequestPolicy": "ResourceProvider",
+    "AWS::CloudFront::Distribution": "ResourceProvider",
     "AWS::CloudFormation::Stack": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
