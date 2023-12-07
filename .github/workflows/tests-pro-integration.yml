@@ -177,7 +177,8 @@ jobs:
       - name: Install OS packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.9-0ubuntu0* postgresql-client postgresql-plpython3
+          # postgresql-14 pin is required to make explicit install of the version from the Ubuntu repos and not PGDG repos
+          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.10-0ubuntu0* postgresql-client postgresql-plpython3
 
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
