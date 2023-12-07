@@ -609,13 +609,6 @@ class TestMacros:
         "template_to_transform",
         ["transformation_snippet_topic.yml", "transformation_snippet_topic.json"],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..TemplateBody.ChangeSetName",
-            "$..TemplateBody.Resources.Topic.LogicalResourceId",
-            "$..TemplateBody.StackName",
-        ]
-    )
     def test_snipped_scope(
         self,
         deploy_cfn_template,

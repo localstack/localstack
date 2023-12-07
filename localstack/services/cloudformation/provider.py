@@ -469,13 +469,13 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return stack_not_found_error(stack_name)
 
-        # Fix this some day
-        if template_stage == TemplateStage.Processed:
-            template_body = (
-                json.dumps(stack.template)
-                if "Transform" in stack.template_body
-                else stack.template_body
-            )
+        if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
+            copy_template = clone(stack.template_original)
+            copy_template.pop("ChangeSetName", None)
+            copy_template.pop("StackName", None)
+            for resource in copy_template.get("Resources", {}).values():
+                resource.pop("LogicalResourceId", None)
+            template_body = json.dumps(copy_template)
         else:
             template_body = stack.template_body
 
