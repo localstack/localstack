@@ -14,9 +14,9 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import retry, short_uid, to_str
 from localstack.utils.sync import poll_condition
 
