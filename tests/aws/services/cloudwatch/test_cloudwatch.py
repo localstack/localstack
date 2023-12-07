@@ -606,9 +606,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
-    def test_put_composite_alarm_describe_alarms_converts_date_format_correctly(
-        self, aws_client, cleanups
-    ):
+    def test_put_composite_alarm_describe_alarms(self, aws_client, cleanups):
         composite_alarm_name = f"composite-a-{short_uid()}"
         alarm_name = f"a-{short_uid()}"
         metric_name = "something"
