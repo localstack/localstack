@@ -73,6 +73,7 @@ PROVIDER_DEFAULTS = {
     "AWS::AppSync::GraphQLApi": "ResourceProvider",
     "AWS::AppSync::GraphQLSchema": "ResourceProvider",
     "AWS::AppSync::Resolver": "ResourceProvider",
+    "AWS::CDK::Metadata": "ResourceProviders",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::CloudFormation::Stack": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
