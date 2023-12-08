@@ -18,6 +18,7 @@ from localstack.services.cloudformation.engine.entities import Stack, StackChang
 from localstack.services.cloudformation.engine.parameters import StackParameter
 from localstack.services.cloudformation.engine.quirks import VALID_GETATT_PROPERTIES
 from localstack.services.cloudformation.engine.template_utils import (
+    AWS_URL_SUFFIX,
     fn_equals_type_conversion,
     get_deps_for_resource,
 )
@@ -40,10 +41,10 @@ from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
+from localstack.utils.urls import localstack_host
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
-AWS_URL_SUFFIX = "localhost.localstack.cloud"  # value is "amazonaws.com" in real AWS
 
 REGEX_OUTPUT_APIGATEWAY = re.compile(
     rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
@@ -199,7 +200,7 @@ def resolve_refs_recursively(
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]
-            port = config.service_port("apigateway")
+            port = localstack_host().port
             return f"{prefix}{host}:{port}/{path}"
 
         # basic dynamic reference support
@@ -612,7 +613,7 @@ def _resolve_refs_recursively(
                 or region_name
             )
             azs = []
-            for az in ("a", "b", "c", "d"):
+            for az in ("a", "b", "c", "d", "e", "f"):
                 azs.append("%s%s" % (region, az))
 
             return azs
@@ -1439,6 +1440,8 @@ class TemplateDeployer:
 def resolve_outputs(account_id: str, region_name: str, stack) -> list[dict]:
     result = []
     for k, details in stack.outputs.items():
+        if not evaluate_resource_condition(stack.resolved_conditions, details):
+            continue
         value = None
         try:
             resolve_refs_recursively(

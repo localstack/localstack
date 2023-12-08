@@ -1,13 +1,9 @@
 from unittest import mock
 
-import requests
-
 from localstack.constants import VERSION
 from localstack.http import Request
-from localstack.services.generic_proxy import ProxyListener
-from localstack.services.internal import CloudFormationUi, HealthResource, LocalstackResourceHandler
+from localstack.services.internal import CloudFormationUi, HealthResource
 from localstack.services.plugins import ServiceManager, ServiceState
-from localstack.utils.testutil import proxy_server
 
 
 class TestHealthResource:
@@ -78,33 +74,3 @@ class TestCloudFormationUiResource:
         assert response.status == "200 OK"
         assert "</html>" in response.get_data(as_text=True), "deploy UI did not render HTML"
         assert "text/html" in response.headers.get("content-type", "")
-
-
-class TestLocalstackResourceHandlerIntegration:
-    def test_health(self, monkeypatch):
-        with proxy_server(LocalstackResourceHandler()) as url:
-            # legacy endpoint
-            response = requests.get(f"{url}/health")
-            assert response.ok
-            assert "services" in response.json()
-
-            # new internal endpoint
-            response = requests.get(f"{url}/_localstack/health")
-            assert response.ok
-            assert "services" in response.json()
-
-    def test_fallthrough(self):
-        class RaiseError(ProxyListener):
-            def forward_request(self, method, path, data, headers):
-                raise ValueError("this error is expected")
-
-        with proxy_server([LocalstackResourceHandler(), RaiseError()]) as url:
-            # the RaiseError handler is called since this is not a /_localstack resource
-            response = requests.get(f"{url}/foobar")
-            assert not response.ok
-            assert response.status_code >= 500
-
-            # internal paths are 404ed
-            response = requests.get(f"{url}/_localstack/foobar")
-            assert not response.ok
-            assert response.status_code == 404

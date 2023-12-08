@@ -1,7 +1,5 @@
 import json
 
-import pytest
-
 from localstack.aws.api.sqs import MessageSystemAttributeNameForSends
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
@@ -9,11 +7,7 @@ from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
-from tests.aws.services.stepfunctions.utils import create_and_record_execution, is_old_provider
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
-)
+from tests.aws.services.stepfunctions.utils import create_and_record_execution
 
 
 @markers.snapshot.skip_snapshot_verify(

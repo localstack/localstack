@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 from antlr4.tree.Tree import ParseTree, TerminalNodeImpl
@@ -16,6 +17,9 @@ from localstack.services.stepfunctions.asl.component.intrinsic.argument.function
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_bool import (
     FunctionArgumentBool,
+)
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_context_path import (
+    FunctionArgumentContextPath,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_float import (
     FunctionArgumentFloat,
@@ -52,10 +56,20 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 
 class Preprocessor(ASLIntrinsicParserVisitor):
     @staticmethod
+    def _replace_escaped_characters(match):
+        escaped_char = match.group(1)
+        if escaped_char.isalpha():
+            replacements = {"n": "\n", "t": "\t", "r": "\r"}
+            return replacements.get(escaped_char, escaped_char)
+        else:
+            return match.group(0)
+
+    @staticmethod
     def _text_of_str(parse_tree: ParseTree) -> str:
         pt = Antlr4Utils.is_production(parse_tree) or Antlr4Utils.is_terminal(parse_tree)
         inner_str = pt.getText()
         inner_str = inner_str[1:-1]
+        inner_str = re.sub(r"\\(.)", Preprocessor._replace_escaped_characters, inner_str)
         return inner_str
 
     def visitFunc_arg_int(self, ctx: ASLIntrinsicParser.Func_arg_intContext) -> FunctionArgumentInt:
@@ -73,6 +87,12 @@ class Preprocessor(ASLIntrinsicParserVisitor):
     ) -> FunctionArgumentString:
         text: str = self._text_of_str(ctx.STRING())
         return FunctionArgumentString(string=text)
+
+    def visitContext_path(
+        self, ctx: ASLIntrinsicParser.Context_pathContext
+    ) -> FunctionArgumentContextPath:
+        json_path: str = ctx.json_path().getText()
+        return FunctionArgumentContextPath(json_path=json_path)
 
     def visitFunc_arg_json_path(
         self, ctx: ASLIntrinsicParser.Func_arg_json_pathContext

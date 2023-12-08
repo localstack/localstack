@@ -48,7 +48,7 @@ class PortConfigurator:
         self.randomize = randomize
 
     def __call__(self, cfg: ContainerConfiguration):
-        cfg.ports.bind_host = config.EDGE_BIND_HOST
+        cfg.ports.bind_host = config.GATEWAY_LISTEN[0].host
 
         if self.randomize:
             ContainerConfigurators.random_gateway_port(cfg)
@@ -142,14 +142,6 @@ class SourceVolumeMountConfigurator:
 
         # postgresql-proxy code if available
         self.try_mount_to_site_packages(cfg, self.host_paths.postgresql_proxy / "postgresql_proxy")
-
-        # persistence plugin
-        self.try_mount_to_site_packages(
-            cfg,
-            self.host_paths.workspace_dir
-            / "localstack-plugin-persistence"
-            / "localstack_persistence",
-        )
 
         # plux
         self.try_mount_to_site_packages(cfg, self.host_paths.workspace_dir / "plux" / "plugin")
@@ -274,6 +266,9 @@ class DependencyMountConfigurator:
 
     dependency_glob = "/opt/code/localstack/.venv/lib/python3.*/site-packages/*"
 
+    # skip mounting dependencies with incompatible binaries (e.g., on MacOS)
+    skipped_dependencies = ["cryptography", "psutil", "rpds"]
+
     def __init__(
         self,
         *,
@@ -303,6 +298,9 @@ class DependencyMountConfigurator:
             if dep_path.name.endswith(".dist-info"):
                 continue
             if dep_path.name == "__pycache__":
+                continue
+
+            if dep_path.name in self.skipped_dependencies:
                 continue
 
             if dep_path.name in container_path_index:

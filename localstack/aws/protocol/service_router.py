@@ -147,7 +147,7 @@ def custom_path_addressing_rules(path: str) -> Optional[str]:
     """
 
     if is_sqs_queue_url(path):
-        return "sqs"
+        return "sqs-query"
 
     if path.startswith("/2015-03-31/functions/"):
         return "lambda"
@@ -285,6 +285,15 @@ def resolve_conflicts(candidates: Set[str], request: Request):
         return "timestream-query"
     if candidates == {"docdb", "neptune", "rds"}:
         return "rds"
+    if candidates == {"sqs-query", "sqs"}:
+        # SQS now have 2 different specs for `query` and `json` protocol. From our current implementation with the
+        # parser and serializer, we need to have 2 different service names for them, but they share one provider
+        # implementation. `sqs-query` represents the legacy `query` protocol spec, and `sqs` the new `json` spec,
+        # default in botocore starting 1.31.81.
+        # The `application/x-amz-json-1.0` header is mandatory for requests targeting SQS with the `json` protocol. We
+        # can safely route them to the `sqs` JSON parser/serializer. If not present, route the request to `query`.
+        content_type = request.headers.get("Content-Type")
+        return "sqs" if content_type == "application/x-amz-json-1.0" else "sqs-query"
 
 
 def determine_aws_service_name(request: Request, services: ServiceCatalog = None) -> Optional[str]:

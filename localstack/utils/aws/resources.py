@@ -1,7 +1,6 @@
 from localstack.aws.api.dynamodb import CreateTableOutput, DescribeTableOutput
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
-from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.aws.aws_stack import LOG
 from localstack.utils.functions import run_safe
 from localstack.utils.sync import poll_condition
@@ -149,6 +148,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=No
         client_error_code = integration.get("clientErrorCode") or "400"
         server_error_code = integration.get("serverErrorCode") or "500"
         request_parameters = integration.get("requestParameters") or {}
+        credentials = integration.get("credentials") or ""
 
         # create integration
         client.put_integration(
@@ -160,6 +160,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=No
             uri=integration["uri"],
             requestTemplates=req_templates,
             requestParameters=request_parameters,
+            credentials=credentials,
         )
         response_configs = [
             {"pattern": "^2.*", "code": success_code, "res_templates": res_templates},
@@ -186,11 +187,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=No
             )
 
 
-def create_kinesis_stream(client, stream_name: str, shards: int = 1, delete: bool = False):
-    stream = KinesisStream(id=stream_name, num_shards=shards)
-    stream.connect(client)
+def create_kinesis_stream(client, stream_name: str, shards: int = 1, delete: bool = False) -> None:
+    client.create_stream(StreamName=stream_name, ShardCount=shards)
     if delete:
-        run_safe(lambda: stream.destroy(), print_error=False)
-    stream.create()
-    # Note: Returning the stream without awaiting its creation (via wait_for()) to avoid API call timeouts/retries.
-    return stream
+        run_safe(lambda: client.delete_stream(StreamName=stream_name), print_error=False)

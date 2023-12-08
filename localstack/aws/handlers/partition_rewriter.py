@@ -9,12 +9,10 @@ from urllib.parse import urlparse
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
-from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Response
 from localstack.http.proxy import forward
 from localstack.http.request import Request, get_full_raw_path, get_raw_path, restore_payload
 from localstack.utils.aws.aws_responses import calculate_crc32
-from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
@@ -89,9 +87,7 @@ class ArnPartitionRewriteHandler(Handler):
         # get arn rewriting mode from header
         # not yet used but would allow manual override (e.g. for testing)
         rewrite_mode = request.headers.pop("LS-INTERNAL-REWRITE-MODE", None)
-        if rewrite_mode is None and (
-            context.is_internal_call or is_internal_call_context(request.headers)
-        ):
+        if rewrite_mode is None and context.is_internal_call:
             # default internal mode
             rewrite_mode = "internal-guard"
         else:
@@ -105,7 +101,7 @@ class ArnPartitionRewriteHandler(Handler):
         # forward to the handler chain again
         result_response = forward(
             request=request,
-            forward_base_url=config.get_edge_url(),
+            forward_base_url=config.internal_service_url(),
             forward_path=get_raw_path(request),
             headers=request.headers,
         )
@@ -257,13 +253,9 @@ class ArnPartitionRewriteHandler(Handler):
             try:
                 partition = self._get_partition_for_region(request_region)
             except self.InvalidRegionException:
-                try:
-                    # If the region is not properly set (f.e. because it is set to a wildcard),
-                    # the partition is determined based on the default region.
-                    partition = self._get_partition_for_region(config.DEFAULT_REGION)
-                except self.InvalidRegionException:
-                    # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
-                    partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
+                # If the region is not properly set (f.e. because it is set to a wildcard),
+                # the fallback partition is used.
+                partition = config.ARN_PARTITION_FALLBACK
         return partition
 
     @staticmethod

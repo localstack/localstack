@@ -10,10 +10,10 @@ exports.handler = async () => {
 
   try {
     let client;
-    if (process.env.LOCALSTACK_HOSTNAME) {
+    if (process.env.AWS_ENDPOINT_URL) {
       const localStackConfig = {
-        endpoint: `http://${process.env.LOCALSTACK_HOSTNAME}:${process.env.EDGE_PORT}`,
-        region: 'us-east-1', // Change the region as per your setup
+        endpoint: process.env.AWS_ENDPOINT_URL,
+        region: process.env.AWS_REGION || "us-east-1",
       };
       client = new  DynamoDBClient(localStackConfig);
     } else {

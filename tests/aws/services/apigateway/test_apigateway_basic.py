@@ -15,10 +15,8 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
-from localstack.config import get_edge_url
 from localstack.constants import (
     APPLICATION_JSON,
-    LOCALHOST_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
@@ -31,13 +29,11 @@ from localstack.services.apigateway.helpers import (
     host_based_url,
     path_based_url,
 )
-from localstack.testing.aws.lambda_utils import (
-    is_old_local_executor,
-)
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_util
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests as requests
@@ -45,6 +41,7 @@ from localstack.utils.json import clone
 from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
+from localstack.utils.urls import localstack_host
 from tests.aws.services.apigateway.apigateway_fixtures import (
     UrlType,
     api_invoke_url,
@@ -62,6 +59,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
 )
 from tests.aws.services.apigateway.conftest import (
     APIGATEWAY_ASSUME_ROLE_POLICY,
+    APIGATEWAY_KINESIS_POLICY,
     APIGATEWAY_LAMBDA_POLICY,
     APIGATEWAY_STEPFUNCTIONS_POLICY,
     STEPFUNCTIONS_ASSUME_ROLE_POLICY,
@@ -1022,7 +1020,7 @@ class TestAPIGateway:
 
         # create state machine and permissions for step function to invoke lambda
         role_name = f"sfn_role-{short_uid()}"
-        role_arn = arns.role_arn(role_name, account_id=aws_account_id)
+        role_arn = arns.iam_role_arn(role_name, account_id=aws_account_id)
         create_iam_role_with_policy(
             RoleName=role_name,
             PolicyName=f"sfn-role-policy-{short_uid()}",
@@ -1220,15 +1218,10 @@ class TestAPIGateway:
     ):
         path = path or "/"
         path = path if path.startswith(path) else f"/{path}"
-        proto = "https" if use_ssl else "http"
         if use_hostname:
-            return (
-                f"{proto}://{api_id}.execute-api.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}/"
-                f"{stage}{path}"
-            )
-        return (
-            f"{proto}://localhost:{config.EDGE_PORT}/restapis/{api_id}/{stage}/_user_request_{path}"
-        )
+            host = f"{api_id}.execute-api.{localstack_host().host}"
+            return f"{config.external_service_url(host=host)}/{stage}{path}"
+        return f"{config.internal_service_url()}/restapis/{api_id}/{stage}/_user_request_{path}"
 
     @markers.aws.unknown
     def test_api_mock_integration_response_params(self, aws_client):
@@ -1609,9 +1602,6 @@ class TestTagging:
         assert tags == tags_saved
 
 
-@pytest.mark.skipif(
-    is_old_local_executor(), reason="Rust lambdas cannot be executed in local executor"
-)
 @pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
 @markers.aws.unknown
 def test_apigateway_rust_lambda(
@@ -1670,11 +1660,9 @@ def test_apigateway_rust_lambda(
 
 @markers.aws.unknown
 def test_apigw_call_api_with_aws_endpoint_url(aws_client):
-    headers = aws_stack.mock_aws_request_headers(
-        "apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
-    )
+    headers = mock_aws_request_headers("apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME)
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
-    url = f"{get_edge_url()}/apikeys?includeValues=true&name=test%40example.org"
+    url = f"{config.internal_service_url()}/apikeys?includeValues=true&name=test%40example.org"
     response = requests.get(url, headers=headers)
     assert response.ok
     content = json.loads(to_str(response.content))
@@ -1931,7 +1919,12 @@ class TestIntegrations:
 
     @markers.aws.unknown
     def test_api_gateway_kinesis_integration(
-        self, aws_client, kinesis_create_stream, wait_for_stream_ready
+        self,
+        aws_client,
+        create_iam_role_with_policy,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        aws_client_factory,
     ):
         # create target Kinesis stream
         stream_name = kinesis_create_stream()
@@ -1939,7 +1932,24 @@ class TestIntegrations:
 
         # create API Gateway and connect it to the target stream
         api_name = f"test-gw-kinesis-{short_uid()}"
-        result = self.connect_api_gateway_to_kinesis(aws_client, api_name, stream_name)
+        client = aws_client_factory(
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+        ).apigateway
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=f"role-apigw-{short_uid()}",
+            PolicyName=f"policy-apigw-{short_uid()}",
+            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_KINESIS_POLICY,
+        )
+
+        result = self.connect_api_gateway_to_kinesis(
+            client,
+            api_name,
+            stream_name,
+            TEST_AWS_REGION_NAME,
+            role_arn,
+        )
 
         # generate test data
         test_data = {
@@ -2020,7 +2030,7 @@ class TestIntegrations:
         )
 
         test_role = "test-s3-role"
-        role_arn = arns.role_arn(role_name=test_role, account_id=TEST_AWS_ACCOUNT_ID)
+        role_arn = arns.iam_role_arn(role_name=test_role, account_id=TEST_AWS_ACCOUNT_ID)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]
@@ -2046,9 +2056,15 @@ class TestIntegrations:
             requestParameters={"integration.request.path.proxy": "method.request.path.proxy"},
         )
 
-    def connect_api_gateway_to_kinesis(self, aws_client, gateway_name: str, kinesis_stream: str):
+    def connect_api_gateway_to_kinesis(
+        self,
+        client,
+        gateway_name: str,
+        kinesis_stream: str,
+        region_name: str,
+        role_arn: str,
+    ):
         template = APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
-        region_name = aws_client.kinesis.meta.region_name
         resources = {
             "data": [
                 {
@@ -2060,6 +2076,7 @@ class TestIntegrations:
                             "type": "AWS",
                             "uri": f"arn:aws:apigateway:{region_name}:kinesis:action/PutRecords",
                             "requestTemplates": {"application/json": template},
+                            "credentials": role_arn,
                         }
                     ],
                 },
@@ -2072,6 +2089,7 @@ class TestIntegrations:
                             "type": "AWS",
                             "uri": f"arn:aws:apigateway:{region_name}:kinesis:action/ListStreams",
                             "requestTemplates": {"application/json": "{}"},
+                            "credentials": role_arn,
                         }
                     ],
                 },
@@ -2081,7 +2099,7 @@ class TestIntegrations:
             name=gateway_name,
             resources=resources,
             stage_name=TEST_STAGE_NAME,
-            client=aws_client.apigateway,
+            client=client,
         )
 
     def connect_api_gateway_to_http(

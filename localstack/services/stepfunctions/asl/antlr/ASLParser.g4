@@ -98,7 +98,7 @@ resource_decl
     ;
 
 input_path_decl
-    : INPUTPATH COLON keyword_or_string
+    : INPUTPATH COLON (NULL | keyword_or_string)
     ;
 
 result_decl
@@ -110,7 +110,7 @@ result_path_decl
     ;
 
 output_path_decl
-    : OUTPUTPATH COLON keyword_or_string
+    : OUTPUTPATH COLON (NULL | keyword_or_string)
     ;
 
 end_decl
@@ -257,7 +257,7 @@ comparison_composite
     : choice_operator COLON
       ( choice_rule
       | LBRACK
-        choice_rule (COMMA choice_rule)+
+        choice_rule (COMMA choice_rule)*
         RBRACK
       )
     ;
@@ -399,7 +399,7 @@ retry_decl
     : RETRY
       COLON
       LBRACK
-      retrier_decl (COMMA retrier_decl)*
+      (retrier_decl (COMMA retrier_decl)*)?
       RBRACK
     ;
 
@@ -440,7 +440,7 @@ catch_decl
     : CATCH
       COLON
       LBRACK
-      catcher_decl (COMMA catcher_decl)*
+      (catcher_decl (COMMA catcher_decl)*)?
       RBRACK
     ;
 
@@ -518,6 +518,7 @@ states_error_name
     | ERRORNAMEStatesExceedToleratedFailureThreshold
     | ERRORNAMEStatesItemReaderFailed
     | ERRORNAMEStatesResultWriterFailed
+    | ERRORNAMEStatesRuntime
     ;
 
 error_name

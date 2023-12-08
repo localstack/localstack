@@ -47,16 +47,17 @@ DEPRECATIONS = [
         "0.12.8",
         "PORT_WEB_UI has been removed, and is not available anymore. Please remove this environment variable.",
     ),
-    # Since 0.12.7 - Full multi-region support
+    # Deprecated in 0.12.7, removed in 3.0.0
     EnvVarDeprecation(
         "USE_SINGLE_REGION",
         "0.12.7",
-        "LocalStack now has full multi-region support. Please remove this environment variable.",
+        "LocalStack now has full multi-region support. This option has no effect. Please remove it from your configuration.",  # noqa
     ),
+    # Deprecated in 0.12.7, removed in 3.0.0
     EnvVarDeprecation(
         "DEFAULT_REGION",
         "0.12.7",
-        "LocalStack now has full multi-region support. Please remove this environment variable.",
+        "LocalStack now has full multi-region support. This option has no effect. Please remove it from your configuration.",  # noqa
     ),
     # Since 1.0.0 - New Persistence and file system
     EnvVarDeprecation(
@@ -64,11 +65,15 @@ DEPRECATIONS = [
         "1.0.0",
         "Please use PERSISTENCE instead. The state will be stored in your LocalStack volume in the state/ directory.",
     ),
-    EnvVarDeprecation("HOST_TMP_FOLDER", "1.0.0", "Please remove this environment variable."),
+    EnvVarDeprecation(
+        "HOST_TMP_FOLDER",
+        "1.0.0",
+        "This option has no effect anymore. Please remove this environment variable.",
+    ),
     EnvVarDeprecation(
         "LEGACY_DIRECTORIES",
         "1.0.0",
-        "Please migrate to the new filesystem layout (introduced with v1.0).",
+        "This option has no effect anymore. Please migrate to the new filesystem layout (introduced with v1.0).",
     ),
     EnvVarDeprecation(
         "TMPDIR", "1.0.0", "Please migrate to the new filesystem layout (introduced with v1.0)."
@@ -82,50 +87,52 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "LEGACY_EDGE_PROXY",
         "1.0.0",
-        "Please migrate to the new HTTP gateway by removing this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     # Since 1.1.0 - Kinesalite removed with 1.3, only kinesis-mock is used as kinesis provider / backend
     EnvVarDeprecation(
         "KINESIS_PROVIDER",
         "1.1.0",
-        "Only a single provider is supported for kinesis. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     # Since 1.1.0 - Init dir has been deprecated in favor of pluggable init hooks
     EnvVarDeprecation(
         "LEGACY_INIT_DIR",
         "1.1.0",
+        "This option has no effect anymore. "
         "Please use the pluggable initialization hooks in /etc/localhost/init/<stage>.d instead.",
     ),
     EnvVarDeprecation(
         "INIT_SCRIPTS_PATH",
         "1.1.0",
+        "This option has no effect anymore. "
         "Please use the pluggable initialization hooks in /etc/localhost/init/<stage>.d instead.",
     ),
     # Since 1.3.0 - Synchronous events break AWS parity
     EnvVarDeprecation(
         "SYNCHRONOUS_SNS_EVENTS",
         "1.3.0",
-        "This configuration breaks parity with AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     EnvVarDeprecation(
         "SYNCHRONOUS_SQS_EVENTS",
         "1.3.0",
-        "This configuration breaks parity with AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     EnvVarDeprecation(
         "SYNCHRONOUS_API_GATEWAY_EVENTS",
         "1.3.0",
-        "This configuration breaks parity with AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     EnvVarDeprecation(
         "SYNCHRONOUS_KINESIS_EVENTS",
         "1.3.0",
-        "This configuration breaks with parity AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     EnvVarDeprecation(
         "SYNCHRONOUS_DYNAMODB_EVENTS",
         "1.3.0",
-        "This configuration breaks with parity AWS. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
     # Since 1.3.0 - All non-pre-seeded infra is downloaded asynchronously
     EnvVarDeprecation(
@@ -137,19 +144,19 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "MOCK_UNIMPLEMENTED",
         "1.3.0",
-        "This feature will not be supported in the future. Please remove this environment variable.",
+        "This feature is not supported anymore. Please remove this environment variable.",
     ),
     # Since 1.4.0 - The Edge Forwarding is only used for legacy HTTPS proxying and will be removed
     EnvVarDeprecation(
         "EDGE_FORWARD_URL",
         "1.4.0",
-        "This feature will not be supported in the future. Please remove this environment variable.",
+        "This option has no effect anymore. Please remove this environment variable.",
     ),
-    # Since 1.4.0 - Local-KMS will be removed in the future making this variable obsolete
+    # Deprecated in 1.4.0, removed in 3.0.0
     EnvVarDeprecation(
         "KMS_PROVIDER",
         "1.4.0",
-        "This feature will not be supported in the future. Please remove this environment variable.",
+        "This option has no effect. Please remove it from your configuration.",
     ),
     # Since 2.0.0 - HOSTNAME_EXTERNAL will be replaced with LOCALSTACK_HOST
     EnvVarDeprecation(
@@ -225,12 +232,6 @@ DEPRECATIONS = [
         "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
     ),
     EnvVarDeprecation(
-        "HOSTNAME_FROM_LAMBDA",
-        "2.0.0",
-        "This feature is currently not supported in the new lambda provider "
-        "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
-    ),
-    EnvVarDeprecation(
         "LAMBDA_XRAY_INIT",
         "2.0.0",
         "The X-Ray daemon is always initialized in the new lambda provider "
@@ -239,22 +240,40 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "KINESIS_INITIALIZE_STREAMS",
         "1.4.0",
-        "This feature is marked for removal. Please use AWS client API to seed Kinesis streams.",
+        "This option has no effect anymore. Please use the AWS client and init hooks instead.",
+    ),
+    EnvVarDeprecation(
+        "SQS_PORT_EXTERNAL",
+        "1.0.0",
+        "This option has no effect anymore. Please use LOCALSTACK_HOST instead.",
+    ),
+    EnvVarDeprecation(
+        "PROVIDER_OVERRIDE_LAMBDA",
+        "3.0.0",
+        "This option is ignored because the legacy Lambda provider (v1) has been removed since 3.0.0. "
+        "Please remove PROVIDER_OVERRIDE_LAMBDA and migrate to our new Lambda provider (v2): "
+        "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
     ),
     EnvVarDeprecation(
         "ES_CUSTOM_BACKEND",
         "0.14.0",
-        "This option is marked for removal. Please use OPENSEARCH_CUSTOM_BACKEND instead.",
+        "This option has no effect anymore. Please use OPENSEARCH_CUSTOM_BACKEND instead.",
     ),
     EnvVarDeprecation(
         "ES_MULTI_CLUSTER",
         "0.14.0",
-        "This option is marked for removal. Please use OPENSEARCH_MULTI_CLUSTER instead.",
+        "This option has no effect anymore. Please use OPENSEARCH_MULTI_CLUSTER instead.",
     ),
     EnvVarDeprecation(
         "ES_ENDPOINT_STRATEGY",
         "0.14.0",
-        "This option is marked for removal. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
+        "This option has no effect anymore. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
+    ),
+    EnvVarDeprecation(
+        "DNS_LOCAL_NAME_PATTERNS",
+        "3.0.0",
+        "This option was confusingly named. Please use DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM "
+        "instead.",
     ),
 ]
 
@@ -302,23 +321,6 @@ def log_env_warning(deprecations: List[EnvVarDeprecation]) -> None:
 def log_deprecation_warnings(deprecations: Optional[List[EnvVarDeprecation]] = None) -> None:
     affected_deprecations = collect_affected_deprecations(deprecations)
     log_env_warning(affected_deprecations)
-
-    provider_override_lambda = os.environ.get("PROVIDER_OVERRIDE_LAMBDA")
-    if provider_override_lambda and provider_override_lambda in ["v1", "legacy"]:
-        env_var_value = f"PROVIDER_OVERRIDE_LAMBDA={provider_override_lambda}"
-        deprecation_version = "2.0.0"
-        # TODO[LambdaV1] adjust message or convert into generic deprecation for PROVIDER_OVERRIDE_LAMBDA
-        deprecation_path = (
-            f"Remove {env_var_value} to use the new Lambda 'v2' provider (current default). "
-            "For more details, refer to our Lambda migration guide "
-            "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2"
-        )
-        LOG.warning(
-            "%s is deprecated (since %s) and will be removed in upcoming releases of LocalStack! %s",
-            env_var_value,
-            deprecation_version,
-            deprecation_path,
-        )
 
 
 def deprecated_endpoint(

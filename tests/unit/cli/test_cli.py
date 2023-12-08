@@ -13,6 +13,7 @@ import localstack.utils.analytics.cli
 from localstack import config, constants
 from localstack.cli.localstack import create_with_plugins, is_frozen_bundle
 from localstack.cli.localstack import localstack as cli
+from localstack.config import HostAndPort
 from localstack.utils import testutil
 from localstack.utils.common import is_command_available
 from localstack.utils.container_utils.container_client import ContainerException, DockerNotAvailable
@@ -110,9 +111,16 @@ def test_start_host(runner, monkeypatch):
 
 
 def test_status_services(runner, httpserver, monkeypatch):
-    # TODO: legacy API, switch to use GATEWAY_LISTEN in the next step
-    monkeypatch.setattr(config, "EDGE_PORT_HTTP", httpserver.port)
-    monkeypatch.setattr(config, "EDGE_PORT", httpserver.port)
+    # configure LOCALSTACK_HOST because the services endpoint makes a request against the
+    # external URL of LocalStack, which may be different to the edge port
+    monkeypatch.setattr(
+        config,
+        "LOCALSTACK_HOST",
+        HostAndPort(
+            host="localhost.localstack.cloud",
+            port=httpserver.port,
+        ),
+    )
 
     services = {"dynamodb": "starting", "s3": "running"}
     httpserver.expect_request("/_localstack/health", method="GET").respond_with_json(
@@ -121,7 +129,7 @@ def test_status_services(runner, httpserver, monkeypatch):
 
     result = runner.invoke(cli, ["status", "services"])
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result
 
     assert "dynamodb" in result.output
     assert "s3" in result.output
@@ -146,7 +154,7 @@ def test_validate_config(runner, monkeypatch, tmp_path):
         """version: "3.3"
 services:
   localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
+    container_name: "${LOCALSTACK_DOCKER_NAME-localstack-main}"
     image: localstack/localstack
     network_mode: bridge
     ports:
@@ -159,11 +167,9 @@ services:
       - SERVICES=${SERVICES- }
       - DEBUG=${DEBUG- }
       - DATA_DIR=${DATA_DIR- }
-      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
       - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY- }
       - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - HOST_TMP_FOLDER=${TMPDIR}
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"

@@ -13,7 +13,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Union
 
 from localstack import config, constants
-from localstack.config import HostAndPort, default_ip, is_env_true
+from localstack.config import HostAndPort, default_ip, is_env_not_false, is_env_true
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
@@ -46,9 +46,11 @@ API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
     "dynamodbstreams": ["kinesis"],
     "es": ["opensearch"],
-    "lambda": ["logs", "cloudwatch", "s3", "sqs"],
-    "kinesis": ["dynamodb"],
+    "cloudformation": ["s3", "sts"],
+    "lambda": ["s3", "sqs", "sts"],
     "firehose": ["kinesis"],
+    "sqs": ["sqs-query"],
+    "transcribe": ["s3"],
 }
 # composites define an abstract name like "serverless" that maps to a set of services
 API_COMPOSITES = {
@@ -232,7 +234,7 @@ def get_enabled_apis() -> Set[str]:
     services_env = os.environ.get("SERVICES", "").strip()
     services = SERVICE_PLUGINS.list_available()
 
-    if services_env and is_env_true("STRICT_SERVICE_LOADING"):
+    if services_env and is_env_not_false("STRICT_SERVICE_LOADING"):
         # SERVICES and STRICT_SERVICE_LOADING are set
         # we filter the result of SERVICE_PLUGINS.list_available() to cross the user-provided list with
         # the available ones
@@ -357,7 +359,7 @@ def validate_localstack_config(name: str):
     docker_env = dict(
         (env.split("=")[0], env.split("=")[1]) for env in ls_service_details.get("environment", {})
     )
-    edge_port = str(docker_env.get("EDGE_PORT") or config.EDGE_PORT)
+    edge_port = config.GATEWAY_LISTEN[0].port
     main_container = config.MAIN_CONTAINER_NAME
 
     # docker-compose file validation cases
@@ -988,7 +990,7 @@ class LocalstackContainerServer(Server):
     def __init__(
         self, container_configuration: ContainerConfiguration | Container | None = None
     ) -> None:
-        super().__init__(config.EDGE_PORT, config.EDGE_BIND_HOST)
+        super().__init__(config.GATEWAY_LISTEN[0].port, config.GATEWAY_LISTEN[0].host)
 
         if container_configuration is None:
             port_configuration = PortMappings(bind_host=config.GATEWAY_LISTEN[0].host)
@@ -1163,10 +1165,10 @@ def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     # create and prepare container
     container_config = ContainerConfiguration(get_docker_image_to_start())
     container = Container(container_config)
+    ensure_container_image(console, container)
 
     configure_container(container)
     container.configure(ContainerConfigurators.cli_params(cli_params or {}))
-    ensure_container_image(console, container)
 
     status = console.status("Starting LocalStack container")
     status.start()
@@ -1247,9 +1249,9 @@ def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
     console.log("configuring container")
     container_config = ContainerConfiguration(get_docker_image_to_start())
     container = Container(container_config)
+    ensure_container_image(console, container)
     configure_container(container)
     container.configure(ContainerConfigurators.cli_params(cli_params or {}))
-    ensure_container_image(console, container)
 
     container_config.detach = True
 

@@ -1,9 +1,9 @@
 import json
 
 import pytest
+import yaml
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.aws.api.stepfunctions import StateMachineType
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
@@ -13,14 +13,8 @@ from tests.aws.services.stepfunctions.utils import (
     await_execution_aborted,
     await_execution_started,
     await_execution_success,
-    await_no_state_machines_listed,
     await_state_machine_listed,
     await_state_machine_not_listed,
-    is_old_provider,
-)
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
 )
 
 
@@ -244,11 +238,6 @@ class TestSnfApi:
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
 
-        await_no_state_machines_listed(stepfunctions_client=aws_client.stepfunctions)
-
-        lst_resp = aws_client.stepfunctions.list_state_machines()
-        sfn_snapshot.match("lst_resp_init", lst_resp)
-
         sm_names = [
             f"statemachine_1_{short_uid()}",
             f"statemachine_2_{short_uid()}",
@@ -261,7 +250,6 @@ class TestSnfApi:
                 name=sm_name,
                 definition=definition_str,
                 roleArn=snf_role_arn,
-                type=StateMachineType.EXPRESS,
             )
             sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, i))
             sfn_snapshot.match(f"creation_resp_{i}", creation_resp)
@@ -271,8 +259,10 @@ class TestSnfApi:
             await_state_machine_listed(
                 stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
             )
-            lst_resp = aws_client.stepfunctions.list_state_machines()
-            sfn_snapshot.match(f"lst_resp_{i}", lst_resp)
+
+        lst_resp = aws_client.stepfunctions.list_state_machines()
+        lst_resp_filter = [sm for sm in lst_resp["stateMachines"] if sm["name"] in sm_names]
+        sfn_snapshot.match("lst_resp_filter", lst_resp_filter)
 
         for i, state_machine_arn in enumerate(state_machine_arns):
             deletion_resp = aws_client.stepfunctions.delete_state_machine(
@@ -284,11 +274,9 @@ class TestSnfApi:
                 stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
             )
 
-            lst_resp = aws_client.stepfunctions.list_state_machines()
-            sfn_snapshot.match(f"lst_resp_del_{i}", lst_resp)
-
         lst_resp = aws_client.stepfunctions.list_state_machines()
-        sfn_snapshot.match("lst_resp_del_end", lst_resp)
+        lst_resp_filter = [sm for sm in lst_resp["stateMachines"] if sm["name"] in sm_names]
+        sfn_snapshot.match("lst_resp_del_filter", lst_resp_filter)
 
     @markers.aws.needs_fixing
     def test_start_execution(
@@ -707,3 +695,120 @@ class TestSnfApi:
             executionArn=execution_arn
         )
         sfn_snapshot.match("describe_resp", describe_resp)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("encoder_function", [json.dumps, yaml.dump])
+    def test_cloudformation_definition_create_describe(
+        self,
+        create_iam_role_for_sfn,
+        sfn_snapshot,
+        aws_client,
+        encoder_function,
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        state_machine_name = f"statemachine{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(state_machine_name, "state_machine_name"))
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        stack_name = f"test-create-describe-yaml-{short_uid()}"
+        cloudformation_template = {
+            "Resources": {
+                "MyStateMachine": {
+                    "Type": "AWS::StepFunctions::StateMachine",
+                    "Properties": {
+                        "StateMachineName": state_machine_name,
+                        "Definition": definition,
+                        "RoleArn": snf_role_arn,
+                    },
+                }
+            }
+        }
+        cloudformation_template = encoder_function(cloudformation_template)
+
+        aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=cloudformation_template,
+        )
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+        list_state_machines_response = aws_client.stepfunctions.list_state_machines()
+        state_machine = next(
+            (
+                sm
+                for sm in list_state_machines_response["stateMachines"]
+                if sm["name"] == state_machine_name
+            ),
+            None,
+        )
+        state_machine_arn = state_machine["stateMachineArn"]
+        sfn_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
+
+        describe_state_machine_response = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_state_machine_response", describe_state_machine_response)
+
+        aws_client.cloudformation.delete_stack(StackName=stack_name)
+        aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+
+        aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("encoder_function", [json.dumps, yaml.dump])
+    def test_cloudformation_definition_string_create_describe(
+        self,
+        create_iam_role_for_sfn,
+        sfn_snapshot,
+        aws_client,
+        encoder_function,
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        state_machine_name = f"statemachine{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(state_machine_name, "state_machine_name"))
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_string = json.dumps(definition)
+        stack_name = f"test-create-describe-yaml-{short_uid()}"
+        cloudformation_template = {
+            "Resources": {
+                "MyStateMachine": {
+                    "Type": "AWS::StepFunctions::StateMachine",
+                    "Properties": {
+                        "StateMachineName": state_machine_name,
+                        "DefinitionString": definition_string,
+                        "RoleArn": snf_role_arn,
+                    },
+                }
+            }
+        }
+        cloudformation_template = encoder_function(cloudformation_template)
+
+        aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=cloudformation_template,
+        )
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+        list_state_machines_response = aws_client.stepfunctions.list_state_machines()
+        state_machine = next(
+            (
+                sm
+                for sm in list_state_machines_response["stateMachines"]
+                if sm["name"] == state_machine_name
+            ),
+            None,
+        )
+        state_machine_arn = state_machine["stateMachineArn"]
+        sfn_snapshot.add_transformer(RegexTransformer(state_machine_arn, "state_machine_arn"))
+
+        describe_state_machine_response = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_state_machine_response", describe_state_machine_response)
+
+        aws_client.cloudformation.delete_stack(StackName=stack_name)
+        aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+
+        aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)

@@ -1577,8 +1577,16 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         if root and not root.tail:
             root.tail = "\n"
 
+    @staticmethod
+    def _timestamp_iso8601(value: datetime) -> str:
+        """
+        This is very specific to S3, S3 returns an ISO8601 timestamp but with milliseconds always set to 000
+        Some SDKs are very picky about the length
+        """
+        return value.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-class SqsResponseSerializer(QueryResponseSerializer):
+
+class SqsQueryResponseSerializer(QueryResponseSerializer):
     """
     Unfortunately, SQS uses a rare interpretation of the XML protocol: It uses HTML entities within XML tag text nodes.
     For example:
@@ -1591,6 +1599,34 @@ class SqsResponseSerializer(QueryResponseSerializer):
     - Since & is (correctly) escaped in XML, the serialized string contains &amp;quot; and &amp;#xD;
     - These double-escapes are corrected by replacing such strings with their original.
     """
+
+    # those are deleted from the JSON specs, but need to be kept for legacy reason (sent in 'x-amzn-query-error')
+    QUERY_PREFIXED_ERRORS = {
+        "BatchEntryIdsNotDistinct",
+        "BatchRequestTooLong",
+        "EmptyBatchRequest",
+        "InvalidBatchEntryId",
+        "MessageNotInflight",
+        "PurgeQueueInProgress",
+        "QueueDeletedRecently",
+        "TooManyEntriesInBatchRequest",
+        "UnsupportedOperation",
+    }
+
+    # Some error code changed between JSON and query, and we need to have a way to map it for legacy reason
+    JSON_TO_QUERY_ERROR_CODES = {
+        "InvalidParameterValueException": "InvalidParameterValue",
+        "MissingRequiredParameterException": "MissingParameter",
+        "AccessDeniedException": "AccessDenied",
+        "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
+        "QueueNameExists": "QueueAlreadyExists",
+    }
+
+    SENDER_FAULT_ERRORS = (
+        QUERY_PREFIXED_ERRORS
+        | JSON_TO_QUERY_ERROR_CODES.keys()
+        | {"OverLimit", "ResourceNotFoundException"}
+    )
 
     def _default_serialize(self, xmlnode: ETree.Element, params: str, _, name: str, __) -> None:
         """
@@ -1620,6 +1656,79 @@ class SqsResponseSerializer(QueryResponseSerializer):
             else None
         )
 
+    def _add_error_tags(
+        self, error: ServiceException, error_tag: ETree.Element, mime_type: str
+    ) -> None:
+        """The SQS API stubs is now generated from JSON specs, and some fields have been modified"""
+        code_tag = ETree.SubElement(error_tag, "Code")
+
+        if error.code in self.JSON_TO_QUERY_ERROR_CODES:
+            error_code = self.JSON_TO_QUERY_ERROR_CODES[error.code]
+        elif error.code in self.QUERY_PREFIXED_ERRORS:
+            error_code = f"AWS.SimpleQueueService.{error.code}"
+        else:
+            error_code = error.code
+        code_tag.text = error_code
+        message = self._get_error_message(error)
+        if message:
+            self._default_serialize(error_tag, message, None, "Message", mime_type)
+        if error.code in self.SENDER_FAULT_ERRORS or error.sender_fault:
+            # The sender fault is either not set or "Sender"
+            self._default_serialize(error_tag, "Sender", None, "Type", mime_type)
+
+
+class SqsResponseSerializer(JSONResponseSerializer):
+    # those are deleted from the JSON specs, but need to be kept for legacy reason (sent in 'x-amzn-query-error')
+    QUERY_PREFIXED_ERRORS = {
+        "BatchEntryIdsNotDistinct",
+        "BatchRequestTooLong",
+        "EmptyBatchRequest",
+        "InvalidBatchEntryId",
+        "MessageNotInflight",
+        "PurgeQueueInProgress",
+        "QueueDeletedRecently",
+        "TooManyEntriesInBatchRequest",
+        "UnsupportedOperation",
+    }
+
+    # Some error code changed between JSON and query, and we need to have a way to map it for legacy reason
+    JSON_TO_QUERY_ERROR_CODES = {
+        "InvalidParameterValueException": "InvalidParameterValue",
+        "MissingRequiredParameterException": "MissingParameter",
+        "AccessDeniedException": "AccessDenied",
+        "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
+        "QueueNameExists": "QueueAlreadyExists",
+    }
+
+    def _serialize_error(
+        self,
+        error: ServiceException,
+        response: HttpResponse,
+        shape: StructureShape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        """
+        Overrides _serialize_error as SQS has a special header for query API legacy reason: 'x-amzn-query-error',
+        which contained the exception code as well as a Sender field.
+        Ex: 'x-amzn-query-error': 'InvalidParameterValue;Sender'
+        """
+        # TODO: for body["__type"] = error.code, it seems AWS differs from what we send for SQS
+        # AWS: "com.amazon.coral.service#InvalidParameterValueException"
+        # or AWS: "com.amazonaws.sqs#BatchRequestTooLong"
+        # LocalStack: "InvalidParameterValue"
+        super()._serialize_error(error, response, shape, operation_model, mime_type, request_id)
+        # We need to add a prefix to certain errors, as they have been deleted in the specs. These will not change
+        if error.code in self.JSON_TO_QUERY_ERROR_CODES:
+            code = self.JSON_TO_QUERY_ERROR_CODES[error.code]
+        elif error.code in self.QUERY_PREFIXED_ERRORS:
+            code = f"AWS.SimpleQueueService.{error.code}"
+        else:
+            code = error.code
+
+        response.headers["x-amzn-query-error"] = f"{code};Sender"
+
 
 def gen_amzn_requestid():
     """
@@ -1648,7 +1757,11 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
     # specific services as close as possible.
     # Therefore, the service-specific serializer implementations (basically the implicit / informally more specific
     # protocol implementation) has precedence over the more general protocol-specific serializers.
-    service_specific_serializers = {"sqs": SqsResponseSerializer, "s3": S3ResponseSerializer}
+    service_specific_serializers = {
+        "sqs-query": SqsQueryResponseSerializer,
+        "sqs": SqsResponseSerializer,
+        "s3": S3ResponseSerializer,
+    }
     protocol_specific_serializers = {
         "query": QueryResponseSerializer,
         "json": JSONResponseSerializer,

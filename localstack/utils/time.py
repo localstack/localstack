@@ -29,6 +29,14 @@ def timestamp_millis(time=None) -> str:
     return microsecond_time[:-4] + microsecond_time[-1]
 
 
+def iso1806_to_epoch(t: str) -> float:
+    return datetime.fromisoformat(t).timestamp()
+
+
+def epoch_to_iso1806(ts: int) -> str:
+    return datetime.utcfromtimestamp(ts).isoformat()
+
+
 def epoch_timestamp() -> float:
     return time.time()
 

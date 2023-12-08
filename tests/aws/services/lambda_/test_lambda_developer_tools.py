@@ -6,7 +6,6 @@ import pytest
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.pytest import markers
 from localstack.utils.container_networking import get_main_container_network
 from localstack.utils.docker_utils import DOCKER_CLIENT, get_host_path_for_path_in_docker
@@ -25,7 +24,6 @@ HOT_RELOADING_PYTHON_HANDLER = os.path.join(
 LAMBDA_NETWORKS_PYTHON_HANDLER = os.path.join(THIS_FOLDER, "functions/lambda_networks.py")
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
 class TestHotReloading:
     @pytest.mark.parametrize(
         "runtime,handler_file,handler_filename",
@@ -135,7 +133,6 @@ class TestHotReloading:
         aws_client.lambda_.publish_version(FunctionName=function_name, CodeSha256="zipfilehash")
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
 class TestDockerFlags:
     @markers.aws.only_localstack
     def test_additional_docker_flags(self, create_lambda_function, monkeypatch, aws_client):

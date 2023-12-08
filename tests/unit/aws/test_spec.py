@@ -1,8 +1,8 @@
 from botocore.model import ServiceModel, StringShape
 
 from localstack.aws.spec import (
+    CustomLoader,
     LazyServiceCatalogIndex,
-    PatchingLoader,
     load_service_index_cache,
     save_service_index_cache,
 )
@@ -25,7 +25,7 @@ def test_pickled_index_equals_lazy_index(tmp_path):
 
 def test_patching_loaders():
     # first test that specs remain intact
-    loader = PatchingLoader({})
+    loader = CustomLoader({})
     description = loader.load_service_model("s3", "service-2")
 
     model = ServiceModel(description, "s3")
@@ -36,7 +36,7 @@ def test_patching_loaders():
     assert shape.metadata.get("exception")
 
     # now try it with a patch
-    loader = PatchingLoader(
+    loader = CustomLoader(
         {
             "s3/2006-03-01/service-2": [
                 {
@@ -60,3 +60,13 @@ def test_patching_loaders():
     assert isinstance(shape.members["BucketName"], StringShape)
     assert shape.metadata["error"]["httpStatusCode"] == 404
     assert shape.metadata.get("exception")
+
+
+def test_loading_own_specs():
+    """Ensure that the internalized specifications (f.e. the sqs-query spec) can be handled by the CustomLoader."""
+    loader = CustomLoader({})
+    # first test that specs remain intact
+    sqs_query_description = loader.load_service_model("sqs-query", "service-2")
+    assert sqs_query_description["metadata"]["protocol"] == "query"
+    sqs_json_description = loader.load_service_model("sqs", "service-2")
+    assert sqs_json_description["metadata"]["protocol"] == "json"

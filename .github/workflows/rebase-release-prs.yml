@@ -10,7 +10,7 @@ jobs:
     steps:
     - name: find release branches
       id: find-release-branches
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           // find all refs in the repo starting with "release/"

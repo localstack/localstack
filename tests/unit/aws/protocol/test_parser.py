@@ -17,7 +17,6 @@ from localstack.aws.protocol.parser import (
 )
 from localstack.aws.spec import load_service
 from localstack.http import Request as HttpRequest
-from localstack.services.s3.legacy import s3_utils
 from localstack.utils.common import to_bytes, to_str
 
 
@@ -44,9 +43,9 @@ def test_query_parser():
     }
 
 
-def test_sqs_parse_tag_map_with_member_name_as_location():
+def test_sqs_query_parse_tag_map_with_member_name_as_location():
     # see https://github.com/localstack/localstack/issues/4391
-    parser = create_parser(load_service("sqs"))
+    parser = create_parser(load_service("sqs-query"))
 
     # with "Tag." it works (this is the default request)
     request = HttpRequest(
@@ -117,7 +116,7 @@ def test_query_parser_uri():
 
 def test_query_parser_flattened_map():
     """Simple test with a flattened map (SQS SetQueueAttributes request)."""
-    parser = QueryRequestParser(load_service("sqs"))
+    parser = QueryRequestParser(load_service("sqs-query"))
     request = HttpRequest(
         body=to_bytes(
             "Action=SetQueueAttributes&Version=2012-11-05&"
@@ -251,7 +250,7 @@ def test_query_parser_non_flattened_list_structure_changed_name():
 
 def test_query_parser_flattened_list_structure():
     """Simple test with a flattened list of structures."""
-    parser = QueryRequestParser(load_service("sqs"))
+    parser = QueryRequestParser(load_service("sqs-query"))
     request = HttpRequest(
         body=to_bytes(
             "Action=DeleteMessageBatch&"
@@ -387,7 +386,7 @@ def test_query_parser_sqs_with_botocore():
 
 def test_query_parser_empty_required_members_sqs_with_botocore():
     _botocore_parser_integration_test(
-        service="sqs",
+        service="sqs-query",
         action="SendMessageBatch",
         QueueUrl="string",
         Entries=[],
@@ -1142,13 +1141,11 @@ def test_restxml_header_date_parsing():
 
 
 @pytest.mark.skipif(
-    not config.LEGACY_S3_PROVIDER, reason="ASF provider does not rely on virtual host parser"
+    config.LEGACY_V2_S3_PROVIDER, reason="v2 provider does not rely on virtual host parser"
 )
 def test_s3_virtual_host_addressing():
     """Test the parsing of an S3 bucket request using the bucket encoded in the domain."""
-    request = HttpRequest(
-        method="PUT", headers={"host": s3_utils.get_bucket_hostname("test-bucket")}
-    )
+    request = HttpRequest(method="PUT", headers={"host": "test-bucket.s3.example.com"})
     parser = create_parser(load_service("s3"))
     parsed_operation_model, parsed_request = parser.parse(request)
     assert parsed_operation_model.name == "CreateBucket"

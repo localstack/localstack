@@ -60,6 +60,8 @@ class StackTemplate(TypedDict):
 
 # TODO: remove metadata (flatten into individual fields)
 class Stack:
+    change_sets: list["StackChangeSet"]
+
     def __init__(
         self,
         account_id: str,
@@ -339,7 +341,7 @@ class StackChangeSet(Stack):
 
         name = self.metadata["ChangeSetName"]
         if not self.metadata.get("ChangeSetId"):
-            self.metadata["ChangeSetId"] = arns.cf_change_set_arn(
+            self.metadata["ChangeSetId"] = arns.cloudformation_change_set_arn(
                 name, change_set_id=short_uid(), account_id=account_id, region_name=region_name
             )
 

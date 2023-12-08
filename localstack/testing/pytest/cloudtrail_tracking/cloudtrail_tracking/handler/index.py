@@ -6,7 +6,7 @@ from typing import Any, List
 import boto3
 
 S3_BUCKET = os.environ["BUCKET"]
-LOCALSTACK_HOST = os.getenv("LOCALSTACK_HOSTNAME")
+AWS_ENDPOINT_URL = os.environ.get("AWS_ENDPOINT_URL")
 
 
 class Encoder(json.JSONEncoder):
@@ -21,10 +21,10 @@ class Encoder(json.JSONEncoder):
 
 
 def get_client(service: str):
-    if LOCALSTACK_HOST is not None:
+    if AWS_ENDPOINT_URL is not None:
         client = boto3.client(
             service,
-            endpoint_url=f"http://{LOCALSTACK_HOST}:4566",
+            endpoint_url=AWS_ENDPOINT_URL,
             region_name="us-east-1",
         )
     else:

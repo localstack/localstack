@@ -41,6 +41,7 @@ LayerPermissionAllowedPrincipal = str
 LayerVersionArn = str
 LicenseInfo = str
 LocalMountPath = str
+LogGroup = str
 MasterRegion = str
 MaxAge = int
 MaxFunctionEventInvokeConfigListItems = int
@@ -96,6 +97,15 @@ Version = str
 VpcId = str
 Weight = float
 WorkingDirectory = str
+
+
+class ApplicationLogLevel(str):
+    TRACE = "TRACE"
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARN = "WARN"
+    ERROR = "ERROR"
+    FATAL = "FATAL"
 
 
 class Architecture(str):
@@ -177,6 +187,11 @@ class LastUpdateStatusReasonCode(str):
     FunctionError = "FunctionError"
 
 
+class LogFormat(str):
+    JSON = "JSON"
+    Text = "Text"
+
+
 class LogType(str):
     None_ = "None"
     Tail = "Tail"
@@ -231,6 +246,10 @@ class Runtime(str):
     java17 = "java17"
     ruby3_2 = "ruby3.2"
     python3_11 = "python3.11"
+    nodejs20_x = "nodejs20.x"
+    provided_al2023 = "provided.al2023"
+    python3_12 = "python3.12"
+    java21 = "java21"
 
 
 class SnapStartApplyOn(str):
@@ -286,6 +305,12 @@ class StateReasonCode(str):
     InvalidRuntime = "InvalidRuntime"
     InvalidZipFileException = "InvalidZipFileException"
     FunctionError = "FunctionError"
+
+
+class SystemLogLevel(str):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARN = "WARN"
 
 
 class ThrottleReason(str):
@@ -804,6 +829,13 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
 
 
+class LoggingConfig(TypedDict, total=False):
+    LogFormat: Optional[LogFormat]
+    ApplicationLogLevel: Optional[ApplicationLogLevel]
+    SystemLogLevel: Optional[SystemLogLevel]
+    LogGroup: Optional[LogGroup]
+
+
 class SnapStart(TypedDict, total=False):
     ApplyOn: Optional[SnapStartApplyOn]
 
@@ -888,6 +920,7 @@ class CreateFunctionRequest(ServiceRequest):
     Architectures: Optional[ArchitecturesList]
     EphemeralStorage: Optional[EphemeralStorage]
     SnapStart: Optional[SnapStart]
+    LoggingConfig: Optional[LoggingConfig]
 
 
 class CreateFunctionUrlConfigRequest(ServiceRequest):
@@ -1090,6 +1123,7 @@ class FunctionConfiguration(TypedDict, total=False):
     EphemeralStorage: Optional[EphemeralStorage]
     SnapStart: Optional[SnapStartResponse]
     RuntimeVersionConfig: Optional[RuntimeVersionConfig]
+    LoggingConfig: Optional[LoggingConfig]
 
 
 class FunctionEventInvokeConfig(TypedDict, total=False):
@@ -1681,6 +1715,7 @@ class UpdateFunctionConfigurationRequest(ServiceRequest):
     ImageConfig: Optional[ImageConfig]
     EphemeralStorage: Optional[EphemeralStorage]
     SnapStart: Optional[SnapStart]
+    LoggingConfig: Optional[LoggingConfig]
 
 
 class UpdateFunctionEventInvokeConfigRequest(ServiceRequest):
@@ -1824,6 +1859,7 @@ class LambdaApi:
         architectures: ArchitecturesList = None,
         ephemeral_storage: EphemeralStorage = None,
         snap_start: SnapStart = None,
+        logging_config: LoggingConfig = None,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2358,6 +2394,7 @@ class LambdaApi:
         image_config: ImageConfig = None,
         ephemeral_storage: EphemeralStorage = None,
         snap_start: SnapStart = None,
+        logging_config: LoggingConfig = None,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 

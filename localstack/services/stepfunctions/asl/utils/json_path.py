@@ -12,7 +12,7 @@ class JSONPathUtils:
         find_res = [match.value for match in input_expr.find(data)]
         if find_res == list():
             raise RuntimeError(
-                f"The JSONPath '{path}' could not be found in the input '{to_json_str(data)}'"
+                f"The JSONPath {path} could not be found in the input {to_json_str(data)}"
             )
         if len(find_res) == 1:
             value = find_res[0]

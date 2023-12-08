@@ -13,7 +13,8 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import retry, short_uid, to_str
 from localstack.utils.sync import poll_condition
 
@@ -71,14 +72,13 @@ class TestCloudwatch:
         bytes_data = bytes(data, encoding="utf-8")
         encoded_data = gzip.compress(bytes_data)
 
-        url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "cloudwatch",
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=TEST_AWS_REGION_NAME,
             internal=True,
         )
-        authorization = aws_stack.mock_aws_request_headers(
+        authorization = mock_aws_request_headers(
             "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )["Authorization"]
 
@@ -91,6 +91,7 @@ class TestCloudwatch:
                 "Authorization": authorization,
             }
         )
+        url = config.external_service_url()
         request = Request(url, encoded_data, headers, method="POST")
         urlopen(request)
 
@@ -201,10 +202,10 @@ class TestCloudwatch:
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=23)]
         )
-        url = f"{config.get_edge_url()}{PATH_GET_RAW_METRICS}"
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
+        url = f"{config.external_service_url()}{PATH_GET_RAW_METRICS}"
         result = requests.get(url, headers=headers)
         assert 200 == result.status_code
         result = json.loads(to_str(result.content))
@@ -950,7 +951,7 @@ class TestCloudwatch:
                     "height": 6,
                     "properties": {
                         "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "i-12345678"]],
-                        "region": "us-east-1",
+                        "region": TEST_AWS_REGION_NAME,
                         "view": "timeSeries",
                         "stacked": False,
                     },

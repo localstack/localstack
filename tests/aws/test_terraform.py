@@ -4,7 +4,6 @@ import threading
 
 import pytest
 
-from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.packages.terraform import terraform_package
 from localstack.testing.pytest import markers
@@ -43,8 +42,6 @@ def check_terraform_version():
 @pytest.fixture(scope="module", autouse=True)
 def setup_test():
     with INIT_LOCK:
-        if config.DEFAULT_REGION != "us-east-1":
-            pytest.skip("Currently only support us-east-1")
         available, version = check_terraform_version()
 
         if not available:

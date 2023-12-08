@@ -28,7 +28,6 @@ CarrierGatewayMaxResults = int
 CertificateArn = str
 CertificateId = str
 ClientSecretType = str
-ClientVpnAssociationId = str
 ClientVpnEndpointId = str
 CloudWatchLogGroupArn = str
 CoipPoolId = str
@@ -37,6 +36,8 @@ ComponentAccount = str
 ComponentRegion = str
 ConnectionNotificationId = str
 ConversionTaskId = str
+CoolOffPeriodRequestHours = int
+CoolOffPeriodResponseHours = int
 CopySnapshotRequestPSU = str
 CoreCount = int
 CoreNetworkArn = str
@@ -69,8 +70,11 @@ DescribeFpgaImagesMaxResults = int
 DescribeHostReservationsMaxResults = int
 DescribeIamInstanceProfileAssociationsMaxResults = int
 DescribeInstanceCreditSpecificationsMaxResults = int
+DescribeInstanceTopologyMaxResults = int
 DescribeInternetGatewaysMaxResults = int
+DescribeIpamByoasnMaxResults = int
 DescribeLaunchTemplatesMaxResults = int
+DescribeLockedSnapshotsMaxResults = int
 DescribeMovingAddressesMaxResults = int
 DescribeNatGatewaysMaxResults = int
 DescribeNetworkAclsMaxResults = int
@@ -249,6 +253,8 @@ ReservedInstancesOfferingId = str
 ResourceArn = str
 RestoreSnapshotTierRequestTemporaryRestoreDays = int
 ResultRange = int
+RetentionPeriodRequestDays = int
+RetentionPeriodResponseDays = int
 RoleId = str
 RouteGatewayId = str
 RouteTableAssociationId = str
@@ -317,22 +323,22 @@ totalInferenceMemory = int
 
 
 class AcceleratorManufacturer(str):
-    nvidia = "nvidia"
-    amd = "amd"
     amazon_web_services = "amazon-web-services"
+    amd = "amd"
+    nvidia = "nvidia"
     xilinx = "xilinx"
 
 
 class AcceleratorName(str):
     a100 = "a100"
-    v100 = "v100"
-    k80 = "k80"
-    t4 = "t4"
-    m60 = "m60"
-    radeon_pro_v520 = "radeon-pro-v520"
-    vu9p = "vu9p"
     inferentia = "inferentia"
     k520 = "k520"
+    k80 = "k80"
+    m60 = "m60"
+    radeon_pro_v520 = "radeon-pro-v520"
+    t4 = "t4"
+    vu9p = "vu9p"
+    v100 = "v100"
 
 
 class AcceleratorType(str):
@@ -429,6 +435,24 @@ class ArchitectureValues(str):
     arm64 = "arm64"
     x86_64_mac = "x86_64_mac"
     arm64_mac = "arm64_mac"
+
+
+class AsnAssociationState(str):
+    disassociated = "disassociated"
+    failed_disassociation = "failed-disassociation"
+    failed_association = "failed-association"
+    pending_disassociation = "pending-disassociation"
+    pending_association = "pending-association"
+    associated = "associated"
+
+
+class AsnState(str):
+    deprovisioned = "deprovisioned"
+    failed_deprovision = "failed-deprovision"
+    failed_provision = "failed-provision"
+    pending_deprovision = "pending-deprovision"
+    pending_provision = "pending-provision"
+    provisioned = "provisioned"
 
 
 class AssociatedNetworkType(str):
@@ -743,6 +767,7 @@ class DestinationFileFormat(str):
 class DeviceTrustProviderType(str):
     jamf = "jamf"
     crowdstrike = "crowdstrike"
+    jumpcloud = "jumpcloud"
 
 
 class DeviceType(str):
@@ -1950,6 +1975,7 @@ class InstanceType(str):
     r7i_16xlarge = "r7i.16xlarge"
     r7i_24xlarge = "r7i.24xlarge"
     r7i_48xlarge = "r7i.48xlarge"
+    dl2q_24xlarge = "dl2q.24xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -2016,6 +2042,7 @@ class IpamPoolAllocationResourceType(str):
     vpc = "vpc"
     ec2_public_ipv4_pool = "ec2-public-ipv4-pool"
     custom = "custom"
+    subnet = "subnet"
 
 
 class IpamPoolAwsService(str):
@@ -2043,6 +2070,10 @@ class IpamPoolPublicIpSource(str):
     byoip = "byoip"
 
 
+class IpamPoolSourceResourceType(str):
+    vpc = "vpc"
+
+
 class IpamPoolState(str):
     create_in_progress = "create-in-progress"
     create_complete = "create-complete"
@@ -2056,6 +2087,31 @@ class IpamPoolState(str):
     isolate_in_progress = "isolate-in-progress"
     isolate_complete = "isolate-complete"
     restore_in_progress = "restore-in-progress"
+
+
+class IpamPublicAddressAssociationStatus(str):
+    associated = "associated"
+    disassociated = "disassociated"
+
+
+class IpamPublicAddressAwsService(str):
+    nat_gateway = "nat-gateway"
+    database_migration_service = "database-migration-service"
+    redshift = "redshift"
+    elastic_container_service = "elastic-container-service"
+    relational_database_service = "relational-database-service"
+    site_to_site_vpn = "site-to-site-vpn"
+    load_balancer = "load-balancer"
+    global_accelerator = "global-accelerator"
+    other = "other"
+
+
+class IpamPublicAddressType(str):
+    service_managed_ip = "service-managed-ip"
+    service_managed_byoip = "service-managed-byoip"
+    amazon_owned_eip = "amazon-owned-eip"
+    byoip = "byoip"
+    ec2_public_ip = "ec2-public-ip"
 
 
 class IpamResourceDiscoveryAssociationState(str):
@@ -2091,6 +2147,7 @@ class IpamResourceType(str):
     eip = "eip"
     public_ipv4_pool = "public-ipv4-pool"
     ipv6_pool = "ipv6-pool"
+    eni = "eni"
 
 
 class IpamScopeState(str):
@@ -2126,6 +2183,11 @@ class IpamState(str):
     isolate_in_progress = "isolate-in-progress"
     isolate_complete = "isolate-complete"
     restore_in_progress = "restore-in-progress"
+
+
+class IpamTier(str):
+    free = "free"
+    advanced = "advanced"
 
 
 class Ipv6SupportValue(str):
@@ -2230,6 +2292,18 @@ class LocationType(str):
     availability_zone = "availability-zone"
     availability_zone_id = "availability-zone-id"
     outpost = "outpost"
+
+
+class LockMode(str):
+    compliance = "compliance"
+    governance = "governance"
+
+
+class LockState(str):
+    compliance = "compliance"
+    governance = "governance"
+    compliance_cooloff = "compliance-cooloff"
+    expired = "expired"
 
 
 class LogDestinationType(str):
@@ -2688,6 +2762,12 @@ class ShutdownBehavior(str):
 class SnapshotAttributeName(str):
     productCodes = "productCodes"
     createVolumePermission = "createVolumePermission"
+
+
+class SnapshotBlockPublicAccessState(str):
+    block_all_sharing = "block-all-sharing"
+    block_new_sharing = "block-new-sharing"
+    unblocked = "unblocked"
 
 
 class SnapshotState(str):
@@ -3866,12 +3946,24 @@ AddressTransferList = List[AddressTransfer]
 
 class AdvertiseByoipCidrRequest(ServiceRequest):
     Cidr: String
+    Asn: Optional[String]
     DryRun: Optional[Boolean]
+
+
+class AsnAssociation(TypedDict, total=False):
+    Asn: Optional[String]
+    Cidr: Optional[String]
+    StatusMessage: Optional[String]
+    State: Optional[AsnAssociationState]
+
+
+AsnAssociationSet = List[AsnAssociation]
 
 
 class ByoipCidr(TypedDict, total=False):
     Cidr: Optional[String]
     Description: Optional[String]
+    AsnAssociations: Optional[AsnAssociationSet]
     StatusMessage: Optional[String]
     State: Optional[ByoipCidrState]
 
@@ -3926,6 +4018,7 @@ class AllocateHostsResult(TypedDict, total=False):
 
 
 IpamPoolAllocationDisallowedCidrs = List[String]
+IpamPoolAllocationAllowedCidrs = List[String]
 
 
 class AllocateIpamPoolCidrRequest(ServiceRequest):
@@ -3936,6 +4029,7 @@ class AllocateIpamPoolCidrRequest(ServiceRequest):
     ClientToken: Optional[String]
     Description: Optional[String]
     PreviewNextCidr: Optional[Boolean]
+    AllowedCidrs: Optional[IpamPoolAllocationAllowedCidrs]
     DisallowedCidrs: Optional[IpamPoolAllocationDisallowedCidrs]
 
 
@@ -3992,6 +4086,13 @@ class ApplySecurityGroupsToClientVpnTargetNetworkResult(TypedDict, total=False):
 ArchitectureTypeList = List[ArchitectureType]
 ArchitectureTypeSet = List[ArchitectureType]
 ArnList = List[ResourceArn]
+
+
+class AsnAuthorizationContext(TypedDict, total=False):
+    Message: String
+    Signature: String
+
+
 IpPrefixList = List[String]
 Ipv6AddressList = List[String]
 
@@ -4193,6 +4294,16 @@ class AssociateInstanceEventWindowResult(TypedDict, total=False):
     InstanceEventWindow: Optional[InstanceEventWindow]
 
 
+class AssociateIpamByoasnRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    Asn: String
+    Cidr: String
+
+
+class AssociateIpamByoasnResult(TypedDict, total=False):
+    AsnAssociation: Optional[AsnAssociation]
+
+
 class AssociateIpamResourceDiscoveryRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     IpamId: IpamId
@@ -4249,8 +4360,10 @@ class AssociateRouteTableResult(TypedDict, total=False):
 
 
 class AssociateSubnetCidrBlockRequest(ServiceRequest):
-    Ipv6CidrBlock: String
+    Ipv6CidrBlock: Optional[String]
     SubnetId: SubnetId
+    Ipv6IpamPoolId: Optional[IpamPoolId]
+    Ipv6NetmaskLength: Optional[NetmaskLength]
 
 
 class SubnetCidrBlockState(TypedDict, total=False):
@@ -4486,6 +4599,7 @@ class VerifiedAccessSseSpecificationResponse(TypedDict, total=False):
 
 class DeviceOptions(TypedDict, total=False):
     TenantId: Optional[String]
+    PublicSigningKeyUrl: Optional[String]
 
 
 class OidcOptions(TypedDict, total=False):
@@ -4823,6 +4937,16 @@ class BundleInstanceResult(TypedDict, total=False):
 
 
 BundleTaskList = List[BundleTask]
+
+
+class Byoasn(TypedDict, total=False):
+    Asn: Optional[String]
+    IpamId: Optional[IpamId]
+    StatusMessage: Optional[String]
+    State: Optional[AsnState]
+
+
+ByoasnSet = List[Byoasn]
 ByoipCidrSet = List[ByoipCidr]
 
 
@@ -5427,6 +5551,32 @@ class ConnectionNotification(TypedDict, total=False):
 
 ConnectionNotificationIdsList = List[ConnectionNotificationId]
 ConnectionNotificationSet = List[ConnectionNotification]
+
+
+class ConnectionTrackingConfiguration(TypedDict, total=False):
+    TcpEstablishedTimeout: Optional[Integer]
+    UdpStreamTimeout: Optional[Integer]
+    UdpTimeout: Optional[Integer]
+
+
+class ConnectionTrackingSpecification(TypedDict, total=False):
+    TcpEstablishedTimeout: Optional[Integer]
+    UdpTimeout: Optional[Integer]
+    UdpStreamTimeout: Optional[Integer]
+
+
+class ConnectionTrackingSpecificationRequest(TypedDict, total=False):
+    TcpEstablishedTimeout: Optional[Integer]
+    UdpStreamTimeout: Optional[Integer]
+    UdpTimeout: Optional[Integer]
+
+
+class ConnectionTrackingSpecificationResponse(TypedDict, total=False):
+    TcpEstablishedTimeout: Optional[Integer]
+    UdpStreamTimeout: Optional[Integer]
+    UdpTimeout: Optional[Integer]
+
+
 ConversionIdStringList = List[ConversionTaskId]
 
 
@@ -6286,6 +6436,13 @@ class CreateInternetGatewayResult(TypedDict, total=False):
     InternetGateway: Optional[InternetGateway]
 
 
+class IpamPoolSourceResourceRequest(TypedDict, total=False):
+    ResourceId: Optional[String]
+    ResourceType: Optional[IpamPoolSourceResourceType]
+    ResourceRegion: Optional[String]
+    ResourceOwner: Optional[String]
+
+
 class RequestIpamResourceTag(TypedDict, total=False):
     Key: Optional[String]
     Value: Optional[String]
@@ -6311,6 +6468,14 @@ class CreateIpamPoolRequest(ServiceRequest):
     ClientToken: Optional[String]
     AwsService: Optional[IpamPoolAwsService]
     PublicIpSource: Optional[IpamPoolPublicIpSource]
+    SourceResource: Optional[IpamPoolSourceResourceRequest]
+
+
+class IpamPoolSourceResource(TypedDict, total=False):
+    ResourceId: Optional[String]
+    ResourceType: Optional[IpamPoolSourceResourceType]
+    ResourceRegion: Optional[String]
+    ResourceOwner: Optional[String]
 
 
 class IpamResourceTag(TypedDict, total=False):
@@ -6345,6 +6510,7 @@ class IpamPool(TypedDict, total=False):
     Tags: Optional[TagList]
     AwsService: Optional[IpamPoolAwsService]
     PublicIpSource: Optional[IpamPoolPublicIpSource]
+    SourceResource: Optional[IpamPoolSourceResource]
 
 
 class CreateIpamPoolResult(TypedDict, total=False):
@@ -6357,6 +6523,7 @@ class CreateIpamRequest(ServiceRequest):
     OperatingRegions: Optional[AddIpamOperatingRegionSet]
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
+    Tier: Optional[IpamTier]
 
 
 class CreateIpamResourceDiscoveryRequest(ServiceRequest):
@@ -6405,6 +6572,8 @@ class Ipam(TypedDict, total=False):
     DefaultResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
     DefaultResourceDiscoveryAssociationId: Optional[IpamResourceDiscoveryAssociationId]
     ResourceDiscoveryAssociationCount: Optional[Integer]
+    StateMessage: Optional[String]
+    Tier: Optional[IpamTier]
 
 
 class CreateIpamResult(TypedDict, total=False):
@@ -6549,6 +6718,15 @@ class LaunchTemplatesMonitoringRequest(TypedDict, total=False):
     Enabled: Optional[Boolean]
 
 
+class EnaSrdUdpSpecificationRequest(TypedDict, total=False):
+    EnaSrdUdpEnabled: Optional[Boolean]
+
+
+class EnaSrdSpecificationRequest(TypedDict, total=False):
+    EnaSrdEnabled: Optional[Boolean]
+    EnaSrdUdpSpecification: Optional[EnaSrdUdpSpecificationRequest]
+
+
 class Ipv6PrefixSpecificationRequest(TypedDict, total=False):
     Ipv6Prefix: Optional[String]
 
@@ -6599,6 +6777,8 @@ class LaunchTemplateInstanceNetworkInterfaceSpecificationRequest(TypedDict, tota
     Ipv6Prefixes: Optional[Ipv6PrefixList]
     Ipv6PrefixCount: Optional[Integer]
     PrimaryIpv6: Optional[Boolean]
+    EnaSrdSpecification: Optional[EnaSrdSpecificationRequest]
+    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
 
 
 LaunchTemplateInstanceNetworkInterfaceSpecificationRequestList = List[
@@ -6818,6 +6998,15 @@ class LaunchTemplatesMonitoring(TypedDict, total=False):
     Enabled: Optional[Boolean]
 
 
+class LaunchTemplateEnaSrdUdpSpecification(TypedDict, total=False):
+    EnaSrdUdpEnabled: Optional[Boolean]
+
+
+class LaunchTemplateEnaSrdSpecification(TypedDict, total=False):
+    EnaSrdEnabled: Optional[Boolean]
+    EnaSrdUdpSpecification: Optional[LaunchTemplateEnaSrdUdpSpecification]
+
+
 class Ipv6PrefixSpecificationResponse(TypedDict, total=False):
     Ipv6Prefix: Optional[String]
 
@@ -6861,6 +7050,8 @@ class LaunchTemplateInstanceNetworkInterfaceSpecification(TypedDict, total=False
     Ipv6Prefixes: Optional[Ipv6PrefixListResponse]
     Ipv6PrefixCount: Optional[Integer]
     PrimaryIpv6: Optional[Boolean]
+    EnaSrdSpecification: Optional[LaunchTemplateEnaSrdSpecification]
+    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecification]
 
 
 LaunchTemplateInstanceNetworkInterfaceSpecificationList = List[
@@ -7308,6 +7499,7 @@ class CreateNetworkInterfaceRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     EnablePrimaryIpv6: Optional[Boolean]
+    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
 
 
 class Ipv6PrefixSpecification(TypedDict, total=False):
@@ -7361,6 +7553,7 @@ class NetworkInterface(TypedDict, total=False):
     Association: Optional[NetworkInterfaceAssociation]
     Attachment: Optional[NetworkInterfaceAttachment]
     AvailabilityZone: Optional[String]
+    ConnectionTrackingConfiguration: Optional[ConnectionTrackingConfiguration]
     Description: Optional[String]
     Groups: Optional[GroupIdentifierList]
     InterfaceType: Optional[NetworkInterfaceType]
@@ -7702,6 +7895,10 @@ class CreateSubnetRequest(ServiceRequest):
     VpcId: VpcId
     DryRun: Optional[Boolean]
     Ipv6Native: Optional[Boolean]
+    Ipv4IpamPoolId: Optional[IpamPoolId]
+    Ipv4NetmaskLength: Optional[NetmaskLength]
+    Ipv6IpamPoolId: Optional[IpamPoolId]
+    Ipv6NetmaskLength: Optional[NetmaskLength]
 
 
 class CreateSubnetResult(TypedDict, total=False):
@@ -8293,6 +8490,7 @@ class CreateVerifiedAccessInstanceResult(TypedDict, total=False):
 
 class CreateVerifiedAccessTrustProviderDeviceOptions(TypedDict, total=False):
     TenantId: Optional[String]
+    PublicSigningKeyUrl: Optional[String]
 
 
 class CreateVerifiedAccessTrustProviderOidcOptions(TypedDict, total=False):
@@ -8999,6 +9197,7 @@ class DeleteInternetGatewayRequest(ServiceRequest):
 class DeleteIpamPoolRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     IpamPoolId: IpamPoolId
+    Cascade: Optional[Boolean]
 
 
 class DeleteIpamPoolResult(TypedDict, total=False):
@@ -9563,6 +9762,16 @@ class DeprovisionByoipCidrRequest(ServiceRequest):
 
 class DeprovisionByoipCidrResult(TypedDict, total=False):
     ByoipCidr: Optional[ByoipCidr]
+
+
+class DeprovisionIpamByoasnRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamId: IpamId
+    Asn: String
+
+
+class DeprovisionIpamByoasnResult(TypedDict, total=False):
+    Byoasn: Optional[Byoasn]
 
 
 class DeprovisionIpamPoolCidrRequest(ServiceRequest):
@@ -10918,6 +11127,39 @@ class DescribeInstanceStatusResult(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+DescribeInstanceTopologyGroupNameSet = List[PlacementGroupName]
+DescribeInstanceTopologyInstanceIdSet = List[InstanceId]
+
+
+class DescribeInstanceTopologyRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeInstanceTopologyMaxResults]
+    InstanceIds: Optional[DescribeInstanceTopologyInstanceIdSet]
+    GroupNames: Optional[DescribeInstanceTopologyGroupNameSet]
+    Filters: Optional[FilterList]
+
+
+NetworkNodesList = List[String]
+
+
+class InstanceTopology(TypedDict, total=False):
+    InstanceId: Optional[String]
+    InstanceType: Optional[String]
+    GroupName: Optional[String]
+    NetworkNodes: Optional[NetworkNodesList]
+    AvailabilityZone: Optional[String]
+    ZoneId: Optional[String]
+
+
+InstanceSet = List[InstanceTopology]
+
+
+class DescribeInstanceTopologyResult(TypedDict, total=False):
+    Instances: Optional[InstanceSet]
+    NextToken: Optional[String]
+
+
 class DescribeInstanceTypeOfferingsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     LocationType: Optional[LocationType]
@@ -11232,6 +11474,15 @@ class InstancePrivateIpAddress(TypedDict, total=False):
 InstancePrivateIpAddressList = List[InstancePrivateIpAddress]
 
 
+class InstanceAttachmentEnaSrdUdpSpecification(TypedDict, total=False):
+    EnaSrdUdpEnabled: Optional[Boolean]
+
+
+class InstanceAttachmentEnaSrdSpecification(TypedDict, total=False):
+    EnaSrdEnabled: Optional[Boolean]
+    EnaSrdUdpSpecification: Optional[InstanceAttachmentEnaSrdUdpSpecification]
+
+
 class InstanceNetworkInterfaceAttachment(TypedDict, total=False):
     AttachTime: Optional[DateTime]
     AttachmentId: Optional[String]
@@ -11239,6 +11490,7 @@ class InstanceNetworkInterfaceAttachment(TypedDict, total=False):
     DeviceIndex: Optional[Integer]
     Status: Optional[AttachmentStatus]
     NetworkCardIndex: Optional[Integer]
+    EnaSrdSpecification: Optional[InstanceAttachmentEnaSrdSpecification]
 
 
 class InstanceNetworkInterface(TypedDict, total=False):
@@ -11260,6 +11512,7 @@ class InstanceNetworkInterface(TypedDict, total=False):
     InterfaceType: Optional[String]
     Ipv4Prefixes: Optional[InstanceIpv4PrefixList]
     Ipv6Prefixes: Optional[InstanceIpv6PrefixList]
+    ConnectionTrackingConfiguration: Optional[ConnectionTrackingSpecificationResponse]
 
 
 InstanceNetworkInterfaceList = List[InstanceNetworkInterface]
@@ -11399,6 +11652,17 @@ InternetGatewayList = List[InternetGateway]
 
 class DescribeInternetGatewaysResult(TypedDict, total=False):
     InternetGateways: Optional[InternetGatewayList]
+    NextToken: Optional[String]
+
+
+class DescribeIpamByoasnRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    MaxResults: Optional[DescribeIpamByoasnMaxResults]
+    NextToken: Optional[NextToken]
+
+
+class DescribeIpamByoasnResult(TypedDict, total=False):
+    Byoasns: Optional[ByoasnSet]
     NextToken: Optional[String]
 
 
@@ -11733,6 +11997,37 @@ LocalGatewaySet = List[LocalGateway]
 
 class DescribeLocalGatewaysResult(TypedDict, total=False):
     LocalGateways: Optional[LocalGatewaySet]
+    NextToken: Optional[String]
+
+
+SnapshotIdStringList = List[SnapshotId]
+
+
+class DescribeLockedSnapshotsRequest(ServiceRequest):
+    Filters: Optional[FilterList]
+    MaxResults: Optional[DescribeLockedSnapshotsMaxResults]
+    NextToken: Optional[String]
+    SnapshotIds: Optional[SnapshotIdStringList]
+    DryRun: Optional[Boolean]
+
+
+class LockedSnapshotsInfo(TypedDict, total=False):
+    OwnerId: Optional[String]
+    SnapshotId: Optional[String]
+    LockState: Optional[LockState]
+    LockDuration: Optional[RetentionPeriodResponseDays]
+    CoolOffPeriod: Optional[CoolOffPeriodResponseHours]
+    CoolOffPeriodExpiresOn: Optional[MillisecondDateTime]
+    LockCreatedOn: Optional[MillisecondDateTime]
+    LockDurationStartTime: Optional[MillisecondDateTime]
+    LockExpiresOn: Optional[MillisecondDateTime]
+
+
+LockedSnapshotsInfoList = List[LockedSnapshotsInfo]
+
+
+class DescribeLockedSnapshotsResult(TypedDict, total=False):
+    Snapshots: Optional[LockedSnapshotsInfoList]
     NextToken: Optional[String]
 
 
@@ -12521,7 +12816,6 @@ class DescribeSnapshotTierStatusResult(TypedDict, total=False):
     NextToken: Optional[String]
 
 
-SnapshotIdStringList = List[SnapshotId]
 RestorableByStringList = List[String]
 
 
@@ -12690,6 +12984,8 @@ class InstanceNetworkInterfaceSpecification(TypedDict, total=False):
     Ipv6Prefixes: Optional[Ipv6PrefixList]
     Ipv6PrefixCount: Optional[Integer]
     PrimaryIpv6: Optional[Boolean]
+    EnaSrdSpecification: Optional[EnaSrdSpecificationRequest]
+    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
 
 
 InstanceNetworkInterfaceSpecificationList = List[InstanceNetworkInterfaceSpecification]
@@ -13994,6 +14290,14 @@ class DisableSerialConsoleAccessResult(TypedDict, total=False):
     SerialConsoleAccessEnabled: Optional[Boolean]
 
 
+class DisableSnapshotBlockPublicAccessRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class DisableSnapshotBlockPublicAccessResult(TypedDict, total=False):
+    State: Optional[SnapshotBlockPublicAccessState]
+
+
 class DisableTransitGatewayRouteTablePropagationRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
@@ -14045,7 +14349,7 @@ class DisassociateAddressRequest(ServiceRequest):
 
 class DisassociateClientVpnTargetNetworkRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    AssociationId: ClientVpnAssociationId
+    AssociationId: String
     DryRun: Optional[Boolean]
 
 
@@ -14086,6 +14390,16 @@ class DisassociateInstanceEventWindowRequest(ServiceRequest):
 
 class DisassociateInstanceEventWindowResult(TypedDict, total=False):
     InstanceEventWindow: Optional[InstanceEventWindow]
+
+
+class DisassociateIpamByoasnRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    Asn: String
+    Cidr: String
+
+
+class DisassociateIpamByoasnResult(TypedDict, total=False):
+    AsnAssociation: Optional[AsnAssociation]
 
 
 class DisassociateIpamResourceDiscoveryRequest(ServiceRequest):
@@ -14381,6 +14695,15 @@ class EnableSerialConsoleAccessResult(TypedDict, total=False):
     SerialConsoleAccessEnabled: Optional[Boolean]
 
 
+class EnableSnapshotBlockPublicAccessRequest(ServiceRequest):
+    State: SnapshotBlockPublicAccessState
+    DryRun: Optional[Boolean]
+
+
+class EnableSnapshotBlockPublicAccessResult(TypedDict, total=False):
+    State: Optional[SnapshotBlockPublicAccessState]
+
+
 class EnableTransitGatewayRouteTablePropagationRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
@@ -14563,6 +14886,7 @@ class GetCoipPoolUsageResult(TypedDict, total=False):
     CoipPoolId: Optional[String]
     CoipAddressUsages: Optional[CoipAddressUsageSet]
     LocalGatewayRouteTableId: Optional[String]
+    NextToken: Optional[String]
 
 
 class GetConsoleOutputRequest(ServiceRequest):
@@ -14777,6 +15101,66 @@ IpamDiscoveredAccountSet = List[IpamDiscoveredAccount]
 
 class GetIpamDiscoveredAccountsResult(TypedDict, total=False):
     IpamDiscoveredAccounts: Optional[IpamDiscoveredAccountSet]
+    NextToken: Optional[NextToken]
+
+
+class GetIpamDiscoveredPublicAddressesRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+    AddressRegion: String
+    Filters: Optional[FilterList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+
+
+class IpamPublicAddressSecurityGroup(TypedDict, total=False):
+    GroupName: Optional[String]
+    GroupId: Optional[String]
+
+
+IpamPublicAddressSecurityGroupList = List[IpamPublicAddressSecurityGroup]
+
+
+class IpamPublicAddressTag(TypedDict, total=False):
+    Key: Optional[String]
+    Value: Optional[String]
+
+
+IpamPublicAddressTagList = List[IpamPublicAddressTag]
+
+
+class IpamPublicAddressTags(TypedDict, total=False):
+    EipTags: Optional[IpamPublicAddressTagList]
+
+
+class IpamDiscoveredPublicAddress(TypedDict, total=False):
+    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
+    AddressRegion: Optional[String]
+    Address: Optional[String]
+    AddressOwnerId: Optional[String]
+    AddressAllocationId: Optional[String]
+    AssociationStatus: Optional[IpamPublicAddressAssociationStatus]
+    AddressType: Optional[IpamPublicAddressType]
+    Service: Optional[IpamPublicAddressAwsService]
+    ServiceResource: Optional[String]
+    VpcId: Optional[String]
+    SubnetId: Optional[String]
+    PublicIpv4PoolId: Optional[String]
+    NetworkInterfaceId: Optional[String]
+    NetworkInterfaceDescription: Optional[String]
+    InstanceId: Optional[String]
+    Tags: Optional[IpamPublicAddressTags]
+    NetworkBorderGroup: Optional[String]
+    SecurityGroups: Optional[IpamPublicAddressSecurityGroupList]
+    SampleTime: Optional[MillisecondDateTime]
+
+
+IpamDiscoveredPublicAddressSet = List[IpamDiscoveredPublicAddress]
+
+
+class GetIpamDiscoveredPublicAddressesResult(TypedDict, total=False):
+    IpamDiscoveredPublicAddresses: Optional[IpamDiscoveredPublicAddressSet]
+    OldestSampleTime: Optional[MillisecondDateTime]
     NextToken: Optional[NextToken]
 
 
@@ -15042,6 +15426,14 @@ class GetSerialConsoleAccessStatusRequest(ServiceRequest):
 
 class GetSerialConsoleAccessStatusResult(TypedDict, total=False):
     SerialConsoleAccessEnabled: Optional[Boolean]
+
+
+class GetSnapshotBlockPublicAccessStateRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class GetSnapshotBlockPublicAccessStateResult(TypedDict, total=False):
+    State: Optional[SnapshotBlockPublicAccessState]
 
 
 class InstanceRequirementsWithMetadataRequest(TypedDict, total=False):
@@ -15687,6 +16079,26 @@ class LoadPermissionModifications(TypedDict, total=False):
 LocalGatewayRouteList = List[LocalGatewayRoute]
 
 
+class LockSnapshotRequest(ServiceRequest):
+    SnapshotId: SnapshotId
+    DryRun: Optional[Boolean]
+    LockMode: LockMode
+    CoolOffPeriod: Optional[CoolOffPeriodRequestHours]
+    LockDuration: Optional[RetentionPeriodRequestDays]
+    ExpirationDate: Optional[MillisecondDateTime]
+
+
+class LockSnapshotResult(TypedDict, total=False):
+    SnapshotId: Optional[String]
+    LockState: Optional[LockState]
+    LockDuration: Optional[RetentionPeriodResponseDays]
+    CoolOffPeriod: Optional[CoolOffPeriodResponseHours]
+    CoolOffPeriodExpiresOn: Optional[MillisecondDateTime]
+    LockCreatedOn: Optional[MillisecondDateTime]
+    LockExpiresOn: Optional[MillisecondDateTime]
+    LockDurationStartTime: Optional[MillisecondDateTime]
+
+
 class ModifyAddressAttributeRequest(ServiceRequest):
     AllocationId: AllocationId
     DomainName: Optional[String]
@@ -16011,6 +16423,7 @@ class ModifyIpamRequest(ServiceRequest):
     Description: Optional[String]
     AddOperatingRegions: Optional[AddIpamOperatingRegionSet]
     RemoveOperatingRegions: Optional[RemoveIpamOperatingRegionSet]
+    Tier: Optional[IpamTier]
 
 
 class ModifyIpamResourceCidrRequest(ServiceRequest):
@@ -16113,6 +16526,7 @@ class ModifyNetworkInterfaceAttributeRequest(ServiceRequest):
     SourceDestCheck: Optional[AttributeBooleanValue]
     EnaSrdSpecification: Optional[EnaSrdSpecification]
     EnablePrimaryIpv6: Optional[Boolean]
+    ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
 
 
 class ModifyPrivateDnsNameOptionsRequest(ServiceRequest):
@@ -16440,6 +16854,10 @@ class ModifyVerifiedAccessInstanceResult(TypedDict, total=False):
     VerifiedAccessInstance: Optional[VerifiedAccessInstance]
 
 
+class ModifyVerifiedAccessTrustProviderDeviceOptions(TypedDict, total=False):
+    PublicSigningKeyUrl: Optional[String]
+
+
 class ModifyVerifiedAccessTrustProviderOidcOptions(TypedDict, total=False):
     Issuer: Optional[String]
     AuthorizationEndpoint: Optional[String]
@@ -16453,6 +16871,7 @@ class ModifyVerifiedAccessTrustProviderOidcOptions(TypedDict, total=False):
 class ModifyVerifiedAccessTrustProviderRequest(ServiceRequest):
     VerifiedAccessTrustProviderId: VerifiedAccessTrustProviderId
     OidcOptions: Optional[ModifyVerifiedAccessTrustProviderOidcOptions]
+    DeviceOptions: Optional[ModifyVerifiedAccessTrustProviderDeviceOptions]
     Description: Optional[String]
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
@@ -16722,6 +17141,17 @@ class ProvisionByoipCidrRequest(ServiceRequest):
 
 class ProvisionByoipCidrResult(TypedDict, total=False):
     ByoipCidr: Optional[ByoipCidr]
+
+
+class ProvisionIpamByoasnRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamId: IpamId
+    Asn: String
+    AsnAuthorizationContext: AsnAuthorizationContext
+
+
+class ProvisionIpamByoasnResult(TypedDict, total=False):
+    Byoasn: Optional[Byoasn]
 
 
 class ProvisionIpamPoolCidrRequest(ServiceRequest):
@@ -17602,6 +18032,15 @@ class UnassignPrivateNatGatewayAddressResult(TypedDict, total=False):
     NatGatewayAddresses: Optional[NatGatewayAddressList]
 
 
+class UnlockSnapshotRequest(ServiceRequest):
+    SnapshotId: SnapshotId
+    DryRun: Optional[Boolean]
+
+
+class UnlockSnapshotResult(TypedDict, total=False):
+    SnapshotId: Optional[String]
+
+
 class UnmonitorInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
     DryRun: Optional[Boolean]
@@ -17718,7 +18157,7 @@ class Ec2Api:
 
     @handler("AdvertiseByoipCidr")
     def advertise_byoip_cidr(
-        self, context: RequestContext, cidr: String, dry_run: Boolean = None
+        self, context: RequestContext, cidr: String, asn: String = None, dry_run: Boolean = None
     ) -> AdvertiseByoipCidrResult:
         raise NotImplementedError
 
@@ -17765,6 +18204,7 @@ class Ec2Api:
         client_token: String = None,
         description: String = None,
         preview_next_cidr: Boolean = None,
+        allowed_cidrs: IpamPoolAllocationAllowedCidrs = None,
         disallowed_cidrs: IpamPoolAllocationDisallowedCidrs = None,
     ) -> AllocateIpamPoolCidrResult:
         raise NotImplementedError
@@ -17880,6 +18320,12 @@ class Ec2Api:
     ) -> AssociateInstanceEventWindowResult:
         raise NotImplementedError
 
+    @handler("AssociateIpamByoasn")
+    def associate_ipam_byoasn(
+        self, context: RequestContext, asn: String, cidr: String, dry_run: Boolean = None
+    ) -> AssociateIpamByoasnResult:
+        raise NotImplementedError
+
     @handler("AssociateIpamResourceDiscovery")
     def associate_ipam_resource_discovery(
         self,
@@ -17916,7 +18362,12 @@ class Ec2Api:
 
     @handler("AssociateSubnetCidrBlock")
     def associate_subnet_cidr_block(
-        self, context: RequestContext, ipv6_cidr_block: String, subnet_id: SubnetId
+        self,
+        context: RequestContext,
+        subnet_id: SubnetId,
+        ipv6_cidr_block: String = None,
+        ipv6_ipam_pool_id: IpamPoolId = None,
+        ipv6_netmask_length: NetmaskLength = None,
     ) -> AssociateSubnetCidrBlockResult:
         raise NotImplementedError
 
@@ -18503,6 +18954,7 @@ class Ec2Api:
         operating_regions: AddIpamOperatingRegionSet = None,
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
+        tier: IpamTier = None,
     ) -> CreateIpamResult:
         raise NotImplementedError
 
@@ -18526,6 +18978,7 @@ class Ec2Api:
         client_token: String = None,
         aws_service: IpamPoolAwsService = None,
         public_ip_source: IpamPoolPublicIpSource = None,
+        source_resource: IpamPoolSourceResourceRequest = None,
     ) -> CreateIpamPoolResult:
         raise NotImplementedError
 
@@ -18748,6 +19201,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         enable_primary_ipv6: Boolean = None,
+        connection_tracking_specification: ConnectionTrackingSpecificationRequest = None,
     ) -> CreateNetworkInterfaceResult:
         raise NotImplementedError
 
@@ -18926,6 +19380,10 @@ class Ec2Api:
         outpost_arn: String = None,
         dry_run: Boolean = None,
         ipv6_native: Boolean = None,
+        ipv4_ipam_pool_id: IpamPoolId = None,
+        ipv4_netmask_length: NetmaskLength = None,
+        ipv6_ipam_pool_id: IpamPoolId = None,
+        ipv6_netmask_length: NetmaskLength = None,
     ) -> CreateSubnetResult:
         raise NotImplementedError
 
@@ -19458,7 +19916,11 @@ class Ec2Api:
 
     @handler("DeleteIpamPool")
     def delete_ipam_pool(
-        self, context: RequestContext, ipam_pool_id: IpamPoolId, dry_run: Boolean = None
+        self,
+        context: RequestContext,
+        ipam_pool_id: IpamPoolId,
+        dry_run: Boolean = None,
+        cascade: Boolean = None,
     ) -> DeleteIpamPoolResult:
         raise NotImplementedError
 
@@ -19958,6 +20420,12 @@ class Ec2Api:
     def deprovision_byoip_cidr(
         self, context: RequestContext, cidr: String, dry_run: Boolean = None
     ) -> DeprovisionByoipCidrResult:
+        raise NotImplementedError
+
+    @handler("DeprovisionIpamByoasn")
+    def deprovision_ipam_byoasn(
+        self, context: RequestContext, ipam_id: IpamId, asn: String, dry_run: Boolean = None
+    ) -> DeprovisionIpamByoasnResult:
         raise NotImplementedError
 
     @handler("DeprovisionIpamPoolCidr")
@@ -20585,6 +21053,19 @@ class Ec2Api:
     ) -> DescribeInstanceStatusResult:
         raise NotImplementedError
 
+    @handler("DescribeInstanceTopology")
+    def describe_instance_topology(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        next_token: String = None,
+        max_results: DescribeInstanceTopologyMaxResults = None,
+        instance_ids: DescribeInstanceTopologyInstanceIdSet = None,
+        group_names: DescribeInstanceTopologyGroupNameSet = None,
+        filters: FilterList = None,
+    ) -> DescribeInstanceTopologyResult:
+        raise NotImplementedError
+
     @handler("DescribeInstanceTypeOfferings")
     def describe_instance_type_offerings(
         self,
@@ -20631,6 +21112,16 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeInternetGatewaysMaxResults = None,
     ) -> DescribeInternetGatewaysResult:
+        raise NotImplementedError
+
+    @handler("DescribeIpamByoasn")
+    def describe_ipam_byoasn(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        max_results: DescribeIpamByoasnMaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribeIpamByoasnResult:
         raise NotImplementedError
 
     @handler("DescribeIpamPools")
@@ -20817,6 +21308,18 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeLocalGatewaysResult:
+        raise NotImplementedError
+
+    @handler("DescribeLockedSnapshots")
+    def describe_locked_snapshots(
+        self,
+        context: RequestContext,
+        filters: FilterList = None,
+        max_results: DescribeLockedSnapshotsMaxResults = None,
+        next_token: String = None,
+        snapshot_ids: SnapshotIdStringList = None,
+        dry_run: Boolean = None,
+    ) -> DescribeLockedSnapshotsResult:
         raise NotImplementedError
 
     @handler("DescribeManagedPrefixLists")
@@ -21856,6 +22359,12 @@ class Ec2Api:
     ) -> DisableSerialConsoleAccessResult:
         raise NotImplementedError
 
+    @handler("DisableSnapshotBlockPublicAccess")
+    def disable_snapshot_block_public_access(
+        self, context: RequestContext, dry_run: Boolean = None
+    ) -> DisableSnapshotBlockPublicAccessResult:
+        raise NotImplementedError
+
     @handler("DisableTransitGatewayRouteTablePropagation")
     def disable_transit_gateway_route_table_propagation(
         self,
@@ -21904,7 +22413,7 @@ class Ec2Api:
         self,
         context: RequestContext,
         client_vpn_endpoint_id: ClientVpnEndpointId,
-        association_id: ClientVpnAssociationId,
+        association_id: String,
         dry_run: Boolean = None,
     ) -> DisassociateClientVpnTargetNetworkResult:
         raise NotImplementedError
@@ -21933,6 +22442,12 @@ class Ec2Api:
         association_target: InstanceEventWindowDisassociationRequest,
         dry_run: Boolean = None,
     ) -> DisassociateInstanceEventWindowResult:
+        raise NotImplementedError
+
+    @handler("DisassociateIpamByoasn")
+    def disassociate_ipam_byoasn(
+        self, context: RequestContext, asn: String, cidr: String, dry_run: Boolean = None
+    ) -> DisassociateIpamByoasnResult:
         raise NotImplementedError
 
     @handler("DisassociateIpamResourceDiscovery")
@@ -22109,6 +22624,15 @@ class Ec2Api:
     def enable_serial_console_access(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> EnableSerialConsoleAccessResult:
+        raise NotImplementedError
+
+    @handler("EnableSnapshotBlockPublicAccess")
+    def enable_snapshot_block_public_access(
+        self,
+        context: RequestContext,
+        state: SnapshotBlockPublicAccessState,
+        dry_run: Boolean = None,
+    ) -> EnableSnapshotBlockPublicAccessResult:
         raise NotImplementedError
 
     @handler("EnableTransitGatewayRouteTablePropagation")
@@ -22369,6 +22893,19 @@ class Ec2Api:
     ) -> GetIpamDiscoveredAccountsResult:
         raise NotImplementedError
 
+    @handler("GetIpamDiscoveredPublicAddresses")
+    def get_ipam_discovered_public_addresses(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        address_region: String,
+        dry_run: Boolean = None,
+        filters: FilterList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+    ) -> GetIpamDiscoveredPublicAddressesResult:
+        raise NotImplementedError
+
     @handler("GetIpamDiscoveredResourceCidrs")
     def get_ipam_discovered_resource_cidrs(
         self,
@@ -22505,6 +23042,12 @@ class Ec2Api:
     def get_serial_console_access_status(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> GetSerialConsoleAccessStatusResult:
+        raise NotImplementedError
+
+    @handler("GetSnapshotBlockPublicAccessState")
+    def get_snapshot_block_public_access_state(
+        self, context: RequestContext, dry_run: Boolean = None
+    ) -> GetSnapshotBlockPublicAccessStateResult:
         raise NotImplementedError
 
     @handler("GetSpotPlacementScores")
@@ -22772,6 +23315,19 @@ class Ec2Api:
         snapshot_ids: SnapshotIdStringList = None,
         dry_run: Boolean = None,
     ) -> ListSnapshotsInRecycleBinResult:
+        raise NotImplementedError
+
+    @handler("LockSnapshot")
+    def lock_snapshot(
+        self,
+        context: RequestContext,
+        snapshot_id: SnapshotId,
+        lock_mode: LockMode,
+        dry_run: Boolean = None,
+        cool_off_period: CoolOffPeriodRequestHours = None,
+        lock_duration: RetentionPeriodRequestDays = None,
+        expiration_date: MillisecondDateTime = None,
+    ) -> LockSnapshotResult:
         raise NotImplementedError
 
     @handler("ModifyAddressAttribute")
@@ -23044,6 +23600,7 @@ class Ec2Api:
         description: String = None,
         add_operating_regions: AddIpamOperatingRegionSet = None,
         remove_operating_regions: RemoveIpamOperatingRegionSet = None,
+        tier: IpamTier = None,
     ) -> ModifyIpamResult:
         raise NotImplementedError
 
@@ -23151,6 +23708,7 @@ class Ec2Api:
         source_dest_check: AttributeBooleanValue = None,
         ena_srd_specification: EnaSrdSpecification = None,
         enable_primary_ipv6: Boolean = None,
+        connection_tracking_specification: ConnectionTrackingSpecificationRequest = None,
     ) -> None:
         raise NotImplementedError
 
@@ -23395,6 +23953,7 @@ class Ec2Api:
         context: RequestContext,
         verified_access_trust_provider_id: VerifiedAccessTrustProviderId,
         oidc_options: ModifyVerifiedAccessTrustProviderOidcOptions = None,
+        device_options: ModifyVerifiedAccessTrustProviderDeviceOptions = None,
         description: String = None,
         dry_run: Boolean = None,
         client_token: String = None,
@@ -23611,6 +24170,17 @@ class Ec2Api:
         pool_tag_specifications: TagSpecificationList = None,
         multi_region: Boolean = None,
     ) -> ProvisionByoipCidrResult:
+        raise NotImplementedError
+
+    @handler("ProvisionIpamByoasn")
+    def provision_ipam_byoasn(
+        self,
+        context: RequestContext,
+        ipam_id: IpamId,
+        asn: String,
+        asn_authorization_context: AsnAuthorizationContext,
+        dry_run: Boolean = None,
+    ) -> ProvisionIpamByoasnResult:
         raise NotImplementedError
 
     @handler("ProvisionIpamPoolCidr")
@@ -24293,6 +24863,12 @@ class Ec2Api:
         max_drain_duration_seconds: DrainSeconds = None,
         dry_run: Boolean = None,
     ) -> UnassignPrivateNatGatewayAddressResult:
+        raise NotImplementedError
+
+    @handler("UnlockSnapshot")
+    def unlock_snapshot(
+        self, context: RequestContext, snapshot_id: SnapshotId, dry_run: Boolean = None
+    ) -> UnlockSnapshotResult:
         raise NotImplementedError
 
     @handler("UnmonitorInstances")

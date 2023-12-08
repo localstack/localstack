@@ -18,7 +18,6 @@ from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.apigateway import (
     Authorizer,
@@ -32,8 +31,9 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.connect import connect_to
 from localstack.constants import (
     APPLICATION_JSON,
+    AWS_REGION_US_EAST_1,
+    DEFAULT_AWS_ACCOUNT_ID,
     HEADER_LOCALSTACK_EDGE_URL,
-    LOCALHOST_HOSTNAME,
     PATH_USER_REQUEST,
 )
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -43,7 +43,7 @@ from localstack.services.apigateway.models import (
     apigateway_stores,
 )
 from localstack.utils import common
-from localstack.utils.aws import aws_stack, queries
+from localstack.utils.aws import queries
 from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
@@ -61,7 +61,7 @@ PATH_REGEX_USER_REQUEST = (
     r"^/restapis/([A-Za-z0-9_\\-]+)(?:/([A-Za-z0-9\_($|%%24)\\-]+))?/%s/(.*)$" % PATH_USER_REQUEST
 )
 # URL pattern for invocations
-HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9]+)(?:(-vpce-[^.]+))?\.execute-api\.(localhost.localstack.cloud|([^\.]+)\.amazonaws\.com)(.*)"
+HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9]+)(?:(-vpce-[^.]+))?\.execute-api\.(.*)"
 
 # regex path patterns
 PATH_REGEX_MAIN = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?"
@@ -135,8 +135,8 @@ def get_apigateway_store(context: RequestContext) -> ApiGatewayStore:
 
 
 def get_apigateway_store_for_invocation(context: ApiInvocationContext) -> ApiGatewayStore:
-    account_id = context.account_id or get_aws_account_id()
-    region_name = context.region_name or aws_stack.get_region()
+    account_id = context.account_id or DEFAULT_AWS_ACCOUNT_ID
+    region_name = context.region_name or AWS_REGION_US_EAST_1
     return apigateway_stores[account_id][region_name]
 
 
@@ -166,7 +166,7 @@ class OpenAPISpecificationResolver:
         # cache which maps known refs to part of the document
         self._cache = {}
         self._refpaths = ["#"]
-        host_definition = localstack_host(use_localhost_cloud=True)
+        host_definition = localstack_host()
         self._base_url = f"{config.get_protocol()}://apigateway.{host_definition.host_and_port()}/restapis/{rest_api_id}/models/"
 
     def _is_ref(self, item) -> bool:
@@ -603,7 +603,7 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
 def path_based_url(api_id: str, stage_name: str, path: str) -> str:
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
     pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
-        config.service_url("apigateway"),
+        config.external_service_url(),
         PATH_USER_REQUEST,
     )
     return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
@@ -612,14 +612,15 @@ def path_based_url(api_id: str, stage_name: str, path: str) -> str:
 def host_based_url(rest_api_id: str, path: str, stage_name: str = None):
     """Return URL for inbound API gateway for given API ID, stage name, and path with custom dns
     format"""
-    pattern = "http://{endpoint}{stage}{path}"
+    pattern = "{endpoint}{stage}{path}"
     stage = stage_name and f"/{stage_name}" or ""
     return pattern.format(endpoint=get_execute_api_endpoint(rest_api_id), stage=stage, path=path)
 
 
-def get_execute_api_endpoint(api_id: str, protocol: str = "") -> str:
-    port = config.get_edge_port_http()
-    return f"{protocol}{api_id}.execute-api.{LOCALHOST_HOSTNAME}:{port}"
+def get_execute_api_endpoint(api_id: str, protocol: str | None = None) -> str:
+    host = localstack_host()
+    protocol = protocol or config.get_protocol()
+    return f"{protocol}://{api_id}.execute-api.{host.host_and_port()}"
 
 
 def tokenize_path(path):
@@ -1387,7 +1388,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
-    account_id = account_id or get_aws_account_id()
+    account_id = account_id or DEFAULT_AWS_ACCOUNT_ID
     request_context = {
         "accountId": account_id,
         "apiId": api_id,
@@ -1574,4 +1575,5 @@ def get_regional_domain_name(domain_name: str) -> str:
     In LocalStack, we're returning this format: "d-<domain_hash>.execute-api.localhost.localstack.cloud"
     """
     domain_name_hash = get_domain_name_hash(domain_name)
-    return f"d-{domain_name_hash}.execute-api.{LOCALHOST_HOSTNAME}"
+    host = localstack_host().host
+    return f"d-{domain_name_hash}.execute-api.{host}"

@@ -45,8 +45,9 @@ class Base64Decode(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
+        args = env.stack.pop()
 
-        base64_string: str = env.stack.pop()
+        base64_string: str = args.pop()
         if len(base64_string) > self.MAX_INPUT_CHAR_LEN:
             raise ValueError(
                 f"Maximum input string for function type '{type(self)}' "

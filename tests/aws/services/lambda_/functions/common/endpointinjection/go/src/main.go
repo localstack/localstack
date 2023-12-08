@@ -8,12 +8,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"os"
+	"fmt"
 )
 
 func getConfig() *aws.Config {
 	shouldConfigure := os.Getenv("CONFIGURE_CLIENT")
 	if shouldConfigure == "1" {
-	    endpointUrl := "http://" + os.Getenv("LOCALSTACK_HOSTNAME") + ":" + os.Getenv("EDGE_PORT")
+	    endpointUrl := os.Getenv("AWS_ENDPOINT_URL")
 		return &aws.Config{
 			Region:      aws.String("us-east-1"),
 			Credentials: credentials.NewStaticCredentials("test", "test", ""),
@@ -27,13 +28,23 @@ func getConfig() *aws.Config {
 }
 
 func HandleRequest(context context.Context, event map[string]string) (string, error) {
-	sess := session.Must(session.NewSession(getConfig()))
+    // SDK v1: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/welcome.html
+    config := &aws.Config{}
+    endpointUrl := os.Getenv("AWS_ENDPOINT_URL")
+    if endpointUrl != "" {
+        config = &aws.Config{
+            Endpoint:    aws.String(endpointUrl),
+        }
+    }
+
+	sess := session.Must(session.NewSession(config))
 	svc := sqs.New(sess)
 	input := &sqs.ListQueuesInput{}
-	_, err := svc.ListQueues(input)
+	response, err := svc.ListQueues(input)
 	if err != nil {
 		return "fail", err
 	}
+    fmt.Printf("response: %+v\n", response)
 
 	return "ok", nil
 }

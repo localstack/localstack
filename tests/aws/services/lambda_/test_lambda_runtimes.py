@@ -9,7 +9,6 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, MAVEN_REPO_URL
 from localstack.packages import DownloadInstaller, Package, PackageInstaller
 from localstack.services.lambda_.packages import lambda_java_libs_package
-from localstack.testing.aws.lambda_utils import is_old_local_executor, is_old_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.archives import unzip
@@ -26,7 +25,6 @@ from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS_ES6,
     TEST_LAMBDA_PYTHON,
-    TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
     TEST_LAMBDA_PYTHON_VERSION,
     THIS_FOLDER,
     read_streams,
@@ -70,35 +68,8 @@ def add_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("CodeSha256", "<code-sha-256>"))
 
 
-# some more common ones that usually don't work in the old provider
-pytestmark = markers.snapshot.skip_snapshot_verify(
-    condition=is_old_provider,
-    paths=[
-        # "$..Architectures",
-        "$..EphemeralStorage",
-        "$..LastUpdateStatus",
-        "$..MemorySize",
-        "$..State",
-        "$..StateReason",
-        "$..StateReasonCode",
-        "$..VpcConfig",
-        "$..LogResult",
-        # "$..CodeSigningConfig",
-        "$..Environment",  # missing
-        "$..HTTPStatusCode",  # 201 vs 200
-        "$..Layers",
-        "$..CreateFunctionResponse.RuntimeVersionConfig",
-        "$..CreateFunctionResponse.SnapStart",
-    ],
-)
-
-
 class TestNodeJSRuntimes:
     @parametrize_node_runtimes
-    @pytest.mark.skipif(
-        is_old_local_executor(),
-        reason="ES6 support is only guaranteed when using the docker executor",
-    )
     @markers.aws.validated
     def test_invoke_nodejs_es6_lambda(self, create_lambda_function, snapshot, runtime, aws_client):
         """Test simple nodejs lambda invocation"""
@@ -156,9 +127,6 @@ class TestJavaRuntimes:
         save_file(zip_jar_path, java_jar)
         return testutil.create_zip_file(tmpdir, get_content=True)
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Payload"]
-    )  # newline at end
     @markers.aws.validated
     def test_java_runtime_with_lib(self, create_lambda_function, snapshot, aws_client):
         """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""
@@ -264,9 +232,6 @@ class TestJavaRuntimes:
             ),
         ],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Payload"]
-    )  # newline at end
     @markers.aws.validated
     # this test is only compiled against java 11
     def test_java_custom_handler_method_specification(
@@ -303,17 +268,6 @@ class TestJavaRuntimes:
 
         retry(check_logs, retries=20)
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..Code.RepositoryType",
-            "$..Tags",
-            "$..Configuration.RuntimeVersionConfig",
-            "$..Configuration.SnapStart",
-            "$..Statement.Condition.ArnLike",
-        ],
-    )
-    @pytest.mark.xfail(is_old_provider(), reason="Test flaky with local executor.")
     @markers.aws.validated
     # TODO maybe snapshot payload as well
     def test_java_lambda_subscribe_sns_topic(
@@ -446,10 +400,6 @@ class TestPythonRuntimes:
         assert 200 == result["StatusCode"]
         assert json.loads("{}") == result_data["event"]
 
-    @pytest.mark.skipif(
-        is_old_local_executor(),
-        reason="Test for docker python runtimes not applicable if run locally",
-    )
     @parametrize_python_runtimes
     @markers.aws.validated
     def test_python_runtime_correct_versions(self, create_lambda_function, runtime, aws_client):
@@ -466,47 +416,3 @@ class TestPythonRuntimes:
         )
         result = json.loads(to_str(result["Payload"].read()))
         assert result["version"] == runtime
-
-    # TODO[LambdaV1] Remove with old Lambda provider
-    # TODO: remove once old provider is gone. Errors tests: tests.aws.services.lambda_.test_lambda.TestLambdaErrors
-    @pytest.mark.skipif(
-        is_old_local_executor(),
-        reason="Test for docker python runtimes not applicable if run locally",
-    )
-    @parametrize_python_runtimes
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Payload.requestId"]
-    )
-    @markers.aws.validated
-    def test_python_runtime_unhandled_errors(
-        self, create_lambda_function, runtime, snapshot, aws_client
-    ):
-        """Test unhandled errors during python lambda invocation"""
-        function_name = f"test_python_executor_{short_uid()}"
-        creation_response = create_lambda_function(
-            func_name=function_name,
-            handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
-            runtime=runtime,
-        )
-        snapshot.match("creation_response", creation_response)
-        result = aws_client.lambda_.invoke(
-            FunctionName=function_name,
-            Payload=b"{}",
-        )
-        result = read_streams(result)
-        snapshot.match("invocation_response", result)
-        assert result["StatusCode"] == 200
-        assert result["ExecutedVersion"] == "$LATEST"
-        assert result["FunctionError"] == "Unhandled"
-        payload = json.loads(result["Payload"])
-        assert payload["errorType"] == "CustomException"
-        assert payload["errorMessage"] == "some error occurred"
-        assert "stackTrace" in payload
-
-        if (
-            runtime in (Runtime.python3_9, Runtime.python3_10, Runtime.python3_11)
-            and not is_old_provider()
-        ):  # TODO: remove this after the legacy provider is gone
-            assert "requestId" in payload
-        else:
-            assert "requestId" not in payload

@@ -2,9 +2,9 @@ import re
 from typing import Any
 
 from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_AWS_NO_VALUE
+from localstack.utils.urls import localstack_host
 
-# TODO: deduplicate
-AWS_URL_SUFFIX = "localhost.localstack.cloud"
+AWS_URL_SUFFIX = localstack_host().host  # value is "amazonaws.com" in real AWS
 
 
 def get_deps_for_resource(resource: dict, evaluated_conditions: dict[str, bool]) -> set[str]:

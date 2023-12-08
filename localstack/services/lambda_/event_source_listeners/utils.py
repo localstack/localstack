@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Dict, List, Union
 
 from localstack.aws.api.lambda_ import FilterCriteria
@@ -136,3 +137,22 @@ def message_attributes_to_lower(message_attrs):
         for key, value in dict(attr).items():
             attr[first_char_to_lower(key)] = attr.pop(key)
     return message_attrs
+
+
+def event_source_arn_matches(mapped: str, searched: str) -> bool:
+    if not mapped:
+        return False
+    if not searched or mapped == searched:
+        return True
+    # Some types of ARNs can end with a path separated by slashes, for
+    # example the ARN of a DynamoDB stream is tableARN/stream/ID. It's
+    # a little counterintuitive that a more specific mapped ARN can
+    # match a less specific ARN on the event, but some integration tests
+    # rely on it for things like subscribing to a stream and matching an
+    # event labeled with the table ARN.
+    if re.match(r"^%s$" % searched, mapped):
+        return True
+    if mapped.startswith(searched):
+        suffix = mapped[len(searched) :]
+        return suffix[0] == "/"
+    return False

@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import re
-import socket
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -17,11 +16,15 @@ from _pytest.config import Config
 from _pytest.nodes import Item
 from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
-from moto.core import BackendDict, BaseBackend
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
-from localstack import config, constants
+from localstack import config
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    SECONDARY_TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -34,6 +37,7 @@ from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
@@ -41,7 +45,6 @@ from localstack.utils.json import CustomEncoder, json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
-from localstack.utils.testutil import start_http_server
 
 LOG = logging.getLogger(__name__)
 
@@ -82,8 +85,7 @@ def aws_http_client_factory(aws_session):
         aws_access_key_id: str = None,
         aws_secret_access_key: str = None,
     ):
-        region = region or aws_session.region_name
-        region = region or config.DEFAULT_REGION
+        region = region or aws_session.region_name or AWS_REGION_US_EAST_1
 
         if aws_access_key_id or aws_secret_access_key:
             credentials = botocore.credentials.Credentials(
@@ -100,7 +102,7 @@ def aws_http_client_factory(aws_session):
                 resolver: EndpointResolver = aws_session._session.get_component("endpoint_resolver")
                 endpoint_url = "https://" + resolver.construct_endpoint(service, region)["hostname"]
             else:
-                endpoint_url = config.get_edge_url()
+                endpoint_url = config.internal_service_url()
 
         return SigningHttpClient(signer_factory(creds, service, region), endpoint_url=endpoint_url)
 
@@ -1538,13 +1540,6 @@ def acm_request_certificate(aws_client_factory):
             LOG.debug("error cleaning up certificate %s: %s", certificate_arn, e)
 
 
-@pytest.fixture
-def tmp_http_server():
-    test_port, invocations, proxy = start_http_server()
-    yield test_port, invocations, proxy
-    proxy.stop()
-
-
 role_policy_su = {
     "Version": "2012-10-17",
     "Statement": [{"Effect": "Allow", "Action": ["*"], "Resource": ["*"]}],
@@ -1779,12 +1774,18 @@ def cleanups():
 
 @pytest.fixture(scope="session")
 def account_id(aws_client):
-    return aws_client.sts.get_caller_identity()["Account"]
+    if is_aws_cloud() or is_api_enabled("sts"):
+        return aws_client.sts.get_caller_identity()["Account"]
+    else:
+        return TEST_AWS_ACCOUNT_ID
 
 
 @pytest.fixture(scope="session")
 def secondary_account_id(secondary_aws_client):
-    return secondary_aws_client.sts.get_caller_identity()["Account"]
+    if is_aws_cloud() or is_api_enabled("sts"):
+        return secondary_aws_client.sts.get_caller_identity()["Account"]
+    else:
+        return SECONDARY_TEST_AWS_ACCOUNT_ID
 
 
 @pytest.hookimpl
@@ -1794,8 +1795,9 @@ def pytest_collection_modifyitems(config: Config, items: list[Item]):
         reason="test only applicable if run against localstack",
     )
     for item in items:
-        if "only_localstack" in item.keywords:
-            item.add_marker(only_localstack)
+        for mark in item.iter_markers():
+            if mark.name.endswith("only_localstack"):
+                item.add_marker(only_localstack)
 
 
 @pytest.fixture
@@ -1806,16 +1808,6 @@ def sample_stores() -> AccountRegionBundle:
         region_specific_attr = LocalAttribute(default=list)
 
     return AccountRegionBundle("zzz", SampleStore, validate=False)
-
-
-@pytest.fixture()
-def sample_backend_dict() -> BackendDict:
-    class SampleBackend(BaseBackend):
-        def __init__(self, region_name, account_id):
-            super().__init__(region_name, account_id)
-            self.attributes = {}
-
-    return BackendDict(SampleBackend, "sns")
 
 
 @pytest.fixture
@@ -1906,63 +1898,22 @@ def appsync_create_api(aws_client):
 
 @pytest.fixture
 def assert_host_customisation(monkeypatch):
-    hostname_external = f"external-host-{short_uid()}"
-    # `LOCALSTACK_HOSTNAME` is really an internal variable that has been
-    # exposed to the user at some point in the past. It is used by some
-    # services that start resources (e.g. OpenSearch) to determine if the
-    # service has been started correctly (i.e. a health check). This means that
-    # the value must be resolvable by LocalStack or else the service resources
-    # won't start properly.
-    #
-    # One hostname that's always resolvable is the hostname of the process
-    # running LocalStack, so use that here.
-    #
-    # Note: We cannot use `localhost` since we explicitly check that the URL
-    # passed in does not contain `localhost`, unless it is requried to.
-    localstack_hostname = socket.gethostname()
-    monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname_external)
-    monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)
+    localstack_host = "foo.bar"
+    monkeypatch.setattr(
+        config, "LOCALSTACK_HOST", config.HostAndPort(host=localstack_host, port=8888)
+    )
 
     def asserter(
         url: str,
         *,
-        use_hostname_external: bool = False,
-        use_localstack_hostname: bool = False,
-        use_localstack_cloud: bool = False,
-        use_localhost: bool = False,
         custom_host: Optional[str] = None,
     ):
-        if use_hostname_external:
-            assert hostname_external in url
+        if custom_host is not None:
+            assert custom_host in url, f"Could not find `{custom_host}` in `{url}`"
 
-            assert localstack_hostname not in url
-            assert constants.LOCALHOST_HOSTNAME not in url
-            assert constants.LOCALHOST not in url
-        elif use_localstack_hostname:
-            assert localstack_hostname in url
-
-            assert hostname_external not in url
-            assert constants.LOCALHOST_HOSTNAME not in url
-            assert constants.LOCALHOST not in url
-        elif use_localstack_cloud:
-            assert constants.LOCALHOST_HOSTNAME in url
-
-            assert hostname_external not in url
-            assert localstack_hostname not in url
-        elif use_localhost:
-            assert constants.LOCALHOST in url
-
-            assert constants.LOCALHOST_HOSTNAME not in url
-            assert hostname_external not in url
-            assert localstack_hostname not in url
-        elif custom_host is not None:
-            assert custom_host in url
-
-            assert constants.LOCALHOST_HOSTNAME not in url
-            assert hostname_external not in url
-            assert localstack_hostname not in url
+            assert localstack_host not in url
         else:
-            raise ValueError("no assertions made")
+            assert localstack_host in url, f"Could not find `{localstack_host}` in `{url}`"
 
     yield asserter
 
@@ -2116,3 +2067,21 @@ def register_extension(s3_bucket, aws_client):
             except Exception:
                 continue
         cfn_client.deregister_type(Arn=arn)
+
+
+@pytest.fixture
+def hosted_zone(aws_client):
+    zone_ids = []
+
+    def factory(**kwargs):
+        if "CallerReference" not in kwargs:
+            kwargs["CallerReference"] = f"ref-{short_uid()}"
+        response = aws_client.route53.create_hosted_zone(**kwargs)
+        zone_id = response["HostedZone"]["Id"]
+        zone_ids.append(zone_id)
+        return response
+
+    yield factory
+
+    for zone_id in zone_ids[::-1]:
+        aws_client.route53.delete_hosted_zone(Id=zone_id)

@@ -165,7 +165,7 @@ class TestLoanBrokerScenario:
     )
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..traceHeader", "$..cause", "$..error"]
+        paths=["$..traceHeader", "$..cause"]
     )  # TODO add missing properties
     def test_stepfunctions_input_recipient_list(
         self, aws_client, infrastructure, step_function_input, expected_result, snapshot

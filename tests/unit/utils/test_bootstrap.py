@@ -46,12 +46,12 @@ class TestGetPreloadedServices:
         assert result == set(SERVICE_PLUGINS.list_available())
 
     def test_with_service_subset(self):
-        with temporary_env({"SERVICES": "s3,sqs", "EAGER_SERVICE_LOADING": "1"}):
+        with temporary_env({"SERVICES": "s3,sns", "EAGER_SERVICE_LOADING": "1"}):
             result = get_preloaded_services()
 
         assert len(result) == 2
         assert "s3" in result
-        assert "sqs" in result
+        assert "sns" in result
 
     def test_custom_service_without_port(self):
         with temporary_env({"SERVICES": "foobar", "EAGER_SERVICE_LOADING": "1"}):
@@ -102,13 +102,29 @@ class TestGetEnabledApis:
 
         assert result == set(SERVICE_PLUGINS.list_available())
 
-    def test_with_service_subset(self):
-        with temporary_env({"SERVICES": "s3,sqs", "STRICT_SERVICE_LOADING": "1"}):
+    def test_strict_service_loading_disabled(self):
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        with temporary_env({"STRICT_SERVICE_LOADING": "0", "SERVICES": "s3,sqs"}):
+            result = get_enabled_apis()
+
+        assert result == set(SERVICE_PLUGINS.list_available())
+
+    def test_strict_service_loading_enabled_by_default(self):
+        with temporary_env({"SERVICES": "s3,sns"}):
             result = get_enabled_apis()
 
         assert len(result) == 2
         assert "s3" in result
-        assert "sqs" in result
+        assert "sns" in result
+
+    def test_with_service_subset(self):
+        with temporary_env({"SERVICES": "s3,sns", "STRICT_SERVICE_LOADING": "1"}):
+            result = get_enabled_apis()
+
+        assert len(result) == 2
+        assert "s3" in result
+        assert "sns" in result
 
     def test_custom_service_not_supported(self):
         with temporary_env({"SERVICES": "foobar", "STRICT_SERVICE_LOADING": "1"}):
@@ -147,11 +163,12 @@ class TestGetEnabledApis:
             "es",
             # a dependency of es
             "opensearch",
-            # lambda has internal dependencies on s3, sqs, logs and cloudwatch
+            # lambda has internal dependencies on s3, sqs, and sts
             "s3",
             "sqs",
-            "logs",
-            "cloudwatch",
+            "sts",
+            # secondary dependency from sqs, which is a dependency from lambda
+            "sqs-query",
         }
 
 

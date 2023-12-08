@@ -6,7 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
-from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled, is_old_provider
+from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -155,9 +155,11 @@ def test_failing_lambda_retries_after_visibility_timeout(
     assert time.time() >= then + retry_timeout
 
     # assert message is removed from the queue
-    assert "Messages" not in aws_client.sqs.receive_message(
+    third_response = aws_client.sqs.receive_message(
         QueueUrl=destination_url, WaitTimeSeconds=retry_timeout + 1, MaxNumberOfMessages=1
     )
+    assert "Messages" in third_response
+    assert third_response["Messages"] == []
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -338,16 +340,16 @@ def test_redrive_policy_with_failing_lambda(
     snapshot.match("first_attempt", first_response)
 
     # check that the DLQ is empty
-    assert "Messages" not in aws_client.sqs.receive_message(
-        QueueUrl=event_dlq_url, WaitTimeSeconds=1
-    )
+    second_response = aws_client.sqs.receive_message(QueueUrl=event_dlq_url, WaitTimeSeconds=1)
+    assert "Messages" in second_response
+    assert second_response["Messages"] == []
 
     # the second is also expected to fail, and then the message moves into the DLQ
-    second_response = aws_client.sqs.receive_message(
+    third_response = aws_client.sqs.receive_message(
         QueueUrl=destination_url, WaitTimeSeconds=15, MaxNumberOfMessages=1
     )
-    assert "Messages" in second_response
-    snapshot.match("second_attempt", second_response)
+    assert "Messages" in third_response
+    snapshot.match("second_attempt", third_response)
 
     # now check that the event messages was placed in the DLQ
     dlq_response = aws_client.sqs.receive_message(QueueUrl=event_dlq_url, WaitTimeSeconds=15)
@@ -356,7 +358,6 @@ def test_redrive_policy_with_failing_lambda(
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_old_provider(), reason="not supported anymore")
 def test_sqs_queue_as_lambda_dead_letter_queue(
     lambda_su_role,
     create_lambda_function,
@@ -573,7 +574,9 @@ def test_report_batch_item_failures(
     snapshot.match("first_invocation", first_invocation)
 
     # check that the DQL is empty
-    assert "Messages" not in aws_client.sqs.receive_message(QueueUrl=event_dlq_url)
+    dlq_messages = aws_client.sqs.receive_message(QueueUrl=event_dlq_url)["Messages"]
+    assert dlq_messages == []
+    assert not dlq_messages
 
     # now wait for the second invocation result which is expected to have processed message 2 and 3
     second_invocation = aws_client.sqs.receive_message(
@@ -591,7 +594,7 @@ def test_report_batch_item_failures(
     third_attempt = aws_client.sqs.receive_message(
         QueueUrl=destination_url, WaitTimeSeconds=1, MaxNumberOfMessages=1
     )
-    assert "Messages" not in third_attempt
+    assert third_attempt["Messages"] == []
 
     # now check that message 4 was placed in the DLQ
     dlq_response = aws_client.sqs.receive_message(QueueUrl=event_dlq_url, WaitTimeSeconds=15)
@@ -861,7 +864,8 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     dlq_response = aws_client.sqs.receive_message(
         QueueUrl=event_dlq_url, WaitTimeSeconds=retry_timeout + 1
     )
-    assert "Messages" not in dlq_response
+    assert "Messages" in dlq_response
+    assert dlq_response["Messages"] == []
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -884,9 +888,6 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
 class TestSQSEventSourceMapping:
     # TODO refactor
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Error.Message", "$..message"]
-    )
     def test_event_source_mapping_default_batch_size(
         self,
         create_lambda_function,
@@ -991,7 +992,7 @@ class TestSQSEventSourceMapping:
         snapshot.match("events", events)
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
-        assert rs.get("Messages") is None
+        assert rs.get("Messages") == []
 
     @markers.aws.validated
     @pytest.mark.parametrize(
@@ -1121,7 +1122,7 @@ class TestSQSEventSourceMapping:
         snapshot.match("invocation_events", invocation_events)
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
-        assert rs.get("Messages") is None
+        assert rs.get("Messages") == []
 
     @markers.aws.validated
     @pytest.mark.parametrize(
@@ -1167,7 +1168,6 @@ class TestSQSEventSourceMapping:
         snapshot.match("create_event_source_mapping_exception", expected.value.response)
         expected.match(InvalidParameterValueException.code)
 
-    @pytest.mark.skipif(condition=is_old_provider(), reason="broken")
     @markers.aws.validated
     def test_sqs_event_source_mapping_update(
         self,
@@ -1241,7 +1241,7 @@ class TestSQSEventSourceMapping:
         snapshot.match("events", events)
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
-        assert rs.get("Messages") is None
+        assert rs.get("Messages") == []
 
         # # create new function version
         aws_client.lambda_.update_function_configuration(
@@ -1282,4 +1282,4 @@ class TestSQSEventSourceMapping:
         snapshot.match("events_postupdate", events_postupdate)
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
-        assert rs.get("Messages") is None
+        assert rs.get("Messages") == []

@@ -50,14 +50,15 @@ class StringSplit(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
+        args = env.stack.pop()
 
-        del_chars = env.stack.pop()
+        del_chars = args.pop()
         if not isinstance(del_chars, str):
             raise ValueError(
                 f"Expected string value as delimiting characters, but got '{del_chars}'."
             )
 
-        string = env.stack.pop()
+        string = args.pop()
         if not isinstance(del_chars, str):
             raise ValueError(f"Expected string value, but got '{del_chars}'.")
 
@@ -67,4 +68,5 @@ class StringSplit(StatesFunction):
         pattern = "|".join(patterns)
 
         parts = re.split(pattern, string)
-        env.stack.append(parts)
+        parts_clean = list(filter(bool, parts))
+        env.stack.append(parts_clean)

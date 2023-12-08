@@ -1,0 +1,28 @@
+{
+  "StartAt": "ChoiceStateX",
+  "States": {
+    "ChoiceStateX": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.type",
+              "StringEquals": "Public"
+            }
+          ],
+          "Next": "Public"
+        }
+      ],
+      "Default": "DefaultState"
+    },
+    "Public": {
+      "Type": "Pass",
+      "End": true
+    },
+    "DefaultState": {
+      "Type": "Fail",
+      "Cause": "No Matches!"
+    }
+  }
+}

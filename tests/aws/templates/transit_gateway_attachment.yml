@@ -1,0 +1,103 @@
+Resources:
+  Vpc8378EB38:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/20
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+  myTransitGateway:
+    Type: "AWS::EC2::TransitGateway"
+    Properties:
+      AmazonSideAsn: 65000
+      Description: "TGW Route Integration Test"
+      AutoAcceptSharedAttachments: "disable"
+      DefaultRouteTableAssociation: "enable"
+      DnsSupport: "enable"
+      VpnEcmpSupport: "enable"
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+  VpcIsolatedSubnet1SubnetE48C5737:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ''
+      CidrBlock: 10.0.0.0/24
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: Vpc8378EB38
+  VpcIsolatedSubnet1RouteTable4771E3E5:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+  VpcIsolatedSubnet1RouteTableAssociationD300FCBB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcIsolatedSubnet1RouteTable4771E3E5
+      SubnetId:
+        Ref: VpcIsolatedSubnet1SubnetE48C5737
+  VpcIsolatedSubnet1TransitGatewayRouteA907B32D:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        Ref: VpcIsolatedSubnet1RouteTable4771E3E5
+      TransitGatewayId: !Ref myTransitGateway
+    DependsOn:
+      - TransitGatewayVpcAttachment
+  VpcIsolatedSubnet2Subnet16364B91:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ''
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: Vpc8378EB38
+  VpcIsolatedSubnet2RouteTable1D30AF7D:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc8378EB38
+  VpcIsolatedSubnet2RouteTableAssociationF7B18CCA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcIsolatedSubnet2RouteTable1D30AF7D
+      SubnetId:
+        Ref: VpcIsolatedSubnet2Subnet16364B91
+  VpcIsolatedSubnet2TransitGatewayRoute1E0D0BF2:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        Ref: VpcIsolatedSubnet2RouteTable1D30AF7D
+      TransitGatewayId: !Ref myTransitGateway
+    DependsOn:
+      - TransitGatewayVpcAttachment
+  TransitGatewayVpcAttachment:
+    Type: AWS::EC2::TransitGatewayAttachment
+    Properties:
+      SubnetIds:
+        - Ref: VpcIsolatedSubnet1SubnetE48C5737
+        - Ref: VpcIsolatedSubnet2Subnet16364B91
+      Tags:
+        - Key: Name
+          Value: example-tag
+      TransitGatewayId: !Ref myTransitGateway
+      VpcId:
+        Ref: Vpc8378EB38
+Outputs:
+  TransitGateway:
+      Value:
+        Ref: myTransitGateway
+  Attachment:
+    Value:
+        Ref: TransitGatewayVpcAttachment

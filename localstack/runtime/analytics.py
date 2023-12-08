@@ -9,7 +9,7 @@ LOG = logging.getLogger(__name__)
 
 TRACKED_ENV_VAR = [
     "DEBUG",
-    "DEFAULT_REGION",
+    "DEFAULT_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "DISABLE_CORS_CHECK",
     "DISABLE_CORS_HEADERS",
     "DNS_ADDRESS",
@@ -17,17 +17,22 @@ TRACKED_ENV_VAR = [
     "EDGE_PORT",
     "ENFORCE_IAM",
     "IAM_SOFT_MODE",
-    "KINESIS_PROVIDER",
+    "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "KMS_PROVIDER",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
-    "LAMBDA_EXECUTOR",
+    "LAMBDA_EXECUTOR",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_STAY_OPEN_MODE",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_REMOTE_DOCKER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_CODE_EXTRACT_TIME",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_CONTAINER_REGISTRY",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_FALLBACK_URL",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_FORWARD_URL",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "LAMBDA_XRAY_INIT",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "LAMBDA_PREBUILD_IMAGES",
-    "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_RUNTIME_EXECUTOR",
-    "LEGACY_DIRECTORIES",
-    "LEGACY_EDGE_PROXY",
+    "LEGACY_EDGE_PROXY",  # Not functional; deprecated in 1.0.0, removed in 2.0.0
     "LS_LOG",
-    "MOCK_UNIMPLEMENTED",
+    "MOCK_UNIMPLEMENTED",  # Not functional; deprecated in 1.3.0, removed in 3.0.0
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "PERSISTENCE",
     "PERSISTENCE_SINGLE_FILE",
@@ -39,23 +44,24 @@ TRACKED_ENV_VAR = [
     "STRICT_SERVICE_LOADING",
     "SKIP_INFRA_DOWNLOADS",
     "SQS_ENDPOINT_STRATEGY",
-    "USE_SINGLE_REGION",
+    "USE_SINGLE_REGION",  # Not functional; deprecated in 0.12.7, removed in 3.0.0
     "USE_SSL",
+    "ES_CUSTOM_BACKEND",  # deprecated in 0.14.0, removed in 3.0.0
+    "ES_MULTI_CLUSTER",  # deprecated in 0.14.0, removed in 3.0.0
+    "ES_ENDPOINT_STRATEGY",  # deprecated in 0.14.0, removed in 3.0.0
 ]
 
 PRESENCE_ENV_VAR = [
     "DATA_DIR",
-    "EDGE_FORWARD_URL",
+    "EDGE_FORWARD_URL",  # Not functional; deprecated in 1.4.0, removed in 3.0.0
     "GATEWAY_LISTEN",
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
     "HOSTNAME_FROM_LAMBDA",
-    "HOST_TMP_FOLDER",
-    "INIT_SCRIPTS_PATH",
-    "LAMBDA_FALLBACK_URL",
-    "LAMBDA_FORWARD_URL",
-    "LEGACY_DIRECTORIES",
-    "LEGACY_INIT_DIR",
+    "HOST_TMP_FOLDER",  # Not functional; deprecated in 1.0.0, removed in 2.0.0
+    "INIT_SCRIPTS_PATH",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
+    "LEGACY_DIRECTORIES",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
+    "LEGACY_INIT_DIR",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
     "LOCALSTACK_HOST",
     "LOCALSTACK_HOSTNAME",
     "S3_DIR",
@@ -71,6 +77,7 @@ def _publish_config_as_analytics_event():
         if key.startswith("PROVIDER_OVERRIDE_"):
             env_vars.append(key)
         elif key.startswith("SYNCHRONOUS_") and key.endswith("_EVENTS"):
+            # these config variables have been removed with 3.0.0
             env_vars.append(key)
 
     env_vars = {key: os.getenv(key) for key in env_vars}

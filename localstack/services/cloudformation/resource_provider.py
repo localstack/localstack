@@ -67,10 +67,18 @@ PROVIDER_DEFAULTS = {
     "AWS::ApiGateway::Stage": "ResourceProvider",
     "AWS::ApiGateway::UsagePlan": "ResourceProvider",
     "AWS::ApiGateway::UsagePlanKey": "ResourceProvider",
+    "AWS::AppSync::ApiKey": "ResourceProvider",
+    "AWS::AppSync::DataSource": "ResourceProvider",
+    "AWS::AppSync::FunctionConfiguration": "ResourceProvider",
+    "AWS::AppSync::GraphQLApi": "ResourceProvider",
+    "AWS::AppSync::GraphQLSchema": "ResourceProvider",
+    "AWS::AppSync::Resolver": "ResourceProvider",
     "AWS::CDK::Metadata": "ResourceProviders",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
+    "AWS::CloudFormation::Stack": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
+    "AWS::DynamoDB::GlobalTable": "ResourceProvider",
     "AWS::DynamoDB::Table": "ResourceProvider",
     "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::EC2::Instance": "ResourceProvider",
@@ -82,6 +90,8 @@ PROVIDER_DEFAULTS = {
     "AWS::EC2::SecurityGroup": "ResourceProvider",
     "AWS::EC2::Subnet": "ResourceProvider",
     "AWS::EC2::SubnetRouteTableAssociation": "ResourceProvider",
+    "AWS::EC2::TransitGateway": "ResourceProvider",
+    "AWS::EC2::TransitGatewayAttachment": "ResourceProvider",
     "AWS::EC2::VPC": "ResourceProvider",
     "AWS::EC2::VPCGatewayAttachment": "ResourceProvider",
     "AWS::ECR::Repository": "ResourceProvider",
@@ -106,8 +116,16 @@ PROVIDER_DEFAULTS = {
     "AWS::KMS::Key": "ResourceProvider",
     "AWS::Kinesis::Stream": "ResourceProvider",
     "AWS::Kinesis::StreamConsumer": "ResourceProvider",
+    "AWS::KinesisAnalytics::Application": "ResourceProvider",
     "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
     "AWS::Lambda::Alias": "ResourceProvider",
+    "AWS::Lambda::CodeSigningConfig": "ResourceProvider",
+    "AWS::Lambda::EventInvokeConfig": "ResourceProvider",
+    "AWS::Lambda::EventSourceMapping": "ResourceProvider",
+    "AWS::Lambda::LayerVersion": "ResourceProvider",
+    "AWS::Lambda::LayerVersionPermission": "ResourceProvider",
+    "AWS::Lambda::Permission": "ResourceProvider",
+    "AWS::Lambda::Version": "ResourceProvider",
     "AWS::Logs::LogGroup": "ResourceProvider",
     "AWS::Logs::LogStream": "ResourceProvider",
     "AWS::Logs::SubscriptionFilter": "ResourceProvider",
@@ -435,7 +453,7 @@ def resolve_resource_parameters(
 
     # FIXME: move this to a single place after template processing is finished
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
-    params = fix_account_id_in_arns(params)
+    params = fix_account_id_in_arns(params, account_id_)
     # convert data types (e.g., boolean strings to bool)
     # TODO: this might not be needed anymore
     params = convert_data_types(func_details.get("types", {}), params)

@@ -8,7 +8,6 @@ from botocore.exceptions import ClientError
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.services.lambda_.event_source_listeners.adapters import (
     EventSourceAdapter,
-    EventSourceLegacyAdapter,
 )
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -124,7 +123,10 @@ class StreamEventSourceListener(EventSourceListener):
             return
 
         LOG.debug(f"Starting {self.source_type()} event source listener coordinator thread")
-        self._invoke_adapter = invoke_adapter or EventSourceLegacyAdapter()
+        self._invoke_adapter = invoke_adapter
+        if self._invoke_adapter is None:
+            LOG.error("Invoke adapter needs to be set for new Lambda provider. Aborting.")
+            raise Exception("Invoke adapter not set ")
         counter += 1
         self._COORDINATOR_THREAD = FuncThread(
             self._monitor_stream_event_sources, name=f"stream-listener-{counter}"

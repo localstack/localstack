@@ -10,10 +10,9 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, LOCALHOST, TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.lambda_.networking import get_main_endpoint_from_container
-from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import PUBLIC_HTTP_ECHO_SERVER_URL
@@ -586,13 +585,8 @@ def test_create_execute_api_vpc_endpoint(
 
     # create Lambda function that invokes the API GW (private VPC endpoint not accessible from outside of AWS)
     if not is_aws_cloud():
-        if config.LAMBDA_EXECUTOR == "local" and is_old_provider():
-            # TODO[LambdaV1]: Remove this special case when removing the old Lambda provider
-            # special case: return localhost for local Lambda executor
-            api_host = LOCALHOST
-        else:
-            api_host = get_main_endpoint_from_container()
-        endpoint = endpoint.replace(host_header, f"{api_host}:{config.get_edge_port_http()}")
+        api_host = get_main_endpoint_from_container()
+        endpoint = endpoint.replace(host_header, f"{api_host}:{config.GATEWAY_LISTEN[0].port}")
     lambda_code = textwrap.dedent(
         f"""
     def handler(event, context):

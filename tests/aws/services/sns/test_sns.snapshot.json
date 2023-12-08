@@ -1997,7 +1997,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs[True]": {
-    "recorded-date": "24-08-2023, 23:37:43",
+    "recorded-date": "09-11-2023, 21:12:03",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2031,6 +2031,7 @@
         }
       },
       "dedup-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2039,7 +2040,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs[False]": {
-    "recorded-date": "24-08-2023, 23:37:46",
+    "recorded-date": "09-11-2023, 21:12:07",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2073,6 +2074,7 @@
         }
       },
       "dedup-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2566,7 +2568,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
-    "recorded-date": "24-08-2023, 23:38:05",
+    "recorded-date": "09-11-2023, 21:10:27",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -2763,6 +2765,7 @@
         }
       },
       "duplicate-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2771,7 +2774,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
-    "recorded-date": "24-08-2023, 23:38:11",
+    "recorded-date": "09-11-2023, 21:10:33",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -2968,6 +2971,7 @@
         }
       },
       "duplicate-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3070,7 +3074,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_publish_to_fifo_topic_deduplication_on_topic_level": {
-    "recorded-date": "24-08-2023, 23:38:21",
+    "recorded-date": "09-11-2023, 21:07:36",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -3104,6 +3108,7 @@
         }
       },
       "dedup-messages": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3190,7 +3195,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy": {
-    "recorded-date": "29-09-2023, 15:32:02",
+    "recorded-date": "09-11-2023, 21:05:40",
     "recorded-content": {
       "subscription-attributes": {
         "Attributes": {
@@ -3223,6 +3228,7 @@
         }
       },
       "messages-0": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3315,6 +3321,7 @@
         }
       },
       "messages-3": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3323,7 +3330,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_exists_filter_policy": {
-    "recorded-date": "25-08-2023, 00:15:09",
+    "recorded-date": "09-11-2023, 21:04:02",
     "recorded-content": {
       "subscription-attributes-policy-1": {
         "Attributes": {
@@ -3351,6 +3358,7 @@
         }
       },
       "messages-0": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3666,9 +3674,10 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body[True]": {
-    "recorded-date": "25-08-2023, 00:15:29",
+    "recorded-date": "09-11-2023, 20:58:29",
     "recorded-content": {
       "recv-init": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3713,9 +3722,10 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body[False]": {
-    "recorded-date": "25-08-2023, 00:15:41",
+    "recorded-date": "09-11-2023, 20:58:42",
     "recorded-content": {
       "recv-init": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3772,7 +3782,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_for_batch": {
-    "recorded-date": "25-08-2023, 00:15:58",
+    "recorded-date": "09-11-2023, 21:01:32",
     "recorded-content": {
       "subscription-attributes-with-filter": {
         "Attributes": {
@@ -3822,12 +3832,14 @@
         }
       },
       "messages-no-filter-before-publish": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "messages-with-filter-before-publish": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3924,6 +3936,7 @@
         }
       },
       "messages-with-filter-after-publish-filtered": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4594,9 +4607,10 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_dot_attribute": {
-    "recorded-date": "09-10-2023, 15:05:32",
+    "recorded-date": "09-11-2023, 18:50:59",
     "recorded-content": {
       "recv-init": {
+        "Messages": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4799,6 +4813,40 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_topic_publish_another_region": {
+    "recorded-date": "17-11-2023, 18:14:28",
+    "recorded-content": {
+      "success": {
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-batch": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

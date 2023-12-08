@@ -271,11 +271,11 @@ class Preprocessor(ASLParserVisitor):
         return ResultPath(result_path_src=inner_str)
 
     def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:
-        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
         return InputPath(input_path_src=inner_str)
 
     def visitOutput_path_decl(self, ctx: ASLParser.Output_path_declContext):
-        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
         return OutputPath(output_path=inner_str)
 
     def visitResult_decl(self, ctx: ASLParser.Result_declContext) -> Result:
@@ -421,16 +421,8 @@ class Preprocessor(ASLParserVisitor):
                     )
                 return ComparisonCompositeNot(rule=rules[0])
             case ComparisonComposite.ChoiceOp.And:
-                if len(rules) <= 1:
-                    raise ValueError(
-                        f"ComparisonCompositeAnd must carry two or more ComparisonCompositeStmt in: '{ctx.getText()}'."
-                    )
                 return ComparisonCompositeAnd(rules=rules)
             case ComparisonComposite.ChoiceOp.Or:
-                if len(rules) <= 1:
-                    raise ValueError(
-                        f"ComparisonCompositeOr must carry two or more ComparisonCompositeStmt in: '{ctx.getText()}'."
-                    )
                 return ComparisonCompositeOr(rules=rules)
 
     def visitChoice_rule_comparison_composite(

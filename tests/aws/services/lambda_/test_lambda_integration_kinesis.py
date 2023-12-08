@@ -2,18 +2,14 @@ import json
 import math
 import os
 import time
-from unittest.mock import patch
 
 import pytest
 
-from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
     _get_lambda_invocation_events,
-    is_new_provider,
-    is_old_provider,
     lambda_role,
     s3_lambda_permission,
 )
@@ -123,12 +119,10 @@ class TestKinesisSource:
         # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
         assert int(math.log10(timestamp)) == 9
 
-    # FIXME remove usage of this config value with 2.0
-    @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
+    # TODO: is this test relevant for the new provider without patching SYNCHRONOUS_KINESIS_EVENTS?
+    #   At least, it is flagged as AWS-validated.
     @markers.aws.validated
-    @pytest.mark.skipif(
-        condition=is_new_provider(), reason="deprecated config that only works in legacy provider"
-    )
+    @pytest.mark.skip(reason="deprecated config that only worked using the legacy provider")
     def test_kinesis_event_source_mapping_with_async_invocation(
         self,
         create_lambda_function,
@@ -139,9 +133,6 @@ class TestKinesisSource:
         snapshot,
         aws_client,
     ):
-        # TODO: this test will fail if `log_cli=true` is set and `LAMBDA_EXECUTOR=local`!
-        # apparently this particular configuration prevents lambda logs from being extracted properly, giving the
-        # appearance that the function was never invoked.
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-foobar-{short_uid()}"
         num_records_per_batch = 10
@@ -338,15 +329,6 @@ class TestKinesisSource:
             "$..Messages..Body.requestContext.approximateInvokeCount",
             "$..Messages..Body.responseContext.statusCode",
         ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.requestContext.functionArn",
-            # destination config arn missing, which leads to those having wrong resource ids
-            "$..EventSourceArn",
-            "$..FunctionArn",
-        ],
-        condition=is_old_provider,
     )
     @markers.aws.validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(

@@ -120,7 +120,7 @@ ELASTICSEARCH_PLUGIN_LIST = [
 ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 
 # the version of opensearch which is used by default
-OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.5"
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.9"
 
 # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
 OPENSEARCH_PLUGIN_LIST = [
@@ -135,11 +135,8 @@ ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack
 # environment variable to indicates this process should run the localstack infrastructure
 LOCALSTACK_INFRA_PROCESS = "LOCALSTACK_INFRA_PROCESS"
 
-# default AWS region us-east-1
+# AWS region us-east-1
 AWS_REGION_US_EAST_1 = "us-east-1"
-
-# default lambda registry
-DEFAULT_LAMBDA_CONTAINER_REGISTRY = "lambci/lambda"
 
 # environment variable to override max pool connections
 try:
@@ -168,11 +165,6 @@ SECONDARY_TEST_AWS_REGION_NAME = os.getenv("SECONDARY_TEST_AWS_REGION") or "ap-s
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
 
-# This header must be set to the AWS Account ID
-# Presence of this header in an incoming request typically means that the request originated within localstack,
-# i.e. it is an internal cross-service call.
-HEADER_LOCALSTACK_ACCOUNT_ID = "x-localstack-account-id"
-
 # trace log levels (excluding/including internal API calls), configurable via $LS_LOG
 LS_LOG_TRACE = "trace"
 LS_LOG_TRACE_INTERNAL = "trace-internal"
@@ -183,10 +175,6 @@ OFFICIAL_IMAGES = [
     "localstack/localstack",
     "localstack/localstack-pro",
 ]
-
-# s3 virtual host name
-S3_VIRTUAL_HOSTNAME = "s3.%s" % LOCALHOST_HOSTNAME
-S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALHOST_HOSTNAME
 
 # port for debug py
 DEFAULT_DEVELOP_PORT = 5678

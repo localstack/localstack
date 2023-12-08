@@ -14,6 +14,12 @@ from localstack.services.stepfunctions.asl.component.common.comment import Comme
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEventException,
 )
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import TimeoutSeconds
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
@@ -75,14 +81,16 @@ class Program(EvalComponent):
             while env.is_running():
                 next_state: CommonStateField = self._get_state(env.next_state_name)
                 next_state.eval(env)
+                env.stack.clear()
         except FailureEventException as ex:
             env.set_error(error=ex.get_execution_failed_event_details())
         except Exception as ex:
-            cause = f"{type(ex)}({str(ex)})"
+            cause = f"{type(ex).__name__}({str(ex)})"
             LOG.error(f"Stepfunctions computation ended with exception '{cause}'.")
             env.set_error(
                 ExecutionFailedEventDetails(
-                    error="Internal Error", cause=f"Internal Error due to '{cause}'"
+                    error=StatesErrorName(typ=StatesErrorNameType.StatesRuntime).error_name,
+                    cause=cause,
                 )
             )
 

@@ -65,7 +65,7 @@ class TestSns:
             "SigningCertURL": "https://sns.jupiter-south-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             "TopicArn": "arn",
             "Type": "Notification",
-            "UnsubscribeURL": f"http://localhost:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
+            "UnsubscribeURL": f"http://localhost.localstack.cloud:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
         }
         assert expected_sns_body == result
 
@@ -98,7 +98,7 @@ class TestSns:
             "SigningCertURL": "https://sns.jupiter-south-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             "TopicArn": "arn",
             "Type": "Notification",
-            "UnsubscribeURL": f"http://localhost:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
+            "UnsubscribeURL": f"http://localhost.localstack.cloud:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
             "MessageAttributes": {
                 "attr1": {
                     "Type": "String",

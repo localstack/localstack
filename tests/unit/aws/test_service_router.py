@@ -189,9 +189,9 @@ def test_service_router_works_for_every_service(
 def test_endpoint_prefix_based_routing():
     # TODO could be generalized using endpoint resolvers and replacing "amazonaws.com" with "localhost.localstack.cloud"
     detected_service_name = determine_aws_service_name(
-        Request(method="GET", path="/", headers={"Host": "sqs.localhost.localstack.cloud"})
+        Request(method="GET", path="/", headers={"Host": "kms.localhost.localstack.cloud"})
     )
-    assert detected_service_name == "sqs"
+    assert detected_service_name == "kms"
 
     detected_service_name = determine_aws_service_name(
         Request(
@@ -217,3 +217,22 @@ def test_endpoint_prefix_based_routing_s3_virtual_host():
         )
     )
     assert detected_service_name == "s3"
+
+
+def test_endpoint_prefix_based_not_short_circuit_for_sqs():
+    detected_service_name = determine_aws_service_name(
+        Request(method="GET", path="/", headers={"Host": "sqs.localhost.localstack.cloud"})
+    )
+    assert detected_service_name == "sqs-query"
+
+    detected_service_name = determine_aws_service_name(
+        Request(
+            method="GET",
+            path="/",
+            headers={
+                "Host": "sqs.localhost.localstack.cloud",
+                "Content-Type": "application/x-amz-json-1.0",
+            },
+        )
+    )
+    assert detected_service_name == "sqs"

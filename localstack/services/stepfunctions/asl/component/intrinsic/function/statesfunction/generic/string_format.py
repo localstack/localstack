@@ -57,12 +57,10 @@ class StringFormat(StatesFunction):
     def _eval_body(self, env: Environment) -> None:
         # TODO: investigate behaviour for incorrect number of arguments in string format.
         self.arg_list.eval(env=env)
+        args = env.stack.pop()
 
-        values: list[Any] = list()
-        for _ in range(self.arg_list.size):
-            values.append(env.stack.pop())
-        string_format: str = values.pop()
-        values.reverse()
+        string_format: str = args[0]
+        values: list[Any] = args[1:]
 
         values_str_repr = map(self._to_str_repr, values)
         string_result = string_format.format(*values_str_repr)

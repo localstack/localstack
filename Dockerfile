@@ -1,5 +1,5 @@
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:11@sha256:1f62aaa9b6947e96189b4dbd14a7fc2a768914df3aefc9b0a1f7ec8a4dce8d6b as java-builder
+FROM eclipse-temurin:11@sha256:b64ecd1a2c7ad6f12df1b2473070123b8312772fb6ebc4e1437b1783f9a91837 as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.6-slim-bookworm@sha256:f89d4d260b6a5caa6aa8e0e14b162deb76862890c91779c31f762b22e72a6cef as base
+FROM python:3.11.6-slim-bookworm@sha256:cc758519481092eb5a4a5ab0c1b303e288880d59afc601958d19e95b300bc86b as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -133,7 +133,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install the latest version of awslocal globally
 RUN --mount=type=cache,target=/root/.cache \
-    pip3 install --upgrade awscli awscli-local requests
+    pip3 install --upgrade awscli==1.30.5 awscli-local requests
 
 
 
@@ -195,10 +195,6 @@ RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > 
     mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
 RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
-
-# Install the latest version of the LocalStack Persistence Plugin
-RUN --mount=type=cache,target=/root/.cache \
-    (. .venv/bin/activate && pip3 install --upgrade localstack-plugin-persistence)
 
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678

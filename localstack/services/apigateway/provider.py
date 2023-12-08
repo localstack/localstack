@@ -159,6 +159,14 @@ STAGE_UPDATE_PATHS = [
     "/tracingEnabled",
 ]
 
+VALID_INTEGRATION_TYPES = {
+    IntegrationType.AWS,
+    IntegrationType.AWS_PROXY,
+    IntegrationType.HTTP,
+    IntegrationType.HTTP_PROXY,
+    IntegrationType.MOCK,
+}
+
 
 class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     router: ApigatewayRouter
@@ -341,6 +349,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         endpoint_configs = rest_api.endpoint_configuration or {}
         if isinstance(endpoint_configs.get("vpcEndpointIds"), str):
             endpoint_configs["vpcEndpointIds"] = [endpoint_configs["vpcEndpointIds"]]
+
+        # minimum_compression_size is a unique path as it's a nullable integer,
+        # it would throw an error if it stays an empty string
+        if rest_api.minimum_compression_size == "":
+            rest_api.minimum_compression_size = None
 
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response, remove_tags=False)
@@ -1746,7 +1759,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def put_integration(
         self, context: RequestContext, request: PutIntegrationRequest
     ) -> Integration:
-        if request.get("type") == IntegrationType.AWS_PROXY:
+        if (integration_type := request.get("type")) not in VALID_INTEGRATION_TYPES:
+            raise CommonServiceException(
+                "ValidationException",
+                f"1 validation error detected: Value '{integration_type}' at "
+                f"'putIntegrationInput.type' failed to satisfy constraint: "
+                f"Member must satisfy enum value set: [HTTP, MOCK, AWS_PROXY, HTTP_PROXY, AWS]",
+            )
+
+        elif integration_type == IntegrationType.AWS_PROXY:
             integration_uri = request.get("uri") or ""
             if ":lambda:" not in integration_uri and ":firehose:" not in integration_uri:
                 raise BadRequestException(
@@ -1756,7 +1777,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         moto_request = copy.copy(request)
         moto_request.setdefault("passthroughBehavior", "WHEN_NO_MATCH")
         moto_request.setdefault("timeoutInMillis", 29000)
-        if request.get("type") in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY):
+        if integration_type in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY):
             moto_request.setdefault("connectionType", ConnectionType.INTERNET)
         response = call_moto_with_request(context, moto_request)
         remove_empty_attributes_from_integration(integration=response)

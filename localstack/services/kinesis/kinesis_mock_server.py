@@ -27,11 +27,9 @@ class KinesisMockServer(Server):
         host: str = "localhost",
         log_level: str = "INFO",
         data_dir: Optional[str] = None,
-        initialize_streams: Optional[str] = None,
     ) -> None:
         self._account_id = account_id
         self._latency = latency
-        self._initialize_streams = initialize_streams
         self._data_dir = data_dir
         self._data_filename = f"{self._account_id}.json"
         self._js_path = js_path
@@ -94,9 +92,6 @@ class KinesisMockServer(Server):
             env_vars["PERSIST_FILE_NAME"] = self._data_filename
             env_vars["PERSIST_INTERVAL"] = config.KINESIS_MOCK_PERSIST_INTERVAL
 
-        if self._initialize_streams:
-            env_vars["INITIALIZE_STREAMS"] = self._initialize_streams
-
         env_vars["LOG_LEVEL"] = self._log_level
         cmd = ["node", self._js_path]
         return cmd, env_vars
@@ -141,7 +136,6 @@ class KinesisServerManager:
         config.dirs.data -> if set, the server runs with persistence using the path to store data
         config.LS_LOG -> configure kinesis mock log level (defaults to INFO)
         config.KINESIS_LATENCY -> configure stream latency (in milliseconds)
-        config.KINESIS_INITIALIZE_STREAMS -> Initialize the given streams on startup
         """
         port = get_free_tcp_port()
         kinesismock_package.install()
@@ -160,16 +154,12 @@ class KinesisServerManager:
         else:
             log_level = "INFO"
         latency = config.KINESIS_LATENCY + "ms"
-        initialize_streams = (
-            config.KINESIS_INITIALIZE_STREAMS if config.KINESIS_INITIALIZE_STREAMS else None
-        )
 
         server = KinesisMockServer(
             port=port,
             js_path=kinesis_mock_js_path,
             log_level=log_level,
             latency=latency,
-            initialize_streams=initialize_streams,
             data_dir=persist_path,
             account_id=account_id,
         )

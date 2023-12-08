@@ -4,7 +4,6 @@ import time
 from random import random
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.kinesis import (
     ConsumerARN,
@@ -73,9 +72,8 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     def on_before_stop(self):
         self.server_manager.shutdown_all()
 
-    def get_forward_url(self):
+    def get_forward_url(self, account_id: str, region_name: str) -> str:
         """Return the URL of the backend Kinesis server to forward requests to"""
-        account_id = get_aws_account_id()
         server = self.server_manager.get_server_for_account(account_id)
         return f"http://{LOCALHOST}:{server.port}"
 
@@ -153,6 +151,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         sequence_number_for_ordering: SequenceNumber = None,
         stream_arn: StreamARN = None,
     ) -> PutRecordOutput:
+        # TODO: Ensure use of `stream_arn` works. Currently kinesis-mock only works with ctx request account ID and region
         if random() < config.KINESIS_ERROR_PROBABILITY:
             raise ProvisionedThroughputExceededException(
                 "Rate exceeded for shard X in stream Y under account Z."
@@ -168,6 +167,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
     ) -> PutRecordsOutput:
+        # TODO: Ensure use of `stream_arn` works. Currently kinesis-mock only works with ctx request account ID and region
         if random() < config.KINESIS_ERROR_PROBABILITY:
             records_count = len(records) if records is not None else 0
             records = [

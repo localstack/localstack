@@ -13,7 +13,6 @@ from opensearchpy.exceptions import AuthorizationException
 
 from localstack import config
 from localstack.aws.api.opensearch import AdvancedSecurityOptionsInput, MasterUserOptions
-from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
 from localstack.constants import (
     OPENSEARCH_DEFAULT_VERSION,
     OPENSEARCH_PLUGIN_LIST,
@@ -34,6 +33,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import call_safe, poll_condition, retry, short_uid, start_worker_thread
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.strings import to_str
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -144,8 +144,16 @@ class TestOpensearchProvider:
         assert len(compatible_versions) >= 20
         expected_compatible_versions = [
             {
+                "SourceVersion": "OpenSearch_2.7",
+                "TargetVersions": ["OpenSearch_2.9"],
+            },
+            {
+                "SourceVersion": "OpenSearch_2.5",
+                "TargetVersions": ["OpenSearch_2.7", "OpenSearch_2.9"],
+            },
+            {
                 "SourceVersion": "OpenSearch_2.3",
-                "TargetVersions": ["OpenSearch_2.5"],
+                "TargetVersions": ["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9"],
             },
             {
                 "SourceVersion": "OpenSearch_1.0",
@@ -161,7 +169,12 @@ class TestOpensearchProvider:
             },
             {
                 "SourceVersion": "OpenSearch_1.3",
-                "TargetVersions": ["OpenSearch_2.3", "OpenSearch_2.5"],
+                "TargetVersions": [
+                    "OpenSearch_2.3",
+                    "OpenSearch_2.5",
+                    "OpenSearch_2.7",
+                    "OpenSearch_2.9",
+                ],
             },
             {
                 "SourceVersion": "Elasticsearch_7.10",
@@ -658,7 +671,7 @@ class TestOpensearchProvider:
         assert "Endpoint" in status
         endpoint = status["Endpoint"]
         parts = endpoint.split(":")
-        assert parts[0] in ("localhost", "127.0.0.1")
+        assert parts[0] in (localstack_host().host, "127.0.0.1")
         assert int(parts[1]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
@@ -684,7 +697,7 @@ class TestEdgeProxiedOpensearchCluster:
     @markers.aws.unknown
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
-        cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
+        cluster_url = f"{config.internal_service_url()}/{cluster_id}"
         arn = f"arn:aws:es:us-east-1:000000000000:domain/{cluster_id}"
         cluster = EdgeProxiedOpensearchCluster(cluster_url, arn, CustomEndpoint(True, cluster_url))
 
@@ -694,7 +707,7 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "2.5.0"
+            assert response.json()["version"]["number"] == "2.9.0"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"
@@ -900,7 +913,7 @@ class TestSingletonClusterManager:
         parts = cluster_0.url.split(":")
         assert parts[0] == "http"
         # either f"//{the bind host}" is used, or in the case of "//0.0.0.0" the localstack hostname instead
-        assert parts[1][2:] in [EDGE_BIND_HOST, LOCALSTACK_HOSTNAME]
+        assert parts[1][2:] in [config.GATEWAY_LISTEN[0].host, localstack_host().host]
         assert int(parts[2]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )

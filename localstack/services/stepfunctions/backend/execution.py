@@ -57,7 +57,7 @@ class BaseExecutionWorkerComm(ExecutionWorkerComm):
 
     def terminated(self) -> None:
         exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
-        self.execution.stop_date = datetime.datetime.now()
+        self.execution.stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
         if isinstance(exit_program_state, ProgramEnded):
             self.execution.exec_status = ExecutionStatus.SUCCEEDED
             self.execution.output = to_json_str(
@@ -132,9 +132,9 @@ class Execution:
         self.exec_worker = None
         self.error = None
         self.cause = None
-        self._events_client = connect_to(
-            aws_access_key_id=self.account_id, region_name=self.region_name
-        ).events
+
+    def _get_events_client(self):
+        return connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
 
     def to_start_output(self) -> StartExecutionOutput:
         return StartExecutionOutput(executionArn=self.exec_arn, startDate=self.start_date)
@@ -206,11 +206,17 @@ class Execution:
         event_history: HistoryEventList = self.exec_worker.env.event_history.get_event_history()
         return GetExecutionHistoryOutput(events=event_history)
 
+    @staticmethod
+    def _to_serialized_date(timestamp: datetime.datetime) -> str:
+        """See test in tests.aws.services.stepfunctions.v2.base.test_base.TestSnfBase.test_execution_dateformat"""
+        return (
+            f'{timestamp.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
+        )
+
     def start(self) -> None:
         # TODO: checks exec_worker does not exists already?
         if self.exec_worker:
             raise InvalidName()  # TODO.
-
         self.exec_worker = ExecutionWorker(
             definition=self.state_machine.definition,
             input_data=self.input_data,
@@ -221,7 +227,7 @@ class Execution:
                     Input=self.input_data,
                     Name=self.name,
                     RoleArn=self.role_arn,
-                    StartTime=self.start_date.time().isoformat(),
+                    StartTime=self._to_serialized_date(self.start_date),
                 ),
                 StateMachine=ContextObjectStateMachine(
                     Id=self.state_machine.arn,
@@ -273,7 +279,7 @@ class Execution:
             ),
         )
         try:
-            self._events_client.put_events(Entries=[entry])
+            self._get_events_client().put_events(Entries=[entry])
         except Exception:
             LOG.exception(
                 f"Unable to send notification of Entry='{entry}' for Step Function execution with Arn='{self.exec_arn}' to EventBridge."

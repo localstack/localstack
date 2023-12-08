@@ -52,14 +52,15 @@ class MathRandom(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
+        args = env.stack.pop()
 
         seed = None
         if self.arg_list.size == 3:
-            seed = env.stack.pop()
+            seed = args.pop()
             self._validate_integer_value(seed, "seed")
 
-        end = self._validate_integer_value(env.stack.pop(), "end")
-        start = self._validate_integer_value(env.stack.pop(), "start")
+        end = self._validate_integer_value(args.pop(), "end")
+        start = self._validate_integer_value(args.pop(), "start")
 
         rand_gen = random.Random(seed)
         rand_int = rand_gen.randint(start, end)

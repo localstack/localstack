@@ -17,7 +17,6 @@ class BaseExtension(Plugin):
         :param kwargs: load keyword arguments
         :return: this extension object
         """
-        self.on_extension_load(*args, **kwargs)
         return self
 
     def on_extension_load(self, *args, **kwargs):

@@ -125,6 +125,10 @@ from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
+from localstack.utils.aws.request_context import (
+    extract_account_id_from_headers,
+    extract_region_from_headers,
+)
 from localstack.utils.collections import select_attributes, select_from_typed_dict
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
@@ -441,12 +445,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
         return self.server.proxy(context, service_request)
 
-    def get_forward_url(self) -> str:
+    def get_forward_url(self, account_id: str, region_name: str) -> str:
         """Return the URL of the backend DynamoDBLocal server to forward requests to"""
         return self.server.url
 
     def handle_shell_ui_redirect(self, request: werkzeug.Request) -> Response:
-        headers = {"Refresh": f"0; url={config.service_url('dynamodb')}/shell/index.html"}
+        headers = {"Refresh": f"0; url={config.external_service_url()}/shell/index.html"}
         return Response("", headers=headers)
 
     def handle_shell_ui_request(self, request: werkzeug.Request, req_path: str) -> Response:
@@ -455,7 +459,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         #  -> keeping this for now, to allow configuring custom installs; should consider removing it in the future
         # https://repost.aws/questions/QUHyIzoEDqQ3iOKlUEp1LPWQ#ANdBm9Nz9TRf6VqR3jZtcA1g
         req_path = f"/{req_path}" if not req_path.startswith("/") else req_path
-        url = f"{self.get_forward_url()}/shell{req_path}"
+        account_id = extract_account_id_from_headers(request.headers)
+        region_name = extract_region_from_headers(request.headers)
+        url = f"{self.get_forward_url(account_id, region_name)}/shell{req_path}"
         result = requests.request(
             method=request.method, url=url, headers=request.headers, data=request.data
         )

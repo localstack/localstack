@@ -9,36 +9,45 @@ from urllib.parse import urlencode
 from botocore.exceptions import ClientError
 from botocore.model import OperationModel
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import NotFound
 
-from localstack import config
 from localstack.aws.api import CommonServiceException
 from localstack.aws.connect import connect_to
 from localstack.aws.protocol.parser import OperationNotFoundParserError, create_parser
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.protocol.validate import MissingRequiredField, validate_request
 from localstack.aws.spec import load_service
-from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID, INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    INTERNAL_AWS_ACCESS_KEY_ID,
+    INTERNAL_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.http import Request, Response, Router, route
 from localstack.http.dispatcher import Handler
-from localstack.services.sqs.exceptions import MissingParameter
+from localstack.services.sqs.exceptions import MissingRequiredParameterException
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
-service = load_service("sqs")
+service = load_service("sqs-query")
 parser = create_parser(service)
 serializer = create_serializer(service)
 
 
 @route(
     '/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
-    host='sqs.<regex("([a-z0-9-]+\\.)?"):region>localhost.localstack.cloud<regex("(:[0-9]{2,5})?"):port>',
+    host='sqs.<regex("([a-z0-9-]+\\.)?"):region><regex(".*"):domain><regex("(:[0-9]{2,5})?"):port>',
     methods=["POST", "GET"],
 )
 def standard_strategy_handler(
-    request: Request, account_id: str, queue_name: str, region: str = None, port: int = None
+    request: Request,
+    account_id: str,
+    queue_name: str,
+    region: str = None,
+    domain: str = None,
+    port: int = None,
 ):
     """
     Handler for modern-style endpoints which always have the region encoded.
@@ -57,16 +66,21 @@ def path_strategy_handler(request: Request, region, account_id: str, queue_name:
 
 @route(
     '/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
-    host='<regex("([a-z0-9-]+\\.)?"):region>queue.localhost.localstack.cloud<regex("(:[0-9]{2,5})?"):port>',
+    host='<regex("([a-z0-9-]+\\.)?"):region>queue.<regex(".*"):domain><regex("(:[0-9]{2,5})?"):port>',
     methods=["POST", "GET"],
 )
 def domain_strategy_handler(
-    request: Request, account_id: str, queue_name: str, region: str = None, port: int = None
+    request: Request,
+    account_id: str,
+    queue_name: str,
+    region: str = None,
+    domain: str = None,
+    port: int = None,
 ):
     """Uses the endpoint host to extract the region. See:
     https://docs.aws.amazon.com/general/latest/gr/sqs-service.html"""
     if not region:
-        region = config.DEFAULT_REGION
+        region = AWS_REGION_US_EAST_1
     else:
         region = region.rstrip(".")
 
@@ -131,9 +145,11 @@ class BotoException(CommonServiceException):
 
 
 def handle_request(request: Request, region: str) -> Response:
-    if request.is_json:
-        # TODO: the response should be sent as JSON response
-        raise NotImplementedError
+    # some SDK (PHP) still send requests to the Queue URL even though the JSON spec does not allow it in the
+    # documentation. If the request is `json`, raise `NotFound` so that we continue the handler chain and the provider
+    # can handle the request
+    if request.headers.get("Content-Type", "").lower() == "application/x-amz-json-1.0":
+        raise NotFound
 
     request_id = long_uid()
 
@@ -183,7 +199,9 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
     except OperationNotFoundParserError:
         raise InvalidAction(action)
     except MissingRequiredField as e:
-        raise MissingParameter(f"The request must contain the parameter {e.required_name}.")
+        raise MissingRequiredParameterException(
+            f"The request must contain the parameter {e.required_name}."
+        )
 
     # Extract from auth header to allow cross-account operations
     # TODO: permissions encoded in URL as AUTHPARAMS cannot be accounted for in this method, which is not a big
@@ -194,7 +212,7 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
         region_name=region,
         aws_access_key_id=account_id or INTERNAL_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-    ).sqs
+    ).sqs_query
 
     try:
         # using the layer below boto3.client("sqs").<operation>(...) to make the call

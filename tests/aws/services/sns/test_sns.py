@@ -262,7 +262,7 @@ class TestSNSPublishCrud:
         if is_aws_cloud():
             endpoint_url = f"https://sns.{TEST_AWS_REGION_NAME}.amazonaws.com"
         else:
-            endpoint_url = config.get_edge_url()
+            endpoint_url = config.internal_service_url()
 
         response = client.post(
             endpoint_url,
@@ -386,6 +386,44 @@ class TestSNSPublishCrud:
             aws_client.sns.publish(TopicArn=fake_arn, Message=message)
 
         snapshot.match("error", e.value.response)
+
+    @markers.aws.validated
+    def test_topic_publish_another_region(
+        self, sns_create_topic, snapshot, aws_client, aws_client_factory
+    ):
+        # create the topic in the default region, so that it's easier to clean up with the fixture
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        # create a client in another region
+        sns_client_region_2 = aws_client_factory.get_client(
+            service_name="sns", region_name=SECONDARY_TEST_AWS_REGION_NAME
+        )
+
+        message = "This is a test message"
+
+        # test to send a message with the client from the same region
+        response = aws_client.sns.publish(TopicArn=topic_arn, Message=message)
+        snapshot.match("success", response)
+
+        # test to send from the second region client
+        with pytest.raises(ClientError) as e:
+            sns_client_region_2.publish(TopicArn=topic_arn, Message=message)
+
+        snapshot.match("error", e.value.response)
+
+        # test to send batch from the second region client
+        with pytest.raises(ClientError) as e:
+            sns_client_region_2.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": message,
+                    }
+                ],
+            )
+
+        snapshot.match("error-batch", e.value.response)
 
     @markers.aws.validated
     def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client):
@@ -2653,7 +2691,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
         )
         snapshot.match("messages-3", response_3)
-        assert "Messages" not in response_3
+        assert "Messages" in response_3
+        assert response_3["Messages"] == []
 
     @markers.aws.validated
     def test_exists_filter_policy(
@@ -2977,7 +3016,8 @@ class TestSNSFilter:
         )
         snapshot.match("recv-init", response)
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # publish messages that satisfies the filter policy, assert that messages are received
         messages = [
@@ -3017,7 +3057,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # publish message that does not satisfy the filter policy as it's not even JSON, or not a JSON object
         message = "Regular string message"
@@ -3034,7 +3075,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
     @markers.aws.validated
     def test_filter_policy_for_batch(
@@ -3185,7 +3227,8 @@ class TestSNSFilter:
         )
         snapshot.match("recv-init", response)
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         def _verify_and_snapshot_sqs_messages(msg_to_send: list[dict], snapshot_prefix: str):
             for i, _message in enumerate(msg_to_send):
@@ -3224,7 +3267,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
         # assert with more nesting
         deep_nested_filter_policy = json.dumps(
@@ -3262,7 +3306,8 @@ class TestSNSFilter:
             QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
 
 class TestSNSPlatformEndpoint:
@@ -3303,8 +3348,10 @@ class TestSNSPlatformEndpoint:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="Test asserts wrong behaviour")
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
-    # Error responses are from reported https://github.com/spulec/moto/issues/2333
+    # TODO: AWS validate this test
+    # See https://github.com/getmoto/moto/pull/6953 where Moto updated errors.
     def test_create_platform_endpoint_check_idempotency(
         self, sns_create_platform_application, aws_client
     ):
@@ -3314,6 +3361,10 @@ class TestSNSPlatformEndpoint:
             Attributes={"PlatformCredential": "123"},
         )
         token = "test1"
+        # TODO: As per AWS docs:
+        # > The CreatePlatformEndpoint action is idempotent, so if the requester already owns an endpoint
+        # > with the same device token and attributes, that endpoint's ARN is returned without creating a new endpoint.
+        # The 'Token' and 'Attributes' are critical to idempotent behaviour.
         kwargs_list = [
             {"Token": token, "CustomUserData": "test-data"},
             {"Token": token, "CustomUserData": "test-data"},
@@ -3950,7 +4001,8 @@ class TestSNSSubscriptionHttp:
 
         response = aws_client.sqs.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=2)
         # AWS doesn't send to the DLQ if the UnsubscribeConfirmation fails to be delivered
-        assert "Messages" not in response
+        assert "Messages" in response
+        assert response["Messages"] == []
 
 
 class TestSNSSubscriptionFirehose:
@@ -4452,7 +4504,7 @@ class TestSNSRetrospectionEndpoints:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        msgs_url = config.get_edge_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
+        msgs_url = config.internal_service_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
         api_contents = requests.get(
             msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
         ).json()
@@ -4554,7 +4606,7 @@ class TestSNSRetrospectionEndpoints:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        msgs_url = config.get_edge_url() + SMS_MSGS_ENDPOINT
+        msgs_url = config.internal_service_url() + SMS_MSGS_ENDPOINT
         api_contents = requests.get(
             msgs_url, params={"region": TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID}
         ).json()
@@ -4641,7 +4693,7 @@ class TestSNSRetrospectionEndpoints:
 
         # we won't confirm the subscription, to simulate an external provider that wouldn't be able to access LocalStack
         # try to access the internal to confirm the Token is there
-        tokens_base_url = config.get_edge_url() + SUBSCRIPTION_TOKENS_ENDPOINT
+        tokens_base_url = config.internal_service_url() + SUBSCRIPTION_TOKENS_ENDPOINT
         api_contents = requests.get(f"{tokens_base_url}/{subscription_arn}").json()
         assert api_contents["subscription_token"] == token
         assert api_contents["subscription_arn"] == subscription_arn

@@ -5,7 +5,7 @@ from localstack import config
 from localstack.aws.handlers import cors as cors_handler
 from localstack.aws.handlers.cors import _get_allowed_cors_origins
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import short_uid, to_str
 
 
@@ -13,24 +13,28 @@ class TestCSRF:
     def test_CSRF(self):
         headers = {"Origin": "http://attacker.com"}
         # Test if lambdas are enumerable
-        response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/", headers=headers)
+        response = requests.get(
+            f"{config.internal_service_url()}/2015-03-31/functions/", headers=headers
+        )
         assert response.status_code == 403
 
         # Test if config endpoint is reachable
         config_body = {"variable": "harmful", "value": "config"}
 
         response = requests.post(
-            f"{config.get_edge_url()}/?_config_", headers=headers, json=config_body
+            f"{config.internal_service_url()}/?_config_", headers=headers, json=config_body
         )
         assert response.status_code == 403
 
         # Test if endpoints are reachable without origin header
-        response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/")
+        response = requests.get(f"{config.internal_service_url()}/2015-03-31/functions/")
         assert response.status_code == 200
 
     def test_default_cors_headers(self):
         headers = {"Origin": "https://app.localstack.cloud"}
-        response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/", headers=headers)
+        response = requests.get(
+            f"{config.internal_service_url()}/2015-03-31/functions/", headers=headers
+        )
         assert response.status_code == 200
         assert response.headers["access-control-allow-origin"] == "https://app.localstack.cloud"
         assert "GET" in response.headers["access-control-allow-methods"].split(",")
@@ -40,7 +44,7 @@ class TestCSRF:
     @pytest.mark.parametrize("path", ["/health", "/_localstack/health"])
     def test_internal_route_cors_headers(self, path):
         headers = {"Origin": "https://app.localstack.cloud"}
-        response = requests.get(f"{config.get_edge_url()}{path}", headers=headers)
+        response = requests.get(f"{config.internal_service_url()}{path}", headers=headers)
         assert response.status_code == 200
         assert response.headers["access-control-allow-origin"] == "https://app.localstack.cloud"
         assert "GET" in response.headers["access-control-allow-methods"].split(",")
@@ -86,7 +90,7 @@ class TestCSRF:
     def test_disable_cors_checks(self, monkeypatch):
         """Test DISABLE_CORS_CHECKS=1 (most permissive setting)"""
         headers = {"Origin": "https://invalid.localstack.cloud"}
-        url = f"{config.get_edge_url()}/2015-03-31/functions/"
+        url = f"{config.internal_service_url()}/2015-03-31/functions/"
         response = requests.get(url, headers=headers)
         assert response.status_code == 403
 
@@ -101,11 +105,11 @@ class TestCSRF:
 
     def test_disable_cors_headers(self, monkeypatch):
         """Test DISABLE_CORS_CHECKS=1 (most restrictive setting, not sending any CORS headers)"""
-        headers = aws_stack.mock_aws_request_headers(
+        headers = mock_aws_request_headers(
             "sns", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         headers["Origin"] = "https://app.localstack.cloud"
-        url = config.get_edge_url()
+        url = config.internal_service_url()
         data = {"Action": "ListTopics", "Version": "2010-03-31"}
         response = requests.post(url, headers=headers, data=data)
         assert response.status_code == 200
@@ -128,8 +132,8 @@ class TestCSRF:
         monkeypatch.setattr(config, "EXTRA_CORS_ALLOWED_ORIGINS", f"https://{test_domain}")
         monkeypatch.setattr(cors_handler, "ALLOWED_CORS_ORIGINS", _get_allowed_cors_origins())
 
-        url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers(
+        url = config.internal_service_url()
+        headers = mock_aws_request_headers(
             "sns", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
         data = {"Action": "ListTopics", "Version": "2010-03-31"}
@@ -146,6 +150,6 @@ class TestCSRF:
         assert not response.ok
 
     def test_no_cors_without_origin_header(self):
-        response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/")
+        response = requests.get(f"{config.internal_service_url()}/2015-03-31/functions/")
         assert response.status_code == 200
         assert "access-control-allow-origin" not in response.headers

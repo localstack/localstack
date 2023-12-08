@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs14.x]": {
-    "recorded-date": "01-08-2023, 13:26:25",
+    "recorded-date": "20-11-2023, 23:31:57",
     "recorded-content": {
       "creation-result": {
         "CreateEventSourceMappingResponse": null,
@@ -62,7 +62,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs16.x]": {
-    "recorded-date": "01-08-2023, 13:26:37",
+    "recorded-date": "20-11-2023, 23:31:45",
     "recorded-content": {
       "creation-result": {
         "CreateEventSourceMappingResponse": null,
@@ -124,7 +124,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_runtime_with_lib": {
-    "recorded-date": "01-08-2023, 13:35:50",
+    "recorded-date": "20-11-2023, 23:32:13",
     "recorded-content": {
       "create-result-jar-with-lib": {
         "CreateEventSourceMappingResponse": null,
@@ -291,7 +291,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8]": {
-    "recorded-date": "01-08-2023, 13:35:54",
+    "recorded-date": "20-11-2023, 23:32:31",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -305,7 +305,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8.al2]": {
-    "recorded-date": "01-08-2023, 13:35:57",
+    "recorded-date": "20-11-2023, 23:32:27",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -319,7 +319,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java11]": {
-    "recorded-date": "01-08-2023, 13:36:01",
+    "recorded-date": "20-11-2023, 23:32:24",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -333,7 +333,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java8]": {
-    "recorded-date": "01-08-2023, 13:36:11",
+    "recorded-date": "20-11-2023, 23:33:04",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -396,7 +396,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java8.al2]": {
-    "recorded-date": "01-08-2023, 13:36:17",
+    "recorded-date": "20-11-2023, 23:32:57",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -459,7 +459,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java11]": {
-    "recorded-date": "01-08-2023, 13:36:22",
+    "recorded-date": "20-11-2023, 23:32:50",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -522,7 +522,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom-CUSTOM]": {
-    "recorded-date": "01-08-2023, 13:36:42",
+    "recorded-date": "20-11-2023, 23:33:12",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -581,7 +581,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom-INTERFACE]": {
-    "recorded-date": "01-08-2023, 13:36:50",
+    "recorded-date": "20-11-2023, 23:33:19",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -640,7 +640,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequest-INTERFACE]": {
-    "recorded-date": "01-08-2023, 13:36:59",
+    "recorded-date": "20-11-2023, 23:33:30",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -699,7 +699,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_lambda_subscribe_sns_topic": {
-    "recorded-date": "01-08-2023, 13:37:21",
+    "recorded-date": "20-11-2023, 23:33:53",
     "recorded-content": {
       "get-function": {
         "Code": {
@@ -771,35 +771,35 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.7]": {
-    "recorded-date": "01-08-2023, 13:19:43",
+    "recorded-date": "20-11-2023, 23:34:14",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.8]": {
-    "recorded-date": "01-08-2023, 13:19:46",
+    "recorded-date": "20-11-2023, 23:34:10",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.9]": {
-    "recorded-date": "01-08-2023, 13:19:49",
+    "recorded-date": "20-11-2023, 23:34:07",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.10]": {
-    "recorded-date": "01-08-2023, 13:19:53",
+    "recorded-date": "20-11-2023, 23:34:03",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.7]": {
-    "recorded-date": "01-08-2023, 13:19:59",
+    "recorded-date": "20-11-2023, 23:34:33",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.8]": {
-    "recorded-date": "01-08-2023, 13:20:02",
+    "recorded-date": "20-11-2023, 23:34:31",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.9]": {
-    "recorded-date": "01-08-2023, 13:20:05",
+    "recorded-date": "20-11-2023, 23:34:27",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.10]": {
-    "recorded-date": "01-08-2023, 13:20:08",
+    "recorded-date": "20-11-2023, 23:34:24",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.7]": {
@@ -1069,7 +1069,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java17]": {
-    "recorded-date": "01-08-2023, 13:36:04",
+    "recorded-date": "20-11-2023, 23:32:20",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -1083,7 +1083,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java17]": {
-    "recorded-date": "01-08-2023, 13:36:28",
+    "recorded-date": "20-11-2023, 23:32:44",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -1146,11 +1146,11 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.11]": {
-    "recorded-date": "01-08-2023, 13:19:56",
+    "recorded-date": "20-11-2023, 23:34:00",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.11]": {
-    "recorded-date": "01-08-2023, 13:20:12",
+    "recorded-date": "20-11-2023, 23:34:21",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.11]": {
@@ -1221,7 +1221,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs18.x]": {
-    "recorded-date": "01-08-2023, 13:26:51",
+    "recorded-date": "20-11-2023, 23:31:39",
     "recorded-content": {
       "creation-result": {
         "CreateEventSourceMappingResponse": null,
@@ -1281,5 +1281,152 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs20.x]": {
+    "recorded-date": "20-11-2023, 23:31:32",
+    "recorded-content": {
+      "creation-result": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<<code-sha-256>:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "lambda_handler_es6.handler",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "nodejs20.x",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "invocation-result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "statusCode": 200,
+          "body": "\"response from localstack lambda: {\\\"event_type\\\":\\\"test_lambda\\\"}\""
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java21]": {
+    "recorded-date": "20-11-2023, 23:32:17",
+    "recorded-content": {
+      "invoke_result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {},
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java21]": {
+    "recorded-date": "20-11-2023, 23:32:38",
+    "recorded-content": {
+      "create-result": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<<code-sha-256>:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java21",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "invoke-result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "bucket": "test_bucket",
+          "key": "test_key",
+          "validated": true
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.12]": {
+    "recorded-date": "20-11-2023, 23:33:57",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.12]": {
+    "recorded-date": "20-11-2023, 23:34:17",
+    "recorded-content": {}
   }
 }

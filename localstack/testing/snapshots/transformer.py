@@ -195,9 +195,10 @@ class KeyValueBasedTransformer:
                             f"Replacing value for key '{k}' with '{self.replacement}'. (Original value: {str(v)})"
                         )
                         input_data[k] = self.replacement
-            elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
+            elif isinstance(v, list) and len(v) > 0:
                 for i in range(0, len(v)):
-                    v[i] = self.transform(v[i], ctx=ctx)
+                    if isinstance(v[i], dict):
+                        v[i] = self.transform(v[i], ctx=ctx)
             elif isinstance(v, dict):
                 input_data[k] = self.transform(v, ctx=ctx)
 

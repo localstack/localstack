@@ -2,16 +2,10 @@ import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from tests.aws.services.stepfunctions.utils import is_old_provider
 from tests.aws.services.stepfunctions.v2.choice_operators.utils import (
     TYPE_COMPARISONS,
     create_and_test_comparison_function,
 )
-
-pytestmark = pytest.mark.skipif(
-    condition=is_old_provider(), reason="Test suite for v2 provider only."
-)
-
 
 # TODO: test for validation errors, and boundary testing.
 

@@ -476,7 +476,7 @@ def test_query_serializer_sqs_none_value_in_map():
 def test_query_protocol_error_serialization():
     exception = InvalidMessageContents("Exception message!")
     _botocore_error_serializer_integration_test(
-        "sqs", "SendMessage", exception, "InvalidMessageContents", 400, "Exception message!"
+        "sqs-query", "SendMessage", exception, "InvalidMessageContents", 400, "Exception message!"
     )
 
 
@@ -486,7 +486,7 @@ def test_query_protocol_error_serialization_plain():
     )
 
     # Load the SQS service
-    service = load_service("sqs")
+    service = load_service("sqs-query")
 
     # Use our serializer to serialize the response
     response_serializer = create_serializer(service)
@@ -528,11 +528,29 @@ def test_query_protocol_error_serialization_plain():
 def test_query_protocol_custom_error_serialization():
     exception = CommonServiceException("InvalidParameterValue", "Parameter x was invalid!")
     _botocore_error_serializer_integration_test(
-        "sqs", "SendMessage", exception, "InvalidParameterValue", 400, "Parameter x was invalid!"
+        "sqs-query",
+        "SendMessage",
+        exception,
+        "InvalidParameterValue",
+        400,
+        "Parameter x was invalid!",
     )
 
 
 def test_query_protocol_error_serialization_sender_fault():
+    exception = UnsupportedOperation("Operation not supported.")
+    _botocore_error_serializer_integration_test(
+        "sqs-query",
+        "SendMessage",
+        exception,
+        "AWS.SimpleQueueService.UnsupportedOperation",
+        400,
+        "Operation not supported.",
+        True,
+    )
+
+
+def test_sqs_json_protocol_error_serialization_sender_fault():
     exception = UnsupportedOperation("Operation not supported.")
     _botocore_error_serializer_integration_test(
         "sqs",
@@ -1848,7 +1866,7 @@ def test_json_protocol_cbor_serialization(headers_dict):
 
 class TestAwsResponseSerializerDecorator:
     def test_query_internal_error(self):
-        @aws_response_serializer("sqs", "ListQueues")
+        @aws_response_serializer("sqs-query", "ListQueues")
         def fn(request: Request):
             raise ValueError("oh noes!")
 
@@ -1857,7 +1875,7 @@ class TestAwsResponseSerializerDecorator:
         assert b"<Code>InternalError</Code>" in response.data
 
     def test_query_service_error(self):
-        @aws_response_serializer("sqs", "ListQueues")
+        @aws_response_serializer("sqs-query", "ListQueues")
         def fn(request: Request):
             raise UnsupportedOperation("Operation not supported.")
 
@@ -1867,7 +1885,7 @@ class TestAwsResponseSerializerDecorator:
         assert b"<Message>Operation not supported.</Message>" in response.data
 
     def test_query_valid_response(self):
-        @aws_response_serializer("sqs", "ListQueues")
+        @aws_response_serializer("sqs-query", "ListQueues")
         def fn(request: Request):
             from localstack.aws.api.sqs import ListQueuesResult
 
@@ -1889,7 +1907,7 @@ class TestAwsResponseSerializerDecorator:
 
     def test_query_valid_response_content_negotiation(self):
         # this test verifies that request header values are passed correctly to perform content negotation
-        @aws_response_serializer("sqs", "ListQueues")
+        @aws_response_serializer("sqs-query", "ListQueues")
         def fn(request: Request):
             from localstack.aws.api.sqs import ListQueuesResult
 
@@ -1912,7 +1930,7 @@ class TestAwsResponseSerializerDecorator:
         }
 
     def test_return_invalid_none_type_causes_internal_error(self):
-        @aws_response_serializer("sqs", "ListQueues")
+        @aws_response_serializer("sqs-query", "ListQueues")
         def fn(request: Request):
             return None
 
@@ -1922,7 +1940,7 @@ class TestAwsResponseSerializerDecorator:
 
     def test_response_pass_through(self):
         # returning a response directly will forego the serializer
-        @aws_response_serializer("sqs", "ListQueues")
+        @aws_response_serializer("sqs-query", "ListQueues")
         def fn(request: Request):
             return Response(b"ok", status=201)
 
@@ -1941,7 +1959,7 @@ class TestAwsResponseSerializerDecorator:
 
     def test_invoke_on_bound_method(self):
         class MyHandler:
-            @aws_response_serializer("sqs", "ListQueues")
+            @aws_response_serializer("sqs-query", "ListQueues")
             def handle(self, request: Request):
                 from localstack.aws.api.sqs import ListQueuesResult
 

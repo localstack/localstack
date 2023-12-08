@@ -9,7 +9,6 @@ from botocore.awsrequest import AWSPreparedRequest, prepare_request_dict
 from botocore.config import Config as BotoConfig
 from werkzeug.datastructures import Headers
 
-from localstack import config
 from localstack.aws.api.core import (
     Request,
     RequestContext,
@@ -21,6 +20,7 @@ from localstack.aws.client import parse_response, raise_service_exception
 from localstack.aws.connect import connect_to
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
 from localstack.aws.spec import load_service
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Response
 from localstack.http.proxy import Proxy
 from localstack.utils.strings import to_str
@@ -144,11 +144,13 @@ def _wrap_with_fallthrough(
     return _call
 
 
-def HttpFallbackDispatcher(provider: object, forward_url_getter: Callable[[], str]):
+def HttpFallbackDispatcher(provider: object, forward_url_getter: Callable[[str, str], str]):
     return ForwardingFallbackDispatcher(provider, get_request_forwarder_http(forward_url_getter))
 
 
-def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> ServiceRequestHandler:
+def get_request_forwarder_http(
+    forward_url_getter: Callable[[str, str], str]
+) -> ServiceRequestHandler:
     """
     Returns a ServiceRequestHandler that creates for each invocation a new AwsRequestProxy with the result of
     forward_url_getter. Note that this is an inefficient method of proxying, since for every call a new client
@@ -161,7 +163,9 @@ def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> Service
     def _forward_request(
         context: RequestContext, service_request: ServiceRequest = None
     ) -> ServiceResponse:
-        return AwsRequestProxy(forward_url_getter()).forward(context, service_request)
+        return AwsRequestProxy(forward_url_getter(context.account_id, context.region)).forward(
+            context, service_request
+        )
 
     return _forward_request
 
@@ -215,7 +219,7 @@ def create_aws_request_context(
     if parameters is None:
         parameters = {}
     if region is None:
-        region = config.AWS_REGION_US_EAST_1
+        region = AWS_REGION_US_EAST_1
 
     service = load_service(service_name)
     operation = service.operation_model(action)

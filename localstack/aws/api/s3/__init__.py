@@ -786,6 +786,7 @@ class CrossLocationLoggingProhibitted(ServiceException):
     sender_fault: bool = False
     status_code: int = 403
     TargetBucketLocation: Optional[BucketRegion]
+    SourceBucketLocation: Optional[BucketRegion]
 
 
 class InvalidTargetBucketForLogging(ServiceException):

@@ -20,12 +20,10 @@ from botocore.response import StreamingBody
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.testing.aws.lambda_utils import (
-    RUNTIMES_AGGREGATED,
     concurrency_update_done,
     get_invoke_init_type,
-    is_old_local_executor,
-    is_old_provider,
     update_done,
 )
 from localstack.testing.aws.util import create_client_with_keys, is_aws_cloud
@@ -44,8 +42,6 @@ from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
 
 LOG = logging.getLogger(__name__)
-FUNCTION_MAX_UNZIPPED_SIZE = 262144000
-
 
 # TODO: find a better way to manage these handler files
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -113,22 +109,17 @@ TEST_LAMBDA_INVOCATION_TYPE = os.path.join(THIS_FOLDER, "functions/lambda_invoca
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
 
+TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
+TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
+
 # TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
 PYTHON_TEST_RUNTIMES = (
-    RUNTIMES_AGGREGATED["python"]
-    if (not is_old_local_executor()) and get_arch() != Arch.arm64
-    else [Runtime.python3_11]
+    RUNTIMES_AGGREGATED["python"] if (get_arch() != Arch.arm64) else [Runtime.python3_11]
 )
 NODE_TEST_RUNTIMES = (
-    RUNTIMES_AGGREGATED["nodejs"]
-    if (not is_old_local_executor()) and get_arch() != Arch.arm64
-    else [Runtime.nodejs16_x]
+    RUNTIMES_AGGREGATED["nodejs"] if (get_arch() != Arch.arm64) else [Runtime.nodejs16_x]
 )
-JAVA_TEST_RUNTIMES = (
-    RUNTIMES_AGGREGATED["java"]
-    if (not is_old_local_executor()) and get_arch() != Arch.arm64
-    else [Runtime.java11]
-)
+JAVA_TEST_RUNTIMES = RUNTIMES_AGGREGATED["java"] if (get_arch() != Arch.arm64) else [Runtime.java11]
 
 TEST_LAMBDA_LIBS = [
     "requests",
@@ -184,27 +175,6 @@ def fixture_snapshot(snapshot):
     )
 
 
-# some more common ones that usually don't work in the old provider
-pytestmark = markers.snapshot.skip_snapshot_verify(
-    condition=is_old_provider,
-    paths=[
-        "$..Architectures",
-        "$..EphemeralStorage",
-        "$..LastUpdateStatus",
-        "$..MemorySize",
-        "$..State",
-        "$..StateReason",
-        "$..StateReasonCode",
-        "$..VpcConfig",
-        "$..CodeSigningConfig",
-        "$..Environment",  # missing
-        "$..HTTPStatusCode",  # 201 vs 200
-        "$..Layers",
-        "$..SnapStart",
-    ],
-)
-
-
 class TestLambdaBaseFeatures:
     @markers.snapshot.skip_snapshot_verify(paths=["$..LogResult"])
     @markers.aws.validated
@@ -228,16 +198,6 @@ class TestLambdaBaseFeatures:
         assert "FunctionError" not in result
         assert payload == json.loads(to_str(result["Payload"].read()))
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..Tags",
-            "$..Configuration.RevisionId",
-            "$..Code.RepositoryType",
-            "$..Layers",  # PRO
-            "$..RuntimeVersionConfig",
-        ],
-    )
     @markers.aws.validated
     def test_function_state(self, lambda_su_role, snapshot, create_lambda_function_aws, aws_client):
         """Tests if a lambda starts in state "Pending" but moves to "Active" at some point"""
@@ -258,9 +218,6 @@ class TestLambdaBaseFeatures:
         response = aws_client.lambda_.get_function(FunctionName=function_name)
         snapshot.match("get-fn-response", response)
 
-    @pytest.mark.skipif(
-        is_old_provider(), reason="Assume role parity not supported in old provider"
-    )
     @pytest.mark.parametrize("function_name_length", [1, 2])
     @markers.aws.validated
     def test_assume_role(
@@ -320,9 +277,6 @@ class TestLambdaBaseFeatures:
         else:
             assert assume_role_resource.split("/")[-1] == function_name
 
-    @pytest.mark.skipif(
-        is_old_provider(), reason="Credential injection not supported in old provider"
-    )
     @markers.aws.validated
     def test_lambda_different_iam_keys_environment(
         self, lambda_su_role, create_lambda_function, snapshot, aws_client, region
@@ -397,24 +351,6 @@ class TestLambdaBaseFeatures:
 
 class TestLambdaBehavior:
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            # empty dict is interpreted as string and fails upon event parsing
-            "$..FunctionError",
-            "$..LogResult",
-            "$..Payload.errorMessage",
-            "$..Payload.errorType",
-            "$..Payload.event",
-            "$..Payload.platform_machine",
-            "$..Payload.platform_system",
-            "$..Payload.stackTrace",
-            "$..Payload.paths",
-            "$..Payload.pwd",
-            "$..Payload.user_login_name",
-            "$..Payload.user_whoami",
-        ],
-    )
-    @markers.snapshot.skip_snapshot_verify(
         paths=[
             # requires creating a new user `slicer` and chown /var/task
             "$..Payload.paths._var_task_gid",
@@ -423,7 +359,7 @@ class TestLambdaBehavior:
         ],
     )
     # TODO: fix arch compatibility detection for supported emulations
-    @pytest.mark.skipif(get_arch() == "arm64", reason="Cannot inspect x86 runtime on arm")
+    @pytest.mark.skipif(get_arch() == Arch.arm64, reason="Cannot inspect x86 runtime on arm")
     @markers.aws.validated
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_x86_{short_uid()}"
@@ -438,7 +374,6 @@ class TestLambdaBehavior:
         invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_x86_introspection", invoke_result)
 
-    @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
     @pytest.mark.skipif(
         not is_arm_compatible() and not is_aws(),
         reason="ARM architecture not supported on this host",
@@ -465,11 +400,6 @@ class TestLambdaBehavior:
         invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_arm_introspection", invoke_result)
 
-    @pytest.mark.skipif(
-        is_old_local_executor(),
-        reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
-    )
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..LogResult"])
     @markers.aws.validated
     def test_runtime_ulimits(self, create_lambda_function, snapshot, monkeypatch, aws_client):
         """We consider ulimits parity as opt-in because development environments could hit these limits unlike in
@@ -477,7 +407,7 @@ class TestLambdaBehavior:
         monkeypatch.setattr(
             config,
             "LAMBDA_DOCKER_FLAGS",
-            "--ulimit nofile=1024:1024 --ulimit nproc=735:735 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
+            "--ulimit nofile=1024:1024 --ulimit nproc=1024:1024 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
         )
 
         func_name = f"test_lambda_ulimits_{short_uid()}"
@@ -490,11 +420,6 @@ class TestLambdaBehavior:
         invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_ulimits", invoke_result)
 
-    @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
-    @pytest.mark.skipif(
-        is_old_local_executor(),
-        reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
-    )
     @markers.aws.only_localstack
     def test_ignore_architecture(self, create_lambda_function, monkeypatch, aws_client):
         """Test configuration to ignore lambda architecture by creating a lambda with non-native architecture."""
@@ -504,7 +429,7 @@ class TestLambdaBehavior:
         # This assumption could be violated when using remote Lambda executors
         native_arch = platform.get_arch()
         non_native_architecture = (
-            Architecture.x86_64 if native_arch == "arm64" else Architecture.arm64
+            Architecture.x86_64 if native_arch == Arch.arm64 else Architecture.arm64
         )
         func_name = f"test_lambda_arch_{short_uid()}"
         create_lambda_function(
@@ -519,7 +444,6 @@ class TestLambdaBehavior:
         lambda_arch = standardized_arch(payload.get("platform_machine"))
         assert lambda_arch == native_arch
 
-    @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
     @pytest.mark.skip  # TODO remove once is_arch_compatible checks work properly
     @markers.aws.validated
     def test_mixed_architecture(self, create_lambda_function, aws_client):
@@ -580,13 +504,10 @@ class TestLambdaBehavior:
         payload_arm_2 = json.loads(invoke_result_arm_2["Payload"].read())
         assert payload_arm_2.get("platform_machine") == "aarch64"
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Payload", "$..LogResult"]
-    )
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
         [
-            (TEST_LAMBDA_CACHE_NODEJS, Runtime.nodejs12_x),
+            (TEST_LAMBDA_CACHE_NODEJS, Runtime.nodejs18_x),
             (TEST_LAMBDA_CACHE_PYTHON, Runtime.python3_10),
         ],
         ids=["nodejs", "python"],
@@ -611,7 +532,6 @@ class TestLambdaBehavior:
         second_invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("second_invoke_result", second_invoke_result)
 
-    @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @markers.aws.validated
     def test_lambda_invoke_with_timeout(self, create_lambda_function, snapshot, aws_client):
         # Snapshot generation could be flaky against AWS with a small timeout margin (e.g., 1.02 instead of 1.00)
@@ -659,15 +579,6 @@ class TestLambdaBehavior:
 
         retry(assert_events, retries=15)
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..Payload",
-            "$..LogResult",
-            "$..Layers",
-            "$..CreateFunctionResponse.RuntimeVersionConfig",
-        ],
-    )
     @markers.aws.validated
     def test_lambda_invoke_no_timeout(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_{short_uid()}"
@@ -703,7 +614,6 @@ class TestLambdaBehavior:
 
         wait_until(_assert_log_output, strategy="linear")
 
-    @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @pytest.mark.xfail(reason="Currently flaky in CI")
     @markers.aws.validated
     def test_lambda_invoke_timed_out_environment_reuse(
@@ -791,20 +701,6 @@ def handler(event, ctx):
 
 
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_old_provider,
-    paths=[
-        "$..context",
-        "$..event.headers.x-forwarded-proto",
-        "$..event.headers.x-forwarded-for",
-        "$..event.headers.x-forwarded-port",
-        "$..event.headers.x-amzn-lambda-forwarded-client-ip",
-        "$..event.headers.x-amzn-lambda-forwarded-host",
-        "$..event.headers.x-amzn-lambda-proxy-auth",
-        "$..event.headers.x-amzn-lambda-proxying-cell",
-        "$..event.headers.x-amzn-trace-id",
-    ],
-)
-@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..event.headers.x-forwarded-proto",
         "$..event.headers.x-forwarded-port",
@@ -837,7 +733,6 @@ class TestLambdaURL:
             "boolean",
         ],
     )
-    @pytest.mark.skipif(condition=is_old_provider(), reason="broken/not-implemented")
     @markers.aws.validated
     def test_lambda_url_invocation(self, create_lambda_function, snapshot, returnvalue, aws_client):
         snapshot.add_transformer(
@@ -934,7 +829,6 @@ class TestLambdaURL:
         assert event["isBase64Encoded"] is False
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=is_old_provider(), reason="broken/not-implemented")
     def test_lambda_url_invocation_exception(self, create_lambda_function, snapshot, aws_client):
         # TODO: extend tests
         snapshot.add_transformer(
@@ -1016,13 +910,8 @@ class TestLambdaFeatures:
         )
         return creation_result["CreateFunctionResponse"]["FunctionArn"]
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Payload.context.memory_limit_in_mb", "$..logs.logs"]
-    )
     # TODO remove, currently missing init duration in REPORT
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not is_old_provider(), paths=["$..logs.logs"]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..logs.logs"])
     @markers.aws.validated
     def test_invocation_with_logs(self, snapshot, invocation_echo_lambda, aws_client):
         """Test invocation of a lambda with no invocation type set, but LogType="Tail""" ""
@@ -1046,16 +935,12 @@ class TestLambdaFeatures:
         assert "END" in logs
         assert "REPORT" in logs
 
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..Message"])
     @markers.aws.validated
     def test_invoke_exceptions(self, aws_client, snapshot):
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             aws_client.lambda_.invoke(FunctionName="doesnotexist")
         snapshot.match("invoke_function_doesnotexist", e.value.response)
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
-    )
     @markers.aws.validated
     def test_invocation_type_request_response(self, snapshot, invocation_echo_lambda, aws_client):
         """Test invocation with InvocationType RequestResponse explicitly set"""
@@ -1066,9 +951,6 @@ class TestLambdaFeatures:
         )
         snapshot.match("invoke-result", result)
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
-    )
     @markers.aws.validated
     def test_invocation_type_event(
         self, snapshot, invocation_echo_lambda, aws_client, check_lambda_logs
@@ -1093,10 +975,8 @@ class TestLambdaFeatures:
 
         retry(check_logs, retries=15)
 
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
-    )
-    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
+    # TODO: implement for new provider (was tested in old provider)
+    @pytest.mark.skip(reason="Not yet implemented")
     @markers.aws.validated
     def test_invocation_type_dry_run(self, snapshot, invocation_echo_lambda, aws_client):
         """Check invocation response for type dryrun"""
@@ -1148,7 +1028,6 @@ class TestLambdaFeatures:
         assert len(uuids) == 2
         assert uuids[0] == uuids[1]
 
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     @markers.aws.validated
     def test_invocation_with_qualifier(
         self,
@@ -1201,7 +1080,6 @@ class TestLambdaFeatures:
         )
         snapshot.match("invocation-response", invoke_result)
 
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     @markers.aws.validated
     def test_upload_lambda_from_s3(
         self,
@@ -1243,12 +1121,8 @@ class TestLambdaFeatures:
         )
         snapshot.match("invocation-response", result)
 
-    @pytest.mark.skipif(
-        is_old_local_executor(),
-        reason="Test for docker nodejs runtimes not applicable if run locally",
-    )
-    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
-    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
+    # TODO: implement in new provider (was tested in old provider)
+    @pytest.mark.skip(reason="Not yet implemented")
     @markers.aws.validated
     def test_lambda_with_context(
         self, create_lambda_function, check_lambda_logs, snapshot, aws_client
@@ -1279,9 +1153,6 @@ class TestLambdaFeatures:
         result_data = result["Payload"]
         assert 200 == result["StatusCode"]
         client_context = json.loads(result_data)["context"]["clientContext"]
-        # TODO in the old provider, for some reason this is necessary. That is invalid behavior
-        if is_old_provider():
-            client_context = json.loads(client_context)
         assert "bar" == client_context.get("custom").get("foo")
 
         # assert that logs are present
@@ -1293,7 +1164,6 @@ class TestLambdaFeatures:
         retry(check_logs, retries=15)
 
 
-@pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
 class TestLambdaErrors:
     @markers.aws.validated
     def test_lambda_runtime_error(self, aws_client, create_lambda_function, snapshot):
@@ -1585,7 +1455,6 @@ class TestLambdaMultiAccounts:
     def secondary_client(self, secondary_aws_client):
         return secondary_aws_client.lambda_
 
-    @pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
     @markers.aws.unknown
     def test_cross_account_access(
         self, primary_client, secondary_client, create_lambda_function, dummylayer
@@ -1708,8 +1577,6 @@ class TestLambdaMultiAccounts:
         assert secondary_client.delete_function(FunctionName=func_arn)
 
 
-# TODO: add check_concurrency_quota for all these tests
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaConcurrency:
     @markers.aws.validated
     def test_lambda_concurrency_crud(self, snapshot, create_lambda_function, aws_client):
@@ -1750,6 +1617,9 @@ class TestLambdaConcurrency:
         Tests an edge case where reserved concurrency is equal to the sum of all provisioned concurrencies for a function.
         In this case we can't call $LATEST anymore since there's no "free"/unclaimed concurrency left to execute the function with
         """
+        min_concurrent_executions = 10 + 2  # reserved concurrency + provisioned concurrency
+        check_concurrency_quota(aws_client, min_concurrent_executions)
+
         # function
         func_name = f"fn-concurrency-{short_uid()}"
         create_lambda_function(
@@ -1808,7 +1678,7 @@ class TestLambdaConcurrency:
             )
         snapshot.match("invoke_latest_second_exc", e.value.response)
 
-    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
+    @pytest.mark.skip(reason="Not yet implemented")
     @pytest.mark.skipif(condition=is_aws(), reason="very slow (only execute when needed)")
     @markers.aws.validated
     def test_lambda_provisioned_concurrency_moves_with_alias(
@@ -1818,6 +1688,10 @@ class TestLambdaConcurrency:
         create fn ⇒ publish version ⇒ create alias for version ⇒ put concurrency on alias
         ⇒ new version with change ⇒ change alias to new version ⇒ concurrency moves with alias? same behavior for calls to alias/version?
         """
+
+        # TODO: validate once implemented
+        min_concurrent_executions = 10 + 2  # for alias and version
+        check_concurrency_quota(aws_client, min_concurrent_executions)
 
         func_name = f"test_lambda_{short_uid()}"
         alias_name = f"test_alias_{short_uid()}"
@@ -1949,6 +1823,9 @@ class TestLambdaConcurrency:
         - it generates 2x provisioned concurrency cloudwatch logstreams with only INIT_START
         - updates while IN_PROGRESS are allowed and overwrite the previous config
         """
+        min_concurrent_executions = 10 + 5
+        check_concurrency_quota(aws_client, min_concurrent_executions)
+
         func_name = f"test_lambda_{short_uid()}"
 
         create_lambda_function(
@@ -1988,8 +1865,80 @@ class TestLambdaConcurrency:
         assert result2 == "on-demand"
 
     @markers.aws.validated
+    def test_lambda_provisioned_concurrency_scheduling(
+        self, snapshot, create_lambda_function, aws_client
+    ):
+        min_concurrent_executions = 10 + 1
+        check_concurrency_quota(aws_client, min_concurrent_executions)
+
+        """Tests that invokes should be scheduled to provisioned-concurrency instances rather than on-demand
+        if-and-only-if free provisioned concurrency is available."""
+        func_name = f"fn-concurrency-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INVOCATION_TYPE,
+            runtime=Runtime.python3_10,
+            timeout=10,
+        )
+
+        v1 = aws_client.lambda_.publish_version(FunctionName=func_name)
+
+        aws_client.lambda_.put_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=1
+        )
+        assert wait_until(concurrency_update_done(aws_client.lambda_, func_name, v1["Version"]))
+
+        get_provisioned_postwait = aws_client.lambda_.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"]
+        )
+        snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
+
+        # Schedule Lambda to provisioned concurrency instead of launching a new on-demand instance
+        invoke_result = aws_client.lambda_.invoke(
+            FunctionName=func_name,
+            Qualifier=v1["Version"],
+        )
+        result = json.loads(to_str(invoke_result["Payload"].read()))
+        assert result == "provisioned-concurrency"
+
+        # Send two simultaneous invokes
+        errored = False
+
+        def _invoke_lambda():
+            nonlocal errored
+            try:
+                invoke_result1 = aws_client.lambda_.invoke(
+                    FunctionName=func_name,
+                    Qualifier=v1["Version"],
+                    Payload=json.dumps({"wait": 6}),
+                )
+                result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+                assert result1 == "provisioned-concurrency"
+            except Exception:
+                LOG.exception("Invoking Lambda failed")
+                errored = True
+
+        thread = threading.Thread(target=_invoke_lambda)
+        thread.start()
+
+        # Ensure the first provisioned-concurrency invoke is running before sending the second on-demand invoke
+        time.sleep(2)
+
+        # Invoke while the first invoke is still running
+        invoke_result2 = aws_client.lambda_.invoke(
+            FunctionName=func_name,
+            Qualifier=v1["Version"],
+        )
+        result2 = json.loads(to_str(invoke_result2["Payload"].read()))
+        assert result2 == "on-demand"
+
+        # Wait for the first invoker thread
+        thread.join()
+        assert not errored
+
+    @markers.aws.validated
     def test_reserved_concurrency_async_queue(self, create_lambda_function, snapshot, aws_client):
-        min_concurrent_executions = 10 + 2
+        min_concurrent_executions = 10 + 3
         check_concurrency_quota(aws_client, min_concurrent_executions)
 
         func_name = f"test_lambda_{short_uid()}"
@@ -2125,8 +2074,10 @@ class TestLambdaConcurrency:
 
     @markers.aws.validated
     def test_reserved_provisioned_overlap(self, create_lambda_function, snapshot, aws_client):
-        func_name = f"test_lambda_{short_uid()}"
+        min_concurrent_executions = 10 + 4  # provisioned concurrency (2) + reserved concurrency (2)
+        check_concurrency_quota(aws_client, min_concurrent_executions)
 
+        func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
@@ -2168,10 +2119,9 @@ class TestLambdaConcurrency:
         snapshot.match("reserved_equals_provisioned_latest_invoke_exc", e.value.response)
 
         # passes since the version has a provisioned concurrency config set
-        # TODO: re-add this when implementing it in version manager
-        # invoke_result1 = lambda_client.invoke(FunctionName=func_name, Qualifier=v1["Version"])
-        # result1 = json.loads(to_str(invoke_result1["Payload"].read()))
-        # assert result1 == "provisioned-concurrency"
+        invoke_result1 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier=v1["Version"])
+        result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+        assert result1 == "provisioned-concurrency"
 
         # try to add a new provisioned concurrency config to another qualifier on the same function
         update_func_config = aws_client.lambda_.update_function_configuration(
@@ -2197,7 +2147,6 @@ class TestLambdaConcurrency:
         snapshot.match("reserved_equals_provisioned_increase_provisioned_exc", e.value.response)
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaVersions:
     @markers.aws.validated
     def test_lambda_versions_with_code_changes(
@@ -2279,7 +2228,6 @@ class TestLambdaVersions:
 
 # TODO: test if routing is static for a single invocation:
 #  Do retries for an event invoke, take the same "path" for every retry?
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaAliases:
     @markers.aws.validated
     def test_lambda_alias_moving(
@@ -2421,7 +2369,6 @@ class TestLambdaAliases:
         assert len(versions_hit) == 2, f"Did not hit both versions after {max_retries} retries"
 
 
-@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestRequestIdHandling:
     @markers.aws.validated
     def test_request_id_format(self, aws_client):
@@ -2432,9 +2379,7 @@ class TestRequestIdHandling:
         )
 
     # TODO remove, currently missing init duration in REPORT
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not is_old_provider(), paths=["$..logs"]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..logs"])
     @markers.aws.validated
     def test_request_id_invoke(self, aws_client, create_lambda_function, snapshot):
         """Test that the request_id within the Lambda context matches with CloudWatch logs."""

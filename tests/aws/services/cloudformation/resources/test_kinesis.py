@@ -120,7 +120,7 @@ def test_describe_template(s3_create_bucket, aws_client, cleanups, snapshot):
             f"https://{bucket_name}.s3.{aws_client.s3.meta.region_name}.amazonaws.com/template.yml"
         )
     else:
-        template_url = f"{config.get_edge_url()}/{bucket_name}/template.yml"
+        template_url = f"{config.internal_service_url()}/{bucket_name}/template.yml"
 
     # get summary by template URL
     get_template_summary_by_url = aws_client.cloudformation.get_template_summary(

@@ -25,7 +25,10 @@ from localstack.services.lambda_.invocation.lambda_models import (
     VersionState,
 )
 from localstack.services.lambda_.invocation.logs import LogHandler, LogItem
-from localstack.services.lambda_.invocation.metrics import record_cw_metric_invocation
+from localstack.services.lambda_.invocation.metrics import (
+    record_cw_metric_error,
+    record_cw_metric_invocation,
+)
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
 from localstack.utils.strings import truncate
 from localstack.utils.threads import FuncThread, start_thread
@@ -215,14 +218,24 @@ class LambdaVersionManager:
                 )
 
         function_id = self.function_version.id
-        # MAYBE: reuse threads
-        start_thread(
-            lambda *args, **kwargs: record_cw_metric_invocation(
-                function_name=self.function.function_name,
-                region_name=self.function_version.id.region,
-            ),
-            name=f"record-cloudwatch-metric-{function_id.function_name}:{function_id.qualifier}",
-        )
+        # Record CloudWatch metrics in separate threads
+        # MAYBE reuse threads rather than starting new threads upon every invocation
+        if invocation_result.is_error:
+            start_thread(
+                lambda *args, **kwargs: record_cw_metric_error(
+                    function_name=self.function.function_name,
+                    region_name=self.function_version.id.region,
+                ),
+                name=f"record-cloudwatch-metric-error-{function_id.function_name}:{function_id.qualifier}",
+            )
+        else:
+            start_thread(
+                lambda *args, **kwargs: record_cw_metric_invocation(
+                    function_name=self.function.function_name,
+                    region_name=self.function_version.id.region,
+                ),
+                name=f"record-cloudwatch-metric-{function_id.function_name}:{function_id.qualifier}",
+            )
         # MAYBE: consider using the same prefix logging as in error case for execution environment.
         #   possibly as separate named logger.
         LOG.debug("Got logs for invocation '%s'", invocation.request_id)
