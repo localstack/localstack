@@ -88,7 +88,6 @@ def test_cfn_handle_sqs_resource(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-@pytest.mark.skip(reason="WIP")
 def test_update_queue_no_change(deploy_cfn_template, aws_client, snapshot):
     bucket_name = f"bucket-{short_uid()}"
 
