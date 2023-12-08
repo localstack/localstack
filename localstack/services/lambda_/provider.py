@@ -139,6 +139,7 @@ from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.api_utils import (
     ARCHITECTURES,
     STATEMENT_ID_REGEX,
+    function_locators_from_arn,
 )
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -762,7 +763,44 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                 Type="User",
             )
-        function_name = request["FunctionName"]
+        request_function_name = request["FunctionName"]
+        # Validate FunctionName:
+        # a) Function name: just function name (max 64 chars)
+        # b) Function ARN: unqualified arn (min 1, max 64 chars)
+        # c) Partial ARN: ACCOUNT_ID:function:FUNCTION_NAME
+        function_name, qualifier, account, region = function_locators_from_arn(
+            request_function_name
+        )
+        if (
+            function_name and qualifier is None and account is None and region is None
+        ):  # just function name
+            pass
+        elif function_name and account and qualifier is None and region is None:  # partial arn
+            if account != context.account_id:
+                raise AccessDeniedException(None)
+        elif function_name and account and region and qualifier is None:  # unqualified arn
+            if len(request_function_name) > 140:
+                raise ValidationException(
+                    f"1 validation error detected: Value '{request_function_name}' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 140"
+                )
+            if region != context.region:
+                raise ResourceNotFoundException(
+                    f"Functions from '{region}' are not reachable in this region ('{context.region}')",
+                    Type="User",
+                )
+            if account != context.account_id:
+                raise AccessDeniedException(None)
+        else:
+            pattern = r"(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"
+            raise ValidationException(
+                f"1 validation error detected: Value '{request_function_name}' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: {pattern}"
+            )
+        if len(function_name) > 64:
+            raise InvalidParameterValueException(
+                f"1 validation error detected: Value '{function_name}' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 64",
+                Type="User",
+            )
+
         if runtime in DEPRECATED_RUNTIMES:
             LOG.warning(
                 f"The Lambda runtime {runtime} is deprecated. "
