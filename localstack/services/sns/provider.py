@@ -54,6 +54,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns import constants as sns_constants
+from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.models import SnsMessage, SnsStore, SnsSubscription, sns_stores
 from localstack.services.sns.publisher import (
     PublishDispatcher,
@@ -87,9 +88,16 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     - DeleteTopic
     """
 
+    @route("/_aws/sns/SimpleNotificationService-0000000000000000000000.pem")
+    def get_signature_cert_pem_file(self, request: Request):
+        # see http://sns-public-resources.s3.amazonaws.com/SNS_Message_Signing_Release_Note_Jan_25_2011.pdf
+        # the `0` are the Cert ID in hex chars
+        return Response(self._signature_cert_pem, 200)
+
     def __init__(self) -> None:
         super().__init__()
         self._publisher = PublishDispatcher()
+        self._signature_cert_pem: str = SNS_SERVER_CERT
 
     def on_before_stop(self):
         self._publisher.shutdown()
@@ -97,6 +105,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def on_after_init(self):
         # Allow sent platform endpoint messages to be retrieved from the SNS endpoint
         register_sns_api_resource(ROUTER)
+        # add the route to serve the Signature .pem files
+        # TODO: check signature V2? believe it's in the way to hash (SHA1 vs SHA256)
+        ROUTER.add(self.get_signature_cert_pem_file)
 
     @staticmethod
     def get_store(account_id: str, region_name: str) -> SnsStore:

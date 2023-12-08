@@ -822,6 +822,31 @@ def send_message_to_gcm(
         )
 
 
+def compute_canonical_string(message: dict, notification_type: str):
+    """
+    The notification message signature is computed using the SHA1withRSA algorithm on a "canonical string" – a UTF-8
+    string which observes certain conventions including the sort order of included fields. (Please note that any
+    deviation in the construction of the message string described below such as excluding a field, including an extra
+    space or changing sort order will result in a different validation signature which will not match the pre-computed
+    message signature.)
+    """
+    # sub/unsub
+    # StringBuilder sb = new StringBuilder(); sb.append("Message\n"); sb.append(message).append("\n"); sb.append("MessageId\n"); sb.append(messageId).append("\n"); sb.append("SubscribeURL\n"); sb.append(subscribeurl).append("\n"); sb.append("Timestamp\n"); sb.append(timestamp).append("\n"); sb.append("Token\n"); sb.append(Token).append("\n"); sb.append("TopicArn\n"); sb.append(topicarn).append("\n"); sb.append("Type\n"); sb.append(type).append("\n");
+    # return sb.toString().getBytes("UTF-8");
+
+    # notification
+    # StringBuilder sb = new StringBuilder(); sb.append("Message\n"); sb.append(message).append("\n"); sb.append("MessageId\n"); sb.append(messageId).append("\n"); if (subject != null) { sb.append("Subject\n"); sb.append(subject).append("\n");
+    # }
+    # sb.append("Timestamp\n"); sb.append(timestamp).append("\n"); sb.append("TopicArn\n"); sb.append(topicarn).append("\n"); sb.append("Type\n");
+    # sb.append(type).append("\n");
+    # return sb.toString().getBytes("UTF-8");
+    pass
+
+
+def get_message_signature(canonical_string: str, signature_version: str):
+    pass
+
+
 def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscription) -> str:
     message_type = message_context.type or "Notification"
     protocol = subscriber["Protocol"]
@@ -845,8 +870,6 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
         data.update(
             {
                 "SignatureVersion": "1",
-                # TODO Add a more sophisticated solution with an actual signature
-                #  check KMS for providing real cert and how to serve them
                 # Hardcoded
                 "Signature": "EXAMPLEpH+..",
                 "SigningCertURL": f"https://sns.{region_name}.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",

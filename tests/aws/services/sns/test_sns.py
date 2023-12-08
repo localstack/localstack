@@ -534,6 +534,38 @@ class TestSNSPublishCrud:
             )
         snapshot.match("key-is-not-string", e.value.response)
 
+    # TODO: add parametrization for Signature type (v1 or v2)
+    def test_publish_verify_signature(
+        self, aws_client, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot
+    ):
+        # see #### link for Signature Calculation for SNS
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message="test signature value with attributes",
+            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "1"}},
+        )
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            WaitTimeSeconds=10,
+            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
+        )
+        snapshot.match("messages", response)
+        message = json.loads(response["Messages"][0]["Body"])
+        cert_url = message["SigningCertURL"]
+        # assert signature value?
+        get_cert_req = requests.get(cert_url)
+        assert get_cert_req.ok
+        cert = get_cert_req.text
+        # calculate signature value with cert
+        message_signature = message["Signature"]
+        calculated_signature = "" ^ cert
+        assert message_signature == calculated_signature
+
 
 class TestSNSSubscriptionCrud:
     @markers.aws.validated
