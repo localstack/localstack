@@ -5,7 +5,7 @@ import logging
 import re
 from typing import Final, Optional
 
-from localstack.aws.api import RequestContext
+from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.stepfunctions import (
     Arn,
     ConflictException,
@@ -422,6 +422,17 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
         return execution.to_describe_output()
 
+    @staticmethod
+    def _list_execution_filter(
+        ex: Execution, state_machine_arn: str | None, status_filter: str | None
+    ) -> bool:
+        if state_machine_arn and ex.state_machine.arn != state_machine_arn:
+            return False
+
+        if not status_filter:
+            return True
+        return ex.exec_status == status_filter
+
     def list_executions(
         self,
         context: RequestContext,
@@ -439,11 +450,38 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if state_machine is None:
             self._raise_state_machine_does_not_exist(state_machine_arn)
 
-        # TODO: add support for paging and filtering.
+        # TODO: add support for paging
+
+        allowed_execution_status = [
+            ExecutionStatus.SUCCEEDED,
+            ExecutionStatus.TIMED_OUT,
+            ExecutionStatus.PENDING_REDRIVE,
+            ExecutionStatus.ABORTED,
+            ExecutionStatus.FAILED,
+            ExecutionStatus.RUNNING,
+        ]
+
+        validation_errors = []
+
+        if status_filter and status_filter not in allowed_execution_status:
+            validation_errors.append(
+                f"Value '{status_filter}' at 'statusFilter' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(allowed_execution_status)}]"
+            )
+
+        if not state_machine_arn and not map_run_arn:
+            validation_errors.append("Must provide a StateMachine ARN or MapRun ARN")
+
+        if validation_errors:
+            errors_message = "; ".join(validation_errors)
+            message = f"{len(validation_errors)} validation {'errors' if len(validation_errors) > 1 else 'error'} detected: {errors_message}"
+            raise CommonServiceException(message=message, code="ValidationException")
+
         executions: ExecutionList = [
             execution.to_execution_list_item()
             for execution in self.get_store(context).executions.values()
-            if execution.state_machine.arn == state_machine_arn
+            if self._list_execution_filter(
+                execution, state_machine_arn=state_machine_arn, status_filter=status_filter
+            )
         ]
         return ListExecutionsOutput(executions=executions)
 
