@@ -13,13 +13,13 @@ exports.handler = async (event, context, callback) => {
     let s3;
     if (process.env.AWS_ENDPOINT_URL) {
         const CREDENTIALS = {
-            secretAccessKey: 'test',
-            accessKeyId: 'test',
+            secretAccessKey: process.env.SECRET_KEY,
+            accessKeyId: process.env.ACCESS_KEY,
         };
 
         s3 = new S3Client({
             endpoint: "http://s3.localhost.localstack.cloud:4566",
-            region: 'us-east-1',
+            region: process.env.AWS_REGION,
             credentials: CREDENTIALS,
         });
     } else {
