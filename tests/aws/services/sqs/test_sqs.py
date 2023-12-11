@@ -130,6 +130,10 @@ class TestSqsProvider:
         for url in queue_urls:
             assert url in result["QueueUrls"]
 
+        # list queues with empty result
+        result = aws_client.sqs.list_queues(QueueNamePrefix="nonexisting-queue-")
+        assert "QueueUrls" not in result
+
     @markers.aws.validated
     def test_create_queue_and_get_attributes(self, sqs_queue, aws_client):
         result = aws_client.sqs.get_queue_attributes(
