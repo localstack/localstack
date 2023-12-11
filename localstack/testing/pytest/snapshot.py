@@ -15,7 +15,10 @@ from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 from localstack.testing.snapshots.report import render_report
 from localstack.testing.snapshots.transformer import RegexTransformer
-from localstack.testing.snapshots.transformer_utility import SNAPSHOT_BASIC_TRANSFORMER
+from localstack.testing.snapshots.transformer_utility import (
+    SNAPSHOT_BASIC_TRANSFORMER,
+    SNAPSHOT_BASIC_TRANSFORMER_NEW,
+)
 from localstack.utils.bootstrap import is_api_enabled
 
 
@@ -122,7 +125,41 @@ def _snapshot_session(request: SubRequest, account_id, region):
     )
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)
     sm.add_transformer(RegexTransformer(region, "<region>"), priority=2)
-    sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER, priority=2)
+
+    # TODO: temporary to migrate to new default transformers.
+    #   remove this after all exemptions are gone
+    exemptions = [
+        "tests/aws/services/acm",
+        "tests/aws/services/apigateway",
+        "tests/aws/services/cloudwatch",
+        "tests/aws/services/cloudformation",
+        "tests/aws/services/dynamodb",
+        "tests/aws/services/events",
+        "tests/aws/services/iam",
+        "tests/aws/services/kinesis",
+        "tests/aws/services/kms",
+        "tests/aws/services/lambda_",
+        "tests/aws/services/logs",
+        "tests/aws/services/route53",
+        "tests/aws/services/route53resolver",
+        "tests/aws/services/s3",
+        "tests/aws/services/secretsmanager",
+        "tests/aws/services/ses",
+        "tests/aws/services/sns",
+        "tests/aws/services/stepfunctions",
+        "tests/aws/services/sqs",
+        "tests/aws/services/transcribe",
+        "tests/aws/scenario/bookstore",
+        "tests/aws/scenario/note_taking",
+        "tests/aws/scenario/lambda_destination",
+        "tests/aws/scenario/loan_broker",
+        "localstack_ext",
+        "localstack-ext",
+    ]
+    if any([e in request.fspath.dirname for e in exemptions]):
+        sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER, priority=2)
+    else:
+        sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER_NEW, priority=2)
 
     yield sm
 
