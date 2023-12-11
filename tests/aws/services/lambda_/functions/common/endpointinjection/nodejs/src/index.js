@@ -1,18 +1,15 @@
+// SDK v2: https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/welcome.html
 const AWS = require("aws-sdk");
-const shouldConfigureClient = process.env.CONFIGURE_CLIENT === "1";
 
-let sqsClient;
 
-if (shouldConfigureClient) {
-    sqsClient = new AWS.SQS({
-        region: "us-east-1",
-        endpoint: process.env.AWS_ENDPOINT_URL
-    });
-} else {
-    sqsClient = new AWS.SQS({region: "us-east-1"});
-}
+const sqsClient = new AWS.SQS({
+    endpoint: process.env.AWS_ENDPOINT_URL
+});
 
 exports.handler = async function(event, context) {
-    await sqsClient.listQueues().promise();
+    // NOTE: With older AWS SDKs, SQS responses are broken returning some ResponseMetadata instead of real data.
+    const response = await sqsClient.listQueues().promise();
+    console.log(response);
+
     return "ok"
 };

@@ -5,8 +5,11 @@
     <AWSProjectType>Lambda</AWSProjectType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.0" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.100.59" />
+    <!-- https://www.nuget.org/packages/Amazon.Lambda.Core -->
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
+    <!-- https://www.nuget.org/packages/Amazon.Lambda.Serialization.SystemTextJson -->
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.0" />
+    <!-- https://www.nuget.org/packages/AWSSDK.SQS -->
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.300.11" />
   </ItemGroup>
 </Project>

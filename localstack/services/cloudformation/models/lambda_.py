@@ -173,6 +173,7 @@ class LambdaFunction(GenericBaseModel):
                 "parameters": {
                     "Architectures": "Architectures",
                     "Code": LambdaFunction.get_lambda_code_param,
+                    "DeadLetterConfig": "DeadLetterConfig",
                     "Description": "Description",
                     "Environment": get_environment_params,
                     "FunctionName": "FunctionName",
@@ -227,9 +228,9 @@ class LambdaFunctionVersion(GenericBaseModel):
         ):
             resource["Properties"]["Version"] = result["Version"]
             resource["PhysicalResourceId"] = result["FunctionArn"]
-            connect_to().lambda_.get_waiter("published_version_active").wait(
-                FunctionName=result["FunctionName"], Qualifier=result["Version"]
-            )
+            connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_.get_waiter(
+                "published_version_active"
+            ).wait(FunctionName=result["FunctionName"], Qualifier=result["Version"])
 
         return {
             "create": {

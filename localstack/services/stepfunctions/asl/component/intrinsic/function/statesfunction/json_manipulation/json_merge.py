@@ -68,14 +68,15 @@ class JsonMerge(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
+        args = env.stack.pop()
 
-        is_deep_merge = env.stack.pop()
+        is_deep_merge = args.pop()
         self._validate_is_deep_merge_argument(is_deep_merge)
 
-        snd = env.stack.pop()
+        snd = args.pop()
         self._validate_merge_argument(snd, 2)
 
-        fst = env.stack.pop()
+        fst = args.pop()
         self._validate_merge_argument(snd, 2)
 
         # Currently, Step Functions only supports the shallow merging mode; therefore, you must specify the boolean

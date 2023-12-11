@@ -52,7 +52,8 @@ class TimeoutSecondsPath(Timeout):
         return False
 
     def _eval_seconds(self, env: Environment) -> int:
-        seconds = JSONPathUtils.extract_json(self.path, env.inp)
+        inp = env.stack[-1]
+        seconds = JSONPathUtils.extract_json(self.path, inp)
         if not isinstance(seconds, int) and seconds <= 0:
             raise ValueError(
                 f"Expected non-negative integer for TimeoutSecondsPath, got '{seconds}' instead."

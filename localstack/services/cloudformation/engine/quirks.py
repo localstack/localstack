@@ -14,7 +14,6 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     # Example
     # "AWS::ApiGateway::Resource": "/properties/ResourceId",
     "AWS::Events::EventBus": "/properties/Name",
-    "AWS::Events::Rule": "/properties/Name",
     "AWS::ApiGateway::RequestValidator": "/properties/RequestValidatorId",
     "AWS::ApiGateway::Deployment": "/properties/DeploymentId",
     "AWS::ApiGateway::Resource": "/properties/ResourceId",

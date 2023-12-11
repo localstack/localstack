@@ -40,8 +40,10 @@ class ArrayContains(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        value = env.stack.pop()
-        array = env.stack.pop()
+        args = env.stack.pop()
+
+        array = args[0]
+        value = args[1]
         if not isinstance(array, list):
             raise TypeError(f"Expected an array type as first argument, but got {array}.")
         contains = value in array

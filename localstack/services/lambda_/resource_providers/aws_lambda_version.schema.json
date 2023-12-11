@@ -1,0 +1,52 @@
+{
+  "typeName": "AWS::Lambda::Version",
+  "description": "Resource Type definition for AWS::Lambda::Version",
+  "additionalProperties": false,
+  "properties": {
+    "FunctionName": {
+      "type": "string"
+    },
+    "ProvisionedConcurrencyConfig": {
+      "$ref": "#/definitions/ProvisionedConcurrencyConfiguration"
+    },
+    "Description": {
+      "type": "string"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "CodeSha256": {
+      "type": "string"
+    },
+    "Version": {
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "ProvisionedConcurrencyConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ProvisionedConcurrentExecutions": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ProvisionedConcurrentExecutions"
+      ]
+    }
+  },
+  "required": [
+    "FunctionName"
+  ],
+  "createOnlyProperties": [
+    "/properties/FunctionName"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id",
+    "/properties/Version"
+  ]
+}

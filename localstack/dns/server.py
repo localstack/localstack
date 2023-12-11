@@ -828,8 +828,17 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
     if config.LOCALSTACK_HOST.host != LOCALHOST_HOSTNAME:
         dns_server.add_host_pointing_to_localstack(f".*{config.LOCALSTACK_HOST.host}")
 
-    if config.DNS_LOCAL_NAME_PATTERNS:
-        for skip_pattern in re.split(r"[,;\s]+", config.DNS_LOCAL_NAME_PATTERNS):
+    # support both DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM and DNS_LOCAL_NAME_PATTERNS
+    # until the next major version change
+    # TODO(srw): remove the usage of DNS_LOCAL_NAME_PATTERNS
+    skip_local_resolution = " ".join(
+        [
+            config.DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM,
+            config.DNS_LOCAL_NAME_PATTERNS,
+        ]
+    ).strip()
+    if skip_local_resolution:
+        for skip_pattern in re.split(r"[,;\s]+", skip_local_resolution):
             dns_server.add_skip(skip_pattern)
 
     dns_server.start()

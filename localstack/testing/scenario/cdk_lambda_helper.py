@@ -5,7 +5,9 @@ import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from localstack.constants import AWS_REGION_US_EAST_1
+from botocore.exceptions import ClientError
+
+from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.run import LOG, run
 
 if TYPE_CHECKING:
@@ -141,9 +143,12 @@ def _zip_lambda_resources(
 
 
 def _upload_to_s3(s3_client: "S3Client", bucket_name: str, key_name: str, file: str):
-    options = {"Bucket": bucket_name}
-    region_name = s3_client.meta.region_name
-    if region_name != AWS_REGION_US_EAST_1:
-        options["CreateBucketConfiguration"] = {"LocationConstraint": region_name}
-    s3_client.create_bucket(**options)
+    try:
+        create_s3_bucket(bucket_name, s3_client)
+    except ClientError as exc:
+        # when creating an already existing bucket, regions differ in their behavior:
+        # us-east-1 will silently pass (idempotent)
+        # any other region will return a `BucketAlreadyOwnedByYou` exception.
+        if exc.response["Error"]["Code"] != "BucketAlreadyOwnedByYou":
+            raise exc
     s3_client.upload_file(Filename=file, Bucket=bucket_name, Key=key_name)

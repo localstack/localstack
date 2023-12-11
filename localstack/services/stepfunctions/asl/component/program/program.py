@@ -81,6 +81,7 @@ class Program(EvalComponent):
             while env.is_running():
                 next_state: CommonStateField = self._get_state(env.next_state_name)
                 next_state.eval(env)
+                env.stack.clear()
         except FailureEventException as ex:
             env.set_error(error=ex.get_execution_failed_event_details())
         except Exception as ex:

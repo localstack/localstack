@@ -1,0 +1,18 @@
+Resources:
+  Table:
+    Type: AWS::DynamoDB::GlobalTable
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: keyName
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: keyName
+          AttributeType: S
+      Replicas:
+        - Region: us-east-1
+
+
+Outputs:
+  TableName:
+    Value: !Ref Table

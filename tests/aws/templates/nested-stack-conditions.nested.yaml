@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Mode:
+    Type: String
+  BucketBaseName:
+    Type: String
+Conditions:
+  ProdMode: !Equals [ !Ref Mode, prod ]
+  TestMode: !Equals [ !Ref Mode, test ]
+Resources:
+  TestS3:
+    Type: AWS::S3::Bucket
+    Condition: TestMode
+    Properties:
+      BucketName:
+        Fn::Join:
+          - "-"
+          - - !Ref BucketBaseName
+            - test
+  ProdS3:
+    Type: AWS::S3::Bucket
+    Condition: ProdMode
+    Properties:
+      BucketName:
+        Fn::Join:
+          - "-"
+          - - !Ref BucketBaseName
+            - prod
+Outputs:
+  TestBucket:
+    Condition: TestMode
+    Value: !Ref TestS3
+  ProdBucket:
+    Condition: ProdMode
+    Value: !Ref ProdS3

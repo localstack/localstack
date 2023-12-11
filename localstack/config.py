@@ -834,6 +834,10 @@ BUCKET_MARKER_LOCAL = (
     os.environ.get("BUCKET_MARKER_LOCAL", "").strip() or DEFAULT_BUCKET_MARKER_LOCAL
 )
 
+# PUBLIC: Opt-out to inject the environment variable AWS_ENDPOINT_URL for automatic configuration of AWS SDKs:
+# https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html
+LAMBDA_DISABLE_AWS_ENDPOINT_URL = is_env_true("LAMBDA_DISABLE_AWS_ENDPOINT_URL")
+
 # PUBLIC: bridge (Docker default)
 # Docker network driver for the Lambda and ECS containers. https://docs.docker.com/network/
 LAMBDA_DOCKER_NETWORK = os.environ.get("LAMBDA_DOCKER_NETWORK", "").strip()
@@ -1015,7 +1019,10 @@ DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
 # Comma-separated list of regex patterns for DNS names to resolve locally.
 # Any DNS name not matched against any of the patterns on this whitelist
 # will resolve to the real DNS entry, rather than the local one.
-DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()
+DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM = (
+    os.environ.get("DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM") or ""
+).strip()
+DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()  # deprecated
 
 # IP address that AWS endpoints should resolve to in our local DNS server. By default,
 # hostnames resolve to 127.0.0.1, which allows to use the LocalStack APIs transparently
@@ -1099,6 +1106,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
+    "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",

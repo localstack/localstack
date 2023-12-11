@@ -1,0 +1,59 @@
+plugins {
+    id 'java'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // AWS SDK v2: https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/home.html
+    implementation platform('software.amazon.awssdk:bom:2.21.33')
+    // SQS and HTTP clients
+    implementation 'software.amazon.awssdk:sqs'
+    compileOnly 'software.amazon.awssdk:apache-client'
+    implementation 'software.amazon.awssdk:url-connection-client'
+    implementation 'software.amazon.awssdk:aws-crt-client'
+    implementation 'software.amazon.awssdk:netty-nio-client'
+
+    // AWS Java libraries https://github.com/aws/aws-lambda-java-libs
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+
+     // SLF4J logging
+    implementation 'org.slf4j:slf4j-nop:2.0.9'
+}
+
+task packageFat(type: Zip) {
+    from compileJava
+    from processResources
+    into('lib') {
+        from configurations.runtimeClasspath
+    }
+    dirMode = 0755
+    fileMode = 0755
+}
+
+task packageLibs(type: Zip) {
+    into('java/lib') {
+        from configurations.runtimeClasspath
+    }
+    dirMode = 0755
+    fileMode = 0755
+}
+
+task packageSkinny(type: Zip) {
+    from compileJava
+    from processResources
+}
+
+tasks.withType(AbstractArchiveTask) {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+build.dependsOn packageSkinny

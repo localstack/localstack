@@ -1,6 +1,7 @@
 DOCKER_PLATFORM ?= linux/amd64
 # Using a sha256 hash breaks on multi-platform hosts (e.g., ARM Macs): https://github.com/moby/moby/issues/43188
-DOCKER_RUST_IMAGE ?= rust:1.67.1
+# https://hub.docker.com/_/rust/tags
+DOCKER_RUST_IMAGE ?= rust:1.74.0
 
 # x86 cross-build on ARM hosts are killed due to memory issues: https://github.com/rust-lang/cargo/issues/10781#issuecomment-1351670409
 # Slow workaround takes ~5min to build on an M1 MacBook Pro: --config net.git-fetch-with-cli=true
@@ -21,13 +22,11 @@ RUST_TARGET ?= x86_64-unknown-linux-musl
 
 build:
 	mkdir -p build && \
-	docker run --rm --platform=$(DOCKER_PLATFORM) -v $$(pwd)/src:/app -v $$(pwd)/build:/out:cached $(DOCKER_RUST_IMAGE) bash -c "rustup target add $(RUST_TARGET) && mkdir -p /app2 && cp -r /app/* /app2 && cd /app2 && cargo build $(ARM_CROSS_BUILD_WORKAROUND) --release --target $(RUST_TARGET) && cp ./target/$(RUST_TARGET)/release/bootstrap /out && chown $$(id -u):$$(id -g) /out/bootstrap"
-	find ./build -exec touch -t 200001010100.00 {} \;
-	cd ./build && zip -r handler.zip .
-	mv ./build/handler.zip .
+	docker run --rm --platform=$(DOCKER_PLATFORM) -v $$(pwd)/src:/app -v $$(pwd)/build:/out:cached $(DOCKER_RUST_IMAGE) bash -c "rustup target add $(RUST_TARGET) && mkdir -p /app2 && cp -r /app/* /app2 && cd /app2 && cargo build $(ARM_CROSS_BUILD_WORKAROUND) --release --target $(RUST_TARGET) && cp ./target/$(RUST_TARGET)/release/bootstrap /out && chown $$(id -u):$$(id -g) /out/bootstrap" && \
+	cd ./build && zip -r handler.zip . && \
+	mv handler.zip ..
 
 clean:
-	$(RM) -r build
-	$(RM) handler.zip
+	$(RM) -r build handler.zip
 
 .PHONY: build clean

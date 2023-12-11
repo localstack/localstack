@@ -213,6 +213,29 @@ Resources:
 """
 
 
+@markers.aws.validated
+def test_rule_properties(deploy_cfn_template, aws_client, snapshot):
+    event_bus_name = f"events-{short_uid()}"
+    rule_name = f"rule-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(event_bus_name, "<event-bus-name>"))
+    snapshot.add_transformer(snapshot.transform.regex(rule_name, "<custom-rule-name>"))
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/events_rule_properties.yaml"
+        ),
+        parameters={"EventBusName": event_bus_name, "RuleName": rule_name},
+    )
+
+    rule_id = stack.outputs["RuleWithoutNameArn"].rsplit("/")[-1]
+    snapshot.add_transformer(snapshot.transform.regex(rule_id, "<rule-id>"))
+
+    without_bus_id = stack.outputs["RuleWithoutBusArn"].rsplit("/")[-1]
+    snapshot.add_transformer(snapshot.transform.regex(without_bus_id, "<without-bus-id>"))
+
+    snapshot.match("outputs", stack.outputs)
+
+
 # {"LogicalResourceId": "ScheduledRule", "ResourceType": "AWS::Events::Rule", "ResourceStatus": "CREATE_FAILED", "ResourceStatusReason": "s3 is not a supported service for a target."}
 @markers.aws.needs_fixing
 def test_cfn_handle_events_rule(deploy_cfn_template, aws_client):

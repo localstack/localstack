@@ -1,0 +1,28 @@
+{
+  "Comment": "BASE_PASS_RESULT_NULL_INPUT_OUTPUT_PATHS",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Parameters": {
+        "Arg1": "argument1",
+        "FromInput.$": "$"
+      },
+      "Next": "State1",
+    },
+    "State1": {
+      "Type": "Pass",
+      "InputPath": null,
+      "Parameters": {
+        "Arg2": "argument2",
+        "FromInput.$": "$"
+      },
+      "Next": "State2",
+    },
+    "State2": {
+      "Type": "Pass",
+      "OutputPath": null,
+      "End": true,
+    }
+  },
+}

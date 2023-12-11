@@ -40,7 +40,9 @@ class ArrayPartition(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        chunk_size = env.stack.pop()
+        args = env.stack.pop()
+
+        chunk_size = args.pop()
         if not isinstance(chunk_size, (int, float)):
             raise TypeError(f"Expected an integer value as chunk_size, but got {chunk_size}.")
         chunk_size = round(chunk_size)
@@ -49,7 +51,7 @@ class ArrayPartition(StatesFunction):
                 f"Expected a non-zero, positive integer as chuck_size, but got {chunk_size}."
             )
 
-        array = env.stack.pop()
+        array = args.pop()
         if not isinstance(array, list):
             raise TypeError(f"Expected an array type as first argument, but got {array}.")
 

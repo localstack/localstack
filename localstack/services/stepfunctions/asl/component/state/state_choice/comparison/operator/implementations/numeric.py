@@ -20,11 +20,16 @@ class NumericEquals(Operator):
         return str(ComparisonOperatorType.NumericEquals)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if _is_numeric(variable):
-            res = variable == value
+            res = variable == comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = NumericEquals._compare(variable, value)
         env.stack.append(res)
 
 
@@ -35,8 +40,11 @@ class NumericEqualsPath(NumericEquals):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        NumericEquals.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = NumericEquals._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class NumericGreaterThan(Operator):
@@ -45,11 +53,16 @@ class NumericGreaterThan(Operator):
         return str(ComparisonOperatorType.NumericGreaterThan)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if _is_numeric(variable):
-            res = variable > value
+            res = variable > comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = NumericGreaterThan._compare(variable, value)
         env.stack.append(res)
 
 
@@ -60,8 +73,11 @@ class NumericGreaterThanPath(NumericGreaterThan):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        NumericGreaterThan.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = NumericGreaterThanPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class NumericGreaterThanEquals(Operator):
@@ -70,11 +86,16 @@ class NumericGreaterThanEquals(Operator):
         return str(ComparisonOperatorType.NumericGreaterThanEquals)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if _is_numeric(variable):
-            res = variable >= value
+            res = variable >= comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = NumericGreaterThanEquals._compare(variable, value)
         env.stack.append(res)
 
 
@@ -85,8 +106,11 @@ class NumericGreaterThanEqualsPath(NumericGreaterThanEquals):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        NumericGreaterThanEquals.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = NumericGreaterThanEqualsPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class NumericLessThan(Operator):
@@ -95,11 +119,16 @@ class NumericLessThan(Operator):
         return str(ComparisonOperatorType.NumericLessThan)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if _is_numeric(variable):
-            res = variable < value
+            res = variable < comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = NumericLessThan._compare(variable, value)
         env.stack.append(res)
 
 
@@ -110,8 +139,11 @@ class NumericLessThanPath(NumericLessThan):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        NumericLessThan.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = NumericLessThanPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class NumericLessThanEquals(Operator):
@@ -120,11 +152,16 @@ class NumericLessThanEquals(Operator):
         return str(ComparisonOperatorType.NumericLessThanEquals)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if _is_numeric(variable):
-            res = variable <= value
+            res = variable <= comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = NumericLessThanEquals._compare(variable, value)
         env.stack.append(res)
 
 
@@ -135,5 +172,8 @@ class NumericLessThanEqualsPath(NumericLessThanEquals):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        NumericLessThanEquals.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = NumericLessThanEqualsPath._compare(variable, comp_value)
+        env.stack.append(res)

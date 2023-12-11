@@ -31,5 +31,7 @@ class IteratorWorker(IterationWorker):
         if self._parameters:
             map_state_input = self._env.stack[-1]
             env_frame.inp = copy.deepcopy(map_state_input)
+            env_frame.stack.append(env_frame.inp)
             self._parameters.eval(env_frame)
             env_frame.inp = env_frame.stack.pop()
+            env_frame.stack.append(env_frame.inp)

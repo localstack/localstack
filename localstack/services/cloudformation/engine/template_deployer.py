@@ -1440,6 +1440,8 @@ class TemplateDeployer:
 def resolve_outputs(account_id: str, region_name: str, stack) -> list[dict]:
     result = []
     for k, details in stack.outputs.items():
+        if not evaluate_resource_condition(stack.resolved_conditions, details):
+            continue
         value = None
         try:
             resolve_refs_recursively(

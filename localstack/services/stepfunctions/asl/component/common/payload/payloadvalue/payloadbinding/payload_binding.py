@@ -16,9 +16,7 @@ class PayloadBinding(PayloadValue, abc.ABC):
         ...
 
     def _eval_body(self, env: Environment) -> None:
-        val = self._eval_val(env=env)
-
         cnt: dict = env.stack.pop()
+        val = self._eval_val(env=env)
         cnt[self.field] = val
-
         env.stack.append(cnt)

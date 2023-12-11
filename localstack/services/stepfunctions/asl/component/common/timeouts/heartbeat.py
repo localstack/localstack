@@ -37,7 +37,8 @@ class HeartbeatSecondsPath(Heartbeat):
         return cls(path=path)
 
     def _eval_seconds(self, env: Environment) -> int:
-        seconds = JSONPathUtils.extract_json(self.path, env.inp)
+        inp = env.stack[-1]
+        seconds = JSONPathUtils.extract_json(self.path, inp)
         if not isinstance(seconds, int) and seconds <= 0:
             raise ValueError(
                 f"Expected non-negative integer for HeartbeatSecondsPath, got '{seconds}' instead."
