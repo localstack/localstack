@@ -76,6 +76,7 @@ PROVIDER_DEFAULTS = {
     "AWS::CDK::Metadata": "ResourceProviders",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::CloudFormation::Stack": "ResourceProvider",
+    "AWS::CloudTrail::Trail": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
     "AWS::DynamoDB::GlobalTable": "ResourceProvider",
