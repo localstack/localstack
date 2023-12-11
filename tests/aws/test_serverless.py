@@ -32,7 +32,7 @@ class TestServerless:
     @pytest.fixture(scope="class")
     def setup_and_teardown(self, aws_client, delenv):
         if not is_aws_cloud():
-            delenv("AWS_PROFILE")
+            delenv("AWS_PROFILE", raising=False)
         base_dir = get_base_dir()
         if not os.path.exists(os.path.join(base_dir, "node_modules")):
             # install dependencies
