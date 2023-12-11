@@ -93,6 +93,15 @@ ClientAddress = Tuple[str, int]
 psutil_cache = TTLCache(maxsize=100, ttl=10)
 
 
+# TODO: update route53 provider to use this util
+def normalise_dns_name(name: DNSLabel | str) -> str:
+    name = str(name)
+    if not name.endswith("."):
+        return f"{name}."
+
+    return name
+
+
 @cached(cache=psutil_cache)
 def list_network_interface_details() -> dict[str, list[snicaddr]]:
     return psutil.net_if_addrs()
@@ -451,7 +460,7 @@ class Resolver(DnsServerProtocol):
         converter = RecordConverter(request, client_address)
 
         # check for direct (not regex based) response
-        zone = self.zones.get(request.q.qname)
+        zone = self.zones.get(normalise_dns_name(request.q.qname))
         if zone is not None:
             for zone_records in zone:
                 rr = converter.to_record(zone_records).try_rr(request.q)
@@ -522,12 +531,14 @@ class Resolver(DnsServerProtocol):
 
     def add_host(self, name: str, record: NameRecord):
         LOG.debug("Adding host %s with record %s", name, record)
+        name = normalise_dns_name(name)
         with self.lock:
             self.zones.setdefault(name, [])
             self.zones[name].append(record)
 
     def delete_host(self, name: str, record: NameRecord):
         LOG.debug("Deleting host %s with record %s", name, record)
+        name = normalise_dns_name(name)
         with self.lock:
             if not self.zones.get(name):
                 raise ValueError("Could not find entry %s for name %s in zones", record, name)

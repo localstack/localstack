@@ -177,6 +177,16 @@ class TestDNSServer:
         assert answer.answer
         assert "122.122.122.122" in answer.to_text()
 
+    def test_dns_server_specific_name_overrides_wildcard(self, dns_server, query_dns):
+        dns_server.add_host("*.example.org", TargetRecord("1.2.3.4", RecordType.A))
+        dns_server.add_host("foo.example.org", TargetRecord("5.6.7.8", RecordType.A))
+
+        answer = query_dns("foo.example.org", "A")
+
+        assert answer.answer
+        assert "5.6.7.8" in answer.to_text()
+        assert "1.2.3.4" not in answer.to_text()
+
     def test_redirect_to_localstack_lifecycle(self, dns_server, query_dns):
         """Test adding records pointing to LS at all times"""
         dns_server.add_host_pointing_to_localstack("*.example.org")
