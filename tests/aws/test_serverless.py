@@ -43,8 +43,11 @@ class TestServerless:
         existing_api_ids = [api["id"] for api in apis]
 
         # deploy serverless app
-        run(["npm", "run", "deploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir,
-            env_vars={"AWS_ACCESS_KEY_ID": TEST_AWS_ACCOUNT_ID})
+        run(
+            ["npm", "run", "deploy", "--", f"--region={TEST_AWS_REGION_NAME}"],
+            cwd=base_dir,
+            env_vars={"AWS_ACCESS_KEY_ID": TEST_AWS_ACCOUNT_ID},
+        )
 
         yield existing_api_ids
 
