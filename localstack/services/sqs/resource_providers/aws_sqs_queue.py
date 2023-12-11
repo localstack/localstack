@@ -96,7 +96,8 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
         model = request.desired_state
         sqs = request.aws_client_factory.sqs
 
-        model["FifoQueue"] = model.get("FifoQueue", False)
+        if model.get("FifoQueue", False):
+            model["FifoQueue"] = model["FifoQueue"]
 
         queue_name = model.get("QueueName")
         if not queue_name:
@@ -190,8 +191,8 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
             request.desired_state.get("QueueName", request.previous_state["QueueName"])
             != request.previous_state["QueueName"]
         ) or (
-            request.desired_state.get("FifoQueue", request.previous_state["FifoQueue"])
-            != request.previous_state["FifoQueue"]
+            request.desired_state.get("FifoQueue", request.previous_state.get("FifoQueue"))
+            != request.previous_state.get("FifoQueue")
         )
 
         if not should_replace:
