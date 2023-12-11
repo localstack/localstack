@@ -5,6 +5,7 @@ import os
 import pytest
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.common import retry, run
@@ -20,7 +21,18 @@ LOG = logging.getLogger(__name__)
 
 class TestServerless:
     @pytest.fixture(scope="class")
-    def setup_and_teardown(self, aws_client):
+    def delenv(self):
+        # Workaround for the inability to use the standard `monkeypatch` fixture in `class` scope
+        from _pytest.monkeypatch import MonkeyPatch
+
+        mkypatch = MonkeyPatch()
+        yield mkypatch.delenv
+        mkypatch.undo()
+
+    @pytest.fixture(scope="class")
+    def setup_and_teardown(self, aws_client, delenv):
+        if not is_aws_cloud():
+            delenv("AWS_PROFILE")
         base_dir = get_base_dir()
         if not os.path.exists(os.path.join(base_dir, "node_modules")):
             # install dependencies
@@ -31,7 +43,8 @@ class TestServerless:
         existing_api_ids = [api["id"] for api in apis]
 
         # deploy serverless app
-        run(["npm", "run", "deploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir)
+        run(["npm", "run", "deploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir,
+            env_vars={"AWS_ACCESS_KEY_ID": TEST_AWS_ACCOUNT_ID})
 
         yield existing_api_ids
 
