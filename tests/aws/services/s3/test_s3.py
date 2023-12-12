@@ -517,7 +517,19 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    @pytest.mark.parametrize("key", ["file%2Fname", "test@key/", "test%123", "test%percent"])
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "file%2Fname",
+            "test@key/",
+            "test%123",
+            "test%percent",
+            "test key/",
+            "test key//",
+            "test%123/",
+            "a/%F0%9F%98%80/",
+        ],
+    )
     def test_put_get_object_special_character(self, s3_bucket, aws_client, snapshot, key):
         snapshot.add_transformer(snapshot.transform.s3_api())
         resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
