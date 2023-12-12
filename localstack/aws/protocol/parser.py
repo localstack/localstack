@@ -69,7 +69,6 @@ import re
 from abc import ABC
 from email.utils import parsedate_to_datetime
 from typing import IO, Any, Dict, List, Mapping, Optional, Tuple, Union
-from urllib.parse import unquote
 from xml.etree import ElementTree as ETree
 
 import cbor2
@@ -1063,17 +1062,21 @@ class S3RequestParser(RestXMLRequestParser):
         Special handling of parsing the shape for s3 object-names (=key):
         trailing '/' are valid and need to be preserved, however, the url-matcher removes it from the key
         we check the request.url to verify the name.
-        We decode the key for the comparison with `base_url` in case of special characters.
+        We encode the key for the comparison with `base_url` in case of special characters with the same logic as
+        Werkzeug, with safe characters.
         """
         if (
             shape is not None
             and uri_params is not None
             and shape.serialization.get("location") == "uri"
             and shape.serialization.get("name") == "Key"
-            and request.base_url.endswith(f"{unquote(uri_params['Key'])}/")
+            and (
+                (trailing_slashes := request.path.partition(uri_params["Key"])[2])
+                and all(char == "/" for char in trailing_slashes)
+            )
         ):
             uri_params = dict(uri_params)
-            uri_params["Key"] = uri_params["Key"] + "/"
+            uri_params["Key"] = uri_params["Key"] + trailing_slashes
         return super()._parse_shape(request, shape, node, uri_params)
 
     @_text_content
