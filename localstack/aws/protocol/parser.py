@@ -1062,8 +1062,8 @@ class S3RequestParser(RestXMLRequestParser):
         Special handling of parsing the shape for s3 object-names (=key):
         trailing '/' are valid and need to be preserved, however, the url-matcher removes it from the key
         we check the request.url to verify the name.
-        We encode the key for the comparison with `base_url` in case of special characters with the same logic as
-        Werkzeug, with safe characters.
+        Trailing slashes are stripped from the path, so we need special logic to compare the parsed Key parameter
+        against the path and add the missing slashes
         """
         if (
             shape is not None
