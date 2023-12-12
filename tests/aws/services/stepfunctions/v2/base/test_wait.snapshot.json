@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[Z]": {
-    "recorded-date": "06-12-2023, 07:58:05",
+    "recorded-date": "11-12-2023, 22:01:34",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -72,7 +72,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[.000000Z]": {
-    "recorded-date": "06-12-2023, 07:59:06",
+    "recorded-date": "11-12-2023, 22:03:38",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -144,7 +144,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[.000Z]": {
-    "recorded-date": "06-12-2023, 08:00:08",
+    "recorded-date": "11-12-2023, 22:04:41",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -216,7 +216,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[]": {
-    "recorded-date": "06-12-2023, 08:00:24",
+    "recorded-date": "11-12-2023, 22:05:59",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -269,7 +269,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[.000000]": {
-    "recorded-date": "06-12-2023, 08:00:39",
+    "recorded-date": "11-12-2023, 22:06:14",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -322,7 +322,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[.000]": {
-    "recorded-date": "06-12-2023, 08:00:53",
+    "recorded-date": "11-12-2023, 22:06:28",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -365,6 +365,265 @@
             "previousEventId": 2,
             "timestamp": "timestamp",
             "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[.0000000Z]": {
+    "recorded-date": "11-12-2023, 22:02:36",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_wait_timestamppath[.00Z]": {
+    "recorded-date": "11-12-2023, 22:05:44",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_timestamp_in_past": {
+    "recorded-date": "11-12-2023, 22:35:58",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "start_at": "<timestamp>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_timestamp_too_far_in_future_fails": {
+    "recorded-date": "11-12-2023, 23:17:14",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "start_at": "<timestamp>"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
           }
         ],
         "ResponseMetadata": {

@@ -13,20 +13,72 @@ from tests.aws.services.stepfunctions.utils import (
 # TODO: add tests for seconds, secondspath, timestamp
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestSfnWait:
-    # TODO: timestamp in the past
-    # def test_timestamp_in_past(self):
+    @markers.aws.unknown
+    def test_timestamp_in_past_succeeds_immediately(
+            self,
+            aws_client,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_TIMESTAMPPATH)
+        definition = json.dumps(template)
+
+        offset_2days = datetime.timedelta(days=2)
+        wait_timestamp = datetime.datetime.now(tz=datetime.timezone.utc) - offset_2days
+        timestamp = wait_timestamp.strftime("%Y-%m-%dT%H:%M:%S")
+
+        full_timestamp = f"{timestamp}.000Z"
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(full_timestamp, "<timestamp>"))
+        exec_input = json.dumps({"start_at": full_timestamp})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
 
     # TODO: test maximum wait time (1 year and 5 minutes)
-    # def test_timestamp_too_far_in_future(self):
+    @markers.aws.unknown
+    def test_timestamp_too_far_in_future_fails(
+            self,
+            aws_client,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_TIMESTAMPPATH)
+        definition = json.dumps(template)
+
+        offset_toofar = datetime.timedelta(days=800)
+        wait_timestamp = datetime.datetime.now(tz=datetime.timezone.utc) + offset_toofar
+        timestamp = wait_timestamp.strftime("%Y-%m-%dT%H:%M:%S")
+
+        full_timestamp = f"{timestamp}.000Z"
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(full_timestamp, "<timestamp>"))
+        exec_input = json.dumps({"start_at": full_timestamp})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
 
     @pytest.mark.parametrize(
         "timestamp_suffix",
         [
             # valid formats
-            # TODO: re-enable
-            # "Z",
-            # ".000000Z",
-            # ".000Z",
+            "Z",
+            ".0000000Z",
+            ".000000Z",
+            ".000Z",
+            ".00Z",
             # invalid formats
             "",
             ".000000",
@@ -51,7 +103,7 @@ class TestSfnWait:
 
         full_timestamp = f"{timestamp}{timestamp_suffix}"
         sfn_snapshot.add_transformer(sfn_snapshot.transform.regex(full_timestamp, "<timestamp>"))
-        exec_input = json.dumps({"start_at": f"{timestamp}{timestamp_suffix}"})
+        exec_input = json.dumps({"start_at": full_timestamp})
         # TODO: make this return the execution ARN for manual assertions
         create_and_record_execution(
             aws_client.stepfunctions,
