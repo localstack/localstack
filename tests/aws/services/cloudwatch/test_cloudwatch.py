@@ -1970,9 +1970,7 @@ class TestCloudwatch:
         retry(assert_ordering, retries=10, sleep=1.0)
 
     @markers.aws.validated
-    # @pytest.mark.skip(
-    #     reason="it's not supported by moto"
-    # )
+    @pytest.mark.skip(reason="it's not supported by moto or new provider")
     def test_handle_different_units(self, aws_client, snapshot):
         namespace = f"n-sp-{short_uid()}"
         metric_name = "m-test"
