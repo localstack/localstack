@@ -72,7 +72,7 @@ class TestCloudwatch:
         snapshot.match("get_metric_statistics", stats)
 
     @markers.aws.only_localstack
-    def test_put_metric_data_gzip(self, aws_client, snapshot):
+    def test_put_metric_data_gzip(self, aws_client):
         metric_name = "test-metric"
         namespace = "namespace"
         data = (

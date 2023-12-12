@@ -10,31 +10,15 @@ from localstack.utils.files import mkdir
 
 LOG = logging.getLogger(__name__)
 
-STAT_TO_SQLITE_FUNC = {
+STAT_TO_SQLITE_AGGREGATION_FUNC = {
     "Sum": "SUM(value)",
-    "Average": "AVG(value)",
-    "Minimum": "MIN(value)",
-    "Maximum": "MAX(value)",
-    "SampleCount": "COUNT(value)",
-}
-
-STAT_TO_SQLITE_COLUMNS = {
-    "Sum": "sum",
-    "Average": "sum, sample_count",
-    "Minimum": "min",
-    "Maximum": "max",
-    "SampleCount": "sample_count",
-}
-
-STAT_TO_SQLITE_FUNC_2 = {
-    "Sum": "SUM(value)",
-    "Average": "SUM(value)",
+    "Average": "SUM(value)",  # we need to calculate the avg manually as we have also a table with aggregated data
     "Minimum": "MIN(value)",
     "Maximum": "MAX(value)",
     "SampleCount": "Sum(count)",
 }
 
-STAT_TO_SQLITE_COLUMNS_2 = {
+STAT_TO_SQLITE_COL_NAME_HELPER = {
     "Sum": "sum",
     "Average": "sum",
     "Minimum": "min",
@@ -209,7 +193,7 @@ class CloudwatchDatabase:
             )
             unit_filter = ""
             if unit:
-                unit_filter = "AND unit LIKE ? "
+                unit_filter = "AND unit = ? "
                 data += (unit,)
 
             dimension_filter = ""
@@ -219,16 +203,16 @@ class CloudwatchDatabase:
 
             sql_query = f"""
             SELECT
-                {STAT_TO_SQLITE_FUNC_2[stat]},
+                {STAT_TO_SQLITE_AGGREGATION_FUNC[stat]},
                 SUM(count)
             FROM (
                 SELECT
                 value, 1 as count,
                 account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution
                 FROM {self.TABLE_SINGLE_METRICS}
-                UNION
+                UNION ALL
                 SELECT
-                {STAT_TO_SQLITE_COLUMNS_2[stat]} as value, sample_count as count,
+                {STAT_TO_SQLITE_COL_NAME_HELPER[stat]} as value, sample_count as count,
                 account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution
                 FROM {self.TABLE_AGGREGATED_METRICS}
             ) AS combined
