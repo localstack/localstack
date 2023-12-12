@@ -6,7 +6,6 @@ import re
 import time
 from typing import Final, Optional, Union
 
-from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import utils as secretsmanager_utils
 from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecretNotFoundException
@@ -633,7 +632,7 @@ def backend_rotate_secret(
         del secret.versions[new_version_id]["secret_string"]
 
         for step in ["create", "set", "test", "finish"]:
-            lm_client.invoke(
+            resp = lm_client.invoke(
                 FunctionName=rotation_lambda_arn,
                 Payload=json.dumps(
                     {
@@ -643,6 +642,10 @@ def backend_rotate_secret(
                     }
                 ),
             )
+            if resp.get("StatusCode") != 200:
+                msg = f"Pending secret version {new_version_id} for Secret {secret_id} was not created by Lambda \
+                    {get_func_res['Configuration']['FunctionName']}. Remove the AWSPENDING staging label and restart rotation."
+                raise InvalidRequestException(msg)
 
     return secret.to_short_dict()
 
