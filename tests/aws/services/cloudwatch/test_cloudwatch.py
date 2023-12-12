@@ -389,7 +389,9 @@ class TestCloudwatch:
         "stat",
         ["Sum", "SampleCount", "Minimum", "Maximum", "Average"],
     )
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MetricDataResults..Label"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MetricDataResults..Label"], condition=is_new_provider
+    )
     def test_get_metric_data_stats(self, aws_client, snapshot, stat):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
@@ -446,7 +448,9 @@ class TestCloudwatch:
         retry(assert_results, retries=10, sleep_before=sleep_before)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MetricDataResults..Label"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MetricDataResults..Label"], condition=is_new_provider
+    )
     def test_get_metric_data_with_dimensions(self, aws_client, snapshot):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
@@ -1740,7 +1744,7 @@ class TestCloudwatch:
         retry(_match_results, retries=10, sleep=1.0)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"], condition=is_new_provider)
     def test_get_metric_statistics(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=timezone.utc)
@@ -1915,7 +1919,7 @@ class TestCloudwatch:
                 MaxDatapoints=10,
             )
 
-            assending_ordering = aws_client.cloudwatch.get_metric_data(
+            ascending_ordering = aws_client.cloudwatch.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "m1",
@@ -1956,7 +1960,7 @@ class TestCloudwatch:
             )
 
             default_ordering_datapoints = default_ordering["MetricDataResults"][0]["Timestamps"]
-            assending_ordering_datapoints = assending_ordering["MetricDataResults"][0]["Timestamps"]
+            assending_ordering_datapoints = ascending_ordering["MetricDataResults"][0]["Timestamps"]
             descening_ordering_datapoints = descening_ordering["MetricDataResults"][0]["Timestamps"]
 
             # The default ordering is TimestampDescending
