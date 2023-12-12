@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, TEST_AWS_ACCESS_KEY_ID
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
