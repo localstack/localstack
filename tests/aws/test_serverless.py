@@ -120,7 +120,7 @@ class TestServerless:
 
         # assert that stream consumer is properly connected and Lambda gets invoked
         def assert_invocations():
-            events = get_lambda_log_events(function_name2)
+            events = get_lambda_log_events(function_name2, logs_client=aws_client.logs)
             assert len(events) == 1
 
         kinesis_client.put_record(StreamName=stream_name, Data=b"test123", PartitionKey="key1")
@@ -144,11 +144,13 @@ class TestServerless:
         assert 1 == len(events)
         event_source_arn = events[0]["EventSourceArn"]
 
-        assert event_source_arn == arns.sqs_queue_arn(
+        queue_arn = arns.sqs_queue_arn(
             queue_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
         )
+
+        assert event_source_arn == queue_arn
         result = sqs_client.get_queue_attributes(
-            QueueUrl=arns.sqs_queue_url_for_arn(queue_name),
+            QueueUrl=arns.sqs_queue_url_for_arn(queue_arn),
             AttributeNames=[
                 "RedrivePolicy",
             ],
