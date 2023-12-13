@@ -27,9 +27,10 @@ class Timestamp(WaitFunction):
 
     @staticmethod
     def parse_timestamp(timestamp: str) -> datetime.datetime:
+        # TODO: need to fix this like we're doing for TimestampPath & add a test
         return datetime.datetime.strptime(timestamp, Timestamp.TIMESTAMP_FORMAT)
 
     def _get_wait_seconds(self, env: Environment) -> int:
-        delta = self.timestamp - datetime.datetime.today()
+        delta = self.timestamp - datetime.datetime.now()
         delta_sec = int(delta.total_seconds())
         return delta_sec
