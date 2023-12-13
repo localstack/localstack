@@ -223,6 +223,7 @@ class TestLambdaRuntimesCommon:
     @markers.aws.validated
     # Only works for >=al2 runtimes, except for any provided runtimes
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
+    # TODO: update runtime filters (should not skip >=al2 runtimes); resolved after fixing ARM build
     @markers.multiruntime(
         scenario="introspection",
         runtimes=list(

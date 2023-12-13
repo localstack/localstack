@@ -517,7 +517,19 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    @pytest.mark.parametrize("key", ["file%2Fname", "test@key/", "test%123", "test%percent"])
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "file%2Fname",
+            "test@key/",
+            "test%123",
+            "test%percent",
+            "test key/",
+            "test key//",
+            "test%123/",
+            "a/%F0%9F%98%80/",
+        ],
+    )
     def test_put_get_object_special_character(self, s3_bucket, aws_client, snapshot, key):
         snapshot.add_transformer(snapshot.transform.s3_api())
         resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
@@ -8481,6 +8493,9 @@ class TestS3BucketLifecycle:
         )
         snapshot.match("put-object-match-both-rules", put_object)
 
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_match_1)
+        snapshot.match("get-object-match-both-rules", get_object)
+
         _, parsed_exp_rule = parse_expiration_header(put_object["Expiration"])
         assert parsed_exp_rule == rule_id_1
 
@@ -8490,6 +8505,9 @@ class TestS3BucketLifecycle:
             Body=b"test", Bucket=s3_bucket, Key=key_match_2, Tagging=tag_set_match_one
         )
         snapshot.match("put-object-match-rule-1", put_object_2)
+
+        get_object_2 = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_match_2)
+        snapshot.match("get-object-match-rule-1", get_object_2)
 
         _, parsed_exp_rule = parse_expiration_header(put_object_2["Expiration"])
         assert parsed_exp_rule == rule_id_1
@@ -8501,6 +8519,17 @@ class TestS3BucketLifecycle:
         )
         snapshot.match("put-object-no-match", put_object_3)
         assert "Expiration" not in put_object_3
+
+        get_object_3 = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_match)
+        snapshot.match("get-object-no-match", get_object_3)
+
+        key_no_tags = "no-tags"
+        put_object_4 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key_no_tags)
+        snapshot.match("put-object-no-tags", put_object_4)
+        assert "Expiration" not in put_object_4
+
+        get_object_4 = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_tags)
+        snapshot.match("get-object-no-tags", get_object_4)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

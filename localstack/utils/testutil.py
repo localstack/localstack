@@ -290,6 +290,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(
     auth_creator_func=None,
     http_method=None,
     client=None,
+    role_arn: str = None,
 ):
     if methods is None:
         methods = []
@@ -304,12 +305,15 @@ def connect_api_gateway_to_http_with_lambda_proxy(
 
     for method in methods:
         int_meth = http_method or method
+        integration = {"type": "AWS_PROXY", "uri": target_uri, "httpMethod": int_meth}
+        if role_arn:
+            integration["credentials"] = role_arn
         resources[resource_path].append(
             {
                 "httpMethod": method,
                 "authorizationType": auth_type,
                 "authorizerId": None,
-                "integrations": [{"type": "AWS_PROXY", "uri": target_uri, "httpMethod": int_meth}],
+                "integrations": [integration],
             }
         )
     return resource_utils.create_api_gateway(
@@ -332,6 +336,7 @@ def create_lambda_api_gateway_integration(
     stage_name=None,
     auth_type=None,
     auth_creator_func=None,
+    role_arn: str = None,
 ):
     if methods is None:
         methods = []
@@ -355,6 +360,7 @@ def create_lambda_api_gateway_integration(
         methods=methods,
         auth_type=auth_type,
         auth_creator_func=auth_creator_func,
+        role_arn=role_arn,
     )
     return result
 

@@ -771,6 +771,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             #  NextToken response element directly outside of the AWS CLI.
             urls = urls[:max_results]
 
+        if len(urls) == 0:
+            return ListQueuesResult()
+
         return ListQueuesResult(QueueUrls=urls)
 
     def change_message_visibility(
