@@ -565,12 +565,8 @@ def backend_rotate_secret(
 
     try:
         lm_client = connect_to(region_name=self.region_name).lambda_
-        get_func_res = lm_client.get_function(FunctionName=rotation_lambda_arn)
+        lm_client.get_function(FunctionName=rotation_lambda_arn)
     except Exception:
-        # Fall through to ResourceNotFoundException.
-        pass
-    #
-    if not get_func_res:
         raise ResourceNotFoundException("Lambda does not exist or could not be accessed")
 
     secret = self.secrets[secret_id]
@@ -651,8 +647,8 @@ def backend_rotate_secret(
         except Exception:
             if pending_version:
                 raise pending_version.pop()
-            # Fall through so we'll "stuck" with a secret version in AWSPENDING state.
-            pass
+            # Fall through if there is no previously pending version so we'll "stuck" with a new
+            # secret version in AWSPENDING state.
 
     return secret.to_short_dict(version_id=new_version_id)
 
