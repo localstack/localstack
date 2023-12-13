@@ -810,6 +810,11 @@ class ResourceProviderExecutor:
                         request.resource_type,
                         request.logical_resource_id,
                     )
+                    if request.previous_state is None:
+                        # this is an issue with our update detection. We should never be in this state.
+                        request.action = "Add"
+                        return resource_provider.create(request)
+
                     return ProgressEvent(
                         status=OperationStatus.SUCCESS, resource_model=request.previous_state
                     )
