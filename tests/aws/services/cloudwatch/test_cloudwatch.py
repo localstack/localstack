@@ -528,6 +528,7 @@ class TestCloudwatch:
         retry(assert_results, retries=retries, sleep_before=sleep_before)
 
     @markers.aws.only_localstack
+    @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
     def test_raw_metric_data(self, aws_client):
         """
         tests internal endpoint at "/_aws/cloudwatch/metrics/raw"
@@ -604,6 +605,7 @@ class TestCloudwatch:
         assert isinstance(alarm["StateUpdatedTimestamp"], datetime)
 
     @markers.aws.validated
+    @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
     def test_put_composite_alarm_describe_alarms_converts_date_format_correctly(
         self, aws_client, cleanups
     ):
@@ -1277,6 +1279,7 @@ class TestCloudwatch:
         assert response["MetricAlarms"][0]["ActionsEnabled"]
 
     @markers.aws.validated
+    @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
     def test_aws_sqs_metrics_created(self, sqs_create_queue, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         sqs_url = sqs_create_queue()
