@@ -229,10 +229,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             timestamps = query_result.get("timestamps", {})
             values = query_result.get("values", {})
 
-            if scan_by == "TimestampAscending":
-                timestamps = timestamps[::-1]
-                values = values[::-1]
-
             # Paginate
             timestamp_value_dicts = [
                 {

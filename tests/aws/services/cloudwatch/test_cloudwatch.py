@@ -1848,7 +1848,9 @@ class TestCloudwatch:
     def test_put_metric_uses_utc(self, aws_client):
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
-        now_local = datetime.now()
+        now_local = datetime.now(timezone(timedelta(hours=-5), "America/Cancun")).replace(
+            tzinfo=None
+        )  # Remove the tz info to avoid boto converting it to UTC
         now_utc = datetime.utcnow()
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
@@ -1963,12 +1965,12 @@ class TestCloudwatch:
             )
 
             default_ordering_datapoints = default_ordering["MetricDataResults"][0]["Timestamps"]
-            assending_ordering_datapoints = ascending_ordering["MetricDataResults"][0]["Timestamps"]
+            ascending_ordering_datapoints = ascending_ordering["MetricDataResults"][0]["Timestamps"]
             descening_ordering_datapoints = descening_ordering["MetricDataResults"][0]["Timestamps"]
 
             # The default ordering is TimestampDescending
             assert default_ordering_datapoints == descening_ordering_datapoints
-            assert default_ordering_datapoints == assending_ordering_datapoints[::-1]
+            assert default_ordering_datapoints == ascending_ordering_datapoints[::-1]
 
         retry(assert_ordering, retries=10, sleep=1.0)
 

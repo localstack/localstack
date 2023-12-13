@@ -167,9 +167,8 @@ class CloudwatchDatabase:
         start_time: datetime,
         end_time: datetime,
         scan_by: str,
-    ) -> dict:
+    ) -> Dict[str, List]:
         # TODO exclude null values, check if dimensions must be null though if missing
-        # TODO add filters for unit
 
         with sqlite3.connect(self.METRICS_DB) as conn:
             cur = conn.cursor()
@@ -181,7 +180,6 @@ class CloudwatchDatabase:
             unit = metric_stat.get("Unit")
 
             # prepare SQL query
-            order_by = "timestamp ASC" if scan_by == ScanBy.TimestampAscending else "timestamp DESC"
             start_time_unix = self._convert_timestamp_to_unix(start_time)
             end_time_unix = self._convert_timestamp_to_unix(end_time)
 
@@ -221,7 +219,7 @@ class CloudwatchDatabase:
             {unit_filter}
             {dimension_filter}
             AND timestamp >= ? AND timestamp < ?
-            ORDER BY {order_by}
+            ORDER BY timestamp ASC
             """
 
             timestamps = []
@@ -241,6 +239,13 @@ class CloudwatchDatabase:
                     timestamps.append(start_time_unix)
                     values.append(calculated_result)
                 start_time_unix = next_start_time
+
+            # The while loop while always give us the timestamps in ascending order as we start with the start_time
+            # and increase it by the period until we reach the end_time
+            # If we want the timestamps in descending order we need to reverse the list
+            if scan_by is None or scan_by == ScanBy.TimestampDescending:
+                timestamps = timestamps[::-1]
+                values = values[::-1]
 
             return {
                 "timestamps": timestamps,
