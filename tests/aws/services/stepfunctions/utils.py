@@ -274,6 +274,7 @@ def launch_and_record_execution(
     sfn_snapshot.match("get_execution_history", get_execution_history)
 
 
+# TODO: make this return the execution ARN for manual assertions
 def create_and_record_execution(
     stepfunctions_client,
     create_iam_role_for_sfn,

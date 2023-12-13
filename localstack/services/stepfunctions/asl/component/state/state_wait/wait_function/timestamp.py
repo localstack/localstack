@@ -19,6 +19,8 @@ class Timestamp(WaitFunction):
     # the time value up to seconds and truncates milliseconds.
 
     TIMESTAMP_FORMAT: Final[str] = "%Y-%m-%dT%H:%M:%SZ"
+    # TODO: could be a bit more exact (e.g. 90 shouldn't be a valid minute)
+    TIMESTAMP_PATTERN: Final[str] = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"
 
     def __init__(self, timestamp):
         self.timestamp: Final[datetime.datetime] = timestamp
