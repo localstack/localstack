@@ -12,7 +12,7 @@ services:
       # LocalStack configuration: https://docs.localstack.cloud/references/configuration
       - DEBUG=${DEBUG-}
       - PERSISTENCE=${PERSISTENCE-}
-      - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY-}  # required for Pro
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN-}  # required for Pro
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
