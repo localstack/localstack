@@ -595,7 +595,7 @@ def backend_rotate_secret(
         if AWSCURRENT not in version["version_stages"]:
             msg = "Previous rotation request is still in progress."
             # Delay exception, so we can trigger lambda again
-            pending_version = list(InvalidRequestException(msg), version)
+            pending_version = [InvalidRequestException(msg), version]
 
     except StopIteration:
         # Pending is not present in any version
@@ -627,14 +627,12 @@ def backend_rotate_secret(
                 version_id=new_version_id,
                 version_stages=[AWSPENDING],
             )
-        else:
-            new_version_id = pending_version.pop()
 
-            # Is there an actual way to have a new secret version with an existing secret
-            # value and being this far?
-            # AWS secret rotation function templates though has this check so we remove
+            # AWS secret rotation function templates have checks on existing values so we remove
             # the dummy value to force the lambda to generate a new one.
             del secret.versions[new_version_id]["secret_string"]
+        else:
+            new_version_id = pending_version.pop()["version_id"]
 
         try:
             for step in ["create", "set", "test", "finish"]:
@@ -648,16 +646,15 @@ def backend_rotate_secret(
                         }
                     ),
                 )
-                if resp.get("StatusCode") != 200:
+                if resp.get("FunctionError"):
                     raise Exception
         except Exception:
+            if pending_version:
+                raise pending_version.pop()
             # Fall through so we'll "stuck" with a secret version in AWSPENDING state.
             pass
 
-        if pending_version:
-            raise pending_version.pop()
-
-    return secret.to_short_dict()
+    return secret.to_short_dict(version_id=new_version_id)
 
 
 @patch(MotoSecretNotFoundException.__init__)
