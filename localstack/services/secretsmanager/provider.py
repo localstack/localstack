@@ -586,6 +586,7 @@ def backend_rotate_secret(
     # version as AWSCURRENT then any later invocation of RotateSecret assumes
     # that a previous rotation request is still in progress and returns an error.
     try:
+        pending_version = None
         version = next(
             version
             for version in secret.versions.values()
@@ -593,7 +594,8 @@ def backend_rotate_secret(
         )
         if AWSCURRENT not in version["version_stages"]:
             msg = "Previous rotation request is still in progress."
-            raise InvalidRequestException(msg)
+            # Delay exception, so we can trigger lambda again
+            pending_version = list(InvalidRequestException(msg), version)
 
     except StopIteration:
         # Pending is not present in any version
@@ -607,45 +609,53 @@ def backend_rotate_secret(
         secret.rotation_requested = True
 
     if rotate_immediately:
-        # Begin the rotation process for the given secret by invoking the lambda function.
-        #
-        # We add the new secret version as "pending". The previous version remains
-        # as "current" for now. Once we've passed the new secret through the lambda
-        # rotation function (if provided) we can then update the status to "current".
-        new_version_id = self._from_client_request_token(client_request_token)
+        if not pending_version:
+            # Begin the rotation process for the given secret by invoking the lambda function.
+            #
+            # We add the new secret version as "pending". The previous version remains
+            # as "current" for now. Once we've passed the new secret through the lambda
+            # rotation function (if provided) we can then update the status to "current".
+            new_version_id = self._from_client_request_token(client_request_token)
 
-        # An initial dummy secret value is necessary otherwise moto is not adding the new
-        # secret version.
-        self._add_secret(
-            secret_id,
-            "dummy_password",
-            description=secret.description,
-            tags=secret.tags,
-            version_id=new_version_id,
-            version_stages=[AWSPENDING],
-        )
-
-        # Is there an actual way to have a new secret version with an existing secret
-        # value and being this far?
-        # AWS secret rotation function templates though has this check so we remove
-        # the dummy value to force the lambda to generate a new one.
-        del secret.versions[new_version_id]["secret_string"]
-
-        for step in ["create", "set", "test", "finish"]:
-            resp = lm_client.invoke(
-                FunctionName=rotation_lambda_arn,
-                Payload=json.dumps(
-                    {
-                        "Step": step + "Secret",
-                        "SecretId": secret.name,
-                        "ClientRequestToken": new_version_id,
-                    }
-                ),
+            # An initial dummy secret value is necessary otherwise moto is not adding the new
+            # secret version.
+            self._add_secret(
+                secret_id,
+                "dummy_password",
+                description=secret.description,
+                tags=secret.tags,
+                version_id=new_version_id,
+                version_stages=[AWSPENDING],
             )
-            if resp.get("StatusCode") != 200:
-                msg = f"Pending secret version {new_version_id} for Secret {secret_id} was not created by Lambda \
-                    {get_func_res['Configuration']['FunctionName']}. Remove the AWSPENDING staging label and restart rotation."
-                raise InvalidRequestException(msg)
+        else:
+            new_version_id = pending_version.pop()
+
+            # Is there an actual way to have a new secret version with an existing secret
+            # value and being this far?
+            # AWS secret rotation function templates though has this check so we remove
+            # the dummy value to force the lambda to generate a new one.
+            del secret.versions[new_version_id]["secret_string"]
+
+        try:
+            for step in ["create", "set", "test", "finish"]:
+                resp = lm_client.invoke(
+                    FunctionName=rotation_lambda_arn,
+                    Payload=json.dumps(
+                        {
+                            "Step": step + "Secret",
+                            "SecretId": secret.name,
+                            "ClientRequestToken": new_version_id,
+                        }
+                    ),
+                )
+                if resp.get("StatusCode") != 200:
+                    raise Exception
+        except Exception:
+            # Fall through so we'll "stuck" with a secret version in AWSPENDING state.
+            pass
+
+        if pending_version:
+            raise pending_version.pop()
 
     return secret.to_short_dict()
 
