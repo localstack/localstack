@@ -9,10 +9,11 @@ services:
       - "127.0.0.1:4510-4559:4510-4559"  # external services port range
       - "127.0.0.1:443:443"              # LocalStack HTTPS Gateway (required for Pro)
     environment:
-      # LocalStack configuration: https://docs.localstack.cloud/references/configuration
+      # Activate LocalStack Pro: https://docs.localstack.cloud/getting-started/auth-token/
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:?}  # required for Pro
+      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
       - DEBUG=${DEBUG:-0}
       - PERSISTENCE=${PERSISTENCE:-0}
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:?}  # required for Pro
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
