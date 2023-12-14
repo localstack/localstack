@@ -605,7 +605,6 @@ class TestCloudwatch:
         assert isinstance(alarm["StateUpdatedTimestamp"], datetime)
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
     def test_put_composite_alarm_describe_alarms(self, aws_client, cleanups):
         composite_alarm_name = f"composite-a-{short_uid()}"
         alarm_name = f"a-{short_uid()}"
