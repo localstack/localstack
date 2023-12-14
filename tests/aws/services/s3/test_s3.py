@@ -5543,6 +5543,10 @@ class TestS3:
         snapshot.match("list-obj-after-empty", response)
 
     @markers.aws.only_localstack
+    @pytest.mark.xfail(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="Moto parsing fails on the form",
+    )
     def test_s3_raw_request_routing(self, s3_bucket, aws_client):
         """
         When sending a PutObject request to S3 with a very raw request not having any indication that the request is
