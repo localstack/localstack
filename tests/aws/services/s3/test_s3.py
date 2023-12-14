@@ -5564,6 +5564,12 @@ class TestS3:
         get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         assert get_object["Body"].read() == data
 
+        fake_key_url = f"{default_endpoint}/fake-bucket-{short_uid()}/{object_key}"
+        resp = requests.put(
+            fake_key_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert b"NoSuchBucket" in resp.content
+
 
 class TestS3MultiAccounts:
     @pytest.fixture
