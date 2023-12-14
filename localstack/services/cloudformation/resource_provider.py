@@ -81,6 +81,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Cognito::UserPool": "ResourceProvider",
     "AWS::Cognito::UserPoolGroup": "ResourceProvider",
     "AWS::Cognito::IdentityPool": "ResourceProvider",
+    "AWS::Cognito::UserPoolClient": "ResourceProvider",
     "AWS::DynamoDB::GlobalTable": "ResourceProvider",
     "AWS::DynamoDB::Table": "ResourceProvider",
     "AWS::EC2::DHCPOptions": "ResourceProvider",
