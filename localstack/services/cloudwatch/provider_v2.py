@@ -45,6 +45,7 @@ from localstack.aws.api.cloudwatch import (
     Namespace,
     NextToken,
     Period,
+    PutCompositeAlarmInput,
     PutDashboardOutput,
     PutMetricAlarmInput,
     RecentlyActive,
@@ -374,6 +375,24 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         alarm_arn = metric_alarm.alarm["AlarmArn"]
         store.Alarms[alarm_arn] = metric_alarm
         self.alarm_scheduler.schedule_metric_alarm(alarm_arn)
+
+    @handler("PutCompositeAlarm", expand=False)
+    def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
+        composite_to_metric_alarm = {
+            "AlarmName": request.get("AlarmName"),
+            "Description": request.get("AlarmDescription"),
+            "AlarmActions": request.get("AlarmActions", []),
+            "OKActions": request.get("OKActions", []),
+            "InsufficientDataActions": request.get("InsufficientDataActions", []),
+            "ActionsEnabled": request.get("ActionsEnabled"),
+            "AlarmRule": request.get("AlarmRule"),
+            "Tags": request.get("Tags", []),
+        }
+        self.put_metric_alarm(context=context, request=composite_to_metric_alarm)
+
+        LOG.warning(
+            "Composite Alarms configuration is not yet supported, alarm state will not be evaluated"
+        )
 
     def describe_alarms(
         self,
