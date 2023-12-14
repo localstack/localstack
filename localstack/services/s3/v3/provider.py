@@ -1110,6 +1110,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # request_payer: RequestPayer = None,  # TODO:
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
+        validate_object_key(dest_key)
         store, dest_s3_bucket = self._get_cross_account_bucket(context, dest_bucket)
 
         src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_copy_source(
