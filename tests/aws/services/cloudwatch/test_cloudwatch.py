@@ -1747,7 +1747,7 @@ class TestCloudwatch:
         retry(_match_results, retries=10, sleep=1.0)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"], condition=is_new_provider)
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"])
     def test_get_metric_statistics(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=timezone.utc)
@@ -1801,6 +1801,7 @@ class TestCloudwatch:
         retry(assert_metrics_count, retries=10, sleep=1.0, sleep_before=1.0)
 
     @markers.aws.validated
+    @pytest.mark.skipif(condition=is_old_provider, reason="not supported by the old provider")
     def test_get_metric_data_pagination(self, aws_client):
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
