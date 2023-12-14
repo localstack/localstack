@@ -84,7 +84,7 @@ class KinesisMockServer(Server):
         for param in latency_params:
             env_vars[param] = self._latency
 
-        if self._data_dir:
+        if self._data_dir and config.KINESIS_PERSISTENCE:
             env_vars["SHOULD_PERSIST_DATA"] = "true"
             # FIXME use relative path to current working directory until
             #  https://github.com/etspaceman/kinesis-mock/issues/554 is resolved
