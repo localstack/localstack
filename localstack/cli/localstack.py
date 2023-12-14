@@ -867,9 +867,9 @@ def print_version() -> None:
 
 
 def print_profile() -> None:
-    if config.LOADED_PROFILE:
+    if config.LOADED_PROFILES:
         console.print(
-            f" :bust_in_silhouette: [bold]Profile:[/bold] [blue]{config.LOADED_PROFILE}[/blue]"
+            f" :bust_in_silhouette: [bold]Profile:[/bold] [blue]{', '.join(config.LOADED_PROFILES)}[/blue]"
         )
 
 
