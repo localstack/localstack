@@ -40,7 +40,6 @@ from localstack.aws.api.cloudwatch import (
     MetricDataQuery,
     MetricDataResult,
     MetricDataResultMessages,
-    MetricDataResults,
     MetricName,
     MetricStat,
     Namespace,
@@ -85,12 +84,14 @@ from localstack.utils.time import timestamp_millis
 
 PATH_GET_RAW_METRICS = "/_aws/cloudwatch/metrics/raw"
 MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
+LIST_METRICS_MAX_RESULTS = 500
 
 
 LOG = logging.getLogger(__name__)
 
 
 class ValidationError(CommonServiceException):
+    # TODO: check this error against AWS (doesn't exist in the API)
     def __init__(self, message: str):
         super().__init__("ValidationError", message, 400, True)
 
@@ -103,14 +104,18 @@ def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
                 f"The parameters MetricData.member.{indexplusone}.Value and MetricData.member.{indexplusone}.Values are mutually exclusive and you have specified both."
             )
 
-        if values := metric_item.get("Values"):
-            counts = metric_item.get("Counts", [])
-            if len(values) != len(counts) and len(counts) != 0:
+        if metric_item.get("StatisticValues") and metric_item.get("Value"):
+            raise InvalidParameterCombinationException(
+                f"The parameters MetricData.member.{indexplusone}.Value and MetricData.member.{indexplusone}.StatisticValues are mutually exclusive and you have specified both."
+            )
+
+        if metric_item.get("Values") and metric_item.get("Counts"):
+            values = metric_item.get("Values")
+            counts = metric_item.get("Counts")
+            if len(values) != len(counts):
                 raise InvalidParameterValueException(
                     f"The parameters MetricData.member.{indexplusone}.Values and MetricData.member.{indexplusone}.Counts must be of the same size."
                 )
-
-        # TODO: check for other validations
 
 
 class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
@@ -199,7 +204,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         max_datapoints: GetMetricDataMaxDatapoints = None,
         label_options: LabelOptions = None,
     ) -> GetMetricDataOutput:
-        results: List[MetricDataResults] = []
+        results: List[MetricDataResult] = []
         limit = max_datapoints or 100_800
         messages: MetricDataResultMessages = []
         nxt = None
@@ -215,35 +220,44 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             if query_result.get("messages"):
                 messages.extend(query_result.get("messages"))
 
+            # TODO: Fix this. AWS sometimes returns the metric name as label, sometimes is metric with stat
+            label = (
+                query.get("Label")
+                or f'{query["MetricStat"]["Metric"]["MetricName"]} {query["MetricStat"]["Stat"]}'
+            )
+
+            timestamps = query_result.get("timestamps", {})
+            values = query_result.get("values", {})
+
             # Paginate
-            aliases_list = PaginatedList(query_result.get("datapoints", {}).items())
-            page, nxt = aliases_list.get_page(
-                lambda metric_result: metric_result.get("Id"),
+            timestamp_value_dicts = [
+                {
+                    "Timestamp": timestamp,
+                    "Value": value,
+                }
+                for timestamp, value in zip(timestamps, values)
+            ]
+
+            pagination = PaginatedList(timestamp_value_dicts)
+            timestamp_page, nxt = pagination.get_page(
+                lambda item: item.get("Timestamp"),
                 next_token=next_token,
                 page_size=limit,
             )
-            query_result["datapoints"] = dict(page)
-            results.append(query_result)
 
-        formatted_results = []
-        for result in results:
-            formatted_result = {
-                "Id": result.get("id"),
-                "Label": result.get("label"),
+            timestamps = [item.get("Timestamp") for item in timestamp_page]
+            values = [item.get("Value") for item in timestamp_page]
+
+            metric_data_result = {
+                "Id": query.get("Id"),
+                "Label": label,
                 "StatusCode": "Complete",
-                "Timestamps": [],
-                "Values": [],
+                "Timestamps": timestamps,
+                "Values": values,
             }
-            datapoints = result.get("datapoints", {})
-            for timestamp, datapoint_result in datapoints.items():
-                formatted_result["Timestamps"].append(int(timestamp))
-                formatted_result["Values"].append(datapoint_result)
+            results.append(MetricDataResult(**metric_data_result))
 
-            formatted_results.append(MetricDataResult(**formatted_result))
-
-        return GetMetricDataOutput(
-            MetricDataResults=formatted_results, NextToken=nxt, Messages=messages
-        )
+        return GetMetricDataOutput(MetricDataResults=results, NextToken=nxt, Messages=messages)
 
     def set_alarm_state(
         self,
@@ -493,7 +507,14 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             }
             for metric in result.get("metrics", [])
         ]
-        return ListMetricsOutput(Metrics=metrics, NextToken=None)
+
+        aliases_list = PaginatedList(metrics)
+        page, nxt = aliases_list.get_page(
+            lambda metric: metric.get("MetricName"),
+            next_token=next_token,
+            page_size=LIST_METRICS_MAX_RESULTS,
+        )
+        return ListMetricsOutput(Metrics=page, NextToken=nxt)
 
     def get_metric_statistics(
         self,
@@ -530,10 +551,11 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 ),
             )
 
-            datapoints = query_result.get("datapoints", {})
-            for timestamp, datapoint_result in datapoints.items():
+            timestamps = query_result.get("timestamps", [])
+            values = query_result.get("values", [])
+            for i, timestamp in enumerate(timestamps):
                 stat_datapoints.setdefault(timestamp, {})
-                stat_datapoints[timestamp][stat] = datapoint_result
+                stat_datapoints[timestamp][stat] = values[i]
 
         datapoints = []
         for timestamp, stats in stat_datapoints.items():
