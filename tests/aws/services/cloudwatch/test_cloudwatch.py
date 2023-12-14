@@ -28,11 +28,16 @@ PUBLICATION_RETRIES = 5
 
 
 def is_old_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2"
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2" and not is_aws_cloud()
+
+
+def is_new_provider():
+    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") == "v2"
 
 
 class TestCloudwatch:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"], condition=is_new_provider)
     def test_put_metric_data_values_list(self, snapshot, aws_client):
         metric_name = "test-metric"
         namespace = f"ns-{short_uid()}"
@@ -157,6 +162,51 @@ class TestCloudwatch:
             == "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size."
         )
 
+        # test invalid due to inserting both value and statistic values
+        with pytest.raises(Exception) as ex:
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": "mymetric",
+                        "Timestamp": utc_now,
+                        "Value": 1.5,
+                        "StatisticValues": {
+                            "SampleCount": 10,
+                            "Sum": 55,
+                            "Minimum": 1,
+                            "Maximum": 10,
+                        },
+                        "Unit": "Count",
+                    }
+                ],
+            )
+        err = ex.value.response["Error"]
+        assert err["Code"] == "InvalidParameterCombination"
+        assert (
+            err["Message"]
+            == "The parameters MetricData.member.1.Value and MetricData.member.1.StatisticValues are mutually exclusive and you have specified both."
+        )
+
+        # For some strange reason the AWS implementation allows this
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": "mymetric",
+                    "Timestamp": utc_now,
+                    "Values": [1.0, 10.0],
+                    "StatisticValues": {
+                        "SampleCount": 10,
+                        "Sum": 55,
+                        "Minimum": 1,
+                        "Maximum": 10,
+                    },
+                    "Unit": "Count",
+                }
+            ],
+        )
+
     @markers.aws.validated
     def test_get_metric_data(self, aws_client):
         namespace1 = f"test/{short_uid()}"
@@ -252,7 +302,12 @@ class TestCloudwatch:
                 assert len(data_metric["Values"]) == 0
 
     @markers.aws.validated
-    def test_get_metric_data_for_multiple_metrics(self, aws_client):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MetricDataResults..Label"],
+        condition=is_new_provider,
+    )
+    def test_get_metric_data_for_multiple_metrics(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
 
@@ -295,60 +350,53 @@ class TestCloudwatch:
                 }
             ],
         )
-        # get_metric_data
-        response = aws_client.cloudwatch.get_metric_data(
-            MetricDataQueries=[
-                {
-                    "Id": "result1",
-                    "MetricStat": {
-                        "Metric": {"Namespace": namespace, "MetricName": "metric1"},
-                        "Period": 60,
-                        "Stat": "Sum",
+
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "result1",
+                        "MetricStat": {
+                            "Metric": {"Namespace": namespace, "MetricName": "metric1"},
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
                     },
-                },
-                {
-                    "Id": "result2",
-                    "MetricStat": {
-                        "Metric": {"Namespace": namespace, "MetricName": "metric2"},
-                        "Period": 60,
-                        "Stat": "Sum",
+                    {
+                        "Id": "result2",
+                        "MetricStat": {
+                            "Metric": {"Namespace": namespace, "MetricName": "metric2"},
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
                     },
-                },
-                {
-                    "Id": "result3",
-                    "MetricStat": {
-                        "Metric": {"Namespace": namespace, "MetricName": "metric3"},
-                        "Period": 60,
-                        "Stat": "Sum",
+                    {
+                        "Id": "result3",
+                        "MetricStat": {
+                            "Metric": {"Namespace": namespace, "MetricName": "metric3"},
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
                     },
-                },
-            ],
-            StartTime=utc_now - timedelta(seconds=60),
-            EndTime=utc_now + timedelta(seconds=60),
-        )
+                ],
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+            )
 
-        res1 = [res for res in response["MetricDataResults"] if res["Id"] == "result1"][0]
-        assert res1["Values"] == [50.0]
+            assert len(response["MetricDataResults"][0]["Values"]) > 0
+            snapshot.match("get_metric_data", response)
 
-        res2 = [res for res in response["MetricDataResults"] if res["Id"] == "result2"][0]
-        assert res2["Values"] == [25.0]
+        retry(assert_results, retries=10, sleep_before=1)
 
-        res3 = [res for res in response["MetricDataResults"] if res["Id"] == "result3"][0]
-        assert res3["Values"] == [55.0]
-
-    # parametrize test
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "stat,result",
-        [
-            ("Sum", 66),
-            ("SampleCount", 11),
-            ("Minimum", 1),
-            ("Maximum", 11),
-            ("Average", 6),
-        ],
+        "stat",
+        ["Sum", "SampleCount", "Minimum", "Maximum", "Average"],
     )
-    def test_get_metric_data_stats(self, aws_client, stat, result):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MetricDataResults..Label"], condition=is_new_provider
+    )
+    def test_get_metric_data_stats(self, aws_client, snapshot, stat):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
 
@@ -381,29 +429,33 @@ class TestCloudwatch:
             ],
         )
 
-        # Instant querying gets wrong results
-        time.sleep(2)
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "result1",
+                        "MetricStat": {
+                            "Metric": {"Namespace": namespace, "MetricName": "metric1"},
+                            "Period": 60,
+                            "Stat": stat,
+                        },
+                    }
+                ],
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+            )
 
-        response = aws_client.cloudwatch.get_metric_data(
-            MetricDataQueries=[
-                {
-                    "Id": "result1",
-                    "MetricStat": {
-                        "Metric": {"Namespace": namespace, "MetricName": "metric1"},
-                        "Period": 60,
-                        "Stat": stat,
-                    },
-                }
-            ],
-            StartTime=utc_now - timedelta(seconds=60),
-            EndTime=utc_now + timedelta(seconds=60),
-        )
+            assert len(response["MetricDataResults"][0]["Values"]) > 0
+            snapshot.match("get_metric_data", response)
 
-        res1 = [res for res in response["MetricDataResults"] if res["Id"] == "result1"][0]
-        assert res1["Values"] == [result]
+        sleep_before = 2 if is_aws_cloud() else 0
+        retry(assert_results, retries=10, sleep_before=sleep_before)
 
     @markers.aws.validated
-    def test_get_metric_data_with_dimensions(self, aws_client):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MetricDataResults..Label"], condition=is_new_provider
+    )
+    def test_get_metric_data_with_dimensions(self, aws_client, snapshot):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
 
@@ -450,33 +502,37 @@ class TestCloudwatch:
             ],
         )
 
-        # Instant querying gets wrong results
-        time.sleep(2)
-        response = aws_client.cloudwatch.get_metric_data(
-            MetricDataQueries=[
-                {
-                    "Id": "result1",
-                    "MetricStat": {
-                        "Metric": {
-                            "Namespace": namespace,
-                            "MetricName": "metric1",
-                            "Dimensions": [
-                                {"Name": "InstanceId", "Value": "one"},
-                            ],
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "result1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": "metric1",
+                                "Dimensions": [
+                                    {"Name": "InstanceId", "Value": "one"},
+                                ],
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
                         },
-                        "Period": 60,
-                        "Stat": "Sum",
-                    },
-                }
-            ],
-            StartTime=utc_now - timedelta(seconds=60),
-            EndTime=utc_now + timedelta(seconds=60),
-        )
+                    }
+                ],
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+            )
 
-        res1 = [res for res in response["MetricDataResults"] if res["Id"] == "result1"][0]
-        assert res1["Values"] == [11]
+            assert len(response["MetricDataResults"][0]["Values"]) > 0
+            snapshot.match("get_metric_data", response)
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0
+        retry(assert_results, retries=retries, sleep_before=sleep_before)
 
     @markers.aws.only_localstack
+    @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
     def test_raw_metric_data(self, aws_client):
         """
         tests internal endpoint at "/_aws/cloudwatch/metrics/raw"
@@ -553,6 +609,7 @@ class TestCloudwatch:
         assert isinstance(alarm["StateUpdatedTimestamp"], datetime)
 
     @markers.aws.validated
+    @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
     def test_put_composite_alarm_describe_alarms_converts_date_format_correctly(
         self, aws_client, cleanups
     ):
@@ -1226,6 +1283,7 @@ class TestCloudwatch:
         assert response["MetricAlarms"][0]["ActionsEnabled"]
 
     @markers.aws.validated
+    @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
     def test_aws_sqs_metrics_created(self, sqs_create_queue, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         sqs_url = sqs_create_queue()
@@ -1651,7 +1709,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
-    def test_get_metric_data_with_zero_and_labels(self, aws_client):
+    def test_get_metric_data_with_zero_and_labels(self, aws_client, snapshot):
         utc_now = datetime.now(tz=timezone.utc)
 
         namespace1 = f"test/{short_uid()}"
@@ -1663,49 +1721,39 @@ class TestCloudwatch:
                 {"MetricName": "metric1", "Value": val, "Unit": "Seconds"} for val in values
             ],
         )
-        if is_aws_cloud():
-            time.sleep(2)
         # get_metric_data
         stats = ["Average", "Sum", "Minimum", "Maximum"]
-        response = aws_client.cloudwatch.get_metric_data(
-            MetricDataQueries=[
-                {
-                    "Id": "result_" + stat,
-                    "MetricStat": {
-                        "Metric": {"Namespace": namespace1, "MetricName": "metric1"},
-                        "Period": 60,
-                        "Stat": stat,
-                    },
-                }
-                for stat in stats
-            ],
-            StartTime=utc_now - timedelta(seconds=60),
-            EndTime=utc_now + timedelta(seconds=60),
-        )
-        #
-        # Assert Average/Min/Max/Sum is returned as expected
-        avg = [res for res in response["MetricDataResults"] if res["Id"] == "result_Average"][0]
-        assert avg["Label"] == "metric1 Average"
-        assert avg["StatusCode"] == "Complete"
-        assert [int(val) for val in avg["Values"]] == [19]
 
-        sum_ = [res for res in response["MetricDataResults"] if res["Id"] == "result_Sum"][0]
-        assert sum_["Label"] == "metric1 Sum"
-        assert sum_["StatusCode"] == "Complete"
-        assert [val for val in sum_["Values"]] == [sum(values)]
+        def _get_metric_data():
+            return aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "result_" + stat,
+                        "MetricStat": {
+                            "Metric": {"Namespace": namespace1, "MetricName": "metric1"},
+                            "Period": 60,
+                            "Stat": stat,
+                        },
+                    }
+                    for stat in stats
+                ],
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+            )
 
-        min_ = [res for res in response["MetricDataResults"] if res["Id"] == "result_Minimum"][0]
-        assert min_["Label"] == "metric1 Minimum"
-        assert min_["StatusCode"] == "Complete"
-        assert [int(val) for val in min_["Values"]] == [0]
+        def _match_results():
+            response = _get_metric_data()
+            # keep one assert to avoid storing incorrect values
+            avg = [res for res in response["MetricDataResults"] if res["Id"] == "result_Average"][0]
+            assert [int(val) for val in avg["Values"]] == [19]
+            snapshot.match("get_metric_data_with_zero_and_labels", response)
 
-        max_ = [res for res in response["MetricDataResults"] if res["Id"] == "result_Maximum"][0]
-        assert max_["Label"] == "metric1 Maximum"
-        assert max_["StatusCode"] == "Complete"
-        assert [int(val) for val in max_["Values"]] == [100]
+        retry(_match_results, retries=10, sleep=1.0)
 
     @markers.aws.validated
-    def test_get_metric_statistics(self, aws_client):
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"])
+    def test_get_metric_statistics(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
 
@@ -1717,26 +1765,311 @@ class TestCloudwatch:
                 ],
             )
 
-        if is_aws_cloud():
-            time.sleep(2)
+        def assert_results():
+            stats_responce = aws_client.cloudwatch.get_metric_statistics(
+                Namespace=namespace,
+                MetricName="metric",
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+                Period=60,
+                Statistics=["Average", "Sum", "Minimum", "Maximum", "SampleCount"],
+            )
 
-        stats = aws_client.cloudwatch.get_metric_statistics(
+            assert len(stats_responce["Datapoints"]) == 1
+            snapshot.match("get_metric_statistics", stats_responce)
+
+        sleep_before = 2 if is_aws_cloud() else 0.0
+        retry(assert_results, retries=10, sleep=1.0, sleep_before=sleep_before)
+
+    @markers.aws.validated
+    def test_list_metrics_pagination(self, aws_client):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        max_metrics = 500  # max metrics per page according to AWS docs
+        for i in range(0, max_metrics + 1):
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": f"{metric_name}-{i}",
+                        "Value": 21,
+                        "Unit": "Seconds",
+                    }
+                ],
+            )
+
+        def assert_metrics_count():
+            response = aws_client.cloudwatch.list_metrics(Namespace=namespace)
+            assert len(response["Metrics"]) == max_metrics and response.get("NextToken") is not None
+
+        retry(assert_metrics_count, retries=10, sleep=1.0, sleep_before=1.0)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=is_old_provider, reason="not supported by the old provider")
+    def test_get_metric_data_pagination(self, aws_client):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        max_data_points = 10  # default is 100,800 according to AWS docs
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        for i in range(0, max_data_points * 2):
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": metric_name,
+                        "Timestamp": now + timedelta(seconds=(i * 60)),
+                        "Value": i,
+                        "Unit": "Seconds",
+                    }
+                ],
+            )
+
+        def assert_data_points_count():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=(max_data_points * 60 * 2)),
+                MaxDatapoints=max_data_points,
+            )
+            assert (len(response["MetricDataResults"][0]["Values"]) == 10) and (
+                response.get("NextToken") is not None
+            )
+
+        retry(assert_data_points_count, retries=10, sleep=1.0, sleep_before=2.0)
+
+    @markers.aws.validated
+    def test_put_metric_uses_utc(self, aws_client):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        now_local = datetime.now(timezone(timedelta(hours=-5), "America/Cancun")).replace(
+            tzinfo=None
+        )  # Remove the tz info to avoid boto converting it to UTC
+        now_utc = datetime.utcnow()
+        aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
-            MetricName="metric",
-            StartTime=utc_now - timedelta(seconds=60),
-            EndTime=utc_now + timedelta(seconds=60),
-            Period=60,
-            Statistics=["Average", "Sum", "Minimum", "Maximum", "SampleCount"],
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Value": 1,
+                    "Unit": "Seconds",
+                }
+            ],
         )
 
-        assert len(stats["Datapoints"]) == 1
-        assert stats["Label"] == "metric"
-        datapoint = stats["Datapoints"][0]
-        assert datapoint["SampleCount"] == 10.0
-        assert datapoint["Sum"] == 45
-        assert datapoint["Minimum"] == 0
-        assert datapoint["Maximum"] == 9
-        assert datapoint["Average"] == 4.5
+        def assert_found_in_utc():
+            response = aws_client.cloudwatch.get_metric_statistics(
+                Namespace=namespace,
+                MetricName=metric_name,
+                StartTime=now_local - timedelta(seconds=60),
+                EndTime=now_local + timedelta(seconds=60),
+                Period=60,
+                Statistics=["Average"],
+            )
+            assert len(response["Datapoints"]) == 0
+
+            response = aws_client.cloudwatch.get_metric_statistics(
+                Namespace=namespace,
+                MetricName=metric_name,
+                StartTime=now_utc - timedelta(seconds=60),
+                EndTime=now_utc + timedelta(seconds=60),
+                Period=60,
+                Statistics=["Average"],
+            )
+            assert len(response["Datapoints"]) == 1
+
+        retry(assert_found_in_utc, retries=10, sleep=1.0)
+
+    @markers.aws.validated
+    def test_default_ordering(self, aws_client):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = f"m-{short_uid()}"
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        for i in range(0, 10):
+            aws_client.cloudwatch.put_metric_data(
+                Namespace=namespace,
+                MetricData=[
+                    {
+                        "MetricName": metric_name,
+                        "Timestamp": now + timedelta(seconds=(i * 60)),
+                        "Value": i,
+                        "Unit": "Seconds",
+                    }
+                ],
+            )
+
+        def assert_ordering():
+            default_ordering = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=(10 * 60)),
+                MaxDatapoints=10,
+            )
+
+            ascending_ordering = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=(10 * 60)),
+                MaxDatapoints=10,
+                ScanBy="TimestampAscending",
+            )
+
+            descening_ordering = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=(10 * 60)),
+                MaxDatapoints=10,
+                ScanBy="TimestampDescending",
+            )
+
+            default_ordering_datapoints = default_ordering["MetricDataResults"][0]["Timestamps"]
+            ascending_ordering_datapoints = ascending_ordering["MetricDataResults"][0]["Timestamps"]
+            descening_ordering_datapoints = descening_ordering["MetricDataResults"][0]["Timestamps"]
+
+            # The default ordering is TimestampDescending
+            assert default_ordering_datapoints == descening_ordering_datapoints
+            assert default_ordering_datapoints == ascending_ordering_datapoints[::-1]
+
+        retry(assert_ordering, retries=10, sleep=1.0)
+
+    @markers.aws.validated
+    @pytest.mark.skip(reason="it's not supported by moto or new provider")
+    def test_handle_different_units(self, aws_client, snapshot):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = "m-test"
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": now,
+                    "Value": 1,
+                    "Unit": "Seconds",
+                },
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": now,
+                    "Value": 1,
+                    "Unit": "Count",
+                },
+            ],
+        )
+
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_statistics(
+                Namespace=namespace,
+                MetricName=metric_name,
+                StartTime=now - timedelta(seconds=60),
+                EndTime=now + timedelta(seconds=60),
+                Period=60,
+                Statistics=["Average"],
+            )
+            assert len(response["Datapoints"]) == 2
+            snapshot.match("get_metric_statistics_with_different_units", response)
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0.0
+        retry(assert_results, retries=retries, sleep=1.0, sleep_before=sleep_before)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..MetricDataResults..Label"], condition=is_new_provider
+    )
+    def test_get_metric_data_with_different_units(self, aws_client, snapshot):
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = "m-test"
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": now,
+                    "Value": 1,
+                    "Unit": "Seconds",
+                },
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": now,
+                    "Value": 1,
+                    "Unit": "Count",
+                },
+            ],
+        )
+
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                            "Unit": "Seconds",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=60),
+                MaxDatapoints=10,
+            )
+            snapshot.match("get_metric_data_with_different_units", response)
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0.0
+        retry(assert_results, retries=retries, sleep=1.0, sleep_before=sleep_before)
 
     @markers.aws.validated
     def test_alarm_lambda_target(
