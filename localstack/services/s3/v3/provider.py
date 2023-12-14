@@ -274,6 +274,7 @@ from localstack.services.s3.validation import (
     validate_cors_configuration,
     validate_inventory_configuration,
     validate_lifecycle_configuration,
+    validate_object_key,
     validate_website_configuration,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
@@ -579,6 +580,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_kms_key_id(sse_kms_key_id, s3_bucket)
 
         key = request["Key"]
+
+        validate_object_key(key)
 
         system_metadata = get_system_metadata_from_request(request)
         if not system_metadata.get("ContentType"):

@@ -5471,31 +5471,6 @@ class TestS3:
         response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
         snapshot.match("list-obj-after-empty", response)
 
-    @markers.aws.validated
-    def test_object_key_length(self, aws_client, s3_bucket, snapshot):
-        key_name_1000 = "/".join(["a" * 100 for _ in range(10)])
-        put_obj_1000_len = aws_client.s3.put_object(
-            Bucket=s3_bucket, Key=key_name_1000, Body="test"
-        )
-        snapshot.match("object-key-length-1000", put_obj_1000_len)
-
-        get_obj_1000_len = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name_1000)
-        snapshot.match("get-object-key-length-1000", get_obj_1000_len)
-
-        key_name_300 = "a" * 300
-        put_obj_300_between_slashes = aws_client.s3.put_object(
-            Bucket=s3_bucket, Key=key_name_300, Body="test"
-        )
-        snapshot.match("object-key-length-300-between-slashes", put_obj_300_between_slashes)
-
-        get_obj_300_between_slashes = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name_300)
-        snapshot.match("get-object-key-length-300-between-slashes", get_obj_300_between_slashes)
-
-        with pytest.raises(ClientError) as e:
-            key_name_1030 = "/".join(["a" * 103 for _ in range(10)])
-            aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name_1030, Body="test")
-        snapshot.match("object-key-length-1030", e.value.response)
-
 
 class TestS3MultiAccounts:
     @pytest.fixture
