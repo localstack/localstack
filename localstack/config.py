@@ -249,7 +249,7 @@ def load_environment(profiles: str = None, env=os.environ) -> List[str]:
         if not os.path.exists(path):
             print(f"Profile '{profile}' specified, but file {path} not found.")
             continue
-        environment |= dotenv.dotenv_values(path)
+        environment.update(dotenv.dotenv_values(path))
 
     for k, v in environment.items():
         # we do not want to override the environment
