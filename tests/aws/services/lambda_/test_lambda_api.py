@@ -4378,9 +4378,6 @@ class TestLambdaEventSourceMappings:
         _create_esm("full_arn_version", v1["FunctionArn"])
         _create_esm("full_arn_alias", alias["AliasArn"])
 
-    # def test_multiple_esm_conflict(self):
-    # E           botocore.errorfactory.ResourceConflictException: An error occurred (ResourceConflictException) when calling the CreateEventSourceMapping operation: An event source mapping with SQS arn (" ...") and function (" ...") already exists. Please update or delete the existing mapping with UUID b0d2651a-52ea-4e9f-80f9-fa7f9fdf4d64
-
     @markers.aws.validated
     def test_create_event_source_validation(
         self, create_lambda_function, lambda_su_role, dynamodb_create_table, snapshot, aws_client
