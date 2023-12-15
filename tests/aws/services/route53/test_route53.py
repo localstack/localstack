@@ -76,9 +76,9 @@ class TestRoute53:
         snapshot.match("get_hosted_zone", response)
 
     @markers.aws.unknown
-    def test_associate_vpc_with_hosted_zone(self, cleanups, aws_client):
+    def test_associate_vpc_with_hosted_zone(self, cleanups, hosted_zone, aws_client):
         name = "zone123"
-        response = aws_client.route53.create_hosted_zone(
+        response = hosted_zone(
             Name=name,
             HostedZoneConfig={"PrivateZone": True, "Comment": "test"},
         )
