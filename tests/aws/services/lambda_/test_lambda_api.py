@@ -4242,6 +4242,7 @@ class TestLambdaEventSourceMappings:
         snapshot.match("create_unknown_params", e.value.response)
         # TODO: add test for event source arn == failure destination
         # TODO: add test for adding success destination
+        # TODO: add test_multiple_esm_conflict: create an event source mapping for a combination of function + target ARN that already exists
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
