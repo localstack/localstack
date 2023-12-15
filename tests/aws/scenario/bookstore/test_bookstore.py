@@ -416,6 +416,38 @@ class BooksApi(Construct):
             projection_type=dynamodb.ProjectionType.ALL,
         )
 
+        #        policy_document = iam.PolicyDocument(
+        #            statements=[
+        #                iam.PolicyStatement(
+        #                    actions=['*'],
+        #                    resources=['*'],
+        #                    effect=iam.Effect.ALLOW,
+        #                )
+        #            ]
+        #
+        #        )
+        #        self.lambda_su_role = iam.Role(f'lambda-su-role', assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"))
+        #        s3_ddb_policy = iam.Policy(document=...)
+        #
+
+        # self.lambda_user = iam.User(
+        #    self, 'LambdaUser',
+        #    managed_policies=[
+        #        iam.ManagedPolicy.from_aws_managed_policy_name('AmazonS3FullAccess'),
+        #        iam.ManagedPolicy.from_aws_managed_policy_name('AmazonDynamoDBFullAccess'),
+        #    ]
+        # )
+
+        self.lambda_role = iam.Role(
+            self, "LambdaRole", assumed_by=iam.ServicePrincipal("lambda.amazonaws.com")
+        )
+        self.lambda_role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
+        )
+        self.lambda_role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonDynamoDBFullAccess")
+        )
+
         # lambda for pre-filling the dynamodb
         self.load_books_helper_fn = awslambda.Function(
             stack,
@@ -429,16 +461,9 @@ class BooksApi(Construct):
                 "FILE_NAME": S3_KEY_BOOKS_INIT,
                 "REGION": stack.region,
             },
+            role=self.lambda_role,
         )
-        self.load_books_helper_fn.role.attach_inline_policy(
-            iam.Policy(
-                stack,
-                "BooksS3Policy",
-                statements=[
-                    iam.PolicyStatement(resources=["arn:aws:s3:::*/*"], actions=["s3:GetObject"])
-                ],
-            )
-        )
+
         # lambdas to get and list books
         self.get_book_fn = awslambda.Function(
             stack,
@@ -450,6 +475,7 @@ class BooksApi(Construct):
                 "TABLE_NAME": self.books_table.table_name,
                 "REGION": stack.region,
             },
+            role=self.lambda_role,
         )
 
         self.list_books_fn = awslambda.Function(
@@ -462,6 +488,7 @@ class BooksApi(Construct):
                 "TABLE_NAME": self.books_table.table_name,
                 "REGION": stack.region,
             },
+            role=self.lambda_role,
         )
 
         # lambda to search for book
@@ -480,6 +507,7 @@ class BooksApi(Construct):
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
                 "REGION": stack.region,
             },
+            role=self.lambda_role,
         )
 
         # lambda to update search cluster
@@ -493,6 +521,7 @@ class BooksApi(Construct):
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
                 "REGION": stack.region,
             },
+            role=self.lambda_role,
         )
 
         event_source = DynamoEventSource(
