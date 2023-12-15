@@ -21,6 +21,7 @@ from localstack.aws.api.lambda_ import InvocationType, Runtime
 from localstack.config import is_env_true
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.sync import retry
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_S3_INTEGRATION,
@@ -95,7 +96,10 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
         Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
     )
 
-    # TODO: try with reserved concurrency=1
+    # Limit concurrency to avoid resource bottlenecks
+    aws_client.lambda_.put_function_concurrency(
+        FunctionName=function_name, ReservedConcurrentExecutions=1
+    )
 
     s3_keys = []
     error_count = 0
@@ -123,7 +127,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     end_time = datetime.utcnow() + timedelta(seconds=10)
     # assert error_count == 0
 
-    # TODO: validate invokes through S3 bucket output + CW metrics + CW logs (maybe)
+    # Validate S3 object creation
     s3_keys_output = []
     paginator = aws_client.s3.get_paginator("list_objects_v2")
     page_iterator = paginator.paginate(Bucket=s3_bucket)
@@ -132,6 +136,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
             s3_keys_output.append(obj["Key"])
     assert len(s3_keys_output) == num_invocations
 
+    # Validate CloudWatch invocation metric
     metric_query_params = {
         "Namespace": "AWS/Lambda",
         "MetricName": "Invocations",
@@ -144,6 +149,19 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     response = aws_client.cloudwatch.get_metric_statistics(**metric_query_params)
     num_invocations_metric = response["Datapoints"][0]["Sum"]
     assert num_invocations_metric == num_invocations
+
+    # Validate CloudWatch invocation logs
+    def assert_events():
+        log_events = aws_client.logs.filter_log_events(
+            logGroupName=f"/aws/lambda/{function_name}",
+        )["events"]
+        invocation_count = len(
+            [event["message"] for event in log_events if event["message"].startswith("REPORT")]
+        )
+        assert invocation_count == num_invocations
+
+    # NOTE: slow against AWS (can take minutes)
+    retry(assert_events, retries=120, sleep=2)
 
 
 def format_summary(timings: [float]) -> str:
