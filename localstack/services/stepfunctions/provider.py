@@ -2,7 +2,7 @@ import copy
 import datetime
 import json
 import logging
-from typing import Optional
+from typing import Final, Optional
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.stepfunctions import (
@@ -23,6 +23,7 @@ from localstack.aws.api.stepfunctions import (
     ExecutionStatus,
     GetExecutionHistoryOutput,
     IncludeExecutionDataGetExecutionHistory,
+    InspectionLevel,
     InvalidArn,
     InvalidDefinition,
     InvalidExecutionInput,
@@ -44,6 +45,7 @@ from localstack.aws.api.stepfunctions import (
     Publish,
     PublishStateMachineVersionOutput,
     ResourceNotFound,
+    RevealSecrets,
     ReverseOrder,
     RevisionId,
     SendTaskFailureOutput,
@@ -65,6 +67,7 @@ from localstack.aws.api.stepfunctions import (
     TaskDoesNotExist,
     TaskTimedOut,
     TaskToken,
+    TestStateOutput,
     ToleratedFailureCount,
     ToleratedFailurePercentage,
     TraceHeader,
@@ -89,21 +92,32 @@ from localstack.services.stepfunctions.asl.parse.asl_parser import (
     AmazonStateLanguageParser,
     ASLParserException,
 )
+from localstack.services.stepfunctions.asl.static_analyser.static_analyser import StaticAnalyser
+from localstack.services.stepfunctions.asl.static_analyser.test_state.test_state_analyser import (
+    TestStateStaticAnalyser,
+)
 from localstack.services.stepfunctions.backend.execution import Execution
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
     StateMachineRevision,
     StateMachineVersion,
+    TestStateMachine,
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
+from localstack.services.stepfunctions.backend.test_case_execution import TestCaseExecution
 from localstack.state import StateVisitor
-from localstack.utils.aws.arns import ArnData, parse_arn, stepfunctions_state_machine_arn
-from localstack.utils.strings import long_uid
+from localstack.utils.aws.arns import (
+    stepfunctions_execution_state_machine_arn,
+    stepfunctions_state_machine_arn,
+)
+from localstack.utils.strings import long_uid, short_uid
 
 LOG = logging.getLogger(__name__)
 
 
 class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
+    _TEST_STATE_MAX_TIMEOUT_SECONDS: Final[int] = 300  # 5 minutes.
+
     @staticmethod
     def get_store(context: RequestContext) -> SFNStore:
         return sfn_stores[context.account_id][context.region]
@@ -166,11 +180,13 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return None
 
     @staticmethod
-    def _validate_definition(definition: str):
-        # Validate
-        # TODO: pass through static analyser.
+    def _validate_definition(
+        definition: str, static_analysers: Optional[list[StaticAnalyser]] = None
+    ) -> None:
         try:
-            AmazonStateLanguageParser.parse(definition)
+            program, parse_tree = AmazonStateLanguageParser.parse(definition)
+            for static_analyser in static_analysers:
+                static_analyser.analyse(parse_tree)
         except ASLParserException as asl_parser_exception:
             invalid_definition = InvalidDefinition()
             invalid_definition.message = repr(asl_parser_exception)
@@ -358,18 +374,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             else state_machine.arn
         )
         exec_name = name or long_uid()  # TODO: validate name format
-        arn_data: ArnData = parse_arn(normalised_state_machine_arn)
-        exec_arn = ":".join(
-            [
-                "arn",
-                arn_data["partition"],
-                arn_data["service"],
-                arn_data["region"],
-                arn_data["account"],
-                "execution",
-                "".join(arn_data["resource"].split(":")[1:]),
-                exec_name,
-            ]
+        exec_arn = stepfunctions_execution_state_machine_arn(
+            normalised_state_machine_arn, exec_name
         )
         if exec_arn in self.get_store(context).executions:
             raise InvalidName()  # TODO
@@ -674,3 +680,43 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 )
                 return UpdateMapRunOutput()
         raise ResourceNotFound()
+
+    def test_state(
+        self,
+        context: RequestContext,
+        definition: Definition,
+        role_arn: Arn,
+        input: SensitiveData = None,
+        inspection_level: InspectionLevel = None,
+        reveal_secrets: RevealSecrets = None,
+    ) -> TestStateOutput:
+        StepFunctionsProvider._validate_definition(
+            definition=definition, static_analysers=[TestStateStaticAnalyser()]
+        )
+
+        name: Optional[Name] = f"TestState-{short_uid()}"
+        arn = stepfunctions_state_machine_arn(
+            name=name, account_id=context.account_id, region_name=context.region
+        )
+        state_machine = TestStateMachine(
+            name=name,
+            arn=arn,
+            role_arn=role_arn,
+            definition=definition,
+        )
+        exec_arn = stepfunctions_execution_state_machine_arn(state_machine.arn, name)
+
+        execution = TestCaseExecution(
+            name=name,
+            role_arn=role_arn,
+            exec_arn=exec_arn,
+            account_id=context.account_id,
+            region_name=context.region,
+            state_machine=state_machine,
+            start_date=datetime.datetime.now(tz=datetime.timezone.utc),
+            input_data=input,
+        )
+        execution.start()
+
+        return TestStateOutput()
+        execution.exec_worker.env

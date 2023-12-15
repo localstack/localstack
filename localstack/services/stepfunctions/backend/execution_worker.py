@@ -9,7 +9,6 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
 )
-from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObjectInitData,
@@ -46,7 +45,7 @@ class ExecutionWorker:
         self.env = None
 
     def _execution_logic(self):
-        program: Program = AmazonStateLanguageParser.parse(self._definition)
+        program, _ = AmazonStateLanguageParser.parse(self._definition)
         self.env = Environment(
             aws_execution_details=self._aws_execution_details,
             context_object_init=self._context_object_init,

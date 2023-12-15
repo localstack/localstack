@@ -9,6 +9,8 @@ from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLPar
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.parse.preprocessor import Preprocessor
 
+ASLParseTree = ASLParser.Program_declContext
+
 
 class SyntaxErrorListener(ErrorListener):
     errors: Final[list[str]]
@@ -48,7 +50,7 @@ class ASLParserException(Exception):
 
 class AmazonStateLanguageParser(abc.ABC):
     @staticmethod
-    def parse(src: str) -> Program:
+    def parse(src: str) -> tuple[Program, ASLParseTree]:
         # Attempt to build the AST and look out for syntax errors.
         syntax_error_listener = SyntaxErrorListener()
 

@@ -11,6 +11,12 @@ ConnectorParameters = str
 Definition = str
 Enabled = bool
 ErrorMessage = str
+HTTPBody = str
+HTTPHeaders = str
+HTTPMethod = str
+HTTPProtocol = str
+HTTPStatusCode = str
+HTTPStatusMessage = str
 Identity = str
 IncludeExecutionData = bool
 IncludeExecutionDataGetExecutionHistory = bool
@@ -23,17 +29,20 @@ PageSize = int
 PageToken = str
 Publish = bool
 RedriveCount = int
+RevealSecrets = bool
 ReverseOrder = bool
 RevisionId = str
 SensitiveCause = str
 SensitiveData = str
 SensitiveDataJobInput = str
 SensitiveError = str
+StateName = str
 TagKey = str
 TagValue = str
 TaskToken = str
 ToleratedFailurePercentage = float
 TraceHeader = str
+URL = str
 UnsignedInteger = int
 VersionDescription = str
 VersionWeight = int
@@ -125,6 +134,12 @@ class HistoryEventType(str):
     MapRunRedriven = "MapRunRedriven"
 
 
+class InspectionLevel(str):
+    INFO = "INFO"
+    DEBUG = "DEBUG"
+    TRACE = "TRACE"
+
+
 class LogLevel(str):
     ALL = "ALL"
     ERROR = "ERROR"
@@ -153,6 +168,13 @@ class SyncExecutionStatus(str):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     TIMED_OUT = "TIMED_OUT"
+
+
+class TestExecutionStatus(str):
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+    RETRIABLE = "RETRIABLE"
+    CAUGHT_ERROR = "CAUGHT_ERROR"
 
 
 class ValidationExceptionReason(str):
@@ -907,6 +929,33 @@ class GetExecutionHistoryOutput(TypedDict, total=False):
     nextToken: Optional[PageToken]
 
 
+class InspectionDataResponse(TypedDict, total=False):
+    protocol: Optional[HTTPProtocol]
+    statusCode: Optional[HTTPStatusCode]
+    statusMessage: Optional[HTTPStatusMessage]
+    headers: Optional[HTTPHeaders]
+    body: Optional[HTTPBody]
+
+
+class InspectionDataRequest(TypedDict, total=False):
+    protocol: Optional[HTTPProtocol]
+    method: Optional[HTTPMethod]
+    url: Optional[URL]
+    headers: Optional[HTTPHeaders]
+    body: Optional[HTTPBody]
+
+
+class InspectionData(TypedDict, total=False):
+    input: Optional[SensitiveData]
+    afterInputPath: Optional[SensitiveData]
+    afterParameters: Optional[SensitiveData]
+    result: Optional[SensitiveData]
+    afterResultSelector: Optional[SensitiveData]
+    afterResultPath: Optional[SensitiveData]
+    request: Optional[InspectionDataRequest]
+    response: Optional[InspectionDataResponse]
+
+
 class ListActivitiesInput(ServiceRequest):
     maxResults: Optional[PageSize]
     nextToken: Optional[PageToken]
@@ -1125,6 +1174,23 @@ class TagResourceInput(ServiceRequest):
 
 class TagResourceOutput(TypedDict, total=False):
     pass
+
+
+class TestStateInput(ServiceRequest):
+    definition: Definition
+    roleArn: Arn
+    input: Optional[SensitiveData]
+    inspectionLevel: Optional[InspectionLevel]
+    revealSecrets: Optional[RevealSecrets]
+
+
+class TestStateOutput(TypedDict, total=False):
+    output: Optional[SensitiveData]
+    error: Optional[SensitiveError]
+    cause: Optional[SensitiveCause]
+    inspectionData: Optional[InspectionData]
+    nextState: Optional[StateName]
+    status: Optional[TestExecutionStatus]
 
 
 class UntagResourceInput(ServiceRequest):
@@ -1410,6 +1476,18 @@ class StepfunctionsApi:
     def tag_resource(
         self, context: RequestContext, resource_arn: Arn, tags: TagList
     ) -> TagResourceOutput:
+        raise NotImplementedError
+
+    @handler("TestState")
+    def test_state(
+        self,
+        context: RequestContext,
+        definition: Definition,
+        role_arn: Arn,
+        input: SensitiveData = None,
+        inspection_level: InspectionLevel = None,
+        reveal_secrets: RevealSecrets = None,
+    ) -> TestStateOutput:
         raise NotImplementedError
 
     @handler("UntagResource")

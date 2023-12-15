@@ -81,6 +81,31 @@ class StateMachineInstance:
         ...
 
 
+class TestStateMachine(StateMachineInstance):
+    def __init__(
+        self,
+        name: Name,
+        arn: Arn,
+        definition: Definition,
+        role_arn: Arn,
+        create_date: Optional[datetime.datetime] = None,
+    ):
+        super().__init__(
+            name,
+            arn,
+            definition,
+            role_arn,
+            create_date,
+            StateMachineType.STANDARD,
+            None,
+            None,
+            None,
+        )
+
+    def itemise(self):
+        raise NotImplementedError("TestStateMachine does not support itemise.")
+
+
 class TagManager:
     _tags: Final[dict[str, Optional[str]]]
 

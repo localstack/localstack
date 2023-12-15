@@ -261,6 +261,23 @@ def stepfunctions_state_machine_arn(name: str, account_id: str, region_name: str
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
 
 
+def stepfunctions_execution_state_machine_arn(state_machine_arn: str, execution_name: str) -> str:
+    arn_data: ArnData = parse_arn(state_machine_arn)
+    execution_arn = ":".join(
+        [
+            "arn",
+            arn_data["partition"],
+            arn_data["service"],
+            arn_data["region"],
+            arn_data["account"],
+            "execution",
+            "".join(arn_data["resource"].split(":")[1:]),
+            execution_name,
+        ]
+    )
+    return execution_arn
+
+
 def stepfunctions_activity_arn(name: str, account_id: str, region_name: str) -> str:
     pattern = "arn:aws:states:%s:%s:activity:%s"
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
