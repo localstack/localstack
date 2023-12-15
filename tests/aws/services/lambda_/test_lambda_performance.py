@@ -4,7 +4,6 @@ Basic opt-in performance tests for Lambda. Usage:
 2) Set TEST_PERFORMANCE_RESULTS_DIR=$HOME/Downloads if you want to export performance results as CSV
 3) Adjust repeat=100 to configure the number of repetitions
 """
-import concurrent
 import csv
 import json
 import logging
@@ -115,12 +114,16 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     lock = threading.Lock()
     request_ids = []
     error_counter = ThreadSafeCounter()
+    num_invocations = 100
+    invoke_barrier = threading.Barrier(num_invocations)
 
-    def invoke():
+    def invoke(runner: int):
         nonlocal request_ids
         nonlocal error_counter
+        nonlocal invoke_barrier
         try:
-            payload = {"file_size_bytes": 1024 * 1024}
+            payload = {"file_size_bytes": 1}
+            invoke_barrier.wait()
             result = aws_client.lambda_.invoke(
                 FunctionName=function_name,
                 InvocationType=InvocationType.Event,
@@ -130,18 +133,19 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
             with lock:
                 request_ids.append(request_id)
         except Exception as e:
-            print(e)
+            print(f"runner-{runner} failed: {e}")
             error_counter.increment()
 
     start_time = datetime.utcnow()
     # Use ThreadPoolExecutor to invoke Lambda function in parallel
-    num_invocations = 100
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_invocations) as executor:
-        # Use list comprehension to submit multiple tasks
-        futures = [executor.submit(invoke) for _ in range(num_invocations)]
+    thread_list = []
+    for i in range(1, num_invocations + 1):
+        thread = threading.Thread(target=invoke, args=[i])
+        thread.start()
+        thread_list.append(thread)
 
-        # Wait for all tasks to complete
-        concurrent.futures.wait(futures)
+    for thread in thread_list:
+        thread.join()
     end_time = datetime.utcnow()
     diff = end_time - start_time
     print(f"N={num_invocations} took {diff.total_seconds()} seconds")
