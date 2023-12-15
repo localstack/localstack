@@ -86,6 +86,8 @@ from localstack.utils.time import timestamp_millis
 PATH_GET_RAW_METRICS = "/_aws/cloudwatch/metrics/raw"
 MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 LIST_METRICS_MAX_RESULTS = 500
+# If the values in these fields are not the same, their values are added when generating labels
+LABEL_DIFFERENTIATORS = ["Stat", "Period"]
 
 
 LOG = logging.getLogger(__name__)
@@ -209,6 +211,15 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         limit = max_datapoints or 100_800
         messages: MetricDataResultMessages = []
         nxt = None
+        label_additions = []
+
+        for diff in LABEL_DIFFERENTIATORS:
+            non_unique = []
+            for query in metric_data_queries:
+                non_unique.append(query["MetricStat"][diff])
+            if len(set(non_unique)) > 1:
+                label_additions.append(diff)
+
         for query in metric_data_queries:
             query_result = self.cloudwatch_database.get_metric_data_stat(
                 account_id=context.account_id,
@@ -221,11 +232,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             if query_result.get("messages"):
                 messages.extend(query_result.get("messages"))
 
-            # TODO: Fix this. AWS sometimes returns the metric name as label, sometimes is metric with stat
-            label = (
-                query.get("Label")
-                or f'{query["MetricStat"]["Metric"]["MetricName"]} {query["MetricStat"]["Stat"]}'
-            )
+            label = query.get("Label") or f'{query["MetricStat"]["Metric"]["MetricName"]}'
+            # TODO: does this happen even if a label is set in the query?
+            for label_addition in label_additions:
+                label = f"{label} {query['MetricStat'][label_addition]}"
 
             timestamps = query_result.get("timestamps", {})
             values = query_result.get("values", {})
