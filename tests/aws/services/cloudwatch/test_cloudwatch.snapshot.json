@@ -1608,5 +1608,221 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[input_pairs0]": {
+    "recorded-date": "15-12-2023, 11:27:23",
+    "recorded-content": {
+      "label_generation": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Sum_60_Seconds",
+            "Label": "metric1 Sum 60",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              109.0
+            ]
+          },
+          {
+            "Id": "result_Minimum_30_Seconds",
+            "Label": "metric1 Minimum 30",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              0.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[input_pairs1]": {
+    "recorded-date": "15-12-2023, 11:27:25",
+    "recorded-content": {
+      "label_generation": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Sum_60_Seconds",
+            "Label": "metric1 Sum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              109.0
+            ]
+          },
+          {
+            "Id": "result_Minimum_60_Seconds",
+            "Label": "metric1 Minimum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              0.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[input_pairs2]": {
+    "recorded-date": "15-12-2023, 11:27:27",
+    "recorded-content": {
+      "label_generation": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Sum_60_Seconds",
+            "Label": "metric1 60",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              109.0
+            ]
+          },
+          {
+            "Id": "result_Sum_30_Seconds",
+            "Label": "metric1 30",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              109.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[input_pairs3]": {
+    "recorded-date": "15-12-2023, 11:27:29",
+    "recorded-content": {
+      "label_generation": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Sum_60_Seconds",
+            "Label": "metric1 Sum 60",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              109.0
+            ]
+          },
+          {
+            "Id": "result_Minimum_30_Milliseconds",
+            "Label": "metric1 Minimum 30",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[input_pairs4]": {
+    "recorded-date": "15-12-2023, 11:27:31",
+    "recorded-content": {
+      "label_generation": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Sum_60_Seconds",
+            "Label": "metric1 Sum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              109.0
+            ]
+          },
+          {
+            "Id": "result_Minimum_60_Milliseconds",
+            "Label": "metric1 Minimum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[input_pairs5]": {
+    "recorded-date": "15-12-2023, 11:27:33",
+    "recorded-content": {
+      "label_generation": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Sum_60_Seconds",
+            "Label": "metric1 60",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              109.0
+            ]
+          },
+          {
+            "Id": "result_Sum_30_Milliseconds",
+            "Label": "metric1 30",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[input_pairs6]": {
+    "recorded-date": "15-12-2023, 11:27:35",
+    "recorded-content": {
+      "label_generation": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Sum_60_Seconds",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              109.0
+            ]
+          },
+          {
+            "Id": "result_Sum_60_Milliseconds",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
