@@ -39,7 +39,7 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
         response = call_moto(context)
 
         # moto does not populate the VPC struct of the response if creating a private hosted zone
-        if hosted_zone_config.get("PrivateZone", False):
+        if hosted_zone_config and hosted_zone_config.get("PrivateZone", False):
             response["VPC"]["VPCId"] = response["VPC"]["VPCId"] or vpc["VPCId"]
             response["VPC"]["VPCRegion"] = response["VPC"]["VPCRegion"] or vpc["VPCRegion"]
 
