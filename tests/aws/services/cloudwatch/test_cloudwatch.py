@@ -302,10 +302,6 @@ class TestCloudwatch:
                 assert len(data_metric["Values"]) == 0
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..MetricDataResults..Label"],
-        condition=is_new_provider,
-    )
     def test_get_metric_data_for_multiple_metrics(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=timezone.utc)
@@ -393,9 +389,6 @@ class TestCloudwatch:
         "stat",
         ["Sum", "SampleCount", "Minimum", "Maximum", "Average"],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..MetricDataResults..Label"], condition=is_new_provider
-    )
     def test_get_metric_data_stats(self, aws_client, snapshot, stat):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
@@ -452,9 +445,6 @@ class TestCloudwatch:
         retry(assert_results, retries=10, sleep_before=sleep_before)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..MetricDataResults..Label"], condition=is_new_provider
-    )
     def test_get_metric_data_with_dimensions(self, aws_client, snapshot):
         utc_now = datetime.now(tz=timezone.utc)
         namespace = f"test/{short_uid()}"
@@ -2017,9 +2007,6 @@ class TestCloudwatch:
         retry(assert_results, retries=retries, sleep=1.0, sleep_before=sleep_before)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..MetricDataResults..Label"], condition=is_new_provider
-    )
     def test_get_metric_data_with_different_units(self, aws_client, snapshot):
         namespace = f"n-sp-{short_uid()}"
         metric_name = "m-test"
@@ -2067,6 +2054,64 @@ class TestCloudwatch:
         retries = 10 if is_aws_cloud() else 1
         sleep_before = 2 if is_aws_cloud() else 0.0
         retry(assert_results, retries=retries, sleep=1.0, sleep_before=sleep_before)
+
+    @pytest.mark.parametrize(
+        "input_pairs",
+        [
+            [("Sum", 60, "Seconds"), ("Minimum", 30, "Seconds")],
+            [("Sum", 60, "Seconds"), ("Minimum", 60, "Seconds")],
+            [("Sum", 60, "Seconds"), ("Sum", 30, "Seconds")],
+            [("Sum", 60, "Seconds"), ("Minimum", 30, "Milliseconds")],
+            [("Sum", 60, "Seconds"), ("Minimum", 60, "Milliseconds")],
+            [("Sum", 60, "Seconds"), ("Sum", 30, "Milliseconds")],
+            [("Sum", 60, "Seconds"), ("Sum", 60, "Milliseconds")],
+        ],
+    )
+    @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
+    def test_label_generation(self, aws_client, snapshot, input_pairs):
+        # Whenever values differ for a statistic type or period, that value is added to the label
+        utc_now = datetime.now(tz=timezone.utc)
+
+        namespace1 = f"test/{short_uid()}"
+        # put metric data
+        values = [0, 2, 7, 100]
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace1,
+            MetricData=[
+                {"MetricName": "metric1", "Value": val, "Unit": "Seconds"} for val in values
+            ],
+        )
+        # get_metric_data
+
+        def _get_metric_data():
+            return aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": f"result_{stat}_{str(period)}_{unit}",
+                        "MetricStat": {
+                            "Metric": {"Namespace": namespace1, "MetricName": "metric1"},
+                            "Period": period,
+                            "Stat": stat,
+                            "Unit": unit,
+                        },
+                    }
+                    for (stat, period, unit) in input_pairs
+                ],
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+            )
+
+        def _match_results():
+            response = _get_metric_data()
+            # keep one assert to avoid storing incorrect values
+            sum = [
+                res for res in response["MetricDataResults"] if res["Id"].startswith("result_Sum")
+            ][0]
+            assert [int(val) for val in sum["Values"]] == [109]
+            snapshot.match("label_generation", response)
+
+        retry(_match_results, retries=10, sleep=1.0)
 
     @markers.aws.validated
     def test_alarm_lambda_target(
