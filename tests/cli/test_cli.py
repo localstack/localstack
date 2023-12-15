@@ -16,6 +16,7 @@ from localstack.constants import LOCALHOST_HOSTNAME, LOCALHOST_IP, MODULE_MAIN_P
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import poll_condition
+from localstack.utils.container_utils.container_client import ContainerClient, NoSuchImage
 from localstack.utils.files import mkdir
 from localstack.utils.net import get_free_udp_port, send_dns_query
 from localstack.utils.run import run, to_str
@@ -53,6 +54,25 @@ def container_client():
     )
 
 
+@pytest.fixture
+def backup_and_remove_image(monkeypatch, container_client: ContainerClient):
+    """
+    To test whether the image is pulled correctly, we must remove the image.
+    However we do not want to do this and remove the current image, so "back it
+    up" - i.e. tag it with another tag, and restore it afterwards.
+    """
+
+    source_image_name = f"{constants.DOCKER_IMAGE_NAME}:latest"
+    tagged_image_name = f"{constants.DOCKER_IMAGE_NAME}:backup"
+    container_client.tag_image(source_image_name, tagged_image_name)
+    container_client.remove_image(source_image_name, force=True)
+    monkeypatch.setenv("IMAGE_NAME", source_image_name)
+
+    yield
+
+    container_client.tag_image(tagged_image_name, source_image_name)
+
+
 @pytest.mark.skipif(condition=in_docker(), reason="cannot run CLI tests in docker")
 class TestCliContainerLifecycle:
     def test_start_wait_stop(self, runner, container_client):
@@ -77,6 +97,22 @@ class TestCliContainerLifecycle:
 
         with pytest.raises(requests.ConnectionError):
             requests.get(config.external_service_url() + "/_localstack/health")
+
+    @pytest.mark.usefixtures("backup_and_remove_image")
+    def test_pulling_image_message(self, runner, container_client: ContainerClient):
+        image_name_and_tag = f"{constants.DOCKER_IMAGE_NAME}:latest"
+        with pytest.raises(NoSuchImage):
+            container_client.inspect_image(image_name_and_tag, pull=False)
+
+        result = runner.invoke(cli, ["start", "-d"])
+
+        assert result.exit_code == 0, result.output
+
+        # we cannot check for "Pulling container image" which would be more accurate
+        # since it is printed in a temporary status line and may not be present in
+        # the output if the docker pull is fast enough, but we can check for the
+        # presence of another message which is present when pulling the image.
+        assert "download complete" in result.output
 
     def test_start_already_running(self, runner, container_client):
         runner.invoke(cli, ["start", "-d"])

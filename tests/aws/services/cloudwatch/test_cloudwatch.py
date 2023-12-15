@@ -951,7 +951,7 @@ class TestCloudwatch:
                     "height": 6,
                     "properties": {
                         "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "i-12345678"]],
-                        "region": "us-east-1",
+                        "region": TEST_AWS_REGION_NAME,
                         "view": "timeSeries",
                         "stacked": False,
                     },

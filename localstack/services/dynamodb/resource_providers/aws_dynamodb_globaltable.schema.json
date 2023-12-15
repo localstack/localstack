@@ -1,0 +1,574 @@
+{
+  "typeName": "AWS::DynamoDB::GlobalTable",
+  "description": "Version: None. Resource Type definition for AWS::DynamoDB::GlobalTable",
+  "additionalProperties": false,
+  "properties": {
+    "Arn": {
+      "type": "string"
+    },
+    "StreamArn": {
+      "type": "string"
+    },
+    "AttributeDefinitions": {
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/AttributeDefinition"
+      },
+      "minItems": 1
+    },
+    "BillingMode": {
+      "type": "string"
+    },
+    "GlobalSecondaryIndexes": {
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/GlobalSecondaryIndex"
+      }
+    },
+    "KeySchema": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/KeySchema"
+      },
+      "minItems": 1,
+      "maxItems": 2
+    },
+    "LocalSecondaryIndexes": {
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/LocalSecondaryIndex"
+      }
+    },
+    "WriteProvisionedThroughputSettings": {
+      "$ref": "#/definitions/WriteProvisionedThroughputSettings"
+    },
+    "Replicas": {
+      "type": "array",
+      "uniqueItems": true,
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/ReplicaSpecification"
+      },
+      "minItems": 1
+    },
+    "SSESpecification": {
+      "$ref": "#/definitions/SSESpecification"
+    },
+    "StreamSpecification": {
+      "$ref": "#/definitions/StreamSpecification"
+    },
+    "TableName": {
+      "type": "string"
+    },
+    "TableId": {
+      "type": "string"
+    },
+    "TimeToLiveSpecification": {
+      "$ref": "#/definitions/TimeToLiveSpecification"
+    }
+  },
+  "definitions": {
+    "StreamSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "StreamViewType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "StreamViewType"
+      ]
+    },
+    "KinesisStreamSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "StreamArn": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "StreamArn"
+      ]
+    },
+    "KeySchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "AttributeName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "KeyType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "KeyType",
+        "AttributeName"
+      ]
+    },
+    "PointInTimeRecoverySpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "PointInTimeRecoveryEnabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ReplicaSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Region": {
+          "type": "string"
+        },
+        "GlobalSecondaryIndexes": {
+          "type": "array",
+          "uniqueItems": true,
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/ReplicaGlobalSecondaryIndexSpecification"
+          }
+        },
+        "ContributorInsightsSpecification": {
+          "$ref": "#/definitions/ContributorInsightsSpecification"
+        },
+        "PointInTimeRecoverySpecification": {
+          "$ref": "#/definitions/PointInTimeRecoverySpecification"
+        },
+        "TableClass": {
+          "type": "string"
+        },
+        "DeletionProtectionEnabled": {
+          "type": "boolean"
+        },
+        "SSESpecification": {
+          "$ref": "#/definitions/ReplicaSSESpecification"
+        },
+        "Tags": {
+          "type": "array",
+          "insertionOrder": false,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/Tag"
+          }
+        },
+        "ReadProvisionedThroughputSettings": {
+          "$ref": "#/definitions/ReadProvisionedThroughputSettings"
+        },
+        "KinesisStreamSpecification": {
+          "$ref": "#/definitions/KinesisStreamSpecification"
+        }
+      },
+      "required": [
+        "Region"
+      ]
+    },
+    "TimeToLiveSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "AttributeName": {
+          "type": "string"
+        },
+        "Enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "Enabled"
+      ]
+    },
+    "LocalSecondaryIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "IndexName": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 255
+        },
+        "KeySchema": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/KeySchema"
+          },
+          "maxItems": 2
+        },
+        "Projection": {
+          "$ref": "#/definitions/Projection"
+        }
+      },
+      "required": [
+        "IndexName",
+        "Projection",
+        "KeySchema"
+      ]
+    },
+    "GlobalSecondaryIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "IndexName": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 255
+        },
+        "KeySchema": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/KeySchema"
+          },
+          "minItems": 1,
+          "maxItems": 2
+        },
+        "Projection": {
+          "$ref": "#/definitions/Projection"
+        },
+        "WriteProvisionedThroughputSettings": {
+          "$ref": "#/definitions/WriteProvisionedThroughputSettings"
+        }
+      },
+      "required": [
+        "IndexName",
+        "Projection",
+        "KeySchema"
+      ]
+    },
+    "SSESpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "SSEEnabled": {
+          "type": "boolean"
+        },
+        "SSEType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "SSEEnabled"
+      ]
+    },
+    "ReplicaSSESpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "KMSMasterKeyId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "KMSMasterKeyId"
+      ]
+    },
+    "AttributeDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "AttributeName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "AttributeType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "AttributeName",
+        "AttributeType"
+      ]
+    },
+    "Tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "type": "string"
+        },
+        "Value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    },
+    "Projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "NonKeyAttributes": {
+          "type": "array",
+          "uniqueItems": true,
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20
+        },
+        "ProjectionType": {
+          "type": "string"
+        }
+      }
+    },
+    "ReplicaGlobalSecondaryIndexSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "IndexName": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 255
+        },
+        "ContributorInsightsSpecification": {
+          "$ref": "#/definitions/ContributorInsightsSpecification"
+        },
+        "ReadProvisionedThroughputSettings": {
+          "$ref": "#/definitions/ReadProvisionedThroughputSettings"
+        }
+      },
+      "required": [
+        "IndexName"
+      ]
+    },
+    "ContributorInsightsSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "Enabled"
+      ]
+    },
+    "ReadProvisionedThroughputSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ReadCapacityUnits": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ReadCapacityAutoScalingSettings": {
+          "$ref": "#/definitions/CapacityAutoScalingSettings"
+        }
+      }
+    },
+    "WriteProvisionedThroughputSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "WriteCapacityAutoScalingSettings": {
+          "$ref": "#/definitions/CapacityAutoScalingSettings"
+        }
+      }
+    },
+    "CapacityAutoScalingSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "MinCapacity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "MaxCapacity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "SeedCapacity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "TargetTrackingScalingPolicyConfiguration": {
+          "$ref": "#/definitions/TargetTrackingScalingPolicyConfiguration"
+        }
+      },
+      "required": [
+        "MinCapacity",
+        "MaxCapacity",
+        "TargetTrackingScalingPolicyConfiguration"
+      ]
+    },
+    "TargetTrackingScalingPolicyConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "DisableScaleIn": {
+          "type": "boolean"
+        },
+        "ScaleInCooldown": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ScaleOutCooldown": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "TargetValue": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "required": [
+        "TargetValue"
+      ]
+    }
+  },
+  "required": [
+    "KeySchema",
+    "AttributeDefinitions",
+    "Replicas"
+  ],
+  "readOnlyProperties": [
+    "/properties/Arn",
+    "/properties/StreamArn",
+    "/properties/TableId"
+  ],
+  "createOnlyProperties": [
+    "/properties/LocalSecondaryIndexes",
+    "/properties/TableName",
+    "/properties/KeySchema"
+  ],
+  "primaryIdentifier": [
+    "/properties/TableName"
+  ],
+  "additionalIdentifiers": [
+    [
+      "/properties/Arn"
+    ],
+    [
+      "/properties/StreamArn"
+    ]
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "dynamodb:CreateTable",
+        "dynamodb:CreateTableReplica",
+        "dynamodb:Describe*",
+        "dynamodb:UpdateTimeToLive",
+        "dynamodb:UpdateContributorInsights",
+        "dynamodb:UpdateContinuousBackups",
+        "dynamodb:ListTagsOfResource",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:UpdateItem",
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:TagResource",
+        "dynamodb:EnableKinesisStreamingDestination",
+        "dynamodb:DisableKinesisStreamingDestination",
+        "dynamodb:DescribeKinesisStreamingDestination",
+        "dynamodb:DescribeTableReplicaAutoScaling",
+        "dynamodb:UpdateTableReplicaAutoScaling",
+        "dynamodb:TagResource",
+        "application-autoscaling:DeleteScalingPolicy",
+        "application-autoscaling:DeleteScheduledAction",
+        "application-autoscaling:DeregisterScalableTarget",
+        "application-autoscaling:Describe*",
+        "application-autoscaling:PutScalingPolicy",
+        "application-autoscaling:PutScheduledAction",
+        "application-autoscaling:RegisterScalableTarget",
+        "kinesis:ListStreams",
+        "kinesis:DescribeStream",
+        "kinesis:PutRecords",
+        "kms:CreateGrant",
+        "kms:Describe*",
+        "kms:Get*",
+        "kms:List*",
+        "kms:RevokeGrant",
+        "cloudwatch:PutMetricData"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "dynamodb:Describe*",
+        "application-autoscaling:Describe*",
+        "cloudwatch:PutMetricData"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "dynamodb:Describe*",
+        "dynamodb:CreateTableReplica",
+        "dynamodb:UpdateTable",
+        "dynamodb:UpdateTimeToLive",
+        "dynamodb:UpdateContinuousBackups",
+        "dynamodb:UpdateContributorInsights",
+        "dynamodb:ListTagsOfResource",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:UpdateItem",
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:DeleteTable",
+        "dynamodb:DeleteTableReplica",
+        "dynamodb:UpdateItem",
+        "dynamodb:TagResource",
+        "dynamodb:UntagResource",
+        "dynamodb:EnableKinesisStreamingDestination",
+        "dynamodb:DisableKinesisStreamingDestination",
+        "dynamodb:DescribeKinesisStreamingDestination",
+        "dynamodb:DescribeTableReplicaAutoScaling",
+        "dynamodb:UpdateTableReplicaAutoScaling",
+        "application-autoscaling:DeleteScalingPolicy",
+        "application-autoscaling:DeleteScheduledAction",
+        "application-autoscaling:DeregisterScalableTarget",
+        "application-autoscaling:Describe*",
+        "application-autoscaling:PutScalingPolicy",
+        "application-autoscaling:PutScheduledAction",
+        "application-autoscaling:RegisterScalableTarget",
+        "kinesis:ListStreams",
+        "kinesis:DescribeStream",
+        "kinesis:PutRecords",
+        "kms:CreateGrant",
+        "kms:Describe*",
+        "kms:Get*",
+        "kms:List*",
+        "kms:RevokeGrant",
+        "cloudwatch:PutMetricData"
+      ],
+      "timeoutInMinutes": 1200
+    },
+    "delete": {
+      "permissions": [
+        "dynamodb:Describe*",
+        "application-autoscaling:DeleteScalingPolicy",
+        "application-autoscaling:DeleteScheduledAction",
+        "application-autoscaling:DeregisterScalableTarget",
+        "application-autoscaling:Describe*",
+        "application-autoscaling:PutScalingPolicy",
+        "application-autoscaling:PutScheduledAction",
+        "application-autoscaling:RegisterScalableTarget"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "dynamodb:ListTables",
+        "cloudwatch:PutMetricData"
+      ]
+    }
+  }
+}

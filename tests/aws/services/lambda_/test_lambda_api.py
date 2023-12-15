@@ -404,6 +404,113 @@ class TestLambdaFunction:
             == get_function_response_updated["Configuration"]["CodeSize"]
         )
 
+    # TODO: fix type of AccessDeniedException yielding null
+    @markers.snapshot.skip_snapshot_verify(paths=["function_arn_other_account_exc..Error.Message"])
+    @markers.aws.validated
+    def test_function_arns(
+        self, create_lambda_function, region, account_id, aws_client, lambda_su_role, snapshot
+    ):
+        # create_function
+        function_name_1 = f"test-function-arn-{short_uid()}"
+        function_arn = f"arn:aws:lambda:{region}:{account_id}:function:{function_name_1}"
+        function_arn_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_arn,
+            runtime=Runtime.python3_12,
+        )
+        snapshot.match("create-function-arn-response", function_arn_response)
+
+        function_name_2 = f"test-partial-arn-{short_uid()}"
+        partial_arn = f"{account_id}:function:{function_name_2}"
+        function_partial_arn_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=partial_arn,
+            runtime=Runtime.python3_12,
+        )
+        snapshot.match("create-function-partial-arn-response", function_partial_arn_response)
+
+        # create_function exceptions
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        # test invalid function name
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName="invalid:function:name",
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("invalid_function_name_exc", e.value.response)
+
+        # test too long function name
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName="a" * 65,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("long_function_name_exc", e.value.response)
+
+        # test too long function arn
+        max_function_arn_length = 140
+        function_arn_prefix = f"arn:aws:lambda:{region}:{account_id}:function:"
+        suffix_length = max_function_arn_length - len(function_arn_prefix) + 1
+        long_function_arn = function_arn_prefix + "a" * suffix_length
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=long_function_arn,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("long_function_arn_exc", e.value.response)
+
+        # test other region in function arn than client
+        function_name_1 = f"test-function-arn-{short_uid()}"
+        other_region = "ap-southeast-1"
+        assert (
+            region != other_region
+        ), "This test assumes that the region in the function arn differs from the client region"
+        function_arn_other_region = (
+            f"arn:aws:lambda:{other_region}:{account_id}:function:{function_name_1}"
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_arn_other_region,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("function_arn_other_region_exc", e.value.response)
+
+        # test other account in function arn than client
+        function_name_1 = f"test-function-arn-{short_uid()}"
+        other_account = "123456789012"
+        assert (
+            account_id != other_account
+        ), "This test assumes that the account in the function arn differs from the client region"
+        function_arn_other_account = (
+            f"arn:aws:lambda:{region}:{other_account}:function:{function_name_1}"
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_arn_other_account,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("function_arn_other_account_exc", e.value.response)
+
     @markers.lambda_runtime_update
     @markers.aws.validated
     def test_create_lambda_exceptions(self, lambda_su_role, snapshot, aws_client):

@@ -19,6 +19,7 @@ from localstack.testing.snapshots.transformer import (
     Transformer,
 )
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
+from localstack.utils.json import CustomEncoder
 
 SNAPSHOT_LOGGER = logging.getLogger(__name__)
 SNAPSHOT_LOGGER.setLevel(logging.DEBUG if os.environ.get("DEBUG_SNAPSHOT") else logging.WARNING)
@@ -134,7 +135,8 @@ class SnapshotSession:
                         "recorded-content": raw_state,
                     }
                     full_state[self.scope_key] = recorded
-                    state_to_dump = json.dumps(full_state, indent=2)
+                    # need to use CustomEncoder to handle datetime objects
+                    state_to_dump = json.dumps(full_state, indent=2, cls=CustomEncoder)
                     fd.seek(0)
                     fd.truncate()
                     # add line ending to be compatible with pre-commit-hooks (end-of-file-fixer)

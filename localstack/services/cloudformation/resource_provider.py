@@ -73,10 +73,12 @@ PROVIDER_DEFAULTS = {
     "AWS::AppSync::GraphQLApi": "ResourceProvider",
     "AWS::AppSync::GraphQLSchema": "ResourceProvider",
     "AWS::AppSync::Resolver": "ResourceProvider",
+    "AWS::CDK::Metadata": "ResourceProviders",
     "AWS::CertificateManager::Certificate": "ResourceProvider",
     "AWS::CloudFormation::Stack": "ResourceProvider",
     "AWS::CloudWatch::Alarm": "ResourceProvider",
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
+    "AWS::DynamoDB::GlobalTable": "ResourceProvider",
     "AWS::DynamoDB::Table": "ResourceProvider",
     "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::EC2::Instance": "ResourceProvider",
@@ -117,6 +119,13 @@ PROVIDER_DEFAULTS = {
     "AWS::KinesisAnalytics::Application": "ResourceProvider",
     "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
     "AWS::Lambda::Alias": "ResourceProvider",
+    "AWS::Lambda::CodeSigningConfig": "ResourceProvider",
+    "AWS::Lambda::EventInvokeConfig": "ResourceProvider",
+    "AWS::Lambda::EventSourceMapping": "ResourceProvider",
+    "AWS::Lambda::LayerVersion": "ResourceProvider",
+    "AWS::Lambda::LayerVersionPermission": "ResourceProvider",
+    "AWS::Lambda::Permission": "ResourceProvider",
+    "AWS::Lambda::Version": "ResourceProvider",
     "AWS::Logs::LogGroup": "ResourceProvider",
     "AWS::Logs::LogStream": "ResourceProvider",
     "AWS::Logs::SubscriptionFilter": "ResourceProvider",
@@ -800,6 +809,11 @@ class ResourceProviderExecutor:
                         request.resource_type,
                         request.logical_resource_id,
                     )
+                    if request.previous_state is None:
+                        # this is an issue with our update detection. We should never be in this state.
+                        request.action = "Add"
+                        return resource_provider.create(request)
+
                     return ProgressEvent(
                         status=OperationStatus.SUCCESS, resource_model=request.previous_state
                     )

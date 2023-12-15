@@ -230,22 +230,33 @@ def is_env_not_false(env_var_name: str) -> bool:
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
 
-def load_environment(profile: str = None) -> Optional[str]:
-    """Loads the environment variables from ~/.localstack/{profile}.env
-    :param profile: the profile to load (defaults to "default")
-    :returns str: the name of the actually loaded profile (might be the fallback)
+def load_environment(profiles: str = None, env=os.environ) -> List[str]:
+    """Loads the environment variables from ~/.localstack/{profile}.env, for each profile listed in the profiles.
+    :param env: environment to load profile to. Defaults to `os.environ`
+    :param profiles: a comma separated list of profiles to load (defaults to "default")
+    :returns str: the list of the actually loaded profiles (might be the fallback)
     """
-    if not profile:
-        profile = "default"
+    if not profiles:
+        profiles = "default"
 
-    path = os.path.join(CONFIG_DIR, f"{profile}.env")
-    if not os.path.exists(path):
-        return None
-
+    profiles = profiles.split(",")
+    environment = {}
     import dotenv
 
-    dotenv.load_dotenv(path, override=False)
-    return profile
+    for profile in profiles:
+        profile = profile.strip()
+        path = os.path.join(CONFIG_DIR, f"{profile}.env")
+        if not os.path.exists(path):
+            print(f"Profile '{profile}' specified, but file {path} not found.")
+            continue
+        environment.update(dotenv.dotenv_values(path))
+
+    for k, v in environment.items():
+        # we do not want to override the environment
+        if k not in env and v is not None:
+            env[k] = v
+
+    return profiles
 
 
 def is_persistence_enabled() -> bool:
@@ -371,10 +382,10 @@ CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 # keep this on top to populate environment
 try:
     # CLI specific: the actually loaded configuration profile
-    LOADED_PROFILE = load_environment(CONFIG_PROFILE)
+    LOADED_PROFILES = load_environment(CONFIG_PROFILE)
 except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
-    LOADED_PROFILE = None
+    LOADED_PROFILES = None
 
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
@@ -834,6 +845,10 @@ BUCKET_MARKER_LOCAL = (
     os.environ.get("BUCKET_MARKER_LOCAL", "").strip() or DEFAULT_BUCKET_MARKER_LOCAL
 )
 
+# PUBLIC: Opt-out to inject the environment variable AWS_ENDPOINT_URL for automatic configuration of AWS SDKs:
+# https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html
+LAMBDA_DISABLE_AWS_ENDPOINT_URL = is_env_true("LAMBDA_DISABLE_AWS_ENDPOINT_URL")
+
 # PUBLIC: bridge (Docker default)
 # Docker network driver for the Lambda and ECS containers. https://docs.docker.com/network/
 LAMBDA_DOCKER_NETWORK = os.environ.get("LAMBDA_DOCKER_NETWORK", "").strip()
@@ -1015,7 +1030,10 @@ DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
 # Comma-separated list of regex patterns for DNS names to resolve locally.
 # Any DNS name not matched against any of the patterns on this whitelist
 # will resolve to the real DNS entry, rather than the local one.
-DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()
+DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM = (
+    os.environ.get("DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM") or ""
+).strip()
+DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()  # deprecated
 
 # IP address that AWS endpoints should resolve to in our local DNS server. By default,
 # hostnames resolve to 127.0.0.1, which allows to use the LocalStack APIs transparently
@@ -1099,6 +1117,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
+    "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",

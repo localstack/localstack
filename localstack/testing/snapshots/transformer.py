@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 import re
+from datetime import datetime
 from re import Pattern
 from typing import Any, Callable, Optional, Protocol
 
@@ -246,3 +247,83 @@ class SortingTransformer:
 
     def transform(self, input_data: dict, *, ctx: TransformContext = None) -> dict:
         return self._transform_dict(input_data, ctx=ctx)
+
+
+class RegexMatcher:
+    def __init__(self, regex: str | re.Pattern, representation: str):
+        if isinstance(regex, str):
+            self.regex = re.compile(regex)
+        elif isinstance(regex, re.Pattern):
+            self.regex = regex
+        else:
+            raise Exception("Invalid")
+
+        self.representation = representation
+
+
+REFERENCE_DATE = (
+    "2022-07-13T13:48:01Z"  # v1.0.0 commit timestamp cf26bd9199354a9a55e0b65e312ceee4c407f6c0
+)
+PATTERN_ISO8601 = re.compile(
+    r"(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:?([0-5]\d)?)"
+)
+
+
+class TimestampTransformer:
+    matchers: list[RegexMatcher]
+
+    def __init__(self):
+        """
+        Create a timestamp transformer which will replace normal datetimes with <datetime> and string timestamps with their representative format.
+
+        The reference date which is used for replacements is "2022-07-13T13:48:01Z", the commit date for the v1.0.0 tag of localstack.
+        """
+
+        # Add your matcher here
+        self.matchers = [
+            RegexMatcher(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z", "2022-07-13T13:48:01.000Z"
+            ),  # stepfunctions internal
+            RegexMatcher(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}\+\d{4}", "2022-07-13T13:48:01.000+0000"
+            ),  # lambda
+            RegexMatcher(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{6}\+\d{2}:\d{2}",
+                "2022-07-13T13:48:01.000000+00:00",
+            ),  # stepfunctions external, also cloudformation
+            RegexMatcher(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z",
+                "2022-07-13T13:48:01Z",
+            ),  # s3
+            # RegexMatcher(
+            #     PATTERN_ISO8601, "generic-iso8601"
+            # ),  # very generic iso8601, this should technically always be fixed so we could also think about removing it here
+        ]
+
+    def transform(self, input_data: dict, *, ctx: TransformContext = None) -> dict:
+        return self._transform_dict(input_data, ctx=ctx)
+
+    def _transform(self, input_data: Any, ctx: TransformContext = None) -> Any:
+        if isinstance(input_data, dict):
+            return self._transform_dict(input_data, ctx=ctx)
+        elif isinstance(input_data, list):
+            return self._transform_list(input_data, ctx=ctx)
+        elif isinstance(input_data, datetime):
+            return "<datetime>"
+        elif isinstance(input_data, str):
+            return self._transform_timestamp(input_data)
+        return input_data
+
+    def _transform_timestamp(self, timestamp: str) -> str:
+        for matcher in self.matchers:
+            if matcher.regex.match(timestamp):
+                return f"<timestamp:{matcher.representation}>"
+        return timestamp
+
+    def _transform_dict(self, input_data: dict, ctx: TransformContext = None) -> dict:
+        for k, v in input_data.items():
+            input_data[k] = self._transform(v, ctx=ctx)
+        return input_data
+
+    def _transform_list(self, input_data: list, ctx: TransformContext = None) -> list:
+        return list(map(lambda e: self._transform(e, ctx=ctx), input_data))

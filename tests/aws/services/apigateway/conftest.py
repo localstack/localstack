@@ -43,6 +43,11 @@ APIGATEWAY_LAMBDA_POLICY = {
     "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
 }
 
+APIGATEWAY_S3_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "s3:*", "Resource": "*"}],
+}
+
 APIGATEWAY_DYNAMODB_POLICY = {
     "Version": "2012-10-17",
     "Statement": [{"Effect": "Allow", "Action": "dynamodb:*", "Resource": "*"}],

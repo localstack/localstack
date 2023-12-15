@@ -96,6 +96,9 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
         model = request.desired_state
         sqs = request.aws_client_factory.sqs
 
+        if model.get("FifoQueue", False):
+            model["FifoQueue"] = model["FifoQueue"]
+
         queue_name = model.get("QueueName")
         if not queue_name:
             # TODO: verify patterns here
@@ -155,7 +158,7 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
         """
         sqs = request.aws_client_factory.sqs
         try:
-            queue_url = sqs.get_queue_url(QueueName=request.desired_state["QueueName"])["QueueUrl"]
+            queue_url = sqs.get_queue_url(QueueName=request.previous_state["QueueName"])["QueueUrl"]
             sqs.delete_queue(QueueUrl=queue_url)
 
         except sqs.exceptions.QueueDoesNotExist:
@@ -181,17 +184,38 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
         """
         sqs = request.aws_client_factory.sqs
         model = request.desired_state
-        if request.desired_state.get("QueueName") != request.previous_state.get("QueueName"):
-            # replacement (TODO: find out if we should handle this in the provider or outside of it)
-            # delete old queue
-            sqs.delete_queue(QueueUrl=request.previous_state["QueueUrl"])
-            # create new queue (TODO: re-use create logic to make this more robust, e.g. for auto-generated queue names)
-            model["QueueUrl"] = sqs.create_queue(QueueName=request.desired_state.get("QueueName"))[
-                "QueueUrl"
-            ]
-            model["Arn"] = sqs.get_queue_attributes(
-                QueueUrl=model["QueueUrl"], AttributeNames=["QueueArn"]
-            )["Attributes"]["QueueArn"]
+
+        assert request.previous_state is not None
+
+        should_replace = (
+            request.desired_state.get("QueueName", request.previous_state["QueueName"])
+            != request.previous_state["QueueName"]
+        ) or (
+            request.desired_state.get("FifoQueue", request.previous_state.get("FifoQueue"))
+            != request.previous_state.get("FifoQueue")
+        )
+
+        if not should_replace:
+            return ProgressEvent(OperationStatus.SUCCESS, resource_model=request.previous_state)
+
+        # TODO: copied from the create handler, extract?
+        if model.get("FifoQueue"):
+            queue_name = util.generate_default_name(
+                request.stack_name, request.logical_resource_id
+            )[:-5]
+            queue_name = f"{queue_name}.fifo"
+        else:
+            queue_name = util.generate_default_name(request.stack_name, request.logical_resource_id)
+
+        # replacement (TODO: find out if we should handle this in the provider or outside of it)
+        # delete old queue
+        sqs.delete_queue(QueueUrl=request.previous_state["QueueUrl"])
+        # create new queue (TODO: re-use create logic to make this more robust, e.g. for
+        #  auto-generated queue names)
+        model["QueueUrl"] = sqs.create_queue(QueueName=queue_name)["QueueUrl"]
+        model["Arn"] = sqs.get_queue_attributes(
+            QueueUrl=model["QueueUrl"], AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
         return ProgressEvent(OperationStatus.SUCCESS, resource_model=model)
 
     def _compile_sqs_queue_attributes(self, properties: SQSQueueProperties) -> dict[str, str]:

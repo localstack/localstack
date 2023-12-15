@@ -31,8 +31,9 @@ class PayloadBindingPath(PayloadBinding):
         return cls(field=field, path=string_path)
 
     def _eval_val(self, env: Environment) -> Any:
+        inp = env.stack[-1]
         try:
-            value = JSONPathUtils.extract_json(self.path, env.inp)
+            value = JSONPathUtils.extract_json(self.path, inp)
         except RuntimeError:
             failure_event = FailureEvent(
                 error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
@@ -40,7 +41,7 @@ class PayloadBindingPath(PayloadBinding):
                 event_details=EventDetails(
                     taskFailedEventDetails=TaskFailedEventDetails(
                         error=StatesErrorNameType.StatesRuntime.to_name(),
-                        cause=f"The JSONPath {self.path} specified for the field $.{self.field} could not be found in the input {to_json_str(env.inp)}",
+                        cause=f"The JSONPath {self.path} specified for the field {self.field}.$ could not be found in the input {to_json_str(inp)}",
                     )
                 ),
             )

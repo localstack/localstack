@@ -1,11 +1,9 @@
 
 build:
-	mkdir -p build; \
-	cp -r ./src/* build/; \
-	find ./build -exec touch -t 200001010100.00 {} \;
+	mkdir -p build && \
+	cp -r ./src/* build/
 
 clean:
-	$(RM) -r build
-	$(RM) handler.zip
+	$(RM) -r build handler.zip
 
 .PHONY: build clean

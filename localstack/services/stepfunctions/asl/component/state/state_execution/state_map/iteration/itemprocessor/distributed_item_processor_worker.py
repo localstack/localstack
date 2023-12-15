@@ -62,6 +62,7 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
             )
 
             env.inp = job.job_input
+            env.stack.append(env.inp)
             self._eval_input(env_frame=env)
 
             job.job_program.eval(env)

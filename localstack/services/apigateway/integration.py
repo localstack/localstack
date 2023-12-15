@@ -168,9 +168,9 @@ def get_source_arn(invocation_context: ApiInvocationContext):
 def call_lambda(
     function_arn: str, event: bytes, asynchronous: bool, invocation_context: ApiInvocationContext
 ) -> str:
-    region_name = extract_region_from_arn(function_arn)
     clients = get_service_factory(
-        region_name=region_name, role_arn=invocation_context.integration.get("credentials")
+        region_name=extract_region_from_arn(function_arn),
+        role_arn=invocation_context.integration.get("credentials"),
     )
     inv_result = clients.lambda_.request_metadata(
         service_principal=ServicePrincipal.apigateway, source_arn=get_source_arn(invocation_context)
@@ -754,7 +754,11 @@ class StepFunctionIntegration(BackendIntegration):
         else:
             payload = json.loads(invocation_context.data)
 
-        client = connect_to().stepfunctions
+        client = get_service_factory(
+            region_name=invocation_context.region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+        ).stepfunctions
+
         if isinstance(payload.get("input"), dict):
             payload["input"] = json.dumps(payload["input"])
 

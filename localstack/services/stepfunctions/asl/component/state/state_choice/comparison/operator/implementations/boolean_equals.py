@@ -31,11 +31,12 @@ class BooleanEqualsPath(Operator):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value: bool = JSONPathUtils.extract_json(value, env.inp)
+        variable = env.stack.pop()
+
+        inp = env.stack[-1]
+        comp_value: bool = JSONPathUtils.extract_json(value, inp)
         if not isinstance(comp_value, bool):
             raise TypeError(f"Expected type bool, but got '{comp_value}' from path '{value}'.")
-
-        variable = env.stack.pop()
 
         res = False
         if isinstance(variable, bool):

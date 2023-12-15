@@ -78,7 +78,9 @@ class StateMap(ExecutionState):
         self.item_selector = state_props.get(ItemSelector)
         self.parameters = state_props.get(Parameters)
         self.max_concurrency = state_props.get(MaxConcurrency) or MaxConcurrency()
-        self.result_path = state_props.get(ResultPath)
+        self.result_path = state_props.get(ResultPath) or ResultPath(
+            result_path_src=ResultPath.DEFAULT_PATH
+        )
         self.result_selector = state_props.get(ResultSelector)
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
