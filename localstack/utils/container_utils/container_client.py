@@ -357,6 +357,17 @@ class VolumeBind:
 
         return ":".join(args)
 
+    def to_mount_str(self) -> str:
+        """
+        Returns a string that can be used as input value for the ``--mount`` CLI flag representing the bind mount.
+
+        :return: a ``--mount`` value
+        """
+        readonly = "true" if self.read_only else "false"
+        return (
+            f"type=bind,source={self.host_dir},destination={self.container_dir},readonly={readonly}"
+        )
+
     @classmethod
     def parse(cls, param: str) -> "VolumeBind":
         parts = param.split(":")

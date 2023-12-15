@@ -26,6 +26,7 @@ from localstack.utils.container_utils.container_client import (
     PortMappings,
     RegistryConnectionError,
     Util,
+    VolumeBind,
     VolumeInfo,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
@@ -479,6 +480,23 @@ class TestDockerClient:
     )
     def test_create_with_volume(self, tmpdir, docker_client: ContainerClient, create_container):
         mount_volumes = [(tmpdir.realpath(), "/tmp/mypath")]
+
+        c = create_container(
+            "alpine",
+            command=["sh", "-c", "echo 'foobar' > /tmp/mypath/foo.log"],
+            mount_volumes=mount_volumes,
+        )
+        docker_client.start_container(c.container_id)
+        assert tmpdir.join("foo.log").isfile(), "foo.log was not created in mounted dir"
+
+    @pytest.mark.skipif(
+        condition=in_docker(), reason="cannot test volume mounts from host when in docker"
+    )
+    def test_create_with_volume_path_with_colon(
+        self, tmpdir, docker_client: ContainerClient, create_container
+    ):
+        tmpdir = tmpdir / "foo:bar:ed"
+        mount_volumes = [VolumeBind(tmpdir.realpath(), "/tmp/mypath")]
 
         c = create_container(
             "alpine",

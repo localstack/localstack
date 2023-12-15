@@ -7,13 +7,14 @@ import re
 import socket
 import threading
 from time import sleep
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import Dict, Iterable, List, Optional, Tuple, Union, cast
 from urllib.parse import quote
 
 import docker
 from docker import DockerClient
 from docker.errors import APIError, ContainerError, DockerException, ImageNotFound, NotFound
 from docker.models.containers import Container
+from docker.types import Mount
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
 from localstack.utils.collections import ensure_list
@@ -33,7 +34,9 @@ from localstack.utils.container_utils.container_client import (
     SimpleVolumeBind,
     Ulimit,
     Util,
+    VolumeBind,
 )
+from localstack.utils.files import mkdir
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
@@ -666,9 +669,16 @@ class SdkDockerClient(ContainerClient):
                     )
                     for ulimit in ulimits
                 ]
-            mounts = None
             if mount_volumes:
-                mounts = Util.convert_mount_list_to_dict(mount_volumes)
+                mounts = self.to_mount_list(mount_volumes)
+                # this is for backwards compatibility since we used to use the volume= parameter, which creates the
+                # directories, whereas mounts= complains if they don't exist
+                for mnt in mounts:
+                    source = mnt["Source"]
+                    if not os.path.exists(source):
+                        mkdir(source)
+
+                kwargs["mounts"] = mounts
 
             def create_container():
                 return self.client().containers.create(
@@ -683,7 +693,6 @@ class SdkDockerClient(ContainerClient):
                     detach=detach,
                     user=user,
                     network=network,
-                    volumes=mounts,
                     extra_hosts=extra_hosts,
                     platform=platform,
                     **kwargs,
@@ -700,6 +709,30 @@ class SdkDockerClient(ContainerClient):
             raise NoSuchImage(image_name)
         except APIError as e:
             raise ContainerException() from e
+
+    def to_mount_list(
+        self, mount_volumes: Iterable[Union[VolumeBind, SimpleVolumeBind]]
+    ) -> List[Mount]:
+        mounts = []
+        for volume in mount_volumes:
+            if isinstance(volume, VolumeBind):
+                mounts.append(
+                    Mount(
+                        type="bind",
+                        source=str(volume.host_dir),
+                        target=str(volume.container_dir),
+                        read_only=volume.read_only,
+                    )
+                )
+            else:
+                mounts.append(
+                    Mount(
+                        type="bind",
+                        source=str(volume[0]),
+                        target=str(volume[1]),
+                    )
+                )
+        return mounts
 
     def run_container(
         self,
