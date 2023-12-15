@@ -134,14 +134,16 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
 
     start_time = datetime.utcnow()
     # Use ThreadPoolExecutor to invoke Lambda function in parallel
-    num_invocations = 50
+    num_invocations = 100
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_invocations) as executor:
         # Use list comprehension to submit multiple tasks
         futures = [executor.submit(invoke) for _ in range(num_invocations)]
 
         # Wait for all tasks to complete
         concurrent.futures.wait(futures)
-    end_time = datetime.utcnow() + timedelta(seconds=10)
+    end_time = datetime.utcnow()
+    diff = end_time - start_time
+    print(f"N={num_invocations} took {diff.total_seconds()} seconds")
     assert error_counter.counter == 0
 
     # Validate S3 object creation
@@ -159,7 +161,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
         "MetricName": "Invocations",
         "Dimensions": [{"Name": "FunctionName", "Value": function_name}],
         "StartTime": start_time,
-        "EndTime": end_time,
+        "EndTime": end_time + timedelta(seconds=10),
         "Period": 3600,  # in seconds
         "Statistics": ["Sum"],
     }
@@ -177,8 +179,8 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
         )
         assert invocation_count == num_invocations
 
-    # NOTE: slow against AWS (can take minutes)
-    retry(assert_events, retries=120, sleep=2)
+    # NOTE: slow against AWS (can take minutes and would likely require more retries)
+    retry(assert_events, retries=30, sleep=2)
 
 
 def format_summary(timings: [float]) -> str:
