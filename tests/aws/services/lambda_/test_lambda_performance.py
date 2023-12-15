@@ -6,21 +6,25 @@ Basic opt-in performance tests for Lambda. Usage:
 """
 
 import csv
+import json
 import logging
 import os
 import pathlib
 import statistics
 import timeit
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
 from localstack import config
-from localstack.aws.api.lambda_ import Runtime
+from localstack.aws.api.lambda_ import InvocationType, Runtime
 from localstack.config import is_env_true
 from localstack.testing.pytest import markers
-from localstack.utils.strings import short_uid
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+from localstack.utils.strings import short_uid, to_bytes, to_str
+from tests.aws.services.lambda_.test_lambda import (
+    TEST_LAMBDA_PYTHON_ECHO,
+    TEST_LAMBDA_PYTHON_S3_INTEGRATION,
+)
 
 # These performance tests are opt-in because we currently do not track performance systematically.
 if not is_env_true("TEST_PERFORMANCE"):
@@ -79,6 +83,67 @@ def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     LOG.info(f" EXECUTION TIME (s) for {repeat} repetitions ".center(80, "="))
     LOG.info(format_summary(timings))
     export_csv(timings, "test_invoke_cold_start")
+
+
+@markers.aws.unknown
+def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
+    function_name = f"echo-func-{short_uid()}"
+    create_lambda_function(
+        handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
+        func_name=function_name,
+        runtime=Runtime.python3_12,
+        Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
+    )
+
+    # TODO: try with reserved concurrency=1
+
+    s3_keys = []
+    error_count = 0
+
+    def invoke():
+        payload = {"file_size_bytes": 1024 * 1024}
+        # TODO: switch to event after successful request response trial
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType=InvocationType.RequestResponse,
+            Payload=to_bytes(json.dumps(payload)),
+        )
+        # TODO: adjust for event invoke
+        assert "FunctionError" not in result
+        response_payload = json.loads(to_str(result["Payload"].read()))
+        s3_keys.append(response_payload["s3_key"])
+
+    start_time = datetime.utcnow()
+    num_invocations = 100
+    for _ in range(num_invocations):
+        try:
+            invoke()
+        except Exception:
+            error_count += 1
+    end_time = datetime.utcnow() + timedelta(seconds=10)
+    # assert error_count == 0
+
+    # TODO: validate invokes through S3 bucket output + CW metrics + CW logs (maybe)
+    s3_keys_output = []
+    paginator = aws_client.s3.get_paginator("list_objects_v2")
+    page_iterator = paginator.paginate(Bucket=s3_bucket)
+    for page in page_iterator:
+        for obj in page.get("Contents", []):
+            s3_keys_output.append(obj["Key"])
+    assert len(s3_keys_output) == num_invocations
+
+    metric_query_params = {
+        "Namespace": "AWS/Lambda",
+        "MetricName": "Invocations",
+        "Dimensions": [{"Name": "FunctionName", "Value": function_name}],
+        "StartTime": start_time,
+        "EndTime": end_time,
+        "Period": 3600,  # in seconds
+        "Statistics": ["Sum"],
+    }
+    response = aws_client.cloudwatch.get_metric_statistics(**metric_query_params)
+    num_invocations_metric = response["Datapoints"][0]["Sum"]
+    assert num_invocations_metric == num_invocations
 
 
 def format_summary(timings: [float]) -> str:

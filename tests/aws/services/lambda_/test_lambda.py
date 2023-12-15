@@ -67,6 +67,7 @@ TEST_LAMBDA_PYTHON_RUNTIME_EXIT_SEGFAULT = os.path.join(
 TEST_LAMBDA_PYTHON_HANDLER_ERROR = os.path.join(THIS_FOLDER, "functions/lambda_handler_error.py")
 TEST_LAMBDA_PYTHON_HANDLER_EXIT = os.path.join(THIS_FOLDER, "functions/lambda_handler_exit.py")
 TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
+TEST_LAMBDA_PYTHON_S3_INTEGRATION = os.path.join(THIS_FOLDER, "functions/lambda_s3_integration.py")
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
 TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
