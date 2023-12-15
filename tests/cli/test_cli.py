@@ -190,8 +190,12 @@ class TestCliContainerLifecycle:
 
         # check that mounts were created correctly
         inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
-        binds = inspect["HostConfig"]["Binds"]
-        assert f"{volume_dir}:{constants.DEFAULT_VOLUME_DIR}" in binds
+        mounts = inspect["HostConfig"]["Mounts"]
+        assert {
+            "Type": "bind",
+            "Source": volume_dir,
+            "Target": constants.DEFAULT_VOLUME_DIR,
+        } in mounts
 
     def test_container_starts_non_root(self, runner, monkeypatch, container_client):
         user = "localstack"

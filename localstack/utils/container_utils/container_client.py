@@ -11,7 +11,7 @@ import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
-from typing import Dict, List, Literal, NamedTuple, Optional, Protocol, Tuple, Union, get_args
+from typing import Any, Dict, List, Literal, NamedTuple, Optional, Protocol, Tuple, Union, get_args
 
 from localstack import config
 from localstack.utils.collections import HashableList, ensure_list
@@ -682,7 +682,7 @@ class ContainerClient(metaclass=ABCMeta):
         """Returns a blocking generator you can iterate over to retrieve log output as it happens."""
 
     @abstractmethod
-    def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_container(self, container_name_or_id: str) -> Dict[str, Any]:
         """Get detailed attributes of a container.
 
         :return: Dict containing docker attributes as returned by the daemon

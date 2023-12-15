@@ -506,6 +506,14 @@ class TestDockerClient:
         docker_client.start_container(c.container_id)
         assert tmpdir.join("foo.log").isfile(), "foo.log was not created in mounted dir"
 
+        inspect = docker_client.inspect_container(c.container_id)
+        mounts = inspect["HostConfig"]["Mounts"]
+        assert {
+            "Type": "bind",
+            "Source": str(tmpdir),
+            "Target": "/tmp/mypath",
+        } in mounts
+
     @pytest.mark.skipif(
         condition=in_docker(), reason="cannot test volume mounts from host when in docker"
     )
