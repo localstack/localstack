@@ -2064,6 +2064,7 @@ class TestCloudwatch:
         ],
     )
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_label_generation(self, aws_client, snapshot, input_pairs):
         # Whenever values differ for a statistic type or period, that value is added to the label
         utc_now = datetime.now(tz=timezone.utc)
