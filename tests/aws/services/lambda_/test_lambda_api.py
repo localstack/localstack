@@ -30,7 +30,10 @@ from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     SNAP_START_SUPPORTED_RUNTIMES,
 )
-from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
+from localstack.testing.aws.lambda_utils import (
+    _await_dynamodb_table_active,
+    _await_event_source_mapping_enabled,
+)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
@@ -4325,9 +4328,61 @@ class TestLambdaEventSourceMappings:
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
     @markers.aws.validated
+    def test_function_name_variations(
+        self,
+        create_lambda_function,
+        snapshot,
+        sqs_create_queue,
+        cleanups,
+        lambda_su_role,
+        aws_client,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+
+        queue_url = sqs_create_queue()
+        queue_arn = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        # create version & alias pointing to the version
+        v1 = aws_client.lambda_.publish_version(FunctionName=function_name)
+        alias = aws_client.lambda_.create_alias(
+            FunctionName=function_name, FunctionVersion=v1["Version"], Name="myalias"
+        )
+        fn = aws_client.lambda_.get_function(FunctionName=function_name)
+
+        def _create_esm(snapshot_scope: str, tested_name: str):
+            result = aws_client.lambda_.create_event_source_mapping(
+                FunctionName=tested_name,
+                EventSourceArn=queue_arn,
+            )
+            cleanups.append(
+                lambda: aws_client.lambda_.delete_event_source_mapping(UUID=result["UUID"])
+            )
+            snapshot.match(f"{snapshot_scope}_create_esm", result)
+            _await_event_source_mapping_enabled(aws_client.lambda_, result["UUID"])
+            aws_client.lambda_.delete_event_source_mapping(UUID=result["UUID"])
+
+        _create_esm("name_only", function_name)
+        _create_esm("partial_arn_latest", f"{function_name}:$LATEST")
+        _create_esm("partial_arn_version", f"{function_name}:{v1['Version']}")
+        _create_esm("partial_arn_alias", f"{function_name}:{alias['Name']}")
+        _create_esm("full_arn_latest", fn["Configuration"]["FunctionArn"])
+        _create_esm("full_arn_version", v1["FunctionArn"])
+        _create_esm("full_arn_alias", alias["AliasArn"])
+
+    @markers.aws.validated
     def test_create_event_source_validation(
         self, create_lambda_function, lambda_su_role, dynamodb_create_table, snapshot, aws_client
     ):
+        """missing required field for DynamoDb stream event source mapping"""
         function_name = f"function-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,

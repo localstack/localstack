@@ -13520,5 +13520,115 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_function_name_variations": {
+    "recorded-date": "15-12-2023, 10:58:47",
+    "recorded-content": {
+      "name_only_create_esm": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "partial_arn_latest_create_esm": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:$LATEST",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "partial_arn_version_create_esm": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:1",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "partial_arn_alias_create_esm": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:myalias",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "full_arn_latest_create_esm": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:5>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "full_arn_version_create_esm": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:1",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "full_arn_alias_create_esm": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:myalias",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:7>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
   }
 }
