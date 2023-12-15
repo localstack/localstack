@@ -1,3 +1,5 @@
+import textwrap
+
 import pytest
 
 from localstack import config
@@ -316,3 +318,69 @@ class TestServiceUrlHelpers:
             internal_service_url(subdomains="abc.execute-api")
             == "http://abc.execute-api.localhost:4566"
         )
+
+
+class TestConfigProfiles:
+    @pytest.fixture
+    def profile_folder(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(config, "CONFIG_DIR", tmp_path)
+        return tmp_path
+
+    def test_multiple_profiles(self, profile_folder):
+        profile_1_content = textwrap.dedent(
+            """
+        VAR1=test1
+        VAR2=test2
+        VAR3=test3
+        """
+        )
+        profile_2_content = textwrap.dedent(
+            """
+        VAR4=test4
+        """
+        )
+        profile_1 = profile_folder / "profile_1.env"
+        profile_1.write_text(profile_1_content)
+        profile_2 = profile_folder / "profile_2.env"
+        profile_2.write_text(profile_2_content)
+
+        environment = {}
+
+        config.load_environment(profiles="profile_1,profile_2", env=environment)
+
+        assert environment == {
+            "VAR1": "test1",
+            "VAR2": "test2",
+            "VAR3": "test3",
+            "VAR4": "test4",
+        }
+
+    def test_multiple_profiles_override_behavior(self, profile_folder):
+        profile_1_content = textwrap.dedent(
+            """
+        VAR1=test1
+        VAR2=test2
+        VAR3=test3
+        """
+        )
+        profile_2_content = textwrap.dedent(
+            """
+        VAR3=override3
+        VAR4=test4
+        """
+        )
+        profile_1 = profile_folder / "profile_1.env"
+        profile_1.write_text(profile_1_content)
+        profile_2 = profile_folder / "profile_2.env"
+        profile_2.write_text(profile_2_content)
+
+        environment = {"VAR1": "can't touch this"}
+
+        config.load_environment(profiles="profile_1,profile_2", env=environment)
+
+        assert environment == {
+            "VAR1": "can't touch this",
+            "VAR2": "test2",
+            "VAR3": "override3",
+            "VAR4": "test4",
+        }
