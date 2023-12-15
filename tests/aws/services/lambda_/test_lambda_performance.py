@@ -11,6 +11,7 @@ import os
 import pathlib
 import statistics
 import threading
+import time
 import timeit
 from datetime import datetime, timedelta
 
@@ -21,7 +22,6 @@ from localstack.aws.api.lambda_ import InvocationType, Runtime
 from localstack.config import is_env_true
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes
-from localstack.utils.sync import retry
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_S3_INTEGRATION,
@@ -114,7 +114,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     lock = threading.Lock()
     request_ids = []
     error_counter = ThreadSafeCounter()
-    num_invocations = 100
+    num_invocations = 200
     invoke_barrier = threading.Barrier(num_invocations)
 
     def invoke(runner: int):
@@ -137,7 +137,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
             error_counter.increment()
 
     start_time = datetime.utcnow()
-    # Use ThreadPoolExecutor to invoke Lambda function in parallel
+    # Use threads to invoke Lambda function in parallel
     thread_list = []
     for i in range(1, num_invocations + 1):
         thread = threading.Thread(target=invoke, args=[i])
@@ -151,41 +151,62 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     print(f"N={num_invocations} took {diff.total_seconds()} seconds")
     assert error_counter.counter == 0
 
+    sleep_seconds = 120
+    print(f"Sleeping for {sleep_seconds} ...")
+    time.sleep(sleep_seconds)
+
+    # Validate CloudWatch invocation metric
+    def assert_cloudwatch_metric():
+        metric_query_params = {
+            "Namespace": "AWS/Lambda",
+            "MetricName": "Invocations",
+            "Dimensions": [{"Name": "FunctionName", "Value": function_name}],
+            "StartTime": start_time,
+            "EndTime": end_time + timedelta(seconds=10),
+            "Period": 3600,  # in seconds
+            "Statistics": ["Sum"],
+        }
+        response = aws_client.cloudwatch.get_metric_statistics(**metric_query_params)
+        num_invocations_metric = response["Datapoints"][0]["Sum"]
+        # assert num_invocations_metric == num_invocations
+        return num_invocations_metric
+
+    metric_count = assert_cloudwatch_metric()
+    # retry(assert_cloudwatch_metric, retries=300, sleep=10)
+
     # Validate CloudWatch invocation logs
-    def assert_events():
+    def assert_log_events():
         log_events = aws_client.logs.filter_log_events(
             logGroupName=f"/aws/lambda/{function_name}",
         )["events"]
         invocation_count = len(
             [event["message"] for event in log_events if event["message"].startswith("REPORT")]
         )
-        assert invocation_count == num_invocations
+        # assert invocation_count == num_invocations
+        return invocation_count
 
+    log_count = assert_log_events()
     # NOTE: slow against AWS (can take minutes and would likely require more retries)
-    retry(assert_events, retries=300, sleep=2)
+    # retry(assert_log_events, retries=300, sleep=2)
 
     # Validate S3 object creation
-    s3_keys_output = []
-    paginator = aws_client.s3.get_paginator("list_objects_v2")
-    page_iterator = paginator.paginate(Bucket=s3_bucket)
-    for page in page_iterator:
-        for obj in page.get("Contents", []):
-            s3_keys_output.append(obj["Key"])
-    assert len(s3_keys_output) == num_invocations
+    def assert_s3_objects():
+        s3_keys_output = []
+        paginator = aws_client.s3.get_paginator("list_objects_v2")
+        page_iterator = paginator.paginate(Bucket=s3_bucket)
+        for page in page_iterator:
+            for obj in page.get("Contents", []):
+                s3_keys_output.append(obj["Key"])
+        # assert len(s3_keys_output) == num_invocations
+        return len(s3_keys_output)
 
-    # Validate CloudWatch invocation metric
-    metric_query_params = {
-        "Namespace": "AWS/Lambda",
-        "MetricName": "Invocations",
-        "Dimensions": [{"Name": "FunctionName", "Value": function_name}],
-        "StartTime": start_time,
-        "EndTime": end_time + timedelta(seconds=10),
-        "Period": 3600,  # in seconds
-        "Statistics": ["Sum"],
-    }
-    response = aws_client.cloudwatch.get_metric_statistics(**metric_query_params)
-    num_invocations_metric = response["Datapoints"][0]["Sum"]
-    assert num_invocations_metric == num_invocations
+    s3_count = assert_s3_objects()
+
+    assert [metric_count, log_count, s3_count] == [
+        num_invocations,
+        num_invocations,
+        num_invocations,
+    ]
 
 
 def format_summary(timings: [float]) -> str:
