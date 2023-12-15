@@ -21,7 +21,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime
 from localstack.config import is_env_true
 from localstack.testing.pytest import markers
-from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import retry
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
@@ -112,25 +112,26 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     #     FunctionName=function_name, ReservedConcurrentExecutions=1
     # )
 
-    s3_keys = []
+    lock = threading.Lock()
+    request_ids = []
     error_counter = ThreadSafeCounter()
 
     def invoke():
+        nonlocal request_ids
         nonlocal error_counter
         try:
             payload = {"file_size_bytes": 1024 * 1024}
-            # TODO: switch to event after successful request response trial
             result = aws_client.lambda_.invoke(
                 FunctionName=function_name,
-                InvocationType=InvocationType.RequestResponse,
+                InvocationType=InvocationType.Event,
                 Payload=to_bytes(json.dumps(payload)),
             )
-        except Exception:
+            request_id = result["ResponseMetadata"]["RequestId"]
+            with lock:
+                request_ids.append(request_id)
+        except Exception as e:
+            print(e)
             error_counter.increment()
-        # TODO: adjust for event invoke
-        assert "FunctionError" not in result
-        response_payload = json.loads(to_str(result["Payload"].read()))
-        s3_keys.append(response_payload["s3_key"])
 
     start_time = datetime.utcnow()
     # Use ThreadPoolExecutor to invoke Lambda function in parallel
@@ -145,6 +146,19 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     diff = end_time - start_time
     print(f"N={num_invocations} took {diff.total_seconds()} seconds")
     assert error_counter.counter == 0
+
+    # Validate CloudWatch invocation logs
+    def assert_events():
+        log_events = aws_client.logs.filter_log_events(
+            logGroupName=f"/aws/lambda/{function_name}",
+        )["events"]
+        invocation_count = len(
+            [event["message"] for event in log_events if event["message"].startswith("REPORT")]
+        )
+        assert invocation_count == num_invocations
+
+    # NOTE: slow against AWS (can take minutes and would likely require more retries)
+    retry(assert_events, retries=300, sleep=2)
 
     # Validate S3 object creation
     s3_keys_output = []
@@ -168,19 +182,6 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     response = aws_client.cloudwatch.get_metric_statistics(**metric_query_params)
     num_invocations_metric = response["Datapoints"][0]["Sum"]
     assert num_invocations_metric == num_invocations
-
-    # Validate CloudWatch invocation logs
-    def assert_events():
-        log_events = aws_client.logs.filter_log_events(
-            logGroupName=f"/aws/lambda/{function_name}",
-        )["events"]
-        invocation_count = len(
-            [event["message"] for event in log_events if event["message"].startswith("REPORT")]
-        )
-        assert invocation_count == num_invocations
-
-    # NOTE: slow against AWS (can take minutes and would likely require more retries)
-    retry(assert_events, retries=30, sleep=2)
 
 
 def format_summary(timings: [float]) -> str:
