@@ -4,13 +4,14 @@ Basic opt-in performance tests for Lambda. Usage:
 2) Set TEST_PERFORMANCE_RESULTS_DIR=$HOME/Downloads if you want to export performance results as CSV
 3) Adjust repeat=100 to configure the number of repetitions
 """
-
+import concurrent
 import csv
 import json
 import logging
 import os
 import pathlib
 import statistics
+import threading
 import timeit
 from datetime import datetime, timedelta
 
@@ -86,6 +87,16 @@ def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     export_csv(timings, "test_invoke_cold_start")
 
 
+class ThreadSafeCounter:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.counter = 0
+
+    def increment(self):
+        with self.lock:
+            self.counter += 1
+
+
 @markers.aws.unknown
 def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     function_name = f"echo-func-{short_uid()}"
@@ -97,35 +108,41 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client):
     )
 
     # Limit concurrency to avoid resource bottlenecks
-    aws_client.lambda_.put_function_concurrency(
-        FunctionName=function_name, ReservedConcurrentExecutions=1
-    )
+    # aws_client.lambda_.put_function_concurrency(
+    #     FunctionName=function_name, ReservedConcurrentExecutions=1
+    # )
 
     s3_keys = []
-    error_count = 0
+    error_counter = ThreadSafeCounter()
 
     def invoke():
-        payload = {"file_size_bytes": 1024 * 1024}
-        # TODO: switch to event after successful request response trial
-        result = aws_client.lambda_.invoke(
-            FunctionName=function_name,
-            InvocationType=InvocationType.RequestResponse,
-            Payload=to_bytes(json.dumps(payload)),
-        )
+        nonlocal error_counter
+        try:
+            payload = {"file_size_bytes": 1024 * 1024}
+            # TODO: switch to event after successful request response trial
+            result = aws_client.lambda_.invoke(
+                FunctionName=function_name,
+                InvocationType=InvocationType.RequestResponse,
+                Payload=to_bytes(json.dumps(payload)),
+            )
+        except Exception:
+            error_counter.increment()
         # TODO: adjust for event invoke
         assert "FunctionError" not in result
         response_payload = json.loads(to_str(result["Payload"].read()))
         s3_keys.append(response_payload["s3_key"])
 
     start_time = datetime.utcnow()
-    num_invocations = 100
-    for _ in range(num_invocations):
-        try:
-            invoke()
-        except Exception:
-            error_count += 1
+    # Use ThreadPoolExecutor to invoke Lambda function in parallel
+    num_invocations = 50
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_invocations) as executor:
+        # Use list comprehension to submit multiple tasks
+        futures = [executor.submit(invoke) for _ in range(num_invocations)]
+
+        # Wait for all tasks to complete
+        concurrent.futures.wait(futures)
     end_time = datetime.utcnow() + timedelta(seconds=10)
-    # assert error_count == 0
+    assert error_counter.counter == 0
 
     # Validate S3 object creation
     s3_keys_output = []
