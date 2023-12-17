@@ -1157,9 +1157,18 @@ def import_api_from_openapi_spec(
             integration_type = (
                 i_type.upper() if (i_type := method_integration.get("type")) else None
             )
-            # TODO: validate more cases like this
-            # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
-            integration_method = method_name if integration_type != "AWS_PROXY" else "POST"
+
+            match integration_type:
+                case "AWS_PROXY":
+                    # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
+                    integration_method = "POST"
+                case "AWS":
+                    integration_method = (
+                        method_integration.get("httpMethod") or method_name
+                    ).upper()
+                case _:
+                    integration_method = method_name
+
             connection_type = (
                 ConnectionType.INTERNET
                 if integration_type in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY)
