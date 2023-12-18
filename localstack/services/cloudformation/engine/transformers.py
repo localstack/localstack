@@ -252,9 +252,10 @@ def apply_serverless_transformation(
     if boto3.session.Session().region_name is None:
         os.environ["AWS_DEFAULT_REGION"] = region_name
     loader = create_policy_loader()
+    simplified_parameters = {k: v["ParameterValue"] for k, v in template_parameters.items()}
 
     try:
-        transformed = transform_sam(parsed_template, template_parameters, loader)
+        transformed = transform_sam(parsed_template, simplified_parameters, loader)
         return transformed
     except Exception as e:
         raise FailedTransformationException(transformation=SERVERLESS_TRANSFORM, message=str(e))
