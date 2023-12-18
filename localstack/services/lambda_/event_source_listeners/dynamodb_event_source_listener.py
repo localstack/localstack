@@ -1,10 +1,10 @@
 import datetime
 from typing import Dict, List, Optional
 
-from localstack.services.awslambda.lambda_utils import filter_stream_records
 from localstack.services.lambda_.event_source_listeners.stream_event_source_listener import (
     StreamEventSourceListener,
 )
+from localstack.services.lambda_.event_source_listeners.utils import filter_stream_records
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.threads import FuncThread
 
