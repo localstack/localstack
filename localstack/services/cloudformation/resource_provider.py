@@ -80,6 +80,7 @@ PROVIDER_DEFAULTS = {
     "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
     "AWS::DynamoDB::GlobalTable": "ResourceProvider",
     "AWS::DynamoDB::Table": "ResourceProvider",
+    "AWS::DocDB::DBCluster": "ResourceProvider",
     "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::EC2::Instance": "ResourceProvider",
     "AWS::EC2::InternetGateway": "ResourceProvider",
