@@ -89,6 +89,10 @@ def describe(describe_orig, self):
         sans.append(cert["DomainName"])
     if cert["DomainName"] not in sans_summaries:
         sans_summaries.append(cert["DomainName"])
+    additional_domains = [
+        san for san in cert["SubjectAlternativeNames"] if san not in sans_summaries
+    ]
+    sans_summaries.extend(additional_domains)
 
     if "HasAdditionalSubjectAlternativeNames" not in cert:
         cert["HasAdditionalSubjectAlternativeNames"] = False
