@@ -572,6 +572,33 @@ def cmd_stop() -> None:
         )
 
 
+@localstack.command(name="restart", short_help="Restart LocalStack")
+@publish_invocation
+def cmd_restart() -> None:
+    """
+    Restarts the current LocalStack runtime.
+
+    This command restarts the currently running LocalStack docker container.
+    By default, this command looks for a container named `localstack-main` (which is the default
+    container name used by the `localstack start` command).
+    If your LocalStack container has a different name, set the config variable
+    `MAIN_CONTAINER_NAME`.
+    """
+    from localstack.utils.docker_utils import DOCKER_CLIENT
+
+    from ..utils.container_utils.container_client import NoSuchContainer
+
+    container_name = config.MAIN_CONTAINER_NAME
+
+    try:
+        DOCKER_CLIENT.restart_container(container_name)
+        console.print("container restarted: %s" % container_name)
+    except NoSuchContainer:
+        raise CLIError(
+            f'Expected a running LocalStack container named "{container_name}", but found none'
+        )
+
+
 @localstack.command(
     name="logs",
     short_help="Show LocalStack logs",
