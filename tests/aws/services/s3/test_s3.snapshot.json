@@ -6985,7 +6985,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[file%2Fname]": {
-    "recorded-date": "13-09-2023, 22:47:29",
+    "recorded-date": "12-12-2023, 13:46:25",
     "recorded-content": {
       "put-object-special-char": {
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
@@ -7039,7 +7039,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[test@key/]": {
-    "recorded-date": "13-09-2023, 22:47:32",
+    "recorded-date": "12-12-2023, 13:46:27",
     "recorded-content": {
       "put-object-special-char": {
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
@@ -7093,7 +7093,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[test%123]": {
-    "recorded-date": "13-09-2023, 22:47:34",
+    "recorded-date": "12-12-2023, 13:46:30",
     "recorded-content": {
       "put-object-special-char": {
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
@@ -7147,7 +7147,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[test%percent]": {
-    "recorded-date": "13-09-2023, 22:47:36",
+    "recorded-date": "12-12-2023, 13:46:33",
     "recorded-content": {
       "put-object-special-char": {
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
@@ -7162,6 +7162,222 @@
           {
             "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
             "Key": "test%percent",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-special-char": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-object-special-char": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[test key/]": {
+    "recorded-date": "12-12-2023, 13:46:36",
+    "recorded-content": {
+      "put-object-special-char": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-special-char": {
+        "Contents": [
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "test key/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-special-char": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-object-special-char": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[test key//]": {
+    "recorded-date": "12-12-2023, 13:46:39",
+    "recorded-content": {
+      "put-object-special-char": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-special-char": {
+        "Contents": [
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "test key//",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-special-char": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-object-special-char": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[test%123/]": {
+    "recorded-date": "12-12-2023, 13:46:41",
+    "recorded-content": {
+      "put-object-special-char": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-special-char": {
+        "Contents": [
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "test%123/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-special-char": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-object-special-char": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_get_object_special_character[a/%F0%9F%98%80/]": {
+    "recorded-date": "12-12-2023, 13:46:44",
+    "recorded-content": {
+      "put-object-special-char": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-special-char": {
+        "Contents": [
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "a/%F0%9F%98%80/",
             "LastModified": "datetime",
             "Size": 4,
             "StorageClass": "STANDARD"
@@ -7804,7 +8020,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_tag_rules": {
-    "recorded-date": "07-07-2023, 20:53:27",
+    "recorded-date": "12-12-2023, 15:17:09",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
         "Rules": [
@@ -7853,6 +8069,22 @@
           "HTTPStatusCode": 200
         }
       },
+      "get-object-match-both-rules": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "put-object-match-rule-1": {
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
         "Expiration": "<expiration>",
@@ -7862,8 +8094,61 @@
           "HTTPStatusCode": 200
         }
       },
+      "get-object-match-rule-1": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "put-object-no-match": {
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-no-match": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-no-tags": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-no-tags": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},

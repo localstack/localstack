@@ -152,11 +152,10 @@ class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
         update_config_props = util.select_attributes(model, parameters_to_select)
 
         # tag handling
-        # tag handling
         new_tags = update_config_props.pop("Tags", {})
         self.update_tags(ssm, model, new_tags)
 
-        ssm.put_parameter(Overwrite=True, **update_config_props)
+        ssm.put_parameter(Overwrite=True, Tags=[], **update_config_props)
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
