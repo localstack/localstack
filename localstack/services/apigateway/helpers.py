@@ -585,8 +585,10 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     if not context.stage:
         return {}
 
-    _, region_name = get_api_account_id_and_region(context.api_id)
-    api_gateway_client = connect_to(region_name=region_name).apigateway
+    account_id, region_name = get_api_account_id_and_region(context.api_id)
+    api_gateway_client = connect_to(
+        aws_access_key_id=account_id, region_name=region_name
+    ).apigateway
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
         return response.get("variables")
@@ -1155,9 +1157,18 @@ def import_api_from_openapi_spec(
             integration_type = (
                 i_type.upper() if (i_type := method_integration.get("type")) else None
             )
-            # TODO: validate more cases like this
-            # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
-            integration_method = method_name if integration_type != "AWS_PROXY" else "POST"
+
+            match integration_type:
+                case "AWS_PROXY":
+                    # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
+                    integration_method = "POST"
+                case "AWS":
+                    integration_method = (
+                        method_integration.get("httpMethod") or method_name
+                    ).upper()
+                case _:
+                    integration_method = method_name
+
             connection_type = (
                 ConnectionType.INTERNET
                 if integration_type in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY)

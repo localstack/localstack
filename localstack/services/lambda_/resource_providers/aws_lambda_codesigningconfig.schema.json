@@ -1,0 +1,111 @@
+{
+  "typeName": "AWS::Lambda::CodeSigningConfig",
+  "description": "Resource Type definition for AWS::Lambda::CodeSigningConfig.",
+  "additionalProperties": false,
+  "properties": {
+    "Description": {
+      "description": "A description of the CodeSigningConfig",
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 256
+    },
+    "AllowedPublishers": {
+      "description": "When the CodeSigningConfig is later on attached to a function, the function code will be expected to be signed by profiles from this list",
+      "$ref": "#/definitions/AllowedPublishers"
+    },
+    "CodeSigningPolicies": {
+      "description": "Policies to control how to act if a signature is invalid",
+      "$ref": "#/definitions/CodeSigningPolicies"
+    },
+    "CodeSigningConfigId": {
+      "description": "A unique identifier for CodeSigningConfig resource",
+      "type": "string",
+      "pattern": "csc-[a-zA-Z0-9-_\\.]{17}"
+    },
+    "CodeSigningConfigArn": {
+      "description": "A unique Arn for CodeSigningConfig resource",
+      "type": "string",
+      "pattern": "arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:code-signing-config:csc-[a-z0-9]{17}"
+    }
+  },
+  "definitions": {
+    "AllowedPublishers": {
+      "type": "object",
+      "description": "When the CodeSigningConfig is later on attached to a function, the function code will be expected to be signed by profiles from this list",
+      "additionalProperties": false,
+      "properties": {
+        "SigningProfileVersionArns": {
+          "type": "array",
+          "description": "List of Signing profile version Arns",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\\-])+:([a-z]{2}(-gov)?-[a-z]+-\\d{1})?:(\\d{12})?:(.*)",
+            "minLength": 12,
+            "maxLength": 1024
+          }
+        }
+      },
+      "required": [
+        "SigningProfileVersionArns"
+      ]
+    },
+    "CodeSigningPolicies": {
+      "type": "object",
+      "description": "Policies to control how to act if a signature is invalid",
+      "additionalProperties": false,
+      "properties": {
+        "UntrustedArtifactOnDeployment": {
+          "type": "string",
+          "description": "Indicates how Lambda operations involve updating the code artifact will operate. Default to Warn if not provided",
+          "default": "Warn",
+          "enum": [
+            "Warn",
+            "Enforce"
+          ]
+        }
+      },
+      "required": [
+        "UntrustedArtifactOnDeployment"
+      ]
+    }
+  },
+  "required": [
+    "AllowedPublishers"
+  ],
+  "readOnlyProperties": [
+    "/properties/CodeSigningConfigId",
+    "/properties/CodeSigningConfigArn"
+  ],
+  "primaryIdentifier": [
+    "/properties/CodeSigningConfigArn"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "lambda:CreateCodeSigningConfig"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "lambda:GetCodeSigningConfig"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "lambda:UpdateCodeSigningConfig"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "lambda:DeleteCodeSigningConfig"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "lambda:ListCodeSigningConfigs"
+      ]
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_queue_no_change": {
+    "recorded-date": "08-12-2023, 21:11:26",
+    "recorded-content": {
+      "outputs-1": {
+        "QueueArn": "<queue-arn>",
+        "QueueUrl": "<queue-url>"
+      },
+      "outputs-2": {
+        "QueueArn": "<queue-arn>",
+        "QueueUrl": "<queue-url>"
+      }
+    }
+  }
+}

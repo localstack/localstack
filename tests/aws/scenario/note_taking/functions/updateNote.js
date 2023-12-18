@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     if (process.env.AWS_ENDPOINT_URL) {
       const localStackConfig = {
         endpoint: process.env.AWS_ENDPOINT_URL,
-        region: 'us-east-1', // Change the region as per your setup
+        region: process.env.AWS_REGION || "us-east-1",
       };
       client = new  DynamoDBClient(localStackConfig);
     } else {

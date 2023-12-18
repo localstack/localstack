@@ -93,6 +93,15 @@ ClientAddress = Tuple[str, int]
 psutil_cache = TTLCache(maxsize=100, ttl=10)
 
 
+# TODO: update route53 provider to use this util
+def normalise_dns_name(name: DNSLabel | str) -> str:
+    name = str(name)
+    if not name.endswith("."):
+        return f"{name}."
+
+    return name
+
+
 @cached(cache=psutil_cache)
 def list_network_interface_details() -> dict[str, list[snicaddr]]:
     return psutil.net_if_addrs()
@@ -451,7 +460,7 @@ class Resolver(DnsServerProtocol):
         converter = RecordConverter(request, client_address)
 
         # check for direct (not regex based) response
-        zone = self.zones.get(request.q.qname)
+        zone = self.zones.get(normalise_dns_name(request.q.qname))
         if zone is not None:
             for zone_records in zone:
                 rr = converter.to_record(zone_records).try_rr(request.q)
@@ -522,12 +531,14 @@ class Resolver(DnsServerProtocol):
 
     def add_host(self, name: str, record: NameRecord):
         LOG.debug("Adding host %s with record %s", name, record)
+        name = normalise_dns_name(name)
         with self.lock:
             self.zones.setdefault(name, [])
             self.zones[name].append(record)
 
     def delete_host(self, name: str, record: NameRecord):
         LOG.debug("Deleting host %s with record %s", name, record)
+        name = normalise_dns_name(name)
         with self.lock:
             if not self.zones.get(name):
                 raise ValueError("Could not find entry %s for name %s in zones", record, name)
@@ -828,8 +839,17 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
     if config.LOCALSTACK_HOST.host != LOCALHOST_HOSTNAME:
         dns_server.add_host_pointing_to_localstack(f".*{config.LOCALSTACK_HOST.host}")
 
-    if config.DNS_LOCAL_NAME_PATTERNS:
-        for skip_pattern in re.split(r"[,;\s]+", config.DNS_LOCAL_NAME_PATTERNS):
+    # support both DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM and DNS_LOCAL_NAME_PATTERNS
+    # until the next major version change
+    # TODO(srw): remove the usage of DNS_LOCAL_NAME_PATTERNS
+    skip_local_resolution = " ".join(
+        [
+            config.DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM,
+            config.DNS_LOCAL_NAME_PATTERNS,
+        ]
+    ).strip()
+    if skip_local_resolution:
+        for skip_pattern in re.split(r"[,;\s]+", skip_local_resolution):
             dns_server.add_skip(skip_pattern)
 
     dns_server.start()

@@ -850,7 +850,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues": {
-    "recorded-date": "14-11-2023, 11:57:28",
+    "recorded-date": "08-12-2023, 17:13:26",
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy": {
