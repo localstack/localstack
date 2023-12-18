@@ -8,12 +8,21 @@ from localstack.testing.pytest import markers
 
 LOG = logging.getLogger("AUTOCLEANUP")
 
-def clear_bucket(client_factory, *, Bucket: str):
-    # TODO: get list of all files, try to delete them
-    raise NotImplementedError()
 
-def handle_bucket(*args, **kwargs):
-    print(":(")
+def clear_bucket(client_factory, *, Bucket: str):
+    s3_client = client_factory.s3
+    try:
+        objs = s3_client.list_objects_v2(Bucket=Bucket)
+        objs_num = objs["KeyCount"]
+        if objs_num > 0:
+            LOG.debug(f"Deleting {objs_num} objects from {Bucket=}")
+            obj_keys = [{"Key": o["Key"]} for o in objs["Contents"]]
+            s3_client.delete_objects(Bucket=Bucket, Delete={"Objects": obj_keys})
+    except Exception:
+        LOG.warning(
+            f"Failed to clean S3 Bucket {Bucket=}",
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
 
 
 mappings = {
@@ -23,9 +32,12 @@ mappings = {
     "sqs.CreateQueue": [("sqs.delete_queue", {"QueueUrl": "$.QueueUrl"})],
     # Lambda
     "lambda.CreateFunction": [("lambda.delete_function", {"FunctionName": "$.FunctionArn"})],
-    "lambda.PublishLayerVersion": [("lambda.delete_layer_version", {"LayerName": "$.LayerArn", "VersionNumber": "$.Version"})],
+    "lambda.PublishLayerVersion": [
+        ("lambda.delete_layer_version", {"LayerName": "$.LayerArn", "VersionNumber": "$.Version"})
+    ],
     "lambda.CreateEventSourceMapping": [("lambda.delete_event_source_mapping", {"Uuid": "$.UUID"})],
     # CloudFormation
+    # TODO: these are good examples for operations that should ideally also make use of a waiter
     "cloudformation.CreateStack": [("cloudformation.delete_stack", {"StackName": "$.StackId"})],
     "cloudformation.CreateChangeSet": [("cloudformation.delete_stack", {"StackName": "$.StackId"})],
     # IAM
@@ -34,13 +46,15 @@ mappings = {
     "iam.CreatePolicy": [("iam.delete_policy", {"PolicyArn": "$.Policy.Arn"})],
     # S3
     # order here matters(!)
+    # TODO: check if this works for every region of if we need some region-based adjustments
     "s3.CreateBucket": [
-        # (clear_bucket, {"Bucket": (lambda resp: resp["Location"][1:])}),
-        # ("s3.delete_bucket", {"Bucket": (lambda resp: resp["Location"][1:])}),
-        ("s3.delete_bucket", {"Bucket": handle_bucket}),
+        (clear_bucket, {"Bucket": (lambda resp: resp["Location"][1:])}),
+        ("s3.delete_bucket", {"Bucket": (lambda resp: resp["Location"][1:])}),
     ],
     # DynamoDB
-    "dynamodb.CreateTable": [("dynamodb.DeleteTable", {"TableName": "$.TableDescription.TableName"})],
+    "dynamodb.CreateTable": [
+        ("dynamodb.DeleteTable", {"TableName": "$.TableDescription.TableName"})
+    ],
 }
 
 
@@ -90,7 +104,7 @@ def perform_cleanup(factory_factory, boto_session, cleanup_operations, parsed_re
                 raise TypeError("Unknown type for cleanup parameter")
 
         # TODO: retries
-        # TODO: waiting for status checks before/after
+        # TODO: waiting for optional status checks before/after (custom & boto-integrated waiters)
         result = cleanup_fn(**params)
         LOG.info(f"result of cleanup: {result=}")
         LOG.info("-----------------")
@@ -98,21 +112,26 @@ def perform_cleanup(factory_factory, boto_session, cleanup_operations, parsed_re
 
 TOPIC_NAME = "test-automatic-cleanup-topic-2"
 
-class TestSnsResourceCleanup:
 
+class TestSnsResourceCleanup:
     @pytest.fixture(scope="function")
     def aws_cleanup_client(self, aws_session, cleanups):
-        """ this fixture returns a client factory that will perform automatic cleanups """
+        """this fixture returns a client factory that will perform automatic cleanups"""
         from localstack.testing.aws.util import base_aws_client_factory
+
         boto3_session = aws_session
 
         def register_cleanup_handler(
-                http_response, parsed, model: OperationModel, context, event_name, **kwargs
+            http_response, parsed, model: OperationModel, context, event_name, **kwargs
         ):
             key = f"{model.service_model.service_name}.{model.name}"
             cleanup_spec = mappings.get(key)
             if cleanup_spec:
-                cleanups.append(lambda: perform_cleanup(base_aws_client_factory, boto3_session, cleanup_spec, parsed))
+                cleanups.append(
+                    lambda: perform_cleanup(
+                        base_aws_client_factory, boto3_session, cleanup_spec, parsed
+                    )
+                )
 
         boto3_session._session.register("after-call.*", register_cleanup_handler)
         factory = base_aws_client_factory(boto3_session)
@@ -120,35 +139,49 @@ class TestSnsResourceCleanup:
 
     @markers.aws.validated
     def test_create_topic(self, aws_cleanup_client):
-        """ create a topic and verify it exists """
+        """create a topic and verify it exists"""
 
         aws_cleanup_client.sns.create_topic(Name=TOPIC_NAME)
-        topics = aws_cleanup_client.sns.get_paginator("list_topics").paginate().build_full_result()['Topics']
-        assert any([TOPIC_NAME in t['TopicArn'] for t in topics])
+        topics = (
+            aws_cleanup_client.sns.get_paginator("list_topics")
+            .paginate()
+            .build_full_result()["Topics"]
+        )
+        assert any([TOPIC_NAME in t["TopicArn"] for t in topics])
 
     @markers.aws.validated
     def test_topic_removed(self, aws_cleanup_client):
-        """ verify that the created SNS topic from above does not exist anymore """
-        topics = aws_cleanup_client.sns.get_paginator("list_topics").paginate().build_full_result()['Topics']
-        assert not any([TOPIC_NAME in t['TopicArn'] for t in topics])
+        """verify that the created SNS topic from above does not exist anymore"""
+        topics = (
+            aws_cleanup_client.sns.get_paginator("list_topics")
+            .paginate()
+            .build_full_result()["Topics"]
+        )
+        assert not any([TOPIC_NAME in t["TopicArn"] for t in topics])
 
 
 TEST_BUCKET = "localstack-test-bucket-autocleanup"
-class TestS3BucketAutoCleanup:
 
+
+class TestS3BucketAutoCleanup:
     @pytest.fixture(scope="function")
     def aws_cleanup_client(self, aws_session, cleanups):
-        """ this fixture returns a client factory that will perform automatic cleanups """
+        """this fixture returns a client factory that will perform automatic cleanups"""
         from localstack.testing.aws.util import base_aws_client_factory
+
         boto3_session = aws_session
 
         def register_cleanup_handler(
-                http_response, parsed, model: OperationModel, context, event_name, **kwargs
+            http_response, parsed, model: OperationModel, context, event_name, **kwargs
         ):
             key = f"{model.service_model.service_name}.{model.name}"
             cleanup_spec = mappings.get(key)
             if cleanup_spec:
-                cleanups.append(lambda: perform_cleanup(base_aws_client_factory, boto3_session, cleanup_spec, parsed))
+                cleanups.append(
+                    lambda: perform_cleanup(
+                        base_aws_client_factory, boto3_session, cleanup_spec, parsed
+                    )
+                )
 
         boto3_session._session.register("after-call.*", register_cleanup_handler)
         factory = base_aws_client_factory(boto3_session)
@@ -156,16 +189,15 @@ class TestS3BucketAutoCleanup:
 
     @markers.aws.validated
     def test_create_resource(self, aws_cleanup_client):
-        """ create a topic and verify it exists """
-        create_response = aws_cleanup_client.s3.create_bucket(Bucket=TEST_BUCKET)
+        """create a topic and verify it exists"""
+        aws_cleanup_client.s3.create_bucket(Bucket=TEST_BUCKET)
         # create_response = aws_cleanup_client.s3.create_bucket(Bucket=TEST_BUCKET, CreateBucketConfiguration={"LocationConstraint": "EU"})
         # bucket_location = aws_cleanup_client.s3.create_bucket(Bucket=TEST_BUCKET, CreateBucketConfiguration={"LocationConstraint": "EU"})['Location']
         aws_cleanup_client.s3.get_bucket_location(Bucket=TEST_BUCKET)
 
     @markers.aws.validated
     def test_resource_removed(self, aws_cleanup_client):
-        """ verify that the created SNS topic from above does not exist anymore """
+        """verify that the created SNS topic from above does not exist anymore"""
         aws_cleanup_client.s3.delete_bucket(Bucket=TEST_BUCKET)
         with pytest.raises(aws_cleanup_client.s3.exceptions.NoSuchBucket):
             aws_cleanup_client.s3.get_bucket_location(Bucket=TEST_BUCKET)
-
