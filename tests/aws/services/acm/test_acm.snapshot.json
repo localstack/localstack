@@ -137,5 +137,27 @@
         }
       ]
     }
+  },
+  "tests/aws/services/acm/test_acm.py::TestACM::test_create_certificate_for_multiple_alternative_domains": {
+    "recorded-date": "18-12-2023, 13:01:36",
+    "recorded-content": {
+      "list-cert-subject-alternative-names": {
+        "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+        "CreatedAt": "datetime",
+        "DomainName": "test.example.com",
+        "ExtendedKeyUsages": [],
+        "HasAdditionalSubjectAlternativeNames": false,
+        "InUse": false,
+        "KeyAlgorithm": "RSA-2048",
+        "KeyUsages": [],
+        "RenewalEligibility": "INELIGIBLE",
+        "Status": "FAILED",
+        "SubjectAlternativeNameSummaries": [
+          "test.example.com",
+          "another.domain.com"
+        ],
+        "Type": "AMAZON_ISSUED"
+      }
+    }
   }
 }
