@@ -958,3 +958,48 @@ def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_
     payload = json.loads(to_str(invocation_result["Payload"].read()))
     assert payload == {"hello": "world"}
     assert invocation_result["StatusCode"] == 200
+
+
+@markers.aws.validated
+def test_lambda_cfn_dead_letter_config_async_invocation(
+    deploy_cfn_template, aws_client, s3_create_bucket, snapshot
+):
+    # invoke intentionally failing lambda async, which then forwards to the DLQ as configured.
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformer(snapshot.transform.sqs_api())
+
+    # cfn template was generated via serverless, but modified to work with pure cloudformation
+    s3_bucket = s3_create_bucket()
+    bucket_key = "serverless/dlq/local/1701682216701-2023-12-04T09:30:16.701Z/dlq.zip"
+
+    zip_file = create_lambda_archive(
+        load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../lambda_/functions/lambda_handler_error.py"
+            )
+        ),
+        get_content=True,
+        runtime=Runtime.python3_10,
+    )
+    aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
+
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_lambda_serverless.yml"
+        ),
+        parameters={"LambdaCodeBucket": s3_bucket},
+    )
+    function_name = deployment.outputs["LambdaName"]
+
+    # async invocation
+    aws_client.lambda_.invoke(FunctionName=function_name, InvocationType="Event")
+    dlq_queue = deployment.outputs["DLQName"]
+    response = {}
+
+    def check_dlq_message(response: dict):
+        response.update(aws_client.sqs.receive_message(QueueUrl=dlq_queue, VisibilityTimeout=0))
+        assert response.get("Messages")
+
+    retry(check_dlq_message, response=response, retries=5, sleep=2.5)
+    snapshot.match("failed-async-lambda", response)

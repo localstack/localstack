@@ -6,6 +6,7 @@ import requests
 from pytest_httpserver import HTTPServer
 
 from localstack import config
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -135,7 +136,7 @@ class TestFirehoseIntegration:
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
-        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
+        role_arn = f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         es_create_response = aws_client.es.create_elasticsearch_domain(DomainName=domain_name)
         cleanups.append(lambda: aws_client.es.delete_elasticsearch_domain(DomainName=domain_name))
@@ -244,7 +245,7 @@ class TestFirehoseIntegration:
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
-        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
+        role_arn = f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
         try:
@@ -352,7 +353,7 @@ class TestFirehoseIntegration:
         bucket_arn = arns.s3_bucket_arn(s3_bucket)
         stream_name = f"test-stream-{short_uid()}"
         log_group_name = f"group{short_uid()}"
-        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
+        role_arn = f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
 
         kinesis_create_stream(StreamName=stream_name, ShardCount=2)

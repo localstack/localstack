@@ -13,5 +13,8 @@ class FunctionArgumentList(EvalComponent):
         self.size: Final[int] = len(arg_list)
 
     def _eval_body(self, env: Environment) -> None:
+        values = list()
         for arg in self.arg_list:
             arg.eval(env=env)
+            values.append(env.stack.pop())
+        env.stack.append(values)

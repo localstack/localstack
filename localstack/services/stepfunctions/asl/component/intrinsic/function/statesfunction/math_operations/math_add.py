@@ -69,9 +69,10 @@ class MathAdd(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
+        args = env.stack.pop()
 
-        b = self._validate_integer_value(env.stack.pop())
-        a = self._validate_integer_value(env.stack.pop())
+        a = self._validate_integer_value(args[0])
+        b = self._validate_integer_value(args[1])
 
         res = a + b
         env.stack.append(res)

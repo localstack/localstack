@@ -101,9 +101,6 @@ class TestIntegration:
         tags = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         assert TEST_TAGS == tags["Tags"]
 
-        # create target S3 bucket
-        s3_create_bucket(Bucket=bucket_name)
-
         # put records
         aws_client.firehose.put_record(
             DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)}
@@ -231,6 +228,7 @@ class TestIntegration:
         # start the KCL client process in the background
         process = kinesis_connector.listen_to_kinesis(
             stream_name,
+            account_id=TEST_AWS_ACCOUNT_ID,
             region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
             wait_until_started=True,

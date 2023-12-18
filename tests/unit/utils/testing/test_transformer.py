@@ -3,7 +3,11 @@ import json
 
 import pytest
 
-from localstack.testing.snapshots.transformer import SortingTransformer, TransformContext
+from localstack.testing.snapshots.transformer import (
+    SortingTransformer,
+    TimestampTransformer,
+    TransformContext,
+)
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 
 
@@ -202,6 +206,49 @@ class TestTransformer:
         }
 
         transformer = SortingTransformer("subsegments", lambda s: s["name"])
+
+        ctx = TransformContext()
+        output = transformer.transform(input, ctx=ctx)
+        assert output == expected
+
+
+class TestTimestampTransformer:
+    def test_generic_timestamp_transformer(self):
+        # TODO: add more samples
+
+        input = {
+            "lambda_": {
+                "FunctionName": "lambdafn",
+                "LastModified": "2023-10-09T12:49:50.000+0000",
+            },
+            "cfn": {
+                "StackName": "cfnstack",
+                "CreationTime": "2023-11-20T18:39:36.014000+00:00",
+            },
+            "sfn": {
+                "name": "statemachine",
+                "creationDate": "2023-11-21T07:14:12.243000+01:00",
+                "sfninternal": "2023-11-21T07:14:12.243Z",
+            },
+        }
+
+        expected = {
+            "lambda_": {
+                "FunctionName": "lambdafn",
+                "LastModified": "<timestamp:2022-07-13T13:48:01.000+0000>",
+            },
+            "cfn": {
+                "StackName": "cfnstack",
+                "CreationTime": "<timestamp:2022-07-13T13:48:01.000000+00:00>",
+            },
+            "sfn": {
+                "name": "statemachine",
+                "creationDate": "<timestamp:2022-07-13T13:48:01.000000+00:00>",
+                "sfninternal": "<timestamp:2022-07-13T13:48:01.000Z>",
+            },
+        }
+
+        transformer = TimestampTransformer()
 
         ctx = TransformContext()
         output = transformer.transform(input, ctx=ctx)

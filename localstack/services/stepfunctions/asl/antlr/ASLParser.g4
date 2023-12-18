@@ -98,7 +98,7 @@ resource_decl
     ;
 
 input_path_decl
-    : INPUTPATH COLON keyword_or_string
+    : INPUTPATH COLON (NULL | keyword_or_string)
     ;
 
 result_decl
@@ -110,7 +110,7 @@ result_path_decl
     ;
 
 output_path_decl
-    : OUTPUTPATH COLON keyword_or_string
+    : OUTPUTPATH COLON (NULL | keyword_or_string)
     ;
 
 end_decl

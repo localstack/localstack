@@ -517,7 +517,19 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
-    @pytest.mark.parametrize("key", ["file%2Fname", "test@key/", "test%123", "test%percent"])
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "file%2Fname",
+            "test@key/",
+            "test%123",
+            "test%percent",
+            "test key/",
+            "test key//",
+            "test%123/",
+            "a/%F0%9F%98%80/",
+        ],
+    )
     def test_put_get_object_special_character(self, s3_bucket, aws_client, snapshot, key):
         snapshot.add_transformer(snapshot.transform.s3_api())
         resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
@@ -5485,7 +5497,9 @@ class TestS3MultiAccounts:
         exc.match("BucketAlreadyExists")
 
     @markers.aws.unknown
-    def test_cross_account_access(self, primary_client, secondary_client, cleanups):
+    def test_cross_account_access(
+        self, primary_client, secondary_client, cleanups, s3_empty_bucket
+    ):
         # Ensure that following operations can be performed across accounts
         # - ListObjects
         # - PutObject
@@ -5499,6 +5513,7 @@ class TestS3MultiAccounts:
         # First user creates a bucket and puts an object
         create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
         cleanups.append(lambda: primary_client.delete_bucket(Bucket=bucket_name))
+        cleanups.append(lambda: s3_empty_bucket(bucket_name))
 
         response = primary_client.list_buckets()
         assert bucket_name in [bucket["Name"] for bucket in response["Buckets"]]
@@ -5521,6 +5536,33 @@ class TestS3MultiAccounts:
         # The modified object must be reflected for the first user
         response = primary_client.get_object(Bucket=bucket_name, Key=key_name)
         assert response["Body"].read() == body2
+
+    @markers.aws.unknown
+    def test_cross_account_copy_object(
+        self, primary_client, secondary_client, cleanups, s3_empty_bucket
+    ):
+        bucket_name = short_uid()
+        key_name = "lorem/ipsum"
+        key_name_copy = "lorem/ipsum2"
+        body1 = b"zaphod beeblebrox"
+
+        # First user creates a bucket and puts an object
+        create_s3_bucket(bucket_name=bucket_name, s3_client=primary_client)
+        cleanups.append(lambda: primary_client.delete_bucket(Bucket=bucket_name))
+        cleanups.append(lambda: s3_empty_bucket(bucket_name))
+
+        primary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body1)
+
+        # Assert that the secondary client can copy an object in the other account bucket
+        response = secondary_client.copy_object(
+            Bucket=bucket_name, Key=key_name_copy, CopySource=f"{bucket_name}/{key_name}"
+        )
+
+        # Yet they should be able to `ListObjects` in that bucket
+        response = secondary_client.list_objects(Bucket=bucket_name)
+        bucket_keys = {key["Key"] for key in response["Contents"]}
+        assert key_name in bucket_keys
+        assert key_name_copy in bucket_keys
 
 
 class TestS3TerraformRawRequests:
@@ -6336,9 +6378,14 @@ class TestS3PresignedUrl:
         )
         snapshot.match("copy-obj", response)
 
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version="s3v4", s3={"payload_signing_enabled": True}),
+            endpoint_url=_endpoint_url(),
+        )
+
         # Create copy object to try to match s3a setting Content-MD5
         dest_key2 = "dest"
-        url = aws_client.s3.generate_presigned_url(
+        url = presigned_client.generate_presigned_url(
             "copy_object",
             Params={
                 "Bucket": s3_bucket,
@@ -6347,7 +6394,9 @@ class TestS3PresignedUrl:
             },
         )
 
-        request_response = requests.put(url, verify=False)
+        request_response = requests.put(
+            url, headers={"x-amz-copy-source": f"{s3_bucket}/{src_key}"}, verify=False
+        )
         assert request_response.status_code == 200
 
     @markers.aws.only_localstack
@@ -6643,6 +6692,10 @@ class TestS3PresignedUrl:
             runtime=Runtime.nodejs14_x,
             handler="lambda_s3_integration_presign.handler",
             role=lambda_su_role,
+            envvars={
+                "ACCESS_KEY": TEST_AWS_ACCESS_KEY_ID,
+                "SECRET_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+            },
         )
         s3_create_bucket(Bucket=function_name)
 
@@ -6710,6 +6763,10 @@ class TestS3PresignedUrl:
             runtime=Runtime.nodejs14_x,
             handler="lambda_s3_integration_sdk_v2.handler",
             role=lambda_su_role,
+            envvars={
+                "ACCESS_KEY": TEST_AWS_ACCESS_KEY_ID,
+                "SECRET_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+            },
         )
         s3_create_bucket(Bucket=function_name)
 
@@ -8436,6 +8493,9 @@ class TestS3BucketLifecycle:
         )
         snapshot.match("put-object-match-both-rules", put_object)
 
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_match_1)
+        snapshot.match("get-object-match-both-rules", get_object)
+
         _, parsed_exp_rule = parse_expiration_header(put_object["Expiration"])
         assert parsed_exp_rule == rule_id_1
 
@@ -8445,6 +8505,9 @@ class TestS3BucketLifecycle:
             Body=b"test", Bucket=s3_bucket, Key=key_match_2, Tagging=tag_set_match_one
         )
         snapshot.match("put-object-match-rule-1", put_object_2)
+
+        get_object_2 = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_match_2)
+        snapshot.match("get-object-match-rule-1", get_object_2)
 
         _, parsed_exp_rule = parse_expiration_header(put_object_2["Expiration"])
         assert parsed_exp_rule == rule_id_1
@@ -8456,6 +8519,17 @@ class TestS3BucketLifecycle:
         )
         snapshot.match("put-object-no-match", put_object_3)
         assert "Expiration" not in put_object_3
+
+        get_object_3 = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_match)
+        snapshot.match("get-object-no-match", get_object_3)
+
+        key_no_tags = "no-tags"
+        put_object_4 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key_no_tags)
+        snapshot.match("put-object-no-tags", put_object_4)
+        assert "Expiration" not in put_object_4
+
+        get_object_4 = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_tags)
+        snapshot.match("get-object-no-tags", get_object_4)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

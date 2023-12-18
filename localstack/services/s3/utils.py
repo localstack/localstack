@@ -693,13 +693,17 @@ def _match_lifecycle_filter(
         case "Prefix":
             return object_key.startswith(filter_value)
         case "Tag":
-            return object_tags.get(filter_value.get("Key")) == filter_value.get("Value")
+            return object_tags and object_tags.get(filter_value.get("Key")) == filter_value.get(
+                "Value"
+            )
         case "ObjectSizeGreaterThan":
             return size > filter_value
         case "ObjectSizeLessThan":
             return size < filter_value
         case "Tags":  # this is inside the `And` field
-            return all(object_tags.get(tag.get("Key")) == tag.get("Value") for tag in filter_value)
+            return object_tags and all(
+                object_tags.get(tag.get("Key")) == tag.get("Value") for tag in filter_value
+            )
 
 
 def parse_expiration_header(

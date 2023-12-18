@@ -313,6 +313,7 @@ class FirehoseProvider(FirehoseApi):
                     )
                     process = kinesis_connector.listen_to_kinesis(
                         stream_name=kinesis_stream_name,
+                        account_id=context.account_id,
                         region_name=context.region,
                         listener_func=listener_function,
                         wait_until_started=True,

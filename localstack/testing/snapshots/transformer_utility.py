@@ -8,11 +8,13 @@ from typing import Optional, Pattern
 from localstack.aws.api.secretsmanager import CreateSecretResponse
 from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
 from localstack.testing.snapshots.transformer import (
+    PATTERN_ISO8601,
     JsonpathTransformer,
     KeyValueBasedTransformer,
     RegexTransformer,
     ResponseMetaDataTransformer,
     SortingTransformer,
+    TimestampTransformer,
 )
 from localstack.utils.net import IP_REGEX
 
@@ -22,9 +24,7 @@ LOG = logging.getLogger(__name__)
 PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 )
-PATTERN_ISO8601 = re.compile(
-    r"(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:?([0-5]\d)?)"
-)
+
 PATTERN_ARN = re.compile(r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:(.*)")
 PATTERN_ARN_CHANGESET = re.compile(
     r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:changeSet/([^/]+)"
@@ -748,6 +748,19 @@ def _change_set_id_transformer(key: str, val: str) -> str:
 
 # TODO maybe move to a different place?
 # Basic Transformation - added automatically to each snapshot (in the fixture)
+SNAPSHOT_BASIC_TRANSFORMER_NEW = [
+    ResponseMetaDataTransformer(),
+    KeyValueBasedTransformer(
+        lambda k, v: (
+            v
+            if (isinstance(v, str) and k.lower().endswith("id") and re.match(PATTERN_UUID, v))
+            else None
+        ),
+        "uuid",
+    ),
+    TimestampTransformer(),
+]
+
 SNAPSHOT_BASIC_TRANSFORMER = [
     ResponseMetaDataTransformer(),
     KeyValueBasedTransformer(

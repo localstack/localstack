@@ -137,7 +137,7 @@ class ExecutionEnvironment:
             # 3) Public LocalStack endpoint
             "LOCALSTACK_HOSTNAME": self.runtime_executor.get_endpoint_from_executor(),
             "EDGE_PORT": str(config.GATEWAY_LISTEN[0].port),
-            "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}",
+            # AWS_ENDPOINT_URL conditionally added below
             # 4) Internal LocalStack runtime API
             "LOCALSTACK_RUNTIME_ID": self.id,
             "LOCALSTACK_RUNTIME_ENDPOINT": self.runtime_executor.get_runtime_endpoint(),
@@ -145,6 +145,10 @@ class ExecutionEnvironment:
             # LOCALSTACK_USER conditionally added below
         }
         # Conditionally added environment variables
+        if not config.LAMBDA_DISABLE_AWS_ENDPOINT_URL:
+            env_vars[
+                "AWS_ENDPOINT_URL"
+            ] = f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}"
         # config.handler is None for image lambdas and will be populated at runtime (e.g., by RIE)
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler

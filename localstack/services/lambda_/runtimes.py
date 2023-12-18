@@ -62,6 +62,9 @@ IMAGE_MAPPING: dict[Runtime, str] = {
 DEPRECATED_RUNTIMES: list[Runtime] = [
     Runtime.nodejs12_x,  # deprecated Mar 31, 2023 => Apr 30, 2023
     Runtime.dotnetcore3_1,  # deprecated Apr 3, 2023 => May 3, 2023
+    # deprecate once snapshot tests show that it really happened
+    # Runtime.python3_7,  # deprecated Nov 27, 2023 => ???
+    # Runtime.nodejs14_x,  # deprecated Nov 27, 2023 => ???
 ]
 # An unordered list of all AWS-supported runtimes.
 SUPPORTED_RUNTIMES: list[Runtime] = list(set(IMAGE_MAPPING.keys()) - set(DEPRECATED_RUNTIMES))

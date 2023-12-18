@@ -233,7 +233,8 @@ class KinesisProcessorThread(ShellCommandThread):
 
 def _start_kcl_client_process(
     stream_name: str,
-    region_name,
+    account_id: str,
+    region_name: str,
     listener_function: ListenerFunction,
     ddb_lease_table_suffix=None,
 ):
@@ -241,7 +242,10 @@ def _start_kcl_client_process(
     stream_name = arns.kinesis_stream_name(stream_name)
     # disable CBOR protocol, enforce use of plain JSON
     # TODO evaluate why?
-    env_vars = {"AWS_CBOR_DISABLE": "true"}
+    env_vars = {
+        "AWS_CBOR_DISABLE": "true",
+        "AWS_ACCESS_KEY_ID": account_id,
+    }
 
     events_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.fifo")
     TMP_FILES.append(events_file)
@@ -334,6 +338,7 @@ if __name__ == '__main__':
 
 def listen_to_kinesis(
     stream_name: str,
+    account_id: str,
     region_name: str,
     listener_func: ListenerFunction,
     ddb_lease_table_suffix: str | None = None,
@@ -345,8 +350,9 @@ def listen_to_kinesis(
     automatically started in the background.
     """
     process = _start_kcl_client_process(
-        stream_name,
-        region_name,
+        stream_name=stream_name,
+        account_id=account_id,
+        region_name=region_name,
         listener_function=listener_func,
         ddb_lease_table_suffix=ddb_lease_table_suffix,
     )

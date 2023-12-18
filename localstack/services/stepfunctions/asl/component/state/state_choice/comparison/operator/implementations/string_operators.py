@@ -17,11 +17,16 @@ class StringEquals(Operator):
         return str(ComparisonOperatorType.StringEquals)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
-            res = variable == value
+            res = variable == comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = StringEquals._compare(variable, value)
         env.stack.append(res)
 
 
@@ -32,8 +37,11 @@ class StringEqualsPath(StringEquals):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        StringEquals.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = StringEqualsPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class StringGreaterThan(Operator):
@@ -42,11 +50,16 @@ class StringGreaterThan(Operator):
         return str(ComparisonOperatorType.StringGreaterThan)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
-            res = variable > value
+            res = variable > comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = StringGreaterThan._compare(variable, value)
         env.stack.append(res)
 
 
@@ -57,8 +70,11 @@ class StringGreaterThanPath(StringGreaterThan):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        StringGreaterThan.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = StringGreaterThanPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class StringGreaterThanEquals(Operator):
@@ -67,11 +83,16 @@ class StringGreaterThanEquals(Operator):
         return str(ComparisonOperatorType.StringGreaterThanEquals)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
-            res = variable >= value
+            res = variable >= comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = StringGreaterThanEquals._compare(variable, value)
         env.stack.append(res)
 
 
@@ -82,8 +103,11 @@ class StringGreaterThanEqualsPath(StringGreaterThanEquals):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        StringGreaterThanEquals.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = StringGreaterThanEqualsPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class StringLessThan(Operator):
@@ -92,11 +116,16 @@ class StringLessThan(Operator):
         return str(ComparisonOperatorType.StringLessThan)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
-            res = variable < value
+            res = variable < comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = StringLessThan._compare(variable, value)
         env.stack.append(res)
 
 
@@ -107,8 +136,11 @@ class StringLessThanPath(StringLessThan):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        StringLessThan.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = StringLessThanPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class StringLessThanEquals(Operator):
@@ -117,11 +149,16 @@ class StringLessThanEquals(Operator):
         return str(ComparisonOperatorType.StringLessThanEquals)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
-            res = variable <= value
+            res = variable <= comparison_value
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = StringLessThanEquals._compare(variable, value)
         env.stack.append(res)
 
 
@@ -132,8 +169,11 @@ class StringLessThanEqualsPath(StringLessThanEquals):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        StringLessThanEquals.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = StringLessThanEqualsPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class StringMatches(Operator):
@@ -142,9 +182,14 @@ class StringMatches(Operator):
         return str(ComparisonOperatorType.StringMatches)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
-            res = fnmatch.fnmatch(variable, value)
+            res = fnmatch.fnmatch(variable, comparison_value)
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = StringMatches._compare(variable, value)
         env.stack.append(res)

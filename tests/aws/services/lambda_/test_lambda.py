@@ -109,6 +109,9 @@ TEST_LAMBDA_INVOCATION_TYPE = os.path.join(THIS_FOLDER, "functions/lambda_invoca
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
 
+TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
+TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
+
 # TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
 PYTHON_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["python"] if (get_arch() != Arch.arm64) else [Runtime.python3_11]
@@ -356,7 +359,7 @@ class TestLambdaBehavior:
         ],
     )
     # TODO: fix arch compatibility detection for supported emulations
-    @pytest.mark.skipif(get_arch() == "arm64", reason="Cannot inspect x86 runtime on arm")
+    @pytest.mark.skipif(get_arch() == Arch.arm64, reason="Cannot inspect x86 runtime on arm")
     @markers.aws.validated
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_x86_{short_uid()}"
@@ -426,7 +429,7 @@ class TestLambdaBehavior:
         # This assumption could be violated when using remote Lambda executors
         native_arch = platform.get_arch()
         non_native_architecture = (
-            Architecture.x86_64 if native_arch == "arm64" else Architecture.arm64
+            Architecture.x86_64 if native_arch == Arch.arm64 else Architecture.arm64
         )
         func_name = f"test_lambda_arch_{short_uid()}"
         create_lambda_function(
