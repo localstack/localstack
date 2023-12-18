@@ -494,7 +494,13 @@ class CmdDockerClient(ContainerClient):
             raise NoSuchNetwork(network_name=e.object_id)
 
     def connect_container_to_network(
-        self, network_name: str, container_name_or_id: str, aliases: Optional[List] = None
+        self,
+        network_name: str,
+        container_name_or_id: str,
+        aliases: Optional[List] = None,
+        ipv4_address: str = None,
+        ipv6_address: str = None,
+        link_local_ips: List[str] = None,
     ) -> None:
         LOG.debug(
             "Connecting container '%s' to network '%s' with aliases '%s'",
@@ -506,6 +512,12 @@ class CmdDockerClient(ContainerClient):
         cmd += ["network", "connect"]
         if aliases:
             cmd += ["--alias", ",".join(aliases)]
+        if ipv4_address:
+            cmd += ["--ip", ipv4_address]
+        if ipv6_address:
+            cmd += ["--ip6", ipv6_address]
+        if link_local_ips:
+            cmd += ["--link-local-ip", ",".join(link_local_ips)]
         cmd += [network_name, container_name_or_id]
         try:
             run(cmd)

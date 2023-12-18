@@ -416,7 +416,13 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException() from e
 
     def connect_container_to_network(
-        self, network_name: str, container_name_or_id: str, aliases: Optional[List] = None
+        self,
+        network_name: str,
+        container_name_or_id: str,
+        aliases: Optional[List] = None,
+        ipv4_address: str = None,
+        ipv6_address: str = None,
+        link_local_ips: List[str] = None,
     ) -> None:
         LOG.debug(
             "Connecting container '%s' to network '%s' with aliases '%s'",
@@ -429,7 +435,13 @@ class SdkDockerClient(ContainerClient):
         except NotFound:
             raise NoSuchNetwork(network_name)
         try:
-            network.connect(container=container_name_or_id, aliases=aliases)
+            network.connect(
+                container=container_name_or_id,
+                aliases=aliases,
+                ipv4_address=ipv4_address,
+                ipv6_address=ipv6_address,
+                link_local_ips=link_local_ips,
+            )
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
         except APIError as e:
