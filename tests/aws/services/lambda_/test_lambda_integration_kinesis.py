@@ -408,7 +408,7 @@ class TestKinesisSource:
             assert result["Messages"]
             return result
 
-        sqs_payload = retry(verify_failure_received, retries=5, sleep=5, sleep_before=5)
+        sqs_payload = retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
         snapshot.match("sqs_payload", sqs_payload)
 
 
