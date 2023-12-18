@@ -318,33 +318,6 @@ class CloudwatchPublishWorker:
                 # Update for the next batch
                 start += batch_size
 
-    def publish_approximate_metrics_for_queue_to_cloudwatch(self, queue):
-        """Publishes the metrics for ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
-        and ApproximateNumberOfMessagesDelayed to CloudWatch"""
-        # TODO ApproximateAgeOfOldestMessage is missing
-        #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
-        publish_sqs_metric(
-            account_id=queue.account_id,
-            region=queue.region,
-            queue_name=queue.name,
-            metric="ApproximateNumberOfMessagesVisible",
-            value=queue.approx_number_of_messages,
-        )
-        publish_sqs_metric(
-            account_id=queue.account_id,
-            region=queue.region,
-            queue_name=queue.name,
-            metric="ApproximateNumberOfMessagesNotVisible",
-            value=queue.approx_number_of_messages_not_visible,
-        )
-        publish_sqs_metric(
-            account_id=queue.account_id,
-            region=queue.region,
-            queue_name=queue.name,
-            metric="ApproximateNumberOfMessagesDelayed",
-            value=queue.approx_number_of_messages_delayed,
-        )
-
     def start(self):
         if self.thread:
             return
