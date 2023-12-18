@@ -94,6 +94,7 @@ class TestTranscribe:
             ("../../files/en-gb.ogg", "hello my name is"),
             ("../../files/en-gb.webm", "hello my name is"),
             ("../../files/en-us_video.mkv", "one of the most vital"),
+            ("../../files/en-us_video.mp4", "one of the most vital"),
         ],
     )
     @markers.aws.unknown
