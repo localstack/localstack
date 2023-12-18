@@ -897,6 +897,7 @@ class ContainerClient(metaclass=ABCMeta):
         platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        init: Optional[bool] = None,
     ) -> Tuple[bytes, bytes]:
         """Creates and runs a given docker container
 

@@ -740,6 +740,7 @@ class CmdDockerClient(ContainerClient):
         labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        init: Optional[bool] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -796,6 +797,8 @@ class CmdDockerClient(ContainerClient):
             cmd += list(
                 itertools.chain.from_iterable(["--ulimits", str(ulimit)] for ulimit in ulimits)
             )
+        if init:
+            cmd += ["--init"]
 
         if additional_flags:
             cmd += shlex.split(additional_flags)
