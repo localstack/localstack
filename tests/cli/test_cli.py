@@ -146,7 +146,8 @@ class TestCliContainerLifecycle:
         runner.invoke(cli, ["wait", "-t", "60"])
 
         result = runner.invoke(cli, ["restart"])
-        assert constants.READY_MARKER_OUTPUT in result.output.splitlines()
+        assert result.exit_code == 0
+        assert "restarted" in result.output
 
     def test_status_services(self, runner):
         result = runner.invoke(cli, ["status", "services"])
