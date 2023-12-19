@@ -6,6 +6,7 @@ import traceback
 from typing import Dict, List, Optional, Tuple, TypedDict
 
 import click
+import requests
 
 from localstack import __version__, config
 from localstack.cli.exceptions import CLIError
@@ -56,9 +57,7 @@ class LocalStackCliGroup(click.Group):
             if ctx and ctx.params.get("debug"):
                 click.echo(traceback.format_exc())
             from localstack.utils.container_utils.container_client import (
-                ContainerException,
-                DockerNotAvailable,
-            )
+                ContainerException, DockerNotAvailable)
 
             if isinstance(e, DockerNotAvailable):
                 raise CLIError(
@@ -316,8 +315,10 @@ class DockerStatus(TypedDict, total=False):
 
 def _print_docker_status(format_: str) -> None:
     from localstack.utils import docker_utils
-    from localstack.utils.bootstrap import get_docker_image_details, get_server_version
-    from localstack.utils.container_networking import get_main_container_ip, get_main_container_name
+    from localstack.utils.bootstrap import (get_docker_image_details,
+                                            get_server_version)
+    from localstack.utils.container_networking import (get_main_container_ip,
+                                                       get_main_container_name)
 
     img = get_docker_image_details()
     cont_name = config.MAIN_CONTAINER_NAME
@@ -374,8 +375,6 @@ def cmd_status_services(format_: str) -> None:
     """
     Query information about the services of the currently running LocalStack instance.
     """
-    import requests
-
     url = config.external_service_url()
 
     try:
@@ -577,26 +576,20 @@ def cmd_stop() -> None:
 def cmd_restart() -> None:
     """
     Restarts the current LocalStack runtime.
-
-    This command restarts the currently running LocalStack docker container.
-    By default, this command looks for a container named `localstack-main` (which is the default
-    container name used by the `localstack start` command).
-    If your LocalStack container has a different name, set the config variable
-    `MAIN_CONTAINER_NAME`.
     """
-    from localstack.utils.docker_utils import DOCKER_CLIENT
-
-    from ..utils.container_utils.container_client import NoSuchContainer
-
-    container_name = config.MAIN_CONTAINER_NAME
+    url = config.external_service_url()
 
     try:
-        DOCKER_CLIENT.restart_container(container_name)
-        console.print("container restarted: %s" % container_name)
-    except NoSuchContainer:
-        raise CLIError(
-            f'Expected a running LocalStack container named "{container_name}", but found none'
+        response = requests.post(
+            f"{url}/_localstack/health",
+            json={"action": "restart"},
         )
+        response.raise_for_status()
+        console.print("LocalStack restarted within the container.")
+    except requests.ConnectionError:
+        if config.DEBUG:
+            console.print_exception()
+        raise CLIError(f"could not restart the LocalStack container")
 
 
 @localstack.command(
@@ -798,7 +791,8 @@ def update_images(image_list: List[str]) -> None:
     from rich.markup import escape
     from rich.progress import MofNCompleteColumn, Progress
 
-    from localstack.utils.container_utils.container_client import ContainerException
+    from localstack.utils.container_utils.container_client import \
+        ContainerException
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     updated_count = 0
