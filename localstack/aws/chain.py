@@ -8,6 +8,7 @@ from typing import Any, Callable, List, Optional
 
 from werkzeug import Response
 
+from ..utils.functions import call_safe
 from .api import RequestContext
 
 LOG = logging.getLogger(__name__)
@@ -76,6 +77,7 @@ class HandlerChain:
 
         self.stopped = False
         self.terminated = False
+        self.finalized = False
         self.error = None
         self.response = None
         self.context = None
@@ -116,7 +118,8 @@ class HandlerChain:
             # call response filters
             self._call_response_handlers(response)
         finally:
-            self._call_finalizers(response)
+            if not self.finalized:
+                self._call_finalizers(response)
 
     def respond(self, status_code: int = 200, payload: Any = None):
         """
@@ -248,3 +251,17 @@ class CompositeResponseHandler(CompositeHandler):
 
     def __init__(self) -> None:
         super().__init__(return_on_stop=False)
+
+
+class CompositeFinalizer(CompositeResponseHandler):
+    """
+    A CompositeHandler that uses ``call_safe`` to invoke handlers, so every handler is always executed.
+    """
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        for handler in self.handlers:
+            call_safe(
+                handler,
+                args=(chain, context, response),
+                exception_message="Error while running request finalizer",
+            )

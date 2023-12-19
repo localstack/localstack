@@ -24,6 +24,7 @@ class Gateway:
         super().__init__()
         self.request_handlers = list()
         self.response_handlers = list()
+        self.finalizers = list()
         self.exception_handlers = list()
 
     def new_chain(self) -> HandlerChain:

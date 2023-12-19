@@ -69,21 +69,26 @@ class LocalstackAwsGateway(Gateway):
                 handlers.add_cors_response_headers,
                 handlers.log_response,
                 handlers.count_service_request,
-                handlers.pop_request_context,
                 metric_collector.update_metric_collection,
             ]
         )
 
+        # request chain finalization
         self.finalizers.extend(
             [
                 handlers.set_close_connection_header,
+                handlers.run_custom_finalizers,
+                handlers.pop_request_context,
             ]
         )
 
     def new_chain(self) -> HandlerChain:
         if config.DEBUG_HANDLER_CHAIN:
             return TracingHandlerChain(
-                self.request_handlers, self.response_handlers, self.exception_handlers
+                self.request_handlers,
+                self.response_handlers,
+                self.finalizers,
+                self.exception_handlers,
             )
         return super().new_chain()
 
