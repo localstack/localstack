@@ -63,6 +63,9 @@ class LambdaFunction(GenericBaseModel):
         update_config_props["FunctionName"] = function_name
         if "Timeout" in update_config_props:
             update_config_props["Timeout"] = int(update_config_props["Timeout"])
+        if "MemorySize" in update_config_props:
+            update_config_props["MemorySize"] = int(update_config_props["MemorySize"])
+
         if "Code" in props:
             code = props["Code"] or {}
             if not code.get("ZipFile"):

@@ -1880,7 +1880,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         stored_multipart = self._storage_backend.get_multipart(bucket_name, s3_multipart)
         stored_s3_part = stored_multipart.open(s3_part)
-        stored_s3_part.write(body)
+        try:
+            stored_s3_part.write(body)
+        except Exception:
+            stored_multipart.remove_part(s3_part)
+            raise
 
         if checksum_algorithm and s3_part.checksum_value != stored_s3_part.checksum:
             stored_multipart.remove_part(s3_part)

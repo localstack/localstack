@@ -67,70 +67,35 @@ class ReflectionStateLocator:
         # needed for services like cognito-idp
         service_name: str = self.service.replace("-", "_")
 
-        def _visit_modules(_modules):
-            for _module, _attribute in _modules:
-                _attribute = _load_attribute_from_module(_module, _attribute)
-                if _attribute is not None:
-                    LOG.debug("Visiting attribute %s in module %s", _attribute, _module)
-                    visitor.visit(_attribute)
+        # try to load AccountRegionBundle from predictable location
+        attribute_name = f"{service_name}_stores"
+        module_name = f"localstack_ext.services.{service_name}.models"
 
-        match service_name:
-            # lambda is a special case in package and module naming
-            # the store attribute is `lambda_stores` in `localstack.services.lambda_.lambda_models`
-            case "lambda":
-                modules = [
-                    ("localstack.services.lambda_.lambda_models", "lambda_stores"),
-                    ("moto.awslambda.models", "lambda_backends"),
-                ]
-                _visit_modules(modules)
-            case "apigatewayv2":
-                modules = [
-                    ("localstack_ext.services.apigateway.models", "apigatewayv2_stores"),
-                    ("moto.apigatewayv2.models", "apigatewayv2_backends"),
-                ]
-                _visit_modules(modules)
-            case "cloudformation":
-                modules = [
-                    ("localstack.services.cloudformation.stores", "cloudformation_stores"),
-                    ("moto.cloudformation.models", "cloudformation_backends"),
-                ]
-                _visit_modules(modules)
-            case "ce":
-                modules = [
-                    ("localstack_ext.services.ce.models", "ce_stores"),
-                    ("moto.ce.models", "ce_backends"),
-                ]
-                _visit_modules(modules)
-            case _:
-                # try to load AccountRegionBundle from predictable location
-                attribute_name = f"{service_name}_stores"
-                module_name = f"localstack_ext.services.{service_name}.models"
+        # it first looks for a module in ext; eventually, it falls back to community
+        attribute = _load_attribute_from_module(module_name, attribute_name)
+        if attribute is None:
+            module_name = f"localstack.services.{service_name}.models"
+            attribute = _load_attribute_from_module(module_name, attribute_name)
 
-                # it first looks for a module in ext; eventually, it falls back to community
-                attribute = _load_attribute_from_module(module_name, attribute_name)
-                if attribute is None:
-                    module_name = f"localstack.services.{service_name}.models"
-                    attribute = _load_attribute_from_module(module_name, attribute_name)
+        if attribute is not None:
+            LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
+            visitor.visit(attribute)
 
-                if attribute is not None:
-                    LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
-                    visitor.visit(attribute)
+        # try to load BackendDict from predictable location
+        module_name = f"moto.{service_name}.models"
+        attribute_name = f"{service_name}_backends"
+        attribute = _load_attribute_from_module(module_name, attribute_name)
 
-                # try to load BackendDict from predictable location
-                module_name = f"moto.{service_name}.models"
-                attribute_name = f"{service_name}_backends"
-                attribute = _load_attribute_from_module(module_name, attribute_name)
+        if attribute is None and "_" in attribute_name:
+            # some services like application_autoscaling do have a backend without the underscore
+            service_name_tmp = service_name.replace("_", "")
+            module_name = f"moto.{service_name_tmp}.models"
+            attribute_name = f"{service_name_tmp}_backends"
+            attribute = _load_attribute_from_module(module_name, attribute_name)
 
-                if attribute is None and "_" in attribute_name:
-                    # some services like application_autoscaling do have a backend without the underscore
-                    service_name_tmp = service_name.replace("_", "")
-                    module_name = f"moto.{service_name_tmp}.models"
-                    attribute_name = f"{service_name_tmp}_backends"
-                    attribute = _load_attribute_from_module(module_name, attribute_name)
-
-                if attribute is not None:
-                    LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
-                    visitor.visit(attribute)
+        if attribute is not None:
+            LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
+            visitor.visit(attribute)
 
 
 def _load_attribute_from_module(module_name: str, attribute_name: str) -> Any | None:
