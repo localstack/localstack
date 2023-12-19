@@ -1152,6 +1152,30 @@
         "documentation": "<p>The Content-MD5 you specified was invalid.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/KeyLength",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/KeyTooLongError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "MaxSizeAllowed": {
+            "shape": "KeyLength"
+          },
+          "Size": {
+            "shape": "KeyLength"
+          }
+        },
+        "documentation": "<p>Your key is too long</p>",
+        "exception": true
+      }
     }
   ]
 }
