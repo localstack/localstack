@@ -2770,6 +2770,77 @@ class TestS3:
         assert completed_object["Body"].read() == to_bytes(body)
 
     @markers.aws.only_localstack
+    def test_upload_part_chunked_cancelled_valid_etag(self, s3_bucket, aws_client):
+        """
+        When using async-type requests, it's possible to cancel them inflight. This will make the request body
+        incomplete, and will fail during the stream decoding. We can simulate this with body by passing an incomplete
+        body, which triggers the same kind of exception.
+        This test is to avoid regression for https://github.com/localstack/localstack/issues/9851
+        """
+        body = "Hello Blob"
+        precalculated_etag = hashlib.md5(body.encode()).hexdigest()
+        headers = {
+            "Authorization": mock_aws_request_headers(
+                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            )["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
+        }
+
+        key_name = "test-multipart-chunked"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        upload_id = response["UploadId"]
+
+        # # upload the invalid part 1
+        invalid_data = (
+            "\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+        url = f"{config.internal_service_url()}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
+
+        response = requests.put(url, invalid_data, headers=headers, verify=False)
+        assert response.status_code == 500
+
+        # now re-upload the valid part and assert that the part was correctly uploaded
+        data = (
+            "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+        response = requests.put(url, data, headers=headers, verify=False)
+        assert response.ok
+
+        part_etag = response.headers.get("ETag")
+        assert not response.content
+
+        # validate that the object etag is the same as the pre-calculated one
+        assert part_etag.strip('"') == precalculated_etag
+
+        multipart_upload_parts = [
+            {
+                "ETag": part_etag,
+                "PartNumber": 1,
+            }
+        ]
+
+        aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+
+        completed_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        assert completed_object["Body"].read() == to_bytes(body)
+
+    @markers.aws.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
         # Write contents to memory rather than a file.
         data = "123gzipfile"
