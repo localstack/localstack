@@ -23,6 +23,7 @@ from botocore.config import Config
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime
 from localstack.config import is_env_true
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import retry
@@ -273,9 +274,39 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
     assert error_counter.counter == 0
 
     # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
-    sleep_seconds = 200
+    sleep_seconds = 0
     LOG.info(f"Sleeping for {sleep_seconds} ...")
     time.sleep(sleep_seconds)
+
+    # Introspect internal event queue in LocalStack
+    if not is_aws_cloud():
+        resource_sqs_client = aws_client_factory(
+            aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
+        ).sqs
+        # HACK: only works with one function / SQS queue in the service account
+        response = resource_sqs_client.list_queues()
+        if "QueueUrls" in response and len(response["QueueUrls"]) == 1:
+            queue_url = response["QueueUrls"][0]
+        else:
+            raise Exception("Only works with one function for now")
+
+        def receive_message():
+            rs = resource_sqs_client.receive_message(
+                QueueUrl=queue_url,
+                WaitTimeSeconds=2,
+                MessageAttributeNames=["All"],
+                VisibilityTimeout=0,
+            )
+            queue_size = len(rs["Messages"])
+            LOG.debug(f"{queue_size=}")
+            # Ensure that all event invokes are processed
+            assert queue_size == 0
+
+        retry(receive_message, retries=120, sleep=1)
+
+        # Still need to wait an undefined time because the functions get scheduled quickly
+        # but are still queueing in the ThreadPoolExecutor
+        time.sleep(100)
 
     # Validate CloudWatch invocation metric
     def assert_cloudwatch_metric():
