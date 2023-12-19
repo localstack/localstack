@@ -23,7 +23,12 @@ DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
 
 LIBSQLITE_AARCH64_URL = f"{MAVEN_REPO_URL}/io/github/ganadist/sqlite4java/libsqlite4java-osx-aarch64/1.0.392/libsqlite4java-osx-aarch64-1.0.392.dylib"
 # Downloading from maven central instead of AWS since AWS doesn't give us a way to pin the version
-DYNAMODB_JAR_URL = "https://repo1.maven.org/maven2/com/amazonaws/DynamoDBLocal/%version%/DynamoDBLocal-%version%.jar"
+DYNAMODB_JAR_URL = (
+    f"{MAVEN_REPO_URL}/com/amazonaws/DynamoDBLocal/%version%/DynamoDBLocal-%version%.jar"
+)
+DYNAMODB_JAR_URL_LATEST = (
+    "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip"
+)
 JAVASSIST_JAR_URL = f"{MAVEN_REPO_URL}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
 
 
@@ -38,7 +43,7 @@ class DynamoDBLocalPackage(Package):
         """
         https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocalHistory.html
         """
-        return ["2.1.0", "2.2.0"]
+        return ["2.1.0", "2.2.0", "latest"]
 
 
 class DynamoDBLocalPackageInstaller(PackageInstaller):
@@ -49,7 +54,10 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
         # download and extract archive
         tmp_archive = os.path.join(config.dirs.cache, "localstack.ddb.zip")
         install_dir = self._get_install_dir(target)
-        download_url = DYNAMODB_JAR_URL.replace("%version%", self.version)
+        if self.version == "latest":
+            download_url = DYNAMODB_JAR_URL_LATEST
+        else:
+            download_url = DYNAMODB_JAR_URL.replace("%version%", self.version)
         download_and_extract_with_retry(download_url, tmp_archive, install_dir)
 
         # download additional libs for Mac M1 (for local dev mode)
