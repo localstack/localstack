@@ -99,7 +99,7 @@ jobs:
           make docker-run-tests-s3-only
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: test-results-s3-image-${{ matrix.arch }}
@@ -110,7 +110,7 @@ jobs:
         run: docker save ${{ env.IMAGE_NAME }} | gzip > ${{ env.IMAGE_NAME }}.tar.gz
 
       - name: Store Docker image as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.IMAGE_NAME }}
           path: ${{ env.IMAGE_NAME }}.tar.gz
@@ -128,12 +128,12 @@ jobs:
     if: success() || failure()
     steps:
       - name: Download AMD64 Results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: test-results-s3-image-amd64
 
       - name: Download ARM64 Results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: test-results-s3-image-arm64
 
@@ -161,12 +161,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Download AMD64 image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.LOCAL_IMAGE_NAME }}-amd64
 
       - name: Download ARM64 image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.LOCAL_IMAGE_NAME }}-arm64
 

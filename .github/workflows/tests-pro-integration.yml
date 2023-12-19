@@ -279,7 +279,7 @@ jobs:
           make test
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: test-results-community-${{ matrix.group }}
@@ -299,12 +299,12 @@ jobs:
     if: success() || failure()
     steps:
       - name: Download Artifacts 1
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: test-results-community-1
 
       - name: Download Artifacts 2
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: test-results-community-2
 
