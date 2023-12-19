@@ -22,30 +22,32 @@ DDB_PATCH_URL_PREFIX = (
 DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
 
 LIBSQLITE_AARCH64_URL = f"{MAVEN_REPO_URL}/io/github/ganadist/sqlite4java/libsqlite4java-osx-aarch64/1.0.392/libsqlite4java-osx-aarch64-1.0.392.dylib"
-DYNAMODB_JAR_URL = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip"
+# Downloading from maven central instead of AWS since AWS doesn't give us a way to pin the version
+DYNAMODB_JAR_URL = "https://repo1.maven.org/maven2/com/amazonaws/DynamoDBLocal/%version%/DynamoDBLocal-%version%.jar"
 JAVASSIST_JAR_URL = f"{MAVEN_REPO_URL}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
 
 
 class DynamoDBLocalPackage(Package):
     def __init__(self):
-        super().__init__(name="DynamoDBLocal", default_version="latest")
+        super().__init__(name="DynamoDBLocal", default_version="2.2.0")
 
-    def _get_installer(self, _) -> PackageInstaller:
-        return DynamoDBLocalPackageInstaller()
+    def _get_installer(self, version: str) -> PackageInstaller:
+        return DynamoDBLocalPackageInstaller(version)
 
     def get_versions(self) -> List[str]:
-        return ["latest"]
+        return ["2.1.0", "2.2.0"]
 
 
 class DynamoDBLocalPackageInstaller(PackageInstaller):
-    def __init__(self):
-        super().__init__("dynamodb-local", "latest")
+    def __init__(self, version: str):
+        super().__init__("dynamodb-local", version)
 
     def _install(self, target: InstallTarget):
         # download and extract archive
         tmp_archive = os.path.join(config.dirs.cache, "localstack.ddb.zip")
         install_dir = self._get_install_dir(target)
-        download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, install_dir)
+        download_url = DYNAMODB_JAR_URL.replace("%version%", self.version)
+        download_and_extract_with_retry(download_url, tmp_archive, install_dir)
 
         # download additional libs for Mac M1 (for local dev mode)
         ddb_local_lib_dir = os.path.join(install_dir, "DynamoDBLocal_lib")
