@@ -138,6 +138,7 @@ class Poller:
             )
             function_timeout = self.version_manager.function_version.config.timeout
             while not self._shutdown_event.is_set():
+                LOG.debug("[%s] Polling event queue", self.event_queue_url)
                 response = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
                     WaitTimeSeconds=2,
@@ -147,7 +148,9 @@ class Poller:
                     VisibilityTimeout=function_timeout + 60,
                 )
                 if not response.get("Messages"):
+                    LOG.debug("[%s] No message in queue", self.event_queue_url)
                     continue
+                LOG.debug("[%s] Got %d messages", self.event_queue_url, len(response["Messages"]))
                 # Guard against shutdown event arriving while polling SQS for messages
                 if not self._shutdown_event.is_set():
                     for message in response["Messages"]:
