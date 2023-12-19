@@ -25,10 +25,6 @@ from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_
 
 class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     _NORMALISED_SERVICE_NAMES = {"dynamodb": "DynamoDb"}
-    # _API_NAMES: dict[str, str] = {"sfn": "stepfunctions"}
-    #
-    # def _normalise_api_name(self, api_name: str) -> str:
-    #     return self._API_NAMES.get(api_name, api_name)
 
     def from_state_props(self, state_props: StateProps) -> None:
         super().from_state_props(state_props=state_props)
