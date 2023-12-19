@@ -1872,5 +1872,26 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_null_dimensions": {
+    "recorded-date": "19-12-2023, 16:29:18",
+    "recorded-content": {
+      "result": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result",
+            "Label": "<label:1>",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

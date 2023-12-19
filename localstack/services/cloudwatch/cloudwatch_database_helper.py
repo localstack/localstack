@@ -247,6 +247,9 @@ class CloudwatchDatabase:
                 dimension_filter += "AND dimensions LIKE ? "
                 data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
 
+            if not dimensions:
+                dimension_filter = "AND dimensions = '' "
+
             unit_filter = ""
             if unit:
                 if unit == "NULL_VALUE":
@@ -254,6 +257,7 @@ class CloudwatchDatabase:
                 else:
                     unit_filter = "AND unit = ? "
                     data += (unit,)
+
 
             sql_query = f"""
             SELECT
