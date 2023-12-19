@@ -35,6 +35,9 @@ class DynamoDBLocalPackage(Package):
         return DynamoDBLocalPackageInstaller(version)
 
     def get_versions(self) -> List[str]:
+        """
+        https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocalHistory.html
+        """
         return ["2.1.0", "2.2.0"]
 
 
