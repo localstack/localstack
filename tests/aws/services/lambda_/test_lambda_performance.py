@@ -133,7 +133,10 @@ def test_number_of_function_versions(create_lambda_function, s3_bucket, aws_clie
     request_id_2 = result_2["ResponseMetadata"]["RequestId"]
 
     # wait to complete the event invoke without causing extra load through polling
+    LOG.info("Waiting for the event invoke to be processed ...")
     time.sleep(10)
+
+    LOG.info("Validate invocations")
     s3_request_ids = get_s3_keys(aws_client, s3_bucket)
     assert set(s3_request_ids) == {request_id_1, request_id_2}
 
@@ -143,6 +146,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
     num_functions = 150
     uuid = short_uid()
 
+    LOG.info("Create functions")
     for num in range(num_functions):
         function_name = f"echo-func-{uuid}-{num}"
         create_lambda_function(
@@ -153,8 +157,10 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
         )
 
     # idle for a while to see if the pollers can manage the load and any errors occur
+    LOG.info("Idle for steady state")
     time.sleep(30)
 
+    LOG.info("Invoke each function once synchronously")
     request_ids = []
     for num in range(num_functions):
         function_name = f"echo-func-{uuid}-{num}"
@@ -166,6 +172,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
         request_id_1 = result_1["ResponseMetadata"]["RequestId"]
         request_ids.append(request_id_1)
 
+    LOG.info("Invoke each function once asynchronously")
     # increase the pool size to prevent EndpointConnectionError
     pool_config = Config(
         max_pool_connections=num_functions,
@@ -182,8 +189,10 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
         request_ids.append(request_id_2)
 
     # wait to complete the event invoke without causing extra load through polling
+    LOG.info("Waiting for event invokes to be processed ...")
     time.sleep(180)
 
+    LOG.info("Validate invocations")
     s3_request_ids = get_s3_keys(aws_client, s3_bucket)
     assert set(s3_request_ids) == set(request_ids)
 
@@ -318,7 +327,7 @@ def test_lambda_event_source_mapping_sqs(
 ):
     """Test SQS => Lambda event source mapping with concurrent event invokes and validate the number of invocations."""
     # TODO: define IAM permissions
-    num_invocations = 130
+    num_invocations = 140
     batch_size = 1
     # that might not be 100% accurate if the batch window is short
     target_invocations = math.ceil(num_invocations / batch_size)
