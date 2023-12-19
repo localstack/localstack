@@ -41,14 +41,14 @@ LOG = logging.getLogger(__name__)
 
 # Custom botocore configuration suitable for performance testing.
 # Using the aws_client_factory can
-CONFIG = Config(
-    # using some shorter timeouts to detect issues earlier but give some room for high-load scenarios
-    connect_timeout=5,
-    read_timeout=10,
+CLIENT_CONFIG = Config(
+    # using shorter timeouts can help to detect issues earlier but longer timeouts give some room for high load
+    connect_timeout=60,
+    read_timeout=60,
     # retries might be necessary under high load, but we don't want to increase load through excessive retries
-    retries={"max_attempts": 1},
+    retries={"max_attempts": 2},
     # 10 is the default but sometimes reducing it to 1 can help detecting issues
-    # max_pool_connections=1,
+    max_pool_connections=3000,
 )
 
 
@@ -182,9 +182,10 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
 
     LOG.info("Invoke each function once synchronously")
     request_ids = []
+    lambda_client = aws_client_factory(config=CLIENT_CONFIG).lambda_
     for num in range(num_functions):
         function_name = f"echo-func-{uuid}-{num}"
-        result_1 = aws_client.lambda_.invoke(
+        result_1 = lambda_client.invoke(
             FunctionName=function_name,
             InvocationType=InvocationType.RequestResponse,
         )
@@ -193,7 +194,6 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
         request_ids.append(request_id_1)
 
     LOG.info("Invoke each function once asynchronously")
-    lambda_client = aws_client_factory(config=CONFIG).lambda_
     for num in range(num_functions):
         function_name = f"echo-func-{uuid}-{num}"
         result_2 = lambda_client.invoke(
@@ -206,7 +206,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
 
     # wait to complete the event invoke without causing extra load through polling
     LOG.info("Waiting for event invokes to be processed ...")
-    time.sleep(180)
+    time.sleep(200)
 
     LOG.info("Validate invocations")
     s3_request_ids = get_s3_keys(aws_client, s3_bucket)
@@ -243,7 +243,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
         nonlocal invoke_barrier
         try:
             payload = {"file_size_bytes": 1}
-            lambda_client = aws_client_factory(config=CONFIG).lambda_
+            lambda_client = aws_client_factory(config=CLIENT_CONFIG).lambda_
             invoke_barrier.wait()
             result = lambda_client.invoke(
                 FunctionName=function_name,
@@ -343,7 +343,7 @@ def test_lambda_event_source_mapping_sqs(
 ):
     """Test SQS => Lambda event source mapping with concurrent event invokes and validate the number of invocations."""
     # TODO: define IAM permissions
-    num_invocations = 1000
+    num_invocations = 2000
     batch_size = 1
     # This calculation might not be 100% accurate if the batch window is short, but it works for now
     target_invocations = math.ceil(num_invocations / batch_size)
@@ -375,7 +375,7 @@ def test_lambda_event_source_mapping_sqs(
         nonlocal error_counter
         nonlocal invoke_barrier
         try:
-            sqs_client = aws_client_factory(config=CONFIG).sqs
+            sqs_client = aws_client_factory(config=CLIENT_CONFIG).sqs
             invoke_barrier.wait()
             result = sqs_client.send_message(
                 QueueUrl=queue_url, MessageBody=json.dumps({"message": str(uuid.uuid4())})
@@ -404,7 +404,7 @@ def test_lambda_event_source_mapping_sqs(
     assert error_counter.counter == 0
 
     # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
-    sleep_seconds = 200
+    sleep_seconds = 2000
     LOG.info(f"Sleeping for {sleep_seconds} ...")
     time.sleep(sleep_seconds)
 
@@ -415,6 +415,7 @@ def test_lambda_event_source_mapping_sqs(
             "MetricName": "Invocations",
             "Dimensions": [{"Name": "FunctionName", "Value": function_name}],
             "StartTime": start_time,
+            # TODO: are potentially future times valid?
             "EndTime": end_time + timedelta(seconds=10),
             "Period": 3600,  # in seconds
             "Statistics": ["Sum"],
@@ -520,7 +521,7 @@ def test_sns_subscription_lambda(
         nonlocal error_counter
         nonlocal invoke_barrier
         try:
-            sns_client = aws_client_factory(config=CONFIG).sns
+            sns_client = aws_client_factory(config=CLIENT_CONFIG).sns
             invoke_barrier.wait()
             result = sns_client.publish(
                 TopicArn=topic_arn, Subject="test-subject", Message=str(uuid.uuid4())
