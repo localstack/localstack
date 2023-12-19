@@ -1,9 +1,7 @@
 import json
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda.lambda_utils import (
-    filter_stream_records,
-)
+from localstack.services.lambda_.event_source_listeners.utils import filter_stream_records
 from localstack.services.lambda_.lambda_utils import format_name_to_path, get_handler_file_from_name
 
 
