@@ -106,14 +106,14 @@ def has_enough_time_for_retry(
 
 # TODO: optimize this client configuration. Do we need to consider client caching here?
 CLIENT_CONFIG = Config(
-    connect_timeout=5,
-    read_timeout=10,
-    retries={"max_attempts": 1},
+    connect_timeout=60,
+    read_timeout=60,
+    retries={"max_attempts": 2},
     # Default 10; the thread pool executor spawns a maximum of 32 threads by default but multiple function versions
     # might push beyond. We need to track how these connections and/or clients are shared.
     # An insufficient pool can lead to connection timeout error with the warning:
     # urllib3.connectionpool: Connection pool is full, discarding connection: localhost. Connection pool size: 1
-    max_pool_connections=200,
+    max_pool_connections=2500,
 )
 
 
