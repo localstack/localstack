@@ -39,6 +39,19 @@ if not is_env_true("TEST_PERFORMANCE"):
 LOG = logging.getLogger(__name__)
 
 
+# Custom botocore configuration suitable for performance testing.
+# Using the aws_client_factory can
+CONFIG = Config(
+    # using some shorter timeouts to detect issues earlier but give some room for high-load scenarios
+    connect_timeout=5,
+    read_timeout=10,
+    # retries might be necessary under high load, but we don't want to increase load through excessive retries
+    retries={"max_attempts": 1},
+    # 10 is the default but sometimes reducing it to 1 can help detecting issues
+    # max_pool_connections=1,
+)
+
+
 @markers.aws.validated
 def test_invoke_warm_start(create_lambda_function, aws_client):
     function_name = f"echo-func-{short_uid()}"
@@ -102,6 +115,10 @@ class ThreadSafeCounter:
 
 @markers.aws.unknown
 def test_number_of_function_versions(create_lambda_function, s3_bucket, aws_client):
+    """Test how many function versions LocalStack can support.
+    This test mainly idles and does one sync + async invoke as a sanity check."""
+    # TODO: validate whether pollers for older function versions remain active because the verbose logs indicated that
+    #   only two pollers were active despite many function versions. Try to async invoke an older function version.
     num_function_versions = 30000
 
     function_name = f"echo-func-{short_uid()}"
@@ -143,6 +160,9 @@ def test_number_of_function_versions(create_lambda_function, s3_bucket, aws_clie
 
 @markers.aws.unknown
 def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_client_factory):
+    """Test how many active functions LocalStack can support.
+    This test invokes each function synchronously (all functions first) + asynchronously validates invokes using S3.
+    """
     num_functions = 150
     uuid = short_uid()
 
@@ -173,11 +193,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
         request_ids.append(request_id_1)
 
     LOG.info("Invoke each function once asynchronously")
-    # increase the pool size to prevent EndpointConnectionError
-    pool_config = Config(
-        max_pool_connections=num_functions,
-    )
-    lambda_client = aws_client_factory(config=pool_config).lambda_
+    lambda_client = aws_client_factory(config=CONFIG).lambda_
     for num in range(num_functions):
         function_name = f"echo-func-{uuid}-{num}"
         result_2 = lambda_client.invoke(
@@ -200,7 +216,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
 @markers.aws.unknown
 def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_client_factory):
     """Test concurrent Lambda event invokes and validate the number of Lambda invocations using CloudWatch and S3."""
-    num_invocations = 100
+    num_invocations = 130
 
     function_name = f"echo-func-{short_uid()}"
     create_lambda_function(
@@ -210,7 +226,8 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
         Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
     )
 
-    # Limit concurrency to avoid resource bottlenecks
+    # Limit concurrency to avoid resource bottlenecks. This is typically not required because the ThreadPoolExecutor
+    # in the pollers are limited to 32 threads. The actual concurrency depends on the number of available CPU cores.
     # aws_client.lambda_.put_function_concurrency(
     #     FunctionName=function_name, ReservedConcurrentExecutions=1
     # )
@@ -226,10 +243,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
         nonlocal invoke_barrier
         try:
             payload = {"file_size_bytes": 1}
-            pool_config = Config(
-                max_pool_connections=num_invocations,
-            )
-            lambda_client = aws_client_factory(config=pool_config).lambda_
+            lambda_client = aws_client_factory(config=CONFIG).lambda_
             invoke_barrier.wait()
             result = lambda_client.invoke(
                 FunctionName=function_name,
@@ -240,7 +254,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
             with lock:
                 request_ids.append(request_id)
         except Exception as e:
-            print(f"runner-{runner} failed: {e}")
+            LOG.error(f"runner-{runner} failed: {e}")
             error_counter.increment()
 
     start_time = datetime.utcnow()
@@ -255,11 +269,12 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
         thread.join()
     end_time = datetime.utcnow()
     diff = end_time - start_time
-    print(f"N={num_invocations} took {diff.total_seconds()} seconds")
+    LOG.info(f"N={num_invocations} took {diff.total_seconds()} seconds")
     assert error_counter.counter == 0
 
+    # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
     sleep_seconds = 200
-    print(f"Sleeping for {sleep_seconds} ...")
+    LOG.info(f"Sleeping for {sleep_seconds} ...")
     time.sleep(sleep_seconds)
 
     # Validate CloudWatch invocation metric
@@ -309,6 +324,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
 
     s3_count = assert_s3_objects()
 
+    # TODO: the CloudWatch metric count for `Invocations` seems very unreliable => double-check API and implementation
     assert [metric_count, log_count, s3_count] == [
         num_invocations,
         num_invocations,
@@ -327,9 +343,9 @@ def test_lambda_event_source_mapping_sqs(
 ):
     """Test SQS => Lambda event source mapping with concurrent event invokes and validate the number of invocations."""
     # TODO: define IAM permissions
-    num_invocations = 140
+    num_invocations = 1000
     batch_size = 1
-    # that might not be 100% accurate if the batch window is short
+    # This calculation might not be 100% accurate if the batch window is short, but it works for now
     target_invocations = math.ceil(num_invocations / batch_size)
 
     function_name = f"echo-func-{short_uid()}"
@@ -359,10 +375,7 @@ def test_lambda_event_source_mapping_sqs(
         nonlocal error_counter
         nonlocal invoke_barrier
         try:
-            pool_config = Config(
-                max_pool_connections=num_invocations,
-            )
-            sqs_client = aws_client_factory(config=pool_config).sqs
+            sqs_client = aws_client_factory(config=CONFIG).sqs
             invoke_barrier.wait()
             result = sqs_client.send_message(
                 QueueUrl=queue_url, MessageBody=json.dumps({"message": str(uuid.uuid4())})
@@ -372,7 +385,7 @@ def test_lambda_event_source_mapping_sqs(
             with lock:
                 request_ids.append(request_id)
         except Exception as e:
-            print(f"runner-{runner} failed: {e}")
+            LOG.error(f"runner-{runner} failed: {e}")
             error_counter.increment()
 
     start_time = datetime.utcnow()
@@ -387,11 +400,12 @@ def test_lambda_event_source_mapping_sqs(
         thread.join()
     end_time = datetime.utcnow()
     diff = end_time - start_time
-    print(f"N={num_invocations} took {diff.total_seconds()} seconds")
+    LOG.info(f"N={num_invocations} took {diff.total_seconds()} seconds")
     assert error_counter.counter == 0
 
+    # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
     sleep_seconds = 200
-    print(f"Sleeping for {sleep_seconds} ...")
+    LOG.info(f"Sleeping for {sleep_seconds} ...")
     time.sleep(sleep_seconds)
 
     # Validate CloudWatch invocation metric
@@ -441,6 +455,7 @@ def test_lambda_event_source_mapping_sqs(
 
     s3_count = assert_s3_objects()
 
+    # TODO: the CloudWatch metric count for `Invocations` seems very unreliable => double-check API and implementation
     assert [metric_count, log_count, s3_count] == [
         target_invocations,
         target_invocations,
@@ -505,10 +520,7 @@ def test_sns_subscription_lambda(
         nonlocal error_counter
         nonlocal invoke_barrier
         try:
-            pool_config = Config(
-                max_pool_connections=num_invocations,
-            )
-            sns_client = aws_client_factory(config=pool_config).sns
+            sns_client = aws_client_factory(config=CONFIG).sns
             invoke_barrier.wait()
             result = sns_client.publish(
                 TopicArn=topic_arn, Subject="test-subject", Message=str(uuid.uuid4())
@@ -518,7 +530,7 @@ def test_sns_subscription_lambda(
             with lock:
                 request_ids.append(request_id)
         except Exception as e:
-            print(f"runner-{runner} failed: {e}")
+            LOG.error(f"runner-{runner} failed: {e}")
             error_counter.increment()
 
     start_time = datetime.utcnow()
@@ -533,11 +545,11 @@ def test_sns_subscription_lambda(
         thread.join()
     end_time = datetime.utcnow()
     diff = end_time - start_time
-    print(f"N={num_invocations} took {diff.total_seconds()} seconds")
+    LOG.info(f"N={num_invocations} took {diff.total_seconds()} seconds")
     assert error_counter.counter == 0
 
     sleep_seconds = 200
-    print(f"Sleeping for {sleep_seconds} ...")
+    LOG.info(f"Sleeping for {sleep_seconds} ...")
     time.sleep(sleep_seconds)
 
     # Validate CloudWatch invocation metric
