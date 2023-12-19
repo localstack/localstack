@@ -193,7 +193,7 @@ class TestCliContainerLifecycle:
         mounts = inspect["HostConfig"]["Mounts"]
         assert {
             "Type": "bind",
-            "Source": volume_dir,
+            "Source": str(volume_dir),
             "Target": constants.DEFAULT_VOLUME_DIR,
         } in mounts
 
