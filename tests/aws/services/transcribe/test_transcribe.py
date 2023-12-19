@@ -85,19 +85,21 @@ class TestTranscribe:
         snapshot.match("GetError", e_info.value.response)
 
     @pytest.mark.parametrize(
-        "media_file",
+        "media_file,speech",
         [
-            "../../files/en-gb.amr",
-            "../../files/en-gb.flac",
-            "../../files/en-gb.mp3",
-            "../../files/en-gb.mp4",
-            "../../files/en-gb.ogg",
-            "../../files/en-gb.webm",
+            ("../../files/en-gb.amr", "hello my name is"),
+            ("../../files/en-gb.flac", "hello my name is"),
+            ("../../files/en-gb.mp3", "hello my name is"),
+            ("../../files/en-gb.mp4", "hello my name is"),
+            ("../../files/en-gb.ogg", "hello my name is"),
+            ("../../files/en-gb.webm", "hello my name is"),
+            ("../../files/en-us_video.mkv", "one of the most vital"),
+            ("../../files/en-us_video.mp4", "one of the most vital"),
         ],
     )
     @markers.aws.unknown
     def test_transcribe_supported_media_formats(
-        self, transcribe_create_job, media_file, aws_client
+        self, transcribe_create_job, media_file, speech, aws_client
     ):
         file_path = os.path.join(BASEDIR, media_file)
         job_name = transcribe_create_job(audio_file=file_path)
@@ -117,7 +119,7 @@ class TestTranscribe:
                 Key="/".join(s3_uri.path.split("/")[2:]).split("?")[0],
             )
             content = to_str(data["Body"].read())
-            assert "hello my name is" in content
+            assert speech in content
 
         retry(_assert_transcript, retries=30, sleep=2)
 
