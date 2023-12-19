@@ -164,7 +164,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_before_stop(self):
         self.shutdown_alarm_scheduler()
-        self.cloudwatch_database.shutdown()
 
     def start_alarm_scheduler(self):
         if not self.alarm_scheduler:
