@@ -27,7 +27,6 @@ from localstack.utils.sync import SynchronizedDefaultDict, retry
 
 LOG = logging.getLogger(__name__)
 
-
 _OPENSEARCH_INSTALL_LOCKS = SynchronizedDefaultDict(threading.RLock)
 
 
