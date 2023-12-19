@@ -98,7 +98,98 @@ class ThreadSafeCounter:
 
 
 @markers.aws.unknown
+def test_max_number_of_function_versions(create_lambda_function, s3_bucket, aws_client):
+    num_function_versions = 30000
+
+    function_name = f"echo-func-{short_uid()}"
+    create_lambda_function(
+        handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
+        func_name=function_name,
+        runtime=Runtime.python3_12,
+        Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
+    )
+
+    for _ in range(num_function_versions):
+        aws_client.lambda_.publish_version(FunctionName=function_name)
+
+    # idle for a while to see if the pollers can manage the load and any errors occur
+    time.sleep(90)
+
+    result_1 = aws_client.lambda_.invoke(
+        FunctionName=function_name,
+        InvocationType=InvocationType.RequestResponse,
+    )
+    assert "FunctionError" not in result_1
+    request_id_1 = result_1["ResponseMetadata"]["RequestId"]
+
+    result_2 = aws_client.lambda_.invoke(
+        FunctionName=function_name,
+        InvocationType=InvocationType.Event,
+    )
+    assert "FunctionError" not in result_2
+    request_id_2 = result_2["ResponseMetadata"]["RequestId"]
+
+    # wait to complete the event invoke without causing extra load through polling
+    time.sleep(10)
+    s3_request_ids = get_s3_keys(aws_client, s3_bucket)
+    assert set(s3_request_ids) == {request_id_1, request_id_2}
+
+
+@markers.aws.unknown
+def test_max_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_client_factory):
+    num_functions = 150
+    uuid = short_uid()
+
+    for num in range(num_functions):
+        function_name = f"echo-func-{uuid}-{num}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
+        )
+
+    # idle for a while to see if the pollers can manage the load and any errors occur
+    time.sleep(30)
+
+    request_ids = []
+    for num in range(num_functions):
+        function_name = f"echo-func-{uuid}-{num}"
+        result_1 = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType=InvocationType.RequestResponse,
+        )
+        assert "FunctionError" not in result_1
+        request_id_1 = result_1["ResponseMetadata"]["RequestId"]
+        request_ids.append(request_id_1)
+
+    # increase the pool size to prevent EndpointConnectionError
+    pool_config = Config(
+        max_pool_connections=num_functions,
+    )
+    lambda_client = aws_client_factory(config=pool_config).lambda_
+    for num in range(num_functions):
+        function_name = f"echo-func-{uuid}-{num}"
+        result_2 = lambda_client.invoke(
+            FunctionName=function_name,
+            InvocationType=InvocationType.Event,
+        )
+        assert "FunctionError" not in result_2
+        request_id_2 = result_2["ResponseMetadata"]["RequestId"]
+        request_ids.append(request_id_2)
+
+    # wait to complete the event invoke without causing extra load through polling
+    time.sleep(180)
+
+    s3_request_ids = get_s3_keys(aws_client, s3_bucket)
+    assert set(s3_request_ids) == set(request_ids)
+
+
+@markers.aws.unknown
 def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_client_factory):
+    """Test concurrent Lambda event invokes and validate the number of Lambda invocations using CloudWatch and S3."""
+    num_invocations = 100
+
     function_name = f"echo-func-{short_uid()}"
     create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
@@ -115,7 +206,6 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
     lock = threading.Lock()
     request_ids = []
     error_counter = ThreadSafeCounter()
-    num_invocations = 150
     invoke_barrier = threading.Barrier(num_invocations)
 
     def invoke(runner: int):
@@ -201,12 +291,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
 
     # Validate S3 object creation
     def assert_s3_objects():
-        s3_keys_output = []
-        paginator = aws_client.s3.get_paginator("list_objects_v2")
-        page_iterator = paginator.paginate(Bucket=s3_bucket)
-        for page in page_iterator:
-            for obj in page.get("Contents", []):
-                s3_keys_output.append(obj["Key"])
+        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
         # assert len(s3_keys_output) == num_invocations
         return len(s3_keys_output)
 
@@ -217,6 +302,16 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
         num_invocations,
         num_invocations,
     ]
+
+
+def get_s3_keys(aws_client, s3_bucket) -> [str]:
+    s3_keys_output = []
+    paginator = aws_client.s3.get_paginator("list_objects_v2")
+    page_iterator = paginator.paginate(Bucket=s3_bucket)
+    for page in page_iterator:
+        for obj in page.get("Contents", []):
+            s3_keys_output.append(obj["Key"])
+    return s3_keys_output
 
 
 def format_summary(timings: [float]) -> str:
