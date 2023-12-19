@@ -236,11 +236,15 @@ class LambdaVersionManager:
                 ),
                 name=f"record-cloudwatch-metric-{function_id.function_name}:{function_id.qualifier}",
             )
-        # MAYBE: consider using the same prefix logging as in error case for execution environment.
+        # TODO: consider using the same prefix logging as in error case for execution environment.
         #   possibly as separate named logger.
         LOG.debug("Got logs for invocation '%s'", invocation.request_id)
         for log_line in invocation_result.logs.splitlines():
-            LOG.debug("> %s", truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT))
+            LOG.debug(
+                "[%s] %s",
+                function_id.function_name,
+                truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT),
+            )
         return invocation_result
 
     def store_logs(
