@@ -474,11 +474,6 @@ class InternalClientFactory(ClientFactory):
         else:
             config = self._config.merge(config)
 
-        # pool_config = Config(
-        #     max_pool_connections=13,
-        # )
-        # config = config.merge(pool_config)
-
         endpoint_url = endpoint_url or get_local_service_url(service_name)
         if service_name == "s3":
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
@@ -534,11 +529,6 @@ class ExternalClientFactory(ClientFactory):
             config = self._config
         else:
             config = self._config.merge(config)
-        #
-        # pool_config = Config(
-        #     max_pool_connections=200,
-        # )
-        # config = config.merge(pool_config)
 
         # Boto has an odd behaviour when using a non-default (any other region than us-east-1) in config
         # If the region in arg is non-default, it gives the arg the precedence
