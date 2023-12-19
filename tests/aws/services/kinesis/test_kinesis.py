@@ -420,16 +420,20 @@ class TestKinesis:
         stream_name = kinesis_create_stream(ShardCount=1)
         wait_for_stream_ready(stream_name)
 
+        aws_client.kinesis.put_records(
+            StreamName=stream_name, Records=[{"Data": b"Hello world", "PartitionKey": "1"}]
+        )
+
         first_stream_shard_data = aws_client.kinesis.describe_stream(StreamName=stream_name)[
             "StreamDescription"
         ]["Shards"][0]
         shard_id = first_stream_shard_data["ShardId"]
 
         shard_iterator = aws_client.kinesis.get_shard_iterator(
-            StreamName=stream_name, ShardIteratorType="LATEST", ShardId=shard_id
+            StreamName=stream_name, ShardIteratorType="TRIM_HORIZON", ShardId=shard_id
         )["ShardIterator"]
 
-        aws_client.kinesis.get_records(ShardIterator=f'"{shard_iterator}"')
+        assert aws_client.kinesis.get_records(ShardIterator=f'"{shard_iterator}"')["Records"]
 
 
 @pytest.fixture
