@@ -317,13 +317,13 @@ class CloudwatchDatabase:
             return {"metrics": metrics_result}
 
     def clear_tables(self):
-        # TODO clear tables for reset calls on cloudwatch
-        pass
-
-    def shutdown(self):
-        # TODO delete tmpdir/database if we do not have persistence enabled?
-        # anything else we should consider?
-        ...
+        with sqlite3.connect(self.METRICS_DB) as conn:
+            cur = conn.cursor()
+            cur.execute(f"DELETE FROM {self.TABLE_SINGLE_METRICS}")
+            cur.execute(f"DELETE FROM {self.TABLE_AGGREGATED_METRICS}")
+            conn.commit()
+            cur.execute("VACUUM")
+            conn.commit()
 
     def _get_ordered_dimensions_with_separator(self, dims: Optional[List[Dict]]):
         if not dims:
