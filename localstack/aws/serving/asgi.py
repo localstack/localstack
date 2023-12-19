@@ -39,7 +39,7 @@ class AsgiGateway:
         self,
         gateway: Gateway,
         event_loop: Optional[AbstractEventLoop] = None,
-        threads: int = 1000,
+        threads: int = 1001,
         lifespan_listener: Optional[ASGILifespanListener] = None,
         websocket_listener=None,
     ) -> None:

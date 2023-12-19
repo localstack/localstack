@@ -204,6 +204,15 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
             retries={"total_max_attempts": 1},
         )
 
+    # # TODO: fix this
+    # pool_config = botocore.config.Config(
+    #     max_pool_connections=202,
+    # )
+    # if config:
+    #     config = config.merge(pool_config)
+    # else:
+    #     config = pool_config
+
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return ExternalAwsClientFactory(session=session, config=config)
     else:
