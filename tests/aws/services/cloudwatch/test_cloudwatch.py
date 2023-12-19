@@ -2189,6 +2189,51 @@ def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
     filtered_logs.sort(key=lambda e: e["timestamp"], reverse=True)
     return filtered_logs[0]["message"]
 
+    @markers.aws.validated
+    def test_get_metric_with_no_results(self, snapshot, aws_client):
+        utc_now = datetime.now(tz=timezone.utc)
+        namespace = f"n-{short_uid()}"
+        metric = f"m-{short_uid()}"
+
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric,
+                    "Value": 1,
+                }
+            ],
+        )
+
+        def validate():
+            data = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "result",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric,
+                                "Dimensions": [
+                                    {
+                                        "Name": "foo",
+                                        "Value": "bar",
+                                    }
+                                ],
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+            )
+            snapshot.add_transformer(snapshot.transform.key_value("Label"))
+            snapshot.match("result", data)
+
+        retry(validate, sleep_before=(2 if is_aws_cloud() else 0))
+
 
 def _check_alarm_triggered(
     expected_state,
