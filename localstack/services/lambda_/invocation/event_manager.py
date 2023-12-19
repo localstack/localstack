@@ -134,24 +134,22 @@ class Poller:
             )
             function_timeout = self.version_manager.function_version.config.timeout
             while not self._shutdown_event.is_set():
-                # TODO: Fix proper shutdown causing EndpointConnectionError
-                # https://app.circleci.com/pipelines/github/localstack/localstack/17428/workflows/391fc320-0cec-4dd1-9e3b-d7511de61d12/jobs/132663/parallel-runs/2
-                # Test case (happens not every time!):
-                # tests.aws.services.cloudformation.resources.test_legacy.TestCloudFormation.test_updating_stack_with_iam_role
-                messages = sqs_client.receive_message(
+                response = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
                     WaitTimeSeconds=2,
-                    # TODO: MAYBE: increase number of messages if single thread schedules invocations
-                    MaxNumberOfMessages=1,
+                    # Related: SQS event source mapping batches up to 10 messages:
+                    # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
+                    MaxNumberOfMessages=10,
                     VisibilityTimeout=function_timeout + 60,
                 )
-                if not messages.get("Messages"):
+                if not response.get("Messages"):
                     continue
-                message = messages["Messages"][0]
-
-                # NOTE: queueing within the thread pool executor could lead to double executions
-                #  due to the visibility timeout
-                self.invoker_pool.submit(self.handle_message, message)
+                # Guard against shutdown event arriving while polling SQS for messages
+                if not self._shutdown_event.is_set():
+                    for message in response["Messages"]:
+                        # NOTE: queueing within the thread pool executor could lead to double executions
+                        #  due to the visibility timeout
+                        self.invoker_pool.submit(self.handle_message, message)
         except Exception as e:
             # TODO gateway shuts down before shutdown event even is set, so this log message might be sent regardless
             if isinstance(e, ConnectionRefusedError) and self._shutdown_event.is_set():
