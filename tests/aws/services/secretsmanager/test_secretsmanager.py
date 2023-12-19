@@ -26,7 +26,6 @@ from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 from localstack.utils.time import today_no_time
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_VERSION
 from tests.aws.services.secretsmanager.functions import lambda_rotate_secret
 
 LOG = logging.getLogger(__name__)
@@ -96,6 +95,23 @@ class TestSecretsManager:
         if not success:
             LOG.warning(
                 f"Timed out whilst awaiting for force deletion of secret '{secret_id}' to complete."
+            )
+
+    @staticmethod
+    def _wait_rotation(client, secret_id: str, secret_version: str):
+        def _is_secret_rotated():
+            resp: dict = client.describe_secret(SecretId=secret_id)
+            secret_stage_tags = list()
+            for key, tags in resp.get("VersionIdsToStages", {}).items():
+                if key == secret_version:
+                    secret_stage_tags = tags
+                    break
+            return "AWSCURRENT" in secret_stage_tags
+
+        success = poll_condition(condition=_is_secret_rotated, timeout=120, interval=5)
+        if not success:
+            LOG.warning(
+                f"Timed out whilst awaiting for secret '{secret_id}' to be rotated to new version."
             )
 
     @pytest.mark.parametrize(
@@ -321,26 +337,36 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
 
-    # TODO: validate against AWS, then check against new lambda provider
-    @pytest.mark.skipif(reason="needs lambda usage rework")
-    @markers.aws.unknown
-    def test_rotate_secret_with_lambda_1(
-        self, secret_name, create_secret, create_lambda_function, aws_client
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Versions..KmsKeyIds"])
+    @markers.aws.validated
+    def test_rotate_secret_with_lambda_success(
+        self, sm_snapshot, secret_name, create_secret, create_lambda_function, aws_client
     ):
-        create_secret(
+        cre_res = create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing rotation of secrets",
         )
 
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(cre_res, 0)
+        )
+
         function_name = f"s-{short_uid()}"
         function_arn = create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_VERSION,
+            handler_file=TEST_LAMBDA_ROTATE_SECRET,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )["CreateFunctionResponse"]["FunctionArn"]
 
-        response = aws_client.secretsmanager.rotate_secret(
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="secretsManagerPermission",
+            Action="lambda:InvokeFunction",
+            Principal="secretsmanager.amazonaws.com",
+        )
+
+        rot_res = aws_client.secretsmanager.rotate_secret(
             SecretId=secret_name,
             RotationLambdaARN=function_arn,
             RotationRules={
@@ -349,7 +375,19 @@ class TestSecretsManager:
             RotateImmediately=True,
         )
 
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        sm_snapshot.match("rotate_secret_immediately", rot_res)
+
+        self._wait_rotation(aws_client.secretsmanager, secret_name, rot_res["VersionId"])
+
+        list_secret_versions_1 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
+
+        list_secret_versions_1["Versions"] = sorted(
+            list_secret_versions_1["Versions"], key=lambda x: x["CreatedDate"]
+        )
+
+        sm_snapshot.match("list_secret_versions_rotated_1", list_secret_versions_1)
 
     # TODO: validate against AWS, then check against new lambda provider
     @pytest.mark.skipif(reason="needs lambda usage rework")
@@ -371,6 +409,13 @@ class TestSecretsManager:
             runtime=Runtime.python3_9,
         )["CreateFunctionResponse"]["FunctionArn"]
 
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="secretsManagerPermission",
+            Action="lambda:InvokeFunction",
+            Principal="secretsmanager.amazonaws.com",
+        )
+
         rot_res = aws_client.secretsmanager.rotate_secret(
             SecretId=secret_name,
             RotationLambdaARN=function_arn,
@@ -387,7 +432,8 @@ class TestSecretsManager:
         sig_rnfe_1 = lambda_rotate_secret.secret_signal_resource_not_found_exception_on_create(
             version_id_1
         )
-        get_sig_rnfe_1 = aws_client.secretsmanager.get_secret_value(SecretId=sig_rnfe_1)
+        with pytest.raises(Exception):
+            get_sig_rnfe_1 = aws_client.secretsmanager.get_secret_value(SecretId=sig_rnfe_1)
         assert get_sig_rnfe_1["Name"] == sig_rnfe_1
         assert get_sig_rnfe_1["SecretString"] == sig_rnfe_1
 

@@ -4,6 +4,7 @@
 
 import logging
 import os
+from urllib.parse import urlparse
 
 import boto3
 
@@ -46,10 +47,13 @@ def handler(event, context):
 
     """
     # Client setup.
-    endpoint_url = os.environ["AWS_ENDPOINT_URL"]
     region = os.environ["AWS_REGION"]
+    endpoint_url = (
+        os.environ.get("AWS_ENDPOINT_URL") or f"https://secretsmanager.{region}.amazonaws.com"
+    )
+    verify = urlparse(endpoint_url).scheme == "https"
     service_client = boto3.client(
-        "secretsmanager", endpoint_url=endpoint_url, verify=False, region_name=region
+        "secretsmanager", endpoint_url=endpoint_url, verify=verify, region_name=region
     )
 
     arn = event["SecretId"]
