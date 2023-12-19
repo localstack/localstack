@@ -111,7 +111,9 @@ CLIENT_CONFIG = Config(
     retries={"max_attempts": 1},
     # Default 10; the thread pool executor spawns a maximum of 32 threads by default but multiple function versions
     # might push beyond. We need to track how these connections and/or clients are shared.
-    max_pool_connections=80,
+    # An insufficient pool can lead to connection timeout error with the warning:
+    # urllib3.connectionpool: Connection pool is full, discarding connection: localhost. Connection pool size: 1
+    max_pool_connections=200,
 )
 
 
