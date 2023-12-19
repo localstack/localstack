@@ -57,7 +57,9 @@ class LocalStackCliGroup(click.Group):
             if ctx and ctx.params.get("debug"):
                 click.echo(traceback.format_exc())
             from localstack.utils.container_utils.container_client import (
-                ContainerException, DockerNotAvailable)
+                ContainerException,
+                DockerNotAvailable,
+            )
 
             if isinstance(e, DockerNotAvailable):
                 raise CLIError(
@@ -315,10 +317,8 @@ class DockerStatus(TypedDict, total=False):
 
 def _print_docker_status(format_: str) -> None:
     from localstack.utils import docker_utils
-    from localstack.utils.bootstrap import (get_docker_image_details,
-                                            get_server_version)
-    from localstack.utils.container_networking import (get_main_container_ip,
-                                                       get_main_container_name)
+    from localstack.utils.bootstrap import get_docker_image_details, get_server_version
+    from localstack.utils.container_networking import get_main_container_ip, get_main_container_name
 
     img = get_docker_image_details()
     cont_name = config.MAIN_CONTAINER_NAME
@@ -589,7 +589,7 @@ def cmd_restart() -> None:
     except requests.ConnectionError:
         if config.DEBUG:
             console.print_exception()
-        raise CLIError(f"could not restart the LocalStack container")
+        raise CLIError("could not restart the LocalStack container")
 
 
 @localstack.command(
@@ -791,8 +791,7 @@ def update_images(image_list: List[str]) -> None:
     from rich.markup import escape
     from rich.progress import MofNCompleteColumn, Progress
 
-    from localstack.utils.container_utils.container_client import \
-        ContainerException
+    from localstack.utils.container_utils.container_client import ContainerException
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     updated_count = 0
