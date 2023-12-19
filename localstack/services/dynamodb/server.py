@@ -159,6 +159,7 @@ class DynamodbServer(Server):
             log_listener=_log_listener,
             auto_restart=True,
             name="dynamodb-local",
+            env_vars={"DDB_LOCAL_TELEMETRY": "0"},
         )
         TMP_THREADS.append(t)
         t.start()
