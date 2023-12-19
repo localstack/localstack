@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Any, Final, Optional
 
 from botocore.exceptions import ClientError
 
@@ -19,7 +19,6 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.utils.strings import camel_to_snake_case
 
 
 class StateTaskServiceSqs(StateTaskServiceCallback):
@@ -58,6 +57,22 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
             )
         return super()._from_error(env=env, ex=ex)
 
+    def _normalise_response(
+        self,
+        response: Any,
+        boto_service_name: Optional[str] = None,
+        service_action_name: Optional[str] = None,
+    ) -> None:
+        super()._normalise_response(
+            response=response,
+            boto_service_name=boto_service_name,
+            service_action_name=service_action_name,
+        )
+        # Normalise output value key to SFN standard for Md5OfMessageBody.
+        if response and "Md5OfMessageBody" in response:
+            md5_message_body = response.pop("Md5OfMessageBody")
+            response["MD5OfMessageBody"] = md5_message_body
+
     def _eval_service_task(
         self,
         env: Environment,
@@ -71,11 +86,12 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
             if message_body is not None and not isinstance(message_body, str):
                 normalised_parameters["MessageBody"] = to_json_str(message_body)
 
-        api_action = camel_to_snake_case(self.resource.api_action)
+        service_name = self._get_boto_service_name()
+        api_action = self._get_boto_service_action()
         sqs_client = boto_client_for(
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
-            service="sqs",
+            service=service_name,
         )
         response = getattr(sqs_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)

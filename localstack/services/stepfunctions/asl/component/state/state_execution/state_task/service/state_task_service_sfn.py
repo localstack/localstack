@@ -1,5 +1,5 @@
 import json
-from typing import Any, Final, Optional
+from typing import Final, Optional
 
 from botocore.exceptions import ClientError
 
@@ -33,7 +33,6 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.strings import camel_to_snake_case
 
 
 class StateTaskServiceSfn(StateTaskServiceCallback):
@@ -41,66 +40,8 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         "startexecution": {"Input", "Name", "StateMachineArn"}
     }
 
-    _SFN_TO_BOTO_PARAM_NORMALISERS = {
-        "startexecution": {"Input": "input", "Name": "name", "StateMachineArn": "stateMachineArn"}
-    }
-
-    _BOTO_TO_SFN_RESPONSE_BINDINGS = {
-        "startexecution": ["StartDate", "ExecutionArn"],
-        "describeexecution": [
-            "ExecutionArn",
-            "Input",
-            ["InputDetails", ["Included"]],
-            "Name",
-            "Output",
-            ["OutputDetails", ["Included"]],
-            "StartDate",
-            "StateMachineArn",
-            "Status",
-            "StopDate",
-            "Error",
-            "Cause",
-        ],
-    }
-
     def _get_supported_parameters(self) -> Optional[set[str]]:
         return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
-
-    def _get_parameters_normalising_bindings(self) -> dict[str, str]:
-        return self._SFN_TO_BOTO_PARAM_NORMALISERS.get(self.resource.api_action.lower(), dict())
-
-    def _normalise_botocore_response(self, api_action: str, response: dict[str, Any]) -> None:
-        keys = self._BOTO_TO_SFN_RESPONSE_BINDINGS.get(api_action.lower())
-        if keys is None:
-            return
-
-        def _build_lower_to_key_dict(key_list: list[str]) -> dict[str, Any]:
-            lower_to_key_dict = dict()
-            for key in key_list:
-                if isinstance(key, str):
-                    lower_to_key_dict[key.lower()] = key
-                elif isinstance(key, list):
-                    lower_to_key_dict[key[0].lower()] = [key[0], _build_lower_to_key_dict(key[1])]
-            return lower_to_key_dict
-
-        def _update_key(old_key, new_key, obj):
-            if new_key != old_key:
-                value_bind = obj[old_key]
-                del obj[old_key]
-                obj[new_key] = value_bind
-
-        def _apply_normalisation(lookup_keys, dictionary):
-            input_keys = list(dictionary.keys())
-            for input_key in input_keys:
-                normalised_key = lookup_keys.get(input_key.lower())
-                if isinstance(normalised_key, str):
-                    _update_key(input_key, normalised_key, dictionary)
-                elif isinstance(normalised_key, list):
-                    _update_key(input_key, normalised_key[0], dictionary)
-                    _apply_normalisation(normalised_key[1], dictionary[normalised_key[0]])
-
-        lower_to_normalise_key = _build_lower_to_key_dict(keys)
-        _apply_normalisation(lower_to_normalise_key, response)
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, ClientError):
@@ -134,22 +75,26 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
             )
         return super()._from_error(env=env, ex=ex)
 
-    def _normalised_parameters_bindings(self, raw_parameters: dict[str, str]) -> dict[str, str]:
-        normalised_parameters = super()._normalised_parameters_bindings(
-            raw_parameters=raw_parameters
+    def _normalise_parameters(
+        self,
+        parameters: dict,
+        boto_service_name: Optional[str] = None,
+        service_action_name: Optional[str] = None,
+    ) -> None:
+        if service_action_name is None:
+            if self._get_boto_service_action() == "start_execution":
+                optional_input = parameters.get("Input")
+                if not isinstance(optional_input, str):
+                    # AWS Sfn's documentation states:
+                    # If you don't include any JSON input data, you still must include the two braces.
+                    if optional_input is None:
+                        optional_input = {}
+                    parameters["Input"] = to_json_str(optional_input, separators=(",", ":"))
+        super()._normalise_parameters(
+            parameters=parameters,
+            boto_service_name=boto_service_name,
+            service_action_name=service_action_name,
         )
-
-        if self.resource.api_action.lower() == "startexecution":
-            optional_input = normalised_parameters.get("input")
-            if not isinstance(optional_input, str):
-                # AWS Sfn's documentation states:
-                # If you don't include any JSON input data, you still must include the two braces.
-                if optional_input is None:
-                    optional_input = {}
-
-                normalised_parameters["input"] = to_json_str(optional_input, separators=(",", ":"))
-
-        return normalised_parameters
 
     @staticmethod
     def _sync2_api_output_of(typ: type, value: json) -> None:
@@ -169,15 +114,15 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
     ):
-        api_action = camel_to_snake_case(self.resource.api_action)
+        service_name = self._get_boto_service_name()
+        api_action = self._get_boto_service_action()
         sfn_client = boto_client_for(
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
-            service="stepfunctions",
+            service=service_name,
         )
         response = getattr(sfn_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
-        self._normalise_botocore_response(self.resource.api_action, response)
         env.stack.append(response)
 
     def _sync_to_start_machine(
@@ -206,7 +151,9 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                     self._sync2_api_output_of(
                         typ=DescribeExecutionOutput, value=describe_execution_output
                     )
-                self._normalise_botocore_response("describeexecution", describe_execution_output)
+                self._normalise_response(
+                    response=describe_execution_output, service_action_name="describe_execution"
+                )
                 if execution_status == ExecutionStatus.SUCCEEDED:
                     return describe_execution_output
                 else:
@@ -238,13 +185,17 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
     ) -> None:
-        match self.resource.api_action.lower():
-            case "startexecution":
-                self._sync_to_start_machine(
+        match self._get_boto_service_action():
+            case "start_execution":
+                return self._sync_to_start_machine(
                     env=env, resource_runtime_part=resource_runtime_part, sync2_response=False
                 )
             case _:
-                super()._sync(env=env)
+                super()._sync(
+                    env=env,
+                    resource_runtime_part=resource_runtime_part,
+                    normalised_parameters=normalised_parameters,
+                )
 
     def _sync2(
         self,
@@ -252,10 +203,14 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
     ) -> None:
-        match self.resource.api_action.lower():
-            case "startexecution":
-                self._sync_to_start_machine(
+        match self._get_boto_service_action():
+            case "start_execution":
+                return self._sync_to_start_machine(
                     env=env, resource_runtime_part=resource_runtime_part, sync2_response=True
                 )
             case _:
-                super()._sync2(env=env)
+                super()._sync2(
+                    env=env,
+                    resource_runtime_part=resource_runtime_part,
+                    normalised_parameters=normalised_parameters,
+                )

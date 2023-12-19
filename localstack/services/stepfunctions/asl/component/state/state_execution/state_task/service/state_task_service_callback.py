@@ -32,6 +32,8 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
+CallbackApiActionName = str
+
 
 class StateTaskServiceCallback(StateTaskService, abc.ABC):
     def _get_sfn_resource(self) -> str:
