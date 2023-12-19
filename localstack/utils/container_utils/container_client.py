@@ -1117,8 +1117,6 @@ class Util:
         # Argparse refactoring opportunity: custom argparse actions can be used to modularize parsing (e.g., key=value)
         # https://docs.python.org/3/library/argparse.html#action
 
-        # TODO@viren
-
         # Configure parser
         parser = NoExitArgumentParser(description="Docker run flags parser")
         parser.add_argument(

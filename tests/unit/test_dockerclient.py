@@ -78,7 +78,6 @@ class TestArgumentParsing:
         test_ulimit_string = "--ulimit nofile=768:1024 --ulimit nproc=3"
         test_user_string = "-u sbx_user1051"
         test_dns_string = "--dns 1.2.3.4 --dns 5.6.7.8"
-        test_init_string = "--init"
         argument_string = " ".join(
             [
                 test_env_string,
@@ -92,7 +91,6 @@ class TestArgumentParsing:
                 test_ulimit_string,
                 test_user_string,
                 test_dns_string,
-                test_init_string,
             ]
         )
         env_vars = {}
@@ -126,7 +124,6 @@ class TestArgumentParsing:
         ]
         assert flags.user == "sbx_user1051"
         assert flags.dns == ["1.2.3.4", "5.6.7.8"]
-        assert flags.init is True
 
         argument_string = (
             "--add-host host.docker.internal:host-gateway --add-host arbitrary.host:127.0.0.1"

@@ -620,6 +620,7 @@ class SdkDockerClient(ContainerClient):
         labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        init: Optional[bool] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
@@ -669,6 +670,8 @@ class SdkDockerClient(ContainerClient):
                 kwargs["working_dir"] = workdir
             if privileged:
                 kwargs["privileged"] = True
+            if init:
+                kwargs["init"] = True
             if labels:
                 kwargs["labels"] = labels
             if ulimits:
