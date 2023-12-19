@@ -247,7 +247,6 @@ def load_environment(profiles: str = None, env=os.environ) -> List[str]:
         profile = profile.strip()
         path = os.path.join(CONFIG_DIR, f"{profile}.env")
         if not os.path.exists(path):
-            print(f"Profile '{profile}' specified, but file {path} not found.")
             continue
         environment.update(dotenv.dotenv_values(path))
 
