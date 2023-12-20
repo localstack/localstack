@@ -432,9 +432,9 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
 def check_fifo_id(fifo_id):
     if not fifo_id:
         return
-    if len(fifo_id) >= 128:
+    if len(fifo_id) > 128:
         raise InvalidParameterValueException(
-            "Message deduplication ID and group ID must be shorter than 128 bytes"
+            "Message deduplication ID and group ID must be shorter than 128 characters"
         )
     if not re.match(sqs_constants.FIFO_MSG_REGEX, fifo_id):
         raise InvalidParameterValueException(
