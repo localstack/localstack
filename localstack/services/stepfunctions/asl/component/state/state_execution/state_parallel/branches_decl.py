@@ -109,7 +109,7 @@ class BranchesDecl(EvalComponent):
         # Collect the results and return.
         result_list = list()
 
-        for worker in reversed(branch_workers):
+        for worker in branch_workers:
             env_frame = worker.env
             result_list.append(env_frame.inp)
             env.close_frame(env_frame)

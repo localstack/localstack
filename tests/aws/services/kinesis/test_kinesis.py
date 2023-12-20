@@ -413,6 +413,28 @@ class TestKinesis:
         assert shard_iterator != get_records_response["NextShardIterator"]
         assert new_shard_iterator != get_records_response["NextShardIterator"]
 
+    @markers.aws.validated
+    def test_get_records_shard_iterator_with_surrounding_quotes(
+        self, kinesis_create_stream, wait_for_stream_ready, aws_client
+    ):
+        stream_name = kinesis_create_stream(ShardCount=1)
+        wait_for_stream_ready(stream_name)
+
+        aws_client.kinesis.put_records(
+            StreamName=stream_name, Records=[{"Data": b"Hello world", "PartitionKey": "1"}]
+        )
+
+        first_stream_shard_data = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["Shards"][0]
+        shard_id = first_stream_shard_data["ShardId"]
+
+        shard_iterator = aws_client.kinesis.get_shard_iterator(
+            StreamName=stream_name, ShardIteratorType="TRIM_HORIZON", ShardId=shard_id
+        )["ShardIterator"]
+
+        assert aws_client.kinesis.get_records(ShardIterator=f'"{shard_iterator}"')["Records"]
+
 
 @pytest.fixture
 def wait_for_consumer_ready(aws_client):
