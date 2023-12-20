@@ -780,6 +780,7 @@ LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
 
 # limit in which to kinesis-mock will start throwing exceptions
 KINESIS_SHARD_LIMIT = os.environ.get("KINESIS_SHARD_LIMIT", "").strip() or "100"
+KINESIS_PERSISTENCE = is_env_not_false("KINESIS_PERSISTENCE")
 
 # limit in which to kinesis-mock will start throwing exceptions
 KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT = (
@@ -1117,6 +1118,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
+    "KINESIS_PERSISTENCE",
     "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",

@@ -4,6 +4,8 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 
+from moto.cloudformation import cloudformation_backends
+
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
     AlreadyExistsException,
@@ -92,10 +94,12 @@ from localstack.services.cloudformation.engine.template_preparer import (
 )
 from localstack.services.cloudformation.engine.template_utils import resolve_stack_conditions
 from localstack.services.cloudformation.stores import (
+    cloudformation_stores,
     find_change_set,
     find_stack,
     get_cloudformation_store,
 )
+from localstack.state import StateVisitor
 from localstack.utils.collections import (
     remove_attributes,
     select_attributes,
@@ -159,6 +163,10 @@ class InternalFailure(CommonServiceException):
 class CloudformationProvider(CloudformationApi):
     def _stack_status_is_active(self, stack_status: str) -> bool:
         return stack_status not in [StackStatus.DELETE_COMPLETE]
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(cloudformation_stores)
+        visitor.visit(cloudformation_backends)
 
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:

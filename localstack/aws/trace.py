@@ -258,24 +258,21 @@ class TracingHandlerChain(HandlerChain):
     - duration (float): Total time taken for handling request in milliseconds.
     - request_handler_traces (list[HandlerTrace]): List of request handler traces.
     - response_handler_traces (list[HandlerTrace]): List of response handler traces.
+    - finalizer_traces (list[HandlerTrace]): List of finalizer traces.
     - exception_handler_traces (list[HandlerTrace]): List of exception handler traces.
-
-    Methods:
-    - handle(context: RequestContext, response: Response):
-    - _call_response_handlers(response): .
-    - _call_exception_handlers(e, response): Overrides HandlerChain's _call_exception_handlers method and adds tracing handler to exception handlers.
-    - _log_report(): Logs the trace report in the format specified.
     """
 
     duration: float
     request_handler_traces: list[HandlerTrace]
     response_handler_traces: list[HandlerTrace]
+    finalizer_traces: list[HandlerTrace]
     exception_handler_traces: list[HandlerTrace]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.request_handler_traces = []
         self.response_handler_traces = []
+        self.finalizer_traces = []
         self.exception_handler_traces = []
 
     def handle(self, context: RequestContext, response: Response):
@@ -296,6 +293,13 @@ class TracingHandlerChain(HandlerChain):
             return super()._call_response_handlers(response)
         finally:
             self.response_handler_traces = [handler.trace for handler in self.response_handlers]
+
+    def _call_finalizers(self, response):
+        self.finalizers = [TracingHandler(handler) for handler in self.finalizers]
+        try:
+            return super()._call_response_handlers(response)
+        finally:
+            self.finalizer_traces = [handler.trace for handler in self.finalizers]
 
     def _call_exception_handlers(self, e, response):
         self.exception_handlers = [
@@ -337,6 +341,8 @@ class TracingHandlerChain(HandlerChain):
         _append_traces(self.request_handler_traces)
         report.append("---- response handlers " + ("-" * 63))
         _append_traces(self.response_handler_traces)
+        report.append("---- finalizers " + ("-" * 63))
+        _append_traces(self.finalizer_traces)
         report.append("---- exception handlers " + ("-" * 63))
         _append_traces(self.exception_handler_traces)
         # Add a separator and total duration value to the end of the report
