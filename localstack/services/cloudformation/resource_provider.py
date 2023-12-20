@@ -132,6 +132,7 @@ PROVIDER_DEFAULTS = {
     "AWS::OpenSearchService::Domain": "ResourceProvider",
     "AWS::RDS::DBCluster": "ResourceProvider",
     "AWS::RDS::GlobalCluster": "ResourceProvider",
+    "AWS::RDS::DBSubnetGroup": "ResourceProvider",
     "AWS::Redshift::Cluster": "ResourceProvider",
     "AWS::Route53::HealthCheck": "ResourceProvider",
     "AWS::Route53::RecordSet": "ResourceProvider",
