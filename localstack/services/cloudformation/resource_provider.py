@@ -134,6 +134,7 @@ PROVIDER_DEFAULTS = {
     "AWS::RDS::GlobalCluster": "ResourceProvider",
     "AWS::RDS::DBSubnetGroup": "ResourceProvider",
     "AWS::RDS::DBParameterGroup": "ResourceProvider",
+    "AWS::RDS::DBClusterParameterGroup": "ResourceProvider",
     "AWS::Redshift::Cluster": "ResourceProvider",
     "AWS::Route53::HealthCheck": "ResourceProvider",
     "AWS::Route53::RecordSet": "ResourceProvider",
