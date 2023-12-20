@@ -285,9 +285,9 @@ class TranscribeProvider(TranscribeApi):
             job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
 
             # Determine the sample rate of input audio if possible
-            if len(ffprobe_output["streams"]):
-                sample_rate = ffprobe_output["streams"][0]["sample_rate"]
-                job["MediaSampleRateHertz"] = int(sample_rate)
+            for stream in ffprobe_output["streams"]:
+                if stream["codec_type"] == "audio":
+                    job["MediaSampleRateHertz"] = int(stream["sample_rate"])
 
             if format in SUPPORTED_FORMAT_NAMES:
                 wav_path = new_tmp_file(suffix=".wav")

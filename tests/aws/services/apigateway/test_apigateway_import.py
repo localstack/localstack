@@ -47,6 +47,7 @@ OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY = os.path.join(
     PARENT_DIR, "../../files/openapi.spec.circular-ref-with-request-body.json"
 )
 OAS_30_STAGE_VARIABLES = os.path.join(PARENT_DIR, "../../files/openapi.spec.stage-variables.json")
+OAS30_HTTP_METHOD_INT = os.path.join(PARENT_DIR, "../../files/openapi-http-method-integration.json")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "../lambda_/functions/lambda_echo.py")
 
 
@@ -754,3 +755,34 @@ class TestApiGatewayImportRestApi:
             assert res.ok
 
         retry(call_api, retries=5, sleep=2)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.resources.items..resourceMethods.GET",
+            "$.resources.items..resourceMethods.OPTIONS",
+        ]
+    )
+    def test_import_with_http_method_integration(
+        self,
+        import_apigw,
+        aws_client,
+        apigw_snapshot_imported_resources,
+        apigateway_placeholder_authorizer_lambda_invocation_arn,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("uri"))
+        spec_file = load_file(OAS30_HTTP_METHOD_INT)
+        spec_file = spec_file.replace(
+            "${lambda_invocation_arn}", apigateway_placeholder_authorizer_lambda_invocation_arn
+        )
+        import_resp, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+        rest_api_id = import_resp["id"]
+
+        response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+        response["items"] = sorted(response["items"], key=itemgetter("path"))
+        snapshot.match("resources", response)
+
+        # this fixture will iterate over every resource and match its method, methodResponse, integration and
+        # integrationResponse
+        apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)

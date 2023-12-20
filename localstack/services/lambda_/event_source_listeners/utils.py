@@ -46,7 +46,11 @@ def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) ->
         else:
             # special case 'exists'
             if isinstance(value, list) and len(value) > 0:
-                append_record = not value[0].get("exists", True)
+                if isinstance(value[0], dict):
+                    append_record = not value[0].get("exists", True)
+                elif value[0] is None:
+                    # support null filter
+                    append_record = True
 
         filter_results.append(append_record)
     return all(filter_results)
@@ -155,4 +159,13 @@ def event_source_arn_matches(mapped: str, searched: str) -> bool:
     if mapped.startswith(searched):
         suffix = mapped[len(searched) :]
         return suffix[0] == "/"
+    return False
+
+
+def has_data_filter_criteria(filters: List[FilterCriteria]) -> bool:
+    for filter in filters:
+        for rule in filter.get("Filters", []):
+            parsed_pattern = json.loads(rule["Pattern"])
+            if "data" in parsed_pattern:
+                return True
     return False

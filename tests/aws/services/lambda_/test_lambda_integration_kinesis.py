@@ -17,12 +17,15 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid, to_bytes
-from localstack.utils.sync import retry
+from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
 TEST_LAMBDA_PARALLEL_FILE = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "functions", "lambda_parallel.py"
+    os.path.dirname(os.path.realpath(__file__)), "functions/lambda_parallel.py"
+)
+TEST_LAMBDA_KINESIS_LOG = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "functions/kinesis_log.py"
 )
 
 
@@ -407,3 +410,141 @@ class TestKinesisSource:
 
         sqs_payload = retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
         snapshot.match("sqs_payload", sqs_payload)
+
+
+# TODO: add tests for different edge cases in filtering (e.g. message isn't json => needs to be dropped)
+# https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-kinesis
+class TestKinesisEventFiltering:
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
+            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfLastRecord",
+            "$..Messages..Body.KinesisBatchInfo.shardId",
+            "$..Messages..Body.KinesisBatchInfo.streamArn",
+            "$..Messages..Body.requestContext.approximateInvokeCount",
+            "$..Messages..Body.responseContext.statusCode",
+        ],
+    )
+    @markers.aws.validated
+    def test_kinesis_event_filtering_json_pattern(
+        self,
+        create_lambda_function,
+        create_iam_role_with_policy,
+        wait_for_stream_ready,
+        cleanups,
+        snapshot,
+        aws_client,
+    ):
+        """
+        1 kinesis stream + 2 lambda functions
+        each function has a different event source mapping with a different filter on the same kinesis stream
+        """
+        # snapshot setup
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
+        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
+
+        function1_name = f"lambda_func1-{short_uid()}"
+        function2_name = f"lambda_func2-{short_uid()}"
+        role = f"test-lambda-role-{short_uid()}"
+        policy_name = f"test-lambda-policy-{short_uid()}"
+        kinesis_name = f"test-kinesis-{short_uid()}"
+        role_arn = create_iam_role_with_policy(
+            RoleName=role,
+            PolicyName=policy_name,
+            RoleDefinition=lambda_role,
+            PolicyDefinition=s3_lambda_permission,
+        )
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_KINESIS_LOG,
+            func_name=function1_name,
+            runtime=Runtime.python3_12,
+            role=role_arn,
+        )
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_KINESIS_LOG,
+            func_name=function2_name,
+            runtime=Runtime.python3_12,
+            role=role_arn,
+        )
+        aws_client.kinesis.create_stream(StreamName=kinesis_name, ShardCount=1)
+        cleanups.append(
+            lambda: aws_client.kinesis.delete_stream(
+                StreamName=kinesis_name, EnforceConsumerDeletion=True
+            )
+        )
+        result = aws_client.kinesis.describe_stream(StreamName=kinesis_name)["StreamDescription"]
+        kinesis_arn = result["StreamARN"]
+        wait_for_stream_ready(stream_name=kinesis_name)
+
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function1_name,
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=kinesis_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+            FilterCriteria={
+                "Filters": [{"Pattern": json.dumps({"data": {"event_type": ["function_1"]}})}]
+            },
+        )
+
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+        )
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_uuid)
+
+        create_event_source_mapping_2_response = aws_client.lambda_.create_event_source_mapping(
+            FunctionName=function2_name,
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            EventSourceArn=kinesis_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+            FilterCriteria={
+                "Filters": [{"Pattern": json.dumps({"data": {"event_type": ["function_2"]}})}]
+            },
+        )
+        snapshot.match(
+            "create_event_source_mapping_2_response", create_event_source_mapping_2_response
+        )
+        event_source_mapping_2_uuid = create_event_source_mapping_2_response["UUID"]
+        cleanups.append(
+            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_mapping_2_uuid)
+        )
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_2_uuid)
+
+        msg1 = {"event_type": "function_1", "message": "foo"}
+        msg2 = {"event_type": "function_2", "message": "bar"}
+        aws_client.kinesis.put_record(
+            StreamName=kinesis_name, Data=to_bytes(json.dumps(msg1)), PartitionKey="custom"
+        )
+        aws_client.kinesis.put_record(
+            StreamName=kinesis_name, Data=to_bytes(json.dumps(msg2)), PartitionKey="custom"
+        )
+
+        # on AWS this can take a bit (~2 min)
+
+        def _wait_lambda_fn_invoked_x_times(fn_name: str, x: int):
+            def _inner():
+                log_events = aws_client.logs.filter_log_events(
+                    logGroupName=f"/aws/lambda/{fn_name}"
+                )
+                report_events = [e for e in log_events["events"] if "REPORT" in e["message"]]
+                report_count = len(report_events)
+                if report_count > x:
+                    raise ShortCircuitWaitException(
+                        f"Too many events. Expected {x}, received {len(report_events)}"
+                    )
+                elif report_count == x:
+                    return True
+                else:
+                    return False
+
+            return _inner
+
+        assert wait_until(_wait_lambda_fn_invoked_x_times(function1_name, 1))
+        assert wait_until(_wait_lambda_fn_invoked_x_times(function2_name, 1))

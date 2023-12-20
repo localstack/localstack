@@ -12,9 +12,6 @@ from localstack.services.lambda_.event_source_listeners.adapters import (
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.lambda_.event_source_listeners.utils import (
-    filter_stream_records,
-)
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import long_uid, timestamp_millis
@@ -111,6 +108,15 @@ class StreamEventSourceListener(EventSourceListener):
         """
         to be implemented by subclasses
         :returns: the timestamps the given records were created/entered the source stream in iso8601 format
+        """
+        raise NotImplementedError
+
+    def _filter_records(
+        self, records: List[Dict], event_filter_criterias: List[Dict]
+    ) -> List[Dict]:
+        """
+        to be implemented by subclasses
+        :returns: records after being filtered by event fitlter criterias
         """
         raise NotImplementedError
 
@@ -218,15 +224,20 @@ class StreamEventSourceListener(EventSourceListener):
                     else:
                         raise
                 else:
-                    records = records_response.get("Records")
+                    raw_records = records_response.get("Records")
                     event_filter_criterias = self._get_lambda_event_filters_for_arn(
                         function_arn, stream_arn
                     )
-                    if len(event_filter_criterias) > 0:
-                        records = filter_stream_records(records, event_filter_criterias)
+
+                    # apply transformations on the raw event that the stream produced
+                    records = self._transform_records(raw_records)
+
+                    # filter the retrieved & transformed records according to
+                    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html
+                    filtered_records = self._filter_records(records, event_filter_criterias)
 
                     should_get_next_batch = True
-                    if records:
+                    if filtered_records:
                         payload = self._create_lambda_event_payload(
                             stream_arn, records, shard_id=shard_id
                         )
@@ -414,3 +425,7 @@ class StreamEventSourceListener(EventSourceListener):
             except Exception as e:
                 LOG.exception(e)
             time.sleep(self._POLL_INTERVAL_SEC)
+
+    def _transform_records(self, raw_records: list[dict]) -> list[dict]:
+        """some, e.g. kinesis have to transform the incoming records (e.g. lower-casing of keys)"""
+        return raw_records

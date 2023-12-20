@@ -4586,5 +4586,193 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_http_method_integration": {
+    "recorded-date": "05-12-2023, 22:27:16",
+    "recorded-content": {
+      "resources": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "path": "/",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-root-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:1>",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "httpMethod": "POST",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestParameters": {
+            "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+          },
+          "requestTemplates": {
+            "application/json": "#set($allParams = $input.params())\n{\n  \"params\" : {\n    #foreach($type in $allParams.keySet())\n      #set($params = $allParams.get($type))\n      \"$type\" : {\n        #foreach($paramName in $params.keySet())\n          \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\n          #if($foreach.hasNext),#end\n        #end\n      }\n      #if($foreach.hasNext),#end\n    #end\n  }\n}\n"
+          },
+          "timeoutInMillis": 29000,
+          "type": "AWS",
+          "uri": "<uri:1>"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:1>",
+        "contentHandling": "CONVERT_TO_TEXT",
+        "httpMethod": "POST",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_TEMPLATES",
+        "requestParameters": {
+          "integration.request.header.X-Amz-Invocation-Type": "'Event'"
+        },
+        "requestTemplates": {
+          "application/json": "#set($allParams = $input.params())\n{\n  \"params\" : {\n    #foreach($type in $allParams.keySet())\n      #set($params = $allParams.get($type))\n      \"$type\" : {\n        #foreach($paramName in $params.keySet())\n          \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\n          #if($foreach.hasNext),#end\n        #end\n      }\n      #if($foreach.hasNext),#end\n    #end\n  }\n}\n"
+        },
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "<uri:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-root-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:1>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:1>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
