@@ -111,7 +111,8 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset-aliastarget.html
             if "EvaluateTargetHealth" not in attrs["AliasTarget"]:
                 attrs["AliasTarget"]["EvaluateTargetHealth"] = False
-        else:
+
+        if "ResourceRecords" in attrs:
             # TODO: CNAME & SOA only allow 1 record type. should we check that here?
             attrs["ResourceRecords"] = [{"Value": record} for record in attrs["ResourceRecords"]]
 
