@@ -34,7 +34,7 @@ class BranchesDecl(EvalComponent):
 
         result_list = list()
 
-        for worker in reversed(worker_pool):
+        for worker in worker_pool:
             env_frame = worker.env_frame
             result_list.append(env_frame.inp)
             env.close_frame(env_frame)
