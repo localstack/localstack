@@ -323,4 +323,4 @@ def _get_lambda_invocation_events(logs_client, function_name, expected_num_event
         assert len(events) == expected_num_events
         return events
 
-    return retry(get_events, retries=retries, sleep_before=2)
+    return retry(get_events, retries=retries, sleep_before=5, sleep=5)

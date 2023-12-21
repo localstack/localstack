@@ -174,6 +174,7 @@ X_Amz_Expires = int
 HttpMethod = str
 ResourceType = str
 MissingHeaderName = str
+KeyLength = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -882,6 +883,14 @@ class InvalidDigest(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     Content_MD5: Optional[ContentMD5]
+
+
+class KeyTooLongError(ServiceException):
+    code: str = "KeyTooLongError"
+    sender_fault: bool = False
+    status_code: int = 400
+    MaxSizeAllowed: Optional[KeyLength]
+    Size: Optional[KeyLength]
 
 
 AbortDate = datetime
