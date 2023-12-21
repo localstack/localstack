@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_restore_object": {
+    "last_validated_date": "2023-07-12T23:18:19+00:00"
+  }
+}

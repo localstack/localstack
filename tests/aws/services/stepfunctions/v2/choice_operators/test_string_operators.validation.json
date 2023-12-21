@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_equals_path": {
+    "last_validated_date": "2023-06-22T11:17:59+00:00"
+  }
+}

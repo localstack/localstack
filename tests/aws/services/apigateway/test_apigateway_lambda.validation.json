@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_selection_patterns": {
+    "last_validated_date": "2023-09-05T19:54:21+00:00"
+  }
+}

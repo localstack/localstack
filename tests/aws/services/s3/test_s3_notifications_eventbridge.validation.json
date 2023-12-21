@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put_in_different_region": {
+    "last_validated_date": "2023-10-17T23:26:55+00:00"
+  }
+}

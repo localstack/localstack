@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/lambda_/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping_update": {
+    "last_validated_date": "2023-10-31T14:18:45+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_add": {
+    "last_validated_date": "2023-09-13T21:07:34+00:00"
+  }
+}

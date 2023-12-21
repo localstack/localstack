@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result_null_input_output_paths": {
+    "last_validated_date": "2023-12-01T16:13:46+00:00"
+  }
+}

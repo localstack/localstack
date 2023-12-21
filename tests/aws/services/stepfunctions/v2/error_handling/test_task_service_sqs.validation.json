@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_sqs_failure_in_wait_for_task_tok": {
+    "last_validated_date": "2023-05-29T09:21:47+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_delete_cors": {
+    "last_validated_date": "2023-07-31T10:32:03+00:00"
+  }
+}

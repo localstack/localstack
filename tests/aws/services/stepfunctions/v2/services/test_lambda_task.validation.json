@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_lambda_task_filter_parameters_input": {
+    "last_validated_date": "2023-09-22T20:36:51+00:00"
+  }
+}

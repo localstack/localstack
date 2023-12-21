@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_create_state_machine": {
+    "last_validated_date": "2023-08-25T18:35:47+00:00"
+  }
+}

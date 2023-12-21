@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_dynamodb.py::TestTaskServiceDynamoDB::test_put_item_invalid_table_name": {
+    "last_validated_date": "2023-05-12T15:15:45+00:00"
+  }
+}

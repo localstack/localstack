@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_add_tags_to_stream": {
+    "last_validated_date": "2022-08-25T06:56:43+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_global_table": {
+    "last_validated_date": "2023-12-01T11:54:13+00:00"
+  }
+}

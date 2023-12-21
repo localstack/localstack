@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/iam/test_iam.py::test_managed_policy_with_empty_resource": {
+    "last_validated_date": "2023-07-11T16:10:41+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
+    "last_validated_date": "2023-07-06T19:01:08+00:00"
+  }
+}

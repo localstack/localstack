@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync_delegate_timeout": {
+    "last_validated_date": "2023-07-05T14:16:56+00:00"
+  }
+}

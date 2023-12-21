@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_describe_template": {
+    "last_validated_date": "2023-05-22T07:25:32+00:00"
+  }
+}

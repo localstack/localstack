@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_storage_class": {
+    "last_validated_date": "2023-08-14T18:14:49+00:00"
+  }
+}

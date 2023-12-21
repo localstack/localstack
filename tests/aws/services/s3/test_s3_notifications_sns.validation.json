@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_invalid_topic_arn": {
+    "last_validated_date": "2023-08-04T22:52:42+00:00"
+  }
+}

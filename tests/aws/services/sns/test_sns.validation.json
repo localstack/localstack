@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/sns/test_sns.py::TestSNSPublishDelivery::test_delivery_lambda": {
+    "last_validated_date": "2023-11-07T10:11:37+00:00"
+  }
+}

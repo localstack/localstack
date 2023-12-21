@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_string": {
+    "last_validated_date": "2023-06-22T11:12:11+00:00"
+  }
+}

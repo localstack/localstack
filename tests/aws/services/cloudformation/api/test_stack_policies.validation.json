@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_prevent_resource_deletion": {
+    "last_validated_date": "2022-10-28T10:29:11+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/sqs/test_sqs.py::TestSqsQueryApi::test_send_message_via_queue_url_with_json_protocol": {
+    "last_validated_date": "2023-11-14T20:27:28+00:00"
+  }
+}

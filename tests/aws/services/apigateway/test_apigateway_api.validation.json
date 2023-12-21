@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_wrong_type": {
+    "last_validated_date": "2023-11-28T19:15:11+00:00"
+  }
+}

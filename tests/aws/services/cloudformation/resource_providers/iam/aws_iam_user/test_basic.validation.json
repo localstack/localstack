@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/iam/aws_iam_user/test_basic.py::TestUpdates::test_update_without_replacement": {
+    "last_validated_date": "2023-06-28T20:31:43+00:00"
+  }
+}

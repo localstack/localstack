@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base_error_topic_arn": {
+    "last_validated_date": "2023-09-03T11:35:10+00:00"
+  }
+}

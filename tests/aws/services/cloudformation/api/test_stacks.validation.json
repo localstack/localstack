@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_name_conflicts": {
+    "last_validated_date": "2023-11-16T16:07:37+00:00"
+  }
+}

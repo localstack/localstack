@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
+    "last_validated_date": "2023-08-07T15:39:40+00:00"
+  }
+}

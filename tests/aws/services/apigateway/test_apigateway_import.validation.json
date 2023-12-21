@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_http_method_integration": {
+    "last_validated_date": "2023-12-05T21:27:16+00:00"
+  }
+}

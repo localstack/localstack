@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_ssm.py::test_maintenance_window": {
+    "last_validated_date": "2023-07-14T12:06:23+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.7]": {
+    "last_validated_date": "2023-11-20T22:34:33+00:00"
+  }
+}

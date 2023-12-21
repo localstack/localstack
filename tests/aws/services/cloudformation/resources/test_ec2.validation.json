@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_transit_gateway_attachment": {
+    "last_validated_date": "2023-10-20T06:55:07+00:00"
+  }
+}

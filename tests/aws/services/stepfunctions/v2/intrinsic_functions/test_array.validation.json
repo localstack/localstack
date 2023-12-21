@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_unique": {
+    "last_validated_date": "2023-02-09T09:20:45+00:00"
+  }
+}

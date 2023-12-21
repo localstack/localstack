@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_create_execute_api_vpc_endpoint": {
+    "last_validated_date": "2023-03-18T21:01:10+00:00"
+  }
+}

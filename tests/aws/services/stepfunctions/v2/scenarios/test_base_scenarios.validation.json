@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp_path": {
+    "last_validated_date": "2023-10-31T17:57:26+00:00"
+  }
+}

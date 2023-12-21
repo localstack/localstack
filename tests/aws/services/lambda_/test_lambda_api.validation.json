@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_exceptions": {
+    "last_validated_date": "2023-11-20T16:08:17+00:00"
+  }
+}

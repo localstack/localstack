@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_cloudformation_definition_string_create_describe[dump]": {
+    "last_validated_date": "2023-11-17T16:07:38+00:00"
+  }
+}

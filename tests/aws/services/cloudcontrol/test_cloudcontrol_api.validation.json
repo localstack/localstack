@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases[FAIL]": {
+    "last_validated_date": "2023-02-01T08:02:30+00:00"
+  }
+}

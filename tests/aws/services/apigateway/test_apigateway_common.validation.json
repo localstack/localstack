@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_update_deployments": {
+    "last_validated_date": "2023-09-11T10:12:50+00:00"
+  }
+}

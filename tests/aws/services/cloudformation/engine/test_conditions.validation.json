@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_output_reference_to_skipped_resource": {
+    "last_validated_date": "2023-06-26T22:43:18+00:00"
+  }
+}

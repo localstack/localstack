@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_name_conflicts": {
+    "last_validated_date": "2023-11-22T09:58:04+00:00"
+  }
+}

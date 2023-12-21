@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_describe_state_machine_for_execution_of_version_with_revision": {
+    "last_validated_date": "2023-08-21T19:19:46+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
+    "last_validated_date": "2023-07-13T00:49:20+00:00"
+  }
+}

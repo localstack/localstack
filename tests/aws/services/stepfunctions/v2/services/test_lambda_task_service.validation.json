@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_list_functions": {
+    "last_validated_date": "2023-05-11T09:29:56+00:00"
+  }
+}

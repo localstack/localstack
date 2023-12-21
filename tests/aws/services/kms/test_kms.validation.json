@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair_without_plaintext": {
+    "last_validated_date": "2023-06-16T15:51:43+00:00"
+  }
+}

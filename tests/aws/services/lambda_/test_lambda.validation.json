@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_async_invoke_with_retry": {
+    "last_validated_date": "2023-11-20T21:10:54+00:00"
+  }
+}

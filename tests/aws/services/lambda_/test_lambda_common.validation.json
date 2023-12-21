@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaCallingLocalstack::test_manual_endpoint_injection[ruby2.7]": {
+    "last_validated_date": "2023-12-04T13:53:13+00:00"
+  }
+}

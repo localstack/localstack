@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/resource_groups/test_resource_groups.py::TestResourceGroups::test_search_resources": {
+    "last_validated_date": "2023-09-13T17:06:38+00:00"
+  }
+}

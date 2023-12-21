@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_invalid_lambda_arn": {
+    "last_validated_date": "2023-08-04T22:51:19+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_put_item_no_such_table": {
+    "last_validated_date": "2023-07-27T17:06:06+00:00"
+  }
+}

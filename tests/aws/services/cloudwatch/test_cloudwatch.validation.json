@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_anomaly_detector_lifecycle": {
+    "last_validated_date": "2023-10-26T08:42:43+00:00"
+  }
+}

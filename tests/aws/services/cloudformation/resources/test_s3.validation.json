@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_cors_configuration": {
+    "last_validated_date": "2023-04-20T18:17:17+00:00"
+  }
+}

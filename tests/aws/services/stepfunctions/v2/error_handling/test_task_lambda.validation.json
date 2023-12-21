@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_no_such_function_catch": {
+    "last_validated_date": "2023-06-22T11:28:19+00:00"
+  }
+}

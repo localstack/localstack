@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_user_attach_policy": {
+    "last_validated_date": "2023-09-14T15:42:45+00:00"
+  }
+}

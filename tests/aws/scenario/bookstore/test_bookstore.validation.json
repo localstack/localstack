@@ -1,0 +1,5 @@
+{
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_opensearch_crud": {
+    "last_validated_date": "2023-09-07T10:02:59+00:00"
+  }
+}

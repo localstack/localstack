@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
+    "last_validated_date": "2023-02-27T17:44:25+00:00"
+  }
+}

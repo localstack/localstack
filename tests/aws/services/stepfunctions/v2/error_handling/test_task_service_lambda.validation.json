@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_invoke_timeout": {
+    "last_validated_date": "2023-06-22T11:30:31+00:00"
+  }
+}

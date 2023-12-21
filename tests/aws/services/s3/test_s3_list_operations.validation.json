@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_empty_part_number_marker": {
+    "last_validated_date": "2023-11-10T23:20:09+00:00"
+  }
+}

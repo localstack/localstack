@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisEventFiltering::test_kinesis_event_filtering_json_pattern": {
+    "last_validated_date": "2023-12-07T08:15:24+00:00"
+  }
+}

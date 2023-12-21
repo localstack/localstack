@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_escape_sequence": {
+    "last_validated_date": "2023-11-30T16:58:53+00:00"
+  }
+}

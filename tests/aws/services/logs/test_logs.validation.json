@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_put_subscription_filter_lambda": {
+    "last_validated_date": "2023-03-17T12:55:00+00:00"
+  }
+}

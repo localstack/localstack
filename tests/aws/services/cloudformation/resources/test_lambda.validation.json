@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_cfn_dead_letter_config_async_invocation": {
+    "last_validated_date": "2023-12-04T11:46:52+00:00"
+  }
+}

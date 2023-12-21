@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_invalid_rollback_configuration_errors": {
+    "last_validated_date": "2022-11-21T14:36:32+00:00"
+  }
+}
