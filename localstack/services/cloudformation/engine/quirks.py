@@ -23,7 +23,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::Logs::LogStream": "/properties/LogStreamName",
     "AWS::Logs::SubscriptionFilter": "/properties/LogGroupName",
     "AWS::SSM::Parameter": "/properties/Name",
-    "AWS::RDS::DBProxyTargetGroup": "/properties/TargetGroupName"
+    "AWS::RDS::DBProxyTargetGroup": "/properties/TargetGroupName",
 }
 
 # You can usually find the available GetAtt targets in the official resource documentation:
