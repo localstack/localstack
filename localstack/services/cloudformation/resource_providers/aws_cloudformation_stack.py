@@ -62,7 +62,7 @@ class CloudFormationStackProvider(ResourceProvider[CloudFormationStackProperties
         if not request.custom_context.get(REPEATED_INVOCATION):
             if not model.get("StackName"):
                 model["StackName"] = util.generate_default_name(
-                    request.stack_id, request.logical_resource_id
+                    request.stack_name, request.logical_resource_id
                 )
 
             create_params = util.select_attributes(
