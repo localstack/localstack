@@ -402,12 +402,12 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
 
     except RequestEntityTooLarge:
         # Some requests can be form-urlencoded but also contain binary data, which will fail the form parsing (S3 can
-        # do this). In that case, skip this step and continue to try to determine the service name.
+        # do this). In that case, skip this step and continue to try to determine the service name. The exception is
+        # RequestEntityTooLarge even if the error is due to failed decoding.
         LOG.debug(
-            "Failed to parse the form while determining AWS service name",
+            "Failed to determine AWS service from request body because the form could not be parsed",
             exc_info=LOG.isEnabledFor(logging.DEBUG),
         )
-        pass
 
     # 6. resolve service spec conflicts
     resolved_conflict = resolve_conflicts(candidates, request)
