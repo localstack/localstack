@@ -393,17 +393,20 @@ class TestEvents:
             assert rs["FailedEntries"] == []
 
             try:
+                messages = []
                 for entry_asserts in entries_asserts:
                     entries = entry_asserts[0]
                     for entry in entries:
                         entry.setdefault("EventBusName", bus_name)
-                    self._put_entries_assert_results_sqs(
+                    message = self._put_entries_assert_results_sqs(
                         events_client,
                         sqs_client,
                         queue_url,
                         entries=entries,
                         should_match=entry_asserts[1],
                     )
+                    if message is not None:
+                        messages.extend(message)
             finally:
                 clean_up(
                     bus_name=bus_name,
@@ -411,6 +414,8 @@ class TestEvents:
                     target_ids=target_id,
                     queue_url=queue_url,
                 )
+
+            return messages
 
         yield _put_events_with_filter_to_sqs
 
@@ -433,8 +438,10 @@ class TestEvents:
             actual_event = json.loads(messages[0]["Body"])
             if "detail" in actual_event:
                 self.assert_valid_event(actual_event)
+            return messages
         else:
             assert not messages
+            return None
 
         return messages
 
