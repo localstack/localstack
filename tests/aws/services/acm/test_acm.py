@@ -131,7 +131,7 @@ class TestACM:
         matching = [cert for cert in summaries if cert["CertificateArn"] == cert_arn]
         snapshot.match("list-cert", matching)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..ExtendedKeyUsages",
