@@ -28,6 +28,18 @@ def find_snapshot_for_item(item: pytest.Item) -> Optional[dict]:
         return file_content.get(item.nodeid)
 
 
+def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
+    base_path = os.path.join(item.fspath.dirname, item.fspath.purebasename)
+    snapshot_path = f"{base_path}.validation.json"
+
+    if not os.path.exists(snapshot_path):
+        return None
+
+    with open(snapshot_path, "r") as fd:
+        file_content = json.load(fd)
+        return file_content.get(item.nodeid)
+
+
 def record_passed_validation(item: pytest.Item, timestamp: Optional[datetime.datetime] = None):
     base_path = os.path.join(item.fspath.dirname, item.fspath.purebasename)
     with open(f"{base_path}.validation.json", "w+") as fd:
@@ -72,3 +84,55 @@ def pytest_runtest_call(item: pytest.Item):
 #         snapshot_update_timestamp = datetime.datetime.strptime(snapshot_entry["recorded-date"], "%d-%m-%Y, %H:%M:%S").astimezone(tz=datetime.timezone.utc)
 #
 #         record_passed_validation(item, snapshot_update_timestamp)
+
+
+@pytest.hookimpl
+def pytest_addoption(parser: pytest.Parser, pluginmanager: pytest.PytestPluginManager):
+    parser.addoption("--validation-date-limit-days", action="store")
+    parser.addoption("--validation-date-limit-timestamp", action="store")
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_collection_modifyitems(
+    session: pytest.Session, config: pytest.Config, items: list[pytest.Item]
+):
+    """
+    Collect only items that have a validation timestamp earlier than the user-provided reference timestamp
+
+    Example usage:
+    - pytest ... --validation-date-limit-days=10
+    - pytest ... --validation-date-limit-timestamp="2023-12-01T00:00:00"
+
+    """
+    # handle two potential config options (relative vs. absolute limits)
+    if config.option.validation_date_limit_days is not None:
+        reference_date = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(
+            days=int(config.option.validation_date_limit_days)
+        )
+    elif config.option.validation_date_limit_timestamp is not None:
+        reference_date = datetime.datetime.fromisoformat(
+            config.option.validation_date_limit_timestamp
+        )
+    else:
+        return
+
+    selected = []  # items to collect
+    deselected = []  # items to drop
+
+    for item in items:
+        validation_data = find_validation_data_for_item(item)
+        if not validation_data:
+            deselected.append(item)
+            continue
+
+        last_validated_date = datetime.datetime.fromisoformat(
+            validation_data["last_validated_date"]
+        )
+
+        if last_validated_date < reference_date:
+            selected.append(item)
+        else:
+            deselected.append(item)
+
+    items[:] = selected
+    config.hook.pytest_deselected(items=deselected)
