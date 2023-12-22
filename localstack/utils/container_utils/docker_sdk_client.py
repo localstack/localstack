@@ -7,7 +7,7 @@ import re
 import socket
 import threading
 from time import sleep
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import Dict, Generator, List, Optional, Tuple, Union, cast
 from urllib.parse import quote
 
 import docker
@@ -360,6 +360,9 @@ class SdkDockerClient(ContainerClient):
             raise NoSuchContainer(container_name_or_id)
         except APIError as e:
             raise ContainerException() from e
+
+    def events(self) -> Generator[Dict, None, None]:
+        yield from self.client().events(decode=True)
 
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
         try:

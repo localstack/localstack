@@ -6,7 +6,7 @@ import os
 import re
 import shlex
 import subprocess
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Tuple, Union
 
 from localstack import config
 from localstack.utils.collections import ensure_list
@@ -407,6 +407,17 @@ class CmdDockerClient(ContainerClient):
         )
 
         return CancellableProcessStream(process)
+
+    def events(self) -> Generator[Dict, None, None]:
+        cmd = self._docker_cmd()
+        cmd += ["events", "--format", "{{json .}}"]
+
+        process: subprocess.Popen = run(
+            cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+
+        for msg in CancellableProcessStream(process):
+            yield json.loads(msg)
 
     def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[dict, list, str]]:
         cmd = self._docker_cmd()
