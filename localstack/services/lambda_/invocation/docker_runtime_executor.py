@@ -409,6 +409,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     @classmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:
         lambda_hooks.prepare_docker_executor.run(function_version)
+        # Trigger the installation of the Lambda runtime-init binary before invocation and
+        # cache the result to save time upon every invocation.
         get_runtime_client_path()
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
