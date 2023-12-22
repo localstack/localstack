@@ -875,9 +875,9 @@ LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 # Where Lambdas will be executed.
 LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
 
-# PUBLIC: 10 (default)
+# PUBLIC: 20 (default)
 # How many seconds Lambda will wait for the runtime environment to start up.
-LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 10)
+LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 20)
 
 # PUBLIC: base images for Lambda (default) https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html
 # localstack/services/lambda_/invocation/lambda_models.py:IMAGE_MAPPING
