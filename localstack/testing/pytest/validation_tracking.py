@@ -43,9 +43,9 @@ def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
 
 def record_passed_validation(item: pytest.Item, timestamp: Optional[datetime.datetime] = None):
     base_path = os.path.join(item.fspath.dirname, item.fspath.purebasename)
-    file_path = f"{base_path}.validation.json"
-    Path(file_path).touch()
-    with open(file_path, "r+") as fd:
+    file_path = Path(f"{base_path}.validation.json")
+    file_path.touch()
+    with file_path.open(mode="r+") as fd:
         # read existing state from file
         try:
             content = json.load(fd)
