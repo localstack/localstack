@@ -516,7 +516,7 @@ def filter_event_based_on_event_format(
 ):
     def filter_event(event_pattern_filter: Dict[str, Any], event: Dict[str, Any]):
         for key, value in event_pattern_filter.items():
-            fallback = "NOT_FOUND_IN_DICT"
+            fallback = object()
             event_value = event.get(key.lower(), event.get(key, fallback))
             if event_value is fallback:
                 return False
