@@ -19,7 +19,7 @@ class ItemProcessorDecl(IterationDecl):
         comment: Optional[Comment],
         start_at: StartAt,
         states: States,
-        processor_config: ProcessorConfig,
+        processor_config: Optional[ProcessorConfig],
     ):
         super().__init__(start_at=start_at, comment=comment, states=states)
-        self.processor_config = processor_config
+        self.processor_config = processor_config or ProcessorConfig()
