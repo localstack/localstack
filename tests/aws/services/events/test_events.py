@@ -393,17 +393,20 @@ class TestEvents:
             assert rs["FailedEntries"] == []
 
             try:
+                messages = []
                 for entry_asserts in entries_asserts:
                     entries = entry_asserts[0]
                     for entry in entries:
                         entry.setdefault("EventBusName", bus_name)
-                    self._put_entries_assert_results_sqs(
+                    message = self._put_entries_assert_results_sqs(
                         events_client,
                         sqs_client,
                         queue_url,
                         entries=entries,
                         should_match=entry_asserts[1],
                     )
+                    if message is not None:
+                        messages.extend(message)
             finally:
                 clean_up(
                     bus_name=bus_name,
@@ -411,6 +414,8 @@ class TestEvents:
                     target_ids=target_id,
                     queue_url=queue_url,
                 )
+
+            return messages
 
         yield _put_events_with_filter_to_sqs
 
@@ -433,10 +438,64 @@ class TestEvents:
             actual_event = json.loads(messages[0]["Body"])
             if "detail" in actual_event:
                 self.assert_valid_event(actual_event)
+            return messages
         else:
             assert not messages
+            return None
 
-        return messages
+    @markers.aws.validated
+    def test_put_events_with_rule_anything_but_to_sqs(
+        self, put_events_with_filter_to_sqs, snapshot
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+                snapshot.transform.jsonpath("$..EventBusName", "event-bus-name"),
+            ]
+        )
+
+        event_detail_match = {"command": "display-message", "payload": "baz"}
+        event_detail_null = {"command": None, "payload": "baz"}
+        event_detail_no_match = {"command": "no-message", "payload": "baz"}
+        test_event_pattern_anything_but = {
+            "source": ["core.update-account-command"],
+            "detail-type": ["core.update-account-command"],
+            "detail": {"command": [{"anything-but": ["no-message"]}]},
+        }
+        entries_match = [
+            {
+                "Source": test_event_pattern_anything_but["source"][0],
+                "DetailType": test_event_pattern_anything_but["detail-type"][0],
+                "Detail": json.dumps(event_detail_match),
+            }
+        ]
+        entries_match_null = [
+            {
+                "Source": test_event_pattern_anything_but["source"][0],
+                "DetailType": test_event_pattern_anything_but["detail-type"][0],
+                "Detail": json.dumps(event_detail_null),
+            }
+        ]
+        entries_no_match = [
+            {
+                "Source": test_event_pattern_anything_but["source"][0],
+                "DetailType": test_event_pattern_anything_but["detail-type"][0],
+                "Detail": json.dumps(event_detail_no_match),
+            }
+        ]
+
+        entries_asserts = [
+            (entries_match, True),
+            (entries_match_null, True),
+            (entries_no_match, False),
+        ]
+
+        messages = put_events_with_filter_to_sqs(
+            pattern=test_event_pattern_anything_but,
+            entries_asserts=entries_asserts,
+        )
+        snapshot.match("rule-anything-but", messages)
 
     # TODO: further unify/parameterize the tests for the different target types below
 

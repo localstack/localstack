@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_describe_template": {
+    "last_validated_date": "2023-05-22T07:25:32+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_stream_creation": {
+    "last_validated_date": "2022-09-12T12:11:29+00:00"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_failure_in_wait_for_task_token": {
+    "last_validated_date": "2023-06-25T12:31:14+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_tok_with_heartbeat": {
+    "last_validated_date": "2023-06-25T12:34:21+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token": {
+    "last_validated_date": "2023-06-25T12:30:26+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_timeout": {
+    "last_validated_date": "2023-06-25T12:30:43+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync": {
+    "last_validated_date": "2023-06-30T12:42:19+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync2": {
+    "last_validated_date": "2023-08-12T14:45:39+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync_delegate_failure": {
+    "last_validated_date": "2023-07-05T13:55:56+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync_delegate_timeout": {
+    "last_validated_date": "2023-07-05T14:16:56+00:00"
+  }
+}

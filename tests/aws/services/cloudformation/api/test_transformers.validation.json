@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_duplicate_resources": {
+    "last_validated_date": "2023-02-21T08:45:29+00:00"
+  }
+}

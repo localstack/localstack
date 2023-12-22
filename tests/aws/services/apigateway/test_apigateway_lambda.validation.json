@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration": {
+    "last_validated_date": "2023-05-31T21:11:42+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration_response_with_mapping_templates": {
+    "last_validated_date": "2023-09-17T07:11:22+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration_with_request_template": {
+    "last_validated_date": "2023-05-31T21:09:38+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration": {
+    "last_validated_date": "2023-04-26T18:03:23+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_selection_patterns": {
+    "last_validated_date": "2023-09-05T19:54:21+00:00"
+  }
+}

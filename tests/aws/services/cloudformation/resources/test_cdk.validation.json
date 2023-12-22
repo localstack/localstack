@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_cdk.py::TestCdkSampleApp::test_cdk_sample": {
+    "last_validated_date": "2022-11-04T14:15:44+00:00"
+  }
+}

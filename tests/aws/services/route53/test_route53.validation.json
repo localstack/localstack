@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_hosted_zone": {
+    "last_validated_date": "2023-11-02T11:59:59+00:00"
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_private_hosted_zone": {
+    "last_validated_date": "2023-12-15T14:20:07+00:00"
+  }
+}

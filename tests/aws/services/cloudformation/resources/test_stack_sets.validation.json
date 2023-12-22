@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
+    "last_validated_date": "2023-05-24T13:32:47+00:00"
+  }
+}
