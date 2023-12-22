@@ -2,7 +2,7 @@ import os
 
 import boto3
 
-s3 = boto3.client("s3", endpoint_url=os.environ["AWS_ENDPOINT_URL"])
+s3 = boto3.client("s3", endpoint_url=os.environ.get("AWS_ENDPOINT_URL"))
 BUCKET_NAME = os.environ["S3_BUCKET_NAME"]
 
 
