@@ -55,7 +55,7 @@ CLIENT_CONFIG = Config(
 
 @markers.aws.validated
 def test_invoke_warm_start(create_lambda_function, aws_client):
-    function_name = f"echo-func-{short_uid()}"
+    function_name = f"test-lambda-perf-{short_uid()}"
     create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         func_name=function_name,
@@ -79,7 +79,7 @@ def test_invoke_warm_start(create_lambda_function, aws_client):
 @markers.aws.only_localstack
 def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     monkeypatch.setattr(config, "LAMBDA_KEEPALIVE_MS", 0)
-    function_name = f"echo-func-{short_uid()}"
+    function_name = f"test-lambda-perf-{short_uid()}"
     create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         func_name=function_name,
@@ -122,7 +122,7 @@ def test_number_of_function_versions(create_lambda_function, s3_bucket, aws_clie
     #   only two pollers were active despite many function versions. Try to async invoke an older function version.
     num_function_versions = 1000
 
-    function_name = f"echo-func-{short_uid()}"
+    function_name = f"test-lambda-perf-{short_uid()}"
     create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
         func_name=function_name,
@@ -169,7 +169,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
 
     LOG.info("Create functions")
     for num in range(num_functions):
-        function_name = f"echo-func-{uuid}-{num}"
+        function_name = f"test-lambda-perf-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
             func_name=function_name,
@@ -185,7 +185,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
     request_ids = []
     lambda_client = aws_client_factory(config=CLIENT_CONFIG).lambda_
     for num in range(num_functions):
-        function_name = f"echo-func-{uuid}-{num}"
+        function_name = f"test-lambda-perf-{uuid}-{num}"
         result_1 = lambda_client.invoke(
             FunctionName=function_name,
             InvocationType=InvocationType.RequestResponse,
@@ -196,7 +196,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
 
     LOG.info("Invoke each function once asynchronously")
     for num in range(num_functions):
-        function_name = f"echo-func-{uuid}-{num}"
+        function_name = f"test-lambda-perf-{uuid}-{num}"
         result_2 = lambda_client.invoke(
             FunctionName=function_name,
             InvocationType=InvocationType.Event,
@@ -214,12 +214,12 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
     assert set(s3_request_ids) == set(request_ids)
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_client_factory):
     """Test concurrent Lambda event invokes and validate the number of Lambda invocations using CloudWatch and S3."""
-    num_invocations = 130
+    num_invocations = 800
 
-    function_name = f"echo-func-{short_uid()}"
+    function_name = f"test-lambda-perf-{short_uid()}"
     create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
         func_name=function_name,
@@ -245,6 +245,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
         try:
             payload = {"file_size_bytes": 1}
             lambda_client = aws_client_factory(config=CLIENT_CONFIG).lambda_
+            # Wait until all threads are ready to invoke simultaneously
             invoke_barrier.wait()
             result = lambda_client.invoke(
                 FunctionName=function_name,
@@ -274,7 +275,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
     assert error_counter.counter == 0
 
     # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
-    sleep_seconds = 200
+    sleep_seconds = 2000
     LOG.info(f"Sleeping for {sleep_seconds} ...")
     time.sleep(sleep_seconds)
 
@@ -285,14 +286,16 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
             "MetricName": "Invocations",
             "Dimensions": [{"Name": "FunctionName", "Value": function_name}],
             "StartTime": start_time,
-            "EndTime": end_time + timedelta(seconds=10),
+            # CloudWatch Lambda metrics can be delayed is a known issue:
+            # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-Troubleshooting.html
+            "EndTime": end_time + timedelta(minutes=20),
             "Period": 3600,  # in seconds
             "Statistics": ["Sum"],
         }
         response = aws_client.cloudwatch.get_metric_statistics(**metric_query_params)
         num_invocations_metric = 0
         for datapoint in response["Datapoints"]:
-            num_invocations_metric += datapoint["Sum"]
+            num_invocations_metric += int(datapoint["Sum"])
         # assert num_invocations_metric == num_invocations
         return num_invocations_metric
 
@@ -329,7 +332,8 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
     s3_count = assert_s3_objects()
     # s3_count = retry(assert_s3_objects, retries=300, sleep=2)
 
-    # TODO: the CloudWatch metric count for `Invocations` seems very unreliable => double-check API and implementation
+    # TODO: the CloudWatch metrics can be unreliable due to concurrency issues (new CW provider is WIP)
+    # The s3_count does not consider re-tries, which have the same request_ids!
     assert [metric_count, log_count, s3_count] == [
         num_invocations,
         num_invocations,
@@ -348,12 +352,12 @@ def test_lambda_event_source_mapping_sqs(
 ):
     """Test SQS => Lambda event source mapping with concurrent event invokes and validate the number of invocations."""
     # TODO: define IAM permissions
-    num_invocations = 2000
+    num_invocations = 200
     batch_size = 1
     # This calculation might not be 100% accurate if the batch window is short, but it works for now
     target_invocations = math.ceil(num_invocations / batch_size)
 
-    function_name = f"echo-func-{short_uid()}"
+    function_name = f"test-lambda-perf-{short_uid()}"
     create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
         func_name=function_name,
@@ -409,7 +413,7 @@ def test_lambda_event_source_mapping_sqs(
     assert error_counter.counter == 0
 
     # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
-    sleep_seconds = 2000
+    sleep_seconds = 200
     LOG.info(f"Sleeping for {sleep_seconds} ...")
     time.sleep(sleep_seconds)
 
@@ -420,15 +424,16 @@ def test_lambda_event_source_mapping_sqs(
             "MetricName": "Invocations",
             "Dimensions": [{"Name": "FunctionName", "Value": function_name}],
             "StartTime": start_time,
-            # TODO: are potentially future times valid?
-            "EndTime": end_time + timedelta(seconds=10),
+            # CloudWatch Lambda metrics can be delayed is a known issue:
+            # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-Troubleshooting.html
+            "EndTime": end_time + timedelta(minutes=20),
             "Period": 3600,  # in seconds
             "Statistics": ["Sum"],
         }
         response = aws_client.cloudwatch.get_metric_statistics(**metric_query_params)
         num_invocations_metric = 0
         for datapoint in response["Datapoints"]:
-            num_invocations_metric += datapoint["Sum"]
+            num_invocations_metric += int(datapoint["Sum"])
         # assert num_invocations_metric == num_invocations
         return num_invocations_metric
 
@@ -465,7 +470,7 @@ def test_lambda_event_source_mapping_sqs(
     s3_count = assert_s3_objects()
     # s3_count = retry(assert_s3_objects, retries=300, sleep=2)
 
-    # TODO: the CloudWatch metric count for `Invocations` seems very unreliable => double-check API and implementation
+    # TODO: fix unreliable event source mapping (e.g., [168, 168, 169] with N=200)
     assert [metric_count, log_count, s3_count] == [
         target_invocations,
         target_invocations,
@@ -484,9 +489,9 @@ def test_sns_subscription_lambda(
 ):
     """Test SNS => Lambda subscription with concurrent event invokes and validate the number of invocations."""
     # TODO: define IAM permissions
-    num_invocations = 130
+    num_invocations = 800
 
-    function_name = f"echo-func-{short_uid()}"
+    function_name = f"test-lambda-perf-{short_uid()}"
     lambda_creation_response = create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
         func_name=function_name,
@@ -535,7 +540,7 @@ def test_sns_subscription_lambda(
             result = sns_client.publish(
                 TopicArn=topic_arn, Subject="test-subject", Message=str(uuid.uuid4())
             )
-            # TODO: validate whether the SNS request_id gets propagated into Lambda?!
+            # TODO: validate against AWS whether the SNS request_id gets propagated into Lambda?!
             request_id = result["ResponseMetadata"]["RequestId"]
             with lock:
                 request_ids.append(request_id)
@@ -558,7 +563,7 @@ def test_sns_subscription_lambda(
     LOG.info(f"N={num_invocations} took {diff.total_seconds()} seconds")
     assert error_counter.counter == 0
 
-    sleep_seconds = 200
+    sleep_seconds = 600
     LOG.info(f"Sleeping for {sleep_seconds} ...")
     time.sleep(sleep_seconds)
 
@@ -569,14 +574,16 @@ def test_sns_subscription_lambda(
             "MetricName": "Invocations",
             "Dimensions": [{"Name": "FunctionName", "Value": function_name}],
             "StartTime": start_time,
-            "EndTime": end_time + timedelta(seconds=10),
+            # CloudWatch Lambda metrics can be delayed is a known issue:
+            # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-Troubleshooting.html
+            "EndTime": end_time + timedelta(minutes=20),
             "Period": 3600,  # in seconds
             "Statistics": ["Sum"],
         }
         response = aws_client.cloudwatch.get_metric_statistics(**metric_query_params)
         num_invocations_metric = 0
         for datapoint in response["Datapoints"]:
-            num_invocations_metric += datapoint["Sum"]
+            num_invocations_metric += int(datapoint["Sum"])
         # assert num_invocations_metric == num_invocations
         return num_invocations_metric
 
@@ -604,14 +611,14 @@ def test_sns_subscription_lambda(
     # NOTE: slow against AWS (can take minutes and would likely require more retries)
     # log_count = retry(assert_log_events, retries=300, sleep=2)
 
-    # Validate S3 object creation
+    # Validate S3 object creation first because it works synchronously and is most reliable
     def assert_s3_objects():
         s3_keys_output = get_s3_keys(aws_client, s3_bucket)
         # assert len(s3_keys_output) == num_invocations
         return len(s3_keys_output)
 
     s3_count = assert_s3_objects()
-    s3_count = retry(assert_s3_objects, retries=300, sleep=2)
+    # s3_count = retry(assert_s3_objects, retries=300, sleep=2)
 
     assert [metric_count, log_count, s3_count] == [
         num_invocations,
