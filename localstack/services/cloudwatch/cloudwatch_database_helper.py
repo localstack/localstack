@@ -248,7 +248,7 @@ class CloudwatchDatabase:
                 data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
 
             if not dimensions:
-                dimension_filter = "AND dimensions = '' "
+                dimension_filter = "AND dimensions is null "
 
             unit_filter = ""
             if unit:
