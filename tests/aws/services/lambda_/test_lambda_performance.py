@@ -169,7 +169,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
 
     LOG.info("Create functions")
     for num in range(num_functions):
-        function_name = f"test-lambda-perf-{short_uid()}"
+        function_name = f"test-lambda-perf-{uuid}-{num}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
             func_name=function_name,
