@@ -301,15 +301,18 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
 
     # Validate CloudWatch invocation logs
     def assert_log_events():
-        # the default and maximum limit is 10k events
-        response = aws_client.logs.filter_log_events(
+        # Using a paginator because the default and maximum limit is 10k events and
+        # tests against AWS were missing invocations because they contained a `nextToken`
+        paginator = aws_client.logs.get_paginator("filter_log_events")
+        page_iterator = paginator.paginate(
             logGroupName=f"/aws/lambda/{function_name}",
         )
-        assert "nextToken" not in response  # guard against pagination
-        log_events = response["events"]
-        invocation_count = len(
-            [event["message"] for event in log_events if event["message"].startswith("REPORT")]
-        )
+        invocation_count = 0
+        for page in page_iterator:
+            log_events = page["events"]
+            invocation_count += len(
+                [event["message"] for event in log_events if event["message"].startswith("REPORT")]
+            )
         # assert invocation_count == num_invocations
         return invocation_count
 
@@ -434,15 +437,18 @@ def test_lambda_event_source_mapping_sqs(
 
     # Validate CloudWatch invocation logs
     def assert_log_events():
-        # the default and maximum limit is 10k events
-        response = aws_client.logs.filter_log_events(
+        # Using a paginator because the default and maximum limit is 10k events and
+        # tests against AWS were missing invocations because they contained a `nextToken`
+        paginator = aws_client.logs.get_paginator("filter_log_events")
+        page_iterator = paginator.paginate(
             logGroupName=f"/aws/lambda/{function_name}",
         )
-        assert "nextToken" not in response  # guard against pagination
-        log_events = response["events"]
-        invocation_count = len(
-            [event["message"] for event in log_events if event["message"].startswith("REPORT")]
-        )
+        invocation_count = 0
+        for page in page_iterator:
+            log_events = page["events"]
+            invocation_count += len(
+                [event["message"] for event in log_events if event["message"].startswith("REPORT")]
+            )
         # assert invocation_count == num_invocations
         return invocation_count
 
@@ -579,15 +585,18 @@ def test_sns_subscription_lambda(
 
     # Validate CloudWatch invocation logs
     def assert_log_events():
-        # the default and maximum limit is 10k events
-        response = aws_client.logs.filter_log_events(
+        # Using a paginator because the default and maximum limit is 10k events and
+        # tests against AWS were missing invocations because they contained a `nextToken`
+        paginator = aws_client.logs.get_paginator("filter_log_events")
+        page_iterator = paginator.paginate(
             logGroupName=f"/aws/lambda/{function_name}",
         )
-        assert "nextToken" not in response  # guard against pagination
-        log_events = response["events"]
-        invocation_count = len(
-            [event["message"] for event in log_events if event["message"].startswith("REPORT")]
-        )
+        invocation_count = 0
+        for page in page_iterator:
+            log_events = page["events"]
+            invocation_count += len(
+                [event["message"] for event in log_events if event["message"].startswith("REPORT")]
+            )
         # assert invocation_count == num_invocations
         return invocation_count
 
