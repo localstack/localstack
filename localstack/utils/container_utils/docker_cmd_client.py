@@ -427,16 +427,20 @@ class CmdDockerClient(ContainerClient):
         if since:
             cmd += [_to_timestamp(since)]
         if until:
-            cmd += [_to_timestamp(until)]
+            cmd += ["--until", _to_timestamp(until)]
         if filters:
-            cmd += [json.dumps(filters)]
+            filter_pairs = [f"{key}={value}" for (key, value) in filters.items()]
+            cmd += ["--filter", ",".join(filter_pairs)]
 
         process: subprocess.Popen = run(
             cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.STDOUT
         )
 
         for msg in CancellableProcessStream(process):
-            yield json.loads(msg)
+            try:
+                yield json.loads(msg)
+            except json.JSONDecodeError as e:
+                LOG.warning("Error decoding docker event %s: %s", msg, e)
 
     def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[dict, list, str]]:
         cmd = self._docker_cmd()

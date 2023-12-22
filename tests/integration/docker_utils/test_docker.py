@@ -1054,9 +1054,10 @@ class TestDockerClient:
         q = queue.Queue()
 
         should_stop = False
+        container_name = _random_container_name()
 
         def stream_messages(*_):
-            for event in docker_client.events():
+            for event in docker_client.events(filters={"id": "container_name"}):
                 if should_stop:
                     break
                 q.put(event)
@@ -1064,7 +1065,6 @@ class TestDockerClient:
         start_thread(stream_messages, name="docker-events-poller")
 
         # run a container to generate some events
-        container_name = _random_container_name()
         id = docker_client.create_container(
             "alpine",
             name=container_name,
