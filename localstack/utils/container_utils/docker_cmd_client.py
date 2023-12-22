@@ -6,6 +6,7 @@ import os
 import re
 import shlex
 import subprocess
+from datetime import datetime
 from typing import Dict, Generator, List, Optional, Tuple, Union
 
 from localstack import config
@@ -408,9 +409,27 @@ class CmdDockerClient(ContainerClient):
 
         return CancellableProcessStream(process)
 
-    def events(self) -> Generator[Dict, None, None]:
+    def events(
+        self,
+        since: Optional[Union[datetime, int]] = None,
+        until: Optional[Union[datetime, int]] = None,
+        filters: Optional[Dict] = None,
+    ) -> Generator[Dict, None, None]:
         cmd = self._docker_cmd()
         cmd += ["events", "--format", "{{json .}}"]
+
+        def _to_timestamp(value: Union[datetime, int]):
+            if isinstance(value, datetime):
+                return value.timestamp()
+            else:
+                return value
+
+        if since:
+            cmd += [_to_timestamp(since)]
+        if until:
+            cmd += [_to_timestamp(until)]
+        if filters:
+            cmd += [json.dumps(filters)]
 
         process: subprocess.Popen = run(
             cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.STDOUT

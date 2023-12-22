@@ -6,6 +6,7 @@ import queue
 import re
 import socket
 import threading
+from datetime import datetime
 from time import sleep
 from typing import Dict, Generator, List, Optional, Tuple, Union, cast
 from urllib.parse import quote
@@ -361,8 +362,13 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def events(self) -> Generator[Dict, None, None]:
-        yield from self.client().events(decode=True)
+    def events(
+        self,
+        since: Optional[Union[datetime, int]] = None,
+        until: Optional[Union[datetime, int]] = None,
+        filters: Optional[Dict] = None,
+    ) -> Generator[Dict, None, None]:
+        yield from self.client().events(since=since, until=until, filters=filters, decode=True)
 
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
         try:
