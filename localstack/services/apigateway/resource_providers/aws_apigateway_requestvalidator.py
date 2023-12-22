@@ -64,8 +64,8 @@ class ApiGatewayRequestValidatorProvider(ResourceProvider[ApiGatewayRequestValid
         response = api.create_request_validator(
             name=model["Name"],
             restApiId=model["RestApiId"],
-            validateRequestBody=model["ValidateRequestBody"],
-            validateRequestParameters=model["ValidateRequestParameters"],
+            validateRequestBody=model.get("ValidateRequestBody", False),
+            validateRequestParameters=model.get("ValidateRequestParameters", False),
         )
         model["RequestValidatorId"] = response["id"]
         # FIXME error happens when other resources try to reference this one

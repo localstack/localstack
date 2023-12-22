@@ -114,6 +114,28 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    def test_parallel_state_order(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(SfnNoneRecursiveParallelTransformer())
+        template = ST.load_sfn_template(ST.PARALLEL_STATE_ORDER)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_map_state(
         self,
         aws_client,
@@ -122,6 +144,27 @@ class TestBaseScenarios:
         sfn_snapshot,
     ):
         template = ST.load_sfn_template(ST.MAP_STATE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_state_no_processor_config(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_NO_PROCESSOR_CONFIG)
         definition = json.dumps(template)
 
         exec_input = json.dumps({})

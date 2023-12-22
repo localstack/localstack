@@ -553,12 +553,7 @@ class Preprocessor(ASLParserVisitor):
                 typ=States,
                 raise_on_missing=ValueError(f"Expected a States declaration at '{ctx.getText()}'."),
             ),
-            processor_config=props.get(
-                typ=ProcessorConfig,
-                raise_on_missing=ValueError(
-                    f"Expected a ProcessorConfig declaration at '{ctx.getText()}'."
-                ),
-            ),
+            processor_config=props.get(typ=ProcessorConfig),
         )
 
     def visitIterator_decl(self, ctx: ASLParser.Iterator_declContext) -> IteratorDecl:

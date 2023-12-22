@@ -21,6 +21,7 @@ from localstack.aws.api.s3 import (
     InvalidBucketName,
     InventoryConfiguration,
     InventoryId,
+    KeyTooLongError,
     ObjectCannedACL,
     Permission,
     WebsiteConfiguration,
@@ -37,6 +38,7 @@ from localstack.services.s3.utils import (
     validate_dict_fields,
 )
 from localstack.utils.aws import arns
+from localstack.utils.strings import to_bytes
 
 # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 # bucket-owner-read + bucket-owner-full-control are allowed, but ignored for buckets
@@ -398,3 +400,16 @@ def validate_cors_configuration(cors_configuration: CORSConfiguration):
                 raise InvalidRequest(
                     f"Found unsupported HTTP method in CORS config. Unsupported method is {method}"
                 )
+
+
+def validate_object_key(object_key: str) -> None:
+    """
+    ref. https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html
+
+    """
+    if (len_key := len(to_bytes(object_key, encoding="UTF-8"))) > 1024:
+        raise KeyTooLongError(
+            "Your key is too long",
+            MaxSizeAllowed="1024",
+            Size=str(len_key),
+        )
