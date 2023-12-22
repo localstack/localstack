@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_events.py::test_rule_properties": {
+    "last_validated_date": "2023-12-01T14:03:52+00:00"
+  }
+}

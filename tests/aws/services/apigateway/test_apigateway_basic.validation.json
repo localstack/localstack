@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigateway_with_step_function_integration[DeleteStateMachine]": {
+    "last_validated_date": "2023-09-07T20:40:38+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigateway_with_step_function_integration[StartExecution]": {
+    "last_validated_date": "2023-09-07T20:40:26+00:00"
+  }
+}

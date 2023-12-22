@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_path_based_on_data": {
+    "last_validated_date": "2023-03-04T09:00:55+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_step_functions_calling_api_gateway": {
+    "last_validated_date": "2023-03-04T09:06:48+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_wait_for_callback": {
+    "last_validated_date": "2023-03-04T09:05:28+00:00"
+  }
+}

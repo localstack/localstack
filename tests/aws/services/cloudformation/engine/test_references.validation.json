@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/cloudformation/engine/test_references.py::TestDependsOn::test_depends_on_with_missing_reference": {
+    "last_validated_date": "2023-07-10T13:22:26+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_references.py::TestFnSub::test_fn_sub_cases": {
+    "last_validated_date": "2023-08-23T18:41:02+00:00"
+  }
+}

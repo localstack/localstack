@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_delete_item": {
+    "last_validated_date": "2023-05-16T20:28:05+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_get_item": {
+    "last_validated_date": "2023-05-16T20:27:38+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_update_get_item": {
+    "last_validated_date": "2023-05-16T20:28:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_list_secrets": {
+    "last_validated_date": "2023-06-22T11:59:49+00:00"
+  }
+}
