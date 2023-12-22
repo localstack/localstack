@@ -51,7 +51,7 @@ RAPID_ENTRYPOINT = "/var/rapid/init"
 InitializationType = Literal["on-demand", "provisioned-concurrency"]
 
 LAMBDA_DOCKERFILE = """FROM {base_img}
-COPY aws-lambda-rie {rapid_entrypoint}
+COPY init {rapid_entrypoint}
 COPY code/ /var/task
 """
 
@@ -177,24 +177,27 @@ def get_runtime_client_path() -> Path:
 def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
     if not function_version.config.runtime:
         raise NotImplementedError("Custom images are currently not supported")
-    src_init = get_runtime_client_path()
-    # copy init file
-    target_init = lambda_runtime_package.get_installer().get_executable_path()
-    shutil.copy(src_init, target_init)
-    target_init.chmod(0o755)
-    # copy code
+
     # create dockerfile
-    docker_file_path = target_path / "Dockerfile"
+    docker_file_path = target_path / ".." / "Dockerfile"
     docker_file = LAMBDA_DOCKERFILE.format(
         base_img=resolver.get_image_for_runtime(function_version.config.runtime),
         rapid_entrypoint=RAPID_ENTRYPOINT,
     )
     with docker_file_path.open(mode="w") as f:
         f.write(docker_file)
+
+    # copy init file
+    init_destination_path = target_path / ".." / "init"
+    src_init = f"{get_runtime_client_path()}/var/rapid/init"
+    shutil.copy(src_init, init_destination_path)
+    init_destination_path.chmod(0o755)
+
     try:
+        image_name = get_image_name_for_function(function_version)
         CONTAINER_CLIENT.build_image(
             dockerfile_path=str(docker_file_path),
-            image_name=get_image_name_for_function(function_version),
+            image_name=image_name,
         )
     except Exception as e:
         if LOG.isEnabledFor(logging.DEBUG):
