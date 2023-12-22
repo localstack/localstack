@@ -12,9 +12,15 @@ class ScenariosTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/catch_states_runtime.json5"
     )
     PARALLEL_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/parallel_state.json5")
+    PARALLEL_STATE_ORDER: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/parallel_state_order.json5"
+    )
     MAP_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_state.json5")
     MAP_STATE_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_legacy.json5"
+    )
+    MAP_STATE_NO_PROCESSOR_CONFIG: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_no_processor_config.json5"
     )
     MAP_ITEM_READER_BASE_LIST_OBJECTS_V2: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_list_objects_v2.json5"

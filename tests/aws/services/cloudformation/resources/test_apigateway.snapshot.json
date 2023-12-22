@@ -168,7 +168,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
-    "recorded-date": "05-07-2023, 20:11:14",
+    "recorded-date": "19-12-2023, 19:04:52",
     "recorded-content": {
       "get-resources": {
         "items": [
@@ -271,13 +271,10 @@
           "cacheNamespace": "<id:2>",
           "integrationResponses": {
             "200": {
-              "responseParameters": {},
-              "responseTemplates": {},
               "statusCode": "200"
             }
           },
           "passthroughBehavior": "NEVER",
-          "requestParameters": {},
           "requestTemplates": {
             "application/json": {
               "statusCode": 200
@@ -288,15 +285,12 @@
         },
         "methodResponses": {
           "200": {
-            "responseModels": {},
-            "responseParameters": {},
             "statusCode": "200"
           }
         },
         "requestModels": {
           "application/json": "<name:3>"
         },
-        "requestParameters": {},
         "requestValidatorId": "<id:6>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
