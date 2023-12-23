@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from json import JSONDecodeError
 from pathlib import Path
 from re import Pattern
@@ -111,7 +111,9 @@ class SnapshotSession:
                     content = fd.read()
                     full_state = json.loads(content or "{}")
                     recorded = {
-                        "recorded-date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
+                        "recorded-date": datetime.now(tz=timezone.utc).strftime(
+                            "%d-%m-%Y, %H:%M:%S"
+                        ),
                         "recorded-content": self.observed_state,
                     }
                     full_state[self.scope_key] = recorded
@@ -131,7 +133,9 @@ class SnapshotSession:
                     content = fd.read()
                     full_state = json.loads(content or "{}")
                     recorded = {
-                        "recorded-date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
+                        "recorded-date": datetime.now(tz=timezone.utc).strftime(
+                            "%d-%m-%Y, %H:%M:%S"
+                        ),
                         "recorded-content": raw_state,
                     }
                     full_state[self.scope_key] = recorded

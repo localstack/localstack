@@ -130,3 +130,41 @@ class TestACM:
         summaries = response.get("CertificateSummaryList") or []
         matching = [cert for cert in summaries if cert["CertificateArn"] == cert_arn]
         snapshot.match("list-cert", matching)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ExtendedKeyUsages",
+            "$..IssuedAt",
+            "$..KeyUsages",
+            "$..NotAfter",
+            "$..NotBefore",
+            "$..Status",
+        ]
+    )
+    def test_create_certificate_for_multiple_alternative_domains(
+        self, acm_request_certificate, aws_client, snapshot
+    ):
+        domain_name = "test.example.com"
+        subject_alternative_names = ["test.example.com", "another.domain.com"]
+        create_response = acm_request_certificate(
+            DomainName=domain_name, SubjectAlternativeNames=subject_alternative_names
+        )
+
+        cert_arn = create_response["CertificateArn"]
+
+        def _certificate_ready():
+            response = aws_client.acm.describe_certificate(CertificateArn=cert_arn)
+            # expecting FAILED on aws due to not requesting a valid certificate
+            # expecting ISSUED as default response from moto
+            assert response["Certificate"]["Status"] in ["FAILED", "ISSUED"]
+            response = aws_client.acm.list_certificates()
+            return response
+
+        response = retry(_certificate_ready, sleep=1, retries=30)
+        summaries = response.get("CertificateSummaryList")
+        cert = next((cert for cert in summaries if cert["CertificateArn"] == cert_arn), None)
+
+        cert_id = cert_arn.split("certificate/")[-1]
+        snapshot.add_transformer(snapshot.transform.regex(cert_id, "<cert-id>"))
+        snapshot.match("list-cert-subject-alternative-names", cert)

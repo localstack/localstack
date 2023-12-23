@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_queue_no_change": {
+    "last_validated_date": "2023-12-08T20:11:26+00:00"
+  }
+}

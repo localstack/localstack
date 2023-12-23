@@ -5542,6 +5542,38 @@ class TestS3:
         response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
         snapshot.match("list-obj-after-empty", response)
 
+    @markers.aws.only_localstack
+    @pytest.mark.xfail(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="Moto parsing fails on the form",
+    )
+    def test_s3_raw_request_routing(self, s3_bucket, aws_client):
+        """
+        When sending a PutObject request to S3 with a very raw request not having any indication that the request is
+        directed to S3 (no signing, no specific S3 endpoint) and encoded as a form, the request will go through the
+        ServiceNameParser handler.
+        This parser will try to parse the form data (which in our case is binary data), and will fail with a decoding
+        error. It also consumes the stream, and leaves S3 with no data to save.
+        This test verifies that this scenario works by skipping the service name thanks to the early S3 CORS handler.
+        """
+        default_endpoint = f"http://{get_localstack_host().host_and_port()}"
+        object_key = "test-routing-key"
+        key_url = f"{default_endpoint}/{s3_bucket}/{object_key}"
+        data = os.urandom(445529)
+        resp = requests.put(
+            key_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert resp.ok
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        assert get_object["Body"].read() == data
+
+        fake_key_url = f"{default_endpoint}/fake-bucket-{short_uid()}/{object_key}"
+        resp = requests.put(
+            fake_key_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert b"NoSuchBucket" in resp.content
+
 
 class TestS3MultiAccounts:
     @pytest.fixture

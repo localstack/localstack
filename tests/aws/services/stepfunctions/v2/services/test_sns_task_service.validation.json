@@ -1,0 +1,26 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[1]": {
+    "last_validated_date": "2023-09-03T11:33:55+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[HelloWorld]": {
+    "last_validated_date": "2023-09-03T11:33:23+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[None]": {
+    "last_validated_date": "2023-09-03T11:34:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[True]": {
+    "last_validated_date": "2023-09-03T11:34:10+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[]": {
+    "last_validated_date": "2023-09-03T11:34:40+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[message1]": {
+    "last_validated_date": "2023-09-03T11:33:39+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base_error_topic_arn": {
+    "last_validated_date": "2023-09-03T11:35:10+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_message_attributes": {
+    "last_validated_date": "2023-09-03T11:34:55+00:00"
+  }
+}

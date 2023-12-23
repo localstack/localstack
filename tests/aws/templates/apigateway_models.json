@@ -108,8 +108,7 @@
      "Ref": "apiC8550315"
     },
     "Name": "require-valid-body",
-    "ValidateRequestBody": true,
-    "ValidateRequestParameters": false
+    "ValidateRequestBody": true
    },
    "Metadata": {
     "aws:cdk:path": "ValidatorExampleStack/request-validator/Resource"

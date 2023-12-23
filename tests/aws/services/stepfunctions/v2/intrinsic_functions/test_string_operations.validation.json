@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_string_operations.py::TestStringOperations::test_string_split": {
+    "last_validated_date": "2023-11-28T09:19:26+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_string_operations.py::TestStringOperations::test_string_split_context_object": {
+    "last_validated_date": "2023-11-28T09:25:42+00:00"
+  }
+}

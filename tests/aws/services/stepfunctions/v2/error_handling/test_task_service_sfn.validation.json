@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sfn.py::TestTaskServiceSfn::test_start_execution_no_such_arn": {
+    "last_validated_date": "2023-06-30T07:50:17+00:00"
+  }
+}

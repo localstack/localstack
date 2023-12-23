@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_no_timeout": {
+    "last_validated_date": "2023-06-26T07:13:01+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_path_timeout": {
+    "last_validated_date": "2023-06-26T07:12:45+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_timeout": {
+    "last_validated_date": "2023-06-26T07:12:29+00:00"
+  }
+}

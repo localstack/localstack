@@ -1,0 +1,53 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_bucket_notification_with_invalid_filter_rules": {
+    "last_validated_date": "2023-08-04T22:56:12+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_delete_objects": {
+    "last_validated_date": "2023-08-04T22:55:37+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_filter_rules_case_insensitive": {
+    "last_validated_date": "2023-08-04T22:56:10+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_invalid_sqs_arn": {
+    "last_validated_date": "2023-08-04T22:56:15+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_key_encoding": {
+    "last_validated_date": "2023-08-04T22:55:45+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_multiple_invalid_sqs_arns": {
+    "last_validated_date": "2023-08-04T22:56:17+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_notifications_with_filter": {
+    "last_validated_date": "2023-08-04T22:56:08+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_and_object_removed": {
+    "last_validated_date": "2023-08-04T22:55:32+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_complete_multipart_upload": {
+    "last_validated_date": "2023-08-04T22:55:41+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_copy": {
+    "last_validated_date": "2023-08-04T22:55:27+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put": {
+    "last_validated_date": "2023-08-04T22:55:23+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put_with_presigned_url_upload": {
+    "last_validated_date": "2023-10-17T15:13:15+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_put_acl": {
+    "last_validated_date": "2023-08-04T22:56:22+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_delete_event": {
+    "last_validated_date": "2023-08-04T22:55:58+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_put_event": {
+    "last_validated_date": "2023-08-04T22:55:54+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_restore_object": {
+    "last_validated_date": "2023-07-12T23:18:19+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_xray_header": {
+    "last_validated_date": "2023-08-04T22:56:03+00:00"
+  }
+}
