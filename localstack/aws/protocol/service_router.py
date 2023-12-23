@@ -3,6 +3,7 @@ import os
 from typing import NamedTuple, Optional, Set
 
 import botocore
+from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.http import parse_dict_header
 
 import localstack
@@ -374,29 +375,39 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
         return None
 
     # 5. check the query / form-data
-    values = request.values
-    if "Action" in values:
-        # query / ec2 protocol requests always have an action and a version (the action is more significant)
-        query_candidates = [
-            service
-            for service in services.by_operation(values["Action"])
-            if services.get(service).protocol in ("ec2", "query")
-        ]
+    try:
+        values = request.values
+        if "Action" in values:
+            # query / ec2 protocol requests always have an action and a version (the action is more significant)
+            query_candidates = [
+                service
+                for service in services.by_operation(values["Action"])
+                if services.get(service).protocol in ("ec2", "query")
+            ]
 
-        if len(query_candidates) == 1:
-            return query_candidates[0]
+            if len(query_candidates) == 1:
+                return query_candidates[0]
 
-        if "Version" in values:
-            for service in list(query_candidates):
-                service_model = services.get(service)
-                if values["Version"] != service_model.api_version:
-                    # the combination of Version and Action is not unique, add matches to the candidates
-                    query_candidates.remove(service)
+            if "Version" in values:
+                for service in list(query_candidates):
+                    service_model = services.get(service)
+                    if values["Version"] != service_model.api_version:
+                        # the combination of Version and Action is not unique, add matches to the candidates
+                        query_candidates.remove(service)
 
-        if len(query_candidates) == 1:
-            return query_candidates[0]
+            if len(query_candidates) == 1:
+                return query_candidates[0]
 
-        candidates.update(query_candidates)
+            candidates.update(query_candidates)
+
+    except RequestEntityTooLarge:
+        # Some requests can be form-urlencoded but also contain binary data, which will fail the form parsing (S3 can
+        # do this). In that case, skip this step and continue to try to determine the service name. The exception is
+        # RequestEntityTooLarge even if the error is due to failed decoding.
+        LOG.debug(
+            "Failed to determine AWS service from request body because the form could not be parsed",
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
 
     # 6. resolve service spec conflicts
     resolved_conflict = resolve_conflicts(candidates, request)

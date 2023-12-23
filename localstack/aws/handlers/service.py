@@ -30,6 +30,12 @@ class ServiceNameParser(Handler):
     """
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        # Some early handlers can already determine the AWS service the request is directed to (the S3 CORS handler for
+        # example). If it is already set, we can skip the parsing of the request. It is very important for S3, because
+        # parsing the request will consume the data stream and prevent streaming.
+        if context.service:
+            return
+
         service = determine_aws_service_name(context.request)
 
         if not service:

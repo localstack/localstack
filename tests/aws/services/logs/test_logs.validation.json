@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_create_and_delete_log_stream": {
+    "last_validated_date": "2023-04-06T09:42:42+00:00"
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_list_tags_log_group": {
+    "last_validated_date": "2022-12-22T16:46:54+00:00"
+  },
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_put_subscription_filter_lambda": {
+    "last_validated_date": "2023-03-17T12:55:00+00:00"
+  }
+}

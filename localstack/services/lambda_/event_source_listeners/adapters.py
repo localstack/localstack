@@ -50,7 +50,7 @@ class EventSourceAdapter(ABC):
         callback=None,
         *,
         lock_discriminator,
-        parallelization_factor
+        parallelization_factor,
     ) -> int:
         pass
 
@@ -73,20 +73,22 @@ class EventSourceAsfAdapter(EventSourceAdapter):
         self.lambda_service = lambda_service
 
     def invoke(self, function_arn, context, payload, invocation_type, callback=None):
-        def _invoke(*args, **kwargs):
-            # split ARN ( a bit unnecessary since we build an ARN again in the service)
-            fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
+        # split ARN ( a bit unnecessary since we build an ARN again in the service)
+        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
+        function_name = fn_parts["function_name"]
+        request_id = gen_amzn_requestid()
 
+        def _invoke(*args, **kwargs):
             result = self.lambda_service.invoke(
                 # basically function ARN
-                function_name=fn_parts["function_name"],
+                function_name=function_name,
                 qualifier=fn_parts["qualifier"],
                 region=fn_parts["region_name"],
                 account_id=fn_parts["account_id"],
                 invocation_type=invocation_type,
                 client_context=json.dumps(context or {}),
                 payload=to_bytes(json.dumps(payload or {}, cls=BytesEncoder)),
-                request_id=gen_amzn_requestid(),
+                request_id=request_id,
             )
 
             if callback:
@@ -114,7 +116,8 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                         error=e,
                     )
 
-        thread = FuncThread(_invoke)
+        # TODO: think about scaling here because this spawns a new thread for every invoke without limits!
+        thread = FuncThread(_invoke, name=f"event-source-invoker-{function_name}-{request_id}")
         thread.start()
 
     def invoke_with_statuscode(
@@ -126,7 +129,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
         callback=None,
         *,
         lock_discriminator,
-        parallelization_factor
+        parallelization_factor,
     ) -> int:
         # split ARN ( a bit unnecessary since we build an ARN again in the service)
         fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()

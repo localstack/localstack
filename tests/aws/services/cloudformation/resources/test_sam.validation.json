@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_sam.py::test_sam_policies": {
+    "last_validated_date": "2023-07-11T16:08:53+00:00"
+  }
+}

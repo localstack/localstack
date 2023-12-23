@@ -1,0 +1,44 @@
+{
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_create_stack_with_policy": {
+    "last_validated_date": "2022-11-16T14:42:23+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_different_action_attribute": {
+    "last_validated_date": "2022-11-21T14:44:16+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_different_principal_attribute": {
+    "last_validated_date": "2022-11-16T10:01:36+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_empty_policy": {
+    "last_validated_date": "2022-11-10T11:40:34+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_not_json_policy": {
+    "last_validated_date": "2022-11-21T14:48:27+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_policy_during_update": {
+    "last_validated_date": "2022-11-17T10:09:28+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_policy_lifecycle": {
+    "last_validated_date": "2022-11-15T15:02:20+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_prevent_resource_deletion": {
+    "last_validated_date": "2022-10-28T10:29:11+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_prevent_stack_update": {
+    "last_validated_date": "2022-10-28T10:10:42+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_empty_policy_with_url": {
+    "last_validated_date": "2022-11-11T13:25:18+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_invalid_policy_with_url": {
+    "last_validated_date": "2022-11-11T13:07:44+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_policy_both_policy_and_url": {
+    "last_validated_date": "2022-11-11T13:19:19+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_policy_with_update_operation": {
+    "last_validated_date": "2022-11-17T10:04:31+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_policy_with_url": {
+    "last_validated_date": "2022-11-11T12:58:17+00:00"
+  }
+}
