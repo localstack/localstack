@@ -27,7 +27,6 @@ class BranchWorkerPool(BranchWorker.BranchWorkerComm):
     _termination_event: Final[threading.Event]
     _active_workers_num: int
 
-    _terminated: bool
     _terminated_with_error: Optional[ExecutionFailedEventDetails]
 
     def __init__(self, workers_num: int):
@@ -35,20 +34,17 @@ class BranchWorkerPool(BranchWorker.BranchWorkerComm):
         self._termination_event = threading.Event()
         self._active_workers_num = workers_num
 
-        self._terminated = False
         self._terminated_with_error = None
 
     def on_terminated(self, env: Environment):
-        if self._terminated:
+        if self._termination_event.is_set():
             return
-
         with self._mutex:
             end_program_state: ProgramState = env.program_state()
             if isinstance(end_program_state, ProgramError):
                 self._terminated_with_error = select_from_typed_dict(
                     typed_dict=ExecutionFailedEventDetails, obj=end_program_state.error or dict()
                 )
-                self._terminated = True
                 self._termination_event.set()
             else:
                 self._active_workers_num -= 1
