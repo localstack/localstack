@@ -142,16 +142,24 @@ class TestOpensearchProvider:
         assert len(compatible_versions) >= 20
         expected_compatible_versions = [
             {
+                "SourceVersion": "OpenSearch_2.10",
+                "TargetVersions": ["OpenSearch_2.11"],
+            },
+            {
+                "SourceVersion": "OpenSearch_2.9",
+                "TargetVersions": ["OpenSearch_2.10", "OpenSearch_2.11"],
+            },
+            {
                 "SourceVersion": "OpenSearch_2.7",
-                "TargetVersions": ["OpenSearch_2.9"],
+                "TargetVersions": ["OpenSearch_2.9", "OpenSearch_2.10", "OpenSearch_2.11"],
             },
             {
                 "SourceVersion": "OpenSearch_2.5",
-                "TargetVersions": ["OpenSearch_2.7", "OpenSearch_2.9"],
+                "TargetVersions": ["OpenSearch_2.7", "OpenSearch_2.9", "OpenSearch_2.10", "OpenSearch_2.11"],
             },
             {
                 "SourceVersion": "OpenSearch_2.3",
-                "TargetVersions": ["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9"],
+                "TargetVersions": ["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9", "OpenSearch_2.10", "OpenSearch_2.11"],
             },
             {
                 "SourceVersion": "OpenSearch_1.0",
@@ -172,6 +180,8 @@ class TestOpensearchProvider:
                     "OpenSearch_2.5",
                     "OpenSearch_2.7",
                     "OpenSearch_2.9",
+                    "OpenSearch_2.10",
+                    "OpenSearch_2.11",
                 ],
             },
             {
@@ -692,7 +702,7 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "2.9.0"
+            assert response.json()["version"]["number"] == "2.11.0"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"

@@ -15,6 +15,8 @@ from localstack.utils.common import get_arch
 
 # Internal representation of the OpenSearch versions (without the "OpenSearch_" prefix)
 _opensearch_install_versions = {
+    "2.11": "2.11.0",
+    "2.10": "2.10.0",
     "2.9": "2.9.0",
     "2.7": "2.7.0",
     "2.5": "2.5.0",
@@ -214,16 +216,28 @@ compatible_versions = [
     ),
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_1.3",
-        TargetVersions=["OpenSearch_2.3", "OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9"],
+        TargetVersions=["OpenSearch_2.3", "OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9", "OpenSearch_2.10", "OpenSearch_2.11"],
     ),
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_2.3",
-        TargetVersions=["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9"],
+        TargetVersions=["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9", "OpenSearch_2.10", "OpenSearch_2.11"],
     ),
     CompatibleVersionsMap(
-        SourceVersion="OpenSearch_2.5", TargetVersions=["OpenSearch_2.7", "OpenSearch_2.9"]
+        SourceVersion="OpenSearch_2.5",
+        TargetVersions=["OpenSearch_2.7", "OpenSearch_2.9", "OpenSearch_2.10", "OpenSearch_2.11"],
     ),
-    CompatibleVersionsMap(SourceVersion="OpenSearch_2.7", TargetVersions=["OpenSearch_2.9"]),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_2.7",
+        TargetVersions=["OpenSearch_2.9", "OpenSearch_2.10", "OpenSearch_2.11"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_2.9",
+        TargetVersions=["OpenSearch_2.10", "OpenSearch_2.11"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_2.10",
+        TargetVersions=["OpenSearch_2.11"],
+    ),
 ]
 
 
