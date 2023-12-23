@@ -14,6 +14,15 @@ def acm():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+@aws_provider(api="acm-pca")
+def acm_pca():
+    from localstack.services.acm_pca.provider import AcmPcaProvider
+    from localstack.services.moto import MotoFallbackDispatcher
+
+    provider = AcmPcaProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
 @aws_provider(api="apigateway")
 def apigateway():
     from localstack.services.apigateway.provider import ApigatewayProvider
