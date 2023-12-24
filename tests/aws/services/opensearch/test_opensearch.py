@@ -155,11 +155,22 @@ class TestOpensearchProvider:
             },
             {
                 "SourceVersion": "OpenSearch_2.5",
-                "TargetVersions": ["OpenSearch_2.7", "OpenSearch_2.9", "OpenSearch_2.10", "OpenSearch_2.11"],
+                "TargetVersions": [
+                    "OpenSearch_2.7",
+                    "OpenSearch_2.9",
+                    "OpenSearch_2.10",
+                    "OpenSearch_2.11",
+                ],
             },
             {
                 "SourceVersion": "OpenSearch_2.3",
-                "TargetVersions": ["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9", "OpenSearch_2.10", "OpenSearch_2.11"],
+                "TargetVersions": [
+                    "OpenSearch_2.5",
+                    "OpenSearch_2.7",
+                    "OpenSearch_2.9",
+                    "OpenSearch_2.10",
+                    "OpenSearch_2.11",
+                ],
             },
             {
                 "SourceVersion": "OpenSearch_1.0",
