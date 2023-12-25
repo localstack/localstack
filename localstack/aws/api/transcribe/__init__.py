@@ -17,6 +17,7 @@ MaxResults = int
 MaxSpeakers = int
 MediaSampleRateHertz = int
 MedicalMediaSampleRateHertz = int
+MedicalScribeChannelId = int
 ModelName = str
 NextToken = str
 NonEmptyString = str
@@ -103,6 +104,70 @@ class LanguageCode(str):
     en_NZ = "en-NZ"
     vi_VN = "vi-VN"
     sv_SE = "sv-SE"
+    ab_GE = "ab-GE"
+    ast_ES = "ast-ES"
+    az_AZ = "az-AZ"
+    ba_RU = "ba-RU"
+    be_BY = "be-BY"
+    bg_BG = "bg-BG"
+    bn_IN = "bn-IN"
+    bs_BA = "bs-BA"
+    ca_ES = "ca-ES"
+    ckb_IQ = "ckb-IQ"
+    ckb_IR = "ckb-IR"
+    cs_CZ = "cs-CZ"
+    cy_WL = "cy-WL"
+    el_GR = "el-GR"
+    et_ET = "et-ET"
+    eu_ES = "eu-ES"
+    fi_FI = "fi-FI"
+    gl_ES = "gl-ES"
+    gu_IN = "gu-IN"
+    ha_NG = "ha-NG"
+    hr_HR = "hr-HR"
+    hu_HU = "hu-HU"
+    hy_AM = "hy-AM"
+    is_IS = "is-IS"
+    ka_GE = "ka-GE"
+    kab_DZ = "kab-DZ"
+    kk_KZ = "kk-KZ"
+    kn_IN = "kn-IN"
+    ky_KG = "ky-KG"
+    lg_IN = "lg-IN"
+    lt_LT = "lt-LT"
+    lv_LV = "lv-LV"
+    mhr_RU = "mhr-RU"
+    mi_NZ = "mi-NZ"
+    mk_MK = "mk-MK"
+    ml_IN = "ml-IN"
+    mn_MN = "mn-MN"
+    mr_IN = "mr-IN"
+    mt_MT = "mt-MT"
+    no_NO = "no-NO"
+    or_IN = "or-IN"
+    pa_IN = "pa-IN"
+    pl_PL = "pl-PL"
+    ps_AF = "ps-AF"
+    ro_RO = "ro-RO"
+    rw_RW = "rw-RW"
+    si_LK = "si-LK"
+    sk_SK = "sk-SK"
+    sl_SI = "sl-SI"
+    so_SO = "so-SO"
+    sr_RS = "sr-RS"
+    su_ID = "su-ID"
+    sw_BI = "sw-BI"
+    sw_KE = "sw-KE"
+    sw_RW = "sw-RW"
+    sw_TZ = "sw-TZ"
+    sw_UG = "sw-UG"
+    tl_PH = "tl-PH"
+    tt_RU = "tt-RU"
+    ug_CN = "ug-CN"
+    uk_UA = "uk-UA"
+    uz_UZ = "uz-UZ"
+    wo_SN = "wo-SN"
+    zu_ZA = "zu-ZA"
 
 
 class MediaFormat(str):
@@ -118,6 +183,22 @@ class MediaFormat(str):
 
 class MedicalContentIdentificationType(str):
     PHI = "PHI"
+
+
+class MedicalScribeJobStatus(str):
+    QUEUED = "QUEUED"
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETED = "COMPLETED"
+
+
+class MedicalScribeLanguageCode(str):
+    en_US = "en-US"
+
+
+class MedicalScribeParticipantRole(str):
+    PATIENT = "PATIENT"
+    CLINICIAN = "CLINICIAN"
 
 
 class ModelStatus(str):
@@ -256,6 +337,10 @@ class ChannelDefinition(TypedDict, total=False):
 ChannelDefinitions = List[ChannelDefinition]
 
 
+class Summarization(TypedDict, total=False):
+    GenerateAbstractiveSummary: Boolean
+
+
 class LanguageIdSettings(TypedDict, total=False):
     VocabularyName: Optional[VocabularyName]
     VocabularyFilterName: Optional[VocabularyFilterName]
@@ -281,6 +366,7 @@ class CallAnalyticsJobSettings(TypedDict, total=False):
     ContentRedaction: Optional[ContentRedaction]
     LanguageOptions: Optional[LanguageOptions]
     LanguageIdSettings: Optional[LanguageIdSettingsMap]
+    Summarization: Optional[Summarization]
 
 
 DateTime = datetime
@@ -506,6 +592,10 @@ class DeleteLanguageModelRequest(ServiceRequest):
     ModelName: ModelName
 
 
+class DeleteMedicalScribeJobRequest(ServiceRequest):
+    MedicalScribeJobName: TranscriptionJobName
+
+
 class DeleteMedicalTranscriptionJobRequest(ServiceRequest):
     MedicalTranscriptionJobName: TranscriptionJobName
 
@@ -560,6 +650,52 @@ class GetCallAnalyticsJobRequest(ServiceRequest):
 
 class GetCallAnalyticsJobResponse(TypedDict, total=False):
     CallAnalyticsJob: Optional[CallAnalyticsJob]
+
+
+class GetMedicalScribeJobRequest(ServiceRequest):
+    MedicalScribeJobName: TranscriptionJobName
+
+
+class MedicalScribeChannelDefinition(TypedDict, total=False):
+    ChannelId: MedicalScribeChannelId
+    ParticipantRole: MedicalScribeParticipantRole
+
+
+MedicalScribeChannelDefinitions = List[MedicalScribeChannelDefinition]
+
+
+class MedicalScribeSettings(TypedDict, total=False):
+    ShowSpeakerLabels: Optional[Boolean]
+    MaxSpeakerLabels: Optional[MaxSpeakers]
+    ChannelIdentification: Optional[Boolean]
+    VocabularyName: Optional[VocabularyName]
+    VocabularyFilterName: Optional[VocabularyFilterName]
+    VocabularyFilterMethod: Optional[VocabularyFilterMethod]
+
+
+class MedicalScribeOutput(TypedDict, total=False):
+    TranscriptFileUri: Uri
+    ClinicalDocumentUri: Uri
+
+
+class MedicalScribeJob(TypedDict, total=False):
+    MedicalScribeJobName: Optional[TranscriptionJobName]
+    MedicalScribeJobStatus: Optional[MedicalScribeJobStatus]
+    LanguageCode: Optional[MedicalScribeLanguageCode]
+    Media: Optional[Media]
+    MedicalScribeOutput: Optional[MedicalScribeOutput]
+    StartTime: Optional[DateTime]
+    CreationTime: Optional[DateTime]
+    CompletionTime: Optional[DateTime]
+    FailureReason: Optional[FailureReason]
+    Settings: Optional[MedicalScribeSettings]
+    DataAccessRoleArn: Optional[DataAccessRoleArn]
+    ChannelDefinitions: Optional[MedicalScribeChannelDefinitions]
+    Tags: Optional[TagList]
+
+
+class GetMedicalScribeJobResponse(TypedDict, total=False):
+    MedicalScribeJob: Optional[MedicalScribeJob]
 
 
 class GetMedicalTranscriptionJobRequest(ServiceRequest):
@@ -761,6 +897,32 @@ class ListLanguageModelsResponse(TypedDict, total=False):
     Models: Optional[Models]
 
 
+class ListMedicalScribeJobsRequest(ServiceRequest):
+    Status: Optional[MedicalScribeJobStatus]
+    JobNameContains: Optional[TranscriptionJobName]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[MaxResults]
+
+
+class MedicalScribeJobSummary(TypedDict, total=False):
+    MedicalScribeJobName: Optional[TranscriptionJobName]
+    CreationTime: Optional[DateTime]
+    StartTime: Optional[DateTime]
+    CompletionTime: Optional[DateTime]
+    LanguageCode: Optional[MedicalScribeLanguageCode]
+    MedicalScribeJobStatus: Optional[MedicalScribeJobStatus]
+    FailureReason: Optional[FailureReason]
+
+
+MedicalScribeJobSummaries = List[MedicalScribeJobSummary]
+
+
+class ListMedicalScribeJobsResponse(TypedDict, total=False):
+    Status: Optional[MedicalScribeJobStatus]
+    NextToken: Optional[NextToken]
+    MedicalScribeJobSummaries: Optional[MedicalScribeJobSummaries]
+
+
 class ListMedicalTranscriptionJobsRequest(ServiceRequest):
     Status: Optional[TranscriptionJobStatus]
     JobNameContains: Optional[TranscriptionJobName]
@@ -902,6 +1064,22 @@ class StartCallAnalyticsJobRequest(ServiceRequest):
 
 class StartCallAnalyticsJobResponse(TypedDict, total=False):
     CallAnalyticsJob: Optional[CallAnalyticsJob]
+
+
+class StartMedicalScribeJobRequest(ServiceRequest):
+    MedicalScribeJobName: TranscriptionJobName
+    Media: Media
+    OutputBucketName: OutputBucketName
+    OutputEncryptionKMSKeyId: Optional[KMSKeyId]
+    KMSEncryptionContext: Optional[KMSEncryptionContextMap]
+    DataAccessRoleArn: DataAccessRoleArn
+    Settings: MedicalScribeSettings
+    ChannelDefinitions: Optional[MedicalScribeChannelDefinitions]
+    Tags: Optional[TagList]
+
+
+class StartMedicalScribeJobResponse(TypedDict, total=False):
+    MedicalScribeJob: Optional[MedicalScribeJob]
 
 
 class StartMedicalTranscriptionJobRequest(ServiceRequest):
@@ -1108,6 +1286,12 @@ class TranscribeApi:
     def delete_language_model(self, context: RequestContext, model_name: ModelName) -> None:
         raise NotImplementedError
 
+    @handler("DeleteMedicalScribeJob")
+    def delete_medical_scribe_job(
+        self, context: RequestContext, medical_scribe_job_name: TranscriptionJobName
+    ) -> None:
+        raise NotImplementedError
+
     @handler("DeleteMedicalTranscriptionJob")
     def delete_medical_transcription_job(
         self, context: RequestContext, medical_transcription_job_name: TranscriptionJobName
@@ -1152,6 +1336,12 @@ class TranscribeApi:
     def get_call_analytics_job(
         self, context: RequestContext, call_analytics_job_name: CallAnalyticsJobName
     ) -> GetCallAnalyticsJobResponse:
+        raise NotImplementedError
+
+    @handler("GetMedicalScribeJob")
+    def get_medical_scribe_job(
+        self, context: RequestContext, medical_scribe_job_name: TranscriptionJobName
+    ) -> GetMedicalScribeJobResponse:
         raise NotImplementedError
 
     @handler("GetMedicalTranscriptionJob")
@@ -1210,6 +1400,17 @@ class TranscribeApi:
         next_token: NextToken = None,
         max_results: MaxResults = None,
     ) -> ListLanguageModelsResponse:
+        raise NotImplementedError
+
+    @handler("ListMedicalScribeJobs")
+    def list_medical_scribe_jobs(
+        self,
+        context: RequestContext,
+        status: MedicalScribeJobStatus = None,
+        job_name_contains: TranscriptionJobName = None,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+    ) -> ListMedicalScribeJobsResponse:
         raise NotImplementedError
 
     @handler("ListMedicalTranscriptionJobs")
@@ -1284,6 +1485,22 @@ class TranscribeApi:
         settings: CallAnalyticsJobSettings = None,
         channel_definitions: ChannelDefinitions = None,
     ) -> StartCallAnalyticsJobResponse:
+        raise NotImplementedError
+
+    @handler("StartMedicalScribeJob")
+    def start_medical_scribe_job(
+        self,
+        context: RequestContext,
+        medical_scribe_job_name: TranscriptionJobName,
+        media: Media,
+        output_bucket_name: OutputBucketName,
+        data_access_role_arn: DataAccessRoleArn,
+        settings: MedicalScribeSettings,
+        output_encryption_kms_key_id: KMSKeyId = None,
+        kms_encryption_context: KMSEncryptionContextMap = None,
+        channel_definitions: MedicalScribeChannelDefinitions = None,
+        tags: TagList = None,
+    ) -> StartMedicalScribeJobResponse:
         raise NotImplementedError
 
     @handler("StartMedicalTranscriptionJob", expand=False)

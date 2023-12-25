@@ -41,6 +41,7 @@ CoolOffPeriodResponseHours = int
 CopySnapshotRequestPSU = str
 CoreCount = int
 CoreNetworkArn = str
+CpuManufacturerName = str
 CurrentGenerationFlag = bool
 CustomerGatewayId = str
 DITMaxResults = int
@@ -327,6 +328,7 @@ class AcceleratorManufacturer(str):
     amd = "amd"
     nvidia = "nvidia"
     xilinx = "xilinx"
+    habana = "habana"
 
 
 class AcceleratorName(str):
@@ -339,6 +341,9 @@ class AcceleratorName(str):
     t4 = "t4"
     vu9p = "vu9p"
     v100 = "v100"
+    a10g = "a10g"
+    h100 = "h100"
+    t4g = "t4g"
 
 
 class AcceleratorType(str):
@@ -1976,6 +1981,15 @@ class InstanceType(str):
     r7i_24xlarge = "r7i.24xlarge"
     r7i_48xlarge = "r7i.48xlarge"
     dl2q_24xlarge = "dl2q.24xlarge"
+    mac2_m2_metal = "mac2-m2.metal"
+    i4i_12xlarge = "i4i.12xlarge"
+    i4i_24xlarge = "i4i.24xlarge"
+    c7i_metal_24xl = "c7i.metal-24xl"
+    c7i_metal_48xl = "c7i.metal-48xl"
+    m7i_metal_24xl = "m7i.metal-24xl"
+    m7i_metal_48xl = "m7i.metal-48xl"
+    r7i_metal_24xl = "r7i.metal-24xl"
+    r7i_metal_48xl = "r7i.metal-48xl"
 
 
 class InstanceTypeHypervisor(str):
@@ -2730,6 +2744,11 @@ class SSEType(str):
     none = "none"
 
 
+class SecurityGroupReferencingSupportValue(str):
+    enable = "enable"
+    disable = "disable"
+
+
 class SelfServicePortal(str):
     enabled = "enabled"
     disabled = "disabled"
@@ -3440,6 +3459,7 @@ class AcceptTransitGatewayVpcAttachmentRequest(ServiceRequest):
 
 class TransitGatewayVpcAttachmentOptions(TypedDict, total=False):
     DnsSupport: Optional[DnsSupportValue]
+    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
     Ipv6Support: Optional[Ipv6SupportValue]
     ApplianceModeSupport: Optional[ApplianceModeSupportValue]
 
@@ -3948,6 +3968,7 @@ class AdvertiseByoipCidrRequest(ServiceRequest):
     Cidr: String
     Asn: Optional[String]
     DryRun: Optional[Boolean]
+    NetworkBorderGroup: Optional[String]
 
 
 class AsnAssociation(TypedDict, total=False):
@@ -3966,6 +3987,7 @@ class ByoipCidr(TypedDict, total=False):
     AsnAssociations: Optional[AsnAssociationSet]
     StatusMessage: Optional[String]
     State: Optional[ByoipCidrState]
+    NetworkBorderGroup: Optional[String]
 
 
 class AdvertiseByoipCidrResult(TypedDict, total=False):
@@ -8227,6 +8249,7 @@ class TransitGatewayRequestOptions(TypedDict, total=False):
     DefaultRouteTablePropagation: Optional[DefaultRouteTablePropagationValue]
     VpnEcmpSupport: Optional[VpnEcmpSupportValue]
     DnsSupport: Optional[DnsSupportValue]
+    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
     MulticastSupport: Optional[MulticastSupportValue]
     TransitGatewayCidrBlocks: Optional[TransitGatewayCidrBlockStringList]
 
@@ -8248,6 +8271,7 @@ class TransitGatewayOptions(TypedDict, total=False):
     PropagationDefaultRouteTableId: Optional[String]
     VpnEcmpSupport: Optional[VpnEcmpSupportValue]
     DnsSupport: Optional[DnsSupportValue]
+    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
     MulticastSupport: Optional[MulticastSupportValue]
 
 
@@ -8343,6 +8367,7 @@ class CreateTransitGatewayRouteTableResult(TypedDict, total=False):
 
 class CreateTransitGatewayVpcAttachmentRequestOptions(TypedDict, total=False):
     DnsSupport: Optional[DnsSupportValue]
+    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
     Ipv6Support: Optional[Ipv6SupportValue]
     ApplianceModeSupport: Optional[ApplianceModeSupportValue]
 
@@ -11355,6 +11380,7 @@ class ProcessorInfo(TypedDict, total=False):
     SupportedArchitectures: Optional[ArchitectureTypeList]
     SustainedClockSpeedInGhz: Optional[ProcessorSustainedClockSpeed]
     SupportedFeatures: Optional[SupportedAdditionalProcessorFeatureList]
+    Manufacturer: Optional[CpuManufacturerName]
 
 
 VirtualizationTypeList = List[VirtualizationType]
@@ -12718,6 +12744,7 @@ class SecurityGroupReference(TypedDict, total=False):
     GroupId: Optional[String]
     ReferencingVpcId: Optional[String]
     VpcPeeringConnectionId: Optional[String]
+    TransitGatewayId: Optional[String]
 
 
 SecurityGroupReferences = List[SecurityGroupReference]
@@ -16688,6 +16715,7 @@ class ModifyTransitGatewayOptions(TypedDict, total=False):
     RemoveTransitGatewayCidrBlocks: Optional[TransitGatewayCidrBlockStringList]
     VpnEcmpSupport: Optional[VpnEcmpSupportValue]
     DnsSupport: Optional[DnsSupportValue]
+    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
     AutoAcceptSharedAttachments: Optional[AutoAcceptSharedAttachmentsValue]
     DefaultRouteTableAssociation: Optional[DefaultRouteTableAssociationValue]
     AssociationDefaultRouteTableId: Optional[TransitGatewayRouteTableId]
@@ -16721,6 +16749,7 @@ class ModifyTransitGatewayResult(TypedDict, total=False):
 
 class ModifyTransitGatewayVpcAttachmentRequestOptions(TypedDict, total=False):
     DnsSupport: Optional[DnsSupportValue]
+    SecurityGroupReferencingSupport: Optional[SecurityGroupReferencingSupportValue]
     Ipv6Support: Optional[Ipv6SupportValue]
     ApplianceModeSupport: Optional[ApplianceModeSupportValue]
 
@@ -17137,6 +17166,7 @@ class ProvisionByoipCidrRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     PoolTagSpecifications: Optional[TagSpecificationList]
     MultiRegion: Optional[Boolean]
+    NetworkBorderGroup: Optional[String]
 
 
 class ProvisionByoipCidrResult(TypedDict, total=False):
@@ -18157,7 +18187,12 @@ class Ec2Api:
 
     @handler("AdvertiseByoipCidr")
     def advertise_byoip_cidr(
-        self, context: RequestContext, cidr: String, asn: String = None, dry_run: Boolean = None
+        self,
+        context: RequestContext,
+        cidr: String,
+        asn: String = None,
+        dry_run: Boolean = None,
+        network_border_group: String = None,
     ) -> AdvertiseByoipCidrResult:
         raise NotImplementedError
 
@@ -24169,6 +24204,7 @@ class Ec2Api:
         dry_run: Boolean = None,
         pool_tag_specifications: TagSpecificationList = None,
         multi_region: Boolean = None,
+        network_border_group: String = None,
     ) -> ProvisionByoipCidrResult:
         raise NotImplementedError
 

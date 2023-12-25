@@ -137,6 +137,12 @@ class OutpostResolverStatus(str):
     FAILED_DELETION = "FAILED_DELETION"
 
 
+class Protocol(str):
+    DoH = "DoH"
+    Do53 = "Do53"
+    DoH_FIPS = "DoH-FIPS"
+
+
 class ResolverAutodefinedReverseStatus(str):
     ENABLING = "ENABLING"
     ENABLED = "ENABLED"
@@ -393,6 +399,7 @@ class AssociateResolverEndpointIpAddressRequest(ServiceRequest):
     IpAddress: IpAddressUpdate
 
 
+ProtocolList = List[Protocol]
 SecurityGroupIds = List[ResourceId]
 
 
@@ -409,9 +416,10 @@ class ResolverEndpoint(TypedDict, total=False):
     StatusMessage: Optional[StatusMessage]
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
-    ResolverEndpointType: Optional[ResolverEndpointType]
     OutpostArn: Optional[OutpostArn]
     PreferredInstanceType: Optional[OutpostInstanceType]
+    ResolverEndpointType: Optional[ResolverEndpointType]
+    Protocols: Optional[ProtocolList]
 
 
 class AssociateResolverEndpointIpAddressResponse(TypedDict, total=False):
@@ -577,10 +585,11 @@ class CreateResolverEndpointRequest(ServiceRequest):
     SecurityGroupIds: SecurityGroupIds
     Direction: ResolverEndpointDirection
     IpAddresses: IpAddressesRequest
-    Tags: Optional[TagList]
-    ResolverEndpointType: Optional[ResolverEndpointType]
     OutpostArn: Optional[OutpostArn]
     PreferredInstanceType: Optional[OutpostInstanceType]
+    Tags: Optional[TagList]
+    ResolverEndpointType: Optional[ResolverEndpointType]
+    Protocols: Optional[ProtocolList]
 
 
 class CreateResolverEndpointResponse(TypedDict, total=False):
@@ -615,6 +624,7 @@ class TargetAddress(TypedDict, total=False):
     Ip: Optional[Ip]
     Port: Optional[Port]
     Ipv6: Optional[Ipv6]
+    Protocol: Optional[Protocol]
 
 
 TargetList = List[TargetAddress]
@@ -624,7 +634,7 @@ class CreateResolverRuleRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
     Name: Optional[Name]
     RuleType: RuleTypeOption
-    DomainName: DomainName
+    DomainName: Optional[DomainName]
     TargetIps: Optional[TargetList]
     ResolverEndpointId: Optional[ResourceId]
     Tags: Optional[TagList]
@@ -1309,6 +1319,7 @@ class UpdateResolverEndpointRequest(ServiceRequest):
     Name: Optional[Name]
     ResolverEndpointType: Optional[ResolverEndpointType]
     UpdateIpAddresses: Optional[UpdateIpAddresses]
+    Protocols: Optional[ProtocolList]
 
 
 class UpdateResolverEndpointResponse(TypedDict, total=False):
@@ -1426,10 +1437,11 @@ class Route53ResolverApi:
         direction: ResolverEndpointDirection,
         ip_addresses: IpAddressesRequest,
         name: Name = None,
-        tags: TagList = None,
-        resolver_endpoint_type: ResolverEndpointType = None,
         outpost_arn: OutpostArn = None,
         preferred_instance_type: OutpostInstanceType = None,
+        tags: TagList = None,
+        resolver_endpoint_type: ResolverEndpointType = None,
+        protocols: ProtocolList = None,
     ) -> CreateResolverEndpointResponse:
         raise NotImplementedError
 
@@ -1450,8 +1462,8 @@ class Route53ResolverApi:
         context: RequestContext,
         creator_request_id: CreatorRequestId,
         rule_type: RuleTypeOption,
-        domain_name: DomainName,
         name: Name = None,
+        domain_name: DomainName = None,
         target_ips: TargetList = None,
         resolver_endpoint_id: ResourceId = None,
         tags: TagList = None,
@@ -1902,6 +1914,7 @@ class Route53ResolverApi:
         name: Name = None,
         resolver_endpoint_type: ResolverEndpointType = None,
         update_ip_addresses: UpdateIpAddresses = None,
+        protocols: ProtocolList = None,
     ) -> UpdateResolverEndpointResponse:
         raise NotImplementedError
 
