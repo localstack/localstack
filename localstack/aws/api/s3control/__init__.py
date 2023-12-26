@@ -92,6 +92,8 @@ TagKeyString = str
 TagValueString = str
 TrafficDialPercentage = int
 VpcId = str
+HostId = str
+URI = str
 
 
 class AsyncOperationName(str):
@@ -430,6 +432,7 @@ class NoSuchPublicAccessBlockConfiguration(ServiceException):
     code: str = "NoSuchPublicAccessBlockConfiguration"
     sender_fault: bool = False
     status_code: int = 404
+    AccountId: Optional[AccountId]
 
 
 class NotFoundException(ServiceException):
@@ -448,6 +451,20 @@ class TooManyTagsException(ServiceException):
     code: str = "TooManyTagsException"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class NoSuchAccessPoint(ServiceException):
+    code: str = "NoSuchAccessPoint"
+    sender_fault: bool = False
+    status_code: int = 404
+    AccessPointName: Optional[AccessPointName]
+
+
+class InvalidURI(ServiceException):
+    code: str = "InvalidURI"
+    sender_fault: bool = False
+    status_code: int = 400
+    URI: Optional[URI]
 
 
 class AbortIncompleteMultipartUpload(TypedDict, total=False):

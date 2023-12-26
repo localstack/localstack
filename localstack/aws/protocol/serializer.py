@@ -1586,6 +1586,53 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         return value.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
+class S3ControlResponseSerializer(RestXMLResponseSerializer):
+    """
+    The ``S3ResponseSerializer`` adds some minor logic to handle S3 specific peculiarities with the error response
+    serialization and the root node tag.
+    """
+
+    def _serialize_error(
+        self,
+        error: ServiceException,
+        response: HttpResponse,
+        shape: StructureShape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        # Check if we need to add a namespace
+        attr = (
+            {"xmlns": operation_model.metadata.get("xmlNamespace")}
+            if "xmlNamespace" in operation_model.metadata
+            else {}
+        )
+        root = ETree.Element("ErrorResponse", attr)
+
+        error_tag = ETree.SubElement(root, "Error")
+        # the difference for S3Control is here: it adds additional error tags inside the Error tags, unlike other
+        # rest-xml services
+        self._add_error_tags(error, error_tag, mime_type)
+        request_id_element = ETree.SubElement(root, "RequestId")
+        request_id_element.text = request_id
+
+        host_id_element = ETree.SubElement(root, "HostId")
+        host_id_element.text = (
+            "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
+        )
+
+        self._add_additional_error_tags(vars(error), error_tag, shape, mime_type)
+        response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
+
+    @staticmethod
+    def _timestamp_iso8601(value: datetime) -> str:
+        """
+        This is very specific to S3, S3 returns an ISO8601 timestamp but with milliseconds always set to 000
+        Some SDKs are very picky about the length
+        """
+        return value.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
 class SqsQueryResponseSerializer(QueryResponseSerializer):
     """
     Unfortunately, SQS uses a rare interpretation of the XML protocol: It uses HTML entities within XML tag text nodes.
@@ -1761,6 +1808,7 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
         "sqs-query": SqsQueryResponseSerializer,
         "sqs": SqsResponseSerializer,
         "s3": S3ResponseSerializer,
+        "s3control": S3ControlResponseSerializer,
     }
     protocol_specific_serializers = {
         "query": QueryResponseSerializer,
