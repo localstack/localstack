@@ -11,6 +11,9 @@
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_empty": {
     "last_validated_date": "2023-09-05T17:17:14+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_regex_json_path": {
+    "last_validated_date": "2023-12-26T19:36:33+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result": {
     "last_validated_date": "2023-09-12T11:48:48+00:00"
   },

@@ -259,3 +259,34 @@ class TestSnfBase:
         d = execution_done["startDate"].astimezone(datetime.UTC)
         serialized_date = f'{d.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
         assert context_start_time == serialized_date
+
+    @markers.aws.validated
+    def test_state_pass_regex_json_path(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.PASS_RESULT_REGEX_JSON_PATH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {
+                "users": [
+                    {"year": 1997, "name": "User1997", "status": 0},
+                    {"year": 1998, "name": "User1998", "status": 0},
+                    {"year": 1999, "last": "User1999", "status": 0},
+                    {"year": 2000, "last": "User2000", "status": 1},
+                    {"year": 2001, "last": "User2001", "status": 2},
+                ]
+            }
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )

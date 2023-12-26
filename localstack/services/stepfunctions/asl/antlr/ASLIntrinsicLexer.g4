@@ -1,21 +1,18 @@
 lexer grammar ASLIntrinsicLexer;
 
+JSON_PATH_STRING
+    : DOLLAR JSON_PATH_BRACK? (DOT IDENTIFIER? JSON_PATH_BRACK?)*
+    ;
+
+fragment JSON_PATH_BRACK
+    : '[' (JSON_PATH_BRACK | ~[\]])* ']'
+    ;
+
 DOLLAR: '$';
-DOT: '.';
-STAR: '*';
-COMMA: ',';
 LPAREN: '(';
 RPAREN: ')';
-LBRACK: '[';
-RBRACK: ']';
-LDIAM: '<';
-RDIAM: '>';
-ATDOT: '@.';
-ATDOTLENGTHDASH: '@.length-';
-ANDAND: '&&';
-OROR: '||';
-EQEQ: '==';
-EQ: '=';
+COMMA: ',';
+DOT: '.';
 
 TRUE: 'true';
 FALSE: 'false';
@@ -39,7 +36,6 @@ MathRandom: 'MathRandom';
 MathAdd: 'MathAdd';
 StringSplit: 'StringSplit';
 UUID: 'UUID';
-
 
 STRING
    : '\'' (ESC | SAFECODEPOINT)*? '\''

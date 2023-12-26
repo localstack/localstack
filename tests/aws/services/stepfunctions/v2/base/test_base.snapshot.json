@@ -778,5 +778,241 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_regex_json_path": {
+    "recorded-date": "26-12-2023, 19:36:33",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "users": [
+                  {
+                    "year": 1997,
+                    "name": "User1997",
+                    "status": 0
+                  },
+                  {
+                    "year": 1998,
+                    "name": "User1998",
+                    "status": 0
+                  },
+                  {
+                    "year": 1999,
+                    "last": "User1999",
+                    "status": 0
+                  },
+                  {
+                    "year": 2000,
+                    "last": "User2000",
+                    "status": 1
+                  },
+                  {
+                    "year": 2001,
+                    "last": "User2001",
+                    "status": 2
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "users": [
+                  {
+                    "year": 1997,
+                    "name": "User1997",
+                    "status": 0
+                  },
+                  {
+                    "year": 1998,
+                    "name": "User1998",
+                    "status": 0
+                  },
+                  {
+                    "year": 1999,
+                    "last": "User1999",
+                    "status": 0
+                  },
+                  {
+                    "year": 2000,
+                    "last": "User2000",
+                    "status": 1
+                  },
+                  {
+                    "year": 2001,
+                    "last": "User2001",
+                    "status": 2
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State0",
+              "output": "[{\"year\":1997,\"name\":\"User1997\",\"status\":0},{\"year\":1998,\"name\":\"User1998\",\"status\":0},{\"year\":1999,\"last\":\"User1999\",\"status\":0}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": "[{\"year\":1997,\"name\":\"User1997\",\"status\":0},{\"year\":1998,\"name\":\"User1998\",\"status\":0},{\"year\":1999,\"last\":\"User1999\",\"status\":0}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "State1",
+              "output": "[{\"year\":1997,\"name\":\"User1997\",\"status\":0},{\"year\":1998,\"name\":\"User1998\",\"status\":0},{\"year\":1999,\"last\":\"User1999\",\"status\":0}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateEnteredEventDetails": {
+              "input": "[{\"year\":1997,\"name\":\"User1997\",\"status\":0},{\"year\":1998,\"name\":\"User1998\",\"status\":0},{\"year\":1999,\"last\":\"User1999\",\"status\":0}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State2"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "State2",
+              "output": {
+                "InputValue": [
+                  {
+                    "year": 1997,
+                    "name": "User1997",
+                    "status": 0
+                  },
+                  {
+                    "year": 1998,
+                    "name": "User1998",
+                    "status": 0
+                  },
+                  {
+                    "year": 1999,
+                    "last": "User1999",
+                    "status": 0
+                  }
+                ],
+                "FromInput": "[{\"year\":1997,\"name\":\"User1997\",\"status\":0},{\"year\":1998,\"name\":\"User1998\",\"status\":0}]"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": {
+                "InputValue": [
+                  {
+                    "year": 1997,
+                    "name": "User1997",
+                    "status": 0
+                  },
+                  {
+                    "year": 1998,
+                    "name": "User1998",
+                    "status": 0
+                  },
+                  {
+                    "year": 1999,
+                    "last": "User1999",
+                    "status": 0
+                  }
+                ],
+                "FromInput": "[{\"year\":1997,\"name\":\"User1997\",\"status\":0},{\"year\":1998,\"name\":\"User1998\",\"status\":0}]"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State3"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "State3",
+              "output": "[\"User1997\",\"User1998\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[\"User1997\",\"User1998\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
