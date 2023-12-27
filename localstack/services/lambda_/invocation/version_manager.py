@@ -230,6 +230,7 @@ class LambdaVersionManager:
                 lambda *args, **kwargs: record_cw_metric_error(
                     function_name=self.function.function_name,
                     region_name=self.function_version.id.region,
+                    function_arn=self.function_arn,
                 ),
                 name=f"record-cloudwatch-metric-error-{function_id.function_name}:{function_id.qualifier}",
             )
