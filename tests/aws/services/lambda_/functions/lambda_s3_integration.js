@@ -27,7 +27,7 @@ exports.handler = async (event, context, callback) => {
     const url = await getSignedUrl(
         s3,
         new PutObjectCommand({
-            Bucket: BUCKET_NAME,
+            Bucket: process.env.AWS_LAMBDA_FUNCTION_NAME,
             Key: 'key.png',
             ContentType: 'image/png'
         }),

@@ -3,7 +3,6 @@ import dataclasses
 import json
 import logging
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
@@ -105,17 +104,10 @@ def has_enough_time_for_retry(
     )
 
 
-# TODO: optimize this client configuration. Do we need to consider client caching here?
 CLIENT_CONFIG = Config(
-    # We shut down the LocalStack gateway last, hence this does not delay LocalStack cleanup anymore
-    connect_timeout=60,
-    read_timeout=60,
-    retries={"max_attempts": 2},
-    # Default 10; the thread pool executor spawns a maximum of 32 threads by default but multiple function versions
-    # might push beyond. We need to track how these connections and/or clients are shared.
-    # An insufficient pool can lead to connection timeout error with the warning:
-    # urllib3.connectionpool: Connection pool is full, discarding connection: localhost. Connection pool size: 1
-    # max_pool_connections=10,
+    connect_timeout=1,
+    read_timeout=5,
+    retries={"max_attempts": 0},
 )
 
 
@@ -142,32 +134,29 @@ class Poller:
             )
             function_timeout = self.version_manager.function_version.config.timeout
             while not self._shutdown_event.is_set():
-                response = sqs_client.receive_message(
+                # TODO: Fix proper shutdown causing EndpointConnectionError
+                # https://app.circleci.com/pipelines/github/localstack/localstack/17428/workflows/391fc320-0cec-4dd1-9e3b-d7511de61d12/jobs/132663/parallel-runs/2
+                # Test case (happens not every time!):
+                # tests.aws.services.cloudformation.resources.test_legacy.TestCloudFormation.test_updating_stack_with_iam_role
+                messages = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
-                    # TODO: consider replacing with short polling instead of long polling to prevent keeping connections open
-                    # WaitTimeSeconds=2,
-                    # Related: SQS event source mapping batches up to 10 messages:
-                    # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
-                    MaxNumberOfMessages=10,
+                    WaitTimeSeconds=2,
+                    # TODO: MAYBE: increase number of messages if single thread schedules invocations
+                    MaxNumberOfMessages=1,
                     VisibilityTimeout=function_timeout + 60,
                 )
-                if not response.get("Messages"):
+                if not messages.get("Messages"):
                     continue
-                LOG.debug("[%s] Got %d messages", self.event_queue_url, len(response["Messages"]))
-                # Guard against shutdown event arriving while polling SQS for messages
-                if not self._shutdown_event.is_set():
-                    for message in response["Messages"]:
-                        # NOTE: queueing within the thread pool executor could lead to double executions
-                        #  due to the visibility timeout
-                        self.invoker_pool.submit(self.handle_message, message)
+                message = messages["Messages"][0]
 
-                # Try short polling instead of long polling to reduce the number of open connections
-                time.sleep(2)
+                # NOTE: queueing within the thread pool executor could lead to double executions
+                #  due to the visibility timeout
+                self.invoker_pool.submit(self.handle_message, message)
         except Exception as e:
-            # TODO: if the gateway shuts down before the shutdown event even is set,
-            #  this log message might be sent regardless
+            # TODO gateway shuts down before shutdown event even is set, so this log message might be sent regardless
             if isinstance(e, ConnectionRefusedError) and self._shutdown_event.is_set():
                 return
+            # TODO: investigate what causes ReadTimeoutError (fixed with increasing read timeout?)
             LOG.error(
                 "Error while polling lambda events for function %s: %s",
                 self.version_manager.function_version.qualified_arn,
