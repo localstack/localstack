@@ -7,6 +7,7 @@ from typing import Optional, TypedDict
 from werkzeug import Response as WerkzeugResponse
 
 from localstack.aws.connect import connect_to
+from localstack.services.lambda_.api_utils import function_locators_from_arn
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import to_str
 from localstack.utils.time import now_utc
@@ -33,7 +34,8 @@ def publish_lambda_metric(metric, value, kwargs, region_name: Optional[str] = No
     # publish metric only if CloudWatch service is available
     if not is_api_enabled("cloudwatch"):
         return
-    cw_client = connect_to(region_name=region_name).cloudwatch
+    _, _, account_id, _ = function_locators_from_arn(kwargs.get("func_arn"))
+    cw_client = connect_to(aws_access_key_id=account_id, region_name=region_name).cloudwatch
     try:
         cw_client.put_metric_data(
             Namespace="AWS/Lambda",

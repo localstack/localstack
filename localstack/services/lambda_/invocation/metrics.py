@@ -5,12 +5,12 @@ from localstack.utils.cloudwatch.cloudwatch_util import publish_lambda_metric
 LOG = logging.getLogger(__name__)
 
 
-def record_cw_metric_invocation(function_name: str, region_name: str):
+def record_cw_metric_invocation(function_name: str, region_name: str, function_arn: str):
     try:
         publish_lambda_metric(
             "Invocations",
             1,
-            {"func_name": function_name},
+            {"func_name": function_name, "func_arn": function_arn},
             region_name=region_name,
         )
     except Exception as e:
