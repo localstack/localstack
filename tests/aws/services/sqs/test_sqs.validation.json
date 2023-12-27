@@ -59,6 +59,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_list_queues": {
     "last_validated_date": "2023-12-08T16:13:26+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_too_long": {
+    "last_validated_date": "2023-12-27T17:52:08+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_group_id_too_long": {
+    "last_validated_date": "2023-12-27T17:49:15+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_non_existent_queue": {
     "last_validated_date": "2023-11-14T12:04:10+00:00"
   },
