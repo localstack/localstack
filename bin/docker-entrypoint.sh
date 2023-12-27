@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Function to perform cleanup before exiting
+cleanup() {
+    echo "Caught SIGINT, exiting..."
+    exit 1
+}
+
+# Trap the SIGINT signal and call the cleanup function
+trap cleanup SIGINT
+
 set -eo pipefail
 shopt -s nullglob
 
