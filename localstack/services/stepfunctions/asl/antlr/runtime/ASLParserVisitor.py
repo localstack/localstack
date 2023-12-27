@@ -29,6 +29,11 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#version_decl.
+    def visitVersion_decl(self, ctx:ASLParser.Version_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#state_stmt.
     def visitState_stmt(self, ctx:ASLParser.State_stmtContext):
         return self.visitChildren(ctx)

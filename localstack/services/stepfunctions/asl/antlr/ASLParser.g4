@@ -12,6 +12,7 @@ program_decl
 
 top_layer_stmt
     : comment_decl
+    | version_decl
     | startat_decl
     | states_decl
     | timeout_seconds_decl
@@ -23,6 +24,10 @@ startat_decl
 
 comment_decl
     : COMMENT COLON keyword_or_string
+    ;
+
+version_decl
+    : VERSION COLON keyword_or_string
     ;
 
 state_stmt
