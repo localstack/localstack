@@ -489,6 +489,9 @@ def handle_prefix_filtering(event_pattern, value):
         elif isinstance(element, dict) and "anything-but" in element:
             if element.get("anything-but") != value:
                 return True
+        elif isinstance(element, dict) and "exists" in element:
+            if element.get("exists") and value:
+                return True
         elif "numeric" in element:
             return handle_numeric_conditions(element.get("numeric"), value)
         elif isinstance(element, list):
