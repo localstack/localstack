@@ -429,12 +429,12 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
                 raise InvalidParameterValueException(e.args[0])
 
 
-def check_fifo_id(fifo_id):
+def check_fifo_id(fifo_id, parameter):
     if not fifo_id:
         return
-    if len(fifo_id) >= 128:
+    if len(fifo_id) > 128:
         raise InvalidParameterValueException(
-            "Message deduplication ID and group ID must be shorter than 128 bytes"
+            f"Value {fifo_id} for parameter {parameter} is invalid. Reason: {parameter} can only include alphanumeric and punctuation characters. 1 to 128 in length."
         )
     if not re.match(sqs_constants.FIFO_MSG_REGEX, fifo_id):
         raise InvalidParameterValueException(
@@ -983,8 +983,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         check_message_content(message_body)
         check_attributes(message_attributes)
         check_attributes(message_system_attributes)
-        check_fifo_id(message_deduplication_id)
-        check_fifo_id(message_group_id)
+        check_fifo_id(message_deduplication_id, "MessageDeduplicationId")
+        check_fifo_id(message_group_id, "MessageGroupId")
 
         message = Message(
             MessageId=generate_message_id(),
