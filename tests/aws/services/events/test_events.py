@@ -428,6 +428,10 @@ class TestEvents:
         def get_message(queue_url):
             resp = sqs_client.receive_message(QueueUrl=queue_url)
             messages = resp.get("Messages")
+            if messages:
+                for message in messages:
+                    receipt_handle = message["ReceiptHandle"]
+                    sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
             if should_match:
                 assert len(messages) == 1
             return messages
