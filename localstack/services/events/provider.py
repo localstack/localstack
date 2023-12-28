@@ -423,7 +423,7 @@ def filter_event_with_content_base_parameter(pattern_value: list, event_value: s
             elif element_key.lower() == "exists":
                 if element_value and event_value:
                     return True
-                elif not element_value and not event_value:
+                elif not element_value and isinstance(event_value, object):
                     return True
             elif element_key.lower() == "cidr":
                 ips = [str(ip) for ip in ipaddress.IPv4Network(element_value)]
@@ -513,6 +513,14 @@ def get_two_lists_intersection(lst1: List, lst2: List) -> List:
     return lst3
 
 
+def event_pattern_prefix_bool_filter(event_pattern_filter_value_list: List[Dict[str, Any]]) -> bool:
+    for event_pattern_filter_value in event_pattern_filter_value_list:
+        if "exists" in event_pattern_filter_value:
+            return event_pattern_filter_value.get("exists")
+        else:
+            return True
+
+
 # TODO: refactor/simplify!
 def filter_event_based_on_event_format(
     self, rule_name: str, event_bus_name: str, event: Dict[str, Any]
@@ -521,7 +529,7 @@ def filter_event_based_on_event_format(
         for key, value in event_pattern_filter.items():
             fallback = object()
             event_value = event.get(key.lower(), event.get(key, fallback))
-            if event_value is fallback:
+            if event_value is fallback and event_pattern_prefix_bool_filter(value):
                 return False
 
             # 1. check if certain values in the event do not match the expected pattern
