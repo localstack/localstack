@@ -397,7 +397,7 @@ class TestEvents:
                 for entry_asserts in entries_asserts:
                     entries = entry_asserts[0]
                     for entry in entries:
-                        entry.setdefault("EventBusName", bus_name)
+                        entry["EventBusName"] = bus_name
                     message = self._put_entries_assert_results_sqs(
                         events_client,
                         sqs_client,
