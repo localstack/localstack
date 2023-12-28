@@ -356,6 +356,12 @@ class QueueUpdateWorker:
                 except Exception:
                     LOG.exception("error enqueueing delayed messages")
 
+                if config.SQS_ENABLE_MESSAGE_RETENTION_PERIOD:
+                    try:
+                        queue.remove_expired_messages()
+                    except Exception:
+                        LOG.exception("error removing expired messages")
+
     def start(self):
         with self.mutex:
             if self.thread:
