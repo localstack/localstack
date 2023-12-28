@@ -426,7 +426,9 @@ class TestEvents:
         assert not response.get("FailedEntryCount")
 
         def get_message(queue_url):
-            resp = sqs_client.receive_message(QueueUrl=queue_url)
+            resp = sqs_client.receive_message(
+                QueueUrl=queue_url, WaitTimeSeconds=5, MaxNumberOfMessages=1
+            )
             messages = resp.get("Messages")
             if messages:
                 for message in messages:
@@ -436,7 +438,7 @@ class TestEvents:
                 assert len(messages) == 1
             return messages
 
-        messages = retry(get_message, retries=5, sleep=1, queue_url=queue_url)
+        messages = retry(get_message, retries=5, queue_url=queue_url)
 
         if should_match:
             actual_event = json.loads(messages[0]["Body"])
@@ -553,8 +555,6 @@ class TestEvents:
         )
         snapshot.match("rule-exists-true", messages)
 
-        # updating snapshot against aws: receiving message is sometimes significantly delays,
-        # increase retry sleep time to 30 seconds and retry 10 times
         messages_not_exists = put_events_with_filter_to_sqs(
             pattern=test_event_pattern_not_exists,
             entries_asserts=entries_asserts_exists_false,
