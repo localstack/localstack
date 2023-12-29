@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, TypedDict
 
 import click
 import requests
+from rich.table import Table
 
 from localstack import __version__, config
 from localstack.cli.exceptions import CLIError
@@ -268,8 +269,6 @@ def _print_config_dict() -> None:
 
 
 def _print_config_table() -> None:
-    from rich.table import Table
-
     grid = Table(show_header=True)
     grid.add_column("Key")
     grid.add_column("Value")
@@ -291,7 +290,19 @@ def localstack_status(ctx: click.Context) -> None:
     Query status information about the currently running LocalStack instance.
     """
     if ctx.invoked_subcommand is None:
-        ctx.invoke(localstack_status.get_command(ctx, "docker"))
+        url = config.external_service_url()
+        try:
+            response = requests.get(f"{url}/_localstack/info")
+            response.raise_for_status()
+            data = response.json()
+            grid = Table(show_header=False)
+            for key, value in data.items():
+                grid.add_row(key, str(value))
+            console.print(grid)
+        except requests.ConnectionError:
+            if config.DEBUG:
+                console.print_exception()
+            raise CLIError("LocalStack is not running")
 
 
 @localstack_status.command(name="docker", short_help="Query LocalStack Docker status")
@@ -346,8 +357,6 @@ def _print_docker_status(format_: str) -> None:
 
 
 def _print_docker_status_table(status: DockerStatus) -> None:
-    from rich.table import Table
-
     grid = Table(show_header=False)
     grid.add_column()
     grid.add_column()
@@ -397,8 +406,6 @@ def cmd_status_services(format_: str) -> None:
 
 
 def _print_service_table(services: Dict[str, str]) -> None:
-    from rich.table import Table
-
     status_display = {
         "running": "[green]:heavy_check_mark:[/green] running",
         "starting": ":hourglass_flowing_sand: starting",
