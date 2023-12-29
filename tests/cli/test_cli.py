@@ -149,6 +149,19 @@ class TestCliContainerLifecycle:
         assert result.exit_code == 0
         assert "restarted" in result.output
 
+    def test_status(self, runner):
+        result = runner.invoke(cli, ["status"])
+        assert result.exit_code != 0
+
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "60"])
+
+        result = runner.invoke(cli, ["status"])
+
+        assert "is_docker" in result.output
+        assert "session_id" in result.output
+        assert "machine_id" in result.output
+
     def test_status_services(self, runner):
         result = runner.invoke(cli, ["status", "services"])
         assert result.exit_code != 0
