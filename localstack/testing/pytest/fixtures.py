@@ -2096,7 +2096,7 @@ def hosted_zone(aws_client):
 
 
 @pytest.fixture
-def clean_up(aws_client):
+def events_clean_up(aws_client):
     def _events_clean_up(
         bus_name=None,
         rule_name=None,
