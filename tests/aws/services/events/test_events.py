@@ -504,7 +504,10 @@ class TestEvents:
         snapshot.match("rule-anything-but", messages)
 
     @markers.aws.validated
-    def test_put_events_with_rule_exists_to_sqs(self, put_events_with_filter_to_sqs, snapshot):
+    def test_put_events_with_rule_exists_true_to_sqs(self, put_events_with_filter_to_sqs, snapshot):
+        """
+        Exists matching True condition: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-exists-matching
+        """
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("MD5OfBody"),
@@ -520,11 +523,6 @@ class TestEvents:
             "source": event_patter_details,
             "detail-type": event_patter_details,
             "detail": {"key": [{"exists": True}]},
-        }
-        test_event_pattern_not_exists = {
-            "source": ["core.update-account-command"],
-            "detail-type": ["core.update-account-command"],
-            "detail": {"key": [{"exists": False}]},
         }
         entries_exists = [
             {
@@ -544,16 +542,54 @@ class TestEvents:
             (entries_exists, True),
             (entries_not_exists, False),
         ]
-        entries_asserts_exists_false = [
-            (entries_exists, False),
-            (entries_not_exists, True),
-        ]
 
         messages = put_events_with_filter_to_sqs(
             pattern=test_event_pattern_exists,
             entries_asserts=entries_asserts,
         )
         snapshot.match("rule-exists-true", messages)
+
+    @markers.aws.validated
+    def test_put_events_with_rule_exists_false_to_sqs(
+        self, put_events_with_filter_to_sqs, snapshot
+    ):
+        """
+        Exists matching False condition: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-exists-matching
+        """
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+                snapshot.transform.jsonpath("$..EventBusName", "event-bus-name"),
+            ]
+        )
+
+        event_detail_exists = {"key": "value", "payload": "baz"}
+        event_detail_not_exists = {"no-key": "no-value", "payload": "baz"}
+        event_patter_details = ["core.update-account-command"]
+        test_event_pattern_not_exists = {
+            "source": event_patter_details,
+            "detail-type": event_patter_details,
+            "detail": {"key": [{"exists": False}]},
+        }
+        entries_exists = [
+            {
+                "Source": test_event_pattern_not_exists["source"][0],
+                "DetailType": test_event_pattern_not_exists["detail-type"][0],
+                "Detail": json.dumps(event_detail_exists),
+            }
+        ]
+        entries_not_exists = [
+            {
+                "Source": test_event_pattern_not_exists["source"][0],
+                "DetailType": test_event_pattern_not_exists["detail-type"][0],
+                "Detail": json.dumps(event_detail_not_exists),
+            }
+        ]
+        entries_asserts_exists_false = [
+            (entries_exists, False),
+            (entries_not_exists, True),
+        ]
 
         messages_not_exists = put_events_with_filter_to_sqs(
             pattern=test_event_pattern_not_exists,
