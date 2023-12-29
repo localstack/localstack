@@ -68,6 +68,9 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_retention": {
     "last_validated_date": "2023-12-28T23:48:08+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_retention_fifo": {
+    "last_validated_date": "2023-12-29T10:21:20+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_retention_with_inflight": {
     "last_validated_date": "2023-12-28T23:51:43+00:00"
   },

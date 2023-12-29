@@ -1062,6 +1062,35 @@ class TestSqsProvider:
         assert not result.get("Messages")
 
     @markers.aws.validated
+    def test_message_retention_fifo(self, sqs_create_queue, aws_client, monkeypatch):
+        monkeypatch.setattr(config, "SQS_ENABLE_MESSAGE_RETENTION_PERIOD", True)
+        # in AWS, message retention is at least 60 seconds
+        if is_aws_cloud():
+            retention = 60
+            wait_time = 5
+        else:
+            retention = 2
+            wait_time = 1
+
+        queue_name = f"queue-{short_uid()}.fifo"
+        attributes = {
+            "FifoQueue": "true",
+            "MessageRetentionPeriod": str(retention),
+            "ContentBasedDeduplication": "true",
+        }
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar1", MessageGroupId="1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar2", MessageGroupId="2")
+
+        # let messages expire
+        time.sleep(retention + wait_time)
+
+        # messages should have expired
+        result = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        assert not result.get("Messages")
+
+    @markers.aws.validated
     @pytest.mark.skip(reason="takes too long, run manually")
     def test_message_retention_with_inflight(self, sqs_create_queue, aws_client, monkeypatch):
         # tests whether an inflight message is correctly removed after it expires
