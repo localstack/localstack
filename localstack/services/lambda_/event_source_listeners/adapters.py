@@ -10,6 +10,7 @@ from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_.api_utils import function_locators_from_arn, qualifier_is_version
+from localstack.services.lambda_.event_source_listeners.exceptions import FunctionNotFoundError
 from localstack.services.lambda_.event_source_listeners.lambda_legacy import LegacyInvocationResult
 from localstack.services.lambda_.event_source_listeners.utils import event_source_arn_matches
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
@@ -50,7 +51,7 @@ class EventSourceAdapter(ABC):
         callback=None,
         *,
         lock_discriminator,
-        parallelization_factor
+        parallelization_factor,
     ) -> int:
         pass
 
@@ -126,7 +127,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
         callback=None,
         *,
         lock_discriminator,
-        parallelization_factor
+        parallelization_factor,
     ) -> int:
         # split ARN ( a bit unnecessary since we build an ARN again in the service)
         fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
@@ -207,6 +208,10 @@ class EventSourceAsfAdapter(EventSourceAdapter):
         function_name, qualifier, account, region = function_locators_from_arn(function_arn)
         store = lambda_stores[account][region]
         function = store.functions.get(function_name)
+
+        if not function:
+            raise FunctionNotFoundError(f"function not found: {function_arn}")
+
         if qualifier and qualifier != "$LATEST":
             if qualifier_is_version(qualifier):
                 version_number = qualifier
