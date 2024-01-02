@@ -20,6 +20,7 @@ from localstack.aws.api.secretsmanager import (
 )
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_from_typed_dict
@@ -348,6 +349,7 @@ class TestSecretsManager:
             Description="testing rotation of secrets",
         )
 
+        sm_snapshot.add_transformer(SortingTransformer("Versions", lambda x: x["CreatedDate"]))
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(cre_res, 0)
         )
@@ -381,10 +383,6 @@ class TestSecretsManager:
 
         list_secret_versions_1 = aws_client.secretsmanager.list_secret_version_ids(
             SecretId=secret_name
-        )
-
-        list_secret_versions_1["Versions"] = sorted(
-            list_secret_versions_1["Versions"], key=lambda x: x["CreatedDate"]
         )
 
         sm_snapshot.match("list_secret_versions_rotated_1", list_secret_versions_1)
