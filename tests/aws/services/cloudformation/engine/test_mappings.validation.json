@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_maximum_nesting_depth": {
+    "last_validated_date": "2023-06-12T14:47:24+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_minimum_nesting_depth": {
+    "last_validated_date": "2023-06-12T14:47:25+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_with_invalid_refs": {
+    "last_validated_date": "2023-06-12T14:47:24+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_mapping_with_nonexisting_key": {
+    "last_validated_date": "2023-06-12T14:47:23+00:00"
+  }
+}

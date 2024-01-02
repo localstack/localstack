@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put": {
+    "last_validated_date": "2023-08-04T22:41:37+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put_in_different_region": {
+    "last_validated_date": "2023-10-17T23:26:55+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_put_acl": {
+    "last_validated_date": "2023-08-04T23:08:43+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_restore_object": {
+    "last_validated_date": "2023-07-13T00:00:37+00:00"
+  }
+}

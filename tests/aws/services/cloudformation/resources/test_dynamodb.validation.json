@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PAY_PER_REQUEST]": {
+    "last_validated_date": "2023-08-28T10:35:02+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PROVISIONED]": {
+    "last_validated_date": "2023-08-28T10:34:41+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_default_name_for_table": {
+    "last_validated_date": "2023-08-28T10:34:19+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_global_table": {
+    "last_validated_date": "2023-12-01T11:54:13+00:00"
+  }
+}

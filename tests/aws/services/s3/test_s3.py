@@ -2770,6 +2770,77 @@ class TestS3:
         assert completed_object["Body"].read() == to_bytes(body)
 
     @markers.aws.only_localstack
+    def test_upload_part_chunked_cancelled_valid_etag(self, s3_bucket, aws_client):
+        """
+        When using async-type requests, it's possible to cancel them inflight. This will make the request body
+        incomplete, and will fail during the stream decoding. We can simulate this with body by passing an incomplete
+        body, which triggers the same kind of exception.
+        This test is to avoid regression for https://github.com/localstack/localstack/issues/9851
+        """
+        body = "Hello Blob"
+        precalculated_etag = hashlib.md5(body.encode()).hexdigest()
+        headers = {
+            "Authorization": mock_aws_request_headers(
+                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            )["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
+        }
+
+        key_name = "test-multipart-chunked"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        upload_id = response["UploadId"]
+
+        # # upload the invalid part 1
+        invalid_data = (
+            "\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+        url = f"{config.internal_service_url()}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
+
+        response = requests.put(url, invalid_data, headers=headers, verify=False)
+        assert response.status_code == 500
+
+        # now re-upload the valid part and assert that the part was correctly uploaded
+        data = (
+            "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+        response = requests.put(url, data, headers=headers, verify=False)
+        assert response.ok
+
+        part_etag = response.headers.get("ETag")
+        assert not response.content
+
+        # validate that the object etag is the same as the pre-calculated one
+        assert part_etag.strip('"') == precalculated_etag
+
+        multipart_upload_parts = [
+            {
+                "ETag": part_etag,
+                "PartNumber": 1,
+            }
+        ]
+
+        aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+
+        completed_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        assert completed_object["Body"].read() == to_bytes(body)
+
+    @markers.aws.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
         # Write contents to memory rather than a file.
         data = "123gzipfile"
@@ -5470,6 +5541,38 @@ class TestS3:
 
         response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
         snapshot.match("list-obj-after-empty", response)
+
+    @markers.aws.only_localstack
+    @pytest.mark.xfail(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="Moto parsing fails on the form",
+    )
+    def test_s3_raw_request_routing(self, s3_bucket, aws_client):
+        """
+        When sending a PutObject request to S3 with a very raw request not having any indication that the request is
+        directed to S3 (no signing, no specific S3 endpoint) and encoded as a form, the request will go through the
+        ServiceNameParser handler.
+        This parser will try to parse the form data (which in our case is binary data), and will fail with a decoding
+        error. It also consumes the stream, and leaves S3 with no data to save.
+        This test verifies that this scenario works by skipping the service name thanks to the early S3 CORS handler.
+        """
+        default_endpoint = f"http://{get_localstack_host().host_and_port()}"
+        object_key = "test-routing-key"
+        key_url = f"{default_endpoint}/{s3_bucket}/{object_key}"
+        data = os.urandom(445529)
+        resp = requests.put(
+            key_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert resp.ok
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        assert get_object["Body"].read() == data
+
+        fake_key_url = f"{default_endpoint}/fake-bucket-{short_uid()}/{object_key}"
+        resp = requests.put(
+            fake_key_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert b"NoSuchBucket" in resp.content
 
 
 class TestS3MultiAccounts:

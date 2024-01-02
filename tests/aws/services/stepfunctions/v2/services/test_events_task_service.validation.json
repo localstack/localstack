@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_base": {
+    "last_validated_date": "2023-09-12T08:45:20+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_malformed_detail": {
+    "last_validated_date": "2023-09-12T08:51:57+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_no_source": {
+    "last_validated_date": "2023-09-12T11:17:16+00:00"
+  }
+}

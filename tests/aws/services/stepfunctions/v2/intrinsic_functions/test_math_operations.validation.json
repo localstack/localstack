@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_add": {
+    "last_validated_date": "2023-09-13T21:07:34+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_random": {
+    "last_validated_date": "2023-02-13T13:35:48+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_random_seeded": {
+    "last_validated_date": "2023-02-13T13:35:50+00:00"
+  }
+}

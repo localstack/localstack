@@ -1346,5 +1346,39 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_too_long": {
+    "recorded-date": "27-12-2023, 17:52:08",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa for parameter MessageDeduplicationId is invalid. Reason: MessageDeduplicationId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_group_id_too_long": {
+    "recorded-date": "27-12-2023, 17:49:16",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa for parameter MessageGroupId is invalid. Reason: MessageGroupId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

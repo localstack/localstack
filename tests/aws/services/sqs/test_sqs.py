@@ -621,6 +621,52 @@ class TestSqsProvider:
         assert message_sent_hash == message_received_hash
 
     @markers.aws.validated
+    def test_message_deduplication_id_too_long(self, sqs_create_queue, aws_client, snapshot):
+        # see issue https://github.com/localstack/localstack/issues/6612
+        queue_name = f"queue-{short_uid()}.fifo"
+        attributes = {"FifoQueue": "true"}
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Hello World!",
+            MessageGroupId="test",
+            MessageDeduplicationId="a" * 128,
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.send_message(
+                QueueUrl=queue_url,
+                MessageBody="Hello World!",
+                MessageGroupId="test",
+                MessageDeduplicationId="a" * 129,
+            )
+        snapshot.match("error-response", e.value.response)
+
+    @markers.aws.validated
+    def test_message_group_id_too_long(self, sqs_create_queue, aws_client, snapshot):
+        # see issue https://github.com/localstack/localstack/issues/6612
+        queue_name = f"queue-{short_uid()}.fifo"
+        attributes = {"FifoQueue": "true"}
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Hello World!",
+            MessageGroupId="a" * 128,
+            MessageDeduplicationId="1",
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.send_message(
+                QueueUrl=queue_url,
+                MessageBody="Hello World!",
+                MessageGroupId="a" * 129,
+                MessageDeduplicationId="2",
+            )
+        snapshot.match("error-response", e.value.response)
+
+    @markers.aws.validated
     def test_create_queue_with_different_attributes_raises_exception(
         self, sqs_create_queue, snapshot, aws_client
     ):

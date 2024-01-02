@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/api/test_nested_stacks.py::test_nested_output_in_params": {
+    "last_validated_date": "2023-02-07T09:57:47+00:00"
+  }
+}

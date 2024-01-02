@@ -1,0 +1,32 @@
+{
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_equals": {
+    "last_validated_date": "2023-06-22T11:14:08+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_equals_path": {
+    "last_validated_date": "2023-03-01T14:29:11+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_greater_than": {
+    "last_validated_date": "2023-03-01T14:30:11+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_greater_than_equals": {
+    "last_validated_date": "2023-03-01T14:30:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_greater_than_equals_path": {
+    "last_validated_date": "2023-03-01T14:30:46+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_greater_than_path": {
+    "last_validated_date": "2023-03-01T14:30:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_less_than": {
+    "last_validated_date": "2023-03-01T14:30:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_less_than_equals": {
+    "last_validated_date": "2023-03-01T14:31:10+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_less_than_equals_path": {
+    "last_validated_date": "2023-03-01T14:31:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_less_than_path": {
+    "last_validated_date": "2023-03-01T14:31:00+00:00"
+  }
+}

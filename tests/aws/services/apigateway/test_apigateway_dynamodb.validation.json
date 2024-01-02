@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_error_aws_proxy_not_supported": {
+    "last_validated_date": "2023-02-26T11:45:17+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[PutItem]": {
+    "last_validated_date": "2023-07-13T15:42:32+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Query]": {
+    "last_validated_date": "2023-07-13T15:42:55+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Scan]": {
+    "last_validated_date": "2023-07-13T15:43:27+00:00"
+  }
+}

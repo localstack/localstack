@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_fifo_with_deduplication": {
+    "last_validated_date": "2023-11-27T20:27:29+00:00"
+  }
+}

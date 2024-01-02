@@ -1,0 +1,26 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_gateway_request_validator": {
+    "last_validated_date": "2023-07-27T15:59:26+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_delete_deployments[False]": {
+    "last_validated_date": "2023-09-07T17:20:47+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_delete_deployments[True]": {
+    "last_validated_date": "2023-09-07T17:27:48+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_update_deployments": {
+    "last_validated_date": "2023-09-11T10:12:50+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestDocumentations::test_documentation_parts_and_versions": {
+    "last_validated_date": "2023-08-07T20:02:13+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestStages::test_create_update_stages": {
+    "last_validated_date": "2023-10-11T15:39:23+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestUsagePlans::test_api_key_required_for_methods": {
+    "last_validated_date": "2023-07-27T15:57:20+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestUsagePlans::test_usage_plan_crud": {
+    "last_validated_date": "2023-07-28T06:30:23+00:00"
+  }
+}
