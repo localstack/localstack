@@ -645,8 +645,10 @@ def backend_rotate_secret(
                     ),
                 )
                 if resp.get("FunctionError"):
-                    raise Exception
-        except Exception:
+                    data = json.loads(resp.get("Payload").read())
+                    raise Exception(data.get("errorType"))
+        except Exception as e:
+            LOG.debug("An exception (%s) has occurred in %s", str(e), rotation_lambda_arn)
             if pending_version:
                 raise pending_version.pop()
             # Fall through if there is no previously pending version so we'll "stuck" with a new
