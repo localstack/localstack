@@ -514,6 +514,7 @@ def fake_secret_remove_version_stages_from_old_versions(fn, self, version_stages
         del self.versions[version_no_stages]
 
 
+# Moto does not support rotate_immediately as an API parameter while the AWS API does
 @patch(SecretsManagerResponse.rotate_secret, pass_target=False)
 def rotate_secret(self) -> str:
     client_request_token = self._get_param("ClientRequestToken")
