@@ -48,13 +48,15 @@ def handler(event, context):
     """
     # Client setup.
     region = os.environ["AWS_REGION"]
-    endpoint_url = (
-        os.environ.get("AWS_ENDPOINT_URL") or f"https://secretsmanager.{region}.amazonaws.com"
-    )
-    verify = urlparse(endpoint_url).scheme == "https"
-    service_client = boto3.client(
-        "secretsmanager", endpoint_url=endpoint_url, verify=verify, region_name=region
-    )
+    endpoint_url = os.environ.get("AWS_ENDPOINT_URL")
+
+    if endpoint_url:
+        verify = urlparse(endpoint_url).scheme == "https"
+        service_client = boto3.client(
+            "secretsmanager", endpoint_url=endpoint_url, verify=verify, region_name=region
+        )
+    else:
+        service_client = boto3.client("secretsmanager", region_name=region)
 
     arn = event["SecretId"]
     token = event["ClientRequestToken"]
