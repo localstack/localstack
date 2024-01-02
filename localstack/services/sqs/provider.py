@@ -286,8 +286,10 @@ class CloudwatchPublishWorker:
 
         for account_id, region, store in sqs_stores.iter_stores():
             start = 0
-            batch_size = 1000
-            # can include up to 1000 metric queries for one put-metric-data call
+            # we can include up to 1000 metric queries for one put-metric-data call
+            #  and we currently include 3 metrics per queue
+            batch_size = 300
+
             while start < len(store.queues):
                 batch_data = []
                 # Process the current batch
@@ -314,7 +316,9 @@ class CloudwatchPublishWorker:
                         )
                     )
 
-                publish_sqs_metric_batch(account_id=account_id, region=region, data=batch_data)
+                publish_sqs_metric_batch(
+                    account_id=account_id, region=region, sqs_metric_batch_data=batch_data
+                )
                 # Update for the next batch
                 start += batch_size
 
