@@ -139,7 +139,7 @@ class TestSqsApproximateMetrics:
                 lambda: self._assert_approximate_metrics_for_queue(
                     aws_client.cloudwatch, queue_name=queue
                 ),
-                retries=70,  # should be reported every 60 seconds
+                retries=70,  # should be reported every 60 seconds on LS
                 sleep=10 if is_aws() else 1,
             )
 
