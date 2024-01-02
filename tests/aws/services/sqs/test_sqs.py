@@ -1091,32 +1091,43 @@ class TestSqsProvider:
         assert not result.get("Messages")
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="takes too long, run manually")
     def test_message_retention_with_inflight(self, sqs_create_queue, aws_client, monkeypatch):
         # tests whether an inflight message is correctly removed after it expires
         monkeypatch.setattr(config, "SQS_ENABLE_MESSAGE_RETENTION_PERIOD", True)
+        if is_aws_cloud():
+            message_retention_period = 60
+            visibility_timeout = 30
+            wait_time = 10
+        else:
+            message_retention_period = 6
+            visibility_timeout = 3
+            wait_time = 2
+
         queue_url = sqs_create_queue(
-            Attributes={"MessageRetentionPeriod": "60", "VisibilityTimeout": "30"}
+            Attributes={
+                "MessageRetentionPeriod": str(message_retention_period),
+                "VisibilityTimeout": str(visibility_timeout),
+            }
         )
 
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar1")
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar2")
 
-        # wait 40 of the 60 seconds message retention period. the given message should expire while in flight.
-        time.sleep(40)
+        # We need to wait for a time so that once we receive the message, the visibility timeout
+        # expiration happens after the message expiration via message retention period
+        time.sleep(message_retention_period - visibility_timeout + wait_time)
         response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
         assert response["Messages"][0]["Body"] == "foobar1"
         receipt_handle = response["Messages"][0]["ReceiptHandle"]
 
-        # message should be removed after 60 seconds (waited a total of 65 now)
-        time.sleep(25)
+        # all messages should be removed after the retention policy timeframe has passed
+        time.sleep(visibility_timeout - wait_time / 2)
 
-        # visibility timeout should have expired
         response = aws_client.sqs.receive_message(QueueUrl=queue_url)
         assert not response.get("Messages")
 
-        # wait until the visibility timeout of the first receive message has expired, should be removed
-        time.sleep(10)
+        # wait until the visibility timeout of the first receive message has expired, should be nonexistent
+        time.sleep(wait_time)
         response = aws_client.sqs.receive_message(QueueUrl=queue_url)
         assert not response.get("Messages")
 
