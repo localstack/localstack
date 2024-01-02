@@ -376,7 +376,7 @@ def _dump_events_to_files(events_with_added_uuid):
         LOG.info("Unable to dump events to tmp dir %s: %s", _get_events_tmp_dir(), e)
 
 
-def handle_numeric_conditions(conditions: List[Any], value: float):
+def handle_numeric_conditions(conditions: list[Any], value: float):
     for i in range(0, len(conditions), 2):
         if conditions[i] == "<" and not (value < conditions[i + 1]):
             return False
@@ -423,7 +423,7 @@ def filter_event_with_content_base_parameter(pattern_value: list, event_value: s
             elif element_key.lower() == "exists":
                 if element_value and event_value:
                     return True
-                elif not element_value and not event_value:
+                elif not element_value and isinstance(event_value, object):
                     return True
             elif element_key.lower() == "cidr":
                 ips = [str(ip) for ip in ipaddress.IPv4Network(element_value)]
@@ -489,6 +489,9 @@ def handle_prefix_filtering(event_pattern, value):
         elif isinstance(element, dict) and "anything-but" in element:
             if element.get("anything-but") != value:
                 return True
+        elif isinstance(element, dict) and "exists" in element:
+            if element.get("exists") and value:
+                return True
         elif "numeric" in element:
             return handle_numeric_conditions(element.get("numeric"), value)
         elif isinstance(element, list):
@@ -510,15 +513,23 @@ def get_two_lists_intersection(lst1: List, lst2: List) -> List:
     return lst3
 
 
+def event_pattern_prefix_bool_filter(event_pattern_filter_value_list: list[dict[str, Any]]) -> bool:
+    for event_pattern_filter_value in event_pattern_filter_value_list:
+        if "exists" in event_pattern_filter_value:
+            return event_pattern_filter_value.get("exists")
+        else:
+            return True
+
+
 # TODO: refactor/simplify!
 def filter_event_based_on_event_format(
-    self, rule_name: str, event_bus_name: str, event: Dict[str, Any]
+    self, rule_name: str, event_bus_name: str, event: dict[str, Any]
 ):
-    def filter_event(event_pattern_filter: Dict[str, Any], event: Dict[str, Any]):
+    def filter_event(event_pattern_filter: dict[str, Any], event: dict[str, Any]):
         for key, value in event_pattern_filter.items():
-            # match keys in the event in a case-agnostic way
-            event_value = event.get(key.lower(), event.get(key))
-            if event_value is None:
+            fallback = object()
+            event_value = event.get(key.lower(), event.get(key, fallback))
+            if event_value is fallback and event_pattern_prefix_bool_filter(value):
                 return False
 
             # 1. check if certain values in the event do not match the expected pattern
@@ -584,7 +595,7 @@ def filter_event_with_target_input_path(target: Dict, event: Dict) -> Dict:
     return event
 
 
-def process_events(event: Dict, targets: List[Dict]):
+def process_events(event: Dict, targets: list[Dict]):
     for target in targets:
         arn = target["Arn"]
         changed_event = filter_event_with_target_input_path(target, event)

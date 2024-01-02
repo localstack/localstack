@@ -1,0 +1,41 @@
+{
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[json]": {
+    "last_validated_date": "2022-08-11T08:55:35+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[yaml]": {
+    "last_validated_date": "2022-08-11T08:55:10+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_list_events_after_deployment": {
+    "last_validated_date": "2022-10-05T11:33:55+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_special_chars": {
+    "last_validated_date": "2022-08-05T11:03:43+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_lifecycle": {
+    "last_validated_date": "2023-11-28T12:24:40+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_name_creation": {
+    "last_validated_date": "2023-04-19T10:44:47+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_update_resources": {
+    "last_validated_date": "2022-08-29T22:13:26+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_blocked_stack_deletion": {
+    "last_validated_date": "2023-09-06T09:01:18+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_events_resource_types": {
+    "last_validated_date": "2023-02-15T09:46:53+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_linting_error_during_creation": {
+    "last_validated_date": "2022-11-11T07:10:14+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_name_conflicts": {
+    "last_validated_date": "2023-11-16T16:07:37+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_update_termination_protection": {
+    "last_validated_date": "2023-01-04T15:23:22+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_updating_an_updated_stack_sets_status": {
+    "last_validated_date": "2022-12-02T10:19:41+00:00"
+  }
+}

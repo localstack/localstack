@@ -1,0 +1,158 @@
+{
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_alias": {
+    "last_validated_date": "2023-04-13T09:29:27+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key": {
+    "last_validated_date": "2023-04-13T09:29:30+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
+    "last_validated_date": "2023-05-11T20:46:49+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
+    "last_validated_date": "2023-04-13T09:30:27+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_256]": {
+    "last_validated_date": "2023-04-13T09:30:28+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_1]": {
+    "last_validated_date": "2023-04-13T09:30:29+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_256]": {
+    "last_validated_date": "2023-04-13T09:30:30+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_1]": {
+    "last_validated_date": "2023-04-13T09:30:31+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_256]": {
+    "last_validated_date": "2023-04-13T09:30:32+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_error_messaging_for_invalid_keys": {
+    "last_validated_date": "2023-04-13T09:31:23+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_224-HMAC_SHA_224]": {
+    "last_validated_date": "2023-11-07T13:06:46+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_256-HMAC_SHA_256]": {
+    "last_validated_date": "2023-11-07T13:06:48+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_384-HMAC_SHA_384]": {
+    "last_validated_date": "2023-11-07T13:06:51+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_512-HMAC_SHA_512]": {
+    "last_validated_date": "2023-11-07T13:06:52+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[1024]": {
+    "last_validated_date": "2023-04-13T09:29:51+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[12]": {
+    "last_validated_date": "2023-04-13T09:29:50+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[1]": {
+    "last_validated_date": "2023-04-13T09:29:51+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[44]": {
+    "last_validated_date": "2023-04-13T09:29:50+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[91]": {
+    "last_validated_date": "2023-04-13T09:29:51+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[0]": {
+    "last_validated_date": "2023-04-13T09:29:53+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[1025]": {
+    "last_validated_date": "2023-04-13T09:29:54+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[None]": {
+    "last_validated_date": "2023-04-13T09:29:52+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_does_not_exist": {
+    "last_validated_date": "2023-04-13T09:29:34+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
+    "last_validated_date": "2023-07-13T09:58:37+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
+    "last_validated_date": "2023-11-07T13:05:57+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import": {
+    "last_validated_date": "2023-10-25T10:29:27+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key": {
+    "last_validated_date": "2023-04-13T09:34:18+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key_invalid_operations": {
+    "last_validated_date": "2023-04-13T09:31:06+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key": {
+    "last_validated_date": "2023-04-13T09:30:39+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_224-HMAC_SHA_256]": {
+    "last_validated_date": "2023-04-13T09:31:14+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_256-INVALID]": {
+    "last_validated_date": "2023-04-13T09:31:15+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_256-some different important message]": {
+    "last_validated_date": "2023-04-13T09:31:17+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_512-some important message]": {
+    "last_validated_date": "2023-04-13T09:31:18+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-INVALID-some important message]": {
+    "last_validated_date": "2023-04-13T09:31:19+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_plaintext_size_for_encrypt": {
+    "last_validated_date": "2023-04-13T09:31:24+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
+    "last_validated_date": "2023-07-13T09:59:29+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P256-ECDSA_SHA_256]": {
+    "last_validated_date": "2023-04-13T09:30:15+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P384-ECDSA_SHA_384]": {
+    "last_validated_date": "2023-04-13T09:30:19+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_SECG_P256K1-ECDSA_SHA_256]": {
+    "last_validated_date": "2023-04-13T09:30:22+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_256]": {
+    "last_validated_date": "2023-04-13T09:29:59+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_384]": {
+    "last_validated_date": "2023-04-13T09:30:02+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_512]": {
+    "last_validated_date": "2023-04-13T09:30:05+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_256]": {
+    "last_validated_date": "2023-04-13T09:30:09+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
+    "last_validated_date": "2023-04-13T09:30:12+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key": {
+    "last_validated_date": "2023-06-16T10:47:28+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair": {
+    "last_validated_date": "2023-06-16T15:51:27+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair_without_plaintext": {
+    "last_validated_date": "2023-06-16T15:51:43+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_without_plaintext": {
+    "last_validated_date": "2023-06-16T10:47:45+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key": {
+    "last_validated_date": "2023-05-11T12:40:24+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair": {
+    "last_validated_date": "2023-05-11T12:40:23+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_without_plaintext": {
+    "last_validated_date": "2023-05-11T12:40:23+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_without_plaintext": {
+    "last_validated_date": "2023-05-11T12:40:24+00:00"
+  }
+}

@@ -230,22 +230,32 @@ def is_env_not_false(env_var_name: str) -> bool:
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
 
-def load_environment(profile: str = None) -> Optional[str]:
-    """Loads the environment variables from ~/.localstack/{profile}.env
-    :param profile: the profile to load (defaults to "default")
-    :returns str: the name of the actually loaded profile (might be the fallback)
+def load_environment(profiles: str = None, env=os.environ) -> List[str]:
+    """Loads the environment variables from ~/.localstack/{profile}.env, for each profile listed in the profiles.
+    :param env: environment to load profile to. Defaults to `os.environ`
+    :param profiles: a comma separated list of profiles to load (defaults to "default")
+    :returns str: the list of the actually loaded profiles (might be the fallback)
     """
-    if not profile:
-        profile = "default"
+    if not profiles:
+        profiles = "default"
 
-    path = os.path.join(CONFIG_DIR, f"{profile}.env")
-    if not os.path.exists(path):
-        return None
-
+    profiles = profiles.split(",")
+    environment = {}
     import dotenv
 
-    dotenv.load_dotenv(path, override=False)
-    return profile
+    for profile in profiles:
+        profile = profile.strip()
+        path = os.path.join(CONFIG_DIR, f"{profile}.env")
+        if not os.path.exists(path):
+            continue
+        environment.update(dotenv.dotenv_values(path))
+
+    for k, v in environment.items():
+        # we do not want to override the environment
+        if k not in env and v is not None:
+            env[k] = v
+
+    return profiles
 
 
 def is_persistence_enabled() -> bool:
@@ -371,10 +381,10 @@ CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 # keep this on top to populate environment
 try:
     # CLI specific: the actually loaded configuration profile
-    LOADED_PROFILE = load_environment(CONFIG_PROFILE)
+    LOADED_PROFILES = load_environment(CONFIG_PROFILE)
 except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
-    LOADED_PROFILE = None
+    LOADED_PROFILES = None
 
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
@@ -769,6 +779,7 @@ LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
 
 # limit in which to kinesis-mock will start throwing exceptions
 KINESIS_SHARD_LIMIT = os.environ.get("KINESIS_SHARD_LIMIT", "").strip() or "100"
+KINESIS_PERSISTENCE = is_env_not_false("KINESIS_PERSISTENCE")
 
 # limit in which to kinesis-mock will start throwing exceptions
 KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT = (
@@ -1106,6 +1117,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
+    "KINESIS_PERSISTENCE",
     "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",

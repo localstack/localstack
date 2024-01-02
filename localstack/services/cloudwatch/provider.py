@@ -71,7 +71,7 @@ def update_state(target, self, reason, reason_data, state_value):
         data = arns.parse_arn(action)
         # test for sns - can this be done in a more generic way?
         if data["service"] == "sns":
-            service = connect_to.get_client(data["service"])
+            service = connect_to.get_client(data["service"], region_name=data["region"])
             subject = f"""{self.state_value}: "{self.name}" in {self.region_name}"""
             message = create_message_response_update_state(self, old_state)
             service.publish(TopicArn=action, Subject=subject, Message=message)

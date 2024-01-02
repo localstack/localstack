@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment[FAIL]": {
+    "last_validated_date": "2023-03-06T14:00:08+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment[WARN]": {
+    "last_validated_date": "2023-03-06T14:01:59+00:00"
+  }
+}

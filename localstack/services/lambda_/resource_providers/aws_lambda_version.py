@@ -58,19 +58,40 @@ class LambdaVersionProvider(ResourceProvider[LambdaVersionProperties]):
         """
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
+        ctx = request.custom_context
 
         params = util.select_attributes(model, ["FunctionName", "CodeSha256", "Description"])
 
-        response = lambda_client.publish_version(**params)
+        if not ctx.get(REPEATED_INVOCATION):
+            response = lambda_client.publish_version(**params)
+            model["Version"] = response["Version"]
+            model["Id"] = response["FunctionArn"]
+            ctx[REPEATED_INVOCATION] = True
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
 
-        model["Version"] = response["Version"]
-        model["Id"] = response["FunctionArn"]
-
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        version = lambda_client.get_function(FunctionName=model["Id"])
+        if version["Configuration"]["State"] == "Pending":
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
+        elif version["Configuration"]["State"] == "Active":
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS,
+                resource_model=model,
+            )
+        else:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                resource_model=model,
+                message="",
+                error_code="VersionStateFailure",  # TODO: not parity tested
+            )
 
     def read(
         self,

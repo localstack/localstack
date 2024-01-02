@@ -274,6 +274,7 @@ from localstack.services.s3.validation import (
     validate_cors_configuration,
     validate_inventory_configuration,
     validate_lifecycle_configuration,
+    validate_object_key,
     validate_website_configuration,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
@@ -579,6 +580,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_kms_key_id(sse_kms_key_id, s3_bucket)
 
         key = request["Key"]
+
+        validate_object_key(key)
 
         system_metadata = get_system_metadata_from_request(request)
         if not system_metadata.get("ContentType"):
@@ -1107,6 +1110,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # request_payer: RequestPayer = None,  # TODO:
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
+        validate_object_key(dest_key)
         store, dest_s3_bucket = self._get_cross_account_bucket(context, dest_bucket)
 
         src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_copy_source(
@@ -1880,7 +1884,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         stored_multipart = self._storage_backend.get_multipart(bucket_name, s3_multipart)
         stored_s3_part = stored_multipart.open(s3_part)
-        stored_s3_part.write(body)
+        try:
+            stored_s3_part.write(body)
+        except Exception:
+            stored_multipart.remove_part(s3_part)
+            raise
 
         if checksum_algorithm and s3_part.checksum_value != stored_s3_part.checksum:
             stored_multipart.remove_part(s3_part)

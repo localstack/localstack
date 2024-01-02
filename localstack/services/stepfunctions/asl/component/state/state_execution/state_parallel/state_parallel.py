@@ -1,4 +1,12 @@
+import copy
+
 from localstack.aws.api.stepfunctions import HistoryEventType
+from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import CatchOutcome
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
+    FailureEventException,
+)
+from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
@@ -40,3 +48,40 @@ class StateParallel(ExecutionState):
             hist_type_event=HistoryEventType.ParallelStateSucceeded,
             update_source_event_id=False,
         )
+
+    def _eval_state(self, env: Environment) -> None:
+        # Initialise the retry counter for execution states.
+        env.context_object_manager.context_object["State"]["RetryCount"] = 0
+
+        # Cache the input, so it can be resubmitted in case of failure.
+        input_value = copy.deepcopy(env.stack.pop())
+
+        # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
+        while True:
+            try:
+                env.stack.append(input_value)
+                self._evaluate_with_timeout(env)
+                break
+            except FailureEventException as failure_event_ex:
+                failure_event: FailureEvent = failure_event_ex.failure_event
+
+                if self.retry is not None:
+                    retry_outcome: RetryOutcome = self._handle_retry(
+                        env=env, failure_event=failure_event
+                    )
+                    if retry_outcome == RetryOutcome.CanRetry:
+                        continue
+
+                env.event_history.add_event(
+                    context=env.event_history_context,
+                    hist_type_event=HistoryEventType.ParallelStateFailed,
+                )
+
+                if self.catch is not None:
+                    catch_outcome: CatchOutcome = self._handle_catch(
+                        env=env, failure_event=failure_event
+                    )
+                    if catch_outcome == CatchOutcome.Caught:
+                        break
+
+                self._handle_uncaught(env=env, failure_event=failure_event)

@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals": {
+    "last_validated_date": "2023-06-22T11:06:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals_path": {
+    "last_validated_date": "2023-06-22T11:07:20+00:00"
+  }
+}

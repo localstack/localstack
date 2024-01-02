@@ -1665,21 +1665,36 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         state = lambda_stores[context.account_id][context.region]
-        function_name = request["FunctionName"]
-
-        if api_utils.FULL_FN_ARN_PATTERN.match(function_name):
-            fn_arn = function_name
-            function_name = api_utils.get_function_name(function_name, context)
-        else:
-            fn_arn = api_utils.unqualified_lambda_arn(
-                function_name, context.account_id, context.region
-            )
+        request_function_name = request["FunctionName"]
+        # can be either a partial arn or a full arn for the version/alias
+        function_name, qualifier, account, region = function_locators_from_arn(
+            request_function_name
+        )
+        account = account or context.account_id
+        region = region or context.region
 
         fn = state.functions.get(function_name)
         if not fn:
             raise InvalidParameterValueException("Function does not exist", Type="User")
 
-        # TODO: check if alias/version exists
+        if qualifier:
+            # make sure the function version/alias exists
+            if api_utils.qualifier_is_alias(qualifier):
+                fn_alias = fn.aliases.get(qualifier)
+                if not fn_alias:
+                    raise Exception("unknown alias")  # TODO: cover via test
+            elif api_utils.qualifier_is_version(qualifier):
+                fn_version = fn.versions.get(qualifier)
+                if not fn_version:
+                    raise Exception("unknown version")  # TODO: cover via test
+            elif qualifier == "$LATEST":
+                pass
+            else:
+                raise Exception("invalid functionname")  # TODO: cover via test
+            fn_arn = api_utils.qualified_lambda_arn(function_name, qualifier, account, region)
+
+        else:
+            fn_arn = api_utils.unqualified_lambda_arn(function_name, account, region)
 
         new_uuid = long_uid()
 

@@ -1,0 +1,35 @@
+{
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
+    "last_validated_date": "2023-12-19T07:08:47+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
+    "last_validated_date": "2023-02-27T16:44:31+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_permissions": {
+    "last_validated_date": "2023-02-27T16:34:08+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
+    "last_validated_date": "2023-02-27T16:38:51+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_cfn_function_url": {
+    "last_validated_date": "2023-02-27T16:27:12+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_event_invoke_config": {
+    "last_validated_date": "2023-11-21T10:00:12+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_alias": {
+    "last_validated_date": "2023-09-08T09:43:01+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_cfn_dead_letter_config_async_invocation": {
+    "last_validated_date": "2023-12-04T11:46:52+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_code_signing_config": {
+    "last_validated_date": "2023-02-27T16:28:57+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_version": {
+    "last_validated_date": "2023-02-27T16:31:32+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_multiple_lambda_permissions_for_singlefn": {
+    "last_validated_date": "2023-03-09T21:07:56+00:00"
+  }
+}
