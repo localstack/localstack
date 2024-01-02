@@ -338,7 +338,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_match_headers": {
-    "recorded-date": "31-07-2023, 12:34:42",
+    "recorded-date": "02-01-2024, 16:08:41",
     "recorded-content": {
       "opt-get": {
         "Body": "",
@@ -395,14 +395,36 @@
         },
         "StatusCode": 200
       },
+      "get-bucket-cors-casing": {
+        "CORSRules": [
+          {
+            "AllowedHeaders": [
+              "x-amz-expected-bucket-owner",
+              "x-amz-server-side-encryption-customer-algorithm",
+              "x-AMZ-server-SIDE-encryption"
+            ],
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "https://localhost:4200"
+            ],
+            "MaxAgeSeconds": 3000
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "opt-get-non-allowed": {
         "Body": {
           "Error": {
             "Code": "AccessForbidden",
-            "HostId": "<x-amz-id-2:4>",
+            "HostId": "<x-amz-id-2:5>",
             "Message": "CORSResponse: This CORS request is not allowed. This is usually because the evalution of Origin, request method / Access-Control-Request-Method or Access-Control-Request-Headers are not whitelisted by the resource's CORS spec.",
             "Method": "GET",
-            "RequestId": "<x-amz-request-id:4>",
+            "RequestId": "<x-amz-request-id:5>",
             "ResourceType": "OBJECT"
           }
         },
@@ -411,8 +433,8 @@
           "Transfer-Encoding": "chunked",
           "date": "date",
           "server": "<server:1>",
-          "x-amz-id-2": "<x-amz-id-2:4>",
-          "x-amz-request-id": "<x-amz-request-id:4>"
+          "x-amz-id-2": "<x-amz-id-2:5>",
+          "x-amz-request-id": "<x-amz-request-id:5>"
         },
         "StatusCode": 403
       },
@@ -428,8 +450,25 @@
           "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
           "date": "date",
           "server": "<server:1>",
-          "x-amz-id-2": "<x-amz-id-2:5>",
-          "x-amz-request-id": "<x-amz-request-id:5>"
+          "x-amz-id-2": "<x-amz-id-2:6>",
+          "x-amz-request-id": "<x-amz-request-id:6>"
+        },
+        "StatusCode": 200
+      },
+      "opt-get-allowed-diff-casing": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Headers": "x-amz-expected-bucket-owner, x-amz-server-side-encryption",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:7>",
+          "x-amz-request-id": "<x-amz-request-id:7>"
         },
         "StatusCode": 200
       },
@@ -443,8 +482,8 @@
           "accept-ranges": "bytes",
           "date": "date",
           "server": "<server:1>",
-          "x-amz-id-2": "<x-amz-id-2:6>",
-          "x-amz-request-id": "<x-amz-request-id:6>",
+          "x-amz-id-2": "<x-amz-id-2:8>",
+          "x-amz-request-id": "<x-amz-request-id:8>",
           "x-amz-server-side-encryption": "AES256"
         },
         "StatusCode": 200
@@ -464,8 +503,8 @@
           "accept-ranges": "bytes",
           "date": "date",
           "server": "<server:1>",
-          "x-amz-id-2": "<x-amz-id-2:7>",
-          "x-amz-request-id": "<x-amz-request-id:7>",
+          "x-amz-id-2": "<x-amz-id-2:9>",
+          "x-amz-request-id": "<x-amz-request-id:9>",
           "x-amz-server-side-encryption": "AES256"
         },
         "StatusCode": 200
