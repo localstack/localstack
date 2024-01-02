@@ -601,7 +601,8 @@ def backend_rotate_secret(
     secret.rotation_lambda_arn = rotation_lambda_arn
     secret.auto_rotate_after_days = rotation_rules.get(rotation_days, 0)
     if secret.auto_rotate_after_days > 0:
-        secret.next_rotation_date = int(time.time()) + (int(rotation_period) * 86400)
+        wait_interval_s = int(rotation_period) * 86400
+        secret.next_rotation_date = int(time.time()) + wait_interval_s
         secret.rotation_enabled = True
         secret.rotation_requested = True
 
