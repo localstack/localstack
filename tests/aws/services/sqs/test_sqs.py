@@ -24,6 +24,7 @@ from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.models import sqs_stores
 from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
 from localstack.services.sqs.utils import parse_queue_url
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import GenericTransformer
 from localstack.utils.aws import arns
@@ -1036,6 +1037,102 @@ class TestSqsProvider:
         )
         response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
         assert len(response["Messages"]) == 1
+
+    @markers.aws.validated
+    def test_message_retention(self, sqs_create_queue, aws_client, monkeypatch):
+        monkeypatch.setattr(config, "SQS_ENABLE_MESSAGE_RETENTION_PERIOD", True)
+        # in AWS, message retention is at least 60 seconds
+        if is_aws_cloud():
+            retention = 60
+            wait_time = 5
+        else:
+            retention = 2
+            wait_time = 1
+
+        queue_url = sqs_create_queue(Attributes={"MessageRetentionPeriod": str(retention)})
+
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar2")
+
+        # let messages expire
+        time.sleep(retention + wait_time)
+
+        # messages should have expired
+        result = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        assert not result.get("Messages")
+
+    @markers.aws.validated
+    def test_message_retention_fifo(self, sqs_create_queue, aws_client, monkeypatch):
+        monkeypatch.setattr(config, "SQS_ENABLE_MESSAGE_RETENTION_PERIOD", True)
+        # in AWS, message retention is at least 60 seconds
+        if is_aws_cloud():
+            retention = 60
+            wait_time = 5
+        else:
+            retention = 2
+            wait_time = 1
+
+        queue_name = f"queue-{short_uid()}.fifo"
+        attributes = {
+            "FifoQueue": "true",
+            "MessageRetentionPeriod": str(retention),
+            "ContentBasedDeduplication": "true",
+        }
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar1", MessageGroupId="1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar2", MessageGroupId="2")
+
+        # let messages expire
+        time.sleep(retention + wait_time)
+
+        # messages should have expired
+        result = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        assert not result.get("Messages")
+
+    @markers.aws.validated
+    def test_message_retention_with_inflight(self, sqs_create_queue, aws_client, monkeypatch):
+        # tests whether an inflight message is correctly removed after it expires
+        monkeypatch.setattr(config, "SQS_ENABLE_MESSAGE_RETENTION_PERIOD", True)
+
+        if is_aws_cloud():
+            message_retention_period = 60
+            wait_time = 5
+        else:
+            message_retention_period = 2
+            wait_time = 1
+
+        # by setting message_retention_period = visibility_timeout, we can keep the waiting logic simple
+        queue_url = sqs_create_queue(
+            Attributes={
+                "MessageRetentionPeriod": str(message_retention_period),
+                "VisibilityTimeout": str(message_retention_period),
+            }
+        )
+
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="foobar2")
+
+        # We need to wait for a bit so that once we receive the message, the visibility timeout
+        # expiration happens after the message expiration via message retention period
+        time.sleep(wait_time)
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
+        assert response["Messages"][0]["Body"] == "foobar1"
+        receipt_handle = response["Messages"][0]["ReceiptHandle"]
+
+        # all messages should be removed after the retention policy timeframe has passed
+        time.sleep(message_retention_period + 1)
+
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        assert not response.get("Messages")
+
+        # wait until the visibility timeout of the first receive message has expired, should be nonexistent
+        time.sleep(wait_time * 1.5)
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        assert not response.get("Messages")
+
+        # try to delete the expired message
+        aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
     @markers.aws.needs_fixing
     @pytest.mark.skip("Needs AWS fixing and is now failing against LocalStack")

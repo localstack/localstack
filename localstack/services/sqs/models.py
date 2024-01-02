@@ -246,8 +246,9 @@ class SqsQueue:
 
     def update_delay_seconds(self, value: int):
         """
-        For standard queues, the per-queue delay setting is not retroactive—changing the setting doesn't affect the delay of messages already in the queue.
-        For FIFO queues, the per-queue delay setting is retroactive—changing the setting affects the delay of messages already in the queue.
+        For standard queues, the per-queue delay setting is not retroactive—changing the setting doesn't affect the
+        delay of messages already in the queue. For FIFO queues, the per-queue delay setting is retroactive—changing
+        the setting affects the delay of messages already in the queue.
 
         https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-delay-queues.html
 
@@ -329,6 +330,14 @@ class SqsQueue:
     @property
     def wait_time_seconds(self) -> int:
         return int(self.attributes[QueueAttributeName.ReceiveMessageWaitTimeSeconds])
+
+    @property
+    def message_retention_period(self) -> int:
+        """
+        ``MessageRetentionPeriod`` -- the length of time, in seconds, for which Amazon SQS retains a message. Valid
+        values: An integer representing seconds, from 60 (1 minute) to 1,209,600 (14 days). Default: 345,600 (4 days).
+        """
+        return int(self.attributes[QueueAttributeName.MessageRetentionPeriod])
 
     @property
     def maximum_message_size(self) -> int:
@@ -483,6 +492,12 @@ class SqsQueue:
                 self.delayed.remove(standard_message)
                 self._put_message(standard_message)
 
+    def remove_expired_messages(self):
+        """
+        Removes messages from the queue whose retention period has expired.
+        """
+        raise NotImplementedError
+
     def _assert_queue_name(self, name):
         if not re.match(r"^[a-zA-Z0-9_-]{1,80}$", name):
             raise InvalidParameterValueException(
@@ -569,6 +584,33 @@ class SqsQueue:
         else:
             del self.attributes[QueueAttributeName.Policy]
 
+    @staticmethod
+    def remove_expired_messages_from_heap(
+        heap: list[SqsMessage], message_retention_period: int
+    ) -> list[SqsMessage]:
+        """
+        Removes from the given heap of SqsMessages all messages that have expired in the context of the current time
+        and the given message retention period. The method manipulates the heap but retains the heap property.
+
+        :param heap: an array satisfying the heap property
+        :param message_retention_period: the message retention period to use in relation to the current time
+        :return: a list of expired messages that have been removed from the heap
+        """
+        th = time.time() - message_retention_period
+
+        expired = []
+        while heap:
+            # here we're leveraging the heap property "that a[0] is always its smallest element"
+            # and the assumption that message.created == message.priority
+            message = heap[0]
+            if th < message.created:
+                break
+            # remove the expired element
+            expired.append(message)
+            heapq.heappop(heap)
+
+        return expired
+
 
 class StandardQueue(SqsQueue):
     visible: PriorityQueue
@@ -628,6 +670,15 @@ class StandardQueue(SqsQueue):
 
     def _put_message(self, message: SqsMessage):
         self.visible.put_nowait(message)
+
+    def remove_expired_messages(self):
+        with self.mutex:
+            messages = self.remove_expired_messages_from_heap(
+                self.visible.queue, self.message_retention_period
+            )
+
+        for message in messages:
+            LOG.debug("Removed expired message %s from queue %s", message.message_id, self.arn)
 
     def receive(
         self,
@@ -712,8 +763,12 @@ class StandardQueue(SqsQueue):
             # this likely means the message was removed with an expired receipt handle unfortunately this
             # means we need to scan the queue for the element and remove it from there, and then re-heapify
             # the queue
-            self.visible.queue.remove(message)
-            heapq.heapify(self.visible.queue)
+            try:
+                self.visible.queue.remove(message)
+                heapq.heapify(self.visible.queue)
+            except ValueError:
+                # this may happen if the message no longer exists because it was removed earlier
+                pass
 
 
 class MessageGroup:
@@ -888,6 +943,22 @@ class FifoQueue(SqsQueue):
                 self.inflight_groups.remove(message_group)
                 self.message_group_queue.put_nowait(message_group)
 
+    def remove_expired_messages(self):
+        with self.mutex:
+            retention_period = self.message_retention_period
+            for message_group in self.message_groups.values():
+                messages = self.remove_expired_messages_from_heap(
+                    message_group.messages, retention_period
+                )
+
+                for message in messages:
+                    LOG.debug(
+                        "Removed expired message %s from message group %s in queue %s",
+                        message.message_id,
+                        message.message_group_id,
+                        self.arn,
+                    )
+
     def receive(
         self,
         num_messages: int = 1,
@@ -930,6 +1001,8 @@ class FifoQueue(SqsQueue):
                 # this can be the case if all messages in the group are still invisible
                 # TODO: it should be blocking until at least one message is in the queue, but we don't
                 #  want to block the group
+                # TODO: check behavior in case it happens if all messages were removed from a group due to message
+                #  retention period.
                 timeout -= time.time() - start
                 if timeout < 0:
                     timeout = 0

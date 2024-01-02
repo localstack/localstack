@@ -65,6 +65,15 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_group_id_too_long": {
     "last_validated_date": "2023-12-27T17:49:15+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_retention": {
+    "last_validated_date": "2023-12-28T23:48:08+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_retention_fifo": {
+    "last_validated_date": "2023-12-29T10:21:20+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_retention_with_inflight": {
+    "last_validated_date": "2024-01-02T17:32:37+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_non_existent_queue": {
     "last_validated_date": "2023-11-14T12:04:10+00:00"
   },
