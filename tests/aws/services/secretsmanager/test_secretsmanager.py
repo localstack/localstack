@@ -27,7 +27,6 @@ from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 from localstack.utils.time import today_no_time
-from tests.aws.services.secretsmanager.functions import lambda_rotate_secret
 
 LOG = logging.getLogger(__name__)
 
@@ -386,105 +385,6 @@ class TestSecretsManager:
         )
 
         sm_snapshot.match("list_secret_versions_rotated_1", list_secret_versions_1)
-
-    # TODO: validate against AWS, then check against new lambda provider
-    @pytest.mark.skipif(reason="needs lambda usage rework")
-    @markers.aws.unknown
-    def test_rotate_secret_with_lambda_2(
-        self, secret_name, create_lambda_function, create_secret, aws_client
-    ):
-        cre_res = create_secret(
-            Name=secret_name,
-            SecretString="init",
-            Description="testing rotation of secrets",
-        )
-        version_id_0 = cre_res["VersionId"]
-
-        function_name = f"rotate-func-{short_uid()}"
-        function_arn = create_lambda_function(
-            handler_file=TEST_LAMBDA_ROTATE_SECRET,
-            func_name=function_name,
-            runtime=Runtime.python3_9,
-        )["CreateFunctionResponse"]["FunctionArn"]
-
-        aws_client.lambda_.add_permission(
-            FunctionName=function_name,
-            StatementId="secretsManagerPermission",
-            Action="lambda:InvokeFunction",
-            Principal="secretsmanager.amazonaws.com",
-        )
-
-        rot_res = aws_client.secretsmanager.rotate_secret(
-            SecretId=secret_name,
-            RotationLambdaARN=function_arn,
-            RotationRules={
-                "AutomaticallyAfterDays": 1,
-            },
-            RotateImmediately=True,
-        )
-        version_id_1 = rot_res["VersionId"]
-        assert version_id_0 != version_id_1
-
-        # Assert secretsmanager promoted the creation of the new secret version by reporting resource not found
-        # exception on pending secret version.
-        sig_rnfe_1 = lambda_rotate_secret.secret_signal_resource_not_found_exception_on_create(
-            version_id_1
-        )
-        with pytest.raises(Exception):
-            get_sig_rnfe_1 = aws_client.secretsmanager.get_secret_value(SecretId=sig_rnfe_1)
-        assert get_sig_rnfe_1["Name"] == sig_rnfe_1
-        assert get_sig_rnfe_1["SecretString"] == sig_rnfe_1
-
-        des = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
-        assert des["RotationEnabled"]
-        assert des["RotationRules"] == {"AutomaticallyAfterDays": 1}
-        assert des["RotationLambdaARN"] == function_arn
-
-        lst_res = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
-        versions = lst_res["Versions"]
-        assert len(versions) == 2
-
-        get_res_v0 = aws_client.secretsmanager.get_secret_value(
-            SecretId=secret_name, VersionId=version_id_0
-        )
-        assert get_res_v0["VersionId"] == version_id_0
-        assert get_res_v0["SecretString"] == "init"
-
-        get_res_v1 = aws_client.secretsmanager.get_secret_value(
-            SecretId=secret_name, VersionId=version_id_1
-        )
-        assert get_res_v1["VersionId"] == version_id_1
-        secret_string_1 = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_1)
-        assert get_res_v1["SecretString"] == secret_string_1
-
-        get_res = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
-        assert get_res["VersionId"] == version_id_1
-        assert get_res["SecretString"] == secret_string_1
-
-        rot_2_res = aws_client.secretsmanager.rotate_secret(
-            SecretId=secret_name,
-            RotationLambdaARN=function_arn,
-            RotationRules={
-                "AutomaticallyAfterDays": 1,
-            },
-            RotateImmediately=True,
-        )
-        version_id_2 = rot_2_res["VersionId"]
-        assert len({version_id_0, version_id_1, version_id_2}) == 3
-
-        # Assert secretsmanager promoted the creation of the new secret version by reporting resource not found
-        # exception on pending secret version.
-        sig_rnfe_2 = lambda_rotate_secret.secret_signal_resource_not_found_exception_on_create(
-            version_id_2
-        )
-        get_sig_rnfe_2 = aws_client.secretsmanager.get_secret_value(SecretId=sig_rnfe_2)
-        assert get_sig_rnfe_2["Name"] == sig_rnfe_2
-        assert get_sig_rnfe_2["SecretString"] == sig_rnfe_2
-
-        get_res = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
-        assert get_res["VersionId"] == version_id_2
-        secret_string_2 = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_2)
-        assert get_res["SecretString"] == secret_string_2
 
     @markers.aws.unknown
     def test_rotate_secret_invalid_lambda_arn(self, secret_name, aws_client):
