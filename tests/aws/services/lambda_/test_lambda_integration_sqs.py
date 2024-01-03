@@ -24,6 +24,7 @@ LAMBDA_SQS_INTEGRATION_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_sqs
 LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE = os.path.join(
     THIS_FOLDER, "functions/lambda_sqs_batch_item_failure.py"
 )
+LAMBDA_SLEEP_FILE = os.path.join(THIS_FOLDER, "functions/lambda_sleep.py")
 # AWS API reference:
 # https://docs.aws.amazon.com/lambda/latest/dg/API_CreateEventSourceMapping.html#SSS-CreateEventSourceMapping-request-BatchSize
 DEFAULT_SQS_BATCH_SIZE = 10
@@ -866,6 +867,72 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     )
     assert "Messages" in dlq_response
     assert dlq_response["Messages"] == []
+
+
+@markers.aws.validated
+def test_fifo_message_group_parallelism(
+    aws_client,
+    create_lambda_function,
+    lambda_su_role,
+    cleanups,
+):
+    # https://github.com/localstack/localstack/issues/7036
+    lambda_client = aws_client.lambda_
+    logs_client = aws_client.logs
+
+    # create FIFO queue
+    queue_name = f"test-queue-{short_uid()}.fifo"
+    create_queue_result = aws_client.sqs.create_queue(
+        QueueName=queue_name,
+        Attributes={
+            "FifoQueue": "true",
+            "ContentBasedDeduplication": "true",
+            "VisibilityTimeout": "60",
+        },
+    )
+    queue_url = create_queue_result["QueueUrl"]
+    queue_arn = aws_client.sqs.get_queue_attributes(
+        QueueUrl=queue_url, AttributeNames=["QueueArn"]
+    )["Attributes"]["QueueArn"]
+
+    message_group_id = "fixed-message-group-id-test"
+
+    # create a lambda to process messages
+    function_name = f"function-name-{short_uid()}"
+
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=LAMBDA_SLEEP_FILE,
+        runtime=Runtime.python3_9,
+        role=lambda_su_role,
+        timeout=10,
+        Environment={"Variables": {"TEST_SLEEP_S": "5"}},
+    )
+
+    # create event source mapping
+    create_esm_result = lambda_client.create_event_source_mapping(
+        FunctionName=function_name, EventSourceArn=queue_arn, Enabled=False, BatchSize=1
+    )
+    esm_uuid = create_esm_result["UUID"]
+    cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=esm_uuid))
+
+    # send messages
+    for i in range(5):
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody=f"message-{i}", MessageGroupId=message_group_id
+        )
+
+    # enable event source mapping
+    lambda_client.update_event_source_mapping(UUID=esm_uuid, Enabled=True)
+    _await_event_source_mapping_enabled(lambda_client, esm_uuid)
+
+    # since the lambda has to be called in-order anyway, there shouldn't be any parallel executions
+    log_group_name = f"/aws/lambda/{function_name}"
+
+    time.sleep(60)
+
+    log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+    assert len(log_streams["logStreams"]) == 1
 
 
 @markers.snapshot.skip_snapshot_verify(
