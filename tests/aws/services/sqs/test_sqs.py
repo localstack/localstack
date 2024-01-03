@@ -1,7 +1,9 @@
 import json
 import os
 import re
+import threading
 import time
+from queue import Empty, Queue
 from threading import Timer
 from typing import Dict
 
@@ -1311,6 +1313,52 @@ class TestSqsProvider:
         result = requests.post(edge_url, data=payload, headers=headers)
         assert result.status_code == 200
         assert message_body in result.text
+
+    @markers.aws.validated
+    def test_fifo_message_group_visibility(self, sqs_create_queue, aws_client):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "VisibilityTimeout": "60",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+
+        queue = Queue()
+
+        def _receive_message():
+            """Worker thread for receiving messages"""
+            response = aws_client.sqs.receive_message(
+                QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=10
+            )
+            if not response.get("Messages"):
+                return None
+            queue.put(response["Messages"][0])
+
+        # start three concurrent listeners
+        threading.Thread(target=_receive_message).start()
+        threading.Thread(target=_receive_message).start()
+        threading.Thread(target=_receive_message).start()
+
+        # send a message to the queue
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1")
+
+        # one worker should return immediately with the message and put the message group into "inflight"
+        message = queue.get(timeout=2)
+        assert message["Body"] == "message-1"
+
+        # sending new messages to the message group should not modify its visibility, so the message group is still
+        # in inflight mode, even after waiting 2 seconds on the message.
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2", MessageGroupId="1")
+        with pytest.raises(Empty):
+            # if the queue is not empty, it means one of the threads received a message when it shouldn't
+            queue.get(timeout=2)
+
+        # now we delete the original message, which should make the group visible immediately
+        aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
+        message = queue.get(timeout=2)
+        assert message["Body"] == "message-2"
 
     @markers.aws.validated
     def test_fifo_messages_in_order_after_timeout(self, sqs_create_queue, aws_client):
