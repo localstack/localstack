@@ -1380,5 +1380,31 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_message_size": {
+    "recorded-date": "03-01-2024, 01:58:35",
+    "recorded-content": {
+      "send-message-batch-result": {
+        "Failed": [
+          {
+            "Code": "InvalidParameterValue",
+            "Id": "<uuid:1>",
+            "Message": "One or more parameters cannot be validated. Reason: Message must be shorter than 1024 bytes.",
+            "SenderFault": true
+          }
+        ],
+        "Successful": [
+          {
+            "Id": "<uuid:2>",
+            "MD5OfMessageBody": "c9a34cfc85d982698c6ac89f76071abd",
+            "MessageId": "<uuid:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

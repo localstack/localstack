@@ -2059,6 +2059,22 @@ class TestSqsProvider:
             aws_client.sqs.send_message_batch(QueueUrl=queue_url, Entries=message_batch)
         snapshot.match("test_missing_deduplication_id_for_fifo_queue", e.value.response)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Failed..Code", "$..Failed..Message"])
+    def test_send_batch_message_size(self, sqs_create_queue, snapshot, aws_client):
+        # message and code are slightly different because of the way SQS exception serialization works
+        queue_url = sqs_create_queue(
+            Attributes={
+                "MaximumMessageSize": "1024",
+            },
+        )
+        message_batch = [
+            {"Id": "a4cff0d1-1961-44bd-ae53-c6d5ed71ed08", "MessageBody": "a" * 1024},
+            {"Id": "35b535ed-b76a-4ebd-b749-6eb35cdb55ee", "MessageBody": "a" * 1025},
+        ]
+        response = aws_client.sqs.send_message_batch(QueueUrl=queue_url, Entries=message_batch)
+        snapshot.match("send-message-batch-result", response)
+
     @markers.parity.aws_validated
     def test_send_batch_missing_message_group_id_for_fifo_queue(
         self, sqs_create_queue, snapshot, aws_client
