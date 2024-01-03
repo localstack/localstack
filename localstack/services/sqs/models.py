@@ -938,7 +938,9 @@ class FifoQueue(SqsQueue):
             # put the message into the group
             message_group.push(message)
 
-            # if a message becomes visible in the queue, that message's group becomes visible also
+            # if an older message becomes visible again in the queue, that message's group becomes visible also.
+            if message.receive_count < 1:
+                return
             if message_group in self.inflight_groups:
                 self.inflight_groups.remove(message_group)
                 self.message_group_queue.put_nowait(message_group)
