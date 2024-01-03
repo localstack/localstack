@@ -4552,7 +4552,10 @@ class TestS3:
         assert "ListAllMyBucketsResult" in resp_dict
         # validate that the Owner tag is first, before Buckets. This is because the Java SDK is counting on the order
         # to properly set the Owner value to the buckets.
-        resp_dict["ListAllMyBucketsResult"].pop("@xmlns", None)
+        assert (
+            resp_dict["ListAllMyBucketsResult"].pop("@xmlns")
+            == "http://s3.amazonaws.com/doc/2006-03-01/"
+        )
         list_buckets_tags = list(resp_dict["ListAllMyBucketsResult"].keys())
         assert list_buckets_tags[0] == "Owner"
         assert list_buckets_tags[1] == "Buckets"
@@ -4563,6 +4566,7 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        assert resp_dict["ListBucketResult"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
         # validate that the Contents tag is last, after BucketName. Again for the Java SDK to properly set the
         # BucketName value to the objects.
         list_objects_tags = list(resp_dict["ListBucketResult"].keys())
@@ -4575,6 +4579,7 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        assert resp_dict["ListBucketResult"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
         # same as ListObjects
         list_objects_v2_tags = list(resp_dict["ListBucketResult"].keys())
         assert list_objects_v2_tags.index("Name") < list_objects_v2_tags.index("Contents")
@@ -4586,11 +4591,17 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListMultipartUploadsResult" in resp_dict
+        assert (
+            resp_dict["ListMultipartUploadsResult"]["@xmlns"]
+            == "http://s3.amazonaws.com/doc/2006-03-01/"
+        )
 
         # GetBucketLocation
         location_constraint_url = f"{bucket_url}?location"
         resp = s3_http_client.get(location_constraint_url, headers=headers)
-        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+        xml_content = get_xml_content(resp.content)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in xml_content
+        assert b'<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"' in xml_content
 
         tagging = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
         # put some tags on the bucket
@@ -4601,6 +4612,7 @@ class TestS3:
         resp = s3_http_client.get(get_bucket_tagging_url, headers=headers)
         resp_dict = xmltodict.parse(resp.content)
         assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+        assert resp_dict["Tagging"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
 
         # put an object to tests the next requests
         key_name = "test-key"
@@ -4611,18 +4623,21 @@ class TestS3:
         resp = s3_http_client.get(get_object_tagging_url, headers=headers)
         resp_dict = xmltodict.parse(resp.content)
         assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+        assert resp_dict["Tagging"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
 
         # CopyObject
         get_object_tagging_url = f"{bucket_url}/{key_name}?tagging"
         resp = s3_http_client.get(get_object_tagging_url, headers=headers)
         resp_dict = xmltodict.parse(resp.content)
         assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+        assert resp_dict["Tagging"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
 
         copy_object_url = f"{bucket_url}/copied-key"
         copy_object_headers = {**headers, "x-amz-copy-source": f"{bucket_url}/{key_name}"}
         resp = s3_http_client.put(copy_object_url, headers=copy_object_headers)
         resp_dict = xmltodict.parse(resp.content)
         assert "CopyObjectResult" in resp_dict
+        assert resp_dict["CopyObjectResult"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
 
         multipart_key = "multipart-key"
         create_multipart = aws_client.s3.create_multipart_upload(

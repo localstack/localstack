@@ -1465,6 +1465,8 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         "UploadPartCopyOutput": "CopyPartResult",
     }
 
+    XML_NAMESPACE = "http://s3.amazonaws.com/doc/2006-03-01/"
+
     def _serialize_response(
         self,
         parameters: dict,
@@ -1576,6 +1578,8 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
         if root and not root.tail:
             root.tail = "\n"
+
+        root.attrib["xmlns"] = self.XML_NAMESPACE
 
     @staticmethod
     def _timestamp_iso8601(value: datetime) -> str:
