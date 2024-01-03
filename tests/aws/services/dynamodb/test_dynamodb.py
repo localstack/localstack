@@ -1926,6 +1926,7 @@ class TestDynamoDB:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
     def test_return_values_on_conditions_check_failure(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
