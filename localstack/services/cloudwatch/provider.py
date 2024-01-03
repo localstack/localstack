@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
@@ -142,6 +143,12 @@ def put_metric_alarm(
     )
 
 
+def convert_camel_to_snake_upper_case(input: str) -> str:
+    # currently we only need to handle "SampleCount" camel case
+    input = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", input)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", input).upper()
+
+
 def create_message_response_update_state(alarm, old_state):
     response = {
         "AWSAccountId": extract_account_id_from_arn(alarm.alarm_arn),
@@ -165,7 +172,7 @@ def create_message_response_update_state(alarm, old_state):
     details = {
         "MetricName": alarm.metric_name or "",
         "Namespace": alarm.namespace or "",
-        "Unit": alarm.unit or "",
+        "Unit": alarm.unit or None,  # testing with AWS revealed this currently returns None
         "Period": int(alarm.period) if alarm.period else 0,
         "EvaluationPeriods": int(alarm.evaluation_periods) if alarm.evaluation_periods else 0,
         "ComparisonOperator": alarm.comparison_operator or "",
@@ -184,7 +191,9 @@ def create_message_response_update_state(alarm, old_state):
 
     if alarm.statistic:
         details["StatisticType"] = "Statistic"
-        details["Statistic"] = alarm.statistic.upper()  # AWS returns uppercase
+        details["Statistic"] = convert_camel_to_snake_upper_case(
+            alarm.statistic
+        )  # AWS returns uppercase
     elif alarm.extended_statistic:
         details["StatisticType"] = "ExtendedStatistic"
         details["ExtendedStatistic"] = alarm.extended_statistic
