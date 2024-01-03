@@ -462,6 +462,7 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("ReceiptHandle"),
+            TransformerUtility.key_value("TaskHandle"),
             TransformerUtility.key_value(
                 "SenderId"
             ),  # TODO: flaky against AWS (e.g. /Attributes/SenderId '<sender-id:1>' → '<sender-id:2>' ... (expected → actual))
