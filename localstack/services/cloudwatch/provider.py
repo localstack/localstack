@@ -1,5 +1,6 @@
 import json
 import logging
+import uuid
 from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
@@ -34,7 +35,7 @@ from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import arns, aws_stack
-from localstack.utils.aws.arns import extract_account_id_from_arn
+from localstack.utils.aws.arns import extract_account_id_from_arn, lambda_function_name
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.patch import patch
 from localstack.utils.sync import poll_condition
@@ -56,6 +57,9 @@ def update_state(target, self, reason, reason_data, state_value):
         old_state = StateValue.INSUFFICIENT_DATA
     else:
         old_state = self.state_value
+
+    old_state_reason = self.state_reason
+    old_state_update_timestamp = self.state_updated_timestamp
     target(self, reason, reason_data, state_value)
 
     # check the state and trigger required actions
@@ -69,12 +73,19 @@ def update_state(target, self, reason, reason_data, state_value):
         actions = self.insufficient_data_actions
     for action in actions:
         data = arns.parse_arn(action)
-        # test for sns - can this be done in a more generic way?
         if data["service"] == "sns":
-            service = connect_to.get_client(data["service"], region_name=data["region"])
+            service = connect_to(region_name=data["region"], aws_access_key_id=data["account"]).sns
             subject = f"""{self.state_value}: "{self.name}" in {self.region_name}"""
-            message = create_message_response_update_state(self, old_state)
+            message = create_message_response_update_state_sns(self, old_state)
             service.publish(TopicArn=action, Subject=subject, Message=message)
+        elif data["service"] == "lambda":
+            service = connect_to(
+                region_name=data["region"], aws_access_key_id=data["account"]
+            ).lambda_
+            message = create_message_response_update_state_lambda(
+                self, old_state, old_state_reason, old_state_update_timestamp
+            )
+            service.invoke(FunctionName=lambda_function_name(action), Payload=message)
         else:
             # TODO: support other actions
             LOG.warning(
@@ -142,7 +153,60 @@ def put_metric_alarm(
     )
 
 
-def create_message_response_update_state(alarm, old_state):
+def create_metric_data_query_from_alarm(alarm: FakeAlarm):
+    # TODO may need to be adapted for other use cases
+    #  verified return value with a snapshot test
+    return [
+        {
+            "id": str(uuid.uuid4()),
+            "metricStat": {
+                "metric": {
+                    "namespace": alarm.namespace,
+                    "name": alarm.metric_name,
+                    "dimensions": alarm.dimensions or {},
+                },
+                "period": int(alarm.period),
+                "stat": alarm.statistic,
+            },
+            "returnData": True,
+        }
+    ]
+
+
+def create_message_response_update_state_lambda(
+    alarm: FakeAlarm, old_state, old_state_reason, old_state_timestamp
+):
+    response = {
+        "accountId": extract_account_id_from_arn(alarm.alarm_arn),
+        "alarmArn": alarm.alarm_arn,
+        "alarmData": {
+            "alarmName": alarm.name,
+            "state": {
+                "value": alarm.state_value,
+                "reason": alarm.state_reason,
+                "timestamp": alarm.state_updated_timestamp,
+            },
+            "previousState": {
+                "value": old_state,
+                "reason": old_state_reason,
+                "timestamp": old_state_timestamp,
+            },
+            "configuration": {
+                "description": alarm.description or "",
+                "metrics": alarm.metric_data_queries
+                or create_metric_data_query_from_alarm(
+                    alarm
+                ),  # TODO: add test with metric_data_queries
+            },
+        },
+        "time": alarm.state_updated_timestamp,
+        "region": alarm.region_name,
+        "source": "aws.cloudwatch",
+    }
+    return json.dumps(response)
+
+
+def create_message_response_update_state_sns(alarm, old_state):
     response = {
         "AWSAccountId": extract_account_id_from_arn(alarm.alarm_arn),
         "OldStateValue": old_state,
