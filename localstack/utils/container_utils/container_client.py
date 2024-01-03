@@ -730,8 +730,6 @@ class ContainerClient(metaclass=ABCMeta):
         network_name: str,
         container_name_or_id: str,
         aliases: Optional[List] = None,
-        ipv4_address: str = None,
-        ipv6_address: str = None,
         link_local_ips: List[str] = None,
     ) -> None:
         """
@@ -739,8 +737,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param network_name: Network to connect the container to
         :param container_name_or_id: Container to connect to the network
         :param aliases: List of dns names the container should be available under in the network
-        :param ipv4_address: IPv4 address of the container on the network
-        :param ipv6_address: IPv6 address of the container on the network
         :param link_local_ips: List of link-local (IPv4 or IPv6) addresses
         """
 

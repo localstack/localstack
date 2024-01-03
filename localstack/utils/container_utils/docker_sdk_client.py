@@ -420,8 +420,6 @@ class SdkDockerClient(ContainerClient):
         network_name: str,
         container_name_or_id: str,
         aliases: Optional[List] = None,
-        ipv4_address: str = None,
-        ipv6_address: str = None,
         link_local_ips: List[str] = None,
     ) -> None:
         LOG.debug(
@@ -438,8 +436,6 @@ class SdkDockerClient(ContainerClient):
             network.connect(
                 container=container_name_or_id,
                 aliases=aliases,
-                ipv4_address=ipv4_address,
-                ipv6_address=ipv6_address,
                 link_local_ips=link_local_ips,
             )
         except NotFound:
