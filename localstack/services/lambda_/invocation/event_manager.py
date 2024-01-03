@@ -3,7 +3,6 @@ import dataclasses
 import json
 import logging
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
@@ -162,7 +161,7 @@ class Poller:
                         self.invoker_pool.submit(self.handle_message, message)
 
                 # Try short polling instead of long polling to reduce the number of open connections
-                time.sleep(2)
+                self._shutdown_event.wait(2)
         except Exception as e:
             # TODO: if the gateway shuts down before the shutdown event even is set,
             #  this log message might be sent regardless
