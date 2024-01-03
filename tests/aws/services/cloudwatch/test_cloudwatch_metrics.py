@@ -123,3 +123,37 @@ class TestCloudWatchLambdaMetrics:
         )
         assert res["MetricDataResults"][0]["Values"] == expected_return
         return res
+
+
+class TestSqsApproximateMetrics:
+    @markers.aws.validated
+    def test_sqs_approximate_metrics(self, aws_client, sqs_create_queue):
+        queue_names = []
+        for _ in range(0, 10):
+            q_name = f"my-test-queue-{short_uid()}"
+            sqs_create_queue(QueueName=q_name)
+            queue_names.append(q_name)
+
+        for queue in queue_names:
+            retry(
+                lambda: self._assert_approximate_metrics_for_queue(
+                    aws_client.cloudwatch, queue_name=queue
+                ),
+                retries=70,  # should be reported every 60 seconds on LS
+                sleep=10 if is_aws() else 1,
+            )
+
+    def _assert_approximate_metrics_for_queue(
+        self,
+        cloudwatch_client: "CloudWatchClient",
+        queue_name: str,
+    ):
+        namespace = "AWS/SQS"
+        dimension = [{"Name": "QueueName", "Value": queue_name}]
+
+        res = cloudwatch_client.list_metrics(Namespace=namespace, Dimensions=dimension)
+        metric_names = [m["MetricName"] for m in res["Metrics"]]
+        assert "ApproximateNumberOfMessagesVisible" in metric_names
+        assert "ApproximateNumberOfMessagesNotVisible" in metric_names
+        assert "ApproximateNumberOfMessagesDelayed" in metric_names
+        return res

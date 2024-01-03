@@ -6,6 +6,7 @@ import re
 import threading
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
+from itertools import islice
 from typing import Dict, List, Optional, Tuple
 
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
@@ -85,7 +86,11 @@ from localstack.services.sqs.utils import (
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.cloudwatch.cloudwatch_util import publish_sqs_metric
+from localstack.utils.cloudwatch.cloudwatch_util import (
+    SqsMetricBatchData,
+    publish_sqs_metric,
+    publish_sqs_metric_batch,
+)
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5
@@ -274,36 +279,48 @@ class CloudwatchPublishWorker:
         self.thread: Optional[FuncThread] = None
 
     def publish_approximate_cloudwatch_metrics(self):
-        for account_id, region, store in sqs_stores.iter_stores():
-            for queue in store.queues.values():
-                self.publish_approximate_metrics_for_queue_to_cloudwatch(queue)
-
-    def publish_approximate_metrics_for_queue_to_cloudwatch(self, queue):
         """Publishes the metrics for ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
         and ApproximateNumberOfMessagesDelayed to CloudWatch"""
         # TODO ApproximateAgeOfOldestMessage is missing
         #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
-        publish_sqs_metric(
-            account_id=queue.account_id,
-            region=queue.region,
-            queue_name=queue.name,
-            metric="ApproximateNumberOfMessagesVisible",
-            value=queue.approx_number_of_messages,
-        )
-        publish_sqs_metric(
-            account_id=queue.account_id,
-            region=queue.region,
-            queue_name=queue.name,
-            metric="ApproximateNumberOfMessagesNotVisible",
-            value=queue.approx_number_of_messages_not_visible,
-        )
-        publish_sqs_metric(
-            account_id=queue.account_id,
-            region=queue.region,
-            queue_name=queue.name,
-            metric="ApproximateNumberOfMessagesDelayed",
-            value=queue.approx_number_of_messages_delayed,
-        )
+
+        for account_id, region, store in sqs_stores.iter_stores():
+            start = 0
+            # we can include up to 1000 metric queries for one put-metric-data call
+            #  and we currently include 3 metrics per queue
+            batch_size = 300
+
+            while start < len(store.queues):
+                batch_data = []
+                # Process the current batch
+                for queue in islice(store.queues.values(), start, start + batch_size):
+                    batch_data.append(
+                        SqsMetricBatchData(
+                            QueueName=queue.name,
+                            MetricName="ApproximateNumberOfMessagesVisible",
+                            Value=queue.approx_number_of_messages,
+                        )
+                    )
+                    batch_data.append(
+                        SqsMetricBatchData(
+                            QueueName=queue.name,
+                            MetricName="ApproximateNumberOfMessagesNotVisible",
+                            Value=queue.approx_number_of_messages_not_visible,
+                        )
+                    )
+                    batch_data.append(
+                        SqsMetricBatchData(
+                            QueueName=queue.name,
+                            MetricName="ApproximateNumberOfMessagesDelayed",
+                            Value=queue.approx_number_of_messages_delayed,
+                        )
+                    )
+
+                publish_sqs_metric_batch(
+                    account_id=account_id, region=region, sqs_metric_batch_data=batch_data
+                )
+                # Update for the next batch
+                start += batch_size
 
     def start(self):
         if self.thread:
