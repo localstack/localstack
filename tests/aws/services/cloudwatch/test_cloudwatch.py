@@ -455,7 +455,7 @@ class TestCloudwatch:
             "EvaluateLowSampleCountPercentile": "",
             "Dimensions": [{"value": "i-0317828c84edbe100", "name": "InstanceId"}],
             "StatisticType": "Statistic",
-            "Statistic": "Average",
+            "Statistic": "AVERAGE",
         }
         # subscribe to SQS
         subscription_alarm = aws_client.sns.subscribe(
@@ -484,7 +484,7 @@ class TestCloudwatch:
             Threshold=expected_trigger["Threshold"],
             Dimensions=[{"Name": "InstanceId", "Value": "i-0317828c84edbe100"}],
             Unit=expected_trigger["Unit"],
-            Statistic=expected_trigger["Statistic"],
+            Statistic=expected_trigger["Statistic"].capitalize(),
             OKActions=[topic_arn_ok],
             AlarmActions=[topic_arn_alarm],
             EvaluationPeriods=expected_trigger["EvaluationPeriods"],
