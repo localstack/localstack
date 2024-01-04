@@ -1,6 +1,4 @@
-import json
 import os
-import time
 from typing import Optional
 
 import pytest
@@ -89,17 +87,3 @@ def infrastructure_setup(cdk_template_path, aws_client):
         )
 
     return _infrastructure_setup
-
-
-# HACK: global timer (the first timediff is inaccurate)
-TIMER = time.perf_counter()
-
-
-@pytest.hookimpl()
-def pytest_runtest_logfinish(nodeid: str, location: tuple):
-    global TIMER
-    now = time.perf_counter()
-    timediff = now - TIMER
-    TIMER = now
-    row = {"nodeid": nodeid, "timediff": timediff}
-    print(f"test-perf-timelog:{json.dumps(row)}")
