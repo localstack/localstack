@@ -3,6 +3,7 @@ import dataclasses
 import json
 import logging
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
@@ -138,6 +139,7 @@ class Poller:
                 response = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
                     # TODO: consider replacing with short polling instead of long polling to prevent keeping connections open
+                    # however, we had some serious performance issues when tried out, so those have to be investigated first
                     WaitTimeSeconds=2,
                     # Related: SQS event source mapping batches up to 10 messages:
                     # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
@@ -156,8 +158,8 @@ class Poller:
 
             except Exception as e:
                 # TODO: if the gateway shuts down before the shutdown event even is set,
-                #  this log message might be sent regardless
-                if isinstance(e, ConnectionRefusedError) and self._shutdown_event.is_set():
+                #  we might still get an error message
+                if self._shutdown_event.is_set():
                     return
                 LOG.error(
                     "Error while polling lambda events for function %s: %s",
@@ -165,6 +167,8 @@ class Poller:
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
+                # some time between retries to avoid running into the problem right again
+                time.sleep(1)
 
     def stop(self):
         LOG.debug(

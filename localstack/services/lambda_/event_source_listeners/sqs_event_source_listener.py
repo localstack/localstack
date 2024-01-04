@@ -25,7 +25,7 @@ LOG = logging.getLogger(__name__)
 class SQSEventSourceListener(EventSourceListener):
     # SQS listener thread settings
     SQS_LISTENER_THREAD: Dict = {}
-    SQS_POLL_INTERVAL_SEC: float = 1
+    SQS_POLL_INTERVAL_SEC: float = 0.1
 
     _invoke_adapter: EventSourceAdapter
 
