@@ -95,7 +95,7 @@ from werkzeug.datastructures import Headers, MIMEAccept
 from werkzeug.http import parse_accept_header
 
 from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
-from localstack.aws.spec import load_service
+from localstack.aws.spec import ProtocolName, load_service
 from localstack.constants import (
     APPLICATION_AMZ_CBOR_1_1,
     APPLICATION_AMZ_JSON_1_0,
@@ -1754,7 +1754,9 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
         return protocol_specific_serializers[service.protocol]()
 
 
-def aws_response_serializer(service_model_name: str, operation: str):
+def aws_response_serializer(
+    service_name: str, operation: str, protocol: Optional[ProtocolName] = None
+):
     """
     A decorator for an HTTP route that can serialize return values or exceptions into AWS responses.
     This can be used to create AWS request handlers in a convenient way. Example usage::
@@ -1770,13 +1772,15 @@ def aws_response_serializer(service_model_name: str, operation: str):
 
             return ListQueuesResult(QueueUrls=...)  # <- object from the SQS API will be serialized
 
-    :param service_model_name: the AWS service model name (e.g., "sqs", "lambda", "sqs-json")
+    :param service_name: the AWS service (e.g., "sqs", "lambda")
+    :param protocol: the protocol of the AWS service to serialize to. If not set (by default) the default protocol
+                    of the service in botocore is used.
     :param operation: the operation name (e.g., "ReceiveMessage", "ListFunctions")
     :returns: a decorator
     """
 
     def _decorate(fn):
-        service_model = load_service(service_model_name)
+        service_model = load_service(service_name, protocol=protocol)
         operation_model = service_model.operation_model(operation)
         serializer = create_serializer(service_model)
 

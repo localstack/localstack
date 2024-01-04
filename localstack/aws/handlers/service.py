@@ -34,14 +34,12 @@ class ServiceNameParser(Handler):
         if context.service:
             return
 
-        service = determine_aws_service_model(context.request)
+        service_model = determine_aws_service_model(context.request)
 
-        if not service:
+        if not service_model:
             return
 
-        context.service = service
-        headers = context.request.headers
-        headers["x-localstack-tgt-api"] = service  # TODO: probably no longer needed
+        context.service = service_model
 
 
 class ServiceRequestParser(Handler):

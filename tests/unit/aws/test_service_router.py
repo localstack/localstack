@@ -70,6 +70,7 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
             ]:
                 yield pytest.param(
                     service,
+                    service.protocol,
                     service.operation_model(operation_name),
                     marks=pytest.mark.xfail(
                         reason=f"{service.service_name} is currently not supported by the service router"
@@ -86,13 +87,14 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
             ):
                 yield pytest.param(
                     service,
+                    service.protocol,
                     service.operation_model(operation_name),
                     marks=pytest.mark.skip(
                         reason=f"{service.service_name} may differ due to ambiguities in the service specs"
                     ),
                 )
             else:
-                yield service, service.operation_model(operation_name)
+                yield service, service.protocol, service.operation_model(operation_name)
 
 
 def _botocore_request_to_localstack_request(request_object: AWSRequest) -> Request:
@@ -147,18 +149,24 @@ def _generate_test_name(param: Any):
 
 
 @pytest.mark.parametrize(
-    "service, operation",
+    "service, protocol, operation",
     _collect_operations(),
     ids=_generate_test_name,
 )
 def test_service_router_works_for_every_service(
-    service: ServiceModel, operation: OperationModel, caplog, aws_client_factory
+    service: ServiceModel, protocol: str, operation: OperationModel, caplog, aws_client_factory
 ):
     caplog.set_level("CRITICAL", "botocore")
 
+    # if we test the routing to the internalized sqs json, we want to use the service name "sqs-json" in order to
+    # instruct botocore to load the internalized spec instead of the default (query)
+    service_name = (
+        "sqs-json" if service.service_name == "sqs" and protocol == "json" else service.service_name
+    )
+
     # Create a dummy request for the service router
     client = aws_client_factory.get_client(
-        service.service_name,
+        service_name,
         config=Config(
             connect_timeout=1_000,
             read_timeout=1_000,
