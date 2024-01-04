@@ -2841,6 +2841,10 @@ class TestS3:
         assert completed_object["Body"].read() == to_bytes(body)
 
     @markers.aws.only_localstack
+    @pytest.mark.skipif(
+        reason="Not implemented in other providers than v3, moto fails at decoding",
+        condition=LEGACY_V2_S3_PROVIDER,
+    )
     def test_put_object_chunked_newlines_no_sig(self, s3_bucket, aws_client):
         object_key = "data"
         body = "test;test;test\r\ntest1;test1;test1\r\n"
