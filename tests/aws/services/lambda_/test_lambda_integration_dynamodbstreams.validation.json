@@ -5,6 +5,9 @@
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_disabled_dynamodb_event_source_mapping": {
     "last_validated_date": "2023-02-27T17:34:59+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_duplicate_event_source_mappings": {
+    "last_validated_date": "2024-01-04T17:25:28+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put10-None-filter0-1]": {
     "last_validated_date": "2023-02-27T17:37:56+00:00"
   },

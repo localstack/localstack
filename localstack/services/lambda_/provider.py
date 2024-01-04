@@ -133,6 +133,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
 from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
 from localstack.aws.connect import connect_to
+from localstack.aws.spec import load_service
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
@@ -1657,7 +1658,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "EventSourceArn" not in request:
             raise InvalidParameterValueException("Unrecognized event source.", Type="User")
 
-        service = extract_service_from_arn(request.get("EventSourceArn"))
+        service = extract_service_from_arn(request["EventSourceArn"])
         if service in ["dynamodb", "kinesis", "kafka"] and "StartingPosition" not in request:
             raise InvalidParameterValueException(
                 "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
@@ -1696,6 +1697,31 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         else:
             fn_arn = api_utils.unqualified_lambda_arn(function_name, account, region)
 
+        # check for event source duplicates
+        # TODO: currently validated for sqs, kinesis, and dynamodb
+        service_id = load_service(service).service_id
+        for uuid, mapping in state.event_source_mappings.items():
+            if (
+                mapping["FunctionArn"] == fn_arn
+                and mapping["EventSourceArn"] == request["EventSourceArn"]
+            ):
+                if service == "sqs":
+                    # *shakes fist at SQS*
+                    raise ResourceConflictException(
+                        f'An event source mapping with {service_id} arn (" {mapping["EventSourceArn"]} ") '
+                        f'and function (" {function_name} ") already exists. Please update or delete the '
+                        f"existing mapping with UUID {uuid}",
+                        Type="User",
+                    )
+                else:
+                    raise ResourceConflictException(
+                        f'The event source arn (" {mapping["EventSourceArn"]} ") and function '
+                        f'(" {function_name} ") provided mapping already exists. Please update or delete the '
+                        f"existing mapping with UUID {uuid}",
+                        Type="User",
+                    )
+
+        # create new event source mappings
         new_uuid = long_uid()
 
         # defaults etc. vary depending on type of event source

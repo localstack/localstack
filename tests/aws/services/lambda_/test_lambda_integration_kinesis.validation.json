@@ -8,6 +8,9 @@
   "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_disable_kinesis_event_source_mapping": {
     "last_validated_date": "2023-02-27T15:59:49+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_duplicate_event_source_mappings": {
+    "last_validated_date": "2024-01-04T17:16:55+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_async_invocation": {
     "last_validated_date": "2023-02-27T15:55:08+00:00"
   },
