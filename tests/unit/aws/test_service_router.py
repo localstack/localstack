@@ -119,6 +119,7 @@ _dummy_values = {
     "integer": 0,
     "long": 0,
     "timestamp": datetime.now(),
+    "boolean": True,
 }
 
 

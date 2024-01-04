@@ -63,6 +63,7 @@ from localstack.aws.api.route53resolver import (
     OutpostArn,
     OutpostInstanceType,
     Priority,
+    ProtocolList,
     ResolverEndpointDirection,
     ResolverEndpointType,
     ResolverQueryLogConfig,
@@ -544,10 +545,11 @@ class Route53ResolverProvider(Route53ResolverApi):
         direction: ResolverEndpointDirection,
         ip_addresses: IpAddressesRequest,
         name: Name = None,
-        tags: TagList = None,
-        resolver_endpoint_type: ResolverEndpointType = None,
         outpost_arn: OutpostArn = None,
         preferred_instance_type: OutpostInstanceType = None,
+        tags: TagList = None,
+        resolver_endpoint_type: ResolverEndpointType = None,
+        protocols: ProtocolList = None,
     ) -> CreateResolverEndpointResponse:
         create_resolver_endpoint_resp = call_moto(context)
         create_resolver_endpoint_resp["ResolverEndpoint"][

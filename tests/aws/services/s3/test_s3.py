@@ -341,6 +341,7 @@ class TestS3:
         snapshot.match("get-copied-object", response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..AccessPointAlias"])
     def test_region_header_exists(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_create_bucket(
@@ -3688,7 +3689,7 @@ class TestS3:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..x-amz-access-point-alias", "$..x-amz-id-2"],
+        paths=["$..x-amz-access-point-alias", "$..x-amz-id-2", "$..AccessPointAlias"],
     )
     def test_create_bucket_head_bucket(self, aws_client_factory, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
