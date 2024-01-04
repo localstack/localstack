@@ -159,6 +159,9 @@ class Poller:
             except Exception as e:
                 # TODO: if the gateway shuts down before the shutdown event even is set,
                 #  we might still get an error message
+                # after shutdown of LS, we might expectedly get errors, if other components shut down.
+                # In any case, after the event manager is shut down, we do not need to spam error logs in case
+                # some resource is already missing
                 if self._shutdown_event.is_set():
                     return
                 LOG.error(
