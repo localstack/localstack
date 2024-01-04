@@ -262,7 +262,6 @@ class TestSQSMetrics:
     ):
         response = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
         assert response["MetricAlarms"][0]["StateValue"] == "ALARM"
-        snapshot.match(f"{identifier}-describe", response)
 
         result = sqs_client.receive_message(QueueUrl=sqs_queue_url, VisibilityTimeout=0)
         msg = result["Messages"][0]
@@ -270,4 +269,5 @@ class TestSQSMetrics:
         message = json.loads(body["Message"])
         sqs_client.delete_message(QueueUrl=sqs_queue_url, ReceiptHandle=msg["ReceiptHandle"])
         assert message["NewStateValue"] == "ALARM"
+        snapshot.match(f"{identifier}-describe", response)
         snapshot.match(f"{identifier}-sqs-msg", message)
