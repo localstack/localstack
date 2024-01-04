@@ -129,12 +129,12 @@ class Poller:
         )
 
     def run(self, *args, **kwargs):
-        try:
-            sqs_client = get_sqs_client(
-                self.version_manager.function_version, client_config=CLIENT_CONFIG
-            )
-            function_timeout = self.version_manager.function_version.config.timeout
-            while not self._shutdown_event.is_set():
+        sqs_client = get_sqs_client(
+            self.version_manager.function_version, client_config=CLIENT_CONFIG
+        )
+        function_timeout = self.version_manager.function_version.config.timeout
+        while not self._shutdown_event.is_set():
+            try:
                 response = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
                     # TODO: consider replacing with short polling instead of long polling to prevent keeping connections open
@@ -154,19 +154,17 @@ class Poller:
                         #  due to the visibility timeout
                         self.invoker_pool.submit(self.handle_message, message)
 
-                # Try short polling instead of long polling to reduce the number of open connections
-                # self._shutdown_event.wait(2)
-        except Exception as e:
-            # TODO: if the gateway shuts down before the shutdown event even is set,
-            #  this log message might be sent regardless
-            if isinstance(e, ConnectionRefusedError) and self._shutdown_event.is_set():
-                return
-            LOG.error(
-                "Error while polling lambda events for function %s: %s",
-                self.version_manager.function_version.qualified_arn,
-                e,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
+            except Exception as e:
+                # TODO: if the gateway shuts down before the shutdown event even is set,
+                #  this log message might be sent regardless
+                if isinstance(e, ConnectionRefusedError) and self._shutdown_event.is_set():
+                    return
+                LOG.error(
+                    "Error while polling lambda events for function %s: %s",
+                    self.version_manager.function_version.qualified_arn,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
 
     def stop(self):
         LOG.debug(
