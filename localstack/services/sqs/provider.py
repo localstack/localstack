@@ -992,9 +992,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                         )
                     )
 
+        # some SDKs expect ``Failed`` to not be present at all
         return SendMessageBatchResult(
-            Successful=successful,
-            Failed=failed,
+            Successful=successful if successful else None,
+            Failed=failed if failed else None,
         )
 
     def _put_message(
@@ -1096,6 +1097,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             self._cloudwatch_dispatcher.dispatch_metric_received(queue, received=len(messages))
 
         # TODO: how does receiving behave if the queue was deleted in the meantime?
+        # TODO: ``Messages`` is often expected to not be set at all if it's an empty list
         return ReceiveMessageResult(Messages=messages)
 
     def list_dead_letter_source_queues(

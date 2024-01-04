@@ -83,6 +83,9 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_posting_to_fifo_requires_deduplicationid_group_id": {
     "last_validated_date": "2023-11-14T11:18:18+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_publish_get_delete_message_batch": {
+    "last_validated_date": "2024-01-04T18:51:38+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters": {
     "last_validated_date": "2023-11-14T11:00:15+00:00"
   },

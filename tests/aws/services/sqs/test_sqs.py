@@ -2122,6 +2122,7 @@ class TestSqsProvider:
         )
         successful = result_send_batch["Successful"]
         assert len(successful) == len(message_batch)
+        assert "Failed" not in result_send_batch
 
         result_recv = []
         i = 0
@@ -2151,8 +2152,7 @@ class TestSqsProvider:
         confirmation = aws_client.sqs.receive_message(
             QueueUrl=queue_url, MaxNumberOfMessages=message_count
         )
-        assert "Messages" in confirmation
-        assert confirmation["Messages"] == []
+        assert not confirmation.get("Messages")
 
     @markers.aws.validated
     @pytest.mark.parametrize(
