@@ -726,13 +726,18 @@ class ContainerClient(metaclass=ABCMeta):
 
     @abstractmethod
     def connect_container_to_network(
-        self, network_name: str, container_name_or_id: str, aliases: Optional[List] = None
+        self,
+        network_name: str,
+        container_name_or_id: str,
+        aliases: Optional[List] = None,
+        link_local_ips: List[str] = None,
     ) -> None:
         """
         Connects a container to a given network
         :param network_name: Network to connect the container to
         :param container_name_or_id: Container to connect to the network
         :param aliases: List of dns names the container should be available under in the network
+        :param link_local_ips: List of link-local (IPv4 or IPv6) addresses
         """
 
     @abstractmethod
@@ -888,6 +893,7 @@ class ContainerClient(metaclass=ABCMeta):
         platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        init: Optional[bool] = None,
     ) -> Tuple[bytes, bytes]:
         """Creates and runs a given docker container
 

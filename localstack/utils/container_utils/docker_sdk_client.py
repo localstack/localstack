@@ -416,7 +416,11 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException() from e
 
     def connect_container_to_network(
-        self, network_name: str, container_name_or_id: str, aliases: Optional[List] = None
+        self,
+        network_name: str,
+        container_name_or_id: str,
+        aliases: Optional[List] = None,
+        link_local_ips: List[str] = None,
     ) -> None:
         LOG.debug(
             "Connecting container '%s' to network '%s' with aliases '%s'",
@@ -429,7 +433,11 @@ class SdkDockerClient(ContainerClient):
         except NotFound:
             raise NoSuchNetwork(network_name)
         try:
-            network.connect(container=container_name_or_id, aliases=aliases)
+            network.connect(
+                container=container_name_or_id,
+                aliases=aliases,
+                link_local_ips=link_local_ips,
+            )
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
         except APIError as e:
@@ -608,6 +616,7 @@ class SdkDockerClient(ContainerClient):
         labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        init: Optional[bool] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
@@ -657,6 +666,8 @@ class SdkDockerClient(ContainerClient):
                 kwargs["working_dir"] = workdir
             if privileged:
                 kwargs["privileged"] = True
+            if init:
+                kwargs["init"] = True
             if labels:
                 kwargs["labels"] = labels
             if ulimits:
@@ -728,6 +739,7 @@ class SdkDockerClient(ContainerClient):
         platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        init: Optional[bool] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -763,6 +775,7 @@ class SdkDockerClient(ContainerClient):
                 workdir=workdir,
                 privileged=privileged,
                 platform=platform,
+                init=init,
                 **kwargs,
             )
             result = self.start_container(

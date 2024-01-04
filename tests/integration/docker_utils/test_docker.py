@@ -342,6 +342,26 @@ class TestDockerClient:
             # perform a command to trigger the exception
             docker_client.list_containers()
 
+    def test_create_container_with_init(self, docker_client, create_container):
+        try:
+            container_name = _random_container_name()
+            docker_client.create_container(
+                "alpine", init=True, command=["sh", "-c", "/bin/true"], name=container_name
+            )
+            assert docker_client.inspect_container(container_name)["HostConfig"]["Init"]
+        finally:
+            docker_client.remove_container(container_name)
+
+    def test_run_container_with_init(self, docker_client, create_container):
+        try:
+            container_name = _random_container_name()
+            docker_client.run_container(
+                "alpine", init=True, command=["sh", "-c", "/bin/true"], name=container_name
+            )
+            assert docker_client.inspect_container(container_name)["HostConfig"]["Init"]
+        finally:
+            docker_client.remove_container(container_name)
+
     # TODO: currently failing under Podman in CI (works locally under MacOS)
     @pytest.mark.xfail(
         _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
@@ -1477,6 +1497,21 @@ class TestDockerNetworking:
             container.container_id
             in docker_client.inspect_network(network_name).get("Containers").keys()
         )
+
+    def test_connect_container_to_network_with_link_local_address(
+        self, docker_client, create_network, create_container
+    ):
+        network_name = f"ls_test_network_{short_uid()}"
+        create_network(network_name)
+        container = create_container("alpine", command=["sh", "-c", "sleep infinity"])
+        docker_client.connect_container_to_network(
+            network_name,
+            container_name_or_id=container.container_id,
+            link_local_ips=["169.254.169.10"],
+        )
+        assert docker_client.inspect_container(container.container_id)["NetworkSettings"][
+            "Networks"
+        ][network_name]["IPAMConfig"]["LinkLocalIPs"] == ["169.254.169.10"]
 
     def test_connect_container_to_nonexistent_network(
         self, docker_client: ContainerClient, create_container
