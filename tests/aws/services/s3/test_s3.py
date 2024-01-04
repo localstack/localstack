@@ -542,6 +542,59 @@ class TestS3:
         snapshot.match("del-object-special-char", resp)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..ServerSideEncryption"],
+    )
+    @pytest.mark.parametrize(
+        "key",
+        ["file%2Fname", "test@key/", "test key/", "test key//", "a/%F0%9F%98%80/", "test+key"],
+    )
+    def test_copy_object_special_character(
+        self, s3_bucket, s3_create_bucket, aws_client, snapshot, key
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        dest_bucket = s3_create_bucket()
+        resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
+        snapshot.match("put-object-src-special-char", resp)
+
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=dest_bucket,
+            Key=key,
+            CopySource=f"{s3_bucket}/{key}",
+        )
+        snapshot.match("copy-object-special-char", copy_obj)
+
+    @markers.aws.validated
+    def test_copy_object_special_character_plus_for_space(
+        self, s3_bucket, aws_client, aws_http_client_factory
+    ):
+        """
+        Different languages don't always handle the space character the same way when encoding URL. Python uses %20
+        when Go for example encodes it with `+`, which is the form way. This leads to a specific edge case for
+        the CopySource header.
+        """
+        object_key = "test key.txt"
+        dest_key = "dest-key"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test-body")
+
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        bucket_url = _bucket_url(s3_bucket)
+
+        copy_object_url = f"{bucket_url}/{dest_key}"
+        copy_source = f"{s3_bucket}%2F{object_key.replace(' ', '+')}"
+        copy_resp = s3_http_client.put(
+            copy_object_url,
+            headers={
+                "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
+                "x-amz-copy-source": copy_source,
+            },
+        )
+        assert copy_resp.ok
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=dest_key)
+        assert head_object["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "use_virtual_address",
         [True, False],
