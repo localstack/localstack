@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
@@ -38,6 +37,7 @@ from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.patch import patch
+from localstack.utils.strings import camel_to_snake_case
 from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
 from localstack.utils.threads import start_worker_thread
@@ -143,12 +143,6 @@ def put_metric_alarm(
     )
 
 
-def convert_camel_to_snake_upper_case(input: str) -> str:
-    # currently we only need to handle "SampleCount" camel case
-    input = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", input)
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", input).upper()
-
-
 def create_message_response_update_state(alarm, old_state):
     response = {
         "AWSAccountId": extract_account_id_from_arn(alarm.alarm_arn),
@@ -191,9 +185,7 @@ def create_message_response_update_state(alarm, old_state):
 
     if alarm.statistic:
         details["StatisticType"] = "Statistic"
-        details["Statistic"] = convert_camel_to_snake_upper_case(
-            alarm.statistic
-        )  # AWS returns uppercase
+        details["Statistic"] = camel_to_snake_case(alarm.statistic).upper()  # AWS returns uppercase
     elif alarm.extended_statistic:
         details["StatisticType"] = "ExtendedStatistic"
         details["ExtendedStatistic"] = alarm.extended_statistic
