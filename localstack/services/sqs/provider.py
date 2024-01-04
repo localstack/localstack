@@ -909,10 +909,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> SendMessageResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        # Have to check the message size here, rather than in _put_message
-        # to avoid multiple calls for batch messages.
-        check_message_size(message_body, message_attributes, queue.maximum_message_size)
-
         queue_item = self._put_message(
             queue,
             context,
@@ -977,6 +973,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                             SequenceNumber=queue_item.sequence_number,
                         )
                     )
+                except ServiceException as e:
+                    failed.append(
+                        BatchResultErrorEntry(
+                            Id=entry["Id"],
+                            SenderFault=e.sender_fault,
+                            Code=e.code,
+                            Message=e.message,
+                        )
+                    )
                 except Exception as e:
                     failed.append(
                         BatchResultErrorEntry(
@@ -1003,6 +1008,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_deduplication_id: String = None,
         message_group_id: String = None,
     ) -> SqsMessage:
+        check_message_size(message_body, message_attributes, queue.maximum_message_size)
         check_message_content(message_body)
         check_attributes(message_attributes)
         check_attributes(message_system_attributes)
