@@ -4977,6 +4977,7 @@ class TestS3:
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882",
     )
+    @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
     def test_s3_multipart_upload_sse(
