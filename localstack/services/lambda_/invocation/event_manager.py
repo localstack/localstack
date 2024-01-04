@@ -106,15 +106,9 @@ def has_enough_time_for_retry(
 
 # TODO: optimize this client configuration. Do we need to consider client caching here?
 CLIENT_CONFIG = Config(
-    # We shut down the LocalStack gateway last, hence this does not delay LocalStack cleanup anymore
-    connect_timeout=5,
-    read_timeout=10,
-    retries={"max_attempts": 1},
-    # Default 10; the thread pool executor spawns a maximum of 32 threads by default but multiple function versions
-    # might push beyond. We need to track how these connections and/or clients are shared.
-    # An insufficient pool can lead to connection timeout error with the warning:
-    # urllib3.connectionpool: Connection pool is full, discarding connection: localhost. Connection pool size: 1
-    # max_pool_connections=10,
+    connect_timeout=1,
+    read_timeout=5,
+    retries={"max_attempts": 0},
 )
 
 
