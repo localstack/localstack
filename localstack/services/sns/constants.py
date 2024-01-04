@@ -33,5 +33,7 @@ GCM_URL = "https://fcm.googleapis.com/fcm/send"
 PLATFORM_ENDPOINT_MSGS_ENDPOINT = "/_aws/sns/platform-endpoint-messages"
 SMS_MSGS_ENDPOINT = "/_aws/sns/sms-messages"
 SUBSCRIPTION_TOKENS_ENDPOINT = "/_aws/sns/subscription-tokens"
+# the `0` are the Cert ID in hex chars
+SNS_CERT_ENDPOINT = "/_aws/sns/SimpleNotificationService-00000000000000000000000000000000.pem"
 
 DUMMY_SUBSCRIPTION_PRINCIPAL = "arn:aws:iam::{{account_id}}:user/DummySNSPrincipal"

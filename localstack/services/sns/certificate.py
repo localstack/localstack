@@ -3,11 +3,7 @@ from datetime import datetime, timedelta
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
-
-#
-# SNS Server Cert
-#
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
 SNS_SERVER_PRIVATE_KEY: RSAPrivateKey = rsa.generate_private_key(
     public_exponent=65537, key_size=2048
@@ -56,31 +52,3 @@ SNS_SERVER_CERT: str = (
     .public_bytes(serialization.Encoding.PEM)
     .decode("utf-8")
 )
-
-print(SNS_SERVER_CERT)
-
-# x509.load_pem_x509_certificate(SNS_SERVER_CERT.encode()).public_key().verify()
-#
-# Utils
-#
-
-
-def private_key_as_pem(key: RSAPrivateKey) -> str:
-    """
-    Return the PEM encoded private key with no encryption.
-    """
-    return key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption(),
-    ).decode("utf-8")
-
-
-def public_key_as_pem(key: RSAPublicKey) -> str:
-    """
-    Return the PEM encoded public key.
-    """
-    return key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    ).decode("utf-8")

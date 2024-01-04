@@ -88,10 +88,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     - DeleteTopic
     """
 
-    @route("/_aws/sns/SimpleNotificationService-0000000000000000000000.pem")
+    @route(sns_constants.SNS_CERT_ENDPOINT, methods=["GET"])
     def get_signature_cert_pem_file(self, request: Request):
         # see http://sns-public-resources.s3.amazonaws.com/SNS_Message_Signing_Release_Note_Jan_25_2011.pdf
-        # the `0` are the Cert ID in hex chars
+        # see https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message.html
         return Response(self._signature_cert_pem, 200)
 
     def __init__(self) -> None:
@@ -105,8 +105,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def on_after_init(self):
         # Allow sent platform endpoint messages to be retrieved from the SNS endpoint
         register_sns_api_resource(ROUTER)
-        # add the route to serve the Signature .pem files
-        # TODO: check signature V2? believe it's in the way to hash (SHA1 vs SHA256)
+        # add the route to serve the certificate used to validate message signatures
         ROUTER.add(self.get_signature_cert_pem_file)
 
     @staticmethod
