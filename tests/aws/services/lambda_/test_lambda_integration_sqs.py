@@ -1356,6 +1356,7 @@ class TestSQSEventSourceMapping:
         self,
         create_lambda_function,
         lambda_su_role,
+        create_event_source_mapping,
         sqs_create_queue,
         sqs_get_queue_arn,
         snapshot,
@@ -1373,14 +1374,14 @@ class TestSQSEventSourceMapping:
             role=lambda_su_role,
         )
 
-        response = aws_client.lambda_.create_event_source_mapping(
+        response = create_event_source_mapping(
             FunctionName=function_name_1,
             EventSourceArn=event_source_arn,
         )
         snapshot.match("create", response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.lambda_.create_event_source_mapping(
+            create_event_source_mapping(
                 FunctionName=function_name_1,
                 EventSourceArn=event_source_arn,
             )
@@ -1395,7 +1396,7 @@ class TestSQSEventSourceMapping:
             runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
-        aws_client.lambda_.create_event_source_mapping(
+        create_event_source_mapping(
             FunctionName=function_name_2,
             EventSourceArn=event_source_arn,
         )

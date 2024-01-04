@@ -1292,6 +1292,24 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
 
 
 @pytest.fixture
+def create_event_source_mapping(aws_client):
+    uuids = []
+
+    def _create_event_source_mapping(*args, **kwargs):
+        response = aws_client.lambda_.create_event_source_mapping(*args, **kwargs)
+        uuids.append(response["UUID"])
+        return response
+
+    yield _create_event_source_mapping
+
+    for uuid in uuids:
+        try:
+            aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
+        except Exception:
+            LOG.debug(f"Unable to delete event source mapping {uuid} in cleanup")
+
+
+@pytest.fixture
 def check_lambda_logs(aws_client):
     def _check_logs(func_name: str, expected_lines: List[str] = None) -> List[str]:
         if not expected_lines:

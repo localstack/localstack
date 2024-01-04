@@ -128,10 +128,12 @@ class TestKinesisSource:
         self,
         create_lambda_function,
         lambda_su_role,
+        create_event_source_mapping,
         kinesis_create_stream,
         wait_for_stream_ready,
         snapshot,
         aws_client,
+        cleanups,
     ):
         function_name_1 = f"lambda_func-{short_uid()}"
         function_name_2 = f"lambda_func-{short_uid()}"
@@ -150,7 +152,7 @@ class TestKinesisSource:
             role=lambda_su_role,
         )
 
-        response = aws_client.lambda_.create_event_source_mapping(
+        response = create_event_source_mapping(
             FunctionName=function_name_1,
             EventSourceArn=event_source_arn,
             StartingPosition="LATEST",
@@ -158,7 +160,7 @@ class TestKinesisSource:
         snapshot.match("create", response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.lambda_.create_event_source_mapping(
+            create_event_source_mapping(
                 FunctionName=function_name_1,
                 EventSourceArn=event_source_arn,
                 StartingPosition="LATEST",
@@ -174,7 +176,7 @@ class TestKinesisSource:
             runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
-        aws_client.lambda_.create_event_source_mapping(
+        create_event_source_mapping(
             FunctionName=function_name_2,
             EventSourceArn=event_source_arn,
             StartingPosition="LATEST",
