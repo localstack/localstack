@@ -106,8 +106,8 @@ def has_enough_time_for_retry(
 
 # TODO: optimize this client configuration. Do we need to consider client caching here?
 CLIENT_CONFIG = Config(
-    connect_timeout=1,
-    read_timeout=5,
+    connect_timeout=5,
+    read_timeout=10,
     retries={"max_attempts": 0},
 )
 
