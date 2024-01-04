@@ -138,7 +138,7 @@ class Poller:
                 response = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
                     # TODO: consider replacing with short polling instead of long polling to prevent keeping connections open
-                    # WaitTimeSeconds=2,
+                    WaitTimeSeconds=2,
                     # Related: SQS event source mapping batches up to 10 messages:
                     # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
                     MaxNumberOfMessages=10,
@@ -155,7 +155,7 @@ class Poller:
                         self.invoker_pool.submit(self.handle_message, message)
 
                 # Try short polling instead of long polling to reduce the number of open connections
-                self._shutdown_event.wait(2)
+                # self._shutdown_event.wait(2)
         except Exception as e:
             # TODO: if the gateway shuts down before the shutdown event even is set,
             #  this log message might be sent regardless
