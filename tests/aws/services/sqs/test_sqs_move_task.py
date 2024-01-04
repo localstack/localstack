@@ -22,7 +22,8 @@ def sqs_collect_messages(
     def _receive():
         response = sqs_client.receive_message(
             QueueUrl=queue_url,
-            WaitTimeSeconds=min(max(1, int(timeout)), 5),
+            # try not to wait too long, but also not poll too often
+            WaitTimeSeconds=min(max(1, timeout), 5),
             MaxNumberOfMessages=1,
         )
 
@@ -223,6 +224,7 @@ def test_basic_move_task_workflow(
     # check move task completion (in AWS, approximate number of messages may take a while to update)
     def _wait_for_task_completion():
         _response = aws_client.sqs.list_message_move_tasks(SourceArn=source_arn)
+        # this test also covers a check that `ApproximateNumberOfMessagesMoved` is set correctly at some point
         assert int(_response["Results"][0]["ApproximateNumberOfMessagesMoved"]) == 2
         return _response
 
@@ -279,6 +281,9 @@ def test_move_task_with_throughput_limit(
         "message-3",
     }
 
+    # we set the MaxNumberOfMessagesPerSecond to 1, so moving 4 messages should take at least 3 seconds (assuming
+    # that the first one is moved immediately, and the task terminates immediately after the last message has been
+    # moved)
     assert time.time() - started >= 3
 
 

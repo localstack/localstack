@@ -433,14 +433,18 @@ class MessageMoveTaskManager:
 
     def submit(self, move_task: MessageMoveTask):
         with self.mutex:
-            move_task.mark_started()
-            source_queue = self._get_queue_by_arn(move_task.source_arn)
-            move_task.approximate_number_of_messages_to_move = (
-                source_queue.approx_number_of_messages
-            )
-            move_task.approximate_number_of_messages_moved = 0
-            self.move_tasks[move_task.task_id] = move_task
-            self.executor.submit(self._run, move_task)
+            try:
+                source_queue = self._get_queue_by_arn(move_task.source_arn)
+                move_task.approximate_number_of_messages_to_move = (
+                    source_queue.approx_number_of_messages
+                )
+                move_task.approximate_number_of_messages_moved = 0
+                move_task.mark_started()
+                self.move_tasks[move_task.task_id] = move_task
+                self.executor.submit(self._run, move_task)
+            except Exception as e:
+                self._fail_task(move_task, e)
+                raise
 
     def cancel(self, move_task: MessageMoveTask):
         with self.mutex:
@@ -455,8 +459,6 @@ class MessageMoveTaskManager:
             self.executor.shutdown(wait=False)
 
     def _run(self, move_task: MessageMoveTask):
-        move_task.status = MessageMoveTaskStatus.RUNNING
-
         try:
             LOG.info(
                 "Move task started %s (%s -> %s)",
@@ -488,17 +490,7 @@ class MessageMoveTaskManager:
                     move_task.cancel_event.wait(timeout=(1 / rate))
 
         except Exception as e:
-            LOG.info(
-                "Move task failed %s: %s",
-                move_task.task_id,
-                e,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
-            move_task.status = MessageMoveTaskStatus.FAILED
-            if isinstance(e, ServiceException):
-                move_task.failure_reason = e.code
-            else:
-                move_task.failure_reason = e.__class__.__name__
+            self._fail_task(move_task, e)
         else:
             if move_task.cancel_event.is_set():
                 LOG.info("Move task cancelled %s", move_task.task_id)
@@ -510,6 +502,25 @@ class MessageMoveTaskManager:
     def _get_queue_by_arn(self, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
         return SqsProvider._require_queue(arn["account"], arn["region"], arn["resource"])
+
+    def _fail_task(self, task: MessageMoveTask, reason: Exception):
+        """
+        Marks a given task as failed due to the given reason.
+
+        :param task: the task to mark as failed
+        :param reason: the failure reason
+        """
+        LOG.info(
+            "Exception occurred during move task %s: %s",
+            task.task_id,
+            reason,
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
+        task.status = MessageMoveTaskStatus.FAILED
+        if isinstance(reason, ServiceException):
+            task.failure_reason = reason.code
+        else:
+            task.failure_reason = reason.__class__.__name__
 
 
 def check_attributes(message_attributes: MessageBodyAttributeMap):
@@ -1329,31 +1340,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def list_message_move_tasks(
         self, context: RequestContext, source_arn: String, max_results: NullableInteger = None
     ) -> ListMessageMoveTasksResult:
-        """Gets the most recent message movement tasks (up to 10) under a specific
-        source queue.
-
-        -  This action is currently limited to supporting message redrive from
-           `dead-letter queues
-           (DLQs) <https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html>`__
-           only. In this context, the source queue is the dead-letter queue
-           (DLQ), while the destination queue can be the original source queue
-           (from which the messages were driven to the dead-letter-queue), or a
-           custom destination queue.
-
-        -  Currently, only standard queues are supported.
-
-        -  Only one active message movement task is supported per queue at any
-           given time.
-
-        :param source_arn: The ARN of the queue whose message movement tasks are to be listed.
-        :param max_results: The maximum number of results to include in the response.
-        :returns: ListMessageMoveTasksResult
-        :raises ResourceNotFoundException:
-        :raises RequestThrottled:
-        :raises InvalidAddress:
-        :raises InvalidSecurity:
-        :raises UnsupportedOperation:
-        """
         try:
             self._require_queue_by_arn(context, source_arn)
         except InvalidArnException:
@@ -1376,7 +1362,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         tasks.sort(key=lambda t: t.started_timestamp, reverse=True)
 
         # convert to result list
-        n = max_results or 10
+        n = max_results or 1
         return ListMessageMoveTasksResult(
             Results=[self._to_message_move_task_entry(task) for task in tasks[:n]]
         )
