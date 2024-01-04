@@ -566,6 +566,9 @@ class TestS3:
         snapshot.match("copy-object-special-char", copy_obj)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=LEGACY_V2_S3_PROVIDER, reason="moto does not handle this edge case"
+    )
     def test_copy_object_special_character_plus_for_space(
         self, s3_bucket, aws_client, aws_http_client_factory
     ):
