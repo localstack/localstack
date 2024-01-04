@@ -542,6 +542,69 @@ class TestS3:
         snapshot.match("del-object-special-char", resp)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..ServerSideEncryption"],
+    )
+    def test_copy_object_special_character(self, s3_bucket, s3_create_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        dest_bucket = s3_create_bucket()
+        special_keys = [
+            "file%2Fname",
+            "test@key/",
+            "test key/",
+            "test key//",
+            "a/%F0%9F%98%80/",
+            "test+key",
+        ]
+
+        for key in special_keys:
+            resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
+            snapshot.match(f"put-object-src-special-char-{key}", resp)
+
+            copy_obj = aws_client.s3.copy_object(
+                Bucket=dest_bucket,
+                Key=key,
+                CopySource=f"{s3_bucket}/{key}",
+            )
+            snapshot.match(f"copy-object-special-char-{key}", copy_obj)
+
+        resp = aws_client.s3.list_objects_v2(Bucket=dest_bucket)
+        snapshot.match("list-object-copy-dest-special-char", resp)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER, reason="moto does not handle this edge case"
+    )
+    def test_copy_object_special_character_plus_for_space(
+        self, s3_bucket, aws_client, aws_http_client_factory
+    ):
+        """
+        Different languages don't always handle the space character the same way when encoding URL. Python uses %20
+        when Go for example encodes it with `+`, which is the form way. This leads to a specific edge case for
+        the CopySource header.
+        """
+        object_key = "test key.txt"
+        dest_key = "dest-key"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test-body")
+
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        bucket_url = _bucket_url(s3_bucket)
+
+        copy_object_url = f"{bucket_url}/{dest_key}"
+        copy_source = f"{s3_bucket}%2F{object_key.replace(' ', '+')}"
+        copy_resp = s3_http_client.put(
+            copy_object_url,
+            headers={
+                "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
+                "x-amz-copy-source": copy_source,
+            },
+        )
+        assert copy_resp.ok
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=dest_key)
+        assert head_object["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "use_virtual_address",
         [True, False],
@@ -769,7 +832,7 @@ class TestS3:
             )
         snapshot.match("abort-exc", e.value.response)
 
-    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     @markers.aws.validated
     def test_multipart_complete_multipart_too_small(self, s3_bucket, snapshot, aws_client):
@@ -802,7 +865,7 @@ class TestS3:
             )
         snapshot.match("complete-exc-too-small", e.value.response)
 
-    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     @markers.aws.validated
     def test_multipart_complete_multipart_wrong_part(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("UploadId"))
@@ -1810,7 +1873,7 @@ class TestS3:
         snapshot.match("copy-success", copy_obj_all_positive)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -2188,7 +2251,7 @@ class TestS3:
         snapshot.match("get-object-acp-acl", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -2655,7 +2718,7 @@ class TestS3:
         assert body == str(download_file_object)
 
     @markers.aws.only_localstack
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         reason="Not implemented in other providers than stream",
         condition=LEGACY_V2_S3_PROVIDER,
     )
@@ -3375,7 +3438,7 @@ class TestS3:
         assert copy_etag != multipart_etag
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -3557,7 +3620,7 @@ class TestS3:
             snapshot.match(f"create-bucket-{loc_constraint}", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         reason="asf provider: routing for region-path style not working; "
         "both provider: return 200 for other regions (no redirects)"
     )
@@ -3987,7 +4050,7 @@ class TestS3:
         assert list_obj_post_versioned["Versions"][2]["VersionId"] is not None
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="ACL behaviour is not implemented, see comments")
+    @pytest.mark.skipif(reason="ACL behaviour is not implemented, see comments")
     def test_s3_batch_delete_objects_using_requests_with_acl(
         self, s3_bucket, allow_bucket_acl, snapshot, aws_client, anonymous_client
     ):
@@ -4744,7 +4807,7 @@ class TestS3:
         assert resp_dict["DeleteResult"]["Deleted"]["Key"] == object_key
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Behaviour not implemented yet")
+    @pytest.mark.skipif(reason="Behaviour not implemented yet")
     def test_complete_multipart_parts_checksum(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -4910,10 +4973,11 @@ class TestS3:
         snapshot.match("upload-part-no-checksum-exc", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
-        condition=is_v2_provider,
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882",
     )
+    @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
     def test_s3_multipart_upload_sse(
@@ -5558,7 +5622,7 @@ class TestS3:
         snapshot.match("list-obj-after-empty", response)
 
     @markers.aws.only_localstack
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Moto parsing fails on the form",
     )
@@ -8694,7 +8758,7 @@ class TestS3BucketLifecycle:
 )
 class TestS3ObjectLockRetention:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -8775,7 +8839,7 @@ class TestS3ObjectLockRetention:
         snapshot.match("get-object-retention-regular-bucket", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -8955,7 +9019,7 @@ class TestS3ObjectLockRetention:
         snapshot.match("head-object-with-lock", head_object)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -9002,7 +9066,7 @@ class TestS3ObjectLockRetention:
         snapshot.match("head-object-locked-delete-marker", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented",
     )
@@ -9059,7 +9123,7 @@ class TestS3ObjectLockRetention:
 )
 class TestS3ObjectLockLegalHold:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented, does not validate",
     )
@@ -9131,7 +9195,7 @@ class TestS3ObjectLockLegalHold:
         snapshot.match("put-object-legal-hold-off", put_legal_hold)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented, does not validate",
     )
@@ -9183,7 +9247,7 @@ class TestS3ObjectLockLegalHold:
         snapshot.match("get-object-retention-regular-bucket", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented, does not validate",
     )
@@ -9993,7 +10057,7 @@ class TestS3PresignedPost:
         assert response.status_code == 204
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="not implemented in moto",
     )
@@ -10094,7 +10158,7 @@ class TestS3PresignedPost:
         snapshot.match("head-object", head_object)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="not implemented in moto",
     )
