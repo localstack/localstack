@@ -529,7 +529,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents": {
-    "recorded-date": "14-11-2023, 11:57:37",
+    "recorded-date": "04-01-2024, 21:47:03",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Error": {
@@ -546,10 +546,9 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size": {
-    "recorded-date": "14-11-2023, 11:57:37",
+    "recorded-date": "04-01-2024, 21:48:32",
     "recorded-content": {
       "send_oversized_message_batch": {
-        "Failed": [],
         "Successful": [
           {
             "Id": "1",

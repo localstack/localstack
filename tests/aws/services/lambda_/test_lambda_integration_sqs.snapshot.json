@@ -239,7 +239,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_sqs.py::test_report_batch_item_failures": {
-    "recorded-date": "10-11-2023, 19:17:37",
+    "recorded-date": "04-01-2024, 21:45:26",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -249,7 +249,6 @@
         }
       },
       "send_message_batch": {
-        "Failed": [],
         "Successful": [
           {
             "Id": "message-1",
