@@ -327,7 +327,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -383,7 +383,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -407,7 +407,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -451,7 +451,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -839,7 +839,7 @@
         "MessageId": "<uuid:1>",
         "Signature": "<signature>",
         "SignatureVersion": "1",
-        "SigningCertUrl": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SigningCertUrl": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
         "Subject": "[Subject] Test subject",
         "Timestamp": "date",
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
@@ -872,7 +872,7 @@
                       "MessageId": "<uuid:1>",
                       "Signature": "<signature>",
                       "SignatureVersion": "1",
-                      "SigningCertUrl": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+                      "SigningCertUrl": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
                       "Subject": null,
                       "Timestamp": "date",
                       "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>",
@@ -899,7 +899,7 @@
               "MessageId": "<uuid:2>",
               "Signature": "<signature>",
               "SignatureVersion": "1",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "Timestamp": "date",
               "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
               "Type": "Notification",
@@ -951,7 +951,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:5>:<resource:3>",
               "MessageAttributes": {
                 "attr1": {
@@ -1016,7 +1016,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "attr1": {
@@ -1051,7 +1051,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -1194,7 +1194,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "attr1": {
@@ -1456,7 +1456,7 @@
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
-          "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
           "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
         },
         "MD5OfBody": "<md5-hash>",
@@ -1521,7 +1521,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
               "MessageAttributes": {
                 "attr2": {
@@ -1611,7 +1611,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
               "MessageAttributes": {
                 "an-attribute-key": {
@@ -1667,7 +1667,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -1726,7 +1726,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -1750,7 +1750,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -1957,7 +1957,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -1981,7 +1981,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -3239,7 +3239,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "attr1": {
@@ -3269,7 +3269,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "attr1": {
@@ -3367,7 +3367,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "def": {
@@ -3401,7 +3401,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "def": {
@@ -3460,7 +3460,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "def": {
@@ -3490,7 +3490,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "def": {
@@ -3732,7 +3732,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -3756,7 +3756,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -3844,7 +3844,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:6>",
               "MessageAttributes": {
                 "attr1": {
@@ -3874,7 +3874,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "attr1": {
@@ -3904,7 +3904,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:6>",
               "MessageAttributes": {
                 "attr1": {
@@ -4365,7 +4365,7 @@
         "MessageId": "<uuid:1>",
         "Signature": "<signature>",
         "SignatureVersion": "1",
-        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
         "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:1>",
         "Timestamp": "date",
         "Token": "<token:1>",
@@ -4461,7 +4461,7 @@
         "MessageId": "<uuid:3>",
         "Signature": "<signature>",
         "SignatureVersion": "1",
-        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
         "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:2>",
         "Timestamp": "date",
         "Token": "<token:2>",
@@ -4478,7 +4478,7 @@
         "MessageId": "<uuid:1>",
         "Signature": "<signature>",
         "SignatureVersion": "1",
-        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
         "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:1>",
         "Timestamp": "date",
         "Token": "<token:1>",
@@ -4553,7 +4553,7 @@
         "MessageId": "<uuid:2>",
         "Signature": "<signature>",
         "SignatureVersion": "1",
-        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
         "Timestamp": "date",
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
         "Type": "Notification",
@@ -4584,7 +4584,7 @@
         "MessageId": "<uuid:3>",
         "Signature": "<signature>",
         "SignatureVersion": "1",
-        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
         "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:2>",
         "Timestamp": "date",
         "Token": "<token:2>",
@@ -4613,7 +4613,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -4637,7 +4637,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -4661,7 +4661,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -4685,7 +4685,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -4709,7 +4709,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -4733,7 +4733,7 @@
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
@@ -4834,6 +4834,124 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_publish_sqs_verify_signature[1]": {
+    "recorded-date": "04-01-2024, 17:39:18",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "test signature value with attributes",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "1"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_publish_sqs_verify_signature[2]": {
+    "recorded-date": "04-01-2024, 17:39:20",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "test signature value with attributes",
+              "Timestamp": "date",
+              "SignatureVersion": "2",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "1"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_publish_lambda_verify_signature[1]": {
+    "recorded-date": "04-01-2024, 18:31:42",
+    "recorded-content": {
+      "notification": {
+        "Message": "Hello world.",
+        "MessageAttributes": {},
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+        "Subject": "[Subject] Test subject Signature v1",
+        "Timestamp": "date",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeUrl": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_publish_lambda_verify_signature[2]": {
+    "recorded-date": "04-01-2024, 18:33:47",
+    "recorded-content": {
+      "notification": {
+        "Message": "Hello world.",
+        "MessageAttributes": {},
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+        "Subject": "[Subject] Test subject Signature v2",
+        "Timestamp": "date",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeUrl": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
       }
     }
   }

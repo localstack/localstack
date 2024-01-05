@@ -1,3 +1,4 @@
+import base64
 import contextlib
 import json
 import logging
@@ -12,6 +13,9 @@ import requests
 import xmltodict
 from botocore.auth import SigV4Auth
 from botocore.exceptions import ClientError
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 from pytest_httpserver import HTTPServer
 from werkzeug import Response
 
@@ -37,7 +41,7 @@ from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws.arns import parse_arn, sqs_queue_arn
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.lambda_.functions import lambda_integration
@@ -1096,6 +1100,109 @@ class TestSNSSubscriptionLambda:
         )
         snapshot.match("messages", response)
 
+    @markers.aws.validated
+    @pytest.mark.parametrize("signature_version", ["1", "2"])
+    def test_publish_lambda_verify_signature(
+        self,
+        aws_client,
+        sns_create_topic,
+        create_lambda_function,
+        sns_subscription,
+        lambda_su_role,
+        snapshot,
+        signature_version,
+    ):
+        # Lambda always returns SignatureVersion=1 in messages, however, it can be v2 and the signature needs to be
+        # verified against v2 (SHA256). Weird bug on AWS side, we will do the same for now.
+
+        function_name = f"lambda-function-{short_uid()}"
+        permission_id = f"test-statement-{short_uid()}"
+        subject = f"[Subject] Test subject Signature v{signature_version}"
+        message = "Hello world."
+        topic_arn = sns_create_topic(
+            Attributes={
+                "DisplayName": "TestTopicSignatureLambda",
+                "SignatureVersion": signature_version,
+            },
+        )["TopicArn"]
+
+        lambda_creation_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+        lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId=permission_id,
+            Action="lambda:InvokeFunction",
+            Principal="sns.amazonaws.com",
+            SourceArn=topic_arn,
+        )
+
+        subscription = sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="lambda",
+            Endpoint=lambda_arn,
+        )
+
+        def check_subscription():
+            subscription_arn = subscription["SubscriptionArn"]
+            subscription_attrs = aws_client.sns.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            assert subscription_attrs["Attributes"]["PendingConfirmation"] == "false"
+
+        retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+        aws_client.sns.publish(TopicArn=topic_arn, Subject=subject, Message=message)
+
+        # access events sent by lambda
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name,
+            expected_length=1,
+            regex_filter="Records.*Sns",
+            logs_client=aws_client.logs,
+        )
+
+        message = events[0]["Records"][0]["Sns"]
+        snapshot.match("notification", message)
+
+        cert_url = message["SigningCertUrl"]
+        get_cert_req = requests.get(cert_url)
+        assert get_cert_req.ok
+
+        cert = x509.load_pem_x509_certificate(get_cert_req.content)
+        message_signature = message["Signature"]
+        # create the canonical string
+        fields = ["Message", "MessageId", "Subject", "Timestamp", "TopicArn", "Type"]
+        # Build the string to be signed.
+        string_to_sign = "".join(
+            [f"{field}\n{message[field]}\n" for field in fields if field in message]
+        )
+
+        # decode the signature from base64.
+        decoded_signature = base64.b64decode(message_signature)
+
+        message_sig_version = message["SignatureVersion"]
+        # this is a bug on AWS side, assert our behaviour is the same for now, this might get fixed
+        assert message_sig_version == "1"
+        signature_hash = hashes.SHA1() if signature_version == "1" else hashes.SHA256()
+
+        # calculate signature value with cert
+        is_valid = cert.public_key().verify(
+            decoded_signature,
+            to_bytes(string_to_sign),
+            padding=padding.PKCS1v15(),
+            algorithm=signature_hash,
+        )
+        # if the verification failed, it would raise `InvalidSignature`
+        assert is_valid is None
+
 
 class TestSNSSubscriptionSQS:
     @markers.aws.validated
@@ -1877,6 +1984,71 @@ class TestSNSSubscriptionSQS:
             QueueUrl=queue_url, WaitTimeSeconds=10, MaxNumberOfMessages=1
         )
         snapshot.match("get-msg-json-default", response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("signature_version", ["1", "2"])
+    def test_publish_sqs_verify_signature(
+        self,
+        aws_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        snapshot,
+        signature_version,
+    ):
+        topic_arn = sns_create_topic(
+            Attributes={
+                "DisplayName": "TestTopicSignature",
+                "SignatureVersion": signature_version,
+            },
+        )["TopicArn"]
+
+        queue_url = sqs_create_queue()
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message="test signature value with attributes",
+            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "1"}},
+        )
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            WaitTimeSeconds=10,
+            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
+        )
+        snapshot.match("messages", response)
+        message = json.loads(response["Messages"][0]["Body"])
+
+        cert_url = message["SigningCertURL"]
+        get_cert_req = requests.get(cert_url)
+        assert get_cert_req.ok
+
+        cert = x509.load_pem_x509_certificate(get_cert_req.content)
+        message_signature = message["Signature"]
+        # create the canonical string
+        fields = ["Message", "MessageId", "Subject", "Timestamp", "TopicArn", "Type"]
+        # Build the string to be signed.
+        string_to_sign = "".join(
+            [f"{field}\n{message[field]}\n" for field in fields if field in message]
+        )
+
+        # decode the signature from base64.
+        decoded_signature = base64.b64decode(message_signature)
+
+        message_sig_version = message["SignatureVersion"]
+        assert message_sig_version == signature_version
+        signature_hash = hashes.SHA1() if message_sig_version == "1" else hashes.SHA256()
+
+        # calculate signature value with cert
+        is_valid = cert.public_key().verify(
+            decoded_signature,
+            to_bytes(string_to_sign),
+            padding=padding.PKCS1v15(),
+            algorithm=signature_hash,
+        )
+        # if the verification failed, it would raise `InvalidSignature`
+        assert is_valid is None
 
 
 class TestSNSSubscriptionSQSFifo:
