@@ -7,7 +7,7 @@ import re
 import shlex
 import subprocess
 from datetime import datetime
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
 from localstack.utils.collections import ensure_list
@@ -38,10 +38,14 @@ LOG = logging.getLogger(__name__)
 
 class CancellableProcessStream(CancellableStream):
     process: subprocess.Popen
+    map_fn: Callable[[str], Any]
 
-    def __init__(self, process: subprocess.Popen) -> None:
+    def __init__(
+        self, process: subprocess.Popen, map_fn: Union[Callable[[str], Any], None] = None
+    ) -> None:
         super().__init__()
         self.process = process
+        self.map_fn = map_fn
 
     def __iter__(self):
         return self
@@ -50,7 +54,11 @@ class CancellableProcessStream(CancellableStream):
         line = self.process.stdout.readline()
         if not line:
             raise StopIteration
-        return line
+
+        if self.map_fn is not None:
+            return self.map_fn(line)
+        else:
+            return line
 
     def close(self):
         return self.process.terminate()
@@ -414,7 +422,7 @@ class CmdDockerClient(ContainerClient):
         since: Optional[Union[datetime, int]] = None,
         until: Optional[Union[datetime, int]] = None,
         filters: Optional[Dict] = None,
-    ) -> Generator[Dict, None, None]:
+    ) -> CancellableStream:
         cmd = self._docker_cmd()
         cmd += ["events", "--format", "{{json .}}"]
 
@@ -436,11 +444,13 @@ class CmdDockerClient(ContainerClient):
             cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.STDOUT
         )
 
-        for msg in CancellableProcessStream(process):
+        def decode_fn(line: str):
             try:
-                yield json.loads(msg)
+                return json.loads(line)
             except json.JSONDecodeError as e:
-                LOG.warning("Error decoding docker event %s: %s", msg, e)
+                LOG.warning("Error decoding docker event %s: %s", line, e)
+
+        return CancellableProcessStream(process, map_fn=decode_fn)
 
     def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[dict, list, str]]:
         cmd = self._docker_cmd()
