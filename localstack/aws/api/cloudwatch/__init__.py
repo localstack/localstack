@@ -133,6 +133,7 @@ class HistoryItemType(str):
 class MetricStreamOutputFormat(str):
     json = "json"
     opentelemetry0_7 = "opentelemetry0.7"
+    opentelemetry1_0 = "opentelemetry1.0"
 
 
 class RecentlyActive(str):

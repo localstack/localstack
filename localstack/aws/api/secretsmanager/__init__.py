@@ -7,6 +7,7 @@ BooleanType = bool
 ClientRequestTokenType = str
 DescriptionType = str
 DurationType = str
+ErrorCode = str
 ErrorMessage = str
 ExcludeCharactersType = str
 ExcludeLowercaseType = bool
@@ -16,6 +17,7 @@ ExcludeUppercaseType = bool
 FilterValueStringType = str
 IncludeSpaceType = bool
 KmsKeyIdType = str
+MaxResultsBatchType = int
 MaxResultsType = int
 NameType = str
 NextTokenType = str
@@ -131,6 +133,15 @@ class ResourceNotFoundException(ServiceException):
     status_code: int = 400
 
 
+class APIErrorType(TypedDict, total=False):
+    SecretId: Optional[SecretIdType]
+    ErrorCode: Optional[ErrorCode]
+    Message: Optional[ErrorMessage]
+
+
+APIErrorListType = List[APIErrorType]
+
+
 class ReplicaRegionType(TypedDict, total=False):
     Region: Optional[RegionType]
     KmsKeyId: Optional[KmsKeyIdType]
@@ -138,6 +149,47 @@ class ReplicaRegionType(TypedDict, total=False):
 
 AddReplicaRegionListType = List[ReplicaRegionType]
 AutomaticallyRotateAfterDaysType = int
+FilterValuesStringList = List[FilterValueStringType]
+
+
+class Filter(TypedDict, total=False):
+    Key: Optional[FilterNameStringType]
+    Values: Optional[FilterValuesStringList]
+
+
+FiltersListType = List[Filter]
+SecretIdListType = List[SecretIdType]
+
+
+class BatchGetSecretValueRequest(ServiceRequest):
+    SecretIdList: Optional[SecretIdListType]
+    Filters: Optional[FiltersListType]
+    MaxResults: Optional[MaxResultsBatchType]
+    NextToken: Optional[NextTokenType]
+
+
+CreatedDateType = datetime
+SecretVersionStagesType = List[SecretVersionStageType]
+SecretBinaryType = bytes
+
+
+class SecretValueEntry(TypedDict, total=False):
+    ARN: Optional[SecretARNType]
+    Name: Optional[SecretNameType]
+    VersionId: Optional[SecretVersionIdType]
+    SecretBinary: Optional[SecretBinaryType]
+    SecretString: Optional[SecretStringType]
+    VersionStages: Optional[SecretVersionStagesType]
+    CreatedDate: Optional[CreatedDateType]
+
+
+SecretValuesType = List[SecretValueEntry]
+
+
+class BatchGetSecretValueResponse(TypedDict, total=False):
+    SecretValues: Optional[SecretValuesType]
+    NextToken: Optional[NextTokenType]
+    Errors: Optional[APIErrorListType]
 
 
 class CancelRotateSecretRequest(ServiceRequest):
@@ -156,7 +208,6 @@ class Tag(TypedDict, total=False):
 
 
 TagListType = List[Tag]
-SecretBinaryType = bytes
 
 
 class CreateSecretRequest(ServiceRequest):
@@ -190,9 +241,6 @@ class CreateSecretResponse(TypedDict, total=False):
     Name: Optional[SecretNameType]
     VersionId: Optional[SecretVersionIdType]
     ReplicationStatus: Optional[ReplicationStatusListType]
-
-
-CreatedDateType = datetime
 
 
 class DeleteResourcePolicyRequest(ServiceRequest):
@@ -230,7 +278,6 @@ class DescribeSecretRequest(ServiceRequest):
 
 
 TimestampType = datetime
-SecretVersionStagesType = List[SecretVersionStageType]
 SecretVersionsToStagesMapType = Dict[SecretVersionIdType, SecretVersionStagesType]
 NextRotationDateType = datetime
 LastChangedDateType = datetime
@@ -264,15 +311,6 @@ class DescribeSecretResponse(TypedDict, total=False):
     ReplicationStatus: Optional[ReplicationStatusListType]
 
 
-FilterValuesStringList = List[FilterValueStringType]
-
-
-class Filter(TypedDict, total=False):
-    Key: Optional[FilterNameStringType]
-    Values: Optional[FilterValuesStringList]
-
-
-FiltersListType = List[Filter]
 PasswordLengthType = int
 
 
@@ -523,6 +561,17 @@ class ValidateResourcePolicyResponse(TypedDict, total=False):
 class SecretsmanagerApi:
     service = "secretsmanager"
     version = "2017-10-17"
+
+    @handler("BatchGetSecretValue")
+    def batch_get_secret_value(
+        self,
+        context: RequestContext,
+        secret_id_list: SecretIdListType = None,
+        filters: FiltersListType = None,
+        max_results: MaxResultsBatchType = None,
+        next_token: NextTokenType = None,
+    ) -> BatchGetSecretValueResponse:
+        raise NotImplementedError
 
     @handler("CancelRotateSecret")
     def cancel_rotate_secret(

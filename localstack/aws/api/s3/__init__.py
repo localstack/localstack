@@ -5,6 +5,8 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 
 AbortRuleId = str
 AcceptRanges = str
+AccessKeyIdValue = str
+AccessPointAlias = bool
 AccessPointArn = str
 AccountId = str
 AllowQuotedRecordDelimiter = bool
@@ -13,6 +15,7 @@ AllowedMethod = str
 AllowedOrigin = str
 AnalyticsId = str
 BucketKeyEnabled = bool
+BucketLocationName = str
 BucketName = str
 BypassGovernanceRetention = bool
 CacheControl = str
@@ -45,6 +48,7 @@ DeleteMarker = bool
 DeleteMarkerVersionId = str
 Delimiter = str
 Description = str
+DirectoryBucketToken = str
 DisplayName = str
 ETag = str
 EmailAddress = str
@@ -84,10 +88,12 @@ KeyMarker = str
 KeyPrefixEquals = str
 LambdaFunctionArn = str
 Location = str
+LocationNameAsString = str
 LocationPrefix = str
 MFA = str
 Marker = str
 MaxAgeSeconds = int
+MaxDirectoryBuckets = int
 MaxKeys = int
 MaxParts = int
 MaxUploads = int
@@ -121,6 +127,7 @@ QuoteCharacter = str
 QuoteEscapeCharacter = str
 Range = str
 RecordDelimiter = str
+Region = str
 ReplaceKeyPrefixWith = str
 ReplaceKeyWith = str
 ReplicaKmsKeyID = str
@@ -139,6 +146,7 @@ SSECustomerKey = str
 SSECustomerKeyMD5 = str
 SSEKMSEncryptionContext = str
 SSEKMSKeyId = str
+SessionCredentialValue = str
 Setting = bool
 SkipValidation = bool
 StartAfter = str
@@ -206,6 +214,7 @@ class BucketLocationConstraint(str):
     ap_northeast_2 = "ap-northeast-2"
     ap_northeast_3 = "ap-northeast-3"
     ap_south_1 = "ap-south-1"
+    ap_south_2 = "ap-south-2"
     ap_southeast_1 = "ap-southeast-1"
     ap_southeast_2 = "ap-southeast-2"
     ap_southeast_3 = "ap-southeast-3"
@@ -216,6 +225,7 @@ class BucketLocationConstraint(str):
     eu_central_1 = "eu-central-1"
     eu_north_1 = "eu-north-1"
     eu_south_1 = "eu-south-1"
+    eu_south_2 = "eu-south-2"
     eu_west_1 = "eu-west-1"
     eu_west_2 = "eu-west-2"
     eu_west_3 = "eu-west-3"
@@ -226,14 +236,16 @@ class BucketLocationConstraint(str):
     us_gov_west_1 = "us-gov-west-1"
     us_west_1 = "us-west-1"
     us_west_2 = "us-west-2"
-    ap_south_2 = "ap-south-2"
-    eu_south_2 = "eu-south-2"
 
 
 class BucketLogsPermission(str):
     FULL_CONTROL = "FULL_CONTROL"
     READ = "READ"
     WRITE = "WRITE"
+
+
+class BucketType(str):
+    Directory = "Directory"
 
 
 class BucketVersioningStatus(str):
@@ -256,6 +268,10 @@ class CompressionType(str):
     NONE = "NONE"
     GZIP = "GZIP"
     BZIP2 = "BZIP2"
+
+
+class DataRedundancy(str):
+    SingleAvailabilityZone = "SingleAvailabilityZone"
 
 
 class DeleteMarkerReplicationStatus(str):
@@ -373,6 +389,10 @@ class JSONType(str):
     LINES = "LINES"
 
 
+class LocationType(str):
+    AvailabilityZone = "AvailabilityZone"
+
+
 class MFADelete(str):
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -447,6 +467,7 @@ class ObjectStorageClass(str):
     OUTPOSTS = "OUTPOSTS"
     GLACIER_IR = "GLACIER_IR"
     SNOW = "SNOW"
+    EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
 
 
 class ObjectVersionStorageClass(str):
@@ -459,6 +480,11 @@ class OptionalObjectAttributes(str):
 
 class OwnerOverride(str):
     Destination = "Destination"
+
+
+class PartitionDateSource(str):
+    EventTime = "EventTime"
+    DeliveryTime = "DeliveryTime"
 
 
 class Payer(str):
@@ -525,6 +551,11 @@ class ServerSideEncryption(str):
     aws_kms_dsse = "aws:kms:dsse"
 
 
+class SessionMode(str):
+    ReadOnly = "ReadOnly"
+    ReadWrite = "ReadWrite"
+
+
 class SseKmsEncryptedObjectsStatus(str):
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -541,6 +572,7 @@ class StorageClass(str):
     OUTPOSTS = "OUTPOSTS"
     GLACIER_IR = "GLACIER_IR"
     SNOW = "SNOW"
+    EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
 
 
 class StorageClassAnalysisSchemaVersion(str):
@@ -576,7 +608,7 @@ class Type(str):
 class BucketAlreadyExists(ServiceException):
     code: str = "BucketAlreadyExists"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 409
 
 
 class BucketAlreadyOwnedByYou(ServiceException):
@@ -620,13 +652,13 @@ class NoSuchUpload(ServiceException):
 class ObjectAlreadyInActiveTierError(ServiceException):
     code: str = "ObjectAlreadyInActiveTierError"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 403
 
 
 class ObjectNotInActiveTierError(ServiceException):
     code: str = "ObjectNotInActiveTierError"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 403
 
 
 class NoSuchLifecycleConfiguration(ServiceException):
@@ -1006,6 +1038,11 @@ class Bucket(TypedDict, total=False):
     CreationDate: Optional[CreationDate]
 
 
+class BucketInfo(TypedDict, total=False):
+    DataRedundancy: Optional[DataRedundancy]
+    Type: Optional[BucketType]
+
+
 class NoncurrentVersionExpiration(TypedDict, total=False):
     NoncurrentDays: Optional[Days]
     NewerNoncurrentVersions: Optional[VersionCount]
@@ -1072,6 +1109,19 @@ class BucketLifecycleConfiguration(TypedDict, total=False):
     Rules: LifecycleRules
 
 
+class PartitionedPrefix(TypedDict, total=False):
+    PartitionDateSource: Optional[PartitionDateSource]
+
+
+class SimplePrefix(TypedDict, total=False):
+    pass
+
+
+class TargetObjectKeyFormat(TypedDict, total=False):
+    SimplePrefix: Optional[SimplePrefix]
+    PartitionedPrefix: Optional[PartitionedPrefix]
+
+
 class TargetGrant(TypedDict, total=False):
     Grantee: Optional[Grantee]
     Permission: Optional[BucketLogsPermission]
@@ -1084,6 +1134,7 @@ class LoggingEnabled(TypedDict, total=False):
     TargetBucket: TargetBucket
     TargetGrants: Optional[TargetGrants]
     TargetPrefix: TargetPrefix
+    TargetObjectKeyFormat: Optional[TargetObjectKeyFormat]
 
 
 class BucketLoggingStatus(TypedDict, total=False):
@@ -1303,8 +1354,15 @@ class CopyPartResult(TypedDict, total=False):
     ChecksumSHA256: Optional[ChecksumSHA256]
 
 
+class LocationInfo(TypedDict, total=False):
+    Type: Optional[LocationType]
+    Name: Optional[LocationNameAsString]
+
+
 class CreateBucketConfiguration(TypedDict, total=False):
     LocationConstraint: Optional[BucketLocationConstraint]
+    Location: Optional[LocationInfo]
+    Bucket: Optional[BucketInfo]
 
 
 class CreateBucketOutput(TypedDict, total=False):
@@ -1371,6 +1429,25 @@ class CreateMultipartUploadRequest(ServiceRequest):
     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
     ExpectedBucketOwner: Optional[AccountId]
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+
+
+SessionExpiration = datetime
+
+
+class SessionCredentials(TypedDict, total=False):
+    AccessKeyId: AccessKeyIdValue
+    SecretAccessKey: SessionCredentialValue
+    SessionToken: SessionCredentialValue
+    Expiration: SessionExpiration
+
+
+class CreateSessionOutput(TypedDict, total=False):
+    Credentials: SessionCredentials
+
+
+class CreateSessionRequest(ServiceRequest):
+    SessionMode: Optional[SessionMode]
+    Bucket: BucketName
 
 
 class DefaultRetention(TypedDict, total=False):
@@ -2236,6 +2313,11 @@ class GlacierJobParameters(TypedDict, total=False):
     Tier: Tier
 
 
+class HeadBucketOutput(TypedDict, total=False):
+    BucketRegion: Optional[BucketRegion]
+    BucketContentType: Optional[BucketContentType]
+
+
 class HeadBucketRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
@@ -2407,6 +2489,16 @@ class ListBucketMetricsConfigurationsRequest(ServiceRequest):
 class ListBucketsOutput(TypedDict, total=False):
     Owner: Optional[Owner]
     Buckets: Optional[Buckets]
+
+
+class ListDirectoryBucketsOutput(TypedDict, total=False):
+    Buckets: Optional[Buckets]
+    ContinuationToken: Optional[DirectoryBucketToken]
+
+
+class ListDirectoryBucketsRequest(ServiceRequest):
+    ContinuationToken: Optional[DirectoryBucketToken]
+    MaxDirectoryBuckets: Optional[MaxDirectoryBuckets]
 
 
 class MultipartUpload(TypedDict, total=False):
@@ -3231,11 +3323,6 @@ class WriteGetObjectResponseRequest(ServiceRequest):
     BucketKeyEnabled: Optional[BucketKeyEnabled]
 
 
-class HeadBucketOutput(TypedDict, total=False):
-    BucketRegion: Optional[BucketRegion]
-    BucketContentType: Optional[BucketContentType]
-
-
 class PostObjectRequest(ServiceRequest):
     Body: Optional[IO[Body]]
     Bucket: BucketName
@@ -3400,6 +3487,12 @@ class S3Api:
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
     ) -> CreateMultipartUploadOutput:
+        raise NotImplementedError
+
+    @handler("CreateSession")
+    def create_session(
+        self, context: RequestContext, bucket: BucketName, session_mode: SessionMode = None
+    ) -> CreateSessionOutput:
         raise NotImplementedError
 
     @handler("DeleteBucket")
@@ -3871,6 +3964,15 @@ class S3Api:
         self,
         context: RequestContext,
     ) -> ListBucketsOutput:
+        raise NotImplementedError
+
+    @handler("ListDirectoryBuckets")
+    def list_directory_buckets(
+        self,
+        context: RequestContext,
+        continuation_token: DirectoryBucketToken = None,
+        max_directory_buckets: MaxDirectoryBuckets = None,
+    ) -> ListDirectoryBucketsOutput:
         raise NotImplementedError
 
     @handler("ListMultipartUploads")

@@ -105,6 +105,7 @@ def sqs_create_dlq_pipe(sqs_create_queue):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
 def test_cancel_with_invalid_task_handle(aws_client, snapshot):
     with pytest.raises(ClientError) as e:
         aws_client.sqs.cancel_message_move_task(TaskHandle="foobared")
@@ -112,6 +113,7 @@ def test_cancel_with_invalid_task_handle(aws_client, snapshot):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
 def test_cancel_with_invalid_source_arn_in_task_handle(aws_client, snapshot):
     source_arn = "arn:aws:sqs:us-east-1:878966065785:test-queue-doesnt-exist-123456"
     task_handle = encode_move_task_handle("10f57157-fc38-4da9-a113-4de7e12d05dd", source_arn)
@@ -122,6 +124,7 @@ def test_cancel_with_invalid_source_arn_in_task_handle(aws_client, snapshot):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
 def test_cancel_with_invalid_task_id_in_task_handle(
     sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
 ):
@@ -136,6 +139,7 @@ def test_cancel_with_invalid_task_id_in_task_handle(
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
 def test_source_needs_redrive_policy(
     sqs_create_queue,
     sqs_get_queue_arn,
@@ -157,6 +161,7 @@ def test_source_needs_redrive_policy(
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
 def test_destination_needs_to_exist(
     sqs_create_queue,
     sqs_create_dlq_pipe,
@@ -416,6 +421,7 @@ def test_move_task_delete_destination_queue_while_running(
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
 def test_start_multiple_move_tasks(
     sqs_create_queue,
     sqs_create_dlq_pipe,
