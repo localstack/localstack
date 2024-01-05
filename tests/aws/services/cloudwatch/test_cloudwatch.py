@@ -37,7 +37,6 @@ def is_new_provider():
 
 class TestCloudwatch:
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"], condition=is_new_provider)
     def test_put_metric_data_values_list(self, snapshot, aws_client):
         metric_name = "test-metric"
         namespace = f"ns-{short_uid()}"
@@ -1271,7 +1270,6 @@ class TestCloudwatch:
         assert response["MetricAlarms"][0]["ActionsEnabled"]
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
     def test_aws_sqs_metrics_created(self, sqs_create_queue, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         sqs_url = sqs_create_queue()
@@ -1793,7 +1791,7 @@ class TestCloudwatch:
         retry(assert_metrics_count, retries=10, sleep=1.0, sleep_before=1.0)
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=is_old_provider, reason="not supported by the old provider")
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported by the old provider")
     def test_get_metric_data_pagination(self, aws_client):
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
@@ -1968,7 +1966,7 @@ class TestCloudwatch:
         retry(assert_ordering, retries=10, sleep=1.0)
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="it's not supported by moto or new provider")
+    @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_handle_different_units(self, aws_client, snapshot):
         namespace = f"n-sp-{short_uid()}"
         metric_name = "m-test"
@@ -1985,8 +1983,13 @@ class TestCloudwatch:
                 {
                     "MetricName": metric_name,
                     "Timestamp": now,
-                    "Value": 1,
+                    "Value": 5,
                     "Unit": "Count",
+                },
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": now,
+                    "Value": 10,
                 },
             ],
         )
@@ -2000,7 +2003,8 @@ class TestCloudwatch:
                 Period=60,
                 Statistics=["Average"],
             )
-            assert len(response["Datapoints"]) == 2
+            assert len(response["Datapoints"]) == 3
+            response["Datapoints"].sort(key=lambda x: x["Average"], reverse=True)
             snapshot.match("get_metric_statistics_with_different_units", response)
 
         retries = 10 if is_aws_cloud() else 1

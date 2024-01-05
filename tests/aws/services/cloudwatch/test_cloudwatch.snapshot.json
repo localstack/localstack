@@ -1606,12 +1606,17 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_handle_different_units": {
-    "recorded-date": "07-12-2023, 14:03:11",
+    "recorded-date": "05-01-2024, 16:15:39",
     "recorded-content": {
       "get_metric_statistics_with_different_units": {
         "Datapoints": [
           {
-            "Average": 1.0,
+            "Average": 10.0,
+            "Timestamp": "timestamp",
+            "Unit": "None"
+          },
+          {
+            "Average": 5.0,
             "Timestamp": "timestamp",
             "Unit": "Count"
           },
