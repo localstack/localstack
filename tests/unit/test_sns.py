@@ -74,7 +74,7 @@ class TestSns:
         expected_sns_body = {
             "Message": "msg",
             "SignatureVersion": "1",
-            "SigningCertURL": "http://localhost.localstack.cloud:4566/_aws/sns/SimpleNotificationService-00000000000000000000000000000000.pem",
+            "SigningCertURL": "http://localhost.localstack.cloud:4566/_aws/sns/SimpleNotificationService-6c6f63616c737461636b69736e696365.pem",
             "TopicArn": "arn",
             "Type": "Notification",
             "UnsubscribeURL": f"http://localhost.localstack.cloud:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
@@ -108,7 +108,7 @@ class TestSns:
             "Message": "msg",
             "Subject": "subject",
             "SignatureVersion": "1",
-            "SigningCertURL": "http://localhost.localstack.cloud:4566/_aws/sns/SimpleNotificationService-00000000000000000000000000000000.pem",
+            "SigningCertURL": "http://localhost.localstack.cloud:4566/_aws/sns/SimpleNotificationService-6c6f63616c737461636b69736e696365.pem",
             "TopicArn": "arn",
             "Type": "Notification",
             "UnsubscribeURL": f"http://localhost.localstack.cloud:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
