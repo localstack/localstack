@@ -329,9 +329,17 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 )
 
     def get_raw_metrics(self, request: Request):
-        # TODO this needs to be read from the database
-        # FIXME this is just a placeholder for now
-        return {"metrics": []}
+        """this feature was introduced with https://github.com/localstack/localstack/pull/3535
+        # in the meantime, it required a valid aws-header so that the account-id/region could be extracted
+        # with the new implementation, we want to return all data, but add the account-id/region as additional attributes
+
+        # TODO endpoint should be refactored or deprecated at some point
+        #   - result should be paginated
+        #   - include aggregated metrics (but we would also need to change/adapt the shape of "metrics" that we return)
+        :returns: json {"metrics": [{"ns": "namespace", "n": "metric_name", "v": value, "t": timestamp,
+        "d": [<dimensions-key-pair-values>],"account": account, "region": region}]}
+        """
+        return {"metrics": self.cloudwatch_database.get_all_metric_data() or []}
 
     @handler("PutMetricAlarm", expand=False)
     def put_metric_alarm(self, context: RequestContext, request: PutMetricAlarmInput) -> None:
