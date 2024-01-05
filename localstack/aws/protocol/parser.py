@@ -84,9 +84,9 @@ from botocore.model import (
 )
 from werkzeug.exceptions import BadRequest, NotFound
 
-from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.config import LEGACY_V2_S3_PROVIDER
+from localstack.http import Request
 
 
 def _text_content(func):
@@ -103,7 +103,7 @@ def _text_content(func):
 
     def _get_text_content(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: Shape,
         node_or_string: Union[ETree.Element, str],
         uri_params: Mapping[str, Any] = None,
@@ -201,7 +201,7 @@ class RequestParser(abc.ABC):
         self.service = service
 
     @_handle_exceptions
-    def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
         """
         Determines which operation the request was aiming for and parses the incoming request such that the resulting
         dictionary can be used to invoke the service's function implementation.
@@ -214,12 +214,12 @@ class RequestParser(abc.ABC):
         raise NotImplementedError
 
     def _parse_shape(
-        self, request: HttpRequest, shape: Shape, node: Any, uri_params: Mapping[str, Any] = None
+        self, request: Request, shape: Shape, node: Any, uri_params: Mapping[str, Any] = None
     ) -> Any:
         """
         Main parsing method which dynamically calls the parsing function for the specific shape.
 
-        :param request: the complete HttpRequest
+        :param request: the complete Request
         :param shape: of the node
         :param node: the single part of the HTTP request to parse
         :param uri_params: the extracted URI path params
@@ -270,7 +270,7 @@ class RequestParser(abc.ABC):
 
     def _parse_list(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: ListShape,
         node: list,
         uri_params: Mapping[str, Any] = None,
@@ -359,7 +359,7 @@ class QueryRequestParser(RequestParser):
     """
 
     @_handle_exceptions
-    def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
         instance = request.values
         if "Action" not in instance:
             raise ProtocolParserError(
@@ -384,7 +384,7 @@ class QueryRequestParser(RequestParser):
 
     def _process_member(
         self,
-        request: HttpRequest,
+        request: Request,
         member_name: str,
         member_shape: Shape,
         node: dict,
@@ -406,7 +406,7 @@ class QueryRequestParser(RequestParser):
 
     def _parse_structure(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: StructureShape,
         node: dict,
         uri_params: Mapping[str, Any] = None,
@@ -428,7 +428,7 @@ class QueryRequestParser(RequestParser):
         return result if len(result) > 0 else None
 
     def _parse_map(
-        self, request: HttpRequest, shape: MapShape, node: dict, uri_params: Mapping[str, Any]
+        self, request: Request, shape: MapShape, node: dict, uri_params: Mapping[str, Any]
     ) -> dict:
         """
         This is what the node looks like for a flattened map::
@@ -476,7 +476,7 @@ class QueryRequestParser(RequestParser):
 
     def _parse_list(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: ListShape,
         node: dict,
         uri_params: Mapping[str, Any] = None,
@@ -551,7 +551,7 @@ class BaseRestRequestParser(RequestParser):
         self._operation_router = RestServiceOperationRouter(service)
 
     @_handle_exceptions
-    def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
         try:
             operation, uri_params = self._operation_router.match(request)
         except NotFound as e:
@@ -568,7 +568,7 @@ class BaseRestRequestParser(RequestParser):
 
     def _parse_payload(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: Shape,
         member_shapes: Dict[str, Shape],
         uri_params: Mapping[str, Any],
@@ -619,7 +619,7 @@ class BaseRestRequestParser(RequestParser):
         final_parsed.update(non_payload_parsed)
         final_parsed.update(payload_parsed)
 
-    def _initial_body_parse(self, request: HttpRequest) -> Any:
+    def _initial_body_parse(self, request: Request) -> Any:
         """
         This method executes the initial parsing of the body (XML, JSON, or CBOR).
         The parsed body will afterwards still be walked through and the nodes will be converted to the appropriate
@@ -630,13 +630,13 @@ class BaseRestRequestParser(RequestParser):
         """
         raise NotImplementedError("_initial_body_parse")
 
-    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> Any:
+    def _create_event_stream(self, request: Request, shape: Shape) -> Any:
         # TODO handle event streams
         raise NotImplementedError("_create_event_stream")
 
-    def create_input_stream(self, request: HttpRequest) -> IO[bytes]:
+    def create_input_stream(self, request: Request) -> IO[bytes]:
         """
-        Returns an IO object that makes the payload of the HttpRequest available for streaming.
+        Returns an IO object that makes the payload of the Request available for streaming.
 
         :param request: the http request
         :return: the input stream that allows services to consume the request payload
@@ -658,7 +658,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         self.ignore_get_body_errors = True
         self._namespace_re = re.compile("{.*}")
 
-    def _initial_body_parse(self, request: HttpRequest) -> ETree.Element:
+    def _initial_body_parse(self, request: Request) -> ETree.Element:
         body = request.data
         if not body:
             return ETree.Element("")
@@ -666,7 +666,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
 
     def _parse_structure(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: StructureShape,
         node: ETree.Element,
         uri_params: Mapping[str, Any] = None,
@@ -701,7 +701,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
 
     def _parse_map(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: MapShape,
         node: dict,
         uri_params: Mapping[str, Any] = None,
@@ -729,7 +729,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
 
     def _parse_list(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: ListShape,
         node: dict,
         uri_params: Mapping[str, Any] = None,
@@ -796,7 +796,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
                 xml_dict[key] = item
         return xml_dict
 
-    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> Any:
+    def _create_event_stream(self, request: Request, shape: Shape) -> Any:
         # TODO handle event streams
         raise NotImplementedError("_create_event_stream")
 
@@ -811,7 +811,7 @@ class BaseJSONRequestParser(RequestParser, ABC):
 
     def _parse_structure(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: StructureShape,
         value: Optional[dict],
         uri_params: Mapping[str, Any] = None,
@@ -836,7 +836,7 @@ class BaseJSONRequestParser(RequestParser, ABC):
 
     def _parse_map(
         self,
-        request: HttpRequest,
+        request: Request,
         shape: MapShape,
         value: Optional[dict],
         uri_params: Mapping[str, Any] = None,
@@ -852,7 +852,7 @@ class BaseJSONRequestParser(RequestParser, ABC):
             parsed[actual_key] = actual_value
         return parsed
 
-    def _parse_body_as_json(self, request: HttpRequest) -> dict:
+    def _parse_body_as_json(self, request: Request) -> dict:
         body_contents = request.data
         if not body_contents:
             return {}
@@ -868,12 +868,12 @@ class BaseJSONRequestParser(RequestParser, ABC):
                 raise ProtocolParserError("HTTP body could not be parsed as JSON.") from e
 
     def _parse_boolean(
-        self, request: HttpRequest, shape: Shape, node: bool, uri_params: Mapping[str, Any] = None
+        self, request: Request, shape: Shape, node: bool, uri_params: Mapping[str, Any] = None
     ) -> bool:
         return super()._noop_parser(request, shape, node, uri_params)
 
     def _parse_blob(
-        self, request: HttpRequest, shape: Shape, node: bool, uri_params: Mapping[str, Any] = None
+        self, request: Request, shape: Shape, node: bool, uri_params: Mapping[str, Any] = None
     ) -> bytes:
         if isinstance(node, bytes) and request.mimetype.startswith("application/x-amz-cbor"):
             # CBOR does not base64 encode binary data
@@ -891,7 +891,7 @@ class JSONRequestParser(BaseJSONRequestParser):
     """
 
     @_handle_exceptions
-    def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
         target = request.headers["X-Amz-Target"]
         # assuming that the last part of the target string (e.g., "x.y.z.MyAction") contains the operation name
         operation_name = target.rpartition(".")[2]
@@ -903,7 +903,7 @@ class JSONRequestParser(BaseJSONRequestParser):
         return operation, final_parsed
 
     def _do_parse(
-        self, request: HttpRequest, shape: Shape, uri_params: Mapping[str, Any] = None
+        self, request: Request, shape: Shape, uri_params: Mapping[str, Any] = None
     ) -> dict:
         parsed = {}
         if shape is not None:
@@ -914,12 +914,12 @@ class JSONRequestParser(BaseJSONRequestParser):
                 parsed = self._handle_json_body(request, shape, uri_params)
         return parsed
 
-    def _handle_event_stream(self, request: HttpRequest, shape: Shape, event_name: str):
+    def _handle_event_stream(self, request: Request, shape: Shape, event_name: str):
         # TODO handle event streams
         raise NotImplementedError
 
     def _handle_json_body(
-        self, request: HttpRequest, shape: Shape, uri_params: Mapping[str, Any] = None
+        self, request: Request, shape: Shape, uri_params: Mapping[str, Any] = None
     ) -> Any:
         # The json.loads() gives us the primitive JSON types, but we need to traverse the parsed JSON data to convert
         # to richer types (blobs, timestamps, etc.)
@@ -935,10 +935,10 @@ class RestJSONRequestParser(BaseRestRequestParser, BaseJSONRequestParser):
     The operation is defined by the HTTP method and the path suffix.
     """
 
-    def _initial_body_parse(self, request: HttpRequest) -> dict:
+    def _initial_body_parse(self, request: Request) -> dict:
         return self._parse_body_as_json(request)
 
-    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> Any:
+    def _create_event_stream(self, request: Request, shape: Shape) -> Any:
         raise NotImplementedError
 
 
@@ -974,7 +974,7 @@ class S3RequestParser(RestXMLRequestParser):
         a request instead of EnvironBuilder, we should copy it before parsing (except the stream).
         """
 
-        def __init__(self, request: HttpRequest):
+        def __init__(self, request: Request):
             self.request = request
             self.old_host = None
             self.old_path = None
@@ -1014,7 +1014,7 @@ class S3RequestParser(RestXMLRequestParser):
 
         @staticmethod
         def _set_request_props(
-            request: HttpRequest, path: str, host: str, raw_uri: Optional[str] = None
+            request: Request, path: str, host: str, raw_uri: Optional[str] = None
         ):
             """Sets the HTTP request's path and host and clears the cache in the request object."""
             request.path = path
@@ -1041,13 +1041,13 @@ class S3RequestParser(RestXMLRequestParser):
                 pass
 
         @staticmethod
-        def _is_vhost_address_get_bucket(request: HttpRequest) -> str | None:
+        def _is_vhost_address_get_bucket(request: Request) -> str | None:
             from localstack.services.s3.utils import uses_host_addressing
 
             return uses_host_addressing(request.headers)
 
     @_handle_exceptions
-    def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
         if not LEGACY_V2_S3_PROVIDER:
             """Handle virtual-host-addressing for S3."""
             with self.VirtualHostRewriter(request):
@@ -1056,7 +1056,7 @@ class S3RequestParser(RestXMLRequestParser):
             return super().parse(request)
 
     def _parse_shape(
-        self, request: HttpRequest, shape: Shape, node: Any, uri_params: Mapping[str, Any] = None
+        self, request: Request, shape: Shape, node: Any, uri_params: Mapping[str, Any] = None
     ) -> Any:
         """
         Special handling of parsing the shape for s3 object-names (=key):

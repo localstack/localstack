@@ -1,7 +1,5 @@
 from .core import (
     CommonServiceException,
-    HttpRequest,
-    HttpResponse,
     RequestContext,
     ServiceException,
     ServiceRequest,
@@ -16,6 +14,4 @@ __all__ = [
     "ServiceRequest",
     "ServiceResponse",
     "handler",
-    "HttpRequest",
-    "HttpResponse",
 ]
