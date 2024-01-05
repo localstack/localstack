@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/lambda_/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_duplicate_event_source_mappings": {
+    "last_validated_date": "2024-01-04T23:36:38+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_event_source_mapping_default_batch_size": {
     "last_validated_date": "2023-02-27T16:09:20+00:00"
   },

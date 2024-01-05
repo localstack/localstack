@@ -1350,3 +1350,53 @@ class TestSQSEventSourceMapping:
 
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages") == []
+
+    @markers.aws.validated
+    def test_duplicate_event_source_mappings(
+        self,
+        create_lambda_function,
+        lambda_su_role,
+        create_event_source_mapping,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        snapshot,
+        aws_client,
+    ):
+        function_name_1 = f"lambda_func-{short_uid()}"
+        function_name_2 = f"lambda_func-{short_uid()}"
+
+        event_source_arn = sqs_get_queue_arn(sqs_create_queue())
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name_1,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+
+        response = create_event_source_mapping(
+            FunctionName=function_name_1,
+            EventSourceArn=event_source_arn,
+        )
+        snapshot.match("create", response)
+
+        with pytest.raises(ClientError) as e:
+            create_event_source_mapping(
+                FunctionName=function_name_1,
+                EventSourceArn=event_source_arn,
+            )
+
+        response = e.value.response
+        snapshot.match("error", response)
+
+        # this should work without problem since it's a new function
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name_2,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+        create_event_source_mapping(
+            FunctionName=function_name_2,
+            EventSourceArn=event_source_arn,
+        )

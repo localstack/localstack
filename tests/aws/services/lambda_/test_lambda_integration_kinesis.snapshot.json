@@ -1437,5 +1437,47 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_duplicate_event_source_mappings": {
+    "recorded-date": "04-01-2024, 17:16:56",
+    "recorded-content": {
+      "create": {
+        "BatchSize": 100,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 0,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": -1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "LATEST",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "The event source arn (\" arn:aws:kinesis:<region>:111111111111:stream/<resource:1> \") and function (\" <resource:2> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:1>"
+        },
+        "Type": "User",
+        "message": "The event source arn (\" arn:aws:kinesis:<region>:111111111111:stream/<resource:1> \") and function (\" <resource:2> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
   }
 }
