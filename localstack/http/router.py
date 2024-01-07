@@ -1,6 +1,7 @@
 import functools
 import inspect
 import threading
+import typing as t
 from typing import (
     Any,
     Callable,
@@ -21,7 +22,7 @@ from typing import (
 from werkzeug import Request, Response
 from werkzeug.routing import BaseConverter, Map, Rule, RuleFactory
 
-from localstack.http.request import get_raw_path
+from .request import get_raw_path
 
 HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE")
 
@@ -189,23 +190,26 @@ class Router(Generic[E]):
         """
         Creates a new Rule from the given parameters and adds it to the URL Map.
 
+        TODO: many callers still expect ``add`` to return a single rule rather than a list, but it would be better to
+         homogenize the API and make every method return a list.
+
         :param path: the path pattern to match. This path rule, in contrast to the default behavior of Werkzeug, will be
                         matched against the raw / original (potentially URL-encoded) path.
         :param endpoint: the endpoint to invoke
         :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
         :param methods: the allowed HTTP verbs for this rule
         :param kwargs: any other argument that can be passed to ``werkzeug.routing.Rule``
-        :return:
+        :return: the rule that was created
         """
         ...
 
     @overload
-    def add(self, fn: _RouteEndpoint) -> Rule:
+    def add(self, fn: _RouteEndpoint) -> List[Rule]:
         """
         Adds a RouteEndpoint (typically a function decorated with ``@route``) as a rule to the router.
 
         :param fn: the RouteEndpoint function
-        :return: the rule that was added
+        :return: the rules that were added. for this operation, only one rule will be in the list
         """
         ...
 
@@ -230,105 +234,25 @@ class Router(Generic[E]):
         """
         ...
 
+    @overload
+    def add(self, routes: list[Union[_RouteEndpoint, RuleFactory, Any]]) -> List[Rule]:
+        """
+        Add multiple routes or rules to the router at once.
+
+        :param routes: the objects to add as routes
+        :return: the rules that were added
+        """
+        ...
+
     def add(self, *args, **kwargs) -> Union[Rule, List[Rule]]:
         """
-        Dispatcher for overloaded ``add`` methods.
+        Creates a ``RuleAdapter`` and adds the generated rules to the router's Map.
         """
-        if "path" in kwargs or type(args[0]) == str:
-            return self._add_endpoint(*args, **kwargs)
+        rules = self._add_rules(RuleAdapter(*args, **kwargs))
 
-        if "fn" in kwargs or callable(args[0]):
-            return self._add_route(*args, **kwargs)
+        if "path" in kwargs or type(args[0]) is str:
+            return rules[0]
 
-        if "rule_factory" in kwargs or isinstance(args[0], RuleFactory):
-            return self._add_rules(*args, **kwargs)
-
-        return self._add_routes(*args, **kwargs)
-
-    def _add_endpoint(
-        self,
-        path: str,
-        endpoint: E,
-        host: Optional[str] = None,
-        methods: Optional[Iterable[str]] = None,
-        **kwargs,
-    ) -> Rule:
-        """
-        Adds a new Rule to the URL Map.
-
-        :param path: the path pattern to match
-        :param endpoint: the endpoint to invoke
-        :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
-        :param methods: the allowed HTTP verbs for this rule
-        :param kwargs: any other argument that can be passed to ``werkzeug.routing.Rule``
-        :return:
-        """
-        if host is None and self.url_map.host_matching:
-            # this creates a "match any" rule, and will put the value of the host
-            # into the variable "__host__"
-            host = "<__host__>"
-
-        # the typing for endpoint is a str, but the doc states it can be any value,
-        # however then the redirection URL building will not work
-        rule = Rule(path, endpoint=endpoint, methods=methods, host=host, **kwargs)
-        self.add_rule(rule)
-        return rule
-
-    def _add_route(self, fn: _RouteEndpoint) -> Union[Rule, List[Rule]]:
-        """
-        Adds a RouteEndpoint (typically a function decorated with one or more ``@route``) as rules to the router.
-        :param fn: the RouteEndpoint function
-        :return: the rules that were added
-        """
-        attrs: list[_RuleAttributes] = fn.rule_attributes
-        rules = []
-        for attr in attrs:
-            rules.append(
-                self._add_endpoint(
-                    path=attr.path, endpoint=fn, host=attr.host, methods=attr.methods, **attr.kwargs
-                )
-            )
-        return rules
-
-    def _add_routes(self, obj: object) -> List[Rule]:
-        """
-        Scans the given object for members that can be used as a `RouteEndpoint` and adds them to the router.
-        :param obj: the object to scan
-        :return: the rules that were added
-        """
-        endpoints: list[_RouteEndpoint] = []
-
-        members = inspect.getmembers(obj)
-        for _, member in members:
-            if hasattr(member, "rule_attributes"):
-                endpoints.append(member)
-
-        rules = []
-        # make sure rules with "HEAD" are added first, otherwise werkzeug would let any "GET" rule would overwrite them.
-        for endpoint in endpoints:
-            for attr in endpoint.rule_attributes:
-                if attr.methods and "HEAD" in attr.methods:
-                    rules.append(
-                        self._add_endpoint(
-                            path=attr.path,
-                            endpoint=endpoint,
-                            host=attr.host,
-                            methods=attr.methods,
-                            **attr.kwargs,
-                        )
-                    )
-        for endpoint in endpoints:
-            for attr in endpoint.rule_attributes:
-                if not attr.methods or "HEAD" not in attr.methods:
-                    rules.append(
-                        self._add_endpoint(
-                            path=attr.path,
-                            endpoint=endpoint,
-                            host=attr.host,
-                            methods=attr.methods,
-                            **attr.kwargs,
-                        )
-                    )
         return rules
 
     def _add_rules(self, rule_factory: RuleFactory) -> List[Rule]:
@@ -361,8 +285,7 @@ class Router(Generic[E]):
         with self._mutex:
             self.url_map.add(rule)
 
-    @overload
-    def remove(self, rule: Rule):
+    def remove(self, rules: Union[Rule, Iterable[Rule]]):
         """
         Removes a single Rule from the Router.
 
@@ -373,20 +296,8 @@ class Router(Generic[E]):
         create a new Map without that rule. This will not prevent the rules from dispatching until the Map has been
         completely constructed.
 
-        :param rule: the Rule to remove that was previously returned by ``add``.
+        :param rules: the Rule or rules to remove that were previously returned by ``add``.
         """
-        ...
-
-    @overload
-    def remove(self, rules: Iterable[Rule]):
-        """
-        Removes a set of Rules from the Router.
-
-        :param rules: the list of Rule objects to remove that were previously returned by ``add``.
-        """
-        ...
-
-    def remove(self, rules: Union[Rule, Iterable[Rule]]):
         if isinstance(rules, Rule):
             self._remove_rules([rules])
         else:
@@ -462,23 +373,223 @@ class Router(Generic[E]):
         def wrapper(fn):
             r = route(path, host, methods, **kwargs)
             fn = r(fn)
-            self._add_route(fn)
+            self.add(fn)
             return fn
 
         return wrapper
 
-    def add_route_endpoint(self, fn: _RouteEndpoint) -> Rule:
-        """
-        DEPRECATED: use ``add`` instead.
-        """
-        return self._add_route(fn)
 
-    def add_route_endpoints(self, obj: object) -> List[Rule]:
-        """
-        DEPRECATED: use ``add`` instead.
-        """
-        return self._add_routes(obj)
+class RuleAdapter(RuleFactory):
+    """
+    Takes something that can also be passed to ``Router.add``, and exposes it as a ``RuleFactory`` that generates the
+    appropriate Werkzeug rules. This can be used in combination with other rule factories like ``Submount``,
+    and creates general compatibility with werkzeug rules. Here's an example::
 
-    def remove_rule(self, rule: Rule):
-        """DEPRECATED: use ``remove`` instead."""
-        self._remove_rules([rule])
+        @route("/my_api", methods=["GET"])
+        def do_get(request: Request, _args):
+            # should be inherited
+            return Response(f"{request.path}/do-get")
+
+        def hello(request: Request, _args):
+            return Response(f"hello world")
+
+        router = Router()
+
+        # base endpoints
+        endpoints = RuleAdapter([
+            do_get,
+            RuleAdapter("/hello", hello)
+        ])
+
+        router.add([
+            endpoints,
+            Submount("/foo", [endpoints])
+        ])
+
+    """
+
+    factory: RuleFactory
+    """The underlying real rule factory."""
+
+    @overload
+    def __init__(
+        self,
+        path: str,
+        endpoint: E,
+        host: Optional[str] = None,
+        methods: Optional[Iterable[str]] = None,
+        **kwargs,
+    ):
+        """
+        Basically a ``Rule``.
+
+        :param path: the path pattern to match. This path rule, in contrast to the default behavior of Werkzeug, will be
+                        matched against the raw / original (potentially URL-encoded) path.
+        :param endpoint: the endpoint to invoke
+        :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
+        :param methods: the allowed HTTP verbs for this rule
+        :param kwargs: any other argument that can be passed to ``werkzeug.routing.Rule``
+        """
+        ...
+
+    @overload
+    def __init__(self, fn: _RouteEndpoint):
+        """
+        Takes a route endpoint (typically a function decorated with ``@route``) and adds it as ``EndpointRule``.
+
+        :param fn: the RouteEndpoint function
+        """
+        ...
+
+    @overload
+    def __init__(self, rule_factory: RuleFactory):
+        """
+        Adds a ``Rule`` or the rules created by a ``RuleFactory`` to the given router. It passes the rules down to
+        the underlying Werkzeug ``Map``, but also returns the created Rules.
+
+        :param rule_factory: a `Rule` or ``RuleFactory`
+        """
+        ...
+
+    @overload
+    def __init__(self, obj: Any):
+        """
+        Scans the given object for members that can be used as a `RouteEndpoint` and adds them to the router.
+
+        :param obj: the object to scan
+        """
+        ...
+
+    @overload
+    def __init__(self, rules: list[Union[_RouteEndpoint, RuleFactory, Any]]):
+        """Add multiple rules at once"""
+        ...
+
+    def __init__(self, *args, **kwargs):
+        """
+        Dispatcher for overloaded ``__init__`` methods.
+        """
+        if "path" in kwargs or type(args[0]) is str:
+            self.factory = _EndpointRule(*args, **kwargs)
+        elif "fn" in kwargs or callable(args[0]):
+            self.factory = _EndpointFunction(*args, **kwargs)
+        elif "rule_factory" in kwargs:
+            self.factory = kwargs["rule_factory"]
+        elif isinstance(args[0], RuleFactory):
+            self.factory = args[0]
+        elif isinstance(args[0], list):
+            self.factory = RuleGroup([RuleAdapter(rule) for rule in args[0]])
+        else:
+            self.factory = _EndpointsObject(*args, **kwargs)
+
+    def get_rules(self, map: Map) -> t.Iterable[Rule]:
+        yield from self.factory.get_rules(map)
+
+
+class WithHost(RuleFactory):
+    def __init__(self, host: str, rules: Iterable[RuleFactory]) -> None:
+        self.host = host
+        self.rules = rules
+
+    def get_rules(self, map: Map) -> t.Iterator[Rule]:
+        for rulefactory in self.rules:
+            for rule in rulefactory.get_rules(map):
+                rule = rule.empty()
+                rule.host = self.host
+                yield rule
+
+
+class RuleGroup(RuleFactory):
+    def __init__(self, rules: Iterable[RuleFactory]):
+        self.rules = rules
+
+    def get_rules(self, map: Map) -> t.Iterable[Rule]:
+        for rule in self.rules:
+            yield from rule.get_rules(map)
+
+
+class _EndpointRule(RuleFactory, Generic[E]):
+    def __init__(
+        self,
+        path: str,
+        endpoint: E,
+        host: Optional[str] = None,
+        methods: Optional[Iterable[str]] = None,
+        **kwargs,
+    ):
+        self.path = path
+        self.endpoint = endpoint
+        self.host = host
+        self.methods = methods
+        self.kwargs = kwargs
+
+    def get_rules(self, map: Map) -> t.Iterable[Rule]:
+        host = self.host
+
+        if host is None and map.host_matching:
+            # this creates a "match any" rule, and will put the value of the host
+            # into the variable "__host__"
+            host = "<__host__>"
+
+        # the typing for endpoint is a str, but the doc states it can be any value,
+        # however then the redirection URL building will not work
+        rule = Rule(
+            self.path, endpoint=self.endpoint, methods=self.methods, host=host, **self.kwargs
+        )
+        yield rule
+
+
+class _EndpointFunction(RuleFactory):
+    def __init__(self, fn: _RouteEndpoint):
+        self.fn = fn
+
+    def get_rules(self, map: Map) -> t.Iterable[Rule]:
+        attrs: list[_RuleAttributes] = self.fn.rule_attributes
+        for attr in attrs:
+            yield from _EndpointRule(
+                path=attr.path,
+                endpoint=self.fn,
+                host=attr.host,
+                methods=attr.methods,
+                **attr.kwargs,
+            ).get_rules(map)
+
+
+class _EndpointsObject(RuleFactory):
+    """
+    Scans the given object for members that can be used as a `RouteEndpoint` and yields them as rules.
+    """
+
+    def __init__(self, obj: object):
+        self.obj = obj
+
+    def get_rules(self, map: Map) -> t.Iterable[Rule]:
+        endpoints: list[_RouteEndpoint] = []
+
+        members = inspect.getmembers(self.obj)
+        for _, member in members:
+            if hasattr(member, "rule_attributes"):
+                endpoints.append(member)
+
+        # make sure rules with "HEAD" are added first, otherwise werkzeug would let any "GET" rule would overwrite them.
+        for endpoint in endpoints:
+            for attr in endpoint.rule_attributes:
+                if attr.methods and "HEAD" in attr.methods:
+                    yield from _EndpointRule(
+                        path=attr.path,
+                        endpoint=endpoint,
+                        host=attr.host,
+                        methods=attr.methods,
+                        **attr.kwargs,
+                    ).get_rules(map)
+
+        for endpoint in endpoints:
+            for attr in endpoint.rule_attributes:
+                if not attr.methods or "HEAD" not in attr.methods:
+                    yield from _EndpointRule(
+                        path=attr.path,
+                        endpoint=endpoint,
+                        host=attr.host,
+                        methods=attr.methods,
+                        **attr.kwargs,
+                    ).get_rules(map)

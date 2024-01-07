@@ -758,8 +758,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._start_cloudwatch_metrics_reporting()
 
     def on_before_stop(self):
-        for rule in self._router_rules:
-            ROUTER.remove_rule(rule)
+        ROUTER.remove(self._router_rules)
 
         self._queue_update_worker.stop()
         self._message_move_task_manager.close()
