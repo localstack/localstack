@@ -55,6 +55,7 @@ class LocalstackAwsGateway(Gateway):
         self.exception_handlers.extend(
             [
                 handlers.log_exception,
+                handlers.serve_custom_exception_handlers,
                 handlers.handle_service_exception,
                 handlers.handle_internal_failure,
             ]
