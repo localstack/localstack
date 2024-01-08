@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_decl_version_1_0": {
+    "last_validated_date": "2023-12-27T17:40:46+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_event_bridge_events_base": {
     "last_validated_date": "2023-09-05T17:25:53+00:00"
   },

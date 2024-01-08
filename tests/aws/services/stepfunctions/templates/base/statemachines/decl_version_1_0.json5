@@ -1,0 +1,11 @@
+{
+  "Comment": "DECL_VERSION_1_0",
+  "StartAt": "State_1",
+  "Version": "1.0",
+  "States": {
+    "State_1": {
+      "Type": "Pass",
+      "End": true,
+    }
+  }
+}
