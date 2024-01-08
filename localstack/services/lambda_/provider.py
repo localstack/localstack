@@ -6,6 +6,7 @@ import logging
 import os
 import threading
 import time
+from pathlib import Path
 from typing import IO, Optional, Tuple
 
 from localstack import config
@@ -195,6 +196,7 @@ from localstack.services.lambda_.runtimes import (
 from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
+from localstack.utils.archives import create_zip_file_cli
 from localstack.utils.aws.arns import extract_service_from_arn
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
@@ -238,6 +240,44 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def on_before_state_load(self):
         self.lambda_service.stop()
+
+    def on_before_state_save(self):
+        for account_id, account_bundle in lambda_stores.items():
+            for region_name, state in account_bundle.items():
+                for fn in state.functions.values():
+                    for fn_version in fn.versions.values():
+                        # if the code archive is hot reloading, try to turn it into a PackageType.Zip-kind
+                        if fn_version.config.code.is_hot_reloading():
+                            try:
+                                _code = fn_version.config.code
+                                unzipped_path_location: Path = _code.get_unzipped_path_location()
+                                # create a zip file from this path location
+                                create_zip_file_cli(
+                                    source_path=unzipped_path_location,
+                                    base_dir=unzipped_path_location,
+                                    zip_file=f"fn-{fn}-pod.zip",
+                                )
+                                zip_path = os.path.join(unzipped_path_location, f"fn-{fn}-pod.zip")
+
+                                with open(zip_path, "rb") as zip_file:
+                                    archive_file = zip_file.read()
+
+                                code = store_lambda_archive(
+                                    archive_file=archive_file,
+                                    function_name=fn,
+                                    region_name=region_name,
+                                    account_id=account_id,
+                                )
+                                new_config = dataclasses.replace(fn_version.config, code=code)
+                                new_version = dataclasses.replace(fn_version, config=new_config)
+                                fn.versions[fn_version.id.qualifier] = new_version
+                            except Exception as e:
+                                LOG.warning(
+                                    "Failed to convert hot reloading lambda version %s: %s",
+                                    fn_version.id.qualified_arn(),
+                                    e,
+                                    exc_info=True,
+                                )
 
     def on_after_state_load(self):
         self.lambda_service = LambdaService()
