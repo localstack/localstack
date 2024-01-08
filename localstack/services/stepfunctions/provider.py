@@ -104,7 +104,7 @@ from localstack.services.stepfunctions.backend.state_machine import (
     TestStateMachine,
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
-from localstack.services.stepfunctions.backend.test_case_execution import TestCaseExecution
+from localstack.services.stepfunctions.backend.test_case.execution import TestCaseExecution
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
     stepfunctions_execution_state_machine_arn,
@@ -718,5 +718,6 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
         execution.start()
 
-        return TestStateOutput()
-        execution.exec_worker.env
+        test_state_output = execution.to_test_state_output()
+
+        return test_state_output

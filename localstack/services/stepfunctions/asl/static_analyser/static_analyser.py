@@ -5,5 +5,4 @@ from localstack.services.stepfunctions.asl.antlr.runtime.ASLParserVisitor import
 
 class StaticAnalyser(ASLParserVisitor, abc.ABC):
     def analyse(self, program_tree) -> None:
-        program = self.visit(program_tree)
-        return program
+        self.visit(program_tree)

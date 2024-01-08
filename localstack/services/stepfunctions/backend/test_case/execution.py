@@ -7,6 +7,9 @@ from localstack.aws.api.stepfunctions import Arn, TestStateOutput, Timestamp
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution import BaseExecutionWorkerComm, Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachineInstance
+from localstack.services.stepfunctions.backend.test_case.execution_worker import (
+    TestCaseExecutionWorker,
+)
 
 
 class TestCaseExecution(Execution):
@@ -47,6 +50,15 @@ class TestCaseExecution(Execution):
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerComm:
         return self.TestCaseExecutionWorkerComm(self)
+
+    def _get_start_execution_worker(self) -> TestCaseExecutionWorker:
+        return TestCaseExecutionWorker(
+            definition=self.state_machine.definition,
+            input_data=self.input_data,
+            exec_comm=self._get_start_execution_worker_comm(),
+            context_object_init=self._get_start_context_object_init_data(),
+            aws_execution_details=self._get_start_aws_execution_details(),
+        )
 
     def start(self) -> None:
         super().start()

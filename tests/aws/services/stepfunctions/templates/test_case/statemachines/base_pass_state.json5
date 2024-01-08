@@ -1,0 +1,10 @@
+{
+// "Comment": "BASE_PASS_STATE",
+//  "StartAt": "StatePass",
+//  "States": {
+//    "StatePass": {
+      "Type": "Pass",
+      "End": true,
+//    }
+//  },
+}

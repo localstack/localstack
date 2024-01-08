@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_case/test_test_case_scenarios.py::TestTestCaseScenarios::test_test_case_info": {
+    "recorded-date": "03-01-2024, 18:37:15",
+    "recorded-content": {
+      "test_case_output": {
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -19,6 +19,9 @@ class TestStateStaticAnalyser(StaticAnalyser):
         StateType.Wait,
     }
 
+    def analyse(self, program_tree) -> None:
+        self.visitState_decl_body(program_tree)
+
     def visitState_type(self, ctx: ASLParser.State_typeContext) -> None:
         state_type_value: int = ctx.children[0].symbol.type
         state_type = StateType(state_type_value)
