@@ -251,7 +251,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                             try:
                                 _code = fn_version.config.code
                                 unzipped_path_location: Path = _code.get_unzipped_code_location()
-                                # create a zip file from this path location
+                                # TODO: this is the file on the host machine! I need to have it somehow in this container to zip it?
                                 create_zip_file_cli(
                                     source_path=unzipped_path_location,
                                     base_dir=unzipped_path_location,
