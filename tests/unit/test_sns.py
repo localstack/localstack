@@ -634,7 +634,7 @@ class TestSns:
             "TopicArn": "arn",
             "Message": "test content",
             "Subject": "random",
-            "Timestamp": timestamp_millis(),
+            "Timestamp": timestamp,
             "UnsubscribeURL": "http://randomurl.com",
         }
 
@@ -650,7 +650,7 @@ class TestSns:
             "TopicArn": "arn",
             "Message": "test content",
             "Subject": "random",
-            "Timestamp": timestamp_millis(),
+            "Timestamp": timestamp,
             "UnsubscribeURL": "http://randomurl.com",
             "SubscribeURL": "http://randomurl.com",
             "Token": "randomtoken",
