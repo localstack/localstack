@@ -22,14 +22,14 @@
       "Type": "Pass",
       "Parameters": {
         "InputValue.$": "$",
-        "FromInput.$": "States.JsonToString($[?(@.year <= 1998)])"
+        "FromInput.$": "States.JsonToString($.[?(@.year <= 1998)])"
       },
       "Next": "State3"
     },
     "State3": {
       "Type": "Pass",
       "InputPath": "$.InputValue",
-      "OutputPath": "$[?(@.year < 1999)].name",
+      "OutputPath": "$.[?(@.year < 1999)].name",
       "End": true,
     }
   }

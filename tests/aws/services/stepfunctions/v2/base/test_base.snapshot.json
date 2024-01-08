@@ -780,7 +780,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_regex_json_path": {
-    "recorded-date": "26-12-2023, 19:36:33",
+    "recorded-date": "08-01-2024, 09:33:56",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1004,6 +1004,106 @@
             },
             "id": 10,
             "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_regex_json_path_base": {
+    "recorded-date": "08-01-2024, 09:43:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "users": [
+                  {
+                    "year": 1997,
+                    "status": 0
+                  },
+                  {
+                    "year": 1998,
+                    "status": 1
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "users": [
+                  {
+                    "year": 1997,
+                    "status": 0
+                  },
+                  {
+                    "year": 1998,
+                    "status": 1
+                  }
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State0"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State0",
+              "output": {
+                "FromInput": [
+                  {
+                    "year": 1997,
+                    "status": 0
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "FromInput": [
+                  {
+                    "year": 1997,
+                    "status": 0
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
             "timestamp": "timestamp",
             "type": "ExecutionSucceeded"
           }

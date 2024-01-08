@@ -261,6 +261,35 @@ class TestSnfBase:
         assert context_start_time == serialized_date
 
     @markers.aws.validated
+    def test_state_pass_regex_json_path_base(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.PASS_RESULT_REGEX_JSON_PATH_BASE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {
+                "users": [
+                    {"year": 1997, "status": 0},
+                    {"year": 1998, "status": 1},
+                ]
+            }
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @pytest.mark.skip(reason="Unsupported jsonpath derivation.")
+    @markers.aws.validated
     def test_state_pass_regex_json_path(
         self,
         aws_client,

@@ -13,11 +13,15 @@ from localstack.services.stepfunctions.asl.parse.intrinsic.preprocessor import P
 class IntrinsicParser(abc.ABC):
     @staticmethod
     def parse(src: str) -> Function:
-        input_stream = InputStream(src)
-        lexer = ASLIntrinsicLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = ASLIntrinsicParser(stream)
-        tree = parser.func_decl()
-        preprocessor = Preprocessor()
-        function: Function = preprocessor.visit(tree)
-        return function
+        try:
+            input_stream = InputStream(src)
+            lexer = ASLIntrinsicLexer(input_stream)
+            stream = CommonTokenStream(lexer)
+            parser = ASLIntrinsicParser(stream)
+            tree = parser.func_decl()
+            preprocessor = Preprocessor()
+            function: Function = preprocessor.visit(tree)
+            return function
+        except Exception as ex:
+            print(ex)
+            raise ex

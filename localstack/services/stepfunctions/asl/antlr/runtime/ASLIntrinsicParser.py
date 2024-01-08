@@ -10,20 +10,20 @@ else:
 
 def serializedATN():
     return [
-        4,1,32,45,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,1,0,1,0,1,1,1,
+        4,1,33,44,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,1,0,1,0,1,1,1,
         1,1,1,1,1,1,1,1,2,1,2,1,3,1,3,1,3,1,3,5,3,24,8,3,10,3,12,3,27,9,
-        3,1,3,1,3,1,3,1,3,3,3,33,8,3,1,4,1,4,1,4,1,4,1,4,1,4,1,4,1,4,3,4,
-        43,8,4,1,4,0,0,5,0,2,4,6,8,0,2,1,0,10,27,1,0,7,8,47,0,10,1,0,0,0,
-        2,12,1,0,0,0,4,17,1,0,0,0,6,32,1,0,0,0,8,42,1,0,0,0,10,11,3,2,1,
-        0,11,1,1,0,0,0,12,13,5,9,0,0,13,14,5,6,0,0,14,15,3,4,2,0,15,16,3,
-        6,3,0,16,3,1,0,0,0,17,18,7,0,0,0,18,5,1,0,0,0,19,20,5,3,0,0,20,25,
-        3,8,4,0,21,22,5,5,0,0,22,24,3,8,4,0,23,21,1,0,0,0,24,27,1,0,0,0,
+        3,1,3,1,3,1,3,1,3,3,3,33,8,3,1,4,1,4,1,4,1,4,1,4,1,4,1,4,3,4,42,
+        8,4,1,4,0,0,5,0,2,4,6,8,0,2,1,0,11,28,1,0,8,9,46,0,10,1,0,0,0,2,
+        12,1,0,0,0,4,17,1,0,0,0,6,32,1,0,0,0,8,41,1,0,0,0,10,11,3,2,1,0,
+        11,1,1,0,0,0,12,13,5,10,0,0,13,14,5,7,0,0,14,15,3,4,2,0,15,16,3,
+        6,3,0,16,3,1,0,0,0,17,18,7,0,0,0,18,5,1,0,0,0,19,20,5,4,0,0,20,25,
+        3,8,4,0,21,22,5,6,0,0,22,24,3,8,4,0,23,21,1,0,0,0,24,27,1,0,0,0,
         25,23,1,0,0,0,25,26,1,0,0,0,26,28,1,0,0,0,27,25,1,0,0,0,28,29,5,
-        4,0,0,29,33,1,0,0,0,30,31,5,3,0,0,31,33,5,4,0,0,32,19,1,0,0,0,32,
-        30,1,0,0,0,33,7,1,0,0,0,34,43,5,28,0,0,35,43,5,29,0,0,36,43,5,30,
-        0,0,37,43,7,1,0,0,38,39,5,2,0,0,39,43,5,1,0,0,40,43,5,1,0,0,41,43,
-        3,0,0,0,42,34,1,0,0,0,42,35,1,0,0,0,42,36,1,0,0,0,42,37,1,0,0,0,
-        42,38,1,0,0,0,42,40,1,0,0,0,42,41,1,0,0,0,43,9,1,0,0,0,3,25,32,42
+        5,0,0,29,33,1,0,0,0,30,31,5,4,0,0,31,33,5,5,0,0,32,19,1,0,0,0,32,
+        30,1,0,0,0,33,7,1,0,0,0,34,42,5,29,0,0,35,42,5,30,0,0,36,42,5,31,
+        0,0,37,42,7,1,0,0,38,42,5,1,0,0,39,42,5,2,0,0,40,42,3,0,0,0,41,34,
+        1,0,0,0,41,35,1,0,0,0,41,36,1,0,0,0,41,37,1,0,0,0,41,38,1,0,0,0,
+        41,39,1,0,0,0,41,40,1,0,0,0,42,9,1,0,0,0,3,25,32,41
     ]
 
 class ASLIntrinsicParser ( Parser ):
@@ -36,21 +36,22 @@ class ASLIntrinsicParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "<INVALID>", "'$'", "'('", "')'", "','", 
-                     "'.'", "'true'", "'false'", "'States'", "'Format'", 
-                     "'StringToJson'", "'JsonToString'", "'Array'", "'ArrayPartition'", 
-                     "'ArrayContains'", "'ArrayRange'", "'ArrayGetItem'", 
-                     "'ArrayLength'", "'ArrayUnique'", "'Base64Encode'", 
-                     "'Base64Decode'", "'Hash'", "'JsonMerge'", "'MathRandom'", 
-                     "'MathAdd'", "'StringSplit'", "'UUID'" ]
+    literalNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "'$'", "'('", 
+                     "')'", "','", "'.'", "'true'", "'false'", "'States'", 
+                     "'Format'", "'StringToJson'", "'JsonToString'", "'Array'", 
+                     "'ArrayPartition'", "'ArrayContains'", "'ArrayRange'", 
+                     "'ArrayGetItem'", "'ArrayLength'", "'ArrayUnique'", 
+                     "'Base64Encode'", "'Base64Decode'", "'Hash'", "'JsonMerge'", 
+                     "'MathRandom'", "'MathAdd'", "'StringSplit'", "'UUID'" ]
 
-    symbolicNames = [ "<INVALID>", "JSON_PATH_STRING", "DOLLAR", "LPAREN", 
-                      "RPAREN", "COMMA", "DOT", "TRUE", "FALSE", "States", 
-                      "Format", "StringToJson", "JsonToString", "Array", 
-                      "ArrayPartition", "ArrayContains", "ArrayRange", "ArrayGetItem", 
-                      "ArrayLength", "ArrayUnique", "Base64Encode", "Base64Decode", 
-                      "Hash", "JsonMerge", "MathRandom", "MathAdd", "StringSplit", 
-                      "UUID", "STRING", "INT", "NUMBER", "IDENTIFIER", "WS" ]
+    symbolicNames = [ "<INVALID>", "CONTEXT_PATH_STRING", "JSON_PATH_STRING", 
+                      "DOLLAR", "LPAREN", "RPAREN", "COMMA", "DOT", "TRUE", 
+                      "FALSE", "States", "Format", "StringToJson", "JsonToString", 
+                      "Array", "ArrayPartition", "ArrayContains", "ArrayRange", 
+                      "ArrayGetItem", "ArrayLength", "ArrayUnique", "Base64Encode", 
+                      "Base64Decode", "Hash", "JsonMerge", "MathRandom", 
+                      "MathAdd", "StringSplit", "UUID", "STRING", "INT", 
+                      "NUMBER", "IDENTIFIER", "WS" ]
 
     RULE_func_decl = 0
     RULE_states_func_decl = 1
@@ -62,38 +63,39 @@ class ASLIntrinsicParser ( Parser ):
                    "func_arg" ]
 
     EOF = Token.EOF
-    JSON_PATH_STRING=1
-    DOLLAR=2
-    LPAREN=3
-    RPAREN=4
-    COMMA=5
-    DOT=6
-    TRUE=7
-    FALSE=8
-    States=9
-    Format=10
-    StringToJson=11
-    JsonToString=12
-    Array=13
-    ArrayPartition=14
-    ArrayContains=15
-    ArrayRange=16
-    ArrayGetItem=17
-    ArrayLength=18
-    ArrayUnique=19
-    Base64Encode=20
-    Base64Decode=21
-    Hash=22
-    JsonMerge=23
-    MathRandom=24
-    MathAdd=25
-    StringSplit=26
-    UUID=27
-    STRING=28
-    INT=29
-    NUMBER=30
-    IDENTIFIER=31
-    WS=32
+    CONTEXT_PATH_STRING=1
+    JSON_PATH_STRING=2
+    DOLLAR=3
+    LPAREN=4
+    RPAREN=5
+    COMMA=6
+    DOT=7
+    TRUE=8
+    FALSE=9
+    States=10
+    Format=11
+    StringToJson=12
+    JsonToString=13
+    Array=14
+    ArrayPartition=15
+    ArrayContains=16
+    ArrayRange=17
+    ArrayGetItem=18
+    ArrayLength=19
+    ArrayUnique=20
+    Base64Encode=21
+    Base64Decode=22
+    Hash=23
+    JsonMerge=24
+    MathRandom=25
+    MathAdd=26
+    StringSplit=27
+    UUID=28
+    STRING=29
+    INT=30
+    NUMBER=31
+    IDENTIFIER=32
+    WS=33
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -306,7 +308,7 @@ class ASLIntrinsicParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 17
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 268434432) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 536868864) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -384,7 +386,7 @@ class ASLIntrinsicParser ( Parser ):
                 self.state = 25
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==5:
+                while _la==6:
                     self.state = 21
                     self.match(ASLIntrinsicParser.COMMA)
                     self.state = 22
@@ -438,10 +440,8 @@ class ASLIntrinsicParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
-        def DOLLAR(self):
-            return self.getToken(ASLIntrinsicParser.DOLLAR, 0)
-        def JSON_PATH_STRING(self):
-            return self.getToken(ASLIntrinsicParser.JSON_PATH_STRING, 0)
+        def CONTEXT_PATH_STRING(self):
+            return self.getToken(ASLIntrinsicParser.CONTEXT_PATH_STRING, 0)
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterFunc_arg_context_path" ):
@@ -612,56 +612,54 @@ class ASLIntrinsicParser ( Parser ):
         self.enterRule(localctx, 8, self.RULE_func_arg)
         self._la = 0 # Token type
         try:
-            self.state = 42
+            self.state = 41
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [28]:
+            if token in [29]:
                 localctx = ASLIntrinsicParser.Func_arg_stringContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 34
                 self.match(ASLIntrinsicParser.STRING)
                 pass
-            elif token in [29]:
+            elif token in [30]:
                 localctx = ASLIntrinsicParser.Func_arg_intContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 35
                 self.match(ASLIntrinsicParser.INT)
                 pass
-            elif token in [30]:
+            elif token in [31]:
                 localctx = ASLIntrinsicParser.Func_arg_floatContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
                 self.state = 36
                 self.match(ASLIntrinsicParser.NUMBER)
                 pass
-            elif token in [7, 8]:
+            elif token in [8, 9]:
                 localctx = ASLIntrinsicParser.Func_arg_boolContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
                 self.state = 37
                 _la = self._input.LA(1)
-                if not(_la==7 or _la==8):
+                if not(_la==8 or _la==9):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
                 pass
-            elif token in [2]:
+            elif token in [1]:
                 localctx = ASLIntrinsicParser.Func_arg_context_pathContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
                 self.state = 38
-                self.match(ASLIntrinsicParser.DOLLAR)
+                self.match(ASLIntrinsicParser.CONTEXT_PATH_STRING)
+                pass
+            elif token in [2]:
+                localctx = ASLIntrinsicParser.Func_arg_json_pathContext(self, localctx)
+                self.enterOuterAlt(localctx, 6)
                 self.state = 39
                 self.match(ASLIntrinsicParser.JSON_PATH_STRING)
                 pass
-            elif token in [1]:
-                localctx = ASLIntrinsicParser.Func_arg_json_pathContext(self, localctx)
-                self.enterOuterAlt(localctx, 6)
-                self.state = 40
-                self.match(ASLIntrinsicParser.JSON_PATH_STRING)
-                pass
-            elif token in [9]:
+            elif token in [10]:
                 localctx = ASLIntrinsicParser.Func_arg_func_declContext(self, localctx)
                 self.enterOuterAlt(localctx, 7)
-                self.state = 41
+                self.state = 40
                 self.func_decl()
                 pass
             else:
