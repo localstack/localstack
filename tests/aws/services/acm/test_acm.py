@@ -153,7 +153,11 @@ class TestACM:
         self, acm_request_certificate, aws_client, snapshot
     ):
         domain_name = "test.example.com"
-        subject_alternative_names = ["test.example.com", "another.domain.com"]
+        subject_alternative_names = [
+            "test.example.com",
+            "another.domain.com",
+            "*.test.example.com",
+        ]
         create_response = acm_request_certificate(
             DomainName=domain_name, SubjectAlternativeNames=subject_alternative_names
         )
