@@ -250,7 +250,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         if fn_version.config.code.is_hot_reloading():
                             try:
                                 _code = fn_version.config.code
-                                unzipped_path_location: Path = _code.get_unzipped_path_location()
+                                unzipped_path_location: Path = _code.get_unzipped_code_location()
                                 # create a zip file from this path location
                                 create_zip_file_cli(
                                     source_path=unzipped_path_location,
