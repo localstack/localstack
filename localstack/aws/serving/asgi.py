@@ -3,6 +3,7 @@ import concurrent.futures.thread
 from asyncio import AbstractEventLoop
 from typing import Optional
 
+from localstack import config
 from localstack.aws.gateway import Gateway
 from localstack.aws.serving.wsgi import WsgiGateway
 from localstack.http.asgi import ASGIAdapter, ASGILifespanListener
@@ -39,7 +40,7 @@ class AsgiGateway:
         self,
         gateway: Gateway,
         event_loop: Optional[AbstractEventLoop] = None,
-        threads: int = 1000,
+        threads: int = config.GATEWAY_WORKER_THREAD_COUNT,
         lifespan_listener: Optional[ASGILifespanListener] = None,
         websocket_listener=None,
     ) -> None:
