@@ -155,7 +155,7 @@ def _get_sqs_request_headers():
 
 
 def test_skeleton_e2e_sqs_send_message():
-    sqs_service = load_service("sqs-query")
+    sqs_service = load_service("sqs")
     skeleton = Skeleton(sqs_service, TestSqsApi())
     context = RequestContext()
     context.account = "test"
@@ -210,7 +210,7 @@ def test_skeleton_e2e_sqs_send_message():
     ],
 )
 def test_skeleton_e2e_sqs_send_message_not_implemented(api_class, oracle_message):
-    sqs_service = load_service("sqs-query")
+    sqs_service = load_service("sqs")
     skeleton = Skeleton(sqs_service, api_class)
     context = RequestContext()
     context.account = "test"
@@ -254,7 +254,7 @@ def test_dispatch_common_service_exception():
     table: DispatchTable = {}
     table["DeleteQueue"] = delete_queue
 
-    sqs_service = load_service("sqs-query")
+    sqs_service = load_service("sqs")
     skeleton = Skeleton(sqs_service, table)
 
     context = RequestContext()
@@ -287,7 +287,7 @@ def test_dispatch_common_service_exception():
 def test_dispatch_missing_method_returns_internal_failure():
     table: DispatchTable = {}
 
-    sqs_service = load_service("sqs-query")
+    sqs_service = load_service("sqs")
     skeleton = Skeleton(sqs_service, table)
 
     context = RequestContext()

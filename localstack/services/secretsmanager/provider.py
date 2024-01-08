@@ -6,7 +6,6 @@ import re
 import time
 from typing import Final, Optional, Union
 
-from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import utils as secretsmanager_utils
 from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecretNotFoundException
@@ -515,6 +514,23 @@ def fake_secret_remove_version_stages_from_old_versions(fn, self, version_stages
         del self.versions[version_no_stages]
 
 
+# Moto does not support rotate_immediately as an API parameter while the AWS API does
+@patch(SecretsManagerResponse.rotate_secret, pass_target=False)
+def rotate_secret(self) -> str:
+    client_request_token = self._get_param("ClientRequestToken")
+    rotation_lambda_arn = self._get_param("RotationLambdaARN")
+    rotation_rules = self._get_param("RotationRules")
+    rotate_immediately = self._get_param("RotateImmediately")
+    secret_id = self._get_param("SecretId")
+    return self.backend.rotate_secret(
+        secret_id=secret_id,
+        client_request_token=client_request_token,
+        rotation_lambda_arn=rotation_lambda_arn,
+        rotation_rules=rotation_rules,
+        rotate_immediately=rotate_immediately,
+    )
+
+
 @patch(SecretsManagerBackend.rotate_secret)
 def backend_rotate_secret(
     _,
@@ -523,6 +539,7 @@ def backend_rotate_secret(
     client_request_token=None,
     rotation_lambda_arn=None,
     rotation_rules=None,
+    rotate_immediately=True,
 ):
     rotation_days = "AutomaticallyAfterDays"
 
@@ -547,18 +564,10 @@ def backend_rotate_secret(
                 msg = "RotationRules.AutomaticallyAfterDays " "must be within 1-1000."
                 raise InvalidParameterException(msg)
 
-    rotation_func = None
     try:
         lm_client = connect_to(region_name=self.region_name).lambda_
-        get_func_res = lm_client.get_function(FunctionName=rotation_lambda_arn)
-        lm_spec = get_func_res["Configuration"]
-        lm_spec["Code"] = {"ZipFile": str(short_uid())}
-        rotation_func = LambdaFunction(self.account_id, lm_spec, self.region_name)
+        lm_client.get_function(FunctionName=rotation_lambda_arn)
     except Exception:
-        # Fall through to ResourceNotFoundException.
-        pass
-    #
-    if not rotation_func:
         raise ResourceNotFoundException("Lambda does not exist or could not be accessed")
 
     secret = self.secrets[secret_id]
@@ -574,61 +583,78 @@ def backend_rotate_secret(
     # version as AWSCURRENT then any later invocation of RotateSecret assumes
     # that a previous rotation request is still in progress and returns an error.
     try:
+        pending_version = None
         version = next(
             version
             for version in secret.versions.values()
             if AWSPENDING in version["version_stages"]
         )
-        if AWSCURRENT in version["version_stages"]:
+        if AWSCURRENT not in version["version_stages"]:
             msg = "Previous rotation request is still in progress."
-            raise InvalidRequestException(msg)
+            # Delay exception, so we can trigger lambda again
+            pending_version = [InvalidRequestException(msg), version]
 
     except StopIteration:
         # Pending is not present in any version
         pass
 
-    # Begin the rotation process for the given secret by invoking the lambda function.
-    #
-    # We add the new secret version as "pending". The previous version remains
-    # as "current" for now. Once we've passed the new secret through the lambda
-    # rotation function (if provided) we can then update the status to "current".
-    new_version_id = self._from_client_request_token(client_request_token)
-    #
-    self._add_secret(
-        secret_id,
-        None,
-        description=secret.description,
-        tags=secret.tags,
-        version_id=new_version_id,
-        version_stages=[AWSPENDING],
-    )
     secret.rotation_lambda_arn = rotation_lambda_arn
-    if rotation_rules:
-        secret.auto_rotate_after_days = rotation_rules.get(rotation_days, 0)
+    secret.auto_rotate_after_days = rotation_rules.get(rotation_days, 0)
     if secret.auto_rotate_after_days > 0:
+        wait_interval_s = int(rotation_period) * 86400
+        secret.next_rotation_date = int(time.time()) + wait_interval_s
         secret.rotation_enabled = True
+        secret.rotation_requested = True
 
-    request_headers = {}
-    response_headers = {}
-    for step in ["create", "set", "test", "finish"]:
-        rotation_func.invoke(
-            json.dumps(
-                {
-                    "Step": step + "Secret",
-                    "SecretId": secret.name,
-                    "ClientRequestToken": new_version_id,
-                }
-            ),
-            request_headers,
-            response_headers,
-        )
+    if rotate_immediately:
+        if not pending_version:
+            # Begin the rotation process for the given secret by invoking the lambda function.
+            #
+            # We add the new secret version as "pending". The previous version remains
+            # as "current" for now. Once we've passed the new secret through the lambda
+            # rotation function (if provided) we can then update the status to "current".
+            new_version_id = self._from_client_request_token(client_request_token)
 
-    secret.set_default_version_id(new_version_id)
-    version_stages = secret.versions[new_version_id]["version_stages"]
-    if AWSPENDING in version_stages:
-        version_stages.remove(AWSPENDING)
+            # An initial dummy secret value is necessary otherwise moto is not adding the new
+            # secret version.
+            self._add_secret(
+                secret_id,
+                "dummy_password",
+                description=secret.description,
+                tags=secret.tags,
+                version_id=new_version_id,
+                version_stages=[AWSPENDING],
+            )
 
-    return secret.to_short_dict()
+            # AWS secret rotation function templates have checks on existing values so we remove
+            # the dummy value to force the lambda to generate a new one.
+            del secret.versions[new_version_id]["secret_string"]
+        else:
+            new_version_id = pending_version.pop()["version_id"]
+
+        try:
+            for step in ["create", "set", "test", "finish"]:
+                resp = lm_client.invoke(
+                    FunctionName=rotation_lambda_arn,
+                    Payload=json.dumps(
+                        {
+                            "Step": step + "Secret",
+                            "SecretId": secret.name,
+                            "ClientRequestToken": new_version_id,
+                        }
+                    ),
+                )
+                if resp.get("FunctionError"):
+                    data = json.loads(resp.get("Payload").read())
+                    raise Exception(data.get("errorType"))
+        except Exception as e:
+            LOG.debug("An exception (%s) has occurred in %s", str(e), rotation_lambda_arn)
+            if pending_version:
+                raise pending_version.pop()
+            # Fall through if there is no previously pending version so we'll "stuck" with a new
+            # secret version in AWSPENDING state.
+
+    return secret.to_short_dict(version_id=new_version_id)
 
 
 @patch(MotoSecretNotFoundException.__init__)

@@ -13,7 +13,7 @@ from localstack.aws.api import (
 )
 from localstack.aws.api.core import ServiceRequest, ServiceRequestHandler, ServiceResponse
 from localstack.aws.protocol.parser import create_parser
-from localstack.aws.protocol.serializer import create_serializer
+from localstack.aws.protocol.serializer import ResponseSerializer, create_serializer
 from localstack.aws.spec import load_service
 from localstack.utils import analytics
 from localstack.utils.coverage_docs import get_coverage_link_for_service
@@ -124,8 +124,6 @@ class Skeleton:
 
     def __init__(self, service: ServiceModel, implementation: Union[Any, DispatchTable]):
         self.service = service
-        self.parser = create_parser(service)
-        self.serializer = create_serializer(service)
 
         if isinstance(implementation, dict):
             self.dispatch_table = implementation
@@ -133,12 +131,14 @@ class Skeleton:
             self.dispatch_table = create_dispatch_table(implementation)
 
     def invoke(self, context: RequestContext) -> HttpResponse:
+        serializer = create_serializer(context.service)
+
         if context.operation and context.service_request:
             # if the parsed request is already set in the context, re-use them
             operation, instance = context.operation, context.service_request
         else:
             # otherwise, parse the incoming HTTPRequest
-            operation, instance = self.parser.parse(context.request)
+            operation, instance = create_parser(context.service).parse(context.request)
             context.operation = operation
 
         try:
@@ -151,13 +151,15 @@ class Skeleton:
                 )
                 raise NotImplementedError
 
-            return self.dispatch_request(context, instance)
+            return self.dispatch_request(serializer, context, instance)
         except ServiceException as e:
-            return self.on_service_exception(context, e)
+            return self.on_service_exception(serializer, context, e)
         except NotImplementedError as e:
-            return self.on_not_implemented_error(context, e)
+            return self.on_not_implemented_error(serializer, context, e)
 
-    def dispatch_request(self, context: RequestContext, instance: ServiceRequest) -> HttpResponse:
+    def dispatch_request(
+        self, serializer: ResponseSerializer, context: RequestContext, instance: ServiceRequest
+    ) -> HttpResponse:
         operation = context.operation
 
         handler = self.dispatch_table[operation.name]
@@ -172,38 +174,42 @@ class Skeleton:
         context.service_response = result
 
         # Serialize result dict to an HTTPResponse and return it
-        return self.serializer.serialize_to_response(
+        return serializer.serialize_to_response(
             result, operation, context.request.headers, context.request_id
         )
 
     def on_service_exception(
-        self, context: RequestContext, exception: ServiceException
+        self, serializer: ResponseSerializer, context: RequestContext, exception: ServiceException
     ) -> HttpResponse:
         """
         Called by invoke if the handler of the operation raised a ServiceException.
 
+        :param serializer: serializer which should be used to serialize the exception
         :param context: the request context
         :param exception: the exception that was raised
         :return: an HttpResponse object
         """
         context.service_exception = exception
 
-        return self.serializer.serialize_error_to_response(
+        return serializer.serialize_error_to_response(
             exception, context.operation, context.request.headers, context.request_id
         )
 
     def on_not_implemented_error(
-        self, context: RequestContext, exception: NotImplementedError
+        self,
+        serializer: ResponseSerializer,
+        context: RequestContext,
+        exception: NotImplementedError,
     ) -> HttpResponse:
         """
         Called by invoke if either the dispatch table did not contain an entry for the operation, or the service
         provider raised a NotImplementedError
+        :param serializer: the serialzier which should be used to serialize the NotImplementedError
         :param context: the request context
         :param exception: the NotImplementedError that was raised
         :return: an HttpResponse object
         """
         operation = context.operation
-        serializer = self.serializer
 
         action_name = operation.name
         service_name = operation.service_model.service_name

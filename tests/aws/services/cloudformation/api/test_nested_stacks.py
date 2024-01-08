@@ -285,3 +285,9 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
 
     assert stack.outputs["ProdBucket"] == f"{nested_bucket_name}-prod"
     assert aws_client.s3.head_bucket(Bucket=stack.outputs["ProdBucket"])
+
+    # Ensure that nested stack names are correctly generated
+    nested_stack = aws_client.cloudformation.describe_stacks(
+        StackName=stack.outputs["NestedStackArn"]
+    )
+    assert ":" not in nested_stack["Stacks"][0]["StackName"]

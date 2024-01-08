@@ -3,6 +3,7 @@ import gzip
 import json
 import time
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 from urllib.request import Request, urlopen
 
 import pytest
@@ -13,11 +14,14 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.snapshot import is_aws
 from localstack.utils.aws import arns
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import retry, short_uid, to_str
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import poll_condition, wait_until
 
+if TYPE_CHECKING:
+    from mypy_boto3_logs import CloudWatchLogsClient
 PUBLICATION_RETRIES = 5
 
 
@@ -1197,6 +1201,81 @@ class TestCloudwatch:
 
         assert isinstance(response["MetricWidgetImage"], bytes)
 
+    @markers.aws.validated
+    def test_alarm_lambda_target(
+        self, aws_client, create_lambda_function, cleanups, account_id, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("alarmName"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("namespace", reference_replacement=False)
+        )
+        fn_name = f"fn-cw-{short_uid()}"
+        response = create_lambda_function(
+            func_name=fn_name,
+            handler_file=ACTION_LAMBDA,
+            runtime="python3.11",
+        )
+        function_arn = response["CreateFunctionResponse"]["FunctionArn"]
+        alarm_name = f"alarm-{short_uid()}"
+        aws_client.cloudwatch.put_metric_alarm(
+            AlarmName=alarm_name,
+            AlarmDescription="testing lambda alarm action",
+            MetricName="metric1",
+            Namespace=f"ns-{short_uid()}",
+            Period=10,
+            Threshold=2,
+            Statistic="Average",
+            OKActions=[],
+            AlarmActions=[function_arn],
+            EvaluationPeriods=2,
+            ComparisonOperator="GreaterThanThreshold",
+            TreatMissingData="ignore",
+        )
+        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
+        alarm_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"][
+            0
+        ]["AlarmArn"]
+        # allow cloudwatch to trigger the lambda
+        aws_client.lambda_.add_permission(
+            FunctionName=fn_name,
+            StatementId="AlarmAction",
+            Action="lambda:InvokeFunction",
+            Principal="lambda.alarms.cloudwatch.amazonaws.com",
+            SourceAccount=account_id,
+            SourceArn=alarm_arn,
+        )
+        aws_client.cloudwatch.set_alarm_state(
+            AlarmName=alarm_name, StateValue="ALARM", StateReason="testing alarm"
+        )
+
+        # wait for lambda invocation
+        def log_group_exists():
+            return (
+                len(
+                    aws_client.logs.describe_log_groups(
+                        logGroupNamePrefix=f"/aws/lambda/{fn_name}"
+                    )["logGroups"]
+                )
+                == 1
+            )
+
+        wait_until(log_group_exists, max_retries=30 if is_aws_cloud() else 10)
+
+        invocation_res = retry(
+            lambda: _get_lambda_logs(aws_client.logs, fn_name=fn_name),
+            retries=200 if is_aws() else 20,
+            sleep=10 if is_aws() else 1,
+        )
+        snapshot.match("lambda-alarm-invocations", invocation_res)
+
+
+def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
+    log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")["events"]
+    filtered_logs = [event for event in log_events if event["message"].startswith("{")]
+    assert len(filtered_logs) >= 1
+    filtered_logs.sort(key=lambda e: e["timestamp"], reverse=True)
+    return filtered_logs[0]["message"]
+
 
 def _check_alarm_triggered(
     expected_state,
@@ -1272,4 +1351,12 @@ def get_sqs_policy(sqs_queue_arn, sns_topic_arn):
     }}
   ]
 }}
+"""
+
+
+ACTION_LAMBDA = """
+def handler(event, context):
+    import json
+    print(json.dumps(event))
+    return {"triggered": True}
 """

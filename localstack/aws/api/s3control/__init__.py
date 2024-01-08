@@ -3,6 +3,13 @@ from typing import Dict, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
+AccessGrantArn = str
+AccessGrantId = str
+AccessGrantsInstanceArn = str
+AccessGrantsInstanceId = str
+AccessGrantsLocationArn = str
+AccessGrantsLocationId = str
+AccessKeyId = str
 AccessPointName = str
 AccountId = str
 Alias = str
@@ -19,6 +26,7 @@ ConfirmationRequired = bool
 ContinuationToken = str
 Days = int
 DaysAfterInitiation = int
+DurationSeconds = int
 ExceptionMessage = str
 ExpiredObjectDeleteMarker = bool
 FunctionArnString = str
@@ -27,8 +35,11 @@ GrantRead = str
 GrantReadACP = str
 GrantWrite = str
 GrantWriteACP = str
+GranteeIdentifier = str
 IAMRoleArn = str
 ID = str
+IdentityCenterApplicationArn = str
+IdentityCenterArn = str
 IsEnabled = bool
 IsPublic = bool
 JobArn = str
@@ -62,7 +73,9 @@ ObjectLambdaAccessPointName = str
 ObjectLambdaPolicy = str
 ObjectLambdaSupportingAccessPointArn = str
 ObjectLockEnabledForBucket = bool
+Organization = str
 Policy = str
+PolicyDocument = str
 Prefix = str
 Priority = int
 PublicAccessBlockEnabled = bool
@@ -76,9 +89,13 @@ S3BucketArnString = str
 S3ExpirationInDays = int
 S3KeyArnString = str
 S3ObjectVersionId = str
+S3Prefix = str
 S3RegionalBucketArn = str
+S3RegionalOrS3ExpressBucketArnString = str
 S3ResourceArn = str
 SSEKMSKeyId = str
+SecretAccessKey = str
+SessionToken = str
 Setting = bool
 StorageLensArn = str
 StorageLensGroupArn = str
@@ -148,6 +165,12 @@ class Format(str):
 
 class GeneratedManifestFormat(str):
     S3InventoryReport_CSV_20211130 = "S3InventoryReport_CSV_20211130"
+
+
+class GranteeType(str):
+    DIRECTORY_USER = "DIRECTORY_USER"
+    DIRECTORY_GROUP = "DIRECTORY_GROUP"
+    IAM = "IAM"
 
 
 class JobManifestFieldName(str):
@@ -255,6 +278,17 @@ class OwnerOverride(str):
     Destination = "Destination"
 
 
+class Permission(str):
+    READ = "READ"
+    WRITE = "WRITE"
+    READWRITE = "READWRITE"
+
+
+class Privilege(str):
+    Minimal = "Minimal"
+    Default = "Default"
+
+
 class ReplicaModificationsStatus(str):
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -348,6 +382,10 @@ class S3Permission(str):
     WRITE = "WRITE"
     READ_ACP = "READ_ACP"
     WRITE_ACP = "WRITE_ACP"
+
+
+class S3PrefixType(str):
+    Object = "Object"
 
 
 class S3SSEAlgorithm(str):
@@ -458,6 +496,54 @@ class AccessControlTranslation(TypedDict, total=False):
     Owner: OwnerOverride
 
 
+CreationTimestamp = datetime
+
+
+class ListAccessGrantsInstanceEntry(TypedDict, total=False):
+    AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
+    AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
+    CreatedAt: Optional[CreationTimestamp]
+    IdentityCenterArn: Optional[IdentityCenterArn]
+
+
+AccessGrantsInstancesList = List[ListAccessGrantsInstanceEntry]
+
+
+class AccessGrantsLocationConfiguration(TypedDict, total=False):
+    S3SubPrefix: Optional[S3Prefix]
+
+
+class Grantee(TypedDict, total=False):
+    GranteeType: Optional[GranteeType]
+    GranteeIdentifier: Optional[GranteeIdentifier]
+
+
+class ListAccessGrantEntry(TypedDict, total=False):
+    CreatedAt: Optional[CreationTimestamp]
+    AccessGrantId: Optional[AccessGrantId]
+    AccessGrantArn: Optional[AccessGrantArn]
+    Grantee: Optional[Grantee]
+    Permission: Optional[Permission]
+    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
+    AccessGrantsLocationConfiguration: Optional[AccessGrantsLocationConfiguration]
+    GrantScope: Optional[S3Prefix]
+    ApplicationArn: Optional[IdentityCenterApplicationArn]
+
+
+AccessGrantsList = List[ListAccessGrantEntry]
+
+
+class ListAccessGrantsLocationsEntry(TypedDict, total=False):
+    CreatedAt: Optional[CreationTimestamp]
+    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
+    AccessGrantsLocationArn: Optional[AccessGrantsLocationArn]
+    LocationScope: Optional[S3Prefix]
+    IAMRoleArn: Optional[IAMRoleArn]
+
+
+AccessGrantsLocationsList = List[ListAccessGrantsLocationsEntry]
+
+
 class VpcConfiguration(TypedDict, total=False):
     VpcId: VpcId
 
@@ -532,6 +618,11 @@ class AccountLevel(TypedDict, total=False):
     AdvancedDataProtectionMetrics: Optional[AdvancedDataProtectionMetrics]
     DetailedStatusCodesMetrics: Optional[DetailedStatusCodesMetrics]
     StorageLensGroupLevel: Optional[StorageLensGroupLevel]
+
+
+class AssociateAccessGrantsIdentityCenterRequest(ServiceRequest):
+    AccountId: AccountId
+    IdentityCenterArn: IdentityCenterArn
 
 
 AsyncCreationTimestamp = datetime
@@ -618,6 +709,65 @@ class CloudWatchMetrics(TypedDict, total=False):
     IsEnabled: IsEnabled
 
 
+class Tag(TypedDict, total=False):
+    Key: TagKeyString
+    Value: TagValueString
+
+
+TagList = List[Tag]
+
+
+class CreateAccessGrantRequest(ServiceRequest):
+    AccountId: AccountId
+    AccessGrantsLocationId: AccessGrantsLocationId
+    AccessGrantsLocationConfiguration: Optional[AccessGrantsLocationConfiguration]
+    Grantee: Grantee
+    Permission: Permission
+    ApplicationArn: Optional[IdentityCenterApplicationArn]
+    S3PrefixType: Optional[S3PrefixType]
+    Tags: Optional[TagList]
+
+
+class CreateAccessGrantResult(TypedDict, total=False):
+    CreatedAt: Optional[CreationTimestamp]
+    AccessGrantId: Optional[AccessGrantId]
+    AccessGrantArn: Optional[AccessGrantArn]
+    Grantee: Optional[Grantee]
+    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
+    AccessGrantsLocationConfiguration: Optional[AccessGrantsLocationConfiguration]
+    Permission: Optional[Permission]
+    ApplicationArn: Optional[IdentityCenterApplicationArn]
+    GrantScope: Optional[S3Prefix]
+
+
+class CreateAccessGrantsInstanceRequest(ServiceRequest):
+    AccountId: AccountId
+    IdentityCenterArn: Optional[IdentityCenterArn]
+    Tags: Optional[TagList]
+
+
+class CreateAccessGrantsInstanceResult(TypedDict, total=False):
+    CreatedAt: Optional[CreationTimestamp]
+    AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
+    AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
+    IdentityCenterArn: Optional[IdentityCenterArn]
+
+
+class CreateAccessGrantsLocationRequest(ServiceRequest):
+    AccountId: AccountId
+    LocationScope: S3Prefix
+    IAMRoleArn: IAMRoleArn
+    Tags: Optional[TagList]
+
+
+class CreateAccessGrantsLocationResult(TypedDict, total=False):
+    CreatedAt: Optional[CreationTimestamp]
+    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
+    AccessGrantsLocationArn: Optional[AccessGrantsLocationArn]
+    LocationScope: Optional[S3Prefix]
+    IAMRoleArn: Optional[IAMRoleArn]
+
+
 class ObjectLambdaContentTransformation(TypedDict, total=False):
     AwsLambda: Optional[AwsLambdaTransformation]
 
@@ -695,6 +845,18 @@ class CreateBucketResult(TypedDict, total=False):
     BucketArn: Optional[S3RegionalBucketArn]
 
 
+StorageClassList = List[S3StorageClass]
+ObjectSizeLessThanBytes = int
+ObjectSizeGreaterThanBytes = int
+NonEmptyMaxLength1024StringList = List[NonEmptyMaxLength1024String]
+
+
+class KeyNameConstraint(TypedDict, total=False):
+    MatchAnyPrefix: Optional[NonEmptyMaxLength1024StringList]
+    MatchAnySuffix: Optional[NonEmptyMaxLength1024StringList]
+    MatchAnySubstring: Optional[NonEmptyMaxLength1024StringList]
+
+
 ReplicationStatusFilterList = List[ReplicationStatus]
 ObjectCreationTime = datetime
 
@@ -704,6 +866,10 @@ class JobManifestGeneratorFilter(TypedDict, total=False):
     CreatedAfter: Optional[ObjectCreationTime]
     CreatedBefore: Optional[ObjectCreationTime]
     ObjectReplicationStatuses: Optional[ReplicationStatusFilterList]
+    KeyNameConstraint: Optional[KeyNameConstraint]
+    ObjectSizeGreaterThanBytes: Optional[ObjectSizeGreaterThanBytes]
+    ObjectSizeLessThanBytes: Optional[ObjectSizeLessThanBytes]
+    MatchAnyStorageClass: Optional[StorageClassList]
 
 
 class SSEKMSEncryption(TypedDict, total=False):
@@ -864,7 +1030,7 @@ class S3ObjectMetadata(TypedDict, total=False):
 
 
 class S3CopyObjectOperation(TypedDict, total=False):
-    TargetResource: Optional[S3BucketArnString]
+    TargetResource: Optional[S3RegionalOrS3ExpressBucketArnString]
     CannedAccessControlList: Optional[S3CannedAccessControlList]
     AccessControlGrants: Optional[S3GrantList]
     MetadataDirective: Optional[S3MetadataDirective]
@@ -884,8 +1050,13 @@ class S3CopyObjectOperation(TypedDict, total=False):
     ChecksumAlgorithm: Optional[S3ChecksumAlgorithm]
 
 
+UserArguments = Dict[NonEmptyMaxLength64String, MaxLength1024String]
+
+
 class LambdaInvokeOperation(TypedDict, total=False):
     FunctionArn: Optional[FunctionArnString]
+    InvocationSchemaVersion: Optional[NonEmptyMaxLength64String]
+    UserArguments: Optional[UserArguments]
 
 
 class JobOperation(TypedDict, total=False):
@@ -928,12 +1099,6 @@ class CreateMultiRegionAccessPointResult(TypedDict, total=False):
     RequestTokenARN: Optional[AsyncRequestTokenARN]
 
 
-class Tag(TypedDict, total=False):
-    Key: TagKeyString
-    Value: TagValueString
-
-
-TagList = List[Tag]
 ObjectSizeValue = int
 
 
@@ -991,8 +1156,35 @@ class CreateStorageLensGroupRequest(ServiceRequest):
 
 
 CreationDate = datetime
-CreationTimestamp = datetime
+Expiration = datetime
+
+
+class Credentials(TypedDict, total=False):
+    AccessKeyId: Optional[AccessKeyId]
+    SecretAccessKey: Optional[SecretAccessKey]
+    SessionToken: Optional[SessionToken]
+    Expiration: Optional[Expiration]
+
+
 Date = datetime
+
+
+class DeleteAccessGrantRequest(ServiceRequest):
+    AccountId: AccountId
+    AccessGrantId: AccessGrantId
+
+
+class DeleteAccessGrantsInstanceRequest(ServiceRequest):
+    AccountId: AccountId
+
+
+class DeleteAccessGrantsInstanceResourcePolicyRequest(ServiceRequest):
+    AccountId: AccountId
+
+
+class DeleteAccessGrantsLocationRequest(ServiceRequest):
+    AccountId: AccountId
+    AccessGrantsLocationId: AccessGrantsLocationId
 
 
 class DeleteAccessPointForObjectLambdaRequest(ServiceRequest):
@@ -1189,6 +1381,10 @@ class Destination(TypedDict, total=False):
     StorageClass: Optional[ReplicationStorageClass]
 
 
+class DissociateAccessGrantsIdentityCenterRequest(ServiceRequest):
+    AccountId: AccountId
+
+
 Endpoints = Dict[NonEmptyMaxLength64String, NonEmptyMaxLength1024String]
 
 
@@ -1206,6 +1402,67 @@ class Exclude(TypedDict, total=False):
 
 class ExistingObjectReplication(TypedDict, total=False):
     Status: ExistingObjectReplicationStatus
+
+
+class GetAccessGrantRequest(ServiceRequest):
+    AccountId: AccountId
+    AccessGrantId: AccessGrantId
+
+
+class GetAccessGrantResult(TypedDict, total=False):
+    CreatedAt: Optional[CreationTimestamp]
+    AccessGrantId: Optional[AccessGrantId]
+    AccessGrantArn: Optional[AccessGrantArn]
+    Grantee: Optional[Grantee]
+    Permission: Optional[Permission]
+    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
+    AccessGrantsLocationConfiguration: Optional[AccessGrantsLocationConfiguration]
+    GrantScope: Optional[S3Prefix]
+    ApplicationArn: Optional[IdentityCenterApplicationArn]
+
+
+class GetAccessGrantsInstanceForPrefixRequest(ServiceRequest):
+    AccountId: AccountId
+    S3Prefix: S3Prefix
+
+
+class GetAccessGrantsInstanceForPrefixResult(TypedDict, total=False):
+    AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
+    AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
+
+
+class GetAccessGrantsInstanceRequest(ServiceRequest):
+    AccountId: AccountId
+
+
+class GetAccessGrantsInstanceResourcePolicyRequest(ServiceRequest):
+    AccountId: AccountId
+
+
+class GetAccessGrantsInstanceResourcePolicyResult(TypedDict, total=False):
+    Policy: Optional[PolicyDocument]
+    Organization: Optional[Organization]
+    CreatedAt: Optional[CreationTimestamp]
+
+
+class GetAccessGrantsInstanceResult(TypedDict, total=False):
+    AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
+    AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
+    IdentityCenterArn: Optional[IdentityCenterArn]
+    CreatedAt: Optional[CreationTimestamp]
+
+
+class GetAccessGrantsLocationRequest(ServiceRequest):
+    AccountId: AccountId
+    AccessGrantsLocationId: AccessGrantsLocationId
+
+
+class GetAccessGrantsLocationResult(TypedDict, total=False):
+    CreatedAt: Optional[CreationTimestamp]
+    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
+    AccessGrantsLocationArn: Optional[AccessGrantsLocationArn]
+    LocationScope: Optional[S3Prefix]
+    IAMRoleArn: Optional[IAMRoleArn]
 
 
 class GetAccessPointConfigurationForObjectLambdaRequest(ServiceRequest):
@@ -1312,8 +1569,6 @@ class Transition(TypedDict, total=False):
 
 
 TransitionList = List[Transition]
-ObjectSizeLessThanBytes = int
-ObjectSizeGreaterThanBytes = int
 
 
 class LifecycleRuleAndOperator(TypedDict, total=False):
@@ -1446,6 +1701,20 @@ class GetBucketVersioningRequest(ServiceRequest):
 class GetBucketVersioningResult(TypedDict, total=False):
     Status: Optional[BucketVersioningStatus]
     MFADelete: Optional[MFADeleteStatus]
+
+
+class GetDataAccessRequest(ServiceRequest):
+    AccountId: AccountId
+    Target: S3Prefix
+    Permission: Permission
+    DurationSeconds: Optional[DurationSeconds]
+    Privilege: Optional[Privilege]
+    TargetType: Optional[S3PrefixType]
+
+
+class GetDataAccessResult(TypedDict, total=False):
+    Credentials: Optional[Credentials]
+    MatchedGrantTarget: Optional[S3Prefix]
 
 
 class GetJobTaggingRequest(ServiceRequest):
@@ -1639,6 +1908,45 @@ class LifecycleConfiguration(TypedDict, total=False):
     Rules: Optional[LifecycleRules]
 
 
+class ListAccessGrantsInstancesRequest(ServiceRequest):
+    AccountId: AccountId
+    NextToken: Optional[ContinuationToken]
+    MaxResults: Optional[MaxResults]
+
+
+class ListAccessGrantsInstancesResult(TypedDict, total=False):
+    NextToken: Optional[ContinuationToken]
+    AccessGrantsInstancesList: Optional[AccessGrantsInstancesList]
+
+
+class ListAccessGrantsLocationsRequest(ServiceRequest):
+    AccountId: AccountId
+    NextToken: Optional[ContinuationToken]
+    MaxResults: Optional[MaxResults]
+    LocationScope: Optional[S3Prefix]
+
+
+class ListAccessGrantsLocationsResult(TypedDict, total=False):
+    NextToken: Optional[ContinuationToken]
+    AccessGrantsLocationsList: Optional[AccessGrantsLocationsList]
+
+
+class ListAccessGrantsRequest(ServiceRequest):
+    AccountId: AccountId
+    NextToken: Optional[ContinuationToken]
+    MaxResults: Optional[MaxResults]
+    GranteeType: Optional[GranteeType]
+    GranteeIdentifier: Optional[GranteeIdentifier]
+    Permission: Optional[Permission]
+    GrantScope: Optional[S3Prefix]
+    ApplicationArn: Optional[IdentityCenterApplicationArn]
+
+
+class ListAccessGrantsResult(TypedDict, total=False):
+    NextToken: Optional[ContinuationToken]
+    AccessGrantsList: Optional[AccessGrantsList]
+
+
 class ListAccessPointsForObjectLambdaRequest(ServiceRequest):
     AccountId: AccountId
     NextToken: Optional[NonEmptyMaxLength1024String]
@@ -1766,6 +2074,18 @@ class ListTagsForResourceRequest(ServiceRequest):
 
 class ListTagsForResourceResult(TypedDict, total=False):
     Tags: Optional[TagList]
+
+
+class PutAccessGrantsInstanceResourcePolicyRequest(ServiceRequest):
+    AccountId: AccountId
+    Policy: PolicyDocument
+    Organization: Optional[Organization]
+
+
+class PutAccessGrantsInstanceResourcePolicyResult(TypedDict, total=False):
+    Policy: Optional[PolicyDocument]
+    Organization: Optional[Organization]
+    CreatedAt: Optional[CreationTimestamp]
 
 
 class PutAccessPointConfigurationForObjectLambdaRequest(ServiceRequest):
@@ -1902,6 +2222,20 @@ class UntagResourceResult(TypedDict, total=False):
     pass
 
 
+class UpdateAccessGrantsLocationRequest(ServiceRequest):
+    AccountId: AccountId
+    AccessGrantsLocationId: AccessGrantsLocationId
+    IAMRoleArn: IAMRoleArn
+
+
+class UpdateAccessGrantsLocationResult(TypedDict, total=False):
+    CreatedAt: Optional[CreationTimestamp]
+    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
+    AccessGrantsLocationArn: Optional[AccessGrantsLocationArn]
+    LocationScope: Optional[S3Prefix]
+    IAMRoleArn: Optional[IAMRoleArn]
+
+
 class UpdateJobPriorityRequest(ServiceRequest):
     AccountId: AccountId
     JobId: JobId
@@ -1935,6 +2269,48 @@ class UpdateStorageLensGroupRequest(ServiceRequest):
 class S3ControlApi:
     service = "s3control"
     version = "2018-08-20"
+
+    @handler("AssociateAccessGrantsIdentityCenter")
+    def associate_access_grants_identity_center(
+        self, context: RequestContext, account_id: AccountId, identity_center_arn: IdentityCenterArn
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("CreateAccessGrant")
+    def create_access_grant(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        access_grants_location_id: AccessGrantsLocationId,
+        grantee: Grantee,
+        permission: Permission,
+        access_grants_location_configuration: AccessGrantsLocationConfiguration = None,
+        application_arn: IdentityCenterApplicationArn = None,
+        s3_prefix_type: S3PrefixType = None,
+        tags: TagList = None,
+    ) -> CreateAccessGrantResult:
+        raise NotImplementedError
+
+    @handler("CreateAccessGrantsInstance")
+    def create_access_grants_instance(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        identity_center_arn: IdentityCenterArn = None,
+        tags: TagList = None,
+    ) -> CreateAccessGrantsInstanceResult:
+        raise NotImplementedError
+
+    @handler("CreateAccessGrantsLocation")
+    def create_access_grants_location(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        location_scope: S3Prefix,
+        iam_role_arn: IAMRoleArn,
+        tags: TagList = None,
+    ) -> CreateAccessGrantsLocationResult:
+        raise NotImplementedError
 
     @handler("CreateAccessPoint")
     def create_access_point(
@@ -2011,6 +2387,31 @@ class S3ControlApi:
         account_id: AccountId,
         storage_lens_group: StorageLensGroup,
         tags: TagList = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteAccessGrant")
+    def delete_access_grant(
+        self, context: RequestContext, account_id: AccountId, access_grant_id: AccessGrantId
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteAccessGrantsInstance")
+    def delete_access_grants_instance(self, context: RequestContext, account_id: AccountId) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteAccessGrantsInstanceResourcePolicy")
+    def delete_access_grants_instance_resource_policy(
+        self, context: RequestContext, account_id: AccountId
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteAccessGrantsLocation")
+    def delete_access_grants_location(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        access_grants_location_id: AccessGrantsLocationId,
     ) -> None:
         raise NotImplementedError
 
@@ -2121,6 +2522,45 @@ class S3ControlApi:
     ) -> DescribeMultiRegionAccessPointOperationResult:
         raise NotImplementedError
 
+    @handler("DissociateAccessGrantsIdentityCenter")
+    def dissociate_access_grants_identity_center(
+        self, context: RequestContext, account_id: AccountId
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("GetAccessGrant")
+    def get_access_grant(
+        self, context: RequestContext, account_id: AccountId, access_grant_id: AccessGrantId
+    ) -> GetAccessGrantResult:
+        raise NotImplementedError
+
+    @handler("GetAccessGrantsInstance")
+    def get_access_grants_instance(
+        self, context: RequestContext, account_id: AccountId
+    ) -> GetAccessGrantsInstanceResult:
+        raise NotImplementedError
+
+    @handler("GetAccessGrantsInstanceForPrefix")
+    def get_access_grants_instance_for_prefix(
+        self, context: RequestContext, account_id: AccountId, s3_prefix: S3Prefix
+    ) -> GetAccessGrantsInstanceForPrefixResult:
+        raise NotImplementedError
+
+    @handler("GetAccessGrantsInstanceResourcePolicy")
+    def get_access_grants_instance_resource_policy(
+        self, context: RequestContext, account_id: AccountId
+    ) -> GetAccessGrantsInstanceResourcePolicyResult:
+        raise NotImplementedError
+
+    @handler("GetAccessGrantsLocation")
+    def get_access_grants_location(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        access_grants_location_id: AccessGrantsLocationId,
+    ) -> GetAccessGrantsLocationResult:
+        raise NotImplementedError
+
     @handler("GetAccessPoint")
     def get_access_point(
         self, context: RequestContext, account_id: AccountId, name: AccessPointName
@@ -2199,6 +2639,19 @@ class S3ControlApi:
     ) -> GetBucketVersioningResult:
         raise NotImplementedError
 
+    @handler("GetDataAccess")
+    def get_data_access(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        target: S3Prefix,
+        permission: Permission,
+        duration_seconds: DurationSeconds = None,
+        privilege: Privilege = None,
+        target_type: S3PrefixType = None,
+    ) -> GetDataAccessResult:
+        raise NotImplementedError
+
     @handler("GetJobTagging")
     def get_job_tagging(
         self, context: RequestContext, account_id: AccountId, job_id: JobId
@@ -2251,6 +2704,42 @@ class S3ControlApi:
     def get_storage_lens_group(
         self, context: RequestContext, name: StorageLensGroupName, account_id: AccountId
     ) -> GetStorageLensGroupResult:
+        raise NotImplementedError
+
+    @handler("ListAccessGrants")
+    def list_access_grants(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        next_token: ContinuationToken = None,
+        max_results: MaxResults = None,
+        grantee_type: GranteeType = None,
+        grantee_identifier: GranteeIdentifier = None,
+        permission: Permission = None,
+        grant_scope: S3Prefix = None,
+        application_arn: IdentityCenterApplicationArn = None,
+    ) -> ListAccessGrantsResult:
+        raise NotImplementedError
+
+    @handler("ListAccessGrantsInstances")
+    def list_access_grants_instances(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        next_token: ContinuationToken = None,
+        max_results: MaxResults = None,
+    ) -> ListAccessGrantsInstancesResult:
+        raise NotImplementedError
+
+    @handler("ListAccessGrantsLocations")
+    def list_access_grants_locations(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        next_token: ContinuationToken = None,
+        max_results: MaxResults = None,
+        location_scope: S3Prefix = None,
+    ) -> ListAccessGrantsLocationsResult:
         raise NotImplementedError
 
     @handler("ListAccessPoints")
@@ -2322,6 +2811,16 @@ class S3ControlApi:
     def list_tags_for_resource(
         self, context: RequestContext, account_id: AccountId, resource_arn: S3ResourceArn
     ) -> ListTagsForResourceResult:
+        raise NotImplementedError
+
+    @handler("PutAccessGrantsInstanceResourcePolicy")
+    def put_access_grants_instance_resource_policy(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        policy: PolicyDocument,
+        organization: Organization = None,
+    ) -> PutAccessGrantsInstanceResourcePolicyResult:
         raise NotImplementedError
 
     @handler("PutAccessPointConfigurationForObjectLambda")
@@ -2472,6 +2971,16 @@ class S3ControlApi:
         resource_arn: S3ResourceArn,
         tag_keys: TagKeyList,
     ) -> UntagResourceResult:
+        raise NotImplementedError
+
+    @handler("UpdateAccessGrantsLocation")
+    def update_access_grants_location(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        access_grants_location_id: AccessGrantsLocationId,
+        iam_role_arn: IAMRoleArn,
+    ) -> UpdateAccessGrantsLocationResult:
         raise NotImplementedError
 
     @handler("UpdateJobPriority")

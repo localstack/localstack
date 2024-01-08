@@ -6,6 +6,7 @@ import traceback
 from typing import Dict, List, Optional, Tuple, TypedDict
 
 import click
+import requests
 
 from localstack import __version__, config
 from localstack.cli.exceptions import CLIError
@@ -374,8 +375,6 @@ def cmd_status_services(format_: str) -> None:
     """
     Query information about the services of the currently running LocalStack instance.
     """
-    import requests
-
     url = config.external_service_url()
 
     try:
@@ -570,6 +569,27 @@ def cmd_stop() -> None:
         raise CLIError(
             f'Expected a running LocalStack container named "{container_name}", but found none'
         )
+
+
+@localstack.command(name="restart", short_help="Restart LocalStack")
+@publish_invocation
+def cmd_restart() -> None:
+    """
+    Restarts the current LocalStack runtime.
+    """
+    url = config.external_service_url()
+
+    try:
+        response = requests.post(
+            f"{url}/_localstack/health",
+            json={"action": "restart"},
+        )
+        response.raise_for_status()
+        console.print("LocalStack restarted within the container.")
+    except requests.ConnectionError:
+        if config.DEBUG:
+            console.print_exception()
+        raise CLIError("could not restart the LocalStack container")
 
 
 @localstack.command(

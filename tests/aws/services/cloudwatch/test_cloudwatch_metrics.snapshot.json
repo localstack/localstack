@@ -90,5 +90,103 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch_metrics.py::TestSQSMetrics::test_alarm_number_of_messages_sent": {
+    "recorded-date": "03-01-2024, 11:59:08",
+    "recorded-content": {
+      "NumberOfMessagesSent-describe": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:aws:sns:<region>:111111111111:<topic-name>"
+            ],
+            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "test messages sent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "QueueName",
+                "Value": "<replaced-queue-name>"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "NumberOfMessagesSent",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Threshold Crossed: 1 datapoint [1.0 (MM/DD/YY HH:MM:SS)] was greater than the threshold (0.0).",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "startDate": "date",
+              "statistic": "SampleCount",
+              "period": 60,
+              "recentDatapoints": [
+                1.0
+              ],
+              "threshold": 0.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date",
+                  "sampleCount": 1.0,
+                  "value": 1.0
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "SampleCount",
+            "Threshold": 0.0,
+            "TreatMissingData": "missing"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "NumberOfMessagesSent-sqs-msg": {
+        "AWSAccountId": "111111111111",
+        "AlarmActions": [
+          "arn:aws:sns:<region>:111111111111:<topic-name>"
+        ],
+        "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmConfigurationUpdatedTimestamp": "date",
+        "AlarmDescription": "test messages sent",
+        "AlarmName": "<alarm-name:1>",
+        "InsufficientDataActions": [],
+        "NewStateReason": "Threshold Crossed: 1 datapoint [1.0 (MM/DD/YY HH:MM:SS)] was greater than the threshold (0.0).",
+        "NewStateValue": "ALARM",
+        "OKActions": [],
+        "OldStateValue": "INSUFFICIENT_DATA",
+        "Region": "<region-name-full:1>",
+        "StateChangeTime": "date",
+        "Trigger": {
+          "ComparisonOperator": "GreaterThanThreshold",
+          "Dimensions": [
+            {
+              "name": "QueueName",
+              "value": "<replaced-queue-name>"
+            }
+          ],
+          "EvaluateLowSampleCountPercentile": "",
+          "EvaluationPeriods": 1,
+          "MetricName": "NumberOfMessagesSent",
+          "Namespace": "<namespace:1>",
+          "Period": 60,
+          "Statistic": "SAMPLE_COUNT",
+          "StatisticType": "Statistic",
+          "Threshold": 0.0,
+          "TreatMissingData": "missing",
+          "Unit": null
+        }
+      }
+    }
   }
 }

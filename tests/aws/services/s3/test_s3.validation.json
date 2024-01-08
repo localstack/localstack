@@ -26,6 +26,12 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_copy_object_kms": {
     "last_validated_date": "2023-08-03T02:13:12+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_copy_object_special_character": {
+    "last_validated_date": "2024-01-04T15:59:31+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_copy_object_special_character_plus_for_space": {
+    "last_validated_date": "2024-01-04T13:48:40+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
     "last_validated_date": "2023-11-06T15:32:57+00:00"
   },
@@ -229,6 +235,9 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
     "last_validated_date": "2023-08-03T02:13:15+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure": {
+    "last_validated_date": "2024-01-03T16:46:18+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
     "last_validated_date": "2023-08-03T02:25:40+00:00"

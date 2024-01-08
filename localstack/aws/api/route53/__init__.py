@@ -152,6 +152,7 @@ class CloudWatchRegion(str):
     us_isob_east_1 = "us-isob-east-1"
     ap_southeast_4 = "ap-southeast-4"
     il_central_1 = "il-central-1"
+    ca_west_1 = "ca-west-1"
 
 
 class ComparisonOperator(str):
@@ -257,6 +258,7 @@ class ResourceRecordSetRegion(str):
     eu_south_2 = "eu-south-2"
     ap_southeast_4 = "ap-southeast-4"
     il_central_1 = "il-central-1"
+    ca_west_1 = "ca-west-1"
 
 
 class ReusableDelegationSetLimitType(str):
@@ -311,6 +313,7 @@ class VPCRegion(str):
     eu_south_2 = "eu-south-2"
     ap_southeast_4 = "ap-southeast-4"
     il_central_1 = "il-central-1"
+    ca_west_1 = "ca-west-1"
 
 
 class CidrBlockInUseException(ServiceException):

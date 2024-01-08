@@ -107,15 +107,9 @@ def has_enough_time_for_retry(
 
 # TODO: optimize this client configuration. Do we need to consider client caching here?
 CLIENT_CONFIG = Config(
-    # We shut down the LocalStack gateway last, hence this does not delay LocalStack cleanup anymore
-    connect_timeout=60,
-    read_timeout=60,
-    retries={"max_attempts": 2},
-    # Default 10; the thread pool executor spawns a maximum of 32 threads by default but multiple function versions
-    # might push beyond. We need to track how these connections and/or clients are shared.
-    # An insufficient pool can lead to connection timeout error with the warning:
-    # urllib3.connectionpool: Connection pool is full, discarding connection: localhost. Connection pool size: 1
-    # max_pool_connections=10,
+    connect_timeout=5,
+    read_timeout=10,
+    retries={"max_attempts": 0},
 )
 
 
@@ -136,16 +130,17 @@ class Poller:
         )
 
     def run(self, *args, **kwargs):
-        try:
-            sqs_client = get_sqs_client(
-                self.version_manager.function_version, client_config=CLIENT_CONFIG
-            )
-            function_timeout = self.version_manager.function_version.config.timeout
-            while not self._shutdown_event.is_set():
+        sqs_client = get_sqs_client(
+            self.version_manager.function_version, client_config=CLIENT_CONFIG
+        )
+        function_timeout = self.version_manager.function_version.config.timeout
+        while not self._shutdown_event.is_set():
+            try:
                 response = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
                     # TODO: consider replacing with short polling instead of long polling to prevent keeping connections open
-                    # WaitTimeSeconds=2,
+                    # however, we had some serious performance issues when tried out, so those have to be investigated first
+                    WaitTimeSeconds=2,
                     # Related: SQS event source mapping batches up to 10 messages:
                     # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
                     MaxNumberOfMessages=10,
@@ -161,19 +156,22 @@ class Poller:
                         #  due to the visibility timeout
                         self.invoker_pool.submit(self.handle_message, message)
 
-                # Try short polling instead of long polling to reduce the number of open connections
-                time.sleep(2)
-        except Exception as e:
-            # TODO: if the gateway shuts down before the shutdown event even is set,
-            #  this log message might be sent regardless
-            if isinstance(e, ConnectionRefusedError) and self._shutdown_event.is_set():
-                return
-            LOG.error(
-                "Error while polling lambda events for function %s: %s",
-                self.version_manager.function_version.qualified_arn,
-                e,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
+            except Exception as e:
+                # TODO: if the gateway shuts down before the shutdown event even is set,
+                #  we might still get an error message
+                # after shutdown of LS, we might expectedly get errors, if other components shut down.
+                # In any case, after the event manager is shut down, we do not need to spam error logs in case
+                # some resource is already missing
+                if self._shutdown_event.is_set():
+                    return
+                LOG.error(
+                    "Error while polling lambda events for function %s: %s",
+                    self.version_manager.function_version.qualified_arn,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+                # some time between retries to avoid running into the problem right again
+                time.sleep(1)
 
     def stop(self):
         LOG.debug(

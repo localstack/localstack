@@ -239,7 +239,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_sqs.py::test_report_batch_item_failures": {
-    "recorded-date": "10-11-2023, 19:17:37",
+    "recorded-date": "07-12-2023, 12:55:26",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -249,7 +249,6 @@
         }
       },
       "send_message_batch": {
-        "Failed": [],
         "Successful": [
           {
             "Id": "message-1",
@@ -1546,6 +1545,38 @@
           }
         }
       ]
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_duplicate_event_source_mappings": {
+    "recorded-date": "04-01-2024, 17:10:43",
+    "recorded-content": {
+      "create": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "An event source mapping with SQS arn (\" arn:aws:sqs:<region>:111111111111:<resource:1> \") and function (\" <resource:2> \") already exists. Please update or delete the existing mapping with UUID <uuid:1>"
+        },
+        "Type": "User",
+        "message": "An event source mapping with SQS arn (\" arn:aws:sqs:<region>:111111111111:<resource:1> \") and function (\" <resource:2> \") already exists. Please update or delete the existing mapping with UUID <uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
     }
   }
 }
