@@ -191,5 +191,4 @@ class TestACM:
         cert_description["DomainValidationOptions"] = sorted(
             cert_description["DomainValidationOptions"], key=lambda x: x["DomainName"]
         )
-
         snapshot.match("describe-cert", cert_description)
