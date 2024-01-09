@@ -80,6 +80,7 @@ from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_account_id_from_arn, lambda_function_name
 from localstack.utils.collections import PaginatedList
 from localstack.utils.json import CustomEncoder as JSONEncoder
+from localstack.utils.strings import camel_to_snake_case
 from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
 from localstack.utils.threads import start_worker_thread
@@ -735,7 +736,7 @@ def create_message_response_update_state_sns(alarm, old_state):
     details = {
         "MetricName": _alarm.get("MetricName", ""),
         "Namespace": _alarm.get("Namespace", ""),
-        "Unit": _alarm.get("Unit", ""),
+        "Unit": _alarm.get("Unit", None),  # testing with AWS revealed this currently returns None
         "Period": int(_alarm.get("Period", 0)),
         "EvaluationPeriods": int(_alarm.get("EvaluationPeriods", 0)),
         "ComparisonOperator": _alarm.get("ComparisonOperator", ""),
@@ -757,7 +758,7 @@ def create_message_response_update_state_sns(alarm, old_state):
 
     if alarm_statistic:
         details["StatisticType"] = "Statistic"
-        details["Statistic"] = alarm_statistic.upper()  # AWS returns uppercase
+        details["Statistic"] = camel_to_snake_case(alarm_statistic).upper()  # AWS returns uppercase
     elif alarm_extended_statistic:
         details["StatisticType"] = "ExtendedStatistic"
         details["ExtendedStatistic"] = alarm_extended_statistic
