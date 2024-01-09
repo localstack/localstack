@@ -22,7 +22,7 @@ def serve_gateway(
     gateway = LocalstackAwsGateway(SERVICE_PLUGINS)
 
     # start serving gateway
-    server = GatewayServer(gateway, listen, use_ssl, config.GATEWAY_WORKER_THREAD_COUNT)
+    server = GatewayServer(gateway, listen, use_ssl, config.GATEWAY_WORKER_COUNT)
     server.start()
 
     # with the current way the infrastructure is started, this is the easiest way to shut down the server correctly
