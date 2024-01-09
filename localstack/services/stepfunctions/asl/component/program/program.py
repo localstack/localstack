@@ -22,6 +22,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 )
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import TimeoutSeconds
+from localstack.services.stepfunctions.asl.component.common.version import Version
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.states import States
@@ -46,6 +47,7 @@ class Program(EvalComponent):
     states: Final[States]
     timeout_seconds: Final[Optional[TimeoutSeconds]]
     comment: Final[Optional[Comment]]
+    version: Final[Optional[Version]]
 
     def __init__(
         self,
@@ -53,11 +55,13 @@ class Program(EvalComponent):
         states: States,
         timeout_seconds: Optional[TimeoutSeconds],
         comment: Optional[Comment] = None,
+        version: Optional[Version] = None,
     ):
         self.start_at = start_at
         self.states = states
         self.timeout_seconds = timeout_seconds
         self.comment = comment
+        self.version = version
 
     def _get_state(self, state_name: str) -> CommonStateField:
         state: Optional[CommonStateField] = self.states.states.get(state_name, None)

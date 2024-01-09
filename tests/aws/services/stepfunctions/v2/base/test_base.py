@@ -129,6 +129,28 @@ class TestSnfBase:
             execution_input,
         )
 
+    @markers.aws.validated
+    def test_decl_version_1_0(
+        self,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_events_to_sqs_queue,
+        aws_client,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.DECL_VERSION_1_0)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @pytest.mark.skip(reason="flaky")  # FIXME
     @markers.aws.needs_fixing
     def test_event_bridge_events_failure(
