@@ -2,6 +2,7 @@ import base64
 import dataclasses
 import json
 import logging
+import math
 import threading
 import time
 from datetime import datetime
@@ -491,8 +492,11 @@ class PollerAutoScaler:
             scaling_factor = messages_per_worker / 5
             scaling_factor = min(scaling_factor, 2)
             target_workers = int(current_workers * scaling_factor)
+            diff = target_workers - current_workers
+            if abs(diff) > 5:
+                target_workers = current_workers + math.copysign(5, diff)
             target_workers = max(1, target_workers)
-            target_workers = min(50, target_workers)
+            target_workers = min(20, target_workers)
             LOG.debug(
                 "Scaling to %s workers: current workers %s, average_duration %s, messages_ready %s",
                 target_workers,
