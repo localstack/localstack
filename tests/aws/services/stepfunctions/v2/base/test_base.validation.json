@@ -1,0 +1,26 @@
+{
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_decl_version_1_0": {
+    "last_validated_date": "2023-12-27T17:40:46+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_event_bridge_events_base": {
+    "last_validated_date": "2023-09-05T17:25:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_query_context_object_values": {
+    "last_validated_date": "2023-09-05T17:18:47+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail": {
+    "last_validated_date": "2023-09-05T17:17:00+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_empty": {
+    "last_validated_date": "2023-09-05T17:17:14+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result": {
+    "last_validated_date": "2023-09-12T11:48:48+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result_jsonpaths": {
+    "last_validated_date": "2023-09-12T11:49:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result_null_input_output_paths": {
+    "last_validated_date": "2023-12-01T16:13:46+00:00"
+  }
+}

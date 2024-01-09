@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.7-slim-bookworm@sha256:ea89b1a57bc3c3a7bb226e09f26368f80224422bb3a0a5ead41dfcfdd53976d9 as base
+FROM python:3.11.7-slim-bookworm@sha256:8f64a67710f3d981cf3008d6f9f1dbe61accd7927f165f4e37ea3f8b883ccc3f as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -133,7 +133,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install the latest version of awslocal globally
 RUN --mount=type=cache,target=/root/.cache \
-    pip3 install --upgrade awscli==1.30.5 awscli-local requests
+    pip3 install --upgrade awscli awscli-local requests
 
 
 

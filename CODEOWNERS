@@ -120,11 +120,11 @@
 /tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw
 
 # cloudwatch
-/localstack/aws/api/cloudwatch/ @steffyP @silv-io
-/localstack/services/cloudwatch/ @steffyP @silv-io
-/localstack/services/cloudformation/models/cloudwatch.py @steffyP @silv-io
-/tests/aws/services/cloudwatch/ @steffyP @silv-io
-/tests/unit/test_cloudwatch.py @steffyP @silv-io
+/localstack/aws/api/cloudwatch/ @steffyP @silv-io @pinzon
+/localstack/services/cloudwatch/ @steffyP @silv-io @pinzon
+/localstack/services/cloudformation/models/cloudwatch.py @steffyP @silv-io @pinzon
+/tests/aws/services/cloudwatch/ @steffyP @silv-io @pinzon
+/tests/unit/test_cloudwatch.py @steffyP @silv-io @pinzon
 
 # dynamodb
 /localstack/aws/api/dynamodb/ @viren-nadkarni @giograno
@@ -156,10 +156,10 @@
 /tests/aws/services/events/ @dominikschubert @dfangl
 
 # iam
-/localstack/aws/api/iam/ @dfangl
-/localstack/services/iam/ @dfangl
-/localstack/services/cloudformation/models/iam.py @dfangl
-/tests/aws/services/iam/ @dfangl
+/localstack/aws/api/iam/ @dfangl @pinzon
+/localstack/services/iam/ @dfangl @pinzon
+/localstack/services/cloudformation/models/iam.py @dfangl @pinzon
+/tests/aws/services/iam/ @dfangl @pinzon
 
 # kms
 /localstack/aws/api/kms/ @sannya-singal @silv-io

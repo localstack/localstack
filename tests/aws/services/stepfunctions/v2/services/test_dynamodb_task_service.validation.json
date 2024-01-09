@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_delete_item": {
+    "last_validated_date": "2023-07-27T17:08:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_get_item": {
+    "last_validated_date": "2023-07-27T17:08:09+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_update_get_item": {
+    "last_validated_date": "2023-07-27T17:09:00+00:00"
+  }
+}

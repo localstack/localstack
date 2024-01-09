@@ -31,6 +31,7 @@ DeliveryS3Bucket = str
 DeliveryS3KeyPrefix = str
 DescribeConformancePackComplianceLimit = int
 DescribePendingAggregationRequestsLimit = int
+Description = str
 EmptiableStringWithCharLimit256 = str
 ErrorMessage = str
 EvaluationContextIdentifier = str
@@ -252,6 +253,11 @@ class RecorderStatus(str):
     Pending = "Pending"
     Success = "Success"
     Failure = "Failure"
+
+
+class RecordingFrequency(str):
+    CONTINUOUS = "CONTINUOUS"
+    DAILY = "DAILY"
 
 
 class RecordingStrategyType(str):
@@ -1183,6 +1189,7 @@ class AggregationAuthorization(TypedDict, total=False):
 
 AggregationAuthorizationList = List[AggregationAuthorization]
 AutoRemediationAttemptSeconds = int
+ConfigurationItemDeliveryTime = datetime
 SupplementaryConfiguration = Dict[SupplementaryConfigurationName, SupplementaryConfigurationValue]
 ResourceCreationTime = datetime
 ConfigurationItemCaptureTime = datetime
@@ -1203,6 +1210,8 @@ class BaseConfigurationItem(TypedDict, total=False):
     resourceCreationTime: Optional[ResourceCreationTime]
     configuration: Optional[Configuration]
     supplementaryConfiguration: Optional[SupplementaryConfiguration]
+    recordingFrequency: Optional[RecordingFrequency]
+    configurationItemDeliveryTime: Optional[ConfigurationItemDeliveryTime]
 
 
 BaseConfigurationItems = List[BaseConfigurationItem]
@@ -1422,9 +1431,26 @@ class ConfigurationItem(TypedDict, total=False):
     relationships: Optional[RelationshipList]
     configuration: Optional[Configuration]
     supplementaryConfiguration: Optional[SupplementaryConfiguration]
+    recordingFrequency: Optional[RecordingFrequency]
+    configurationItemDeliveryTime: Optional[ConfigurationItemDeliveryTime]
 
 
 ConfigurationItemList = List[ConfigurationItem]
+RecordingModeResourceTypesList = List[ResourceType]
+
+
+class RecordingModeOverride(TypedDict, total=False):
+    description: Optional[Description]
+    resourceTypes: RecordingModeResourceTypesList
+    recordingFrequency: RecordingFrequency
+
+
+RecordingModeOverrides = List[RecordingModeOverride]
+
+
+class RecordingMode(TypedDict, total=False):
+    recordingFrequency: RecordingFrequency
+    recordingModeOverrides: Optional[RecordingModeOverrides]
 
 
 class RecordingStrategy(TypedDict, total=False):
@@ -1450,6 +1476,7 @@ class ConfigurationRecorder(TypedDict, total=False):
     name: Optional[RecorderName]
     roleARN: Optional[String]
     recordingGroup: Optional[RecordingGroup]
+    recordingMode: Optional[RecordingMode]
 
 
 ConfigurationRecorderList = List[ConfigurationRecorder]

@@ -199,7 +199,7 @@ jobs:
     if: success()
     needs: push-s3-image
     steps:
-      - uses: geekyeggo/delete-artifact@v2
+      - uses: geekyeggo/delete-artifact@v4
         with:
           name: localstack-s3-*
           failOnError: false

@@ -18,6 +18,7 @@ COMMENT: '"Comment"';
 STATES: '"States"';
 STARTAT: '"StartAt"';
 NEXTSTATE: '"NextState"';
+VERSION: '"Version"';
 
 TYPE: '"Type"';
 TASK: '"Task"';

@@ -8,6 +8,7 @@ we can periodically re-validate ALL AWS-targeting tests (and therefore not only 
 import datetime
 import json
 import os
+from pathlib import Path
 from typing import Optional
 
 import pluggy
@@ -42,7 +43,9 @@ def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
 
 def record_passed_validation(item: pytest.Item, timestamp: Optional[datetime.datetime] = None):
     base_path = os.path.join(item.fspath.dirname, item.fspath.purebasename)
-    with open(f"{base_path}.validation.json", "w+") as fd:
+    file_path = Path(f"{base_path}.validation.json")
+    file_path.touch()
+    with file_path.open(mode="r+") as fd:
         # read existing state from file
         try:
             content = json.load(fd)
@@ -56,7 +59,7 @@ def record_passed_validation(item: pytest.Item, timestamp: Optional[datetime.dat
 
         # save updates
         fd.seek(0)
-        json.dump(content, fd, indent=2)
+        json.dump(content, fd, indent=2, sort_keys=True)
 
 
 # TODO: we should skip if we're updating snapshots
@@ -75,7 +78,7 @@ def pytest_runtest_call(item: pytest.Item):
 # this is a sort of utility used for retroactively creating validation files in accordance with existing snapshot files
 # it takes the recorded date from a snapshot and sets it to the last validated date
 # @pytest.hookimpl(trylast=True)
-# def pytest_collection_modifyitems(session, config, items: list[pytest.Item]):
+# def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config, items: list[pytest.Item]):
 #     for item in items:
 #         snapshot_entry = find_snapshot_for_item(item)
 #         if not snapshot_entry:

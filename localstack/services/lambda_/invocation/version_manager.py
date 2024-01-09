@@ -188,8 +188,13 @@ class LambdaVersionManager:
         2.(nogood) fail fast fail hard
 
         """
+        LOG.debug(
+            "Got an invocation for function %s with request_id %s",
+            self.function_arn,
+            invocation.request_id,
+        )
         if self.shutdown_event.is_set():
-            message = f"Got an invocation with request id {invocation.request_id} for a version shutting down"
+            message = f"Got an invocation with request_id {invocation.request_id} for a version shutting down"
             LOG.warning(message)
             raise ServiceException(message)
 
@@ -236,11 +241,16 @@ class LambdaVersionManager:
                 ),
                 name=f"record-cloudwatch-metric-{function_id.function_name}:{function_id.qualifier}",
             )
-        # MAYBE: consider using the same prefix logging as in error case for execution environment.
+        # TODO: consider using the same prefix logging as in error case for execution environment.
         #   possibly as separate named logger.
         LOG.debug("Got logs for invocation '%s'", invocation.request_id)
         for log_line in invocation_result.logs.splitlines():
-            LOG.debug("> %s", truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT))
+            LOG.debug(
+                "[%s-%s] %s",
+                function_id.function_name,
+                invocation.request_id,
+                truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT),
+            )
         return invocation_result
 
     def store_logs(

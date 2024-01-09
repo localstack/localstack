@@ -824,5 +824,31 @@
         ]
       }
     }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_return_values_on_conditions_check_failure": {
+    "recorded-date": "03-01-2024, 17:52:20",
+    "recorded-content": {
+      "items": {
+        "Error": {
+          "Code": "ConditionalCheckFailedException",
+          "Message": "The conditional request failed"
+        },
+        "Item": {
+          "id": {
+            "S": "456"
+          },
+          "price": {
+            "N": "650"
+          },
+          "product": {
+            "S": "sporting goods"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

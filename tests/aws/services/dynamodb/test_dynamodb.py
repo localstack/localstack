@@ -4,6 +4,7 @@ from datetime import datetime
 from time import sleep
 from typing import Dict
 
+import botocore.exceptions
 import pytest
 from boto3.dynamodb.types import STRING
 from botocore.exceptions import ClientError
@@ -1923,3 +1924,32 @@ class TestDynamoDB:
             sleep=sleep_secs,
             sleep_before=2,
         )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
+    def test_return_values_on_conditions_check_failure(
+        self, dynamodb_create_table_with_parameters, snapshot, aws_client
+    ):
+        table_name = f"table-{short_uid()}"
+        dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        item = {
+            PARTITION_KEY: {"S": "456"},
+            "price": {"N": "650"},
+            "product": {"S": "sporting goods"},
+        }
+        aws_client.dynamodb.put_item(TableName=table_name, Item=item)
+        try:
+            aws_client.dynamodb.delete_item(
+                TableName=table_name,
+                Key={PARTITION_KEY: {"S": "456"}},
+                ConditionExpression="price between :lo and :hi",
+                ExpressionAttributeValues={":lo": {"N": "500"}, ":hi": {"N": "600"}},
+                ReturnValuesOnConditionCheckFailure="ALL_OLD",
+            )
+        except botocore.exceptions.ClientError as error:
+            snapshot.match("items", error.response)  # noqa

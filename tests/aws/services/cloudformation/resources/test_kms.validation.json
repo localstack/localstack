@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resources/test_kms.py::test_cfn_with_kms_resources": {
+    "last_validated_date": "2023-05-29T13:45:17+00:00"
+  }
+}

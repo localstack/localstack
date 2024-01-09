@@ -1,0 +1,14 @@
+{
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_lambda_dynamodb": {
+    "last_validated_date": "2023-08-30T11:23:16+00:00"
+  },
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_opensearch_crud": {
+    "last_validated_date": "2023-09-07T10:02:59+00:00"
+  },
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_search_books": {
+    "last_validated_date": "2023-08-31T11:39:41+00:00"
+  },
+  "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_setup": {
+    "last_validated_date": "2023-08-29T15:20:44+00:00"
+  }
+}

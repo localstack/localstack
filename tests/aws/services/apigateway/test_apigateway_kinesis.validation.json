@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_kinesis.py::test_apigateway_to_kinesis": {
+    "last_validated_date": "2023-01-26T08:45:49+00:00"
+  }
+}

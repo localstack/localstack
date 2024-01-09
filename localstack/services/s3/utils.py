@@ -117,7 +117,11 @@ def extract_bucket_key_version_id_from_copy_source(
     :return: parsed BucketName, ObjectKey and optionally VersionId
     """
     copy_source_parsed = urlparser.urlparse(copy_source)
-    src_bucket, src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
+    # we need to manually replace `+` character with a space character before URL decoding, because different languages
+    # don't encode their URL the same way (%20 vs +), and Python doesn't unquote + into a space char
+    src_bucket, src_key = (
+        urlparser.unquote(copy_source_parsed.path.replace("+", " ")).lstrip("/").split("/", 1)
+    )
     src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
 
     return src_bucket, src_key, src_version_id

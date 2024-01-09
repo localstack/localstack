@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudformation/api/test_reference_resolving.py::test_nested_getatt_ref[TopicArn]": {
+    "last_validated_date": "2023-05-11T11:44:18+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_reference_resolving.py::test_nested_getatt_ref[TopicName]": {
+    "last_validated_date": "2023-05-11T11:43:51+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_reference_resolving.py::test_sub_resolving": {
+    "last_validated_date": "2023-05-12T05:51:06+00:00"
+  }
+}

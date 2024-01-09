@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/ec2/aws_ec2_networkacl/test_basic.py::TestBasicCRD::test_black_box": {
+    "last_validated_date": "2023-10-31T12:22:34+00:00"
+  }
+}

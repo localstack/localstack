@@ -2,6 +2,7 @@ import datetime
 import ipaddress
 import logging
 import os
+import queue
 import re
 import time
 from typing import NamedTuple, Type
@@ -39,7 +40,7 @@ from localstack.utils.docker_utils import (
 )
 from localstack.utils.net import Port, PortNotAvailableException, get_free_tcp_port
 from localstack.utils.strings import to_bytes
-from localstack.utils.threads import FuncThread
+from localstack.utils.threads import FuncThread, start_thread
 from tests.integration.docker_utils.conftest import is_podman_test, skip_for_podman
 
 ContainerInfo = NamedTuple(
@@ -341,6 +342,26 @@ class TestDockerClient:
         with pytest.raises(DockerNotAvailable):
             # perform a command to trigger the exception
             docker_client.list_containers()
+
+    def test_create_container_with_init(self, docker_client, create_container):
+        try:
+            container_name = _random_container_name()
+            docker_client.create_container(
+                "alpine", init=True, command=["sh", "-c", "/bin/true"], name=container_name
+            )
+            assert docker_client.inspect_container(container_name)["HostConfig"]["Init"]
+        finally:
+            docker_client.remove_container(container_name)
+
+    def test_run_container_with_init(self, docker_client, create_container):
+        try:
+            container_name = _random_container_name()
+            docker_client.run_container(
+                "alpine", init=True, command=["sh", "-c", "/bin/true"], name=container_name
+            )
+            assert docker_client.inspect_container(container_name)["HostConfig"]["Init"]
+        finally:
+            docker_client.remove_container(container_name)
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
     @pytest.mark.xfail(
@@ -1028,6 +1049,69 @@ class TestDockerClient:
         finally:
             docker_client.remove_container(container_name)
 
+    def test_events(self, docker_client: ContainerClient):
+        # create background thread watching for events
+        q = queue.Queue()
+
+        should_stop = False
+        container_name = _random_container_name()
+
+        def stream_messages(*_):
+            for event in docker_client.events(filters={"id": "container_name"}):
+                if should_stop:
+                    break
+                q.put(event)
+
+        start_thread(stream_messages, name="docker-events-poller")
+
+        # run a container to generate some events
+        id = docker_client.create_container(
+            "alpine",
+            name=container_name,
+            detach=False,
+            command=["sh", "-c", "sleep 1"],
+        )
+        try:
+            docker_client.start_container(
+                id,
+                attach=True,
+            )
+        finally:
+            docker_client.remove_container(container_name)
+
+        should_stop = True
+
+        # flags to indicate that expected messages have been observed
+        # running a container and then removing the container should at least
+        # contain the following:
+        #
+        # - {"status": "create", ...}
+        # - {"status": "destroy", ...}
+        received_create = False
+        received_destroy = False
+
+        max_messages = 50
+        for _ in range(max_messages):
+            if received_create and received_destroy:
+                break
+
+            msg = q.get()
+
+            # filter out only events for this container
+            if msg.get("id") != id:
+                continue
+
+            # update test state based on message content
+            match msg.get("status"):
+                case "create":
+                    received_create = True
+                case "destroy":
+                    received_destroy = True
+
+            q.task_done()
+
+        assert received_create and received_destroy
+
     @markers.skip_offline
     def test_pull_docker_image(self, docker_client: ContainerClient):
         try:
@@ -1477,6 +1561,21 @@ class TestDockerNetworking:
             container.container_id
             in docker_client.inspect_network(network_name).get("Containers").keys()
         )
+
+    def test_connect_container_to_network_with_link_local_address(
+        self, docker_client, create_network, create_container
+    ):
+        network_name = f"ls_test_network_{short_uid()}"
+        create_network(network_name)
+        container = create_container("alpine", command=["sh", "-c", "sleep infinity"])
+        docker_client.connect_container_to_network(
+            network_name,
+            container_name_or_id=container.container_id,
+            link_local_ips=["169.254.169.10"],
+        )
+        assert docker_client.inspect_container(container.container_id)["NetworkSettings"][
+            "Networks"
+        ][network_name]["IPAMConfig"]["LinkLocalIPs"] == ["169.254.169.10"]
 
     def test_connect_container_to_nonexistent_network(
         self, docker_client: ContainerClient, create_container

@@ -1,0 +1,8 @@
+{
+  "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_deployed_infra_state": {
+    "last_validated_date": "2023-10-17T18:07:08+00:00"
+  },
+  "tests/aws/scenario/mythical_mysfits/test_mythical_misfits.py::TestMythicalMisfitsScenario::test_user_clicks_are_stored": {
+    "last_validated_date": "2023-10-17T18:12:30+00:00"
+  }
+}

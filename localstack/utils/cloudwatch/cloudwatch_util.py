@@ -1,7 +1,8 @@
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Optional
+from itertools import islice
+from typing import Optional, TypedDict
 
 from werkzeug import Response as WerkzeugResponse
 
@@ -16,6 +17,11 @@ LOG = logging.getLogger(__name__)
 # ---------------
 # Lambda metrics
 # ---------------
+class SqsMetricBatchData(TypedDict, total=False):
+    MetricName: str
+    QueueName: str
+    Value: Optional[int]
+    Unit: Optional[str]
 
 
 def dimension_lambda(kwargs):
@@ -42,6 +48,49 @@ def publish_lambda_metric(metric, value, kwargs, region_name: Optional[str] = No
         )
     except Exception as e:
         LOG.info('Unable to put metric data for metric "%s" to CloudWatch: %s', metric, e)
+
+
+def publish_sqs_metric_batch(
+    account_id: str, region: str, sqs_metric_batch_data: list[SqsMetricBatchData]
+):
+    """
+    Publishes SQS metrics to CloudWatch in a single batch using the namespace "AWS/SQS"
+    See also: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
+    :param account_id The account id that should be used for CloudWatch
+    :param region The region that should be used for CloudWatch
+    :param sqs_metric_batch_data data to be published
+    """
+    if not is_api_enabled("cloudwatch"):
+        return
+
+    cw_client = connect_to(region_name=region, aws_access_key_id=account_id).cloudwatch
+    metric_data = []
+    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc)
+    # to be on the safe-side: check the size of the data again and only insert up to 1000 data metrics at once
+    start = 0
+    batch_size = 1000
+    # can include up to 1000 metric queries for one put-metric-data call
+    while start < len(sqs_metric_batch_data):
+        # Process the current batch
+        for d in islice(sqs_metric_batch_data, start, start + batch_size):
+            metric_data.append(
+                {
+                    "MetricName": d.get("MetricName"),
+                    "Dimensions": [{"Name": "QueueName", "Value": d.get("QueueName")}],
+                    "Unit": d.get("Unit", "Count"),
+                    "Timestamp": timestamp,
+                    "Value": d.get("Value", 1),
+                }
+            )
+
+        try:
+            cw_client.put_metric_data(Namespace="AWS/SQS", MetricData=metric_data)
+        except Exception as e:
+            LOG.info(f"Unable to put metric data for metrics to CloudWatch: {e}")
+
+        # Update for the next batch
+        metric_data.clear()
+        start += batch_size
 
 
 def publish_sqs_metric(

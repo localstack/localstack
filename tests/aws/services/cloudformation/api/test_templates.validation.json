@@ -1,0 +1,17 @@
+{
+  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_host]": {
+    "last_validated_date": "2023-10-10T22:04:02+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_invalid]": {
+    "last_validated_date": "2023-10-10T22:04:04+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[http_path]": {
+    "last_validated_date": "2023-10-10T22:03:53+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_create_stack_from_s3_template_url[s3_url]": {
+    "last_validated_date": "2023-10-10T22:03:44+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary": {
+    "last_validated_date": "2023-05-24T13:05:00+00:00"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_binary": {
+    "last_validated_date": "2023-08-23T14:32:35+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_items": {
+    "last_validated_date": "2023-08-23T14:33:43+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_items_streaming": {
+    "last_validated_date": "2023-10-22T21:23:09+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_not_existing_table": {
+    "last_validated_date": "2023-10-22T18:45:30+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_not_matching_schema": {
+    "last_validated_date": "2023-08-23T14:34:26+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_continuous_backup_update": {
+    "last_validated_date": "2023-08-23T14:34:39+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_create_duplicate_table": {
+    "last_validated_date": "2023-08-23T14:33:08+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_data_encoding_consistency": {
+    "last_validated_date": "2023-08-24T08:56:37+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_batch_execute_statement": {
+    "last_validated_date": "2023-08-23T14:32:51+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_create_table_with_partial_sse_specification": {
+    "last_validated_date": "2023-08-23T14:33:50+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_transaction": {
+    "last_validated_date": "2023-08-23T14:32:44+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_get_batch_items": {
+    "last_validated_date": "2023-08-23T14:33:58+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_idempotent_writing": {
+    "last_validated_date": "2023-08-23T14:39:54+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_partiql_missing": {
+    "last_validated_date": "2023-08-23T14:33:00+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_pay_per_request": {
+    "last_validated_date": "2023-08-23T14:33:43+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_stream_view_type": {
+    "last_validated_date": "2023-10-22T21:22:27+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_describe_with_exclusive_start_shard_id": {
+    "last_validated_date": "2023-10-22T20:27:28+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_empty_and_binary_values": {
+    "last_validated_date": "2023-08-23T14:32:29+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_return_values_in_put_item": {
+    "last_validated_date": "2023-08-23T14:32:21+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_return_values_on_conditions_check_failure": {
+    "last_validated_date": "2024-01-03T17:52:19+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_get_items": {
+    "last_validated_date": "2023-08-23T14:33:37+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transaction_write_binary_data": {
+    "last_validated_date": "2023-08-23T14:33:31+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transaction_write_canceled": {
+    "last_validated_date": "2023-08-23T14:33:24+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transaction_write_items": {
+    "last_validated_date": "2023-08-23T14:33:16+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_valid_local_secondary_index": {
+    "last_validated_date": "2023-08-23T14:32:11+00:00"
+  }
+}
