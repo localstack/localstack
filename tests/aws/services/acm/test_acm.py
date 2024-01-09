@@ -178,11 +178,18 @@ class TestACM:
         cert_list_response = aws_client.acm.list_certificates()
         cert_summaries = cert_list_response["CertificateSummaryList"]
         cert = next((cert for cert in cert_summaries if cert["CertificateArn"] == cert_arn), None)
-
+        # Order of sns is not guaranteed therefor we sort them
+        cert["SubjectAlternativeNameSummaries"].sort()
         cert_id = cert_arn.split("certificate/")[-1]
         snapshot.add_transformer(snapshot.transform.regex(cert_id, "<cert-id>"))
         snapshot.match("list-cert-summary-list", cert)
 
         cert_describe_response = aws_client.acm.describe_certificate(CertificateArn=cert_arn)
         cert_description = cert_describe_response["Certificate"]
+        # Order of sns is not guaranteed therefor we sort them
+        cert_description["SubjectAlternativeNames"].sort()
+        cert_description["DomainValidationOptions"] = sorted(
+            cert_description["DomainValidationOptions"], key=lambda x: x["DomainName"]
+        )
+
         snapshot.match("describe-cert", cert_description)
