@@ -159,6 +159,58 @@ class CloudwatchDatabase:
 
             conn.commit()
 
+    def get_units_for_metric_data_stat(
+        self,
+        account_id: str,
+        region: str,
+        start_time: datetime,
+        end_time: datetime,
+        metric_name: str,
+        namespace: str,
+    ):
+        with sqlite3.connect(self.METRICS_DB) as conn:
+            cur = conn.cursor()
+
+            # prepare SQL query
+            start_time_unix = self._convert_timestamp_to_unix(start_time)
+            end_time_unix = self._convert_timestamp_to_unix(end_time)
+
+            data = (
+                account_id,
+                region,
+                namespace,
+                metric_name,
+                start_time_unix,
+                end_time_unix,
+            )
+
+            sql_query = f"""
+            SELECT GROUP_CONCAT(unit) AS unit_values
+            FROM(
+                SELECT
+                    DISTINCT COALESCE(unit, 'NULL_VALUE') AS unit
+                FROM (
+                    SELECT
+                    account_id, region, metric_name, namespace, timestamp, unit
+                    FROM {self.TABLE_SINGLE_METRICS}
+                    UNION ALL
+                    SELECT
+                    account_id, region, metric_name, namespace, timestamp, unit
+                    FROM {self.TABLE_AGGREGATED_METRICS}
+                ) AS combined
+                WHERE account_id = ? AND region = ?
+                AND namespace = ? AND metric_name = ?
+                AND timestamp >= ? AND timestamp < ?
+            ) AS subquery
+            """
+
+            cur.execute(
+                sql_query,
+                data,
+            )
+            result_row = cur.fetchone()
+            return result_row[0].split(",") if result_row[0] else ["NULL_VALUE"]
+
     def get_metric_data_stat(
         self,
         account_id: str,
@@ -189,15 +241,19 @@ class CloudwatchDatabase:
                 metric.get("Namespace"),
                 metric.get("MetricName"),
             )
-            unit_filter = ""
-            if unit:
-                unit_filter = "AND unit = ? "
-                data += (unit,)
 
             dimension_filter = ""
             for dimension in dimensions:
                 dimension_filter += "AND dimensions LIKE ? "
                 data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
+
+            unit_filter = ""
+            if unit:
+                if unit == "NULL_VALUE":
+                    unit_filter = "AND unit IS NULL"
+                else:
+                    unit_filter = "AND unit = ? "
+                    data += (unit,)
 
             sql_query = f"""
             SELECT
@@ -238,6 +294,7 @@ class CloudwatchDatabase:
                     )
                     timestamps.append(start_time_unix)
                     values.append(calculated_result)
+
                 start_time_unix = next_start_time
 
             # The while loop while always give us the timestamps in ascending order as we start with the start_time
