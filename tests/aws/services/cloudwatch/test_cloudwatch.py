@@ -1372,7 +1372,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..DashboardArn"], condition=is_old_provider()
+        paths=["$..DashboardArn"], condition=is_old_provider
     )  # ARN has a typo in moto
     def test_dashboard_lifecycle(self, aws_client, snapshot):
         dashboard_name = f"test-{short_uid()}"
@@ -2181,14 +2181,6 @@ class TestCloudwatch:
         )
         snapshot.match("lambda-alarm-invocations", invocation_res)
 
-
-def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
-    log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")["events"]
-    filtered_logs = [event for event in log_events if event["message"].startswith("{")]
-    assert len(filtered_logs) >= 1
-    filtered_logs.sort(key=lambda e: e["timestamp"], reverse=True)
-    return filtered_logs[0]["message"]
-
     @markers.aws.validated
     def test_get_metric_with_no_results(self, snapshot, aws_client):
         utc_now = datetime.now(tz=timezone.utc)
@@ -2233,6 +2225,14 @@ def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
             snapshot.match("result", data)
 
         retry(validate, sleep_before=(2 if is_aws_cloud() else 0))
+
+
+def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
+    log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")["events"]
+    filtered_logs = [event for event in log_events if event["message"].startswith("{")]
+    assert len(filtered_logs) >= 1
+    filtered_logs.sort(key=lambda e: e["timestamp"], reverse=True)
+    return filtered_logs[0]["message"]
 
 
 def _check_alarm_triggered(
