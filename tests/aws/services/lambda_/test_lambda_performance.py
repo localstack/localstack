@@ -275,9 +275,14 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
     assert error_counter.counter == 0
 
     # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
-    sleep_seconds = 2000
-    LOG.info(f"Sleeping for {sleep_seconds} ...")
-    time.sleep(sleep_seconds)
+
+    # Validate S3 object creation
+    def assert_s3_objects():
+        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
+        assert len(s3_keys_output) == num_invocations
+        return len(s3_keys_output)
+
+    s3_count = retry(assert_s3_objects, sleep=5, retries=300)
 
     # Validate CloudWatch invocation metric
     def assert_cloudwatch_metric():
@@ -299,8 +304,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
         # assert num_invocations_metric == num_invocations
         return num_invocations_metric
 
-    metric_count = assert_cloudwatch_metric()
-    # metric_count = retry(assert_cloudwatch_metric, retries=300, sleep=10)
+    metric_count = retry(assert_cloudwatch_metric, retries=300, sleep=10)
 
     # Validate CloudWatch invocation logs
     def assert_log_events():
@@ -322,15 +326,6 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
     log_count = assert_log_events()
     # NOTE: slow against AWS (can take minutes and would likely require more retries)
     # log_count = retry(assert_log_events, retries=300, sleep=2)
-
-    # Validate S3 object creation
-    def assert_s3_objects():
-        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
-        # assert len(s3_keys_output) == num_invocations
-        return len(s3_keys_output)
-
-    s3_count = assert_s3_objects()
-    # s3_count = retry(assert_s3_objects, retries=300, sleep=2)
 
     # TODO: the CloudWatch metrics can be unreliable due to concurrency issues (new CW provider is WIP)
     # The s3_count does not consider re-tries, which have the same request_ids!

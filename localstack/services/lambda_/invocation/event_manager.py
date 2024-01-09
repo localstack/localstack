@@ -4,7 +4,6 @@ import json
 import logging
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
 
@@ -23,7 +22,8 @@ from localstack.services.lambda_.invocation.lambda_models import (
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.message_forwarding import send_event_to_target
-from localstack.utils.strings import md5, to_str
+from localstack.utils.scaling import StoppableThread, ThreadScaler
+from localstack.utils.strings import md5, short_uid, to_str
 from localstack.utils.threads import FuncThread
 from localstack.utils.time import timestamp_millis
 
@@ -118,21 +118,23 @@ CLIENT_CONFIG = Config(
 )
 
 
-class Poller:
+class PollerWorker(StoppableThread):
     version_manager: LambdaVersionManager
     event_queue_url: str
     _shutdown_event: threading.Event
-    invoker_pool: ThreadPoolExecutor
+    invoking: bool
+    last_duration: float
 
     def __init__(self, version_manager: LambdaVersionManager, event_queue_url: str):
         self.version_manager = version_manager
         self.event_queue_url = event_queue_url
         self._shutdown_event = threading.Event()
         function_id = self.version_manager.function_version.id
-        # TODO: think about scaling, test it, make it configurable?!
-        self.invoker_pool = ThreadPoolExecutor(
-            thread_name_prefix=f"lambda-invoker-{function_id.function_name}:{function_id.qualifier}"
+        super().__init__(
+            name=f"lambda-invoker-{function_id.function_name}:{function_id.qualifier}-{short_uid()}"
         )
+        self.invoking = False
+        self.last_duration = -1
 
     def run(self, *args, **kwargs):
         sqs_client = get_sqs_client(
@@ -143,23 +145,23 @@ class Poller:
             try:
                 response = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
-                    # TODO: consider replacing with short polling instead of long polling to prevent keeping connections open
-                    # however, we had some serious performance issues when tried out, so those have to be investigated first
-                    WaitTimeSeconds=2,
                     # Related: SQS event source mapping batches up to 10 messages:
                     # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
-                    MaxNumberOfMessages=10,
+                    MaxNumberOfMessages=1,
                     VisibilityTimeout=function_timeout + 60,
                 )
                 if not response.get("Messages"):
+                    self._shutdown_event.wait(1)
                     continue
                 LOG.debug("[%s] Got %d messages", self.event_queue_url, len(response["Messages"]))
                 # Guard against shutdown event arriving while polling SQS for messages
                 if not self._shutdown_event.is_set():
-                    for message in response["Messages"]:
-                        # NOTE: queueing within the thread pool executor could lead to double executions
-                        #  due to the visibility timeout
-                        self.invoker_pool.submit(self.handle_message, message)
+                    message = response["Messages"][0]
+                    start_time = time.perf_counter()
+                    self.invoking = True
+                    self.handle_message(message)
+                    self.invoking = False
+                    self.last_duration = time.perf_counter() - start_time
 
             except Exception as e:
                 # TODO: if the gateway shuts down before the shutdown event even is set,
@@ -176,7 +178,7 @@ class Poller:
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
                 # some time between retries to avoid running into the problem right again
-                time.sleep(1)
+                self._shutdown_event.wait(1)
 
     def stop(self):
         LOG.debug(
@@ -185,7 +187,6 @@ class Poller:
             id(self),
         )
         self._shutdown_event.set()
-        self.invoker_pool.shutdown(cancel_futures=True, wait=False)
 
     def handle_message(self, message: dict) -> None:
         failure_cause = None
@@ -428,21 +429,106 @@ class Poller:
             )
 
 
+class PollerThreadScaler(ThreadScaler[PollerWorker]):
+    version_manager: LambdaVersionManager
+    event_invoke_url: str
+
+    def __init__(self, version_manager: LambdaVersionManager, event_invoke_url: str):
+        super().__init__()
+        self.version_manager = version_manager
+        self.event_invoke_url = event_invoke_url
+
+    def create_thread(self) -> PollerWorker:
+        return PollerWorker(self.version_manager, self.event_invoke_url)
+
+    def average_invoke_time(self) -> float:
+        durations = [
+            running_worker.last_duration
+            for running_worker in self.running_threads
+            if running_worker.last_duration > 0
+        ]
+        if durations:
+            return sum(durations) / len(durations)
+
+        return -1
+
+
+class PollerAutoScaler:
+    version_manager: LambdaVersionManager
+    event_invoke_url: str
+    autoscaling_thread: threading.Thread
+    _stop_event: threading.Event
+    scaling_interval: int = 5
+
+    def __init__(self, version_manager: LambdaVersionManager, event_invoke_url: str):
+        self.version_manager = version_manager
+        self.event_invoke_url = event_invoke_url
+        self.poller_scaler = PollerThreadScaler(
+            version_manager=version_manager, event_invoke_url=event_invoke_url
+        )
+        self.autoscaling_thread = threading.Thread(
+            target=self._run_scaling, name="autoscaler_thread"
+        )
+        self._stop_event = threading.Event()
+
+    def _run_scaling(self):
+        self.poller_scaler.scale_to(1)
+        sqs_client = get_sqs_client(self.version_manager.function_version, CLIENT_CONFIG)
+        while not self._stop_event.is_set():
+            messages_ready = int(
+                sqs_client.get_queue_attributes(
+                    QueueUrl=self.event_invoke_url, AttributeNames=["ApproximateNumberOfMessages"]
+                )["Attributes"]["ApproximateNumberOfMessages"]
+            )
+            current_workers = self.poller_scaler.running_workers()
+            average_duration = self.poller_scaler.average_invoke_time()
+            if average_duration < 0:
+                # just assume 5 seconds as lambda invoke time if there has not been one yet
+                average_duration = 5
+
+            messages_per_worker = messages_ready / current_workers
+            # we want to get around 5 threads per worker
+            scaling_factor = messages_per_worker / 5
+            scaling_factor = min(scaling_factor, 2)
+            target_workers = int(current_workers * scaling_factor)
+            target_workers = max(1, target_workers)
+            target_workers = min(50, target_workers)
+            LOG.debug(
+                "Scaling to %s workers: current workers %s, average_duration %s, messages_ready %s",
+                target_workers,
+                current_workers,
+                average_duration,
+                messages_ready,
+            )
+            self.poller_scaler.scale_to(target_workers)
+
+            wait_time = self.scaling_interval
+            if target_workers != current_workers:
+                wait_time *= 2
+            self._stop_event.wait(wait_time)
+
+    def start(self):
+        self.autoscaling_thread.start()
+
+    def stop(self):
+        self._stop_event.set()
+        self.poller_scaler.stop()
+
+
 class LambdaEventManager:
     version_manager: LambdaVersionManager
-    poller: Poller | None
     poller_thread: FuncThread | None
     event_queue_url: str | None
     lifecycle_lock: threading.RLock
     stopped: threading.Event
+    autoscaler: PollerAutoScaler | None
 
     def __init__(self, version_manager: LambdaVersionManager):
         self.version_manager = version_manager
-        self.poller = None
-        self.poller_thread = None
         self.event_queue_url = None
         self.lifecycle_lock = threading.RLock()
         self.stopped = threading.Event()
+        self.autoscaler = None
 
     def enqueue_event(self, invocation: Invocation) -> None:
         message_body = SQSInvocation(invocation).encode()
@@ -475,13 +561,8 @@ class LambdaEventManager:
             self.event_queue_url = create_queue_response["QueueUrl"]
             # Ensure no events are in new queues due to persistence and cloud pods
             sqs_client.purge_queue(QueueUrl=self.event_queue_url)
-
-            self.poller = Poller(self.version_manager, self.event_queue_url)
-            self.poller_thread = FuncThread(
-                self.poller.run,
-                name=f"lambda-poller-{function_id.function_name}:{function_id.qualifier}",
-            )
-            self.poller_thread.start()
+            self.autoscaler = PollerAutoScaler(self.version_manager, self.event_queue_url)
+            self.autoscaler.start()
 
     def stop_for_update(self) -> None:
         LOG.debug(
@@ -494,19 +575,12 @@ class LambdaEventManager:
                 LOG.debug("Event manager already stopped!")
                 return
             self.stopped.set()
-            if self.poller:
-                self.poller.stop()
-                self.poller_thread.join(timeout=3)
-                LOG.debug("Waited for poller thread %s", self.poller_thread)
-                if self.poller_thread.is_alive():
-                    LOG.error("Poller did not shutdown %s", self.poller_thread)
-                self.poller = None
+            self.autoscaler.stop()
 
     def stop(self) -> None:
         LOG.debug(
-            "Stopping event manager %s: %s id %s",
+            "Stopping event manager %s: id %s",
             self.version_manager.function_version.qualified_arn,
-            self.poller,
             id(self),
         )
         with self.lifecycle_lock:
@@ -514,13 +588,7 @@ class LambdaEventManager:
                 LOG.debug("Event manager already stopped!")
                 return
             self.stopped.set()
-            if self.poller:
-                self.poller.stop()
-                self.poller_thread.join(timeout=3)
-                LOG.debug("Waited for poller thread %s", self.poller_thread)
-                if self.poller_thread.is_alive():
-                    LOG.error("Poller did not shutdown %s", self.poller_thread)
-                self.poller = None
+            self.autoscaler.stop()
             if self.event_queue_url:
                 sqs_client = get_sqs_client(
                     self.version_manager.function_version, client_config=CLIENT_CONFIG
