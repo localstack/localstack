@@ -351,3 +351,34 @@ class CloudwatchDatabase:
         self, timestamp: datetime
     ):  # TODO verify if this is the standard format, might need to convert
         return int(timestamp.timestamp())
+
+    def get_all_metric_data(self):
+        with sqlite3.connect(self.METRICS_DB) as conn:
+            cur = conn.cursor()
+            """ shape for each data entry:
+            {
+                "ns": r.namespace,
+                "n": r.name,
+                "v": r.value,
+                "t": r.timestamp,
+                "d": [{"n": d.name, "v": d.value} for d in r.dimensions],
+                "account": account-id, # new for v2
+                "region": region_name, # new for v2
+            }
+            """
+            query = f"SELECT namespace, metric_name, value, timestamp, dimensions, account_id, region from {self.TABLE_SINGLE_METRICS}"
+            cur.execute(query)
+            metrics_result = [
+                {
+                    "ns": r[0],
+                    "n": r[1],
+                    "v": r[2],
+                    "t": r[3],
+                    "d": r[4],
+                    "account": r[5],
+                    "region": r[6],
+                }
+                for r in cur.fetchall()
+            ]
+            # TODO add aggregated metrics (was not handled by v1 either)
+            return metrics_result
