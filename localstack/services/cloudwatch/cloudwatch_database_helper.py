@@ -258,7 +258,6 @@ class CloudwatchDatabase:
                     unit_filter = "AND unit = ? "
                     data += (unit,)
 
-
             sql_query = f"""
             SELECT
                 {STAT_TO_SQLITE_AGGREGATION_FUNC[stat]},
