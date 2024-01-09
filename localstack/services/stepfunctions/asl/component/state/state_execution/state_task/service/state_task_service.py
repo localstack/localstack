@@ -107,6 +107,14 @@ class StateTaskService(StateTask, abc.ABC):
                     self._to_boto_args(parameter_value, norm_member_bind_shape)
                 parameters[norm_member_bind_key] = parameter_value
 
+    @staticmethod
+    def _to_sfn_cased(member_key: str) -> str:
+        # Normalise the string to snake case, e.g. "HelloWorld_hello__world" -> "hello_world_hello_world"
+        norm_member_key = camel_to_snake_case(member_key)
+        # Normalise the snake case to camel case, e.g. "hello_world_hello_world" -> "HelloWorldHelloWorld"
+        norm_member_key = snake_to_camel_case(norm_member_key)
+        return norm_member_key
+
     def _from_boto_response(self, response: Any, structure_shape: StructureShape) -> None:
         if not isinstance(response, dict):
             return
@@ -114,8 +122,7 @@ class StateTaskService(StateTask, abc.ABC):
         shape_members = structure_shape.members
         response_bind_keys: list[str] = list(response.keys())
         for response_key in response_bind_keys:
-            norm_response_key = camel_to_snake_case(response_key)
-            norm_response_key = snake_to_camel_case(norm_response_key)
+            norm_response_key = self._to_sfn_cased(response_key)
             if response_key in shape_members:
                 shape_member = shape_members[response_key]
 
