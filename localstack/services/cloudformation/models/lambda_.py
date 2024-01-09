@@ -5,15 +5,15 @@ import string
 import uuid
 
 from localstack.aws.connect import connect_to
-from localstack.services.awslambda.resource_providers.aws_lambda_function import (
-    NODEJS_CFN_RESPONSE_CONTENT,
-)
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     select_parameters,
 )
 from localstack.services.cloudformation.service_models import LOG, GenericBaseModel
 from localstack.services.lambda_.lambda_utils import get_handler_file_from_name
+from localstack.services.lambda_.resource_providers.aws_lambda_function import (
+    NODEJS_CFN_RESPONSE_CONTENT,
+)
 from localstack.utils.aws import arns
 from localstack.utils.common import (
     is_base64,
