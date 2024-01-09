@@ -115,11 +115,51 @@ class ThreadSafeCounter:
 
 
 @markers.aws.unknown
-def test_number_of_function_versions(create_lambda_function, s3_bucket, aws_client):
+def test_number_of_function_versions_sync(create_lambda_function, s3_bucket, aws_client):
     """Test how many function versions LocalStack can support.
-    This test mainly idles and does one sync + async invoke as a sanity check."""
+    This test performs one sync invoke for each function version."""
+    num_function_versions = 400
+
+    function_name = f"test-lambda-perf-{short_uid()}"
+    create_lambda_function(
+        handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
+        func_name=function_name,
+        runtime=Runtime.python3_12,
+        Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
+    )
+
+    function_versions = []
+    for _ in range(num_function_versions):
+        response = aws_client.lambda_.publish_version(FunctionName=function_name)
+        function_versions.append(response["Version"])
+
+    # idle for a while to see if the pollers can manage the load and any errors occur
+    time.sleep(20)
+
+    LOG.info("Invoke each function once synchronously")
+    request_ids = set()
+    for fn_version in function_versions:
+        result_sync = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType=InvocationType.RequestResponse,
+            Qualifier=fn_version,
+        )
+        assert "FunctionError" not in result_sync
+        request_id = result_sync["ResponseMetadata"]["RequestId"]
+        request_ids.add(request_id)
+        assert result_sync["ExecutedVersion"] == fn_version
+
+    LOG.info("Validate invocations")
+    s3_request_ids = get_s3_keys(aws_client, s3_bucket)
+    assert set(s3_request_ids) == request_ids
+
+
+@markers.aws.unknown
+def test_number_of_function_versions_async(create_lambda_function, s3_bucket, aws_client):
+    """Test how many function versions LocalStack can support.
+    This test does one async invoke per function version."""
     # TODO: validate whether pollers for older function versions remain active because the verbose logs indicated that
-    #   only two pollers were active despite many function versions. Try to async invoke an older function version.
+    #   only two pollers were active despite many function versions.
     num_function_versions = 1000
 
     function_name = f"test-lambda-perf-{short_uid()}"
@@ -130,33 +170,38 @@ def test_number_of_function_versions(create_lambda_function, s3_bucket, aws_clie
         Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
     )
 
+    function_versions = []
     for _ in range(num_function_versions):
-        aws_client.lambda_.publish_version(FunctionName=function_name)
+        response = aws_client.lambda_.publish_version(FunctionName=function_name)
+        function_versions.append(response["Version"])
 
     # idle for a while to see if the pollers can manage the load and any errors occur
-    time.sleep(90)
+    time.sleep(20)
 
-    result_1 = aws_client.lambda_.invoke(
-        FunctionName=function_name,
-        InvocationType=InvocationType.RequestResponse,
-    )
-    assert "FunctionError" not in result_1
-    request_id_1 = result_1["ResponseMetadata"]["RequestId"]
+    LOG.info("Invoke each function once asynchronously")
+    request_ids = set()
+    for fn_version in function_versions:
+        response = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType=InvocationType.Event,
+            Qualifier=fn_version,
+        )
+        assert "FunctionError" not in response
+        request_id = response["ResponseMetadata"]["RequestId"]
+        request_ids.add(request_id)
 
-    result_2 = aws_client.lambda_.invoke(
-        FunctionName=function_name,
-        InvocationType=InvocationType.Event,
-    )
-    assert "FunctionError" not in result_2
-    request_id_2 = result_2["ResponseMetadata"]["RequestId"]
+    LOG.info("Waiting for event invokes to be processed ...")
 
-    # wait to complete the event invoke without causing extra load through polling
-    LOG.info("Waiting for the event invoke to be processed ...")
-    time.sleep(10)
+    def assert_s3_objects():
+        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
+        assert len(s3_keys_output) >= len(request_ids)
+
+    retry(assert_s3_objects, sleep=5, retries=300)
 
     LOG.info("Validate invocations")
     s3_request_ids = get_s3_keys(aws_client, s3_bucket)
-    assert set(s3_request_ids) == {request_id_1, request_id_2}
+    assert set(s3_request_ids) == request_ids
+    # TODO: ideally validate that the right function version got invoked
 
 
 @markers.aws.unknown
@@ -179,45 +224,53 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
 
     # idle for a while to see if the pollers can manage the load and any errors occur
     LOG.info("Idle for steady state")
-    time.sleep(30)
+    time.sleep(20)
 
     LOG.info("Invoke each function once synchronously")
-    request_ids = []
+    request_ids = set()
     lambda_client = aws_client_factory(config=CLIENT_CONFIG).lambda_
     for num in range(num_functions):
         function_name = f"test-lambda-perf-{uuid}-{num}"
-        result_1 = lambda_client.invoke(
+        response = lambda_client.invoke(
             FunctionName=function_name,
             InvocationType=InvocationType.RequestResponse,
         )
-        assert "FunctionError" not in result_1
-        request_id_1 = result_1["ResponseMetadata"]["RequestId"]
-        request_ids.append(request_id_1)
+        assert "FunctionError" not in response
+        request_id = response["ResponseMetadata"]["RequestId"]
+        request_ids.add(request_id)
+
+    LOG.info("Validate async invocations")
+    s3_request_ids = get_s3_keys(aws_client, s3_bucket)
+    assert set(s3_request_ids) == request_ids
 
     LOG.info("Invoke each function once asynchronously")
     for num in range(num_functions):
         function_name = f"test-lambda-perf-{uuid}-{num}"
-        result_2 = lambda_client.invoke(
+        response = lambda_client.invoke(
             FunctionName=function_name,
             InvocationType=InvocationType.Event,
         )
-        assert "FunctionError" not in result_2
-        request_id_2 = result_2["ResponseMetadata"]["RequestId"]
-        request_ids.append(request_id_2)
+        assert "FunctionError" not in response
+        request_id = response["ResponseMetadata"]["RequestId"]
+        request_ids.add(request_id)
 
-    # wait to complete the event invoke without causing extra load through polling
     LOG.info("Waiting for event invokes to be processed ...")
-    time.sleep(200)
 
-    LOG.info("Validate invocations")
+    def assert_s3_objects():
+        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
+        assert len(s3_keys_output) >= len(request_ids)
+
+    retry(assert_s3_objects, sleep=5, retries=300)
+
+    LOG.info("Validate all invocations")
     s3_request_ids = get_s3_keys(aws_client, s3_bucket)
-    assert set(s3_request_ids) == set(request_ids)
+    assert set(s3_request_ids) == request_ids
 
 
 @markers.aws.validated
 def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_client_factory):
     """Test concurrent Lambda event invokes and validate the number of Lambda invocations using CloudWatch and S3."""
-    num_invocations = 2000
+    num_invocations = 1500
 
     function_name = f"test-lambda-perf-{short_uid()}"
     create_lambda_function(
@@ -327,8 +380,9 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
     # NOTE: slow against AWS (can take minutes and would likely require more retries)
     log_count = retry(assert_log_events, retries=300, sleep=2)
 
-    # TODO: the CloudWatch metrics can be unreliable due to concurrency issues (new CW provider is WIP)
-    # The s3_count does not consider re-tries, which have the same request_ids!
+    # TODO: the CloudWatch metrics can occasionally be unreliable due to concurrency issues (new CW provider is WIP)
+    # IMPORTANT NOTE: The s3_count does not consider re-tries, which have the same request_ids!
+    LOG.info("Validate invocation counts: metric_count, log_count, s3_count")
     assert [metric_count, log_count, s3_count] == [
         num_invocations,
         num_invocations,
@@ -347,7 +401,7 @@ def test_lambda_event_source_mapping_sqs(
 ):
     """Test SQS => Lambda event source mapping with concurrent event invokes and validate the number of invocations."""
     # TODO: define IAM permissions
-    num_invocations = 2000
+    num_invocations = 1500
     batch_size = 1
     # This calculation might not be 100% accurate if the batch window is short, but it works for now
     target_invocations = math.ceil(num_invocations / batch_size)
@@ -408,9 +462,15 @@ def test_lambda_event_source_mapping_sqs(
     assert error_counter.counter == 0
 
     # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
-    sleep_seconds = 400
-    LOG.info(f"Sleeping for {sleep_seconds} ...")
-    time.sleep(sleep_seconds)
+    # time.sleep(num_invocations + 300)
+
+    # Validate S3 object creation
+    def assert_s3_objects():
+        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
+        assert len(s3_keys_output) >= num_invocations
+        return len(s3_keys_output)
+
+    s3_count = retry(assert_s3_objects, retries=300, sleep=2)
 
     # Validate CloudWatch invocation metric
     def assert_cloudwatch_metric():
@@ -429,11 +489,10 @@ def test_lambda_event_source_mapping_sqs(
         num_invocations_metric = 0
         for datapoint in response["Datapoints"]:
             num_invocations_metric += int(datapoint["Sum"])
-        # assert num_invocations_metric == num_invocations
+        assert num_invocations_metric >= num_invocations
         return num_invocations_metric
 
-    metric_count = assert_cloudwatch_metric()
-    # metric_count = retry(assert_cloudwatch_metric, retries=300, sleep=10)
+    metric_count = retry(assert_cloudwatch_metric, retries=300, sleep=10)
 
     # Validate CloudWatch invocation logs
     def assert_log_events():
@@ -449,23 +508,13 @@ def test_lambda_event_source_mapping_sqs(
             invocation_count += len(
                 [event["message"] for event in log_events if event["message"].startswith("REPORT")]
             )
-        # assert invocation_count == num_invocations
+        assert invocation_count >= num_invocations
         return invocation_count
 
-    log_count = assert_log_events()
     # NOTE: slow against AWS (can take minutes and would likely require more retries)
-    # log_count = retry(assert_log_events, retries=300, sleep=2)
+    log_count = retry(assert_log_events, retries=300, sleep=2)
 
-    # Validate S3 object creation
-    def assert_s3_objects():
-        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
-        # assert len(s3_keys_output) == num_invocations
-        return len(s3_keys_output)
-
-    s3_count = assert_s3_objects()
-    # s3_count = retry(assert_s3_objects, retries=300, sleep=2)
-
-    # TODO: fix unreliable event source mapping (e.g., [168, 168, 169] with N=200)
+    LOG.info("Validate invocation counts: metric_count, log_count, s3_count")
     assert [metric_count, log_count, s3_count] == [
         target_invocations,
         target_invocations,
@@ -484,7 +533,7 @@ def test_sns_subscription_lambda(
 ):
     """Test SNS => Lambda subscription with concurrent event invokes and validate the number of invocations."""
     # TODO: define IAM permissions
-    num_invocations = 800
+    num_invocations = 1500
 
     function_name = f"test-lambda-perf-{short_uid()}"
     lambda_creation_response = create_lambda_function(
@@ -558,9 +607,16 @@ def test_sns_subscription_lambda(
     LOG.info(f"N={num_invocations} took {diff.total_seconds()} seconds")
     assert error_counter.counter == 0
 
-    sleep_seconds = 600
-    LOG.info(f"Sleeping for {sleep_seconds} ...")
-    time.sleep(sleep_seconds)
+    # NOTE: slow against AWS (can take minutes and would likely require more retries)
+    # time.sleep(200)
+
+    # Validate S3 object creation first because it works synchronously and is most reliable
+    def assert_s3_objects():
+        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
+        assert len(s3_keys_output) >= num_invocations
+        return len(s3_keys_output)
+
+    s3_count = retry(assert_s3_objects, retries=300, sleep=2)
 
     # Validate CloudWatch invocation metric
     def assert_cloudwatch_metric():
@@ -579,11 +635,10 @@ def test_sns_subscription_lambda(
         num_invocations_metric = 0
         for datapoint in response["Datapoints"]:
             num_invocations_metric += int(datapoint["Sum"])
-        # assert num_invocations_metric == num_invocations
+        assert num_invocations_metric >= num_invocations
         return num_invocations_metric
 
-    metric_count = assert_cloudwatch_metric()
-    # metric_count = retry(assert_cloudwatch_metric, retries=300, sleep=10)
+    metric_count = retry(assert_cloudwatch_metric, retries=300, sleep=10)
 
     # Validate CloudWatch invocation logs
     def assert_log_events():
@@ -599,22 +654,13 @@ def test_sns_subscription_lambda(
             invocation_count += len(
                 [event["message"] for event in log_events if event["message"].startswith("REPORT")]
             )
-        # assert invocation_count == num_invocations
+        assert invocation_count >= num_invocations
         return invocation_count
 
-    log_count = assert_log_events()
     # NOTE: slow against AWS (can take minutes and would likely require more retries)
-    # log_count = retry(assert_log_events, retries=300, sleep=2)
+    log_count = retry(assert_log_events, retries=300, sleep=2)
 
-    # Validate S3 object creation first because it works synchronously and is most reliable
-    def assert_s3_objects():
-        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
-        # assert len(s3_keys_output) == num_invocations
-        return len(s3_keys_output)
-
-    s3_count = assert_s3_objects()
-    # s3_count = retry(assert_s3_objects, retries=300, sleep=2)
-
+    LOG.info("Validate invocation counts: metric_count, log_count, s3_count")
     assert [metric_count, log_count, s3_count] == [
         num_invocations,
         num_invocations,
