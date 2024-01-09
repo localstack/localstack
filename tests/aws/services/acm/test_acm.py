@@ -171,7 +171,7 @@ class TestACM:
             if response["Certificate"]["Status"] not in ["FAILED", "ISSUED"]:
                 raise Exception("Certificate no yet ready")
 
-        retry(_certificate_ready, sleep=5, retries=30)
+        retry(_certificate_ready, sleep=1, retries=30)
 
         cert_list_response = aws_client.acm.list_certificates()
         cert_summaries = cert_list_response["CertificateSummaryList"]
