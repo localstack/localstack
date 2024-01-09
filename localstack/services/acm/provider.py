@@ -29,7 +29,7 @@ def describe(describe_orig, self):
     cert = result.get("Certificate", {})
     cert["Status"] = cert_status
     sans = cert.setdefault("SubjectAlternativeNames", [])
-    sans_summaries = cert.setdefault("SubjectAlternativeNameSummaries", [])
+    sans_summaries = cert.setdefault("SubjectAlternativeNameSummaries", sans)
 
     # add missing attributes in ACM certs that cause Terraform to fail
     addenda = {
