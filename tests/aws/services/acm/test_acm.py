@@ -168,7 +168,8 @@ class TestACM:
             response = aws_client.acm.describe_certificate(CertificateArn=cert_arn)
             # expecting FAILED on aws due to not requesting a valid certificate
             # expecting ISSUED as default response from moto
-            assert response["Certificate"]["Status"] in ["FAILED", "ISSUED"]
+            if response["Certificate"]["Status"] not in ["FAILED", "ISSUED"]:
+                raise Exception("Certificate no yet ready")
 
         retry(_certificate_ready, sleep=5, retries=30)
 
