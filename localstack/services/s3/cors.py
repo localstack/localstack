@@ -43,6 +43,9 @@ class BucketCorsIndex(Protocol):
     def buckets(self) -> set[str]:
         raise NotImplementedError
 
+    def invalidate(self):
+        raise NotImplementedError
+
 
 class S3CorsHandler(Handler):
     bucket_cors_index: BucketCorsIndex
@@ -202,7 +205,7 @@ class S3CorsHandler(Handler):
 
         if requested_headers := request.headers.get("Access-Control-Request-Headers"):
             # if the rule matched, it means all Requested Headers are allowed
-            response.headers["Access-Control-Allow-Headers"] = requested_headers
+            response.headers["Access-Control-Allow-Headers"] = requested_headers.lower()
 
         if expose_headers := rule.get("ExposeHeaders"):
             response.headers["Access-Control-Expose-Headers"] = ", ".join(expose_headers)
@@ -253,9 +256,13 @@ class S3CorsHandler(Handler):
             return
 
         if request_headers := headers.get("Access-Control-Request-Headers"):
-            if not (allowed_headers := rule.get("AllowedHeaders")) or (
-                "*" not in allowed_headers
-                and not all(header in allowed_headers for header in request_headers.split(", "))
+            if not (allowed_headers := rule.get("AllowedHeaders")):
+                return
+
+            lower_case_allowed_headers = {header.lower() for header in allowed_headers}
+            if "*" not in allowed_headers and not all(
+                header in lower_case_allowed_headers
+                for header in request_headers.lower().split(", ")
             ):
                 return
 

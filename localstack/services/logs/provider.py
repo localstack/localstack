@@ -23,6 +23,7 @@ from localstack.aws.api.logs import (
     KmsKeyId,
     ListTagsForResourceResponse,
     ListTagsLogGroupResponse,
+    LogGroupClass,
     LogGroupName,
     LogsApi,
     LogStreamName,
@@ -139,6 +140,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_group_name: LogGroupName,
         kms_key_id: KmsKeyId = None,
         tags: Tags = None,
+        log_group_class: LogGroupClass = None,
     ) -> None:
         call_moto(context)
         if tags:

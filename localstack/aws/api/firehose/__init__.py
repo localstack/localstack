@@ -71,6 +71,8 @@ RedshiftRetryDurationInSeconds = int
 RetryDurationInSeconds = int
 RoleARN = str
 SizeInMBs = int
+SplunkBufferingIntervalInSeconds = int
+SplunkBufferingSizeInMBs = int
 SplunkRetryDurationInSeconds = int
 TagKey = str
 TagValue = str
@@ -264,6 +266,12 @@ class InvalidArgumentException(ServiceException):
 
 class InvalidKMSResourceException(ServiceException):
     code: str = "InvalidKMSResourceException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class InvalidSourceException(ServiceException):
+    code: str = "InvalidSourceException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -559,6 +567,11 @@ class HttpEndpointDestinationConfiguration(TypedDict, total=False):
     S3Configuration: S3DestinationConfiguration
 
 
+class SplunkBufferingHints(TypedDict, total=False):
+    IntervalInSeconds: Optional[SplunkBufferingIntervalInSeconds]
+    SizeInMBs: Optional[SplunkBufferingSizeInMBs]
+
+
 class SplunkRetryOptions(TypedDict, total=False):
     DurationInSeconds: Optional[SplunkRetryDurationInSeconds]
 
@@ -573,6 +586,7 @@ class SplunkDestinationConfiguration(TypedDict, total=False):
     S3Configuration: S3DestinationConfiguration
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    BufferingHints: Optional[SplunkBufferingHints]
 
 
 class ElasticsearchRetryOptions(TypedDict, total=False):
@@ -793,6 +807,7 @@ class SplunkDestinationDescription(TypedDict, total=False):
     S3DestinationDescription: Optional[S3DestinationDescription]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    BufferingHints: Optional[SplunkBufferingHints]
 
 
 class ElasticsearchDestinationDescription(TypedDict, total=False):
@@ -1050,6 +1065,7 @@ class SplunkDestinationUpdate(TypedDict, total=False):
     S3Update: Optional[S3DestinationUpdate]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    BufferingHints: Optional[SplunkBufferingHints]
 
 
 class StartDeliveryStreamEncryptionInput(ServiceRequest):

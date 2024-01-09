@@ -462,6 +462,7 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("ReceiptHandle"),
+            TransformerUtility.key_value("TaskHandle"),
             TransformerUtility.key_value(
                 "SenderId"
             ),  # TODO: flaky against AWS (e.g. /Attributes/SenderId '<sender-id:1>' → '<sender-id:2>' ... (expected → actual))
@@ -511,10 +512,14 @@ class TransformerUtility:
                 _sns_pem_file_token_transformer,
                 replacement="signing-cert-file",
             ),
+            # replaces the domain in "SigningCertURL" URL (KeyValue won't work as it replaces reference, and if
+            # replace_reference is False, then it replaces the whole key
+            RegexTransformer(
+                r"(?i)(?<=SigningCertURL[\"|']:\s[\"|'])(https?.*?)(?=/\SimpleNotificationService-)",
+                replacement="<cert-domain>",
+            ),
             # replaces the domain in "UnsubscribeURL" URL (KeyValue won't work as it replaces reference, and if
             # replace_reference is False, then it replaces the whole key
-            # this will be able to use a KeyValue based once we provide a certificate for message signing in SNS
-            # a match must be made case-insensitive because the key casing is different from lambda notifications
             RegexTransformer(
                 r"(?i)(?<=UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)",
                 replacement="<unsubscribe-domain>",

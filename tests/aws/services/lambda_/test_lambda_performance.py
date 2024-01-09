@@ -352,7 +352,7 @@ def test_lambda_event_source_mapping_sqs(
 ):
     """Test SQS => Lambda event source mapping with concurrent event invokes and validate the number of invocations."""
     # TODO: define IAM permissions
-    num_invocations = 200
+    num_invocations = 2000
     batch_size = 1
     # This calculation might not be 100% accurate if the batch window is short, but it works for now
     target_invocations = math.ceil(num_invocations / batch_size)
@@ -413,7 +413,7 @@ def test_lambda_event_source_mapping_sqs(
     assert error_counter.counter == 0
 
     # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
-    sleep_seconds = 200
+    sleep_seconds = 400
     LOG.info(f"Sleeping for {sleep_seconds} ...")
     time.sleep(sleep_seconds)
 

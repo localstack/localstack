@@ -21,7 +21,9 @@ NextToken = str
 OnDemandStreamCountLimitObject = int
 OnDemandStreamCountObject = int
 PartitionKey = str
+Policy = str
 PositiveIntegerObject = int
+ResourceARN = str
 RetentionPeriodHours = int
 SequenceNumber = str
 ShardCountObject = int
@@ -248,6 +250,10 @@ class DecreaseStreamRetentionPeriodInput(ServiceRequest):
     StreamARN: Optional[StreamARN]
 
 
+class DeleteResourcePolicyInput(ServiceRequest):
+    ResourceARN: ResourceARN
+
+
 class DeleteStreamInput(ServiceRequest):
     StreamName: Optional[StreamName]
     EnforceConsumerDeletion: Optional[BooleanObject]
@@ -401,6 +407,14 @@ class GetRecordsOutput(TypedDict, total=False):
     ChildShards: Optional[ChildShardList]
 
 
+class GetResourcePolicyInput(ServiceRequest):
+    ResourceARN: ResourceARN
+
+
+class GetResourcePolicyOutput(TypedDict, total=False):
+    Policy: Policy
+
+
 class GetShardIteratorInput(ServiceRequest):
     StreamName: Optional[StreamName]
     ShardId: ShardId
@@ -551,6 +565,11 @@ class PutRecordsOutput(TypedDict, total=False):
     EncryptionType: Optional[EncryptionType]
 
 
+class PutResourcePolicyInput(ServiceRequest):
+    ResourceARN: ResourceARN
+    Policy: Policy
+
+
 class RegisterStreamConsumerInput(ServiceRequest):
     StreamARN: StreamARN
     ConsumerName: ConsumerName
@@ -679,6 +698,10 @@ class KinesisApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DeleteResourcePolicy")
+    def delete_resource_policy(self, context: RequestContext, resource_arn: ResourceARN) -> None:
+        raise NotImplementedError
+
     @handler("DeleteStream")
     def delete_stream(
         self,
@@ -761,6 +784,12 @@ class KinesisApi:
         limit: GetRecordsInputLimit = None,
         stream_arn: StreamARN = None,
     ) -> GetRecordsOutput:
+        raise NotImplementedError
+
+    @handler("GetResourcePolicy")
+    def get_resource_policy(
+        self, context: RequestContext, resource_arn: ResourceARN
+    ) -> GetResourcePolicyOutput:
         raise NotImplementedError
 
     @handler("GetShardIterator")
@@ -864,6 +893,12 @@ class KinesisApi:
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
     ) -> PutRecordsOutput:
+        raise NotImplementedError
+
+    @handler("PutResourcePolicy")
+    def put_resource_policy(
+        self, context: RequestContext, resource_arn: ResourceARN, policy: Policy
+    ) -> None:
         raise NotImplementedError
 
     @handler("RegisterStreamConsumer")

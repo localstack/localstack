@@ -125,6 +125,7 @@ OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.9"
 # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
 OPENSEARCH_PLUGIN_LIST = [
     "ingest-attachment",
+    "analysis-kuromoji",
 ]
 
 # API endpoint for analytics events

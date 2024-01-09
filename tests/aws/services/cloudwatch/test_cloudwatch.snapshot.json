@@ -1206,5 +1206,48 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_alarm_lambda_target": {
+    "recorded-date": "03-01-2024, 17:30:00",
+    "recorded-content": {
+      "lambda-alarm-invocations": {
+        "source": "aws.cloudwatch",
+        "alarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "accountId": "111111111111",
+        "time": "date",
+        "region": "<region>",
+        "alarmData": {
+          "alarmName": "<alarm-name:1>",
+          "state": {
+            "value": "ALARM",
+            "reason": "testing alarm",
+            "timestamp": "date"
+          },
+          "previousState": {
+            "value": "INSUFFICIENT_DATA",
+            "reason": "Unchecked: Initial alarm creation",
+            "timestamp": "date"
+          },
+          "configuration": {
+            "description": "testing lambda alarm action",
+            "metrics": [
+              {
+                "id": "<uuid:1>",
+                "metricStat": {
+                  "metric": {
+                    "namespace": "namespace",
+                    "name": "metric1",
+                    "dimensions": {}
+                  },
+                  "period": 10,
+                  "stat": "Average"
+                },
+                "returnData": true
+              }
+            ]
+          }
+        }
+      }
+    }
   }
 }

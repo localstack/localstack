@@ -120,7 +120,7 @@ class TestS3ListObjects:
         snapshot.match("list-objects", resp)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="moto does not implement the right behaviour",
     )
@@ -354,7 +354,7 @@ class TestS3ListObjectsV2:
 
 class TestS3ListObjectVersions:
     @markers.aws.validated
-    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     def test_list_objects_versions_markers(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         aws_client.s3.put_bucket_versioning(
@@ -432,7 +432,7 @@ class TestS3ListObjectVersions:
         snapshot.match("list-objects-next-key-empty", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     def test_list_object_versions_pagination_common_prefixes(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -560,7 +560,7 @@ class TestS3ListObjectVersions:
 
 class TestS3ListMultipartUploads:
     @markers.aws.validated
-    @pytest.mark.xfail(condition=is_v2_provider(), reason="not implemented in moto")
+    @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     def test_list_multiparts_next_marker(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformers_list(
@@ -666,7 +666,7 @@ class TestS3ListMultipartUploads:
         snapshot.match("list-multiparts-next-key-empty", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(condition=is_v2_provider, reason="not implemented in moto")
+    @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     def test_list_multiparts_with_prefix_and_delimiter(
         self, s3_bucket, snapshot, aws_client, aws_http_client_factory
     ):
@@ -767,7 +767,7 @@ class TestS3ListMultipartUploads:
         snapshot.match("list-uploads-delimiter", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="not implemented in moto",
     )
@@ -845,7 +845,7 @@ class TestS3ListMultipartUploads:
 
 
 class TestS3ListParts:
-    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     @markers.aws.validated
     def test_list_parts_pagination(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
@@ -901,7 +901,7 @@ class TestS3ListParts:
         )
         snapshot.match("list-parts-wrong-part", response)
 
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER, reason="moto does not handle empty query string parameters"
     )
     @markers.aws.validated

@@ -1,8 +1,10 @@
 {
   "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "recorded-date": "03-08-2023, 04:13:15",
+    "recorded-date": "06-12-2023, 16:47:40",
     "recorded-content": {
       "head_bucket": {
+        "AccessPointAlias": false,
+        "BucketRegion": "eu-west-1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1793,7 +1795,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
-    "recorded-date": "06-11-2023, 16:32:57",
+    "recorded-date": "06-12-2023, 16:45:33",
     "recorded-content": {
       "create_bucket": {
         "Location": "/<bucket-name:1>",
@@ -1810,6 +1812,8 @@
         }
       },
       "head_bucket": {
+        "AccessPointAlias": false,
+        "BucketRegion": "<x-amz-bucket-region:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1823,6 +1827,8 @@
         "x-amz-request-id": "x-amz-request-id"
       },
       "head_bucket_2": {
+        "AccessPointAlias": false,
+        "BucketRegion": "<x-amz-bucket-region:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -10966,6 +10972,181 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 403
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_copy_object_special_character": {
+    "recorded-date": "04-01-2024, 15:59:31",
+    "recorded-content": {
+      "put-object-src-special-char-file%2Fname": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-special-char-file%2Fname": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-src-special-char-test@key/": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-special-char-test@key/": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-src-special-char-test key/": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-special-char-test key/": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-src-special-char-test key//": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-special-char-test key//": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-src-special-char-a/%F0%9F%98%80/": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-special-char-a/%F0%9F%98%80/": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-src-special-char-test+key": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-special-char-test+key": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-copy-dest-special-char": {
+        "Contents": [
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "a/%F0%9F%98%80/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "file%2Fname",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "test key/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "test key//",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "test+key",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+            "Key": "test@key/",
+            "LastModified": "datetime",
+            "Size": 4,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 6,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
