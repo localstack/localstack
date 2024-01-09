@@ -156,8 +156,10 @@ class TestACM:
         subject_alternative_names = [
             "test.example.com",
             "another.domain.com",
+            "yet-another.domain.com",
             "*.test.example.com",
         ]
+
         create_response = acm_request_certificate(
             DomainName=domain_name, SubjectAlternativeNames=subject_alternative_names
         )
