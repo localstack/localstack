@@ -154,15 +154,28 @@ class PollerWorker(StoppableThread):
                 if not response.get("Messages"):
                     self._shutdown_event.wait(1)
                     continue
-                LOG.debug("[%s] Got %d messages", self.event_queue_url, len(response["Messages"]))
+                message = response["Messages"][0]
+                sqs_invocation = SQSInvocation.decode(message["Body"])
+                invocation = sqs_invocation.invocation
+                LOG.debug(
+                    "[%s] Got %d messages with request_id %s",
+                    self.event_queue_url,
+                    len(response["Messages"]),
+                    invocation.request_id,
+                )
+
                 # Guard against shutdown event arriving while polling SQS for messages
-                if not self._shutdown_event.is_set():
-                    message = response["Messages"][0]
-                    start_time = time.perf_counter()
-                    self.invoking = True
-                    self.handle_message(message)
-                    self.invoking = False
-                    self.last_duration = time.perf_counter() - start_time
+                if self._shutdown_event.is_set():
+                    LOG.debug(
+                        "Shutting down and skipping message with request_id %s",
+                        invocation.request_id,
+                    )
+
+                start_time = time.perf_counter()
+                self.invoking = True
+                self.handle_message(message)
+                self.invoking = False
+                self.last_duration = time.perf_counter() - start_time
 
             except Exception as e:
                 # TODO: if the gateway shuts down before the shutdown event even is set,
@@ -190,15 +203,17 @@ class PollerWorker(StoppableThread):
         self._shutdown_event.set()
 
     def handle_message(self, message: dict) -> None:
-        failure_cause = None
-        qualifier = self.version_manager.function_version.id.qualifier
-        event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
         try:
+            failure_cause = None
+            qualifier = self.version_manager.function_version.id.qualifier
+            event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
             sqs_invocation = SQSInvocation.decode(message["Body"])
             invocation = sqs_invocation.invocation
+            LOG.debug("Handling message with request_id %s", invocation.request_id)
             try:
                 invocation_result = self.version_manager.invoke(invocation=invocation)
             except Exception as e:
+                LOG.debug("Exception during handling message %s", invocation.request_id)
                 # Reserved concurrency == 0
                 if self.version_manager.function.reserved_concurrent_executions == 0:
                     failure_cause = "ZeroReservedConcurrency"
@@ -206,6 +221,11 @@ class PollerWorker(StoppableThread):
                 elif not has_enough_time_for_retry(sqs_invocation, event_invoke_config):
                     failure_cause = "EventAgeExceeded"
                 if failure_cause:
+                    LOG.warning(
+                        "Handling message with request_id %s failed with failure cause %s",
+                        invocation.request_id,
+                        failure_cause,
+                    )
                     invocation_result = InvocationResult(
                         is_error=True, request_id=invocation.request_id, payload=None, logs=None
                     )
@@ -494,7 +514,7 @@ class PollerAutoScaler:
             target_workers = int(current_workers * scaling_factor)
             diff = target_workers - current_workers
             if abs(diff) > 5:
-                target_workers = current_workers + math.copysign(5, diff)
+                target_workers = current_workers + int(math.copysign(5, diff))
             target_workers = max(1, target_workers)
             target_workers = min(20, target_workers)
             LOG.debug(

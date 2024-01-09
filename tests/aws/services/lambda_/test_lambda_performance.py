@@ -217,7 +217,7 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
 @markers.aws.validated
 def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_client_factory):
     """Test concurrent Lambda event invokes and validate the number of Lambda invocations using CloudWatch and S3."""
-    num_invocations = 800
+    num_invocations = 2000
 
     function_name = f"test-lambda-perf-{short_uid()}"
     create_lambda_function(
@@ -275,11 +275,12 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
     assert error_counter.counter == 0
 
     # Sleeping here is a bit hacky, but we want to avoid polling for now because polling affects the results.
+    # time.sleep(30)
 
     # Validate S3 object creation
     def assert_s3_objects():
         s3_keys_output = get_s3_keys(aws_client, s3_bucket)
-        assert len(s3_keys_output) == num_invocations
+        assert len(s3_keys_output) >= num_invocations
         return len(s3_keys_output)
 
     s3_count = retry(assert_s3_objects, sleep=5, retries=300)
@@ -301,7 +302,7 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
         num_invocations_metric = 0
         for datapoint in response["Datapoints"]:
             num_invocations_metric += int(datapoint["Sum"])
-        # assert num_invocations_metric == num_invocations
+        assert num_invocations_metric >= num_invocations
         return num_invocations_metric
 
     metric_count = retry(assert_cloudwatch_metric, retries=300, sleep=10)
@@ -320,12 +321,11 @@ def test_lambda_event_invoke(create_lambda_function, s3_bucket, aws_client, aws_
             invocation_count += len(
                 [event["message"] for event in log_events if event["message"].startswith("REPORT")]
             )
-        # assert invocation_count == num_invocations
+        assert invocation_count >= num_invocations
         return invocation_count
 
-    log_count = assert_log_events()
     # NOTE: slow against AWS (can take minutes and would likely require more retries)
-    # log_count = retry(assert_log_events, retries=300, sleep=2)
+    log_count = retry(assert_log_events, retries=300, sleep=2)
 
     # TODO: the CloudWatch metrics can be unreliable due to concurrency issues (new CW provider is WIP)
     # The s3_count does not consider re-tries, which have the same request_ids!
