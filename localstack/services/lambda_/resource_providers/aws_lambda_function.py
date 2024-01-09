@@ -331,6 +331,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                 model,
                 [
                     "Architectures",
+                    "DeadLetterConfig",
                     "Description",
                     "FunctionName",
                     "Handler",
@@ -345,6 +346,11 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                     "VpcConfig",
                 ],
             )
+            if "Timeout" in kwargs:
+                kwargs["Timeout"] = int(kwargs["Timeout"])
+            if "MemorySize" in kwargs:
+                kwargs["MemorySize"] = int(kwargs["MemorySize"])
+
             # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
             if "Environment" in model:
@@ -458,6 +464,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
 
         config_keys = [
             "Description",
+            "DeadLetterConfig",
             "Environment",
             "Handler",
             "ImageConfig",
@@ -472,8 +479,11 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
         update_config_props = util.select_attributes(request.desired_state, config_keys)
         function_name = request.previous_state["FunctionName"]
         update_config_props["FunctionName"] = function_name
+
         if "Timeout" in update_config_props:
             update_config_props["Timeout"] = int(update_config_props["Timeout"])
+        if "MemorySize" in update_config_props:
+            update_config_props["MemorySize"] = int(update_config_props["MemorySize"])
         if "Code" in request.desired_state:
             code = request.desired_state["Code"] or {}
             if not code.get("ZipFile"):
