@@ -522,7 +522,7 @@ class TestCloudwatch:
         retry(assert_results, retries=retries, sleep_before=sleep_before)
 
     @markers.aws.only_localstack
-    @pytest.mark.skipif(condition=is_new_provider, reason="not supported by the new provider")
+    # this feature was a customer request and added with https://github.com/localstack/localstack/pull/3535
     def test_raw_metric_data(self, aws_client):
         """
         tests internal endpoint at "/_aws/cloudwatch/metrics/raw"
@@ -531,6 +531,7 @@ class TestCloudwatch:
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=23)]
         )
+        # the new v2 provider doesn't need the headers, will return results for all accounts/regions
         headers = mock_aws_request_headers(
             "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )
