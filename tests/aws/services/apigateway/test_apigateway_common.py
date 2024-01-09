@@ -35,17 +35,11 @@ class TestApiGatewayCommon:
     def test_api_gateway_request_validator(
         self, create_lambda_function, create_rest_apigw, apigw_redeploy_api, snapshot, aws_client
     ):
-        # TODO: create fixture which will provide basic integrations where we can test behaviour
-        # see once we have more cases how we can regroup functionality into one or several fixtures
-        # example: create a basic echo lambda + integrations + deploy stage
-        # We could also leverage the MOCK integration
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("requestValidatorId"),
                 snapshot.transform.key_value("cacheNamespace"),
                 snapshot.transform.key_value("id"),  # deployment id
-                snapshot.transform.key_value("fn_name"),  # lambda name
-                snapshot.transform.key_value("fn_arn"),  # lambda arn
             ]
         )
 
@@ -68,7 +62,7 @@ class TestApiGatewayCommon:
         api_id, _, root = create_rest_apigw(name="aws lambda api")
 
         resource_1 = aws_client.apigateway.create_resource(
-            restApiId=api_id, parentId=root, pathPart="test"
+            restApiId=api_id, parentId=root, pathPart="nested"
         )["id"]
 
         resource_id = aws_client.apigateway.create_resource(
@@ -89,7 +83,12 @@ class TestApiGatewayCommon:
                 httpMethod=http_method,
                 authorizationType="NONE",
                 requestValidatorId=validator_id,
-                requestParameters={"method.request.path.test": True},
+                requestParameters={
+                    # the path parameter is most often used to generate SDK from the REST API
+                    "method.request.path.test": True,
+                    "method.request.querystring.qs1": True,
+                    "method.request.header.x-header-param": True,
+                },
             )
 
             aws_client.apigateway.put_integration(
@@ -98,8 +97,7 @@ class TestApiGatewayCommon:
                 httpMethod=http_method,
                 integrationHttpMethod="POST",
                 type="AWS_PROXY",
-                uri=f"arn:aws:apigateway:{region}:lambda:path//2015-03-31/functions/"
-                f"{lambda_arn}/invocations",
+                uri=f"arn:aws:apigateway:{region}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
             )
             aws_client.apigateway.put_method_response(
                 restApiId=api_id,
@@ -118,7 +116,7 @@ class TestApiGatewayCommon:
         deploy_1 = aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
         snapshot.match("deploy-1", deploy_1)
 
-        source_arn = f"arn:aws:execute-api:{region}:{account_id}:{api_id}/*/*/test/*"
+        source_arn = f"arn:aws:execute-api:{region}:{account_id}:{api_id}/*/*/nested/*"
 
         aws_client.lambda_.add_permission(
             FunctionName=lambda_arn,
@@ -128,15 +126,26 @@ class TestApiGatewayCommon:
             SourceArn=source_arn,
         )
 
-        url = api_invoke_url(api_id, stage=stage_name, path="/test/value")
-        response = requests.post(url, json={"test": "test"})
+        # test that with every request parameters, it passes
+        url = api_invoke_url(api_id, stage=stage_name, path="/nested/value")
+        response = requests.post(
+            url,
+            json={"test": "test"},
+            headers={"x-header-param": "test"},
+            params={"qs1": "test"},
+        )
         assert response.ok
         assert json.loads(response.json()["body"]) == {"test": "test"}
 
         # GET request with an empty body
-        response_get = requests.get(url)
+        response_get = requests.get(
+            url,
+            headers={"x-header-param": "test"},
+            params={"qs1": "test"},
+        )
         assert response_get.ok
 
+        # replace the POST method requestParameters to require a non-existing {issuer} path part
         response = aws_client.apigateway.update_method(
             restApiId=api_id,
             resourceId=resource_id,
@@ -159,10 +168,16 @@ class TestApiGatewayCommon:
         apigw_redeploy_api(rest_api_id=api_id, stage_name=stage_name)
 
         response = requests.post(url, json={"test": "test"})
-        # FIXME: for now, not implemented in LocalStack, we don't validate RequestParameters yet
-        # assert response.status_code == 400
-        if response.status_code == 400:
-            snapshot.match("missing-required-request-params", response.json())
+        assert response.status_code == 400
+        snapshot.match("missing-all-required-request-params-post", response.json())
+
+        response = requests.get(url, params={"qs1": "test"})
+        assert response.status_code == 400
+        snapshot.match("missing-required-headers-request-params-get", response.json())
+
+        response = requests.get(url, headers={"x-header-param": "test"})
+        assert response.status_code == 400
+        snapshot.match("missing-required-qs-request-params-get", response.json())
 
         # create Model schema to validate body
         aws_client.apigateway.create_model(
@@ -220,17 +235,40 @@ class TestApiGatewayCommon:
         apigw_redeploy_api(rest_api_id=api_id, stage_name=stage_name)
 
         # the validator should then check against this schema and fail
-        response = requests.post(url, json={"test": "test"})
+        response = requests.post(
+            url,
+            json={"test": "test"},
+            headers={"x-header-param": "test", "content-type": "application/json"},
+            params={"qs1": "test"},
+        )
         assert response.status_code == 400
         snapshot.match("invalid-request-body", response.json())
 
         # GET request with an empty body
-        response_get = requests.get(url)
+        response_get = requests.get(
+            url,
+            headers={"x-header-param": "test"},
+            params={"qs1": "test"},
+        )
         assert response_get.status_code == 400
 
         # GET request with an empty body, content type JSON
-        response_get = requests.get(url, headers={"Content-Type": "application/json"})
+        response_get = requests.get(
+            url,
+            headers={"Content-Type": "application/json", "x-header-param": "test"},
+            params={"qs1": "test"},
+        )
         assert response_get.status_code == 400
+
+        # the validator should work with a valid object
+        response = requests.post(
+            url,
+            json={"a": 1, "b": 2},
+            headers={"x-header-param": "test"},
+            params={"qs1": "test"},
+        )
+        assert response.status_code == 200
+        snapshot.match("valid-request-body", response.json())
 
         # remove the validator from the methods
         for http_method in ("GET", "POST"):

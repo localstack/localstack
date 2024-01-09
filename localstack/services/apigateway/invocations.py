@@ -79,16 +79,13 @@ class RequestValidator:
         if not validator:
             return True
 
-        # are we validating the body?
-        if self.should_validate_body(validator):
-            is_body_valid = self.validate_body(resource)
-            if not is_body_valid:
-                return is_body_valid
+        if self.should_validate_body(validator) and not self.validate_body(resource):
+            return False
 
-        if self.should_validate_request(validator):
-            is_valid_parameters = self.validate_parameters_and_headers(resource)
-            if not is_valid_parameters:
-                return is_valid_parameters
+        if self.should_validate_request(validator) and not self.validate_parameters_and_headers(
+            resource
+        ):
+            return False
 
         return True
 
@@ -98,7 +95,9 @@ class RequestValidator:
         if not (request_models := resource.get("requestModels")):
             model_name = EMPTY_MODEL
         else:
-            model_name = request_models.get(APPLICATION_JSON, EMPTY_MODEL)
+            model_name = request_models.get(
+                APPLICATION_JSON, request_models.get("$default", EMPTY_MODEL)
+            )
 
         model_resolver = ModelResolver(
             rest_api_container=self.rest_api_container,
@@ -127,8 +126,12 @@ class RequestValidator:
             LOG.warning("failed to validate request body, request data is not valid JSON %s", e)
             return False
 
-    # TODO implement parameters and headers
     def validate_parameters_and_headers(self, resource):
+        if not (request_parameters := resource.get("requestParameters")):
+            return True
+
+        print(request_parameters)
+
         return True
 
     @staticmethod
