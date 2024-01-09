@@ -31,10 +31,6 @@ def is_old_provider():
     return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") != "v2" and not is_aws_cloud()
 
 
-def is_new_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") == "v2"
-
-
 class TestCloudwatch:
     @markers.aws.validated
     def test_put_metric_data_values_list(self, snapshot, aws_client):
