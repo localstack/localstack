@@ -2115,6 +2115,52 @@ class TestCloudwatch:
         retry(_match_results, retries=10, sleep=1.0)
 
     @markers.aws.validated
+    def test_get_metric_with_null_dimensions(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Id"))
+        snapshot.add_transformer(snapshot.transform.key_value("Label"))
+        namespace = f"n-{short_uid()}"
+        metric_name = "m-test"
+        aws_client.cloudwatch.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Value": 1,
+                    "Unit": "Seconds",
+                    "Dimensions": [
+                        {
+                            "Name": "foo",
+                            "Value": "bar",
+                        }
+                    ],
+                }
+            ],
+        )
+
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                                "Dimensions": [],
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=datetime.utcnow() - timedelta(hours=1),
+                EndTime=datetime.utcnow(),
+            )
+            snapshot.match("get_metric_with_null_dimensions", response)
+
+        retry(assert_results, retries=10, sleep=1.0, sleep_before=2.0 if is_aws_cloud() else 0.0)
+
+    @markers.aws.validated
     def test_alarm_lambda_target(
         self, aws_client, create_lambda_function, cleanups, account_id, snapshot
     ):

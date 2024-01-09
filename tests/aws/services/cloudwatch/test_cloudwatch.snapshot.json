@@ -1873,8 +1873,8 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_null_dimensions": {
-    "recorded-date": "19-12-2023, 16:29:18",
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_no_results": {
+    "recorded-date": "19-12-2023, 16:57:15",
     "recorded-content": {
       "result": {
         "Messages": [],
@@ -1894,14 +1894,14 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_no_results": {
-    "recorded-date": "19-12-2023, 16:57:15",
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_null_dimensions": {
+    "recorded-date": "09-01-2024, 20:13:11",
     "recorded-content": {
-      "result": {
+      "get_metric_with_null_dimensions": {
         "Messages": [],
         "MetricDataResults": [
           {
-            "Id": "result",
+            "Id": "<id:1>",
             "Label": "<label:1>",
             "StatusCode": "Complete",
             "Timestamps": "timestamp",
