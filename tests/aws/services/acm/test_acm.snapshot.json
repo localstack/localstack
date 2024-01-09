@@ -139,7 +139,7 @@
     }
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_create_certificate_for_multiple_alternative_domains": {
-    "recorded-date": "08-01-2024, 22:13:31",
+    "recorded-date": "09-01-2024, 14:58:14",
     "recorded-content": {
       "list-cert-summary-list": {
         "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
@@ -153,9 +153,10 @@
         "RenewalEligibility": "INELIGIBLE",
         "Status": "FAILED",
         "SubjectAlternativeNameSummaries": [
-          "test.example.com",
+          "*.test.example.com",
           "another.domain.com",
-          "*.test.example.com"
+          "test.example.com",
+          "yet-another.domain.com"
         ],
         "Type": "AMAZON_ISSUED"
       },
@@ -165,11 +166,11 @@
         "DomainName": "test.example.com",
         "DomainValidationOptions": [
           {
-            "DomainName": "test.example.com",
-            "ValidationDomain": "test.example.com",
+            "DomainName": "*.test.example.com",
+            "ValidationDomain": "*.test.example.com",
             "ValidationEmails": [],
             "ValidationMethod": "EMAIL",
-            "ValidationStatus": "PENDING_VALIDATION"
+            "ValidationStatus": "FAILED"
           },
           {
             "DomainName": "another.domain.com",
@@ -179,11 +180,18 @@
             "ValidationStatus": "PENDING_VALIDATION"
           },
           {
-            "DomainName": "*.test.example.com",
-            "ValidationDomain": "*.test.example.com",
+            "DomainName": "test.example.com",
+            "ValidationDomain": "test.example.com",
             "ValidationEmails": [],
             "ValidationMethod": "EMAIL",
-            "ValidationStatus": "FAILED"
+            "ValidationStatus": "PENDING_VALIDATION"
+          },
+          {
+            "DomainName": "yet-another.domain.com",
+            "ValidationDomain": "yet-another.domain.com",
+            "ValidationEmails": [],
+            "ValidationMethod": "EMAIL",
+            "ValidationStatus": "PENDING_VALIDATION"
           }
         ],
         "ExtendedKeyUsages": [],
@@ -200,9 +208,10 @@
         "Status": "FAILED",
         "Subject": "CN=test.example.com",
         "SubjectAlternativeNames": [
-          "test.example.com",
+          "*.test.example.com",
           "another.domain.com",
-          "*.test.example.com"
+          "test.example.com",
+          "yet-another.domain.com"
         ],
         "Type": "AMAZON_ISSUED"
       }
