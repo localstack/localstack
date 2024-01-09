@@ -669,7 +669,7 @@ def create_metric_data_query_from_alarm(alarm: LocalStackMetricAlarm):
                 "metric": {
                     "namespace": alarm.alarm["Namespace"],
                     "name": alarm.alarm["MetricName"],
-                    "dimensions": alarm.alarm["Dimensions"] or {},
+                    "dimensions": alarm.alarm.get("Dimensions", {}),
                 },
                 "period": int(alarm.alarm["Period"]),
                 "stat": alarm.alarm["Statistic"],
