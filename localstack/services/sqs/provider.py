@@ -993,30 +993,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None
     ) -> GetQueueAttributesResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-
-        if not attribute_names:
-            return GetQueueAttributesResult(Attributes={})
-
-        if QueueAttributeName.All in attribute_names:
-            # return GetQueueAttributesResult(Attributes=queue.attributes)
-            attribute_names = queue.attributes.keys()
-
-        result: Dict[QueueAttributeName, str] = {}
-
-        for attr in attribute_names:
-            try:
-                getattr(QueueAttributeName, attr)
-            except AttributeError:
-                raise InvalidAttributeName(f"Unknown Attribute {attr}.")
-
-            value = queue.attributes.get(attr)
-            if callable(value):
-                func = value
-                value = func()
-                if value is not None:
-                    result[attr] = value
-            elif value is not None:
-                result[attr] = value
+        result = queue.get_queue_attributes(attribute_names=attribute_names)
 
         return GetQueueAttributesResult(Attributes=(result if result else None))
 

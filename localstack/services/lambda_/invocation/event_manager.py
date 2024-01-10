@@ -7,34 +7,277 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
+from typing import Optional
 
 from botocore.config import Config
 
 from localstack import config
 from localstack.aws.api.lambda_ import TooManyRequestsException
+from localstack.aws.api.sqs import (
+    AttributeNameList,
+    CreateQueueResult,
+    GetQueueAttributesResult,
+    Integer,
+    Message,
+    MessageAttributeNameList,
+    MessageBodyAttributeMap,
+    MessageBodySystemAttributeMap,
+    MessageSystemAttributeName,
+    QueueAttributeMap,
+    ReceiveMessageResult,
+    SendMessageResult,
+    String,
+    TagMap,
+)
 from localstack.aws.connect import connect_to
 from localstack.services.lambda_.invocation.lambda_models import (
     EventInvokeConfig,
+    FunctionVersion,
     Invocation,
     InvocationResult,
 )
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
+from localstack.services.sqs.models import SqsQueue, StandardQueue
+from localstack.services.sqs.provider import _create_message_attribute_hash, to_sqs_api_message
+from localstack.services.sqs.utils import generate_message_id
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.message_forwarding import send_event_to_target
+from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5, to_str
-from localstack.utils.threads import FuncThread
-from localstack.utils.time import timestamp_millis
+from localstack.utils.threads import FuncThread, start_thread
+from localstack.utils.time import now, timestamp_millis
 
 LOG = logging.getLogger(__name__)
 
 
-def get_sqs_client(function_version, client_config=None):
-    region_name = function_version.id.region
-    return connect_to(
-        aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
-        region_name=region_name,
-        config=client_config,
-    ).sqs
+class QueueUpdateWorker:
+    """
+    Regularly re-queues inflight and delayed messages whose visibility timeout has expired or delay deadline has been
+    reached.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.scheduler = Scheduler()
+        self.thread: Optional[FuncThread] = None
+        self.mutex = threading.RLock()
+        self.queues = []
+
+    def add_queue(self, queue: SqsQueue):
+        self.queues.append(queue)
+
+    def remove_queue(self, queue: SqsQueue):
+        self.queues.remove(queue)
+
+    def do_update_all_queues(self):
+        for queue in self.queues:
+            try:
+                queue.requeue_inflight_messages()
+            except Exception:
+                LOG.exception("error re-queueing inflight messages")
+
+            try:
+                queue.enqueue_delayed_messages()
+            except Exception:
+                LOG.exception("error enqueueing delayed messages")
+
+            if config.SQS_ENABLE_MESSAGE_RETENTION_PERIOD:
+                try:
+                    queue.remove_expired_messages()
+                except Exception:
+                    LOG.exception("error removing expired messages")
+
+    def start(self):
+        with self.mutex:
+            if self.thread:
+                return
+
+            self.scheduler = Scheduler()
+            self.scheduler.schedule(self.do_update_all_queues, period=1)
+
+            def _run(*_args):
+                self.scheduler.run()
+
+            self.thread = start_thread(_run, name="sqs-queue-update-worker")
+
+    def stop(self):
+        with self.mutex:
+            if self.scheduler:
+                self.scheduler.close()
+
+            if self.thread:
+                self.thread.stop()
+
+            self.thread = None
+            self.scheduler = None
+
+
+class QueueManager:
+    queues: dict[str, StandardQueue]
+    queue_lock: threading.RLock
+    queue_update_worker: QueueUpdateWorker
+
+    def __init__(self):
+        self.queues = {}
+        self.queue_lock = threading.RLock()
+        self.queue_update_worker = QueueUpdateWorker()
+        self.queue_update_worker.start()
+
+    def get_queue(self, queue_name: str):
+        if queue_name not in self.queues:
+            raise ValueError("Queue not available")
+        return self.queues[queue_name]
+
+    def create_queue(self, queue_name: str) -> SqsQueue:
+        """
+        Creates a queue.
+        :param queue_name: Queue name, has to be unique
+        :return: Queue Object
+        """
+        with self.queue_lock:
+            if queue_name in self.queues:
+                raise ValueError("Queue already created")
+
+            # Truncate function name to ensure queue name limit of max 80 characters
+            queue = StandardQueue(
+                name=queue_name,
+                region="us-east-1",
+                account_id=config.INTERNAL_RESOURCE_ACCOUNT,
+            )
+            self.queues[queue_name] = queue
+            self.queue_update_worker.add_queue(queue)
+        return queue
+
+    def delete_queue(self, queue_name: str) -> None:
+        with self.queue_lock:
+            if queue_name not in self.queues:
+                raise ValueError("Queue not available")
+
+            queue = self.queues.pop(queue_name)
+            self.queue_update_worker.remove_queue(queue)
+
+
+if config.LAMBDA_EVENTS_INTERNAL_SQS:
+    QUEUE_MANAGER = QueueManager()
+else:
+    QUEUE_MANAGER = None
+
+
+class FakeSqsClient:
+    def create_queue(
+        self, QueueName: String, attributes: QueueAttributeMap = None, tags: TagMap = None
+    ) -> CreateQueueResult:
+        QUEUE_MANAGER.create_queue(queue_name=QueueName)
+        return {"QueueUrl": QueueName}
+
+    def delete_queue(self, QueueUrl: String) -> None:
+        QUEUE_MANAGER.delete_queue(queue_name=QueueUrl)
+
+    def get_queue_attributes(
+        self, QueueUrl: String, AttributeNames: AttributeNameList = None
+    ) -> GetQueueAttributesResult:
+        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+        result = queue.get_queue_attributes(AttributeNames)
+        return {"Attributes": result}
+
+    def purge_queue(self, QueueUrl: String) -> None:
+        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+        queue.clear()
+
+    def receive_message(
+        self,
+        QueueUrl: String,
+        attribute_names: AttributeNameList = None,
+        MessageAttributeNames: MessageAttributeNameList = None,
+        MaxNumberOfMessages: Integer = None,
+        VisibilityTimeout: Integer = None,
+        WaitTimeSeconds: Integer = None,
+        ReceiveRequestAttemptId: String = None,
+    ) -> ReceiveMessageResult:
+        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+        num = MaxNumberOfMessages or 1
+        result = queue.receive(
+            num_messages=num,
+            visibility_timeout=VisibilityTimeout,
+            wait_time_seconds=WaitTimeSeconds,
+        )
+
+        messages = []
+        for i, standard_message in enumerate(result.successful):
+            message = to_sqs_api_message(standard_message, attribute_names, MessageAttributeNames)
+            message["ReceiptHandle"] = result.receipt_handles[i]
+            messages.append(message)
+
+        return {"Messages": messages if messages else None}
+
+    def delete_message(self, QueueUrl: String, ReceiptHandle: String) -> None:
+        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+        queue.remove(ReceiptHandle)
+
+    def _create_message_attributes(
+        self,
+        message_system_attributes: MessageBodySystemAttributeMap = None,
+    ) -> dict[str, str]:
+        result = {
+            MessageSystemAttributeName.SenderId: config.INTERNAL_RESOURCE_ACCOUNT,  # not the account ID in AWS
+            MessageSystemAttributeName.SentTimestamp: str(now(millis=True)),
+        }
+
+        if message_system_attributes is not None:
+            for attr in message_system_attributes:
+                result[attr] = message_system_attributes[attr]["StringValue"]
+
+        return result
+
+    def send_message(
+        self,
+        QueueUrl: String,
+        MessageBody: String,
+        DelaySeconds: Integer = None,
+        MessageAttributes: MessageBodyAttributeMap = None,
+        MessageSystemAttributes: MessageBodySystemAttributeMap = None,
+        MessageDeduplicationId: String = None,
+        MessageGroupId: String = None,
+    ) -> SendMessageResult:
+        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+
+        message = Message(
+            MessageId=generate_message_id(),
+            MD5OfBody=md5(MessageBody),
+            Body=MessageBody,
+            Attributes=self._create_message_attributes(MessageSystemAttributes),
+            MD5OfMessageAttributes=_create_message_attribute_hash(MessageAttributes),
+            MessageAttributes=MessageAttributes,
+        )
+        queue_item = queue.put(
+            message=message,
+            message_deduplication_id=MessageDeduplicationId,
+            message_group_id=MessageGroupId,
+            delay_seconds=int(DelaySeconds) if DelaySeconds is not None else None,
+        )
+        message = queue_item.message
+        return {
+            "MessageId": message["MessageId"],
+            "MD5OfMessageBody": message["MD5OfBody"],
+            "MD5OfMessageAttributes": message.get("MD5OfMessageAttributes"),
+            "SequenceNumber": queue_item.sequence_number,
+            "MD5OfMessageSystemAttributes": _create_message_attribute_hash(MessageSystemAttributes),
+        }
+
+
+CLIENT = FakeSqsClient()
+
+
+def get_sqs_client(function_version: FunctionVersion, client_config=None):
+    if config.LAMBDA_EVENTS_INTERNAL_SQS:
+        return CLIENT
+    else:
+        region_name = function_version.id.region
+        return connect_to(
+            aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
+            region_name=region_name,
+            config=client_config,
+        ).sqs
 
 
 # TODO: remove once DLQ handling is refactored following the removal of the legacy lambda provider

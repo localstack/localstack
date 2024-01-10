@@ -931,6 +931,8 @@ LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = int(
     os.environ.get("LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES", 4 * 1024)
 )
 
+LAMBDA_EVENTS_INTERNAL_SQS = is_env_not_false("LAMBDA_EVENTS_INTERNAL_SQS")
+
 # DEV: 0 (default) only applies to new lambda provider. For LS developers only.
 # Whether to explicitly expose a free TCP port in lambda containers when invoking functions in host mode for
 # systems that cannot reach the container via its IPv4. For example, macOS cannot reach Docker containers:
