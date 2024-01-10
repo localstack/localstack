@@ -7,7 +7,7 @@ import threading
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
 from itertools import islice
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from botocore.utils import InvalidArnException
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
@@ -369,24 +369,28 @@ class QueueUpdateWorker:
         self.thread: Optional[FuncThread] = None
         self.mutex = threading.RLock()
 
-    def do_update_all_queues(self):
+    def iter_queues(self) -> Iterable[SqsQueue]:
         for account_id, region, store in sqs_stores.iter_stores():
             for queue in store.queues.values():
-                try:
-                    queue.requeue_inflight_messages()
-                except Exception:
-                    LOG.exception("error re-queueing inflight messages")
+                yield queue
 
-                try:
-                    queue.enqueue_delayed_messages()
-                except Exception:
-                    LOG.exception("error enqueueing delayed messages")
+    def do_update_all_queues(self):
+        for queue in self.iter_queues():
+            try:
+                queue.requeue_inflight_messages()
+            except Exception:
+                LOG.exception("error re-queueing inflight messages")
 
-                if config.SQS_ENABLE_MESSAGE_RETENTION_PERIOD:
-                    try:
-                        queue.remove_expired_messages()
-                    except Exception:
-                        LOG.exception("error removing expired messages")
+            try:
+                queue.enqueue_delayed_messages()
+            except Exception:
+                LOG.exception("error enqueueing delayed messages")
+
+            if config.SQS_ENABLE_MESSAGE_RETENTION_PERIOD:
+                try:
+                    queue.remove_expired_messages()
+                except Exception:
+                    LOG.exception("error removing expired messages")
 
     def start(self):
         with self.mutex:

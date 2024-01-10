@@ -7,7 +7,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
-from typing import Optional
+from typing import Iterable
 
 from botocore.config import Config
 
@@ -38,20 +38,23 @@ from localstack.services.lambda_.invocation.lambda_models import (
 )
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
 from localstack.services.sqs.models import SqsQueue, StandardQueue
-from localstack.services.sqs.provider import _create_message_attribute_hash, to_sqs_api_message
+from localstack.services.sqs.provider import (
+    QueueUpdateWorker,
+    _create_message_attribute_hash,
+    to_sqs_api_message,
+)
 from localstack.services.sqs.utils import generate_message_id
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.objects import singleton_factory
-from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5, to_str
-from localstack.utils.threads import FuncThread, start_thread
+from localstack.utils.threads import FuncThread
 from localstack.utils.time import now, timestamp_millis
 
 LOG = logging.getLogger(__name__)
 
 
-class QueueUpdateWorker:
+class EventQueueUpdateWorker(QueueUpdateWorker):
     """
     Regularly re-queues inflight and delayed messages whose visibility timeout has expired or delay deadline has been
     reached.
@@ -59,9 +62,6 @@ class QueueUpdateWorker:
 
     def __init__(self) -> None:
         super().__init__()
-        self.scheduler = Scheduler()
-        self.thread: Optional[FuncThread] = None
-        self.mutex = threading.RLock()
         self.queues = []
 
     def add_queue(self, queue: SqsQueue):
@@ -70,47 +70,8 @@ class QueueUpdateWorker:
     def remove_queue(self, queue: SqsQueue):
         self.queues.remove(queue)
 
-    def do_update_all_queues(self):
-        for queue in self.queues:
-            try:
-                queue.requeue_inflight_messages()
-            except Exception:
-                LOG.exception("error re-queueing inflight messages")
-
-            try:
-                queue.enqueue_delayed_messages()
-            except Exception:
-                LOG.exception("error enqueueing delayed messages")
-
-            if config.SQS_ENABLE_MESSAGE_RETENTION_PERIOD:
-                try:
-                    queue.remove_expired_messages()
-                except Exception:
-                    LOG.exception("error removing expired messages")
-
-    def start(self):
-        with self.mutex:
-            if self.thread:
-                return
-
-            self.scheduler = Scheduler()
-            self.scheduler.schedule(self.do_update_all_queues, period=1)
-
-            def _run(*_args):
-                self.scheduler.run()
-
-            self.thread = start_thread(_run, name="sqs-queue-update-worker")
-
-    def stop(self):
-        with self.mutex:
-            if self.scheduler:
-                self.scheduler.close()
-
-            if self.thread:
-                self.thread.stop()
-
-            self.thread = None
-            self.scheduler = None
+    def iter_queues(self) -> Iterable[SqsQueue]:
+        return iter(self.queues)
 
 
 class QueueManager:
