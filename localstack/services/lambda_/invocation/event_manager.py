@@ -42,6 +42,7 @@ from localstack.services.sqs.provider import _create_message_attribute_hash, to_
 from localstack.services.sqs.utils import generate_message_id
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.message_forwarding import send_event_to_target
+from localstack.utils.objects import singleton_factory
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5, to_str
 from localstack.utils.threads import FuncThread, start_thread
@@ -157,31 +158,28 @@ class QueueManager:
             self.queue_update_worker.remove_queue(queue)
 
 
-if config.LAMBDA_EVENTS_INTERNAL_SQS:
-    QUEUE_MANAGER = QueueManager()
-else:
-    QUEUE_MANAGER = None
-
-
 class FakeSqsClient:
+    def __init__(self, queue_manager: QueueManager):
+        self.queue_manager = queue_manager
+
     def create_queue(
         self, QueueName: String, attributes: QueueAttributeMap = None, tags: TagMap = None
     ) -> CreateQueueResult:
-        QUEUE_MANAGER.create_queue(queue_name=QueueName)
+        self.queue_manager.create_queue(queue_name=QueueName)
         return {"QueueUrl": QueueName}
 
     def delete_queue(self, QueueUrl: String) -> None:
-        QUEUE_MANAGER.delete_queue(queue_name=QueueUrl)
+        self.queue_manager.delete_queue(queue_name=QueueUrl)
 
     def get_queue_attributes(
         self, QueueUrl: String, AttributeNames: AttributeNameList = None
     ) -> GetQueueAttributesResult:
-        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+        queue = self.queue_manager.get_queue(queue_name=QueueUrl)
         result = queue.get_queue_attributes(AttributeNames)
         return {"Attributes": result}
 
     def purge_queue(self, QueueUrl: String) -> None:
-        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+        queue = self.queue_manager.get_queue(queue_name=QueueUrl)
         queue.clear()
 
     def receive_message(
@@ -194,7 +192,7 @@ class FakeSqsClient:
         WaitTimeSeconds: Integer = None,
         ReceiveRequestAttemptId: String = None,
     ) -> ReceiveMessageResult:
-        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+        queue = self.queue_manager.get_queue(queue_name=QueueUrl)
         num = MaxNumberOfMessages or 1
         result = queue.receive(
             num_messages=num,
@@ -211,7 +209,7 @@ class FakeSqsClient:
         return {"Messages": messages if messages else None}
 
     def delete_message(self, QueueUrl: String, ReceiptHandle: String) -> None:
-        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+        queue = self.queue_manager.get_queue(queue_name=QueueUrl)
         queue.remove(ReceiptHandle)
 
     def _create_message_attributes(
@@ -239,7 +237,7 @@ class FakeSqsClient:
         MessageDeduplicationId: String = None,
         MessageGroupId: String = None,
     ) -> SendMessageResult:
-        queue = QUEUE_MANAGER.get_queue(queue_name=QueueUrl)
+        queue = self.queue_manager.get_queue(queue_name=QueueUrl)
 
         message = Message(
             MessageId=generate_message_id(),
@@ -265,12 +263,14 @@ class FakeSqsClient:
         }
 
 
-CLIENT = FakeSqsClient()
+@singleton_factory
+def get_fake_sqs_client():
+    return FakeSqsClient(QueueManager())
 
 
 def get_sqs_client(function_version: FunctionVersion, client_config=None):
     if config.LAMBDA_EVENTS_INTERNAL_SQS:
-        return CLIENT
+        return get_fake_sqs_client()
     else:
         region_name = function_version.id.region
         return connect_to(
