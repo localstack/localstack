@@ -208,36 +208,7 @@ class Poller:
                     self.process_dead_letter_queue(sqs_invocation, invocation_result)
                     return
                 # 3) Otherwise, retry without increasing counter
-
-                # If the function doesn't have enough concurrency available to process all events, additional
-                # requests are throttled. For throttling errors (429) and system errors (500-series), Lambda returns
-                # the event to the queue and attempts to run the function again for up to 6 hours. The retry interval
-                # increases exponentially from 1 second after the first attempt to a maximum of 5 minutes. If the
-                # queue contains many entries, Lambda increases the retry interval and reduces the rate at which it
-                # reads events from the queue. Source:
-                # https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
-                # Difference depending on error cause:
-                # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
-                # Troubleshooting 500 errors:
-                # https://repost.aws/knowledge-center/lambda-troubleshoot-invoke-error-502-500
-                if isinstance(e, TooManyRequestsException):  # Throttles 429
-                    LOG.debug("Throttled lambda %s: %s", self.version_manager.function_arn, e)
-                else:  # System errors 5xx
-                    LOG.debug(
-                        "Service exception in lambda %s: %s", self.version_manager.function_arn, e
-                    )
-
-                maximum_exception_retry_delay_seconds = 5 * 60
-                delay_seconds = min(
-                    2**sqs_invocation.exception_retries, maximum_exception_retry_delay_seconds
-                )
-                # TODO: calculate delay seconds into max event age handling
-                sqs_client = get_sqs_client(self.version_manager.function_version)
-                sqs_client.send_message(
-                    QueueUrl=self.event_queue_url,
-                    MessageBody=sqs_invocation.encode(),
-                    DelaySeconds=delay_seconds,
-                )
+                self.process_throttles_and_system_errors(sqs_invocation, e)
                 return
             finally:
                 sqs_client = get_sqs_client(self.version_manager.function_version)
@@ -298,6 +269,36 @@ class Poller:
             LOG.error(
                 "Error handling lambda invoke %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)
             )
+
+    def process_throttles_and_system_errors(self, sqs_invocation: SQSInvocation, error: Exception):
+        # If the function doesn't have enough concurrency available to process all events, additional
+        # requests are throttled. For throttling errors (429) and system errors (500-series), Lambda returns
+        # the event to the queue and attempts to run the function again for up to 6 hours. The retry interval
+        # increases exponentially from 1 second after the first attempt to a maximum of 5 minutes. If the
+        # queue contains many entries, Lambda increases the retry interval and reduces the rate at which it
+        # reads events from the queue. Source:
+        # https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
+        # Difference depending on error cause:
+        # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
+        # Troubleshooting 500 errors:
+        # https://repost.aws/knowledge-center/lambda-troubleshoot-invoke-error-502-500
+        if isinstance(error, TooManyRequestsException):  # Throttles 429
+            LOG.debug("Throttled lambda %s: %s", self.version_manager.function_arn, error)
+        else:  # System errors 5xx
+            LOG.debug(
+                "Service exception in lambda %s: %s", self.version_manager.function_arn, error
+            )
+        maximum_exception_retry_delay_seconds = 5 * 60
+        delay_seconds = min(
+            2**sqs_invocation.exception_retries, maximum_exception_retry_delay_seconds
+        )
+        # TODO: calculate delay seconds into max event age handling
+        sqs_client = get_sqs_client(self.version_manager.function_version)
+        sqs_client.send_message(
+            QueueUrl=self.event_queue_url,
+            MessageBody=sqs_invocation.encode(),
+            DelaySeconds=delay_seconds,
+        )
 
     def process_success_destination(
         self,
