@@ -108,17 +108,17 @@ class RequestValidator:
             return
 
         if self.should_validate_request(validator) and (
-            param_errors := self.validate_parameters_and_headers(resource)
+            missing_parameters := self._get_missing_required_parameters(resource)
         ):
-            message = f"Missing required request parameters: [{', '.join(param_errors)}]"
+            message = f"Missing required request parameters: [{', '.join(missing_parameters)}]"
             raise BadRequestParameters(message=message)
 
-        if self.should_validate_body(validator) and not self.validate_body(resource):
+        if self.should_validate_body(validator) and not self._is_body_valid(resource):
             raise BadRequestBody(message="Invalid request body")
 
         return
 
-    def validate_body(self, resource) -> bool:
+    def _is_body_valid(self, resource) -> bool:
         # if there's no model to validate the body, use the Empty model
         # https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_aws-apigateway.EmptyModel.html
         if not (request_models := resource.get("requestModels")):
@@ -155,7 +155,7 @@ class RequestValidator:
             LOG.warning("failed to validate request body, request data is not valid JSON %s", e)
             return False
 
-    def validate_parameters_and_headers(self, resource) -> list[str]:
+    def _get_missing_required_parameters(self, resource) -> list[str]:
         missing_params = []
         if not (request_parameters := resource.get("requestParameters")):
             return missing_params
