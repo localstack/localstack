@@ -46,6 +46,7 @@ def to_invocation_context(
     headers = Headers(request.headers)
 
     # adjust the X-Forwarded-For header
+    # XXX wondering if we need this at all
     x_forwarded_for = headers.getlist("X-Forwarded-For")
     x_forwarded_for.append(request.remote_addr)
     x_forwarded_for.append(request.host)
@@ -61,6 +62,7 @@ def to_invocation_context(
     #   and use it everywhere.
     ctx = ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
     ctx.raw_uri = raw_uri
+    ctx.auth_identity["sourceIp"] = request.remote_addr
 
     return ctx
 
