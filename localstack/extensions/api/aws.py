@@ -6,6 +6,7 @@ from localstack.aws.api import (
     ServiceResponse,
 )
 from localstack.aws.chain import (
+    CompositeExceptionHandler,
     CompositeHandler,
     CompositeResponseHandler,
     ExceptionHandler,
@@ -26,4 +27,5 @@ __all__ = [
     "CompositeHandler",
     "ExceptionHandler",
     "CompositeResponseHandler",
+    "CompositeExceptionHandler",
 ]
