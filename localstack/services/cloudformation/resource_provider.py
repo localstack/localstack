@@ -99,6 +99,7 @@ PROVIDER_DEFAULTS = {
     "AWS::DynamoDB::Table": "ResourceProvider",
     "AWS::DocDB::DBCluster": "ResourceProvider",
     "AWS::DocDB::DBInstance": "ResourceProvider",
+    "AWS::DocDB::DBClusterParameterGroup": "ResourceProvider",
     "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::EC2::Instance": "ResourceProvider",
     "AWS::EC2::InternetGateway": "ResourceProvider",
