@@ -11750,5 +11750,317 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_fail": {
+    "recorded-date": "16-12-2023, 18:52:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelState"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch1"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ParallelStateFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "FailureType"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_catch": {
+    "recorded-date": "16-12-2023, 21:45:29",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelState"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch1"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ParallelStateFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "ParallelState",
+              "output": {
+                "Error": "FailureType",
+                "Cause": "Cause description"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "FailureType",
+                "Cause": "Cause description"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "FinalCaught"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "FinalCaught",
+              "output": {
+                "Error": "FailureType",
+                "Cause": "Cause description"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "FailureType",
+                "Cause": "Cause description"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_retry": {
+    "recorded-date": "16-12-2023, 21:58:47",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelState"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch1"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch1"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Branch1"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ParallelStateFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Cause description",
+              "error": "FailureType"
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

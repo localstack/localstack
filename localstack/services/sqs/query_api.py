@@ -31,7 +31,7 @@ from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
-service = load_service("sqs-query")
+service = load_service("sqs")
 parser = create_parser(service)
 serializer = create_serializer(service)
 
@@ -212,7 +212,7 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
         region_name=region,
         aws_access_key_id=account_id or INTERNAL_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-    ).sqs_query
+    ).sqs
 
     try:
         # using the layer below boto3.client("sqs").<operation>(...) to make the call

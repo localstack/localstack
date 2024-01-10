@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_dhcp_options": {
+    "last_validated_date": "2023-10-19T12:51:28+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_internet_gateway_ref_and_attr": {
+    "last_validated_date": "2023-02-13T16:13:41+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_transit_gateway_attachment": {
+    "last_validated_date": "2023-10-20T06:55:07+00:00"
+  }
+}

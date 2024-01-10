@@ -4,6 +4,7 @@ import os
 import time
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import (
@@ -121,6 +122,65 @@ class TestKinesisSource:
         # check if the timestamp has same amount of numbers before the comma as the current timestamp
         # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
         assert int(math.log10(timestamp)) == 9
+
+    @markers.aws.validated
+    def test_duplicate_event_source_mappings(
+        self,
+        create_lambda_function,
+        lambda_su_role,
+        create_event_source_mapping,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        snapshot,
+        aws_client,
+        cleanups,
+    ):
+        function_name_1 = f"lambda_func-{short_uid()}"
+        function_name_2 = f"lambda_func-{short_uid()}"
+
+        stream_name = f"test-foobar-{short_uid()}"
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name=stream_name)
+        event_source_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name_1,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+
+        response = create_event_source_mapping(
+            FunctionName=function_name_1,
+            EventSourceArn=event_source_arn,
+            StartingPosition="LATEST",
+        )
+        snapshot.match("create", response)
+
+        with pytest.raises(ClientError) as e:
+            create_event_source_mapping(
+                FunctionName=function_name_1,
+                EventSourceArn=event_source_arn,
+                StartingPosition="LATEST",
+            )
+
+        response = e.value.response
+        snapshot.match("error", response)
+
+        # this should work without problem since it's a new function
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name_2,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+        create_event_source_mapping(
+            FunctionName=function_name_2,
+            EventSourceArn=event_source_arn,
+            StartingPosition="LATEST",
+        )
 
     # TODO: is this test relevant for the new provider without patching SYNCHRONOUS_KINESIS_EVENTS?
     #   At least, it is flagged as AWS-validated.

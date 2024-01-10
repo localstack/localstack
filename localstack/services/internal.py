@@ -87,10 +87,7 @@ class HealthResource:
         if reload:
             self.service_manager.check_all()
         services = {
-            service: state.value
-            for service, state in self.service_manager.get_states().items()
-            # TODO remove this as soon as the sqs-query service is gone
-            if service != "sqs-query"
+            service: state.value for service, state in self.service_manager.get_states().items()
         }
 
         # build state dict from internal state and merge into it the service states

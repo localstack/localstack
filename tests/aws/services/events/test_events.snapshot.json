@@ -247,5 +247,102 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_rule_anything_but_to_sqs": {
+    "recorded-date": "21-12-2023, 13:00:42",
+    "recorded-content": {
+      "rule-anything-but": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "display-message",
+              "payload": "baz"
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": null,
+              "payload": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_rule_exists_true_to_sqs": {
+    "recorded-date": "29-12-2023, 09:56:47",
+    "recorded-content": {
+      "rule-exists-true": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "key": "value",
+              "payload": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_rule_exists_false_to_sqs": {
+    "recorded-date": "29-12-2023, 09:59:20",
+    "recorded-content": {
+      "rule-exists-false": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "no-key": "no-value",
+              "payload": "baz"
+            }
+          }
+        }
+      ]
+    }
   }
 }

@@ -655,6 +655,8 @@ def populate_edge_configuration(
     GATEWAY_LISTEN,
 ) = populate_edge_configuration(os.environ)
 
+GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
+
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
@@ -822,6 +824,9 @@ SQS_DELAY_PURGE_RETRY = is_env_true("SQS_DELAY_PURGE_RETRY")
 # Used to toggle QueueDeletedRecently errors when re-creating a queue within 60 seconds of deleting it
 SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 
+# Used to toggle MessageRetentionPeriod functionality in SQS queues
+SQS_ENABLE_MESSAGE_RETENTION_PERIOD = is_env_true("SQS_ENABLE_MESSAGE_RETENTION_PERIOD")
+
 # Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", or "path"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "standard"
 
@@ -875,9 +880,9 @@ LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 # Where Lambdas will be executed.
 LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
 
-# PUBLIC: 10 (default)
+# PUBLIC: 20 (default)
 # How many seconds Lambda will wait for the runtime environment to start up.
-LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 10)
+LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 20)
 
 # PUBLIC: base images for Lambda (default) https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html
 # localstack/services/lambda_/invocation/lambda_models.py:IMAGE_MAPPING
@@ -1111,6 +1116,7 @@ CONFIG_ENV_VARS = [
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",
     "GATEWAY_LISTEN",
+    "GATEWAY_WORKER_THREAD_COUNT",
     "HOSTNAME",
     "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
@@ -1171,6 +1177,7 @@ CONFIG_ENV_VARS = [
     "SNAPSHOT_FLUSH_INTERVAL",
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
+    "SQS_ENABLE_MESSAGE_RETENTION_PERIOD",
     "SQS_ENDPOINT_STRATEGY",
     "SQS_DISABLE_CLOUDWATCH_METRICS",
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",

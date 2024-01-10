@@ -404,7 +404,9 @@ class TestS3Cors:
         condition=lambda: config.LEGACY_V2_S3_PROVIDER,
         paths=["$..Headers.x-amz-server-side-encryption"],
     )
-    def test_cors_match_headers(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
+    def test_cors_match_headers(
+        self, s3_bucket, match_headers, aws_client, allow_bucket_acl, snapshot
+    ):
         origin = "https://localhost:4200"
         bucket_cors_config = {
             "CORSRules": [
@@ -462,11 +464,15 @@ class TestS3Cors:
                     "AllowedHeaders": [
                         "x-amz-expected-bucket-owner",
                         "x-amz-server-side-encryption-customer-algorithm",
+                        "x-AMZ-server-SIDE-encryption",
                     ],
                 }
             ]
         }
         aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+
+        get_bucket_cors_casing = aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
+        snapshot.match("get-bucket-cors-casing", get_bucket_cors_casing)
 
         # test with a specific header: x-amz-request-payer, but not allowed in the config
         opt_req = requests.options(
@@ -490,6 +496,18 @@ class TestS3Cors:
             },
         )
         match_headers("opt-get-allowed", opt_req)
+        assert opt_req.ok
+
+        # test with a specific header but different casing: x-AMZ-expected-BUCKET-owner, allowed in the config
+        opt_req = requests.options(
+            key_url,
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "x-AMZ-expected-BUCKET-owner, x-amz-server-side-encryption",
+            },
+        )
+        match_headers("opt-get-allowed-diff-casing", opt_req)
         assert opt_req.ok
 
         # test GET with Access-Control-Request-Headers: should not happen in reality, AWS is considering it like an

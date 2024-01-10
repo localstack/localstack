@@ -1,0 +1,35 @@
+{
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_alarm_lambda_target": {
+    "last_validated_date": "2024-01-03T17:30:00+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_anomaly_detector_lifecycle": {
+    "last_validated_date": "2023-10-26T08:42:43+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_aws_sqs_metrics_created": {
+    "last_validated_date": "2023-09-25T08:25:29+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_breaching_alarm_actions": {
+    "last_validated_date": "2023-09-12T09:56:52+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_create_metric_stream": {
+    "last_validated_date": "2023-10-26T07:12:10+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_dashboard_lifecycle": {
+    "last_validated_date": "2023-10-25T11:16:20+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_enable_disable_alarm_actions": {
+    "last_validated_date": "2023-09-12T10:00:45+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_insight_rule": {
+    "last_validated_date": "2023-10-26T08:07:59+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm": {
+    "last_validated_date": "2023-10-26T09:44:13+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list": {
+    "last_validated_date": "2023-09-25T08:26:17+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_store_tags": {
+    "last_validated_date": "2023-09-12T09:54:46+00:00"
+  }
+}

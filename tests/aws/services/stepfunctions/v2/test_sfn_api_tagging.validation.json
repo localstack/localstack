@@ -1,0 +1,47 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_create_state_machine": {
+    "last_validated_date": "2023-08-25T18:35:47+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_invalid_state_machine[None]": {
+    "last_validated_date": "2023-08-25T18:20:14+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_invalid_state_machine[tag_list1]": {
+    "last_validated_date": "2023-08-25T18:20:27+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_invalid_state_machine[tag_list2]": {
+    "last_validated_date": "2023-08-25T18:20:41+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_invalid_state_machine[tag_list3]": {
+    "last_validated_date": "2023-08-25T18:20:55+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list0]": {
+    "last_validated_date": "2023-08-25T18:18:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list1]": {
+    "last_validated_date": "2023-08-25T18:19:13+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list2]": {
+    "last_validated_date": "2023-08-25T18:19:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list3]": {
+    "last_validated_date": "2023-08-25T18:19:41+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine[tag_list4]": {
+    "last_validated_date": "2023-08-25T18:19:55+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_tag_state_machine_version": {
+    "last_validated_date": "2023-08-25T18:21:09+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_untag_state_machine[tag_keys0]": {
+    "last_validated_date": "2023-08-25T18:21:22+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_untag_state_machine[tag_keys1]": {
+    "last_validated_date": "2023-08-25T18:21:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_untag_state_machine[tag_keys2]": {
+    "last_validated_date": "2023-08-25T18:21:51+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_tagging.py::TestSnfApiTagging::test_untag_state_machine[tag_keys3]": {
+    "last_validated_date": "2023-08-25T18:22:05+00:00"
+  }
+}

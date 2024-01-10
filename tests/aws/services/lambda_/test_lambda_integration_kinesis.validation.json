@@ -1,0 +1,23 @@
+{
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisEventFiltering::test_kinesis_event_filtering_json_pattern": {
+    "last_validated_date": "2023-12-07T08:15:24+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping": {
+    "last_validated_date": "2023-02-27T15:54:02+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_disable_kinesis_event_source_mapping": {
+    "last_validated_date": "2023-02-27T15:59:49+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_duplicate_event_source_mappings": {
+    "last_validated_date": "2024-01-04T23:37:20+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_async_invocation": {
+    "last_validated_date": "2023-02-27T15:55:08+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_on_failure_destination_config": {
+    "last_validated_date": "2023-02-27T16:01:08+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_trim_horizon": {
+    "last_validated_date": "2023-02-27T15:56:17+00:00"
+  }
+}

@@ -119,6 +119,23 @@ class BackendIntegration(ABC):
                 response.headers[header_name] = value.strip("'")
         return response
 
+    @classmethod
+    def render_template_selection_expression(cls, invocation_context: ApiInvocationContext):
+        integration = invocation_context.integration
+        template_selection_expression = integration.get("templateSelectionExpression")
+        if not template_selection_expression:
+            return "$default"
+        variables = {
+            "request": {
+                "header": invocation_context.headers,
+                "querystring": invocation_context.query_params(),
+                "body": invocation_context.data_as_string(),
+                "context": invocation_context.context or {},
+                "stage_variables": invocation_context.stage_variables or {},
+            }
+        }
+        return VtlTemplate().render_vtl(template_selection_expression, variables)
+
 
 @lru_cache(maxsize=64)
 def get_service_factory(region_name: str, role_arn: str):
@@ -466,11 +483,8 @@ class KinesisIntegration(BackendIntegration):
             # integration type "AWS" is only supported for WebSocket APIs and REST
             # API (v1), but the template selection expression is only supported for
             # Websockets
-            template_key = None
             if invocation_context.is_websocket_request():
-                template_key = invocation_context.integration.get(
-                    "TemplateSelectionExpression", "$default"
-                )
+                template_key = self.render_template_selection_expression(invocation_context)
                 payload = self.request_templates.render(invocation_context, template_key)
             else:
                 payload = self.request_templates.render(invocation_context)
@@ -682,12 +696,17 @@ class SQSIntegration(BackendIntegration):
         if "Accept" not in headers:
             headers["Accept"] = "application/json"
 
-        template = integration.get("requestTemplates").get(APPLICATION_JSON)
-        if "GetQueueUrl" in template or "CreateQueue" in template:
-            payload = self.request_templates.render(invocation_context)
-            new_request = f"{payload}&QueueName={queue}"
+        if invocation_context.is_websocket_request():
+            template_key = self.render_template_selection_expression(invocation_context)
+            payload = self.request_templates.render(invocation_context, template_key)
         else:
             payload = self.request_templates.render(invocation_context)
+
+        # not sure what the purpose of this is, but it's in the original code
+        # TODO: check if this is still needed
+        if "GetQueueUrl" in payload or "CreateQueue" in payload:
+            new_request = f"{payload}&QueueName={queue}"
+        else:
             queue_url = f"{config.internal_service_url()}/queue/{region_name}/{account_id}/{queue}"
             new_request = f"{payload}&QueueUrl={queue_url}"
 

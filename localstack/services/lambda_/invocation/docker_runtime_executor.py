@@ -2,6 +2,7 @@ import dataclasses
 import json
 import logging
 import shutil
+from functools import cache
 from pathlib import Path
 from typing import Callable, Dict, Literal, Optional
 
@@ -164,6 +165,9 @@ class RuntimeImageResolver:
 resolver = RuntimeImageResolver()
 
 
+# TODO: handle architecture-specific installer and caching because we currently assume that the lambda-runtime-init
+#   Golang binary is cross-architecture compatible.
+@cache
 def get_runtime_client_path() -> Path:
     installer = lambda_runtime_package.get_installer()
     installer.install()
@@ -405,6 +409,9 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     @classmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:
         lambda_hooks.prepare_docker_executor.run(function_version)
+        # Trigger the installation of the Lambda runtime-init binary before invocation and
+        # cache the result to save time upon every invocation.
+        get_runtime_client_path()
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
             image_name = resolver.get_image_for_runtime(function_version.config.runtime)

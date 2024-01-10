@@ -1364,5 +1364,83 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_duplicate_event_source_mappings": {
+    "recorded-date": "04-01-2024, 17:25:30",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create": {
+        "BatchSize": 100,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "The event source arn (\" arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>"
+        },
+        "Type": "User",
+        "message": "The event source arn (\" arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
   }
 }

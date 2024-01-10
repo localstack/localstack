@@ -494,7 +494,11 @@ class CmdDockerClient(ContainerClient):
             raise NoSuchNetwork(network_name=e.object_id)
 
     def connect_container_to_network(
-        self, network_name: str, container_name_or_id: str, aliases: Optional[List] = None
+        self,
+        network_name: str,
+        container_name_or_id: str,
+        aliases: Optional[List] = None,
+        link_local_ips: List[str] = None,
     ) -> None:
         LOG.debug(
             "Connecting container '%s' to network '%s' with aliases '%s'",
@@ -506,6 +510,8 @@ class CmdDockerClient(ContainerClient):
         cmd += ["network", "connect"]
         if aliases:
             cmd += ["--alias", ",".join(aliases)]
+        if link_local_ips:
+            cmd += ["--link-local-ip", ",".join(link_local_ips)]
         cmd += [network_name, container_name_or_id]
         try:
             run(cmd)
@@ -728,6 +734,7 @@ class CmdDockerClient(ContainerClient):
         labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        init: Optional[bool] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -784,6 +791,8 @@ class CmdDockerClient(ContainerClient):
             cmd += list(
                 itertools.chain.from_iterable(["--ulimits", str(ulimit)] for ulimit in ulimits)
             )
+        if init:
+            cmd += ["--init"]
 
         if additional_flags:
             cmd += shlex.split(additional_flags)

@@ -82,15 +82,19 @@ class GatewayServer(HypercornServer):
     """
 
     def __init__(
-        self, gateway: Gateway, listen: HostAndPort | list[HostAndPort], use_ssl: bool = False
+        self,
+        gateway: Gateway,
+        listen: HostAndPort | list[HostAndPort],
+        use_ssl: bool = False,
+        threads: int | None = None,
     ):
         """
         Creates a new GatewayServer instance.
 
         :param gateway: which will be served by this server
-        :param port: defining the port of this server instance
-        :param bind_address: to bind this server instance to. Can be a host string or a list of host strings.
+        :param listen: defining the address and port pairs this server binds to. Can be a list of host and port pairs.
         :param use_ssl: True if the LocalStack cert should be loaded and HTTP/HTTPS multiplexing should be enabled.
+        :param threads: Number of worker threads the gateway will use.
         """
         # build server config
         config = Config()
@@ -109,7 +113,7 @@ class GatewayServer(HypercornServer):
 
         # build gateway
         loop = asyncio.new_event_loop()
-        app = AsgiGateway(gateway, event_loop=loop)
+        app = AsgiGateway(gateway, event_loop=loop, threads=threads)
 
         # start serving gateway
         super().__init__(app, config, loop)

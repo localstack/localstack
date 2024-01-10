@@ -16,6 +16,8 @@ CommitMessage = str
 ConnectionAlias = str
 ConnectionId = str
 ConnectionStatusMessage = str
+DataSourceDescription = str
+DataSourceName = str
 DeploymentType = str
 DescribePackagesFilterValue = str
 Description = str
@@ -428,6 +430,7 @@ class SkipUnavailableStatus(str):
 class TLSSecurityPolicy(str):
     Policy_Min_TLS_1_0_2019_07 = "Policy-Min-TLS-1-0-2019-07"
     Policy_Min_TLS_1_2_2019_07 = "Policy-Min-TLS-1-2-2019-07"
+    Policy_Min_TLS_1_2_PFS_2023_10 = "Policy-Min-TLS-1-2-PFS-2023-10"
 
 
 class TimeUnit(str):
@@ -603,6 +606,25 @@ class OptionStatus(TypedDict, total=False):
 class AccessPoliciesStatus(TypedDict, total=False):
     Options: PolicyDocument
     Status: OptionStatus
+
+
+class S3GlueDataCatalog(TypedDict, total=False):
+    RoleArn: Optional[RoleArn]
+
+
+class DataSourceType(TypedDict, total=False):
+    S3GlueDataCatalog: Optional[S3GlueDataCatalog]
+
+
+class AddDataSourceRequest(ServiceRequest):
+    DomainName: DomainName
+    Name: DataSourceName
+    DataSourceType: DataSourceType
+    Description: Optional[DataSourceDescription]
+
+
+class AddDataSourceResponse(TypedDict, total=False):
+    Message: Optional[String]
 
 
 class Tag(TypedDict, total=False):
@@ -1144,6 +1166,24 @@ class CreateVpcEndpointResponse(TypedDict, total=False):
     VpcEndpoint: VpcEndpoint
 
 
+class DataSourceDetails(TypedDict, total=False):
+    DataSourceType: Optional[DataSourceType]
+    Name: Optional[DataSourceName]
+    Description: Optional[DataSourceDescription]
+
+
+DataSourceList = List[DataSourceDetails]
+
+
+class DeleteDataSourceRequest(ServiceRequest):
+    DomainName: DomainName
+    Name: DataSourceName
+
+
+class DeleteDataSourceResponse(TypedDict, total=False):
+    Message: Optional[String]
+
+
 class DeleteDomainRequest(ServiceRequest):
     DomainName: DomainName
 
@@ -1644,6 +1684,17 @@ class GetCompatibleVersionsResponse(TypedDict, total=False):
     CompatibleVersions: Optional[CompatibleVersionsList]
 
 
+class GetDataSourceRequest(ServiceRequest):
+    DomainName: DomainName
+    Name: DataSourceName
+
+
+class GetDataSourceResponse(TypedDict, total=False):
+    DataSourceType: Optional[DataSourceType]
+    Name: Optional[DataSourceName]
+    Description: Optional[DataSourceDescription]
+
+
 class GetDomainMaintenanceStatusRequest(ServiceRequest):
     DomainName: DomainName
     MaintenanceId: RequestId
@@ -1740,6 +1791,14 @@ class InstanceTypeDetails(TypedDict, total=False):
 
 
 InstanceTypeDetailsList = List[InstanceTypeDetails]
+
+
+class ListDataSourcesRequest(ServiceRequest):
+    DomainName: DomainName
+
+
+class ListDataSourcesResponse(TypedDict, total=False):
+    DataSources: Optional[DataSourceList]
 
 
 class ListDomainMaintenancesRequest(ServiceRequest):
@@ -1928,6 +1987,17 @@ class StartServiceSoftwareUpdateResponse(TypedDict, total=False):
     ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
 
 
+class UpdateDataSourceRequest(ServiceRequest):
+    DomainName: DomainName
+    Name: DataSourceName
+    DataSourceType: DataSourceType
+    Description: Optional[DataSourceDescription]
+
+
+class UpdateDataSourceResponse(TypedDict, total=False):
+    Message: Optional[String]
+
+
 class UpdateDomainConfigRequest(ServiceRequest):
     DomainName: DomainName
     ClusterConfig: Optional[ClusterConfig]
@@ -2014,6 +2084,17 @@ class OpensearchApi:
     ) -> AcceptInboundConnectionResponse:
         raise NotImplementedError
 
+    @handler("AddDataSource")
+    def add_data_source(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        name: DataSourceName,
+        data_source_type: DataSourceType,
+        description: DataSourceDescription = None,
+    ) -> AddDataSourceResponse:
+        raise NotImplementedError
+
     @handler("AddTags")
     def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
         raise NotImplementedError
@@ -2093,6 +2174,12 @@ class OpensearchApi:
         vpc_options: VPCOptions,
         client_token: ClientToken = None,
     ) -> CreateVpcEndpointResponse:
+        raise NotImplementedError
+
+    @handler("DeleteDataSource")
+    def delete_data_source(
+        self, context: RequestContext, domain_name: DomainName, name: DataSourceName
+    ) -> DeleteDataSourceResponse:
         raise NotImplementedError
 
     @handler("DeleteDomain")
@@ -2259,6 +2346,12 @@ class OpensearchApi:
     ) -> GetCompatibleVersionsResponse:
         raise NotImplementedError
 
+    @handler("GetDataSource")
+    def get_data_source(
+        self, context: RequestContext, domain_name: DomainName, name: DataSourceName
+    ) -> GetDataSourceResponse:
+        raise NotImplementedError
+
     @handler("GetDomainMaintenanceStatus")
     def get_domain_maintenance_status(
         self, context: RequestContext, domain_name: DomainName, maintenance_id: RequestId
@@ -2289,6 +2382,12 @@ class OpensearchApi:
     def get_upgrade_status(
         self, context: RequestContext, domain_name: DomainName
     ) -> GetUpgradeStatusResponse:
+        raise NotImplementedError
+
+    @handler("ListDataSources")
+    def list_data_sources(
+        self, context: RequestContext, domain_name: DomainName
+    ) -> ListDataSourcesResponse:
         raise NotImplementedError
 
     @handler("ListDomainMaintenances")
@@ -2424,6 +2523,17 @@ class OpensearchApi:
         schedule_at: ScheduleAt = None,
         desired_start_time: Long = None,
     ) -> StartServiceSoftwareUpdateResponse:
+        raise NotImplementedError
+
+    @handler("UpdateDataSource")
+    def update_data_source(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        name: DataSourceName,
+        data_source_type: DataSourceType,
+        description: DataSourceDescription = None,
+    ) -> UpdateDataSourceResponse:
         raise NotImplementedError
 
     @handler("UpdateDomainConfig")
