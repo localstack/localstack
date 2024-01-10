@@ -136,7 +136,7 @@ class QueueManager:
         """
         with self.queue_lock:
             if queue_name in self.queues:
-                raise ValueError("Queue already created")
+                return self.queues[queue_name]
 
             # Truncate function name to ensure queue name limit of max 80 characters
             queue = StandardQueue(
