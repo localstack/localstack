@@ -622,7 +622,7 @@ class HTTPIntegration(BackendIntegration):
         integration = invocation_context.integration
         path_params = invocation_context.path_params
         method = invocation_context.method
-        headers = invocation_context.headers
+        headers = helpers.create_invocation_headers(invocation_context)
         relative_path, query_string_params = extract_query_string_params(path=invocation_path)
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
