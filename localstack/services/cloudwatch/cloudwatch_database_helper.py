@@ -247,6 +247,9 @@ class CloudwatchDatabase:
                 dimension_filter += "AND dimensions LIKE ? "
                 data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
 
+            if not dimensions:
+                dimension_filter = "AND dimensions is null "
+
             unit_filter = ""
             if unit:
                 if unit == "NULL_VALUE":

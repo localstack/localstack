@@ -1872,5 +1872,47 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_no_results": {
+    "recorded-date": "10-01-2024, 15:29:50",
+    "recorded-content": {
+      "result": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result",
+            "Label": "<label:1>",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_null_dimensions": {
+    "recorded-date": "09-01-2024, 20:13:11",
+    "recorded-content": {
+      "get_metric_with_null_dimensions": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "<id:1>",
+            "Label": "<label:1>",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
