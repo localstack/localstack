@@ -2243,34 +2243,39 @@ class TestCloudwatch:
             ],
         )
 
-        def validate():
-            data = aws_client.cloudwatch.get_metric_data(
-                MetricDataQueries=[
-                    {
-                        "Id": "result",
-                        "MetricStat": {
-                            "Metric": {
-                                "Namespace": namespace,
-                                "MetricName": metric,
-                                "Dimensions": [
-                                    {
-                                        "Name": "foo",
-                                        "Value": "bar",
-                                    }
-                                ],
-                            },
-                            "Period": 60,
-                            "Stat": "Sum",
-                        },
-                    }
-                ],
-                StartTime=utc_now - timedelta(seconds=60),
-                EndTime=utc_now + timedelta(seconds=60),
+        def assert_metric_ready():
+            list_of_metrics = aws_client.cloudwatch.list_metrics(
+                Namespace=namespace, MetricName=metric
             )
-            snapshot.add_transformer(snapshot.transform.key_value("Label"))
-            snapshot.match("result", data)
+            assert len(list_of_metrics["Metrics"]) == 1
 
-        retry(validate, sleep_before=(2 if is_aws_cloud() else 0))
+        retry(assert_metric_ready, sleep=1, retries=10)
+
+        data = aws_client.cloudwatch.get_metric_data(
+            MetricDataQueries=[
+                {
+                    "Id": "result",
+                    "MetricStat": {
+                        "Metric": {
+                            "Namespace": namespace,
+                            "MetricName": metric,
+                            "Dimensions": [
+                                {
+                                    "Name": "foo",
+                                    "Value": "bar",
+                                }
+                            ],
+                        },
+                        "Period": 60,
+                        "Stat": "Sum",
+                    },
+                }
+            ],
+            StartTime=utc_now - timedelta(seconds=60),
+            EndTime=utc_now + timedelta(seconds=60),
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("Label"))
+        snapshot.match("result", data)
 
 
 def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
