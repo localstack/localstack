@@ -45,8 +45,8 @@ def to_invocation_context(
     data = restore_payload(request)
     headers = Headers(request.headers)
 
+    # TODO: verify that this is needed
     # adjust the X-Forwarded-For header
-    # XXX wondering if we need this at all
     x_forwarded_for = headers.getlist("X-Forwarded-For")
     x_forwarded_for.append(request.remote_addr)
     x_forwarded_for.append(request.host)
