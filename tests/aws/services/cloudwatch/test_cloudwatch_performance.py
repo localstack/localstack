@@ -1,7 +1,8 @@
 import logging
 import threading
 
-from localstack.testing import pytest
+import pytest
+
 from localstack.testing.pytest import markers
 
 LOG = logging.getLogger(__name__)
